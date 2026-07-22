@@ -1,6 +1,12 @@
 # Reisen
 
-macOS-App zur Verwaltung von Flug- und Hotelbuchungen. Datenquellen sind austauschbare **Provider** (aktuell: CHECK24). Persistenz ist **kanonisch** (Domain-Entities) mit SwiftData als Adapter.
+macOS-App zur Verwaltung von Flug- und Hotelbuchungen. Datenquellen sind austauschbare **Provider**; Persistenz ist **kanonisch** (Domain-Entities) mit SwiftData als Adapter.
+
+Unterstützte Provider (Sync/Session):
+- `Check24`
+- `Opodo`
+- `Booking.com`
+- `Airbnb` (Stay/Hotel-artige Buchungen, Experiences i. d. R. als `.other`)
 
 ## Architektur
 
@@ -30,12 +36,30 @@ Keine stillen Store-Fallbacks: bei Schema-/Store-Fehlern zeigt die App einen Res
 ```
 
 1. Seitenleiste **Anmelden & Sync**
-2. Bei Check24 anmelden
+2. Provider aktivieren und im eingebetteten `WKWebView` anmelden
 3. **Jetzt synchronisieren**
 
-## Hinweise zu CHECK24
+## CI (Continuous Integration)
 
-CHECK24 ist ein Vermittlungs-/Vergleichsportal. Automatisiertes Auslesen ist rechtlich/technisch sensibel: Der Sync ist für **lokale, persönliche Nutzung** gedacht und speichert keine Credentials im Klartext (Session nur im WebView-Cookie-Store).
+[![CI](https://github.com/rosch100/Reisen/actions/workflows/ci.yml/badge.svg)](https://github.com/rosch100/Reisen/actions/workflows/ci.yml)
+
+Für PRs und Pushs auf `master` läuft die CI automatisch:
+- `swift build --build-tests`
+- `swift test` über `bash ./Scripts/ci-test.sh`
+
+Lokale CI-parität:
+```bash
+bash ./Scripts/ci-test.sh
+```
+
+## Vollständige Funktionalität (Kurzüberblick)
+
+Beim Sync:
+1. Lädt der ausgewählte Provider eine Katalog-Ansicht (Trips/Activities) via eingeloggter Web-Session.
+2. Parsed Daten werden in die kanonische Domain-Struktur (`Booking`, `Trip`, `CancellationDeadline`, optional `BookingRateDetails`) überführt und persistent gespeichert.
+3. Wenn vom Nutzer aktiviert: werden **Stornofristen** als lokale **Benachrichtigungen/Erinnerungen** geplant sowie optional **Kalenderereignisse** geschrieben (inkl. Zeitnormalisierung).
+
+Hinweis: Der Sync ist für **lokale, persönliche Nutzung** gedacht und speichert keine Credentials im Klartext; Session-Cookies bleiben im WebView-Cookie-Store.
 
 ## Lizenz (nicht-kommerziell)
 
