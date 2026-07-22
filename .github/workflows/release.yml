@@ -33,7 +33,8 @@ jobs:
           /usr/sbin/installer -pkg ./swiftly.pkg -target CurrentUserHomeDirectory >/dev/null
 
           "${HOME}/.swiftly/bin/swiftly" init --quiet-shell-followup --assume-yes --no-modify-profile
-          "${HOME}/.swiftly/bin/swiftly" install 6.4.x
+          "${HOME}/.swiftly/bin/swiftly" install 6.4
+          "${HOME}/.swiftly/bin/swiftly" link 6.4
           . "${HOME}/.swiftly/env.sh"
           swift --version
 
