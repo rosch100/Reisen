@@ -1,0 +1,22 @@
+# CodeRabbit repository configuration
+#
+# Ziel: „Code + Security“ Reviews für Pull Requests.
+# - CodeRabbit Reviews laufen automatisch (Auto-Review)
+# - OpenGrep ist aktiviert, um Security-Vulnerabilities in PR-Änderungen zu finden
+
+language: "en-US"
+
+reviews:
+  # Balanced feedback für ein kleines Maintainer-Team.
+  profile: "chill"
+
+  # Auto-Reviews für PRs aktivieren; Drafts bleiben aus, damit kein „Spam“-Review
+  # für frühe Entwürfe entsteht.
+  auto_review:
+    enabled: true
+    drafts: false
+
+  tools:
+    opengrep:
+      enabled: true
+
