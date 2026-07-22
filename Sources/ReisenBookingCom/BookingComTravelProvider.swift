@@ -28,6 +28,10 @@ internal protocol BookingComWebView: NavigationWebView {
 extension WKWebView: BookingComWebView {}
 
 /// Session-Interface für `BookingComWebView`.
+///
+/// Main-Actor-isoliert, damit die `WebViewProviderSession`-Conformance zu `BookingComWebViewSession`
+/// keine `[ConformanceIsolation]`-Fehler in Swift 6.2+ auslöst.
+@MainActor
 internal protocol BookingComWebViewSession: ProviderSession {
     var bookingComWebView: BookingComWebView { get }
 }

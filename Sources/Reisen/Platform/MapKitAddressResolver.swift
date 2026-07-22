@@ -3,7 +3,7 @@ import MapKit
 
 import ReisenDomain
 
-public struct MapKitAddressResolver: AddressResolving {
+public struct MapKitAddressResolver: AddressResolving, Sendable {
     public init() {}
 
     public func resolveAddress(query: String) async throws -> String? {
