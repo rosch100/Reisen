@@ -18,8 +18,18 @@ Dieses Repo nutzt Cursor-Agents primär für saubere CI-/Review-Workflows. Die �
 - Fokus: `release.yml`, `Scripts/sign-and-notarize.sh`, `docs/ci/apple-signing.md`.
 - Regel: Nur Secrets aus GitHub (`secrets.*`) verwenden; keine Hardcodings.
 
+### AI-Assistenz (Human-in-the-loop)
+- Ziel: AI nur als Hilfswerkzeug nutzen; jede Änderung muss vom Menschen verstanden und geprüft werden.
+- Regel: Keine autonomen ungeprüften PR-Inhalte oder Kommentare; AI-Empfehlungen sind Hinweise, keine Gate-Kriterien.
+- Zielpfade: `AI_POLICY.md`, `.github/copilot-instructions.md` (für Code-Review-Kommentare), `PULL_REQUEST_TEMPLATE.md` (für Kontext/Checklisten).
+- Hinweis: Der Beitragende bleibt für Korrektheit und Verständlichkeit verantwortlich.
+
 ## Lokale Kommandos (SSOT zu CI)
 
 - Test (CI-parität): `bash ./Scripts/ci-test.sh`
 - App-Bundle bauen: `bash ./Scripts/build-app.sh --configuration debug|release`
+
+## Referenzen
+- `AI_POLICY.md`: Regeln für die Verwendung von AI in Issues, PRs und Reviews
+- `.github/copilot-instructions.md`: Regeln, wie (Copilot) Review-Kommentare formuliert sein sollen
 
