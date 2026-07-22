@@ -30,17 +30,19 @@ jobs:
         with:
           xcode-version: "26.0"
 
-      - name: Setup Swift via Swiftly (6.4.x)
+      - name: Setup Swiftly (Swift 6.4.x snapshot)
         run: |
           set -euo pipefail
           SWIFTLY_PKG_URL="https://download.swift.org/swiftly/darwin/swiftly.pkg"
           curl -fsSL "$SWIFTLY_PKG_URL" -o swiftly.pkg
           /usr/sbin/installer -pkg ./swiftly.pkg -target CurrentUserHomeDirectory >/dev/null
 
+          SWIFT_SELECTOR="6.4.x-snapshot"
           "${HOME}/.swiftly/bin/swiftly" init --quiet-shell-followup --assume-yes --no-modify-profile
-          "${HOME}/.swiftly/bin/swiftly" install 6.4
-          "${HOME}/.swiftly/bin/swiftly" link 6.4
+          "${HOME}/.swiftly/bin/swiftly" install "$SWIFT_SELECTOR"
+          "${HOME}/.swiftly/bin/swiftly" use "$SWIFT_SELECTOR"
           . "${HOME}/.swiftly/env.sh"
+
           swift --version
 
       - name: Print toolchain versions
