@@ -16,6 +16,7 @@ public protocol TravelProvider {
 }
 
 /// Optional login metadata for provider web-based account syncing.
+@MainActor
 public protocol TravelProviderLoginConfiguration {
     /// URL used to start the provider's login flow in the embedded web view.
     var loginURL: URL { get }
