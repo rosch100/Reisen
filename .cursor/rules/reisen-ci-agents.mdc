@@ -1,0 +1,22 @@
+---
+description: Cursor-Agent Hinweise für Reisen CI/Agents (SSOT zu Scripts + Secrets-Disziplin)
+alwaysApply: true
+---
+
+# Reisen CI/Agents
+
+## SSOT: Scripts statt doppelte CI-Logik
+- Änderungen am CI-Pfad erfolgen über:
+  - `Scripts/ci-test.sh`
+  - `Scripts/build-app.sh`
+  - `Scripts/sign-and-notarize.sh`
+- Workflows rufen diese Scripts auf (keine Copy/Paste-Build-Logik in YAML).
+
+## Keine Secrets im Klartext
+- `release.yml` und `Scripts/sign-and-notarize.sh` dürfen niemals Secrets loggen.
+- Bei Fehlern: nur technische Details (welcher Befehl fehlgeschlagen ist), keine Env-Werte.
+
+## Debug/Release-Konsistenz
+- `Scripts/build-app.sh --configuration release` muss den Release-Binärpfad und Resource-Bundles konsistent finden.
+- Wenn Cache/Paths geändert werden, Tests lokal vor dem Push laufen lassen.
+
