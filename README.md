@@ -37,6 +37,16 @@ Keine stillen Store-Fallbacks: bei Schema-/Store-Fehlern zeigt die App einen Res
 
 CHECK24 ist ein Vermittlungs-/Vergleichsportal. Automatisiertes Auslesen ist rechtlich/technisch sensibel: Der Sync ist für **lokale, persönliche Nutzung** gedacht und speichert keine Credentials im Klartext (Session nur im WebView-Cookie-Store).
 
+## Lizenz (nicht-kommerziell)
+
+Dieses Projekt ist unter **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** lizenziert.
+
+Der Code darf geteilt und angepasst werden, **aber nicht** für kommerzielle Zwecke verwendet werden.
+
+Lizenz-Links:
+- Kurzfassung: https://creativecommons.org/licenses/by-nc/4.0/
+- Vollständiger Legal Code: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+
 ## Weiterer Ausbau
 
 - Weitere Provider: `TravelProvider` + optional `GapDeepLinkBuilding` registrieren
