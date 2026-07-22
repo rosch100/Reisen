@@ -1,0 +1,117 @@
+{
+  "data": {
+    "getTrips": {
+      "trips": [
+        {
+          "trip": {
+            "id": "25121497153",
+            "bookingStatus": "CONTRACT",
+            "bookingProductStatus": "CONFIRMED",
+            "tdToken": "FAKE_TOKEN_FLIGHT_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "price": { "amount": 333.79, "currency": "EUR" },
+            "travellers": [
+              { "travellerType": "ADULT" },
+              { "travellerType": "ADULT" },
+              { "travellerType": "ADULT" }
+            ],
+            "itinerary": {
+              "departureDate": 1785843900000,
+              "arrivalDate": 1785846600000,
+              "origin": {
+                "cityName": "Singapur",
+                "iata": "SIN"
+              },
+              "destination": {
+                "cityName": "Jakarta",
+                "iata": "CGK"
+              },
+              "legs": [
+                {
+                  "sections": [
+                    {
+                      "pnr": "1D9505",
+                      "flightCode": "8B152",
+                      "carrier": { "name": "TransNusa" },
+                      "departure": {
+                        "iata": "SIN",
+                        "name": "Singapore Changi Airport"
+                      },
+                      "arrival": {
+                        "iata": "CGK",
+                        "name": "Soekarno-Hatta International Airport"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "accommodationBooking": null
+          }
+        },
+        {
+          "trip": {
+            "id": "25314675162",
+            "bookingStatus": "CONTRACT",
+            "bookingProductStatus": null,
+            "tdToken": "FAKE_TOKEN_HOTEL_CANCELLED_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "price": { "amount": 0.0, "currency": "EUR" },
+            "travellers": [],
+            "itinerary": null,
+            "accommodationBooking": {
+              "id": "100170323515",
+              "city": "Borobudur",
+              "bookingStatus": "RETAINED",
+              "accommodationName": "Plataran Heritage Borobudur Hotel and Convention Center",
+              "address": "Dusun Kretek",
+              "postalCode": "56553",
+              "countryCode": "ID",
+              "checkInDate": 1786320000000,
+              "checkOutDate": 1786406400000,
+              "checkIn": "14:00-23:59",
+              "checkOut": "12:00",
+              "boardType": "BB",
+              "numberOfRooms": 2,
+              "numberOfAdults": 2,
+              "numberOfChildren": 1,
+              "bookingRooms": [
+                { "roomDescription": "DELUXE ROOM" },
+                { "roomDescription": "DELUXE ROOM" }
+              ]
+            }
+          }
+        },
+        {
+          "trip": {
+            "id": "25373233010",
+            "bookingStatus": "CONTRACT",
+            "bookingProductStatus": "CONFIRMED",
+            "tdToken": "FAKE_TOKEN_HOTEL_ACTIVE_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "price": { "amount": 63.0, "currency": "EUR" },
+            "travellers": [],
+            "itinerary": null,
+            "accommodationBooking": {
+              "id": "100172774666",
+              "city": "Jakarta",
+              "bookingStatus": "CONTRACT",
+              "accommodationName": "Merlynn Park Hotel",
+              "address": "Jl. KH. Hasyim Azhari 29 - 31",
+              "postalCode": "10130",
+              "countryCode": "ID",
+              "checkInDate": 1787270400000,
+              "checkOutDate": 1787356800000,
+              "checkIn": "14:00",
+              "checkOut": "12:00",
+              "boardType": "BB",
+              "numberOfRooms": 1,
+              "numberOfAdults": 3,
+              "numberOfChildren": 0,
+              "bookingRooms": [
+                { "roomDescription": "Family Suite" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "data": {
+    "tripsQueries": {
+      "getTrips": {
+        "__typename": "GetTripsList",
+        "trips": [
+          {
+            "id": "306712048518231",
+            "title": "Funchal",
+            "startDateTime": "2026-03-27T20:50:00.000Z",
+            "endDateTime": "2026-03-28T10:05:00.000Z",
+            "canceled": false,
+            "numberOfReservations": 1,
+            "__typename": "Trip"
+          },
+          {
+            "id": "30809030762654",
+            "title": "Bamberg",
+            "startDateTime": "2025-08-01T14:00:00.000Z",
+            "endDateTime": "2025-08-02T09:00:00.000Z",
+            "canceled": false,
+            "numberOfReservations": 1,
+            "__typename": "Trip"
+          },
+          {
+            "id": "300712754175907",
+            "title": "Nairobi",
+            "startDateTime": "2024-08-29T21:00:00.000Z",
+            "endDateTime": "2024-08-31T08:00:00.000Z",
+            "canceled": false,
+            "numberOfReservations": 1,
+            "__typename": "Trip"
+          }
+        ],
+        "nextPageData": {
+          "paginationToken": null,
+          "__typename": "TripsListNextPageData"
+        }
+      }
+    }
+  }
+}

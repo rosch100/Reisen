@@ -1,0 +1,233 @@
+{
+  "orderId": "7c1ccd99-9682-4016-8ad4-3b2aa0093c88",
+  "orderToken": "524cc06efe97a4f78aa8286070b75852e135abb9074a78ec73a6362c54fec84a8b3a21127e07e6a4682fabb7c6b74272b651da0ff589707e11022d7df9f094cf6eed51c644bc147d3c6dbc4986e8",
+  "orderStatus": "CONFIRMED",
+  "cancellationOptions": {
+    "cancellable": false,
+    "isFullRefund": false,
+    "cancellationStatus": "UNKNOWN_CANCELLABLE",
+    "refundOptions": [],
+    "flightsPbemUniversalNonRefundableOrders": false
+  },
+  "isCancellableWithin24Hours": false,
+  "publicReference": {
+    "prefix": 40,
+    "number": 1042665121,
+    "pin": "5828",
+    "publicReference": "40-1042665121",
+    "formattedReference": "40-1042665121"
+  },
+  "totalPrice": {
+    "total": {
+      "currencyCode": "EUR",
+      "units": 229,
+      "nanos": 550000000
+    },
+    "baseFare": {
+      "currencyCode": "EUR",
+      "units": 229,
+      "nanos": 550000000
+    },
+    "fee": {
+      "currencyCode": "EUR",
+      "units": 0,
+      "nanos": 0
+    },
+    "tax": {
+      "currencyCode": "EUR",
+      "units": 0,
+      "nanos": 0
+    },
+    "discount": {
+      "currencyCode": "EUR",
+      "units": 0,
+      "nanos": 0
+    },
+    "totalWithoutDiscount": {
+      "currencyCode": "EUR",
+      "units": 229,
+      "nanos": 550000000
+    },
+    "showPriceStrikethrough": false
+  },
+  "airOrder": {
+    "flightSegments": [
+      {
+        "departureTime": "2026-08-11T16:10:00",
+        "departureTimeTz": "2026-08-11T16:10:00+07:00",
+        "arrivalTime": "2026-08-11T18:35:00",
+        "arrivalTimeTz": "2026-08-11T18:35:00+08:00",
+        "travellerCheckedLuggage": [
+          {
+            "travellerReference": "500253051",
+            "luggageAllowance": {
+              "luggageType": "CHECKED_IN",
+              "ruleType": "PIECE_BASED",
+              "maxPiece": 1,
+              "maxWeightPerPiece": 10,
+              "massUnit": "KG"
+            }
+          },
+          {
+            "travellerReference": "500253050",
+            "luggageAllowance": {
+              "luggageType": "CHECKED_IN",
+              "ruleType": "PIECE_BASED",
+              "maxPiece": 1,
+              "maxWeightPerPiece": 10,
+              "massUnit": "KG"
+            }
+          },
+          {
+            "travellerReference": "500253052",
+            "luggageAllowance": {
+              "luggageType": "CHECKED_IN",
+              "ruleType": "PIECE_BASED",
+              "maxPiece": 1,
+              "maxWeightPerPiece": 10,
+              "massUnit": "KG"
+            }
+          }
+        ],
+        "travellerCabinLuggage": [
+          {
+            "travellerReference": "500253050",
+            "luggageAllowance": {
+              "luggageType": "HAND",
+              "maxPiece": 1,
+              "maxWeightPerPiece": 5,
+              "massUnit": "KG",
+              "sizeRestrictions": {
+                "maxLength": 40,
+                "maxWidth": 30,
+                "maxHeight": 20,
+                "sizeUnit": "CM"
+              }
+            },
+            "personalItem": true
+          },
+          {
+            "travellerReference": "500253051",
+            "luggageAllowance": {
+              "luggageType": "HAND",
+              "maxPiece": 1,
+              "maxWeightPerPiece": 5,
+              "massUnit": "KG",
+              "sizeRestrictions": {
+                "maxLength": 40,
+                "maxWidth": 30,
+                "maxHeight": 20,
+                "sizeUnit": "CM"
+              }
+            },
+            "personalItem": true
+          },
+          {
+            "travellerReference": "500253052",
+            "luggageAllowance": {
+              "luggageType": "HAND",
+              "maxPiece": 1,
+              "maxWeightPerPiece": 5,
+              "massUnit": "KG",
+              "sizeRestrictions": {
+                "maxLength": 40,
+                "maxWidth": 30,
+                "maxHeight": 20,
+                "sizeUnit": "CM"
+              }
+            },
+            "personalItem": true
+          }
+        ]
+      }
+    ]
+  },
+  "luggageBySegment": [
+    [
+      {
+        "travellerReference": "500253050",
+        "luggageAllowance": [
+          {
+            "luggageType": "HAND",
+            "maxPiece": 1,
+            "maxWeightPerPiece": 5,
+            "massUnit": "KG",
+            "sizeRestrictions": {
+              "maxLength": 40,
+              "maxWidth": 30,
+              "maxHeight": 20,
+              "sizeUnit": "CM"
+            }
+          },
+          {
+            "luggageType": "PERSONAL_ITEM",
+            "maxPiece": 1
+          },
+          {
+            "luggageType": "CHECKED_IN",
+            "ruleType": "PIECE_BASED",
+            "maxPiece": 1,
+            "maxWeightPerPiece": 10,
+            "massUnit": "KG"
+          }
+        ]
+      },
+      {
+        "travellerReference": "500253051",
+        "luggageAllowance": [
+          {
+            "luggageType": "HAND",
+            "maxPiece": 1,
+            "maxWeightPerPiece": 5,
+            "massUnit": "KG",
+            "sizeRestrictions": {
+              "maxLength": 40,
+              "maxWidth": 30,
+              "maxHeight": 20,
+              "sizeUnit": "CM"
+            }
+          },
+          {
+            "luggageType": "PERSONAL_ITEM",
+            "maxPiece": 1
+          },
+          {
+            "luggageType": "CHECKED_IN",
+            "ruleType": "PIECE_BASED",
+            "maxPiece": 1,
+            "maxWeightPerPiece": 10,
+            "massUnit": "KG"
+          }
+        ]
+      },
+      {
+        "travellerReference": "500253052",
+        "luggageAllowance": [
+          {
+            "luggageType": "HAND",
+            "maxPiece": 1,
+            "maxWeightPerPiece": 5,
+            "massUnit": "KG",
+            "sizeRestrictions": {
+              "maxLength": 40,
+              "maxWidth": 30,
+              "maxHeight": 20,
+              "sizeUnit": "CM"
+            }
+          },
+          {
+            "luggageType": "PERSONAL_ITEM",
+            "maxPiece": 1
+          },
+          {
+            "luggageType": "CHECKED_IN",
+            "ruleType": "PIECE_BASED",
+            "maxPiece": 1,
+            "maxWeightPerPiece": 10,
+            "massUnit": "KG"
+          }
+        ]
+      }
+    ]
+  ]
+}
