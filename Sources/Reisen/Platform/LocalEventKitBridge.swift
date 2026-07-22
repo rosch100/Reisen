@@ -4,6 +4,10 @@ import ReisenDomain
 import SwiftData
 import ReisenData
 
+// EventKit types are not annotated as `Sendable`, but they are main-actor bound in this codebase
+// (this bridge is a `@MainActor` type). This prevents Swift 6.2/6.3 "sending risks" build failures.
+extension EKEventStore: @unchecked Sendable {}
+
 @MainActor
 final class LocalEventKitBridge: CalendarSyncing {
     private let calendarEventLinkRepository: CalendarEventLinkRepository?
