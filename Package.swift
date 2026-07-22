@@ -1,11 +1,11 @@
-// swift-tools-version: 6.4
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
     name: "Reisen",
     platforms: [
-        .macOS(.v27),
+        .macOS(.v26),
         .iOS(.v17),
     ],
     products: [
