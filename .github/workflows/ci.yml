@@ -30,6 +30,11 @@ jobs:
         with:
           xcode-version: "26.0"
 
+      - name: Setup Swift 6.4.0
+        uses: swift-actions/setup-swift@v3
+        with:
+          swift-version: "6.4.0"
+
       - name: Print toolchain versions
         run: |
           swift --version
