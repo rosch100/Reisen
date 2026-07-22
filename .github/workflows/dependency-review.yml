@@ -17,7 +17,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Dependency Review
+      - name: Dependency Review (Swift needs Package.resolved)
+        if: ${{ hashFiles('Package.resolved') != '' }}
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
         with:
           fail-on-severity: high
+
+      - name: Skip Dependency Review
+        if: ${{ hashFiles('Package.resolved') == '' }}
+        run: |
+          echo "Skipping dependency review: Package.resolved not present in repository."
