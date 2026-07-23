@@ -12,6 +12,8 @@ let package = Package(
         .library(name: "ReisenDomain", targets: ["ReisenDomain"]),
         .library(name: "ReisenData", targets: ["ReisenData"]),
         .library(name: "ReisenProviders", targets: ["ReisenProviders"]),
+        .library(name: "ReisenAppCore", targets: ["ReisenAppCore"]),
+        .library(name: "ReisenSharedUI", targets: ["ReisenSharedUI"]),
         .library(name: "ReisenCheck24", targets: ["ReisenCheck24"]),
         .library(name: "ReisenOpodo", targets: ["ReisenOpodo"]),
         .library(name: "ReisenBookingCom", targets: ["ReisenBookingCom"]),
@@ -38,6 +40,34 @@ let package = Package(
             name: "ReisenProviders",
             dependencies: ["ReisenDomain"],
             path: "Sources/ReisenProviders",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .target(
+            name: "ReisenAppCore",
+            dependencies: [
+                "ReisenDomain",
+                "ReisenData",
+                "ReisenProviders",
+                "ReisenCheck24",
+                "ReisenOpodo",
+                "ReisenBookingCom",
+                "ReisenAirbnb",
+            ],
+            path: "Sources/ReisenAppCore",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .target(
+            name: "ReisenSharedUI",
+            dependencies: [
+                "ReisenDomain",
+                "ReisenData",
+                "ReisenAppCore",
+            ],
+            path: "Sources/ReisenSharedUI",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

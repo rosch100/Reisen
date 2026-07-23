@@ -6,3 +6,14 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+
+# Superpowers SDD scratch
+.superpowers/
+
+# iOS / XcodeGen / SweetPad (generated)
+*.xcodeproj/
+*.xcworkspace/
+!default.xcworkspace
+buildServer.json
+.sweetpad/
+Apps/ReiseniOS/xcuserdata/
