@@ -28,10 +28,10 @@ jobs:
       - name: Select Xcode 26
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
         with:
-          xcode-version: "26.0"
+          xcode-version: latest-stable
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@4187e74d05793876e9989daffde9c3e66b4acd07
+        uses: github/codeql-action/init@e58424170fb0262c8d7ed60a2e84b9bffe205c67
         with:
           languages: swift
           build-mode: manual
@@ -40,7 +40,7 @@ jobs:
         run: swift build --build-tests -v
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@4187e74d05793876e9989daffde9c3e66b4acd07
+        uses: github/codeql-action/analyze@e58424170fb0262c8d7ed60a2e84b9bffe205c67
         continue-on-error: true
         with:
           category: "/language:swift"
