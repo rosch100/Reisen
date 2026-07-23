@@ -1,6 +1,6 @@
 {
   "orderId": "7c1ccd99-9682-4016-8ad4-3b2aa0093c88",
-  "orderToken": "524cc06efe97a4f78aa8286070b75852e135abb9074a78ec73a6362c54fec84a8b3a21127e07e6a4682fabb7c6b74272b651da0ff589707e11022d7df9f094cf6eed51c644bc147d3c6dbc4986e8",
+  "orderToken": "fixture_order_token_001",
   "orderStatus": "CONFIRMED",
   "cancellationOptions": {
     "cancellable": false,

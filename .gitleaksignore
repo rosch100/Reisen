@@ -1,0 +1,10 @@
+# Historical Booking.com HAR fixture tokens (sanitized in HEAD).
+# Fingerprints from introduction commit; values no longer present in tree.
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/Fixtures/flight_order_sample.json:generic-api-key:3
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/Fixtures/single_timeline_kuta_muenchen.json:generic-api-key:94
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/Fixtures/single_timeline_kuta_muenchen.json:generic-api-key:101
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/Fixtures/single_timeline_kuta_muenchen.json:generic-api-key:158
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/GraphQLCatalogParserTests.swift:generic-api-key:93
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/GraphQLCatalogParserTests.swift:generic-api-key:98
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/GraphQLCatalogParserTests.swift:generic-api-key:104
+522985d2f6ffc7b9bb9d7b10958e0a22d377927e:Tests/ReisenBookingComTests/GraphQLCatalogParserTests.swift:generic-api-key:109

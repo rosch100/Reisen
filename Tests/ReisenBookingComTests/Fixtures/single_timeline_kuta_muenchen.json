@@ -25,7 +25,7 @@
                   "endDateTime": "2026-08-11T18:35:00.000+08:00",
                   "localisedDatetimeRange": "",
                   "passengerCount": 3,
-                  "encryptedOrderId": "524cc06efe97a4f78aa8fe2ea5b14b100e6fb0043a4a95b5c3f4433becd7228d69af8363f27a3fd2ea00d9d8a1f77b79b8673a257b20734b5314818c87ce5dc49cbe5659be22416842d07758df1f",
+                  "encryptedOrderId": "fixture_encrypted_order_id_001",
                   "verticalType": "FLIGHT",
                   "lastUpdated": "2026-07-19T08:27:56.000+02:00",
                   "startDateTime": "2026-08-11T16:10:00.000+07:00",
@@ -34,7 +34,7 @@
                     "currency": "EUR",
                     "__typename": "Price"
                   },
-                  "bookingUrl": "https://flights.booking.com/confirmation/524cc06efe97a4f78aa8286070b75852e135abb9074a78ec73a6362c54fec84a8b3a21127e07e6a4682fabb7c6b74272b651da0ff589707e11022d7df9f094cf6eed51c644bc147d3c6dbc4986e8",
+                  "bookingUrl": "https://flights.booking.com/confirmation/fixture_order_token_001",
                   "identifiers": {
                     "reserveOrderId": "7c1ccd99-9682-4016-8ad4-3b2aa0093c88",
                     "publicFacingIdentifier": "5031303168853001",
@@ -91,14 +91,14 @@
               {
                 "__typename": "ReservationTripItem",
                 "reservation": {
-                  "authKey": "OIGACKs01QJKxF38",
+                  "authKey": "fixtureAuthKey0001",
                   "reservationStatus": "CONFIRMED",
                   "checkIn": {
                     "end": "2026-08-12T23:30:00.000+02:00",
                     "start": "2026-08-12T15:00:00.000+02:00",
                     "__typename": "CheckInTime"
                   },
-                  "bookingUrl": "/confirmation.de.html?auth_key=OIGACKs01QJKxF38;aid=304142;source=mytrips",
+                  "bookingUrl": "/confirmation.de.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips",
                   "checkOut": {
                     "__typename": "CheckOutTime",
                     "start": "2026-08-13T06:00:00.000+02:00",
@@ -155,7 +155,7 @@
                     }
                   },
                   "localisedDatetimeRange": "12. Aug. – 13. Aug.",
-                  "reservationDetailsURL": "/confirmation.de.html?auth_key=OIGACKs01QJKxF38;aid=304142;source=mytrips",
+                  "reservationDetailsURL": "/confirmation.de.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips",
                   "endDateTime": "2026-08-13T11:00:00.000+02:00",
                   "__typename": "AccommodationReservation",
                   "numOfRooms": 1,

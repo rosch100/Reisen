@@ -90,23 +90,23 @@ func bookingComGraphQLParsesFlightAndHotel() throws {
 
 @Test("BookingComParsing normalisiert confirmation.de.html → confirmation.html (HAR)")
 func bookingComNormalizesHotelConfirmationURL() throws {
-    let raw = "/confirmation.de.html?auth_key=OIGACKs01QJKxF38;aid=304142;source=mytrips"
+    let raw = "/confirmation.de.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips"
     let normalized = try #require(BookingComParsing.normalizedHotelConfirmationURL(raw))
     #expect(normalized.contains("confirmation.html"))
     #expect(!normalized.lowercased().contains("confirmation.de.html"))
     #expect(normalized.contains("lang=de"))
-    #expect(normalized.contains("auth_key=OIGACKs01QJKxF38"))
+    #expect(normalized.contains("auth_key=fixtureAuthKey0001"))
 }
 
 @Test("BookingComParsing normalisiert confirmation.en-us.html → confirmation.html lang=de")
 func bookingComNormalizesEnUsHotelConfirmationURL() throws {
     // Live-DB 2026-07-20: Nockherberg-URL aus GraphQL bei en-us Session
-    let raw = "https://secure.booking.com/confirmation.en-us.html?auth_key=OIGACKs01QJKxF38;aid=304142;source=mytrips"
+    let raw = "https://secure.booking.com/confirmation.en-us.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips"
     let normalized = try #require(BookingComParsing.normalizedHotelConfirmationURL(raw))
     #expect(normalized.hasPrefix("https://secure.booking.com/confirmation.html?"))
     #expect(!normalized.lowercased().contains("en-us"))
     #expect(normalized.contains("lang=de"))
-    #expect(normalized.contains("auth_key=OIGACKs01QJKxF38"))
+    #expect(normalized.contains("auth_key=fixtureAuthKey0001"))
 }
 
 @Test("BookingComParsing parst englische exclusive Policy-Frist")
