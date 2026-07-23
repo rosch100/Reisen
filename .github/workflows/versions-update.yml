@@ -1,0 +1,44 @@
+name: Automatisches Versions-Update
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Version Pins aktualisieren
+    runs-on: macos-26
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
+        with:
+          xcode-version: latest-stable
+
+      - name: Versions aktualisieren
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash ./Scripts/update-versions.sh --verify
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/versions-update
+          delete-branch: true
+          commit-message: "chore: automate version pins update"
+          title: "Automatisches Versions-Update"
+          body: "Automatisch aktualisierte Action-Pins, actionlint und Toolchain-Parameter (xcode-version / swift-tools-version)."
+

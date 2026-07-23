@@ -10,6 +10,10 @@ reviews:
   # Balanced feedback für ein kleines Maintainer-Team.
   profile: "chill"
 
+  # Required for the `@coderabbitai approve` command to attempt submitting an
+  # approval review (see CodeRabbit docs).
+  request_changes_workflow: true
+
   # Auto-Reviews für PRs aktivieren; Drafts bleiben aus, damit kein „Spam“-Review
   # für frühe Entwürfe entsteht.
   auto_review:
