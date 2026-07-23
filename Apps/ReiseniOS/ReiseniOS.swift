@@ -68,7 +68,17 @@ private struct StoreFailureViewIOS: View {
 }
 
 private struct RootTabView: View {
+    @ViewBuilder
     var body: some View {
+        if #available(iOS 18.0, *) {
+            tabs
+                .tabViewStyle(.sidebarAdaptable)
+        } else {
+            tabs
+        }
+    }
+
+    private var tabs: some View {
         TabView {
             ReisenTab()
                 .tabItem {
@@ -90,7 +100,6 @@ private struct RootTabView: View {
                     Label("Mehr", systemImage: "gearshape")
                 }
         }
-        .tabViewStyle(.sidebarAdaptable)
     }
 }
 
