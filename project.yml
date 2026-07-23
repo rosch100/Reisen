@@ -50,8 +50,6 @@ targets:
       - path: Tests/ReiseniOSTests
     dependencies:
       - target: ReiseniOS
-      - package: Reisen
-        product: ReisenDomain
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.tests
