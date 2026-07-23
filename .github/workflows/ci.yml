@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   ci:
@@ -53,4 +54,39 @@ jobs:
         env:
           CI: "true"
         run: bash ./Scripts/ci-test.sh
+
+      - name: Publish legacy commit status "CI"
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          sha='${{ github.sha }}'
+          context='CI'
+          run_url='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+
+          # GitHub Branch Protection verlangt Status-Kontext "CI" (legacy commit status), nicht nur Check-Runs.
+          case '${{ job.status }}' in
+            success) state='success' ;;
+            failure) state='failure' ;;
+            cancelled) state='error' ;;
+            *) state='error' ;;
+          esac
+
+          payload=$(cat <<EOF
+          {
+            "state": "${state}",
+            "context": "${context}",
+            "description": "CI workflow completed",
+            "target_url": "${run_url}"
+          }
+          EOF
+          )
+
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${sha}" \
+            -d "${payload}" > /dev/null
 
