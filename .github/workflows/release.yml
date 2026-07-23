@@ -29,7 +29,7 @@ jobs:
         id: swift_tools
         run: |
           set -euo pipefail
-          swift_tools_version="$(awk -F': ' '/^\\/\\/ swift-tools-version:/ {print $2; exit 0}' Package.swift)"
+          swift_tools_version="$(awk -F'swift-tools-version:' '/swift-tools-version:/ { gsub(/^[[:space:]]+/, "", $2); gsub(/[^0-9.].*$/, "", $2); print $2; exit }' Package.swift)"
           echo "swift-version=${swift_tools_version}" >> "$GITHUB_OUTPUT"
 
       - name: Install matching Swift toolchain
