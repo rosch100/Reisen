@@ -1,0 +1,12 @@
+title = "Reisen"
+
+[extend]
+useDefault = true
+
+# Airbnb embeds this web client key in the public frontend; it is not a user secret.
+[[allowlists]]
+description = "Airbnb public web client API key"
+regexTarget = "secret"
+regexes = [
+  '''^d306zoyjsyarp7ifhu67rjxn52tv0t20$''',
+]
