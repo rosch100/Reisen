@@ -6,7 +6,8 @@ cd "$REPO_ROOT"
 
 VERIFY=false
 UPDATE_SWIFT_TOOLS_VERSION=true
-SWIFT_TARGET_VERSION="6.4"
+# Always derive swift-tools-version from the Swift actually installed on the runner
+# to avoid selecting a version that isn't available on the current environment.
 
 usage() {
   cat <<'EOF'
@@ -96,22 +97,25 @@ replace_swift_tools_version() {
     return 0
   fi
 
-  local swift_version="$SWIFT_TARGET_VERSION"
-  # swift_version example: "6.4"
-  if [[ -z "$swift_version" ]]; then
-    echo "SWIFT_TARGET_VERSION is not configured" >&2
+  # Extract installed Swift major.minor (drop patch component, e.g. 6.3.3 -> 6.3)
+  local swift_raw swift_tools_version
+  swift_raw="$(swift --version | awk '/Apple Swift version/ {print $4; exit}')"
+  swift_tools_version="$(printf '%s' "$swift_raw" | awk -F. '{print $1 "." $2}')"
+
+  if [[ -z "$swift_raw" || -z "$swift_tools_version" ]]; then
+    echo "Unable to detect installed Swift version to set swift-tools-version" >&2
     exit 1
   fi
 
-  # Validate that the configured target matches a version-number pattern like X.Y
-  if ! [[ "$swift_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
-    echo "SWIFT_TARGET_VERSION must match pattern X.Y (e.g., 6.4), got: $swift_version" >&2
+  # Validate that the derived value matches X.Y
+  if ! [[ "$swift_tools_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
+    echo "Derived swift-tools-version must match pattern X.Y, got: $swift_tools_version (raw: $swift_raw)" >&2
     exit 1
   fi
 
   # Use perl here instead of sed because the sed expression can break on macOS
   # when constructed via shell variables.
-  perl -pi -e 's{^// swift-tools-version: [0-9]+\.[0-9]+$}{// swift-tools-version: '"$swift_version"'}' "$file"
+  perl -pi -e 's{^// swift-tools-version: [0-9]+\.[0-9]+(\.[0-9]+)?$}{// swift-tools-version: '"$swift_tools_version"'}' "$file"
 }
 
 update_xcode_versions_in_workflows() {
