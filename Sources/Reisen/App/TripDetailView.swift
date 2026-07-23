@@ -3,6 +3,7 @@ import SwiftData
 import ReisenDomain
 import ReisenData
 import ReisenProviders
+import ReisenSharedUI
 import AppKit
 import Foundation
 

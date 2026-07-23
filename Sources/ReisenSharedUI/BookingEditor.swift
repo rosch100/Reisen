@@ -6,23 +6,23 @@ import ReisenData
 // MARK: - Session
 
 /// Anlegen/Bearbeiten läuft in der Detailspalte (Inspector), nicht als Modal-Sheet.
-enum BookingEditorSession: Equatable, Sendable {
+public enum BookingEditorSession: Equatable, Sendable {
     case create(prefillStart: Date?, prefillEnd: Date?)
     case edit(bookingID: UUID)
 }
 
 // MARK: - Draft Models
 
-struct CancellationDeadlineDraft: Identifiable, Equatable, Sendable {
-    var id: UUID = UUID()
-    var deadlineAt: Date
-    var policyText: String
-    var isStrict: Bool
-    var isFreeCancellation: Bool
-    var hotelOffsetSecondsText: String
-    var cancellationFeeAmountText: String
+public struct CancellationDeadlineDraft: Identifiable, Equatable, Sendable {
+    public var id: UUID = UUID()
+    public var deadlineAt: Date
+    public var policyText: String
+    public var isStrict: Bool
+    public var isFreeCancellation: Bool
+    public var hotelOffsetSecondsText: String
+    public var cancellationFeeAmountText: String
 
-    init(
+    public init(
         id: UUID = UUID(),
         deadlineAt: Date,
         policyText: String = "",
@@ -41,13 +41,13 @@ struct CancellationDeadlineDraft: Identifiable, Equatable, Sendable {
     }
 }
 
-enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, Sendable {
+public enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, Sendable {
     case unknown
     case yes
     case no
 
-    var id: String { rawValue }
-    var label: String {
+    public var id: String { rawValue }
+    public var label: String {
         switch self {
         case .unknown: return "Unbekannt"
         case .yes: return "Ja"
@@ -55,7 +55,7 @@ enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, Sendable
         }
     }
 
-    func toBool() -> Bool? {
+    public func toBool() -> Bool? {
         switch self {
         case .unknown: return nil
         case .yes: return true
@@ -63,7 +63,7 @@ enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, Sendable
         }
     }
 
-    static func fromBool(_ value: Bool?) -> Self {
+    public static func fromBool(_ value: Bool?) -> Self {
         switch value {
         case true: return .yes
         case false: return .no
@@ -72,40 +72,40 @@ enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, Sendable
     }
 }
 
-struct BookingEditorDraft: Equatable, Sendable {
-    var bookingID: UUID?
-    var provider: ProviderID
-    var bookingType: BookingType
-    var status: BookingStatus
-    var title: String
-    var confirmationCode: String
-    var externalUrl: String
-    var startAt: Date
-    var endAt: Date
-    var locationFrom: String
-    var locationTo: String
-    var locationFromAddress: String
-    var locationToAddress: String
-    var hotelOffsetSecondsText: String
-    var flightDepartureOffsetSecondsText: String
-    var flightArrivalOffsetSecondsText: String
-    var hotelCheckInMinutesText: String
-    var hotelCheckOutMinutesText: String
-    var totalPriceAmountText: String
-    var totalPriceCurrency: String
-    var roomCategory: String
-    var boardType: BookingBoardType
-    var includedBreakfastState: BookingIncludedBreakfastState
-    var guestCountText: String
-    var roomCountText: String
-    var airline: String
-    var passengerCountText: String
-    var baggageInfoRaw: String
-    var lastParsedAt: Date?
-    var cancellationDeadlines: [CancellationDeadlineDraft]
-    var passengers: [BookingPassenger]
+public struct BookingEditorDraft: Equatable, Sendable {
+    public var bookingID: UUID?
+    public var provider: ProviderID
+    public var bookingType: BookingType
+    public var status: BookingStatus
+    public var title: String
+    public var confirmationCode: String
+    public var externalUrl: String
+    public var startAt: Date
+    public var endAt: Date
+    public var locationFrom: String
+    public var locationTo: String
+    public var locationFromAddress: String
+    public var locationToAddress: String
+    public var hotelOffsetSecondsText: String
+    public var flightDepartureOffsetSecondsText: String
+    public var flightArrivalOffsetSecondsText: String
+    public var hotelCheckInMinutesText: String
+    public var hotelCheckOutMinutesText: String
+    public var totalPriceAmountText: String
+    public var totalPriceCurrency: String
+    public var roomCategory: String
+    public var boardType: BookingBoardType
+    public var includedBreakfastState: BookingIncludedBreakfastState
+    public var guestCountText: String
+    public var roomCountText: String
+    public var airline: String
+    public var passengerCountText: String
+    public var baggageInfoRaw: String
+    public var lastParsedAt: Date?
+    public var cancellationDeadlines: [CancellationDeadlineDraft]
+    public var passengers: [BookingPassenger]
 
-    static func createDefault(
+    public static func createDefault(
         tripStartDate: Date,
         prefillStart: Date? = nil,
         prefillEnd: Date? = nil,
@@ -149,7 +149,7 @@ struct BookingEditorDraft: Equatable, Sendable {
         )
     }
 
-    static func fromExisting(_ booking: SDBooking) -> BookingEditorDraft {
+    public static func fromExisting(_ booking: SDBooking) -> BookingEditorDraft {
         BookingEditorDraft(
             bookingID: booking.id,
             provider: ProviderID(rawValue: booking.providerRaw),
@@ -192,19 +192,18 @@ struct BookingEditorDraft: Equatable, Sendable {
                         cancellationFeeAmountText: deadline.cancellationFeeAmount.map { String($0) } ?? ""
                     )
                 }
-                .sorted { $0.deadlineAt < $1.deadlineAt }
-            ,
+                .sorted { $0.deadlineAt < $1.deadlineAt },
             passengers: booking.passengers.map(DomainMapper.passenger(from:))
         )
     }
 
-    enum ValidationError: LocalizedError, Sendable {
+    public enum ValidationError: LocalizedError, Sendable {
         case emptyTitle
         case endBeforeStart
         case invalidNumber(field: String)
         case invalidUrl
 
-        var errorDescription: String? {
+        public var errorDescription: String? {
             switch self {
             case .emptyTitle: return "Bitte einen Titel eingeben."
             case .endBeforeStart: return "Ende darf nicht vor Start liegen."
@@ -214,13 +213,13 @@ struct BookingEditorDraft: Equatable, Sendable {
         }
     }
 
-    static func parseIntOrNil(_ text: String) -> Int? {
+    public static func parseIntOrNil(_ text: String) -> Int? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         return Int(trimmed)
     }
 
-    static func parseDoubleOrNil(_ text: String) -> Double? {
+    public static func parseDoubleOrNil(_ text: String) -> Double? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         let formatter = NumberFormatter()
@@ -230,13 +229,13 @@ struct BookingEditorDraft: Equatable, Sendable {
         return formatter.number(from: trimmed)?.doubleValue
     }
 
-    static func normalizeOptionalString(_ text: String) -> String? {
+    public static func normalizeOptionalString(_ text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         return trimmed
     }
 
-    func validate() throws {
+    public func validate() throws {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { throw ValidationError.emptyTitle }
         guard endAt >= startAt else { throw ValidationError.endBeforeStart }
@@ -277,7 +276,7 @@ struct BookingEditorDraft: Equatable, Sendable {
 
     /// Neue manuelle Buchung anlegen und persistieren.
     @discardableResult
-    static func createBooking(
+    public static func createBooking(
         from draft: BookingEditorDraft,
         trip: SDTrip,
         in modelContext: ModelContext
@@ -312,7 +311,7 @@ struct BookingEditorDraft: Equatable, Sendable {
         return booking.id
     }
 
-    func apply(to booking: SDBooking, in modelContext: ModelContext) throws {
+    public func apply(to booking: SDBooking, in modelContext: ModelContext) throws {
         try validate()
 
         booking.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -589,8 +588,8 @@ private func localizedBaggageType(_ type: BaggageType) -> String {
 
 // MARK: - Inspector Form (HIG)
 
-/// Scrollbares Formular mit sticky Fußleiste — für die rechte Detailspalte (kein Modal).
-struct BookingEditorForm: View {
+/// Scrollbares Formular mit sticky Fußleiste - für die rechte Detailspalte (kein Modal).
+public struct BookingEditorForm: View {
     let title: String
     let showsSyncOverwriteHint: Bool
     @Binding var draft: BookingEditorDraft
@@ -602,7 +601,23 @@ struct BookingEditorForm: View {
 
     private var computedEndAtMin: Date { draft.startAt }
 
-    var body: some View {
+    public init(
+        title: String,
+        showsSyncOverwriteHint: Bool,
+        draft: Binding<BookingEditorDraft>,
+        providerReadOnly: Bool,
+        onCancel: @escaping () -> Void,
+        onSave: @escaping () throws -> Void
+    ) {
+        self.title = title
+        self.showsSyncOverwriteHint = showsSyncOverwriteHint
+        self._draft = draft
+        self.providerReadOnly = providerReadOnly
+        self.onCancel = onCancel
+        self.onSave = onSave
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -825,3 +840,4 @@ struct BookingEditorForm: View {
         }
     }
 }
+

@@ -19,8 +19,9 @@ public struct TripBookingAssignment: Sendable {
             guard booking.status != .cancelled else { return nil }
             let bookingStartDay = calendar.startOfDay(for: booking.startAt)
             let bookingEndDay = calendar.startOfDay(for: booking.endAt)
-            guard bookingStartDay >= startOfToday else { return nil }
-            guard bookingStartDay >= tripStartDay, bookingEndDay <= tripEndDay else { return nil }
+            guard bookingStartDay >= startOfToday,
+                  bookingStartDay >= tripStartDay,
+                  bookingEndDay <= tripEndDay else { return nil }
             return booking.id
         }
     }

@@ -110,10 +110,12 @@ let package = Package(
                 "ReisenDomain",
                 "ReisenData",
                 "ReisenProviders",
+                "ReisenAppCore",
                 "ReisenCheck24",
                 "ReisenOpodo",
                 "ReisenBookingCom",
                 "ReisenAirbnb",
+                "ReisenSharedUI",
             ],
             path: "Sources/Reisen",
             resources: [

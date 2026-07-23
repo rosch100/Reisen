@@ -47,4 +47,17 @@ fi
 xcrun simctl install "$UDID" "$APP_PATH"
 xcrun simctl launch "$UDID" "$BUNDLE_ID"
 
+# Xcode 27+: Simulator.app entfällt → DeviceHub zeigt die Geräte-UI.
+# Ältere Xcode: weiterhin Simulator.app.
+DEVELOPER_DIR="$(xcode-select -p)"
+DEVICE_HUB="${DEVELOPER_DIR%/Contents/Developer}/Contents/Applications/DeviceHub.app"
+SIMULATOR_APP="${DEVELOPER_DIR}/Applications/Simulator.app"
+if [[ -d "$DEVICE_HUB" ]]; then
+  open "$DEVICE_HUB" --args -CurrentDeviceUDID "$UDID" >/dev/null 2>&1 || true
+elif [[ -d "$SIMULATOR_APP" ]]; then
+  open "$SIMULATOR_APP" --args -CurrentDeviceUDID "$UDID" >/dev/null 2>&1 || true
+else
+  echo "Hinweis: Weder DeviceHub.app noch Simulator.app gefunden — App läuft headless." >&2
+fi
+
 echo "OK: $BUNDLE_ID auf $SIMULATOR_NAME ($UDID)"

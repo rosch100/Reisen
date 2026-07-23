@@ -36,6 +36,8 @@ Das erzeugt lokal `Reisen.xcodeproj` aus `project.yml` (nicht committen).
 
 **Default-Simulator:** exakt `iPad Pro 13-inch (M5)`.
 
+Unter **Xcode 27+** zeigt `ios-run.sh` die Geräte-UI über **Device Hub** (`DeviceHub.app`), nicht mehr über `Simulator.app`. Fehlt das Fenster: Xcode → *Open Developer Tool* → *Device Hub*.
+
 Anderen Simulator wählen (kein stiller Fallback — fehlt der Name, bricht das Script ab und listet verfügbare Geräte):
 
 ```bash

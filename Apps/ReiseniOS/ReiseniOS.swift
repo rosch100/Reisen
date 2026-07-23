@@ -115,9 +115,11 @@ private struct SettingsTab: View {
 private struct ReisenTab: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
+    @State private var showCreateTrip = false
+    @State private var navigationPath: [UUID] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             List {
                 ForEach(trips) { trip in
                     NavigationLink(value: trip.id) {
@@ -134,6 +136,24 @@ private struct ReisenTab: View {
             .navigationTitle("Reisen")
             .navigationDestination(for: UUID.self) { tripID in
                 TripDetailIOS(tripID: tripID)
+            }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showCreateTrip = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .help("Neue Reise anlegen")
+                }
+            }
+            .sheet(isPresented: $showCreateTrip) {
+                TripEditorSheet(
+                    mode: .create,
+                    onSaved: { newTrip in
+                        navigationPath = [newTrip.id]
+                    }
+                )
             }
         }
     }
@@ -189,10 +209,7 @@ private struct OpenBookingsScreen: View {
                 }
                 .navigationTitle("Offen")
                 .navigationDestination(for: UUID.self) { bookingID in
-                    OpenBookingDetailIOS(
-                        bookingID: bookingID,
-                        trips: trips
-                    )
+                    BookingDetailIOS(bookingID: bookingID)
                 }
             }
         }
@@ -307,6 +324,591 @@ private struct OpenBookingDetailIOS: View {
     }
 }
 
+private struct BookingDetailIOS: View {
+    let bookingID: UUID
+
+    @Environment(\.modelContext) private var modelContext
+    @Query private var bookings: [SDBooking]
+    @Query private var trips: [SDTrip]
+
+    @State private var assignErrorMessage: String?
+    @State private var showAssignError = false
+
+    @State private var isEditing = false
+    @State private var bookingEditorDraft: BookingEditorDraft?
+
+    @State private var pendingDeleteBookingID: UUID?
+    @State private var showDeleteConfirmation = false
+
+    @State private var pendingRemoveFromTripBookingID: UUID?
+    @State private var showRemoveFromTripConfirmation = false
+
+    private var booking: SDBooking? {
+        bookings.first(where: { $0.id == bookingID })
+    }
+
+    private var bookingTrip: SDTrip? {
+        guard let booking else { return nil }
+        return booking.trip
+    }
+
+    private var startOfToday: Date { Calendar.current.startOfDay(for: Date()) }
+
+    private func isOpenBookingCandidate(
+        _ booking: SDBooking,
+        for trip: SDTrip
+    ) -> Bool {
+        guard booking.trip == nil, booking.status != .cancelled else { return false }
+        let tripStartDay = Calendar.current.startOfDay(for: trip.startDate)
+        let tripEndDay = Calendar.current.startOfDay(for: trip.endDate)
+        let bookingStartDay = Calendar.current.startOfDay(for: booking.startAt)
+        let bookingEndDay = Calendar.current.startOfDay(for: booking.endAt)
+        return bookingStartDay >= startOfToday
+            && bookingStartDay >= tripStartDay
+            && bookingEndDay <= tripEndDay
+    }
+
+    private var matchingTrip: SDTrip? {
+        guard let booking, booking.trip == nil else { return nil }
+        return trips.first { isOpenBookingCandidate(booking, for: $0) }
+    }
+
+    private var externalURL: URL? {
+        guard let booking,
+              let urlString = booking.externalUrl,
+              let url = URL(string: urlString),
+              !urlString.hasPrefix("reisen://manual/") else {
+            return nil
+        }
+        return url
+    }
+
+    private var hotelTimeZone: TimeZone {
+        if let offsetSeconds = booking?.hotelOffsetSeconds,
+           let tz = TimeZone(secondsFromGMT: offsetSeconds) {
+            return tz
+        }
+        if let deadlineOffset = booking?.cancellationDeadlines.compactMap(\.hotelOffsetSeconds).first,
+           let tz = TimeZone(secondsFromGMT: deadlineOffset) {
+            return tz
+        }
+        return TimeZone(secondsFromGMT: 0) ?? .current
+    }
+
+    private var draftBinding: Binding<BookingEditorDraft>? {
+        guard bookingEditorDraft != nil else { return nil }
+        return Binding(
+            get: { bookingEditorDraft! },
+            set: { bookingEditorDraft = $0 }
+        )
+    }
+
+    private var bookingNavigationTitle: String {
+        booking?.title
+            ?? booking?.bookingType.rawValue.capitalized
+            ?? "Buchung"
+    }
+
+    private func deletePendingBooking() {
+        guard let bookingID = pendingDeleteBookingID,
+              let bookingToDelete = bookings.first(where: { $0.id == bookingID }) else { return }
+        modelContext.delete(bookingToDelete)
+        try? modelContext.save()
+        pendingDeleteBookingID = nil
+    }
+
+    private func removePendingBookingFromTrip() {
+        guard let bookingID = pendingRemoveFromTripBookingID,
+              let bookingToRemove = bookings.first(where: { $0.id == bookingID }) else { return }
+        bookingToRemove.trip = nil
+        try? modelContext.save()
+        pendingRemoveFromTripBookingID = nil
+    }
+
+    @ViewBuilder
+    private func bookingActionsSection(for booking: SDBooking) -> some View {
+        Section {
+            Button {
+                isEditing = true
+                bookingEditorDraft = BookingEditorDraft.fromExisting(booking)
+            } label: {
+                Label("Bearbeiten", systemImage: "pencil")
+            }
+            .help("Diese Buchung bearbeiten")
+
+            if booking.provider == .manual {
+                Button(role: .destructive) {
+                    pendingDeleteBookingID = booking.id
+                    showDeleteConfirmation = true
+                } label: {
+                    Text("Löschen…")
+                }
+                .help("Diese manuelle Buchung unwiderruflich löschen")
+            }
+
+            if booking.trip != nil {
+                Button(role: .destructive) {
+                    pendingRemoveFromTripBookingID = booking.id
+                    showRemoveFromTripConfirmation = true
+                } label: {
+                    Text("Von Reise entfernen…")
+                }
+                .help("Diese Buchung aus der Reise lösen und unter „Offene Buchungen“ anzeigen")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bookingRateSections(for booking: SDBooking) -> some View {
+        if let rate = booking.rateDetails {
+            Section("Preis / Tarif") {
+                BookingDetailIOSRateDetailsView(rate: rate, booking: booking)
+            }
+
+            if !rate.roomItems.isEmpty {
+                Section("Zimmer / Positionen") {
+                    BookingDetailIOSRoomItemsView(rate: rate)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bookingAssignmentSection(for booking: SDBooking) -> some View {
+        Section("Zuordnung") {
+            if let trip = bookingTrip {
+                Text("In Reise: \(trip.title)")
+                    .foregroundStyle(.secondary)
+            } else if let trip = matchingTrip {
+                Button("In Reise zuordnen…") {
+                    do {
+                        booking.trip = trip
+                        try modelContext.save()
+                    } catch {
+                        assignErrorMessage = error.localizedDescription
+                        showAssignError = true
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .help("Diese offene Buchung der passenden Reise zuordnen")
+            } else {
+                Text("Keine passende Reise gefunden.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bookingLinksSection(for booking: SDBooking) -> some View {
+        Section("Links") {
+            if let externalURL {
+                Link("Buchung im Browser öffnen", destination: externalURL)
+            } else {
+                Text("Kein Browser-Link verfügbar.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bookingOverviewSection(for booking: SDBooking) -> some View {
+        Section("Übersicht") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(booking.title ?? booking.bookingType.rawValue.capitalized)
+                    .font(.headline)
+                    .textSelection(.enabled)
+
+                Text("\(booking.bookingType.rawValue.capitalized) • \(booking.provider.rawValue.capitalized)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                let startText = booking.startAt.formatted(date: .abbreviated, time: .omitted)
+                let endText = booking.endAt.formatted(date: .abbreviated, time: .omitted)
+                HStack(spacing: 4) {
+                    Text("Zeitraum:")
+                    Text(startText)
+                    Text("–")
+                    Text(endText)
+                }
+                .foregroundStyle(.secondary)
+
+                if let code = booking.confirmationCode, !code.isEmpty {
+                    Text("Bestätigung: \(code)")
+                        .foregroundStyle(.secondary)
+                }
+
+                if let synced = booking.lastSyncedAt {
+                    let syncedText = synced.formatted(date: .abbreviated, time: .shortened)
+                    HStack(spacing: 4) {
+                        Text("Zuletzt synchronisiert:")
+                        Text(syncedText)
+                    }
+                    .foregroundStyle(.tertiary)
+                }
+            }
+        }
+    }
+
+    var body: some View {
+        Group {
+            if let booking {
+                List {
+                    bookingOverviewSection(for: booking)
+
+                    bookingAssignmentSection(for: booking)
+
+                    Section("Details") {
+                        AnyView(BookingDetailIOSDetailsView(booking: booking))
+                    }
+
+                    bookingRateSections(for: booking)
+
+                    if !booking.cancellationDeadlines.isEmpty {
+                        Section("Stornierung") {
+                            BookingDetailIOSCancellationDeadlinesView(
+                                booking: booking,
+                                hotelTimeZone: hotelTimeZone
+                            )
+                        }
+                    }
+
+                    bookingLinksSection(for: booking)
+
+                    bookingActionsSection(for: booking)
+                }
+            } else {
+                ContentUnavailableView(
+                    "Buchung nicht gefunden",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text("Die ausgewählte Buchung ist nicht mehr verfügbar.")
+                )
+            }
+        }
+        .navigationTitle(bookingNavigationTitle)
+        .alert("Zuordnung fehlgeschlagen", isPresented: $showAssignError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            if let message = assignErrorMessage, !message.isEmpty {
+                Text(message)
+            }
+        }
+        .confirmationDialog(
+            "Buchung wirklich löschen?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Löschen", role: .destructive) { deletePendingBooking() }
+            Button("Abbrechen", role: .cancel) {
+                pendingDeleteBookingID = nil
+            }
+        }
+        .confirmationDialog(
+            "Buchung von Reise entfernen?",
+            isPresented: $showRemoveFromTripConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Entfernen", role: .destructive) { removePendingBookingFromTrip() }
+            Button("Abbrechen", role: .cancel) {
+                pendingRemoveFromTripBookingID = nil
+            }
+        } message: {
+            Text("Die Buchung wird der Reise entzogen und erscheint unter „Offene Buchungen“.")
+        }
+        .sheet(isPresented: $isEditing) {
+            if let draftBinding {
+                BookingEditorForm(
+                    title: "Buchung bearbeiten",
+                    showsSyncOverwriteHint: booking?.provider == .manual ? false : true,
+                    draft: draftBinding,
+                    providerReadOnly: booking?.provider == .manual ? false : true,
+                    onCancel: {
+                        isEditing = false
+                        bookingEditorDraft = nil
+                    },
+                    onSave: {
+                        guard let booking else { return }
+                        guard let draft = bookingEditorDraft else { return }
+                        try draft.apply(to: booking, in: modelContext)
+                        isEditing = false
+                        bookingEditorDraft = nil
+                    }
+                )
+            }
+        }
+    }
+}
+
+private struct BookingDetailIOSDetailsView: View {
+    let booking: SDBooking
+
+    private var hotelStartText: String {
+        HotelStayDate.format(
+            booking.startAt,
+            dateFormat: "d.M.yyyy",
+            legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
+        )
+    }
+
+    private var hotelEndText: String {
+        HotelStayDate.format(
+            booking.endAt,
+            dateFormat: "d.M.yyyy",
+            legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
+        )
+    }
+
+    private var flightDepartureTZ: TimeZone {
+        booking.flightDepartureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+    }
+
+    private var flightArrivalTZ: TimeZone {
+        booking.flightArrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+    }
+
+    private var flightStartText: String {
+        Formatting.formatOrtszeit(
+            booking.startAt,
+            dateFormat: "d.M.yyyy HH:mm",
+            timeZone: flightDepartureTZ
+        )
+    }
+
+    private var flightEndText: String {
+        Formatting.formatOrtszeit(
+            booking.endAt,
+            dateFormat: "d.M.yyyy HH:mm",
+            timeZone: flightArrivalTZ
+        )
+    }
+
+    private var headerView: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Status: \(booking.status.rawValue.capitalized)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(booking.bookingType.rawValue.capitalized)
+                .font(.caption)
+                .foregroundStyle(.primary)
+        }
+    }
+
+    private var locationsView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let from = booking.locationFrom, !from.isEmpty {
+                Text("Von: \(from)")
+                    .foregroundStyle(.secondary)
+            }
+            if let to = booking.locationTo, !to.isEmpty {
+                Text("Nach: \(to)")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var hotelDateView: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Start: \(hotelStartText)")
+                .foregroundStyle(.secondary)
+            Text("Ende: \(hotelEndText)")
+                .foregroundStyle(.secondary)
+
+            if let checkIn = booking.hotelCheckInMinutes {
+                Text("Check-in: \(Formatting.minutesToHHmm(checkIn))")
+                    .foregroundStyle(.secondary)
+            }
+            if let checkOut = booking.hotelCheckOutMinutes {
+                Text("Check-out: \(Formatting.minutesToHHmm(checkOut))")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var flightDateView: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Start: \(flightStartText)")
+                .foregroundStyle(.secondary)
+            Text("Ende: \(flightEndText)")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            headerView
+            locationsView
+            if booking.bookingType == .hotel {
+                hotelDateView
+            } else {
+                flightDateView
+            }
+        }
+    }
+}
+
+private struct BookingDetailIOSRateDetailsView: View {
+    let rate: SDBookingRateDetails
+    let booking: SDBooking
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let amount = rate.totalPriceAmount {
+                Text("Preis: \(Formatting.formatCurrencyAmount(amount, currencyCode: rate.totalPriceCurrency))")
+                    .foregroundStyle(.secondary)
+            }
+            if let currency = rate.totalPriceCurrency, !currency.isEmpty {
+                Text("Währung: \(currency)")
+                    .foregroundStyle(.secondary)
+            }
+            if rate.roomItems.isEmpty, let room = rate.roomCategory, !room.isEmpty {
+                Text("Zimmerkategorie: \(room)")
+                    .foregroundStyle(.secondary)
+            }
+            if let breakfast = rate.includedBreakfast {
+                Text("Frühstück: \(breakfast ? "ja" : "nein")")
+                    .foregroundStyle(.secondary)
+            }
+            if let guests = rate.guestCount {
+                Text("Gäste: \(guests)")
+                    .foregroundStyle(.secondary)
+            }
+            if let rooms = rate.roomCount {
+                Text("Zimmer: \(rooms)")
+                    .foregroundStyle(.secondary)
+            }
+            if let airline = rate.airline, !airline.isEmpty {
+                Text("Airline: \(airline)")
+                    .foregroundStyle(.secondary)
+            }
+
+            if !booking.passengers.isEmpty {
+                let names = booking.passengers.compactMap { pax -> String? in
+                    let parts = [pax.givenName, pax.familyName].compactMap { part -> String? in
+                        guard let part else { return nil }
+                        let trimmed = part.trimmingCharacters(in: .whitespacesAndNewlines)
+                        return trimmed.isEmpty ? nil : trimmed
+                    }
+                    let fullName = parts.joined(separator: " ")
+                    return fullName.isEmpty ? nil : fullName
+                }
+                Text("Passagiere: \(names.joined(separator: ", "))")
+                    .foregroundStyle(.secondary)
+            } else if let passengers = rate.passengerCount {
+                Text("Passagiere: \(passengers)")
+                    .foregroundStyle(.secondary)
+            }
+
+            if let baggage = rate.baggageInfoRaw, !baggage.isEmpty {
+                Text("Gepäck: \(baggage)")
+                    .foregroundStyle(.secondary)
+            }
+
+            if let rawBoardType = rate.boardTypeRaw,
+               !rawBoardType.isEmpty,
+               let boardType = BookingBoardType(rawValue: rawBoardType),
+               let boardLabel = localizedBoardLabel(for: boardType) {
+                Text("Verpflegung: \(boardLabel)")
+                    .foregroundStyle(.secondary)
+            }
+
+            if let parsed = rate.lastParsedAt {
+                Text("Tarif gelesen: \(parsed.formatted(date: .abbreviated, time: .shortened))")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .textSelection(.enabled)
+    }
+
+    private func localizedBoardLabel(for boardType: BookingBoardType) -> String? {
+        switch boardType {
+        case .roomOnly: return "Nur Zimmer"
+        case .breakfastIncluded: return "Frühstück"
+        case .halfBoard: return "Halbpension"
+        case .fullBoard: return "Vollpension"
+        case .unknown: return nil
+        }
+    }
+}
+
+private struct BookingDetailIOSRoomItemsView: View {
+    let rate: SDBookingRateDetails
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(rate.roomItems.sorted(by: { ($0.sortIndex ?? 0) < ($1.sortIndex ?? 0) })) { item in
+                VStack(alignment: .leading, spacing: 4) {
+                    if let category = item.category, !category.isEmpty {
+                        Text(category)
+                            .font(.caption.weight(.medium))
+                    }
+                    if let code = item.confirmationCode, !code.isEmpty {
+                        Text("Buchungsnr.: \(code)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let guest = item.guestSummary, !guest.isEmpty {
+                        Text(guest)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let amount = item.priceAmount {
+                        let currency = item.priceCurrency ?? rate.totalPriceCurrency
+                        Text("Einzelpreis: \(Formatting.formatCurrencyAmount(amount, currencyCode: currency))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+}
+
+private struct BookingDetailIOSCancellationDeadlinesView: View {
+    let booking: SDBooking
+    let hotelTimeZone: TimeZone
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(
+                booking.cancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt }),
+                id: \.id
+            ) { deadline in
+                let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? hotelTimeZone
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M.yyyy HH:mm", timeZone: tz))
+                        .font(.caption.weight(.medium))
+
+                    HStack(spacing: 8) {
+                        Text(deadline.isFreeCancellation ? "Kostenlos" : "Kostenpflichtig")
+                            .font(.caption2)
+                            .foregroundStyle(deadline.isFreeCancellation ? .green : .secondary)
+
+                        if let fee = deadline.cancellationFeeAmount {
+                            Text(Formatting.formatCurrencyAmount(fee, currencyCode: booking.rateDetails?.totalPriceCurrency))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if deadline.isStrict {
+                            Text("strikt")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    if let policy = deadline.policyText, !policy.isEmpty {
+                        Text(policy)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+}
+
 private struct TripDetailIOS: View {
     let tripID: UUID
 
@@ -320,26 +922,33 @@ private struct TripDetailIOS: View {
     var body: some View {
         Group {
             if let trip {
-                List {
-                    Section("Übersicht") {
-                        Text(trip.title)
-                        Text("Zeitraum: \(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
-                            .foregroundStyle(.secondary)
-                        if let destination = trip.destination, !destination.isEmpty {
-                            Text(destination)
-                        }
-                    }
-
-                    Section("Buchungen") {
-                        ForEach(trip.bookings) { booking in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(booking.title ?? booking.providerRaw)
-                                    .font(.headline)
-                                Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                NavigationStack {
+                    List {
+                        Section("Übersicht") {
+                            Text(trip.title)
+                            Text("Zeitraum: \(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
+                                .foregroundStyle(.secondary)
+                            if let destination = trip.destination, !destination.isEmpty {
+                                Text(destination)
                             }
                         }
+
+                        Section("Buchungen") {
+                            ForEach(trip.bookings) { booking in
+                                NavigationLink(value: booking.id) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(booking.title ?? booking.providerRaw)
+                                            .font(.headline)
+                                        Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .navigationDestination(for: UUID.self) { bookingID in
+                        BookingDetailIOS(bookingID: bookingID)
                     }
                 }
                 .navigationTitle(trip.title)
@@ -363,59 +972,53 @@ private struct SyncTab: View {
 
     @State private var selectedProviderID: ProviderID = .check24
     @State private var webView: WKWebView?
+    @State private var isBrowserExpanded = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Provider") {
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 12) {
                     Picker("Provider", selection: $selectedProviderID) {
                         ForEach(providerIDs, id: \.self) { id in
                             Text(providerName(for: id)).tag(id)
                         }
                     }
-
-                    Button("Login & Session im WebView öffnen") {
-                        if let sessionHub { sessionHub.updateWebView(selectedProviderID, webView: webView) }
-                    }
+                    .pickerStyle(.segmented)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                .background(.bar)
 
-                Section("Sync") {
-                    Button("Jetzt synchronisieren") {
-                        guard let syncStore else { return }
-                        guard let webView else { return }
-                        let settings = AppSettings(
-                            notificationEnabled: notificationEnabled,
-                            eventKitEnabled: eventKitEnabled,
-                            calendarTripTimesEnabled: calendarTripTimesEnabled,
-                            calendarFlightTimesEnabled: calendarFlightTimesEnabled,
-                            calendarHotelStaysEnabled: calendarHotelStaysEnabled
-                        )
-                        Task {
-                            await syncStore.sync(providerID: selectedProviderID, webView: webView, settings: settings)
-                        }
-                    }
+                sessionBanner
+                Divider()
 
-                    if let statusMessage = syncStore?.statusMessage {
-                        Text(statusMessage).foregroundStyle(.secondary)
-                    }
-                    if let errorMessage = syncStore?.errorMessage {
-                        Text(errorMessage).foregroundStyle(.red)
-                    }
-                }
-            }
-            .navigationTitle("Sync")
-            .safeAreaInset(edge: .bottom) {
                 WebViewHost(
                     loginURL: loginURLForSelectedProvider(),
                     providerID: selectedProviderID,
                     webView: $webView,
-                    onDidFinish: {
-                        guard let sessionHub else { return }
-                        sessionHub.updateStatus(selectedProviderID, status: .sessionReady)
-                        sessionHub.updateLastURL(selectedProviderID, urlString: webView?.url?.absoluteString)
+                    onDidFinish: { finishedWebView in
+                        handleWebDidFinish(finishedWebView)
                     }
                 )
-                .frame(maxWidth: .infinity, minHeight: 420)
+                .opacity(isBrowserExpanded ? 1 : 0)
+                .frame(height: isBrowserExpanded ? 420 : 1)
+                .clipped()
+                .allowsHitTesting(isBrowserExpanded)
+
+                actionBar
+            }
+            .navigationTitle("Sync")
+            .onAppear {
+                guard let sessionHub else { return }
+                sessionHub.syncEnabledProviders(Set(providerIDs))
+                // Startzustand: für UI-Gating keine „blind ready“-Defaults.
+                sessionHub.updateStatus(selectedProviderID, status: .needsLogin)
+            }
+            .onChange(of: selectedProviderID) { _, newProviderID in
+                guard let sessionHub else { return }
+                sessionHub.updateStatus(newProviderID, status: .needsLogin)
+                sessionHub.updateLastURL(newProviderID, urlString: nil)
             }
         }
     }
@@ -426,10 +1029,218 @@ private struct SyncTab: View {
         providerRegistry?.providers.first(where: { $0.id == id })?.displayName ?? id.rawValue
     }
 
+    private var sessionStatus: ProviderSessionStatus {
+        sessionHub?.status(for: selectedProviderID) ?? .needsLogin
+    }
+
+    private var lastURLString: String? {
+        sessionHub?.lastURLString(for: selectedProviderID)
+    }
+
+    private var canStartSync: Bool {
+        guard let syncStore, webView != nil else { return false }
+        guard syncStore.isSyncing != true else { return false }
+        return sessionStatus == .sessionReady
+    }
+
+    private var syncAllSettings: AppSettings {
+        AppSettings(
+            notificationEnabled: notificationEnabled,
+            eventKitEnabled: eventKitEnabled,
+            calendarTripTimesEnabled: calendarTripTimesEnabled,
+            calendarFlightTimesEnabled: calendarFlightTimesEnabled,
+            calendarHotelStaysEnabled: calendarHotelStaysEnabled
+        )
+    }
+
+    private var syncAllCandidates: [(ProviderID, WKWebView)] {
+        guard let webView else { return [] }
+        let ids = providerIDs.filter { sessionHub?.status(for: $0) == .sessionReady }
+        return ids.map { ($0, webView) }
+    }
+
+    private var canStartSyncAll: Bool {
+        guard let syncStore else { return false }
+        guard syncStore.isSyncing != true else { return false }
+        return !syncAllCandidates.isEmpty
+    }
+
     private func loginURLForSelectedProvider() -> URL? {
         let provider = providerRegistry?.provider(id: selectedProviderID)
         let loginConfig = provider as? any TravelProviderLoginConfiguration
         return loginConfig?.loginURL
+    }
+
+    private var sessionBanner: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: sessionStatus == .sessionReady
+                  ? "checkmark.circle.fill"
+                  : "person.crop.circle.badge.questionmark")
+            .foregroundStyle(sessionStatus == .sessionReady ? .green : .secondary)
+            .imageScale(.large)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(sessionStatus == .sessionReady ? "Angemeldet" : "Anmeldung erforderlich")
+                    .font(.headline)
+                Text(sessionStatus == .sessionReady
+                     ? "Du kannst jetzt die Buchungen synchronisieren."
+                     : "Melde dich im Browser unten beim Provider an (inkl. 2FA falls nötig).")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            }
+
+            Spacer(minLength: 8)
+
+            if let lastURLString {
+                Text(lastURLString)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: 280, alignment: .trailing)
+                    .textSelection(.enabled)
+                    .help(lastURLString)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.bar)
+    }
+
+    private var actionBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let statusMessage = syncStore?.statusMessage {
+                Text(statusMessage).foregroundStyle(.secondary)
+            }
+            if let errorMessage = syncStore?.errorMessage {
+                Text(errorMessage).foregroundStyle(.red)
+            }
+
+            Text(sessionStatus == .sessionReady
+                 ? "Nach dem Login synchronisiert die App Aktivitäten und Stornofristen lokal."
+                 : "Sync ist deaktiviert, bis die Session bereit ist.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                Button {
+                    isBrowserExpanded.toggle()
+                } label: {
+                    Label(
+                        isBrowserExpanded ? "Browser ausblenden" : "Browser anzeigen",
+                        systemImage: isBrowserExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Spacer()
+
+                Button {
+                    isBrowserExpanded = true
+                } label: {
+                    Text("Login")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(isBrowserExpanded)
+            }
+
+            Button {
+                guard let syncStore else { return }
+                guard let webView else { return }
+                Task {
+                    await syncStore.sync(
+                        providerID: selectedProviderID,
+                        webView: webView,
+                        settings: syncAllSettings
+                    )
+                }
+            } label: {
+                if syncStore?.isSyncing == true, syncStore?.syncingProviderID == selectedProviderID {
+                    ProgressView()
+                        .controlSize(.small)
+                        .padding(.horizontal, 8)
+                } else {
+                    Text("Jetzt synchronisieren")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(!canStartSync)
+            .help(canStartSync
+                ? "Aktivitäten und Stornofristen dieses Providers lokal aktualisieren"
+                : "Sync nicht möglich — Anmeldung und aktiven Provider prüfen")
+
+            Button {
+                guard let syncStore else { return }
+                guard let webView else { return }
+                Task {
+                    // `syncAllCandidates` already contains `webView`, but we keep this guard for safety.
+                    _ = webView
+                    await syncStore.syncAll(providers: syncAllCandidates, settings: syncAllSettings)
+                }
+            } label: {
+                if syncStore?.isSyncing == true && syncStore?.syncingProviderID != nil {
+                    ProgressView()
+                        .controlSize(.small)
+                        .padding(.horizontal, 8)
+                } else {
+                    Text("Alle synchronisieren")
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .disabled(!canStartSyncAll)
+            .help(canStartSyncAll
+                ? "Synchronisiert alle angemeldeten Provider (sequenziell) im Hintergrund"
+                : "Keine angemeldeten Provider für Sync-All")
+        }
+        .padding(16)
+        .background(.bar)
+    }
+
+    @MainActor
+    private func handleWebDidFinish(_ finishedWebView: WKWebView) {
+        guard let hub = sessionHub else { return }
+        guard let url = finishedWebView.url else { return }
+
+        let heuristic = ProviderSessionStatusResolver.classify(url)
+
+        hub.updateLastURL(selectedProviderID, urlString: url.absoluteString)
+        hub.updateWebView(selectedProviderID, webView: finishedWebView)
+
+        switch heuristic {
+        case .sessionReady:
+            hub.updateStatus(selectedProviderID, status: .sessionReady)
+        case .needsLogin:
+            hub.updateStatus(selectedProviderID, status: .needsLogin)
+        case .shouldProbeOpodo:
+            // Opodo: Heuristik ist oft unklar → GraphQL Probe nach Navigation.
+            hub.updateStatus(selectedProviderID, status: .needsLogin)
+            Task {
+                do {
+                    let text = try await finishedWebView.fetchAuthenticatedText(
+                        url: OpodoSessionProbe.graphqlURL,
+                        method: "POST",
+                        accept: "application/json",
+                        referer: "https://www.opodo.de/",
+                        contentType: "application/json",
+                        body: OpodoSessionProbe.getUserAccountRequestBody()
+                    )
+                    if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text) {
+                        await MainActor.run {
+                            hub.updateStatus(selectedProviderID, status: loggedIn ? .sessionReady : .needsLogin)
+                        }
+                    }
+                } catch {
+                    // Probe fehlgeschlagen: Status bleibt konservativ `needsLogin`.
+                }
+            }
+        case .unknown:
+            hub.updateStatus(selectedProviderID, status: .needsLogin)
+        }
     }
 }
 
@@ -437,7 +1248,7 @@ private struct WebViewHost: View {
     let loginURL: URL?
     let providerID: ProviderID
     @Binding var webView: WKWebView?
-    let onDidFinish: () -> Void
+    let onDidFinish: (WKWebView) -> Void
 
     var body: some View {
         ProviderSessionWebView(
@@ -454,38 +1265,40 @@ import UIKit
 private struct ProviderSessionWebView: UIViewRepresentable {
     let loginURL: URL?
     @Binding var webView: WKWebView?
-    let onDidFinish: () -> Void
+    let onDidFinish: (WKWebView) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onDidFinish: onDidFinish)
+    }
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         let view = WKWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = context.coordinator
         webView = view
-        if let loginURL {
-            view.load(URLRequest(url: loginURL))
-        }
+        context.coordinator.loadedLoginURL = loginURL
+        if let loginURL { view.load(URLRequest(url: loginURL)) }
         return view
     }
 
     func updateUIView(_ uiView: WKWebView, context: Context) {
-        // Keep behavior deterministic: only reload if no content yet.
-        guard uiView.url == nil, let loginURL else { return }
-        uiView.load(URLRequest(url: loginURL))
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onDidFinish: onDidFinish)
+        guard let loginURL else { return }
+        if context.coordinator.loadedLoginURL != loginURL {
+            context.coordinator.loadedLoginURL = loginURL
+            uiView.load(URLRequest(url: loginURL))
+        }
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
-        let onDidFinish: () -> Void
+        let onDidFinish: (WKWebView) -> Void
+        var loadedLoginURL: URL?
 
-        init(onDidFinish: @escaping () -> Void) {
+        init(onDidFinish: @escaping (WKWebView) -> Void) {
             self.onDidFinish = onDidFinish
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            onDidFinish()
+            onDidFinish(webView)
         }
     }
 }
@@ -495,23 +1308,24 @@ import AppKit
 private struct ProviderSessionWebView: NSViewRepresentable {
     let loginURL: URL?
     @Binding var webView: WKWebView?
-    let onDidFinish: () -> Void
+    let onDidFinish: (WKWebView) -> Void
 
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         let view = WKWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = context.coordinator
         webView = view
-        if let loginURL {
-            view.load(URLRequest(url: loginURL))
-        }
+        context.coordinator.loadedLoginURL = loginURL
+        if let loginURL { view.load(URLRequest(url: loginURL)) }
         return view
     }
 
     func updateNSView(_ nsView: WKWebView, context: Context) {
-        // Keep behavior deterministic: only reload if no content yet.
-        guard nsView.url == nil, let loginURL else { return }
-        nsView.load(URLRequest(url: loginURL))
+        guard let loginURL else { return }
+        if context.coordinator.loadedLoginURL != loginURL {
+            context.coordinator.loadedLoginURL = loginURL
+            nsView.load(URLRequest(url: loginURL))
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -519,14 +1333,15 @@ private struct ProviderSessionWebView: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
-        let onDidFinish: () -> Void
+        let onDidFinish: (WKWebView) -> Void
+        var loadedLoginURL: URL?
 
-        init(onDidFinish: @escaping () -> Void) {
+        init(onDidFinish: @escaping (WKWebView) -> Void) {
             self.onDidFinish = onDidFinish
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            onDidFinish()
+            onDidFinish(webView)
         }
     }
 }
