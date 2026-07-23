@@ -1,0 +1,15 @@
+---
+description: iOS/iPadOS Build/Run/Test nur über SSOT-Scripts
+alwaysApply: true
+---
+
+# iOS Cursor Workflow
+
+- iOS Build/Run/Test ausschließlich über:
+  - `bash ./Scripts/generate-ios-project.sh`
+  - `bash ./Scripts/ios-run.sh`
+  - `bash ./Scripts/ios-test.sh`
+- Kein ad-hoc-`xcodebuild` mit losen Flags im Standard-Agent-Workflow.
+- Default-Simulator ist exakt `iPad Pro 13-inch (M5)`; Override nur via `IOS_SIMULATOR`.
+- Kein Commit von `*.xcodeproj`, `buildServer.json` oder `.sweetpad/`.
+- Xcode GUI nur für Signing, Entitlements, Instruments.
