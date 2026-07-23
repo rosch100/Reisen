@@ -6,6 +6,7 @@ cd "$REPO_ROOT"
 
 VERIFY=false
 UPDATE_SWIFT_TOOLS_VERSION=true
+SWIFT_TARGET_VERSION="6.4"
 
 usage() {
   cat <<'EOF'
@@ -77,11 +78,12 @@ replace_codeql_uses_sha() {
 replace_actionlint_download() {
   # Updates: https://raw.githubusercontent.com/rhysd/actionlint/<ref>/scripts/download-actionlint.bash
   local file=".github/workflows/actionlint.yml"
-  local tag
+  local tag sha
   tag="$(get_latest_release_tag "rhysd/actionlint")"
+  sha="$(get_release_tag_commit_sha "rhysd/actionlint" "$tag")"
 
   local tmp="$tmpdir/actionlint.yml.tmp"
-  sed -E "s#https://raw\\.githubusercontent\\.com/rhysd/actionlint/[^/]+/scripts/download-actionlint\\.bash#https://raw.githubusercontent.com/rhysd/actionlint/${tag}/scripts/download-actionlint.bash#g" \
+  sed -E "s#https://raw\\.githubusercontent\\.com/rhysd/actionlint/[^/]+/scripts/download-actionlint\\.bash#https://raw.githubusercontent.com/rhysd/actionlint/${sha}/scripts/download-actionlint.bash#g" \
     "$file" > "$tmp"
   mv "$tmp" "$file"
 }
@@ -92,11 +94,16 @@ replace_swift_tools_version() {
     return 0
   fi
 
-  local swift_version
-  swift_version="$(swift --version | awk '/Apple Swift version/ {print $4}' | tr -d '[:space:]')"
+  local swift_version="$SWIFT_TARGET_VERSION"
   # swift_version example: "6.4"
   if [[ -z "$swift_version" ]]; then
-    echo "Unable to detect swift version via swift --version" >&2
+    echo "SWIFT_TARGET_VERSION is not configured" >&2
+    exit 1
+  fi
+
+  # Validate that the configured target matches a version-number pattern like X.Y
+  if ! [[ "$swift_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
+    echo "SWIFT_TARGET_VERSION must match pattern X.Y (e.g., 6.4), got: $swift_version" >&2
     exit 1
   fi
 
