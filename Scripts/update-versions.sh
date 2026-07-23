@@ -36,6 +36,8 @@ require_cmd() {
 require_cmd gh
 require_cmd jq
 require_cmd curl
+require_cmd rg
+require_cmd perl
 
 tmpdir="$(mktemp -d)"
 cleanup() { rm -rf "$tmpdir"; }
@@ -112,55 +114,16 @@ replace_swift_tools_version() {
   perl -pi -e 's{^// swift-tools-version: [0-9]+\.[0-9]+$}{// swift-tools-version: '"$swift_version"'}' "$file"
 }
 
-get_latest_stable_xcode_for_macos() {
-  # $1 = major version, e.g. 26 for macos-26
-  local macos_major="$1"
-  local doc_url="https://raw.githubusercontent.com/actions/runner-images/master/images/macos/macos-${macos_major}-Readme.md"
-  local doc_file="$tmpdir/macos-${macos_major}-Readme.md"
-
-  curl -fsSL "$doc_url" -o "$doc_file"
-
-  # Extract Xcode versions like 26.6 from the Xcode table.
-  # Table rows look like: | 26.6           | 17F113 | ...
-  # We parse the second pipe-separated column and keep only entries matching "^<major>.<minor+>$".
-  local latest
-  latest="$(
-    awk -F'|' -v major="$macos_major" '
-      {
-        v=$2;
-        gsub(/^[ \t]+|[ \t]+$/, "", v);
-        if (v ~ ("^" major "\\.[0-9]+$")) print v;
-      }
-    ' "$doc_file" \
-      | sort -V \
-      | tail -n 1
-  )"
-
-  if [[ -z "$latest" ]]; then
-    echo "Unable to determine latest stable Xcode for macos-${macos_major}" >&2
-    exit 1
-  fi
-
-  echo "$latest"
-}
-
 update_xcode_versions_in_workflows() {
-  # Currently focuses on macos-26 in this repo; but handles any macos-<N> found.
-  local major
-  for major in $(rg -o --no-filename "macos-[0-9]+" .github/workflows/*.yml | awk -F'-' '{print $2}' | sort -u); do
-    local stable_xcode
-    stable_xcode="$(get_latest_stable_xcode_for_macos "$major")"
-
-    for wf in .github/workflows/*.yml; do
-      # Only touch xcode-version lines for workflows that reference this macos runner.
-      if rg -n "runs-on: macos-${major}" "$wf" >/dev/null 2>&1; then
-        local tmp="$tmpdir/$(basename "$wf").tmp"
-        # Replace lines like: xcode-version: "26.0" or xcode-version: '26.0.1'
-        sed -E "s|(xcode-version: ['\"])${major}\\.[0-9.]+(['\"]$)|\\1${stable_xcode}\\2|g" \
-          "$wf" > "$tmp"
-        mv "$tmp" "$wf"
-      fi
-    done
+  # Best practice: let setup-xcode select the newest stable Xcode for the runner image.
+  # This avoids fragile scraping of upstream markdown tables.
+  for wf in .github/workflows/*.yml; do
+    if rg -q "xcode-version:" "$wf"; then
+      sed -E -i.bak \
+        "s/(xcode-version:[[:space:]]*)\"[0-9]+\\.[0-9.]+\"/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)'[0-9]+\\.[0-9.]+'/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)[0-9]+\\.[0-9.]+/\\1latest-stable/g" \
+        "$wf"
+      rm -f "${wf}.bak"
+    fi
   done
 }
 
@@ -175,6 +138,7 @@ update_action_pins_in_workflows() {
     ["actions/checkout"]=""
     ["actions/cache"]=""
     ["maxim-lobanov/setup-xcode"]=""
+    ["fwal/setup-swift"]=""
     ["ossf/scorecard-action"]=""
     ["actions/dependency-review-action"]=""
     ["gitleaks/gitleaks-action"]=""

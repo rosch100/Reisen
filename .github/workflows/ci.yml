@@ -28,7 +28,19 @@ jobs:
       - name: Select Xcode 26
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
         with:
-          xcode-version: "26.6"
+          xcode-version: latest-stable
+
+      - name: Detect Swift tools version
+        id: swift_tools
+        run: |
+          set -euo pipefail
+          swift_tools_version="$(awk -F': ' '/^\\/\\/ swift-tools-version:/ {print $2; exit 0}' Package.swift)"
+          echo "swift-version=${swift_tools_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install matching Swift toolchain
+        uses: fwal/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a
+        with:
+          swift-version: ${{ steps.swift_tools.outputs.swift-version }}
 
       - name: Print toolchain versions
         run: |
