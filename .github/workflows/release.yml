@@ -23,7 +23,7 @@ jobs:
       - name: Select Xcode 26
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
         with:
-          xcode-version: "26.0"
+          xcode-version: "26.6"
 
       - name: Print toolchain versions
         run: |
@@ -93,13 +93,13 @@ jobs:
 
       - name: Create GitHub Release (Signed)
         if: steps.gate.outputs.enabled == 'true'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2 (latest)
         with:
           files: ${{ steps.artifact_paths.outputs.zip_path }}
 
       - name: Create GitHub Release (Unsigned)
         if: steps.gate.outputs.enabled != 'true'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2 (latest)
         with:
           files: ${{ steps.ZipUnsigned.outputs.zip_path }}
 
