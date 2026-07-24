@@ -141,31 +141,30 @@ struct SyncView: View {
                     description: Text("Aktiviere den Provider über die Checkbox in der Seitenleiste.")
                 )
             } else {
-                GeometryReader { geo in
-                    let bannerReserve: CGFloat = 72
-                    let actionReserve: CGFloat = 88
-                    let browserHeight = max(120, geo.size.height - bannerReserve - actionReserve)
+                VStack(spacing: 0) {
+                    sessionBanner
+                    Divider()
+                    ProviderSessionView(
+                        loginURL: providerLoginURL,
+                        sessionStatus: $sessionStatus,
+                        lastURLString: $lastURLString,
+                        webView: webViewBinding,
+                        autofillCredentials: autofillCredentials
+                    )
+                    .frame(
+                        maxWidth: .infinity,
+                        // Wenn Browser nicht benötigt wird, soll er im Layout kollabieren.
+                        minHeight: isBrowserExpanded ? 120 : 0,
+                        maxHeight: isBrowserExpanded ? .infinity : 0,
+                        alignment: .top
+                    )
+                    .opacity(isBrowserExpanded ? 1 : 0)
+                    .allowsHitTesting(isBrowserExpanded)
+                    .accessibilityHidden(!isBrowserExpanded)
+                    .clipped()
 
-                    VStack(spacing: 0) {
-                        sessionBanner
-                        Divider()
-                        ProviderSessionView(
-                            loginURL: providerLoginURL,
-                            sessionStatus: $sessionStatus,
-                            lastURLString: $lastURLString,
-                            webView: webViewBinding,
-                            autofillCredentials: autofillCredentials
-                        )
-                        .frame(width: geo.size.width, height: isBrowserExpanded ? browserHeight : 0)
-                        .opacity(isBrowserExpanded ? 1 : 0)
-                        .allowsHitTesting(isBrowserExpanded)
-                        .accessibilityHidden(!isBrowserExpanded)
-                        .clipped()
-
-                        Divider()
-                        actionBar
-                    }
-                    .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                    Divider()
+                    actionBar
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
