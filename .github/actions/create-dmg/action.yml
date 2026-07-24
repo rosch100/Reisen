@@ -1,0 +1,27 @@
+name: Create DMG
+description: Erzeugt aus einem .app Bundle eine HIG-orientierte macOS-installierbare DMG.
+
+inputs:
+  app_path:
+    description: Absoluter Pfad zum .app Bundle
+    required: true
+  dmg_path:
+    description: Absoluter Pfad zur Ziel-.dmg Datei
+    required: true
+  volname:
+    description: Volume-Name im Finder (optional)
+    required: false
+    default: Reisen
+
+runs:
+  using: composite
+  steps:
+    - name: Create DMG
+      shell: bash
+      run: |
+        set -euo pipefail
+        bash ./Scripts/create-dmg.sh \
+          --app-path "${{ inputs.app_path }}" \
+          --dmg-path "${{ inputs.dmg_path }}" \
+          --volname "${{ inputs.volname }}"
+

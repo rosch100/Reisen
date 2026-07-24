@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "iOS: Generate Xcode project",
+      "type": "shell",
+      "command": "bash ./Scripts/generate-ios-project.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "iOS: Run on Simulator",
+      "type": "shell",
+      "command": "bash ./Scripts/ios-run.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "iOS: Test on Simulator",
+      "type": "shell",
+      "command": "bash ./Scripts/ios-test.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "type": "sweetpad",
+      "action": "launch",
+      "label": "sweetpad: launch",
+      "detail": "Build and launch ReiseniOS (SweetPad)",
+      "scheme": "ReiseniOS",
+      "configuration": "Debug",
+      "isBackground": true,
+      "problemMatcher": ["$sweetpad-watch"]
+    }
+  ]
+}

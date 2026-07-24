@@ -35,7 +35,9 @@ Wenn diese Werte fehlen, erzeugt der Release-Workflow weiterhin ein Artifact (Un
 ## Befehlspfade (SSOT)
 
 - Signing/Notarize Shell Helper: `Scripts/sign-and-notarize.sh`
-- Release Workflow triggert den Helper nur im Signed Pfad
+  - `.app`: `bash ./Scripts/sign-and-notarize.sh --app-path /abs/path/to/Reisen.app`
+  - `.dmg`: `bash ./Scripts/sign-and-notarize.sh --dmg-path /abs/path/to/Reisen.dmg` (sign → notarytool → staple)
+- Release Workflow: erst `.app` signieren/notarizen/staplen, dann DMG erzeugen, danach dieselbe Helper-API für die DMG
 
 ## Validierung / Troubleshooting
 

@@ -74,4 +74,4 @@ Lizenz-Links:
 ## Weiterer Ausbau
 
 - Weitere Provider: `TravelProvider` + optional `GapDeepLinkBuilding` registrieren
-- iOS/iPadOS: Shared-Module wiederverwenden, App-Target und WebView-UI portieren
+- iOS/iPadOS: App-Target und WebView-UI sind vorhanden; Cursor/Simulator-Workflow: [docs/dev/ios-cursor.md](docs/dev/ios-cursor.md)

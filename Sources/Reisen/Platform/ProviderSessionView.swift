@@ -772,6 +772,7 @@ private struct ProviderWebView: NSViewRepresentable {
             let absolute = url.absoluteString.lowercased()
             let looksLikeLogin = AuthPageURLHeuristic.looksLikeLoginPage(absolute)
             let looksLikeAccount = AuthPageURLHeuristic.looksLikeAccountPage(absolute)
+            let statusHeuristic = ProviderSessionStatusResolver.classify(url)
 
             // #region agent log
             AgentDebugLog.write(
@@ -787,13 +788,16 @@ private struct ProviderWebView: NSViewRepresentable {
             )
             // #endregion
 
-            if looksLikeAccount && !looksLikeLogin {
+            switch statusHeuristic {
+            case .sessionReady:
                 sessionStatus.wrappedValue = .sessionReady
-            } else if looksLikeLogin {
+            case .needsLogin:
                 sessionStatus.wrappedValue = .needsLogin
-            } else if OpodoSessionProbe.applies(to: url) {
+            case .shouldProbeOpodo:
                 // Homepage nach Login: weder Login- noch Account-URL → GraphQL-Probe.
                 scheduleOpodoSessionProbe(in: webView)
+            case .unknown:
+                break
             }
 
             if looksLikeLogin, !loginAssistanceSuspended {

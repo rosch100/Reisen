@@ -6,14 +6,20 @@ cd "$ROOT"
 
 usage() {
   echo "Usage: $0 --app-path /abs/path/to/Reisen.app" >&2
+  echo "       $0 --dmg-path /abs/path/to/Reisen.dmg" >&2
 }
 
 APP_PATH=""
+DMG_PATH=""
 ZIP_PATH=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --app-path)
       APP_PATH="${2:-}"
+      shift 2
+      ;;
+    --dmg-path)
+      DMG_PATH="${2:-}"
       shift 2
       ;;
     --zip-path)
@@ -31,14 +37,25 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$APP_PATH" ]]; then
-  echo "Fehler: --app-path ist erforderlich." >&2
+if [[ -z "$APP_PATH" && -z "$DMG_PATH" ]]; then
+  echo "Fehler: --app-path oder --dmg-path ist erforderlich." >&2
   usage
   exit 2
 fi
 
-if [[ ! -d "$APP_PATH" || "$APP_PATH" != *.app ]]; then
+if [[ -n "$APP_PATH" && -n "$DMG_PATH" ]]; then
+  echo "Fehler: --app-path und --dmg-path dürfen nicht gemeinsam angegeben werden." >&2
+  usage
+  exit 2
+fi
+
+if [[ -n "$APP_PATH" && ( ! -d "$APP_PATH" || "$APP_PATH" != *.app ) ]]; then
   echo "Fehler: APP_PATH ist kein .app Bundle: $APP_PATH" >&2
+  exit 2
+fi
+
+if [[ -n "$DMG_PATH" && ( ! -f "$DMG_PATH" || "$DMG_PATH" != *.dmg ) ]]; then
+  echo "Fehler: DMG_PATH ist keine .dmg Datei: $DMG_PATH" >&2
   exit 2
 fi
 
@@ -107,32 +124,50 @@ if [[ -z "$IDENTITY" ]]; then
   exit 1
 fi
 
-echo "Codesign (Developer ID)..." >&2
-codesign --force --sign "$IDENTITY" --timestamp --options runtime "$APP_PATH" >/dev/null
+notarize_submit() {
+  local artifact_path="$1"
+  echo "Notarize via notarytool (wait...): $artifact_path" >&2
+  xcrun notarytool submit "$artifact_path" \
+    --key "$P8_PATH" \
+    --key-id "$APP_STORE_CONNECT_API_KEY_KEY_ID" \
+    --issuer "$APP_STORE_CONNECT_API_KEY_ISSUER" \
+    --wait
+}
 
-# Deep sign für nested resource bundles (sichert Notary-Checks ab).
-codesign --force --sign "$IDENTITY" --timestamp --options runtime --deep "$APP_PATH" >/dev/null
+if [[ -n "$APP_PATH" ]]; then
+  echo "Codesign .app (Developer ID)..." >&2
+  codesign --force --sign "$IDENTITY" --timestamp --options runtime "$APP_PATH" >/dev/null
 
-if [[ -z "$ZIP_PATH" ]]; then
-  ZIP_PATH="$ROOT/.build/notarize/$(basename "$APP_PATH" .app).zip"
+  # Deep sign für nested resource bundles (sichert Notary-Checks ab).
+  codesign --force --sign "$IDENTITY" --timestamp --options runtime --deep "$APP_PATH" >/dev/null
+
+  if [[ -z "$ZIP_PATH" ]]; then
+    ZIP_PATH="$ROOT/.build/notarize/$(basename "$APP_PATH" .app).zip"
+  fi
+
+  mkdir -p "$(dirname "$ZIP_PATH")"
+
+  echo "Erzeuge ZIP: $ZIP_PATH" >&2
+  ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+
+  notarize_submit "$ZIP_PATH"
+
+  echo "Staple .app (nach Notarization)..." >&2
+  xcrun stapler staple -v "$APP_PATH"
+
+  echo "Fertig: $APP_PATH" >&2
+  printf '%s\n' "$APP_PATH"
 fi
 
-mkdir -p "$(dirname "$ZIP_PATH")"
+if [[ -n "$DMG_PATH" ]]; then
+  echo "Codesign .dmg (Developer ID)..." >&2
+  codesign --force --sign "$IDENTITY" --timestamp "$DMG_PATH" >/dev/null
 
-echo "Erzeuge ZIP: $ZIP_PATH" >&2
-ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+  notarize_submit "$DMG_PATH"
 
-echo "Notarize via notarytool (wait...)" >&2
-xcrun notarytool submit "$ZIP_PATH" \
-  --key "$P8_PATH" \
-  --key-id "$APP_STORE_CONNECT_API_KEY_KEY_ID" \
-  --issuer "$APP_STORE_CONNECT_API_KEY_ISSUER" \
-  --wait
+  echo "Staple .dmg (nach Notarization)..." >&2
+  xcrun stapler staple -v "$DMG_PATH"
 
-echo "Staple (nach Notarization)..." >&2
-xcrun stapler staple -v "$APP_PATH"
-
-echo "Fertig: $APP_PATH" >&2
-
-printf '%s\n' "$APP_PATH"
-
+  echo "Fertig: $DMG_PATH" >&2
+  printf '%s\n' "$DMG_PATH"
+fi

@@ -1,0 +1,67 @@
+name: Reisen
+options:
+  bundleIdPrefix: de.roschmac
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  Reisen:
+    path: .
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+targets:
+  ReiseniOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: Apps/ReiseniOS
+        excludes:
+          - "**/*.plist"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios
+        PRODUCT_NAME: ReiseniOS
+        INFOPLIST_FILE: Apps/ReiseniOS/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+    dependencies:
+      - package: Reisen
+        product: ReisenAppCore
+      - package: Reisen
+        product: ReisenSharedUI
+    scheme:
+      testTargets:
+        - ReiseniOSTests
+
+  ReiseniOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/ReiseniOSTests
+    dependencies:
+      - target: ReiseniOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.tests
+        GENERATE_INFOPLIST_FILE: true
+
+schemes:
+  ReiseniOS:
+    build:
+      targets:
+        ReiseniOS: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ReiseniOSTests

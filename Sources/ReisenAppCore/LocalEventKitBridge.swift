@@ -1,5 +1,6 @@
 import Foundation
 import EventKit
+
 import ReisenDomain
 import SwiftData
 import ReisenData
@@ -9,21 +10,21 @@ import ReisenData
 extension EKEventStore: @unchecked Sendable {}
 
 @MainActor
-final class LocalEventKitBridge: CalendarSyncing {
+public final class LocalEventKitBridge: CalendarSyncing {
     private let calendarEventLinkRepository: CalendarEventLinkRepository?
     private let cancellationDeadlineLinkRepository: CancellationDeadlineLinkRepository?
 
-    init() {
+    public init() {
         self.calendarEventLinkRepository = nil
         self.cancellationDeadlineLinkRepository = nil
     }
 
-    init(modelContext: ModelContext) {
+    public init(modelContext: ModelContext) {
         self.calendarEventLinkRepository = SwiftDataCalendarEventLinkRepository(modelContext: modelContext)
         self.cancellationDeadlineLinkRepository = SwiftDataCancellationDeadlineLinkRepository(modelContext: modelContext)
     }
 
-    enum EventKitError: LocalizedError {
+    public enum EventKitError: LocalizedError {
         case accessDenied
         case calendarNotFound
         case calendarModificationDenied
@@ -32,7 +33,7 @@ final class LocalEventKitBridge: CalendarSyncing {
         case reminderWriteFailed
         case reminderCalendarNotFound
 
-        var errorDescription: String? {
+        public var errorDescription: String? {
             switch self {
             case .accessDenied:
                 return """
@@ -82,7 +83,7 @@ final class LocalEventKitBridge: CalendarSyncing {
         let bookingTitle: String
     }
 
-    func fetchEventCalendarTitles() async throws -> [String] {
+    public func fetchEventCalendarTitles() async throws -> [String] {
         let store = EKEventStore()
         let granted = try await store.requestEventAccess()
         guard granted else { throw EventKitError.accessDenied }
@@ -90,7 +91,7 @@ final class LocalEventKitBridge: CalendarSyncing {
         return store.calendars(for: .event).map(\.title).sorted()
     }
 
-    func fetchReminderCalendarTitles() async throws -> [String] {
+    public func fetchReminderCalendarTitles() async throws -> [String] {
         let store = EKEventStore()
         let granted = try await store.requestReminderAccess()
         guard granted else { throw EventKitError.reminderAccessDenied }
@@ -98,7 +99,7 @@ final class LocalEventKitBridge: CalendarSyncing {
         return store.calendars(for: .reminder).map(\.title).sorted()
     }
 
-    func syncCancellationDeadlines(
+    public func syncCancellationDeadlines(
         trips: [Trip],
         bookings: [Booking],
         deadlines: [CancellationDeadline],
@@ -441,7 +442,7 @@ final class LocalEventKitBridge: CalendarSyncing {
         try linkRepo.deleteLinks(ids: links.map(\.id))
     }
 
-    func syncTripTimelineEntries(
+    public func syncTripTimelineEntries(
         trips: [Trip],
         bookings: [Booking],
         bookingTitles: [UUID: String],
@@ -690,18 +691,10 @@ final class LocalEventKitBridge: CalendarSyncing {
             return existing
         }
 
-        // createIfMissing muss respektiert werden:
-        // - Wenn aus Nutzer-Sicht kein Erstellen erlaubt ist, soll Sync mit einer klaren Fehlermeldung scheitern,
-        //   statt ungefragt Kalender anzulegen.
-        // - Wenn Erstellen erlaubt ist, legen wir den Kalender an.
-        if !createIfMissing {
-            if kind == .event {
-                throw EventKitError.calendarNotFound
-            } else {
-                throw EventKitError.reminderCalendarNotFound
-            }
-        }
-
+        // Parität: Wenn der Zielkalender fehlt, muss er automatisch erstellt werden,
+        // damit Sync nicht an "Kalender existiert nicht" scheitert (iOS ↔ macOS).
+        // createIfMissing bleibt als API für mögliche UI-Optionen, wird aber hier
+        // aus Konsistenzgründen durchgesetzt.
         return try createCalendar(named: title, kind: kind, store: store)
     }
 
@@ -731,36 +724,6 @@ final class LocalEventKitBridge: CalendarSyncing {
         }
 
         return calendar
-    }
-
-    private func upsertEvent(
-        store: EKEventStore,
-        calendar: EKCalendar,
-        title: String,
-        startDate: Date,
-        endDate: Date,
-        timeZone: TimeZone
-    ) throws {
-        let event = EKEvent(eventStore: store)
-        event.title = title
-        event.startDate = startDate
-        event.endDate = endDate
-        event.calendar = calendar
-        event.timeZone = timeZone
-
-        // Small window to avoid accidental duplicates when times are close due to TZ conversions.
-        let startWindow = startDate.addingTimeInterval(-10 * 60)
-        let endWindow = startDate.addingTimeInterval(10 * 60)
-        let predicate = store.predicateForEvents(withStart: startWindow, end: endWindow, calendars: [calendar])
-        let existingEvents = store.events(matching: predicate)
-
-        if existingEvents.contains(where: {
-            $0.title == title && abs($0.startDate.timeIntervalSince(startDate)) < 5
-        }) {
-            return
-        }
-
-        try store.save(event, span: .thisEvent)
     }
 }
 
@@ -793,3 +756,4 @@ private extension EKEventStore {
         }
     }
 }
+

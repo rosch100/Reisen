@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "sweetpad-lldb",
+      "request": "attach",
+      "name": "Attach to running app (SweetPad)",
+      "preLaunchTask": "sweetpad: launch"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Reisen}",
+      "name": "Debug Reisen",
+      "target": "Reisen",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug Reisen"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Reisen}",
+      "name": "Release Reisen",
+      "target": "Reisen",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release Reisen"
+    }
+  ]
+}

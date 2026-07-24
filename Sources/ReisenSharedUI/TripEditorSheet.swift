@@ -3,12 +3,13 @@ import SwiftData
 import ReisenDomain
 import ReisenData
 
-enum TripEditorMode {
+public enum TripEditorMode {
     case create
     case edit
 }
 
-struct TripEditorSheet: View {
+/// Plattformeinheitlicher Trip-Editor (macOS + iOS).
+public struct TripEditorSheet: View {
     let mode: TripEditorMode
     let trip: SDTrip?
     let onSaved: ((SDTrip) -> Void)?
@@ -21,7 +22,7 @@ struct TripEditorSheet: View {
     @State private var endDate: Date
     @State private var errorMessage: String?
 
-    init(
+    public init(
         mode: TripEditorMode,
         trip: SDTrip? = nil,
         onSaved: ((SDTrip) -> Void)? = nil
@@ -51,7 +52,7 @@ struct TripEditorSheet: View {
         return endDate >= startDate
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             Text(mode == .create ? "Neue Reise" : "Reise bearbeiten")
                 .font(.headline)
@@ -68,11 +69,9 @@ struct TripEditorSheet: View {
 
                 if let errorMessage {
                     Section {
-                        CopyableTextView(
-                            text: errorMessage,
-                            font: .preferredFont(forTextStyle: .body),
-                            textColor: .systemRed
-                        )
+                        Text(errorMessage)
+                            .foregroundStyle(.red)
+                            .textSelection(.enabled)
                     }
                 }
             }
@@ -129,6 +128,7 @@ struct TripEditorSheet: View {
                 try tripRepo.assignBooking(bookingID: bookingID, toTripID: savedTrip.id)
             }
             try tripRepo.save()
+
             onSaved?(savedTrip)
             dismiss()
         } catch {
@@ -136,3 +136,4 @@ struct TripEditorSheet: View {
         }
     }
 }
+

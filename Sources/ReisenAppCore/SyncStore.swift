@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftData
+
 import ReisenDomain
 import ReisenData
 import ReisenProviders
@@ -12,27 +13,27 @@ import WebKit
 
 @MainActor
 @Observable
-final class SyncStore {
-    var isSyncing = false
-    var syncingProviderID: ProviderID?
+public final class SyncStore {
+    public var isSyncing = false
+    public var syncingProviderID: ProviderID?
     /// Welcher Provider die aktuelle Status-/Fehlermeldung erzeugt hat.
-    var messageProviderID: ProviderID?
-    var errorMessage: String?
-    var statusMessage: String?
+    public var messageProviderID: ProviderID?
+    public var errorMessage: String?
+    public var statusMessage: String?
 
     private let modelContext: ModelContext
     private let registry: ProviderRegistry
     private let reminderScheduler: LocalReminderScheduler
     private let calendarSync: LocalEventKitBridge
 
-    init(modelContext: ModelContext, registry: ProviderRegistry) {
+    public init(modelContext: ModelContext, registry: ProviderRegistry) {
         self.modelContext = modelContext
         self.registry = registry
         self.reminderScheduler = LocalReminderScheduler(modelContext: modelContext)
         self.calendarSync = LocalEventKitBridge(modelContext: modelContext)
     }
 
-    func sync(
+    public func sync(
         providerID: ProviderID,
         webView: WKWebView,
         settings: AppSettings
@@ -290,12 +291,12 @@ final class SyncStore {
             let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
             let trips = try tripRepo.fetchAll()
 
-            // Parität / HIG-Fix:
-            // Wenn der Zielkalender nicht existiert, soll er automatisch erstellt werden (inkl. Reminder-Liste),
-            // damit der Sync nicht an "Kalender existiert nicht" scheitert.
-            // Dadurch ist das Verhalten auf iOS und macOS konsistent, auch wenn die optionalen UI-Toggles aus sind.
-            let effectiveEventCreateIfMissing = true
-            let effectiveReminderCreateIfMissing = true
+            // Standard-Verhalten:
+            // Wenn der Nutzer den globalen Standardkalender "Reisen" (und die Standard-Reminder-Liste "Reisen")
+            // in der Fix/Global-Strategie ausgewählt hat, sollen diese bei Bedarf automatisch erstellt werden,
+            // damit der Sync nicht nur an "Kalender existiert nicht" scheitert.
+            let effectiveEventCreateIfMissing = settings.eventCalendarCreateIfMissing
+            let effectiveReminderCreateIfMissing = settings.reminderCalendarCreateIfMissing
 
             try await calendarSync.syncCancellationDeadlines(
                 trips: trips,
@@ -323,7 +324,7 @@ final class SyncStore {
             let needsHotelAddresses = settings.calendarTripTimesEnabled || settings.calendarHotelStaysEnabled
             let needsFlightAddresses = settings.calendarFlightTimesEnabled
 
-            if needsTripAddresses || needsFlightAddresses {
+            if needsHotelAddresses || needsFlightAddresses {
                 statusMessage = "Löse Adressen auf…"
                 try await resolveAndPersistBookingAddressesIfNeeded(
                     needsHotelAddresses: needsHotelAddresses,
@@ -342,7 +343,7 @@ final class SyncStore {
                 bookingTitles: bookingTitles,
                 eventCalendarTitle: settings.calendarTitle,
                 eventCreateIfMissing:
-                    true,
+                    settings.eventCalendarCreateIfMissing,
                 includeTripStartEnd: settings.calendarTripTimesEnabled,
                 includeFlightTimes: settings.calendarFlightTimesEnabled,
                 includeHotelStays: settings.calendarHotelStaysEnabled
@@ -441,7 +442,7 @@ final class SyncStore {
     }
 
     /// Status/Fehler dieses Providers verwerfen (z. B. beim Wegnavigieren).
-    func dismissMessages(for providerID: ProviderID) {
+    public func dismissMessages(for providerID: ProviderID) {
         if syncingProviderID == providerID { return }
         guard messageProviderID == providerID else { return }
         statusMessage = nil
@@ -450,7 +451,7 @@ final class SyncStore {
     }
 
     /// Synchronisiert alle angegebenen Provider nacheinander (HIG: eine laufende Aktion, klarer Fortschritt).
-    func syncAll(
+    public func syncAll(
         providers: [(ProviderID, WKWebView)],
         settings: AppSettings
     ) async {
@@ -514,7 +515,6 @@ final class SyncStore {
         assignOptional(incoming.totalPriceAmount, into: &merged, \.totalPriceAmount)
         assignOptional(incoming.totalPriceCurrency, into: &merged, \.totalPriceCurrency)
         assignOptional(incoming.roomCategory, into: &merged, \.roomCategory)
-        assignIfBoardTypeKnown(incoming.boardType, into: &merged)
         assignOptional(incoming.includedBreakfast, into: &merged, \.includedBreakfast)
         assignOptional(incoming.guestCount, into: &merged, \.guestCount)
         assignOptional(incoming.roomCount, into: &merged, \.roomCount)
@@ -552,8 +552,8 @@ final class SyncStore {
     }
 }
 
-enum SyncLog {
-    static func append(_ line: String) {
+public enum SyncLog {
+    public static func append(_ line: String) {
         let fm = FileManager.default
         guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return
@@ -581,3 +581,4 @@ enum SyncLog {
         }
     }
 }
+
