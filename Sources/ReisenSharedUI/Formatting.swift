@@ -5,7 +5,7 @@ public enum Formatting {
     public static func formatCurrencyAmount(_ amount: Double, currencyCode: String?) -> String {
         let currency = currencyCode ?? "EUR"
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "de_DE_POSIX")
+        formatter.locale = Locale(identifier: "de_DE")
         formatter.numberStyle = .currency
         formatter.currencyCode = currency
         formatter.maximumFractionDigits = 2
