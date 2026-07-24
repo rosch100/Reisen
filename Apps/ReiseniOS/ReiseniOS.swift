@@ -986,6 +986,8 @@ private struct SyncTab: View {
                         handleWebDidFinish(finishedWebView)
                     }
                 )
+                // Neu-erzeugen beim Ein-/Ausblenden sorgt dafür, dass der loginURL frisch geladen wird.
+                .id(isBrowserExpanded)
                 .opacity(isBrowserExpanded ? 1 : 0)
                 .frame(height: isBrowserExpanded ? 420 : 1)
                 .clipped()
