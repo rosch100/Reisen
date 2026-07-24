@@ -76,7 +76,7 @@ jobs:
       - name: Create Unsigned DMG
         if: steps.gate.outputs.enabled != 'true'
         id: dmg_unsigned
-        uses: ./.github/actions/create-dmg/action.yml
+        uses: ./.github/actions/create-dmg
         with:
           app_path: ${{ steps.build.outputs.app_path }}
           dmg_path: ${{ github.workspace }}/.build/${{ steps.version.outputs.dmg_name }}
@@ -99,7 +99,7 @@ jobs:
 
       - name: Create Signed DMG
         if: steps.gate.outputs.enabled == 'true'
-        uses: ./.github/actions/create-dmg/action.yml
+        uses: ./.github/actions/create-dmg
         with:
           app_path: ${{ steps.sign.outputs.signed_app_path }}
           dmg_path: ${{ github.workspace }}/.build/${{ steps.version.outputs.dmg_name }}
