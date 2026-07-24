@@ -329,7 +329,7 @@ public final class SyncStore {
             let needsHotelAddresses = settings.calendarTripTimesEnabled || settings.calendarHotelStaysEnabled
             let needsFlightAddresses = settings.calendarFlightTimesEnabled
 
-            if needsTripAddresses || needsFlightAddresses {
+            if needsHotelAddresses || needsFlightAddresses {
                 statusMessage = "Löse Adressen auf…"
                 try await resolveAndPersistBookingAddressesIfNeeded(
                     needsHotelAddresses: needsHotelAddresses,
