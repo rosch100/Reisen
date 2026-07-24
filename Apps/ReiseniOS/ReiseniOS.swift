@@ -67,52 +67,264 @@ private struct StoreFailureViewIOS: View {
     }
 }
 
+private let iosSyncProviderIDs: [ProviderID] = [.check24, .opodo, .booking, .airbnb]
+
 private struct RootTabView: View {
+    @State private var isShowingSettings = false
+    /// Erzwingt Toolbar-Refresh, wenn Hintergrund-Probes den SessionHub aktualisieren
+    /// (optional Environment + @Observable tracked sonst nicht zuverlässig über Tabs).
+    @State private var sessionChromeEpoch = 0
+
     @ViewBuilder
     var body: some View {
-        if #available(iOS 18.0, *) {
-            tabs
-                .tabViewStyle(.sidebarAdaptable)
-        } else {
-            tabs
+        ZStack {
+            Group {
+                if #available(iOS 18.0, *) {
+                    tabs
+                        .tabViewStyle(.sidebarAdaptable)
+                } else {
+                    tabs
+                }
+            }
+
+            // Hintergrund-Session-Probe: Läuft unabhängig vom aktiven Tab,
+            // damit Provider (z. B. Check24) im Hintergrund als „sessionReady“ erkannt werden.
+            SyncBackgroundSessionProbe(onSessionChanged: {
+                sessionChromeEpoch &+= 1
+            })
+            .frame(width: 1, height: 1)
+            .opacity(0.01)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            NavigationStack {
+                SettingsView()
+                    .navigationTitle("Einstellungen")
+            }
         }
     }
 
     private var tabs: some View {
         TabView {
-            ReisenTab()
-                .tabItem {
-                    Label("Reisen", systemImage: "airplane")
-                }
+            ReisenTab(
+                isShowingSettings: $isShowingSettings,
+                sessionChromeEpoch: $sessionChromeEpoch
+            )
+            .tabItem {
+                Label("Reisen", systemImage: "airplane")
+            }
 
-            OffenTab()
-                .tabItem {
-                    Label("Offen", systemImage: "list.bullet.rectangle")
-                }
+            OffenTab(
+                isShowingSettings: $isShowingSettings,
+                sessionChromeEpoch: $sessionChromeEpoch
+            )
+            .tabItem {
+                Label("Offen", systemImage: "list.bullet.rectangle")
+            }
 
-            SyncTab()
-                .tabItem {
-                    Label("Sync", systemImage: "arrow.triangle.2.circlepath")
-                }
-
-            SettingsTab()
-                .tabItem {
-                    Label("Mehr", systemImage: "gearshape")
-                }
+            SyncTab(
+                isShowingSettings: $isShowingSettings,
+                sessionChromeEpoch: $sessionChromeEpoch
+            )
+            .tabItem {
+                Label("Sync", systemImage: "arrow.triangle.2.circlepath")
+            }
         }
     }
 }
 
-private struct SettingsTab: View {
+/// Gemeinsame Trailing-Toolbar: Settings + Sync-All (über alle Tabs konsistent).
+private struct GlobalChromeTrailingToolbar: View {
+    @Binding var isShowingSettings: Bool
+    /// Nur für Re-Render bei Hub-Änderungen aus Hintergrund-Probes / SyncTab.
+    @Binding var sessionChromeEpoch: Int
+
+    @Environment(\.syncStore) private var syncStore
+    @Environment(\.providerSessionHub) private var sessionHub
+
+    @AppStorage(AppSettingsKeys.notificationEnabled) private var notificationEnabled: Bool = true
+    @AppStorage(AppSettingsKeys.eventKitEnabled) private var eventKitEnabled: Bool = false
+    @AppStorage(AppSettingsKeys.calendarTripTimesEnabled) private var calendarTripTimesEnabled: Bool = false
+    @AppStorage(AppSettingsKeys.calendarFlightTimesEnabled) private var calendarFlightTimesEnabled: Bool = false
+    @AppStorage(AppSettingsKeys.calendarHotelStaysEnabled) private var calendarHotelStaysEnabled: Bool = false
+
+    private var syncAllSettings: AppSettings {
+        AppSettings(
+            notificationEnabled: notificationEnabled,
+            eventKitEnabled: eventKitEnabled,
+            calendarTripTimesEnabled: calendarTripTimesEnabled,
+            calendarFlightTimesEnabled: calendarFlightTimesEnabled,
+            calendarHotelStaysEnabled: calendarHotelStaysEnabled
+        )
+    }
+
+    private var syncAllCandidates: [(ProviderID, WKWebView)] {
+        // sessionChromeEpoch bewusst lesen, damit Toolbar nach Probe-Updates neu evaluated.
+        _ = sessionChromeEpoch
+        guard let hub = sessionHub else { return [] }
+        return iosSyncProviderIDs.compactMap { id in
+            guard hub.status(for: id) == .sessionReady,
+                  let webView = hub.webView(for: id) else { return nil }
+            return (id, webView)
+        }
+    }
+
+    private var canStartSyncAll: Bool {
+        guard let syncStore else { return false }
+        guard syncStore.isSyncing != true else { return false }
+        return !syncAllCandidates.isEmpty
+    }
+
     var body: some View {
-        NavigationStack {
-            SettingsView()
-                .navigationTitle("Mehr")
+        HStack(spacing: 12) {
+            Button {
+                isShowingSettings = true
+            } label: {
+                Image(systemName: "gearshape.fill")
+            }
+            .help("Einstellungen öffnen")
+
+            Button {
+                guard let syncStore else { return }
+                let candidates = syncAllCandidates
+                guard !candidates.isEmpty else { return }
+                Task {
+                    await syncStore.syncAll(providers: candidates, settings: syncAllSettings)
+                }
+            } label: {
+                if syncStore?.isSyncing == true && syncStore?.syncingProviderID != nil {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                }
+            }
+            .disabled(!canStartSyncAll)
+            .help(canStartSyncAll
+                ? "Synchronisiert alle angemeldeten Provider (sequenziell) im Hintergrund"
+                : "Keine angemeldeten Provider für Sync-All")
+        }
+    }
+}
+
+private struct SyncBackgroundSessionProbe: View {
+    var onSessionChanged: () -> Void
+
+    @Environment(\.providerRegistry) private var providerRegistry
+    @Environment(\.providerSessionHub) private var sessionHub
+
+    @State private var webViewsByProvider: [ProviderID: WKWebView?] = [:]
+
+    private func loginURL(for providerID: ProviderID) -> URL? {
+        let provider = providerRegistry?.provider(id: providerID)
+        let loginConfig = provider as? any TravelProviderLoginConfiguration
+        return loginConfig?.loginURL
+    }
+
+    private func webViewBinding(for providerID: ProviderID) -> Binding<WKWebView?> {
+        Binding(
+            get: { webViewsByProvider[providerID] ?? nil },
+            set: { webViewsByProvider[providerID] = $0 }
+        )
+    }
+
+    @MainActor
+    private func ensureSlots() {
+        sessionHub?.syncEnabledProviders(Set(iosSyncProviderIDs))
+    }
+
+    @MainActor
+    private func handleWebNavigationDidFinish(providerID: ProviderID, _ finishedWebView: WKWebView) {
+        ensureSlots()
+        guard let hub = sessionHub else { return }
+        guard let url = finishedWebView.url else { return }
+
+        let heuristic = ProviderSessionStatusResolver.classify(url)
+        let currentStatus = hub.status(for: providerID)
+        hub.updateLastURL(providerID, urlString: url.absoluteString)
+        hub.updateWebView(providerID, webView: finishedWebView)
+
+        let previousReady = currentStatus == .sessionReady
+        switch heuristic {
+        case .sessionReady:
+            hub.updateStatus(providerID, status: .sessionReady)
+        case .needsLogin:
+            // Wenn bereits `sessionReady` erkannt wurde, darf ein späterer Login-Look nicht downgraden.
+            if currentStatus != .sessionReady {
+                hub.updateStatus(providerID, status: .needsLogin)
+            }
+        case .shouldProbeOpodo:
+            if currentStatus != .sessionReady {
+                hub.updateStatus(providerID, status: .needsLogin)
+            }
+            Task {
+                do {
+                    let text = try await finishedWebView.fetchAuthenticatedText(
+                        url: OpodoSessionProbe.graphqlURL,
+                        method: "POST",
+                        accept: "application/json",
+                        referer: "https://www.opodo.de/",
+                        contentType: "application/json",
+                        body: OpodoSessionProbe.getUserAccountRequestBody()
+                    )
+                    if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text) {
+                        await MainActor.run {
+                            ensureSlots()
+                            if loggedIn {
+                                hub.updateStatus(providerID, status: .sessionReady)
+                            } else if hub.status(for: providerID) != .sessionReady {
+                                hub.updateStatus(providerID, status: .needsLogin)
+                            }
+                            onSessionChanged()
+                        }
+                    }
+                } catch {
+                    // Probe fehlgeschlagen: Status bleibt konservativ.
+                }
+            }
+        case .unknown:
+            if currentStatus != .sessionReady {
+                hub.updateStatus(providerID, status: .needsLogin)
+            }
+        }
+
+        let nowReady = hub.status(for: providerID) == .sessionReady
+        if previousReady != nowReady || nowReady {
+            onSessionChanged()
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            ForEach(iosSyncProviderIDs, id: \.self) { id in
+                WebViewHost(
+                    loginURL: loginURL(for: id),
+                    providerID: id,
+                    webView: webViewBinding(for: id),
+                    onDidFinish: { finishedWebView in
+                        handleWebNavigationDidFinish(providerID: id, finishedWebView)
+                    }
+                )
+                .frame(width: 1, height: 1)
+                .opacity(0.01)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+            }
+        }
+        .onAppear {
+            ensureSlots()
+        }
+        .task {
+            ensureSlots()
         }
     }
 }
 
 private struct ReisenTab: View {
+    @Binding var isShowingSettings: Bool
+    @Binding var sessionChromeEpoch: Int
+
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
     @State private var showCreateTrip = false
@@ -146,6 +358,12 @@ private struct ReisenTab: View {
                     }
                     .help("Neue Reise anlegen")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    GlobalChromeTrailingToolbar(
+                        isShowingSettings: $isShowingSettings,
+                        sessionChromeEpoch: $sessionChromeEpoch
+                    )
+                }
             }
             .sheet(isPresented: $showCreateTrip) {
                 TripEditorSheet(
@@ -160,8 +378,40 @@ private struct ReisenTab: View {
 }
 
 private struct OffenTab: View {
+    @Binding var isShowingSettings: Bool
+    @Binding var sessionChromeEpoch: Int
+    @State private var showCreateTrip = false
+
     var body: some View {
-        OpenBookingsScreen()
+        NavigationStack {
+            OpenBookingsScreen()
+                .navigationTitle("Offen")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showCreateTrip = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .help("Neue Reise anlegen")
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        GlobalChromeTrailingToolbar(
+                            isShowingSettings: $isShowingSettings,
+                            sessionChromeEpoch: $sessionChromeEpoch
+                        )
+                    }
+                }
+                .sheet(isPresented: $showCreateTrip) {
+                    TripEditorSheet(
+                        mode: .create,
+                        onSaved: { _ in
+                            // Auf „Offen“ nicht automatisch navigieren — Header/Tab bleibt konsistent.
+                        }
+                    )
+                }
+        }
     }
 }
 
@@ -181,23 +431,18 @@ private struct OpenBookingsScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        Group {
             if openBookings.isEmpty {
                 ContentUnavailableView(
                     "Keine offenen Buchungen",
                     systemImage: "calendar",
                     description: Text("Aktuell gibt es keine Buchungen, die noch keiner Reise zugeordnet sind.")
                 )
-                .navigationTitle("Offen")
             } else {
                 List(openBookings, id: \.id) { booking in
-                    NavigationLink(value: booking.id) {
+                    NavigationLink(destination: BookingDetailIOS(bookingID: booking.id)) {
                         OpenBookingRow(booking: booking)
                     }
-                }
-                .navigationTitle("Offen")
-                .navigationDestination(for: UUID.self) { bookingID in
-                    BookingDetailIOS(bookingID: bookingID)
                 }
             }
         }
@@ -907,14 +1152,11 @@ private struct TripDetailIOS: View {
 
                         Section("Buchungen") {
                             ForEach(trip.bookings) { booking in
-                                NavigationLink(value: booking.id) {
+                                NavigationLink(destination: BookingDetailIOS(bookingID: booking.id)) {
                                     OpenBookingRow(booking: booking)
                                 }
                             }
                         }
-                    }
-                    .navigationDestination(for: UUID.self) { bookingID in
-                        BookingDetailIOS(bookingID: bookingID)
                     }
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
@@ -940,6 +1182,9 @@ private struct TripDetailIOS: View {
 }
 
 private struct SyncTab: View {
+    @Binding var isShowingSettings: Bool
+    @Binding var sessionChromeEpoch: Int
+
     @Environment(\.syncStore) private var syncStore
     @Environment(\.providerRegistry) private var providerRegistry
     @Environment(\.providerSessionHub) private var sessionHub
@@ -953,6 +1198,7 @@ private struct SyncTab: View {
     @State private var selectedProviderID: ProviderID = .check24
     @State private var webView: WKWebView?
     @State private var isBrowserExpanded = false
+    @State private var showCreateTrip = false
 
     var body: some View {
         NavigationStack {
@@ -960,7 +1206,7 @@ private struct SyncTab: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Picker("Provider", selection: $selectedProviderID) {
-                            ForEach(providerIDs, id: \.self) { id in
+                            ForEach(iosSyncProviderIDs, id: \.self) { id in
                                 Text(providerName(for: id)).tag(id)
                             }
                         }
@@ -998,59 +1244,62 @@ private struct SyncTab: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .navigationTitle("Sync")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .primaryAction) {
                     Button {
-                        guard let syncStore else { return }
-                        guard let webView else { return }
-                        Task {
-                            // `syncAllCandidates` already contains `webView`, but we keep this guard for safety.
-                            _ = webView
-                            await syncStore.syncAll(providers: syncAllCandidates, settings: syncAllSettings)
-                        }
+                        showCreateTrip = true
                     } label: {
-                        if syncStore?.isSyncing == true && syncStore?.syncingProviderID != nil {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Label("Alle synchronisieren", systemImage: "arrow.triangle.2.circlepath")
-                        }
+                        Image(systemName: "plus")
                     }
-                    .disabled(!canStartSyncAll)
-                    .help(canStartSyncAll
-                        ? "Synchronisiert alle angemeldeten Provider (sequenziell) im Hintergrund"
-                        : "Keine angemeldeten Provider für Sync-All")
+                    .help("Neue Reise anlegen")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    GlobalChromeTrailingToolbar(
+                        isShowingSettings: $isShowingSettings,
+                        sessionChromeEpoch: $sessionChromeEpoch
+                    )
+                }
+            }
+            .sheet(isPresented: $showCreateTrip) {
+                TripEditorSheet(
+                    mode: .create,
+                    onSaved: { _ in
+                        // Auf „Sync“ nicht automatisch navigieren — nur Header/Tab konsistent halten.
+                    }
+                )
             }
             .onAppear {
                 guard let sessionHub else { return }
-                sessionHub.syncEnabledProviders(Set(providerIDs))
-                // Startzustand: für UI-Gating keine „blind ready“-Defaults.
-                sessionHub.updateStatus(selectedProviderID, status: .needsLogin)
+                sessionHub.syncEnabledProviders(Set(iosSyncProviderIDs))
+                // Tab-Wechsel / onAppear darf einen bereits erkannten Session-Status nicht zurücksetzen.
             }
             .onChange(of: selectedProviderID) { _, newProviderID in
                 guard let sessionHub else { return }
-                sessionHub.updateStatus(newProviderID, status: .needsLogin)
-                sessionHub.updateLastURL(newProviderID, urlString: nil)
+                // Provider-Wechsel darf eine bereits erkannte Session nicht downgraden.
+                if sessionHub.status(for: newProviderID) != .sessionReady {
+                    sessionHub.updateStatus(newProviderID, status: .needsLogin)
+                }
             }
         }
     }
-
-    private var providerIDs: [ProviderID] { [.check24, .opodo, .booking, .airbnb] }
 
     private func providerName(for id: ProviderID) -> String {
         providerRegistry?.providers.first(where: { $0.id == id })?.displayName ?? id.rawValue
     }
 
     private var sessionStatus: ProviderSessionStatus {
-        sessionHub?.status(for: selectedProviderID) ?? .needsLogin
+        _ = sessionChromeEpoch
+        return sessionHub?.status(for: selectedProviderID) ?? .needsLogin
     }
 
     private var lastURLString: String? {
-        sessionHub?.lastURLString(for: selectedProviderID)
+        _ = sessionChromeEpoch
+        return sessionHub?.lastURLString(for: selectedProviderID)
     }
 
     private var canStartSync: Bool {
-        guard let syncStore, webView != nil else { return false }
+        guard let syncStore else { return false }
+        let targetWebView = webView ?? sessionHub?.webView(for: selectedProviderID)
+        guard targetWebView != nil else { return false }
         guard syncStore.isSyncing != true else { return false }
         return sessionStatus == .sessionReady
     }
@@ -1063,18 +1312,6 @@ private struct SyncTab: View {
             calendarFlightTimesEnabled: calendarFlightTimesEnabled,
             calendarHotelStaysEnabled: calendarHotelStaysEnabled
         )
-    }
-
-    private var syncAllCandidates: [(ProviderID, WKWebView)] {
-        guard let webView else { return [] }
-        let ids = providerIDs.filter { sessionHub?.status(for: $0) == .sessionReady }
-        return ids.map { ($0, webView) }
-    }
-
-    private var canStartSyncAll: Bool {
-        guard let syncStore else { return false }
-        guard syncStore.isSyncing != true else { return false }
-        return !syncAllCandidates.isEmpty
     }
 
     private func loginURLForSelectedProvider() -> URL? {
@@ -1162,11 +1399,12 @@ private struct SyncTab: View {
             HStack(spacing: 12) {
                 Button {
                     guard let syncStore else { return }
-                    guard let webView else { return }
+                    let targetWebView = webView ?? sessionHub?.webView(for: selectedProviderID)
+                    guard let targetWebView else { return }
                     Task {
                         await syncStore.sync(
                             providerID: selectedProviderID,
-                            webView: webView,
+                            webView: targetWebView,
                             settings: syncAllSettings
                         )
                     }
@@ -1197,6 +1435,7 @@ private struct SyncTab: View {
         guard let hub = sessionHub else { return }
         guard let url = finishedWebView.url else { return }
 
+        hub.syncEnabledProviders(Set(iosSyncProviderIDs))
         let heuristic = ProviderSessionStatusResolver.classify(url)
 
         hub.updateLastURL(selectedProviderID, urlString: url.absoluteString)
@@ -1206,10 +1445,15 @@ private struct SyncTab: View {
         case .sessionReady:
             hub.updateStatus(selectedProviderID, status: .sessionReady)
         case .needsLogin:
-            hub.updateStatus(selectedProviderID, status: .needsLogin)
+            // Wenn bereits `sessionReady` erkannt wurde, darf ein späterer Login-Look nicht downgraden.
+            if hub.status(for: selectedProviderID) != .sessionReady {
+                hub.updateStatus(selectedProviderID, status: .needsLogin)
+            }
         case .shouldProbeOpodo:
             // Opodo: Heuristik ist oft unklar → GraphQL Probe nach Navigation.
-            hub.updateStatus(selectedProviderID, status: .needsLogin)
+            if hub.status(for: selectedProviderID) != .sessionReady {
+                hub.updateStatus(selectedProviderID, status: .needsLogin)
+            }
             Task {
                 do {
                     let text = try await finishedWebView.fetchAuthenticatedText(
@@ -1222,7 +1466,12 @@ private struct SyncTab: View {
                     )
                     if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text) {
                         await MainActor.run {
-                            hub.updateStatus(selectedProviderID, status: loggedIn ? .sessionReady : .needsLogin)
+                            if loggedIn {
+                                hub.updateStatus(selectedProviderID, status: .sessionReady)
+                            } else if hub.status(for: selectedProviderID) != .sessionReady {
+                                hub.updateStatus(selectedProviderID, status: .needsLogin)
+                            }
+                            sessionChromeEpoch &+= 1
                         }
                     }
                 } catch {
@@ -1230,8 +1479,13 @@ private struct SyncTab: View {
                 }
             }
         case .unknown:
-            hub.updateStatus(selectedProviderID, status: .needsLogin)
+            // `unknown` darf eine bereits erkannte Session nicht downgraden.
+            if hub.status(for: selectedProviderID) != .sessionReady {
+                hub.updateStatus(selectedProviderID, status: .needsLogin)
+            }
         }
+
+        sessionChromeEpoch &+= 1
     }
 }
 
@@ -1289,6 +1543,20 @@ private struct ProviderSessionWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            onDidFinish(webView)
+        }
+
+        func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+            // SSOT-ähnlich zu ProviderSessionView: Session-Heuristik auch bei Redirect/Commit aktualisieren.
+            onDidFinish(webView)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            didFailProvisionalNavigation navigation: WKNavigation!,
+            withError error: Error
+        ) {
+            // Wenn die Navigation scheitert, bleibt meist der aktuelle URL-Stand für eine Heuristik relevant.
             onDidFinish(webView)
         }
     }

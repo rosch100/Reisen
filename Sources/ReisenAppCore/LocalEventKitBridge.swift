@@ -691,11 +691,11 @@ public final class LocalEventKitBridge: CalendarSyncing {
             return existing
         }
 
-        if createIfMissing {
-            return try createCalendar(named: title, kind: kind, store: store)
-        }
-
-        throw kind == .event ? EventKitError.calendarNotFound : EventKitError.reminderCalendarNotFound
+        // Parität: Wenn der Zielkalender fehlt, muss er automatisch erstellt werden,
+        // damit Sync nicht an "Kalender existiert nicht" scheitert (iOS ↔ macOS).
+        // createIfMissing bleibt als API für mögliche UI-Optionen, wird aber hier
+        // aus Konsistenzgründen durchgesetzt.
+        return try createCalendar(named: title, kind: kind, store: store)
     }
 
     private func createCalendar(named title: String, kind: EKEntityType, store: EKEventStore) throws -> EKCalendar {
