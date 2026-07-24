@@ -1414,41 +1414,11 @@ private struct BookingRow: View {
     }
 
     private func computeFutureDeadlinesForDisplay(now: Date = Date()) -> [SDCancellationDeadline] {
-
-        // Für "Fix/Lock" soll "abgelaufen" wirklich zeitbasiert gelten,
-        // nicht nur tagbasiert (sonst wirkt "Fix" ggf. zu früh/zu spät).
-        let futureDeadlines = booking.cancellationDeadlines
-            .filter { $0.deadlineAt > now }
-            .sorted { $0.deadlineAt < $1.deadlineAt }
-
-        if futureDeadlines.isEmpty { return [] }
-
-        let freeDeadlines = futureDeadlines.filter(\.isFreeCancellation)
-        let paidDeadlines = futureDeadlines.filter { !$0.isFreeCancellation }
-
-        let paidAmounts: [Double] = paidDeadlines.compactMap(\.cancellationFeeAmount)
-
-        // "Buchungspreis" entspricht in den Policies typischerweise dem maximalen kostenpflichtigen Betrag.
-        // Kostenpflichtige Optionen dürfen nur angezeigt werden, wenn sie *wirklich* geringer sind.
-        guard let bookingPriceFee = paidAmounts.max() else {
-            // Wenn wir den Buchungspreis nicht zuverlässig bestimmen können, zeigen wir sicherheitshalber
-            // nur kostenlose Optionen an.
-            return freeDeadlines
-        }
-
-        let epsilon = 0.01
-
-        let paidIdsToShow: Set<UUID> = {
-            let candidates = paidDeadlines.filter { deadline in
-                guard let amount = deadline.cancellationFeeAmount else { return false }
-                return amount < (bookingPriceFee - epsilon)
-            }
-            return Set(candidates.map(\.id))
-        }()
-
-        return futureDeadlines.filter { deadline in
-            deadline.isFreeCancellation || paidIdsToShow.contains(deadline.id)
-        }
+        let service = CancellationDeadlineDisplayService()
+        let domainDeadlines = booking.cancellationDeadlines.map(DomainMapper.deadline(from:))
+        let filteredDomainDeadlines = service.deadlinesForDisplay(domainDeadlines, now: now)
+        let keepIDs = Set(filteredDomainDeadlines.map(\.id))
+        return booking.cancellationDeadlines.filter { keepIDs.contains($0.id) }
     }
 
     private func bookingTimeCopyText() -> String {
@@ -1510,57 +1480,37 @@ private struct BookingRow: View {
     private func bookingSummaryStornoLines(now: Date = Date()) -> [SummaryStornoLine] {
         guard !booking.cancellationDeadlines.isEmpty else { return [] }
 
-        let futureDeadlinesForDisplay = computeFutureDeadlinesForDisplay(now: now)
-        let hasFutureFreeCancellation = futureDeadlinesForDisplay.contains(where: \.isFreeCancellation)
-        let urgencyService = CancellationUrgencyService()
-        var lines: [SummaryStornoLine] = []
+        let domainDeadlines = booking.cancellationDeadlines.map(DomainMapper.deadline(from:))
+        let service = CancellationDeadlineDisplayService()
+        let summaryLines = service.summaryLines(
+            deadlines: domainDeadlines,
+            hotelTimeZone: hotelTimeZone,
+            now: now
+        )
 
-        if futureDeadlinesForDisplay.isEmpty || !hasFutureFreeCancellation {
-            lines.append(
-                SummaryStornoLine(
-                    id: "fix",
-                    systemImage: "lock.fill",
-                    text: "Fix (nicht mehr kostenlos stornierbar)",
-                    color: .secondary
-                )
-            )
-        }
-
-        for deadline in futureDeadlinesForDisplay {
-            if deadline.isFreeCancellation {
-                let urgency = urgencyService.urgency(for: DomainMapper.deadline(from: deadline), now: now)
-                let color: Color = {
+        return summaryLines.map { summaryLine in
+            let color: Color = {
+                switch summaryLine.kind {
+                case .fix, .paid:
+                    return .secondary
+                case .free:
+                    guard let urgency = summaryLine.urgency else { return .secondary }
                     switch urgency {
                     case .ok: return .green
                     case .warning: return .orange
                     case .critical: return .red
                     case .fix: return .secondary
                     }
-                }()
-                lines.append(
-                    SummaryStornoLine(
-                        id: deadline.id.uuidString,
-                        systemImage: "checkmark.circle.fill",
-                        text: "Kostenlos stornierbar bis \(formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))",
-                        color: color
-                    )
-                )
-            } else {
-                let paidText = (deadline.policyText?.isEmpty == false)
-                    ? deadline.policyText!
-                    : "Kostenpflichtig stornierbar bis \(formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))"
-                lines.append(
-                    SummaryStornoLine(
-                        id: deadline.id.uuidString,
-                        systemImage: "tag.fill",
-                        text: paidText,
-                        color: .secondary
-                    )
-                )
-            }
-        }
+                }
+            }()
 
-        return lines
+            return SummaryStornoLine(
+                id: summaryLine.id.uuidString,
+                systemImage: summaryLine.systemImageName,
+                text: summaryLine.text,
+                color: color
+            )
+        }
     }
 
     /// Start-/Enddatum für die Listenzeile (ohne Check-in/Check-out-Uhrzeiten).

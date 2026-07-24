@@ -34,6 +34,9 @@ public final class FlightTimeZoneAssigner {
                 continue
             } catch ResolveError.noTimeZoneFound {
                 continue
+            } catch {
+                // Transient geocoding/network failure: skip this booking, keep the batch.
+                continue
             }
         }
         try bookingRepository.save()

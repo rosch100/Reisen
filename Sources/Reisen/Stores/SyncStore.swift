@@ -290,17 +290,12 @@ final class SyncStore {
             let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
             let trips = try tripRepo.fetchAll()
 
-            // Standard-Verhalten:
-            // Wenn der Nutzer den globalen Standardkalender "Reisen" (und die Standard-Reminder-Liste "Reisen")
-            // in der Fix/Global-Strategie ausgewählt hat, sollen diese bei Bedarf automatisch erstellt werden,
-            // damit der Sync nicht nur an "Kalender existiert nicht" scheitert.
-            let standardCalendarTitle = "Reisen"
-            let effectiveEventCreateIfMissing =
-                settings.eventCalendarCreateIfMissing ||
-                (settings.calendarTitleMode == .fixed && settings.calendarTitle == standardCalendarTitle)
-            let effectiveReminderCreateIfMissing =
-                settings.reminderCalendarCreateIfMissing ||
-                (settings.calendarTitleMode == .fixed && settings.reminderCalendarTitle == standardCalendarTitle)
+            // Parität / HIG-Fix:
+            // Wenn der Zielkalender nicht existiert, soll er automatisch erstellt werden (inkl. Reminder-Liste),
+            // damit der Sync nicht an "Kalender existiert nicht" scheitert.
+            // Dadurch ist das Verhalten auf iOS und macOS konsistent, auch wenn die optionalen UI-Toggles aus sind.
+            let effectiveEventCreateIfMissing = true
+            let effectiveReminderCreateIfMissing = true
 
             try await calendarSync.syncCancellationDeadlines(
                 trips: trips,
@@ -347,8 +342,7 @@ final class SyncStore {
                 bookingTitles: bookingTitles,
                 eventCalendarTitle: settings.calendarTitle,
                 eventCreateIfMissing:
-                    settings.eventCalendarCreateIfMissing ||
-                    (settings.calendarTitleMode == .fixed && settings.calendarTitle == "Reisen"),
+                    true,
                 includeTripStartEnd: settings.calendarTripTimesEnabled,
                 includeFlightTimes: settings.calendarFlightTimesEnabled,
                 includeHotelStays: settings.calendarHotelStaysEnabled

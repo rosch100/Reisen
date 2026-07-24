@@ -54,7 +54,7 @@ Entsprechende Cursor-Tasks: **Terminal → Run Task…** → `iOS: Generate Xcod
 3. **F5** oder Launch-Konfiguration **Attach to running app (SweetPad)** — startet vorher die SweetPad-Launch-Task (`ReiseniOS`, Debug).
 4. Alternativ: SweetPad-Sidebar → Build & Run für Scheme `ReiseniOS`.
 
-LLDB-Pfad ist in `.vscode/settings.json` auf das Xcode-Framework gesetzt. **Wichtig:** `lldb.library` muss zur aktiven Xcode-Installation passen (`xcode-select -p`). Liegt Xcode unter `/Applications/Xcode.app` statt Xcode-beta, den Pfad in `.vscode/settings.json` entsprechend anpassen (…/SharedFrameworks/LLDB.framework/Versions/A/LLDB). `sweetpad.xcodegen.autoGenerate` ruft bei Bedarf `generate-ios-project.sh` auf.
+CodeLLDB braucht ggf. einen lokalen `lldb.library`-Override in den **User**-Settings (nicht im Repo), passend zur aktiven Xcode-Installation (`xcode-select -p`), z. B. `…/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/LLDB` oder Xcode-beta. `sweetpad.xcodegen.autoGenerate` ruft bei Bedarf `generate-ios-project.sh` auf.
 
 ## Xcode-Fallback
 

@@ -149,7 +149,11 @@ public struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+#if os(macOS)
         .frame(width: 480, height: 360)
+#else
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+#endif
         .task(id: eventKitEnabled) {
             guard eventKitEnabled else { return }
             guard CalendarTitleMode(rawValue: calendarTitleModeRaw) == .fixed else { return }

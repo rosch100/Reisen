@@ -116,13 +116,13 @@ private struct ReisenTab: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
     @State private var showCreateTrip = false
-    @State private var navigationPath: [UUID] = []
+    @State private var selectedTripID: UUID?
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack {
             List {
                 ForEach(trips) { trip in
-                    NavigationLink(value: trip.id) {
+                    NavigationLink(destination: TripDetailIOS(tripID: trip.id)) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(trip.title)
                                 .font(.headline)
@@ -134,7 +134,7 @@ private struct ReisenTab: View {
                 }
             }
             .navigationTitle("Reisen")
-            .navigationDestination(for: UUID.self) { tripID in
+            .navigationDestination(item: $selectedTripID) { tripID in
                 TripDetailIOS(tripID: tripID)
             }
             .toolbar {
@@ -151,7 +151,7 @@ private struct ReisenTab: View {
                 TripEditorSheet(
                     mode: .create,
                     onSaved: { newTrip in
-                        navigationPath = [newTrip.id]
+                        selectedTripID = newTrip.id
                     }
                 )
             }
@@ -166,12 +166,7 @@ private struct OffenTab: View {
 }
 
 private struct OpenBookingsScreen: View {
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
-    @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
-
-    @State private var assignErrorMessage: String?
-    @State private var showAssignError = false
 
     private var startOfToday: Date {
         Calendar.current.startOfDay(for: Date())
@@ -197,14 +192,7 @@ private struct OpenBookingsScreen: View {
             } else {
                 List(openBookings, id: \.id) { booking in
                     NavigationLink(value: booking.id) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(booking.title ?? booking.bookingType.rawValue.capitalized)
-                                .lineLimit(1)
-                                .font(.headline)
-                            Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
+                        OpenBookingRow(booking: booking)
                     }
                 }
                 .navigationTitle("Offen")
@@ -216,109 +204,92 @@ private struct OpenBookingsScreen: View {
     }
 }
 
-private struct OpenBookingDetailIOS: View {
-    let bookingID: UUID
-    let trips: [SDTrip]
+private struct OpenBookingRow: View {
+    let booking: SDBooking
 
-    @Environment(\.modelContext) private var modelContext
-    @Query private var bookings: [SDBooking]
-
-    @State private var assignErrorMessage: String?
-    @State private var showAssignError = false
-
-    private var booking: SDBooking? {
-        bookings.first(where: { $0.id == bookingID })
+    private struct SummaryStornoLine: Identifiable {
+        let id: String
+        let systemImage: String
+        let text: String
+        let color: Color
     }
 
-    private func isOpenBookingCandidate(
-        _ booking: SDBooking,
-        for trip: SDTrip,
-        calendar: Calendar = .current,
-        now: Date = Date()
-    ) -> Bool {
-        guard booking.trip == nil, booking.status != .cancelled else { return false }
-        let startOfToday = calendar.startOfDay(for: now)
-        let tripStartDay = calendar.startOfDay(for: trip.startDate)
-        let tripEndDay = calendar.startOfDay(for: trip.endDate)
-        let bookingStartDay = calendar.startOfDay(for: booking.startAt)
-        let bookingEndDay = calendar.startOfDay(for: booking.endAt)
-        return bookingStartDay >= startOfToday
-            && bookingStartDay >= tripStartDay
-            && bookingEndDay <= tripEndDay
-    }
-
-    private var matchingTrip: SDTrip? {
-        guard let booking else { return nil }
-        return trips.first { isOpenBookingCandidate(booking, for: $0) }
-    }
-
-    private var externalURL: URL? {
-        guard let booking,
-              let urlString = booking.externalUrl,
-              let url = URL(string: urlString),
-              !urlString.hasPrefix("reisen://manual/") else {
-            return nil
+    private var hotelTimeZone: TimeZone {
+        if let offsetSeconds = booking.hotelOffsetSeconds,
+           let tz = TimeZone(secondsFromGMT: offsetSeconds) {
+            return tz
         }
-        return url
+        if let offsetSeconds = booking.cancellationDeadlines.compactMap(\.hotelOffsetSeconds).first,
+           let tz = TimeZone(secondsFromGMT: offsetSeconds) {
+            return tz
+        }
+        return .current
+    }
+
+    private func bookingSummaryStornoLines(now: Date = Date()) -> [SummaryStornoLine] {
+        guard !booking.cancellationDeadlines.isEmpty else { return [] }
+
+        let domainDeadlines = booking.cancellationDeadlines.map(DomainMapper.deadline(from:))
+        let service = CancellationDeadlineDisplayService()
+        let summaryLines = service.summaryLines(
+            deadlines: domainDeadlines,
+            hotelTimeZone: hotelTimeZone,
+            now: now
+        )
+
+        return summaryLines.map { summaryLine in
+            let color: Color = {
+                switch summaryLine.kind {
+                case .fix, .paid:
+                    return .secondary
+                case .free:
+                    guard let urgency = summaryLine.urgency else { return .secondary }
+                    switch urgency {
+                    case .ok: return .green
+                    case .warning: return .orange
+                    case .critical: return .red
+                    case .fix: return .secondary
+                    }
+                }
+            }()
+
+            return SummaryStornoLine(
+                id: summaryLine.id.uuidString,
+                systemImage: summaryLine.systemImageName,
+                text: summaryLine.text,
+                color: color
+            )
+        }
     }
 
     var body: some View {
-        Group {
-            if let booking {
-                List {
-                    Section("Übersicht") {
-                        Text(booking.title ?? booking.bookingType.rawValue.capitalized)
-                            .font(.headline)
-                        Text("Zeitraum: \(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
-                            .foregroundStyle(.secondary)
-                        if let code = booking.confirmationCode, !code.isEmpty {
-                            Text("Bestätigung: \(code)")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+        let stornoLines = bookingSummaryStornoLines()
 
-                    Section("Zuordnung") {
-                        if let trip = matchingTrip {
-                            Button("In Reise zuordnen…") {
-                                do {
-                                    booking.trip = trip
-                                    try modelContext.save()
-                                } catch {
-                                    assignErrorMessage = error.localizedDescription
-                                    showAssignError = true
-                                }
-                            }
-                            .buttonStyle(.borderedProminent)
-                        } else {
-                            Text("Keine passende Reise gefunden.")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+        VStack(alignment: .leading, spacing: 4) {
+            Text(booking.title ?? booking.bookingType.rawValue.capitalized)
+                .lineLimit(1)
+                .font(.headline)
 
-                    Section("Links") {
-                        if let externalURL {
-                            Link("Im Browser öffnen", destination: externalURL)
-                        } else {
-                            Text("Kein Browser-Link verfügbar.")
-                                .foregroundStyle(.secondary)
+            Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            if !stornoLines.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(stornoLines) { line in
+                        Label {
+                            Text(line.text)
+                                .font(.caption)
+                                .foregroundStyle(line.color)
+                                .lineLimit(2)
+                        } icon: {
+                            Image(systemName: line.systemImage)
+                                .font(.caption)
+                                .foregroundStyle(line.color)
                         }
+                        .labelStyle(.titleAndIcon)
                     }
                 }
-                .navigationTitle(booking.title ?? booking.bookingType.rawValue.capitalized)
-                .alert(
-                    "Zuordnung fehlgeschlagen",
-                    isPresented: $showAssignError
-                ) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(assignErrorMessage ?? "")
-                }
-            } else {
-                ContentUnavailableView(
-                    "Buchung nicht gefunden",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text("Die ausgewählte Buchung ist nicht mehr verfügbar.")
-                )
             }
         }
     }
@@ -914,6 +885,7 @@ private struct TripDetailIOS: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query private var trips: [SDTrip]
+    @State private var tripToEdit: SDTrip?
 
     var trip: SDTrip? {
         trips.first(where: { $0.id == tripID })
@@ -936,19 +908,27 @@ private struct TripDetailIOS: View {
                         Section("Buchungen") {
                             ForEach(trip.bookings) { booking in
                                 NavigationLink(value: booking.id) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(booking.title ?? booking.providerRaw)
-                                            .font(.headline)
-                                        Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                    OpenBookingRow(booking: booking)
                                 }
                             }
                         }
                     }
                     .navigationDestination(for: UUID.self) { bookingID in
                         BookingDetailIOS(bookingID: bookingID)
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Bearbeiten") {
+                                tripToEdit = trip
+                            }
+                            .help("Diese Reise bearbeiten")
+                        }
+                    }
+                    .sheet(item: $tripToEdit) { trip in
+                        TripEditorSheet(
+                            mode: .edit,
+                            trip: trip
+                        )
                     }
                 }
                 .navigationTitle(trip.title)
@@ -978,12 +958,17 @@ private struct SyncTab: View {
         NavigationStack {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Picker("Provider", selection: $selectedProviderID) {
-                        ForEach(providerIDs, id: \.self) { id in
-                            Text(providerName(for: id)).tag(id)
+                    HStack {
+                        Picker("Provider", selection: $selectedProviderID) {
+                            ForEach(providerIDs, id: \.self) { id in
+                                Text(providerName(for: id)).tag(id)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        // Segmented Picker nicht künstlich strecken: sonst wirkt er optisch "zentriert".
+                        .fixedSize(horizontal: true, vertical: false)
+                        Spacer(minLength: 0)
                     }
-                    .pickerStyle(.segmented)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
@@ -1008,7 +993,32 @@ private struct SyncTab: View {
 
                 actionBar
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .navigationTitle("Sync")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        guard let syncStore else { return }
+                        guard let webView else { return }
+                        Task {
+                            // `syncAllCandidates` already contains `webView`, but we keep this guard for safety.
+                            _ = webView
+                            await syncStore.syncAll(providers: syncAllCandidates, settings: syncAllSettings)
+                        }
+                    } label: {
+                        if syncStore?.isSyncing == true && syncStore?.syncingProviderID != nil {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Label("Alle synchronisieren", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    }
+                    .disabled(!canStartSyncAll)
+                    .help(canStartSyncAll
+                        ? "Synchronisiert alle angemeldeten Provider (sequenziell) im Hintergrund"
+                        : "Keine angemeldeten Provider für Sync-All")
+                }
+            }
             .onAppear {
                 guard let sessionHub else { return }
                 sessionHub.syncEnabledProviders(Set(providerIDs))
@@ -1147,55 +1157,34 @@ private struct SyncTab: View {
                 .disabled(isBrowserExpanded)
             }
 
-            Button {
-                guard let syncStore else { return }
-                guard let webView else { return }
-                Task {
-                    await syncStore.sync(
-                        providerID: selectedProviderID,
-                        webView: webView,
-                        settings: syncAllSettings
-                    )
+            HStack(spacing: 12) {
+                Button {
+                    guard let syncStore else { return }
+                    guard let webView else { return }
+                    Task {
+                        await syncStore.sync(
+                            providerID: selectedProviderID,
+                            webView: webView,
+                            settings: syncAllSettings
+                        )
+                    }
+                } label: {
+                    if syncStore?.isSyncing == true, syncStore?.syncingProviderID == selectedProviderID {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.horizontal, 8)
+                    } else {
+                        Text("Jetzt synchronisieren")
+                    }
                 }
-            } label: {
-                if syncStore?.isSyncing == true, syncStore?.syncingProviderID == selectedProviderID {
-                    ProgressView()
-                        .controlSize(.small)
-                        .padding(.horizontal, 8)
-                } else {
-                    Text("Jetzt synchronisieren")
-                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(!canStartSync)
+                .help(canStartSync
+                    ? "Aktivitäten und Stornofristen dieses Providers lokal aktualisieren"
+                    : "Sync nicht möglich — Anmeldung und aktiven Provider prüfen")
+                .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(!canStartSync)
-            .help(canStartSync
-                ? "Aktivitäten und Stornofristen dieses Providers lokal aktualisieren"
-                : "Sync nicht möglich — Anmeldung und aktiven Provider prüfen")
-
-            Button {
-                guard let syncStore else { return }
-                guard let webView else { return }
-                Task {
-                    // `syncAllCandidates` already contains `webView`, but we keep this guard for safety.
-                    _ = webView
-                    await syncStore.syncAll(providers: syncAllCandidates, settings: syncAllSettings)
-                }
-            } label: {
-                if syncStore?.isSyncing == true && syncStore?.syncingProviderID != nil {
-                    ProgressView()
-                        .controlSize(.small)
-                        .padding(.horizontal, 8)
-                } else {
-                    Text("Alle synchronisieren")
-                }
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .disabled(!canStartSyncAll)
-            .help(canStartSyncAll
-                ? "Synchronisiert alle angemeldeten Provider (sequenziell) im Hintergrund"
-                : "Keine angemeldeten Provider für Sync-All")
         }
         .padding(16)
         .background(.bar)

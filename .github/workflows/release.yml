@@ -104,6 +104,22 @@ jobs:
           app_path: ${{ steps.sign.outputs.signed_app_path }}
           dmg_path: ${{ github.workspace }}/.build/${{ steps.version.outputs.dmg_name }}
 
+      - name: Sign & notarize DMG (Developer ID)
+        if: steps.gate.outputs.enabled == 'true'
+        id: dmg_sign
+        env:
+          APPLE_DEVELOPER_ID_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_P12_BASE64 }}
+          APPLE_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER }}
+        run: |
+          set -euo pipefail
+          DMG_PATH="${{ github.workspace }}/.build/${{ steps.version.outputs.dmg_name }}"
+          SIGNED_DMG_PATH="$(bash ./Scripts/sign-and-notarize.sh --dmg-path "$DMG_PATH")"
+          echo "signed_dmg_path=$SIGNED_DMG_PATH" >> "$GITHUB_OUTPUT"
+
       - name: Select signed artifact zip path
         if: steps.gate.outputs.enabled == 'true'
         id: artifact_paths
@@ -122,7 +138,7 @@ jobs:
         with:
           files: |
             ${{ steps.artifact_paths.outputs.zip_path }}
-            ${{ github.workspace }}/.build/${{ steps.version.outputs.dmg_name }}
+            ${{ steps.dmg_sign.outputs.signed_dmg_path }}
 
       - name: Create GitHub Release (Unsigned)
         if: steps.gate.outputs.enabled != 'true'
