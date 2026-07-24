@@ -690,10 +690,18 @@ final class LocalEventKitBridge: CalendarSyncing {
             return existing
         }
 
-        // Parität: Wenn der Zielkalender fehlt, muss er automatisch erstellt werden,
-        // damit Sync nicht an "Kalender existiert nicht" scheitert (iOS ↔ macOS).
-        // createIfMissing bleibt als API für mögliche UI-Optionen, wird aber hier
-        // aus Gründen der Konsistenz durchgesetzt.
+        // createIfMissing muss respektiert werden:
+        // - Wenn aus Nutzer-Sicht kein Erstellen erlaubt ist, soll Sync mit einer klaren Fehlermeldung scheitern,
+        //   statt ungefragt Kalender anzulegen.
+        // - Wenn Erstellen erlaubt ist, legen wir den Kalender an.
+        if !createIfMissing {
+            if kind == .event {
+                throw EventKitError.calendarNotFound
+            } else {
+                throw EventKitError.reminderCalendarNotFound
+            }
+        }
+
         return try createCalendar(named: title, kind: kind, store: store)
     }
 

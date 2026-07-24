@@ -1417,8 +1417,9 @@ private struct BookingRow: View {
         let service = CancellationDeadlineDisplayService()
         let domainDeadlines = booking.cancellationDeadlines.map(DomainMapper.deadline(from:))
         let filteredDomainDeadlines = service.deadlinesForDisplay(domainDeadlines, now: now)
-        let keepIDs = Set(filteredDomainDeadlines.map(\.id))
-        return booking.cancellationDeadlines.filter { keepIDs.contains($0.id) }
+        let deadlinesByID = Dictionary(uniqueKeysWithValues: booking.cancellationDeadlines.map { ($0.id, $0) })
+        // Preserve the ascending order returned by the domain/service layer.
+        return filteredDomainDeadlines.compactMap { deadlinesByID[$0.id] }
     }
 
     private func bookingTimeCopyText() -> String {

@@ -43,6 +43,12 @@ if [[ -z "$APP_PATH" && -z "$DMG_PATH" ]]; then
   exit 2
 fi
 
+if [[ -n "$APP_PATH" && -n "$DMG_PATH" ]]; then
+  echo "Fehler: --app-path und --dmg-path dürfen nicht gemeinsam angegeben werden." >&2
+  usage
+  exit 2
+fi
+
 if [[ -n "$APP_PATH" && ( ! -d "$APP_PATH" || "$APP_PATH" != *.app ) ]]; then
   echo "Fehler: APP_PATH ist kein .app Bundle: $APP_PATH" >&2
   exit 2
