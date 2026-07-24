@@ -29,8 +29,8 @@ targets:
         PRODUCT_NAME: ReiseniOS
         INFOPLIST_FILE: Apps/ReiseniOS/Info.plist
         GENERATE_INFOPLIST_FILE: false
-        CURRENT_PROJECT_VERSION: 1
-        MARKETING_VERSION: 0.1
+        CURRENT_PROJECT_VERSION: 2
+        MARKETING_VERSION: 0.2
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
     dependencies:
