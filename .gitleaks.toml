@@ -4,6 +4,7 @@ title = "Reisen"
 useDefault = true
 
 # Airbnb embeds this web client key in the public frontend; it is not a user secret.
+# [[allowlists]] requires Gitleaks >= 8.25.0 (CI pins GITLEAKS_VERSION in gitleaks.yml).
 [[allowlists]]
 description = "Airbnb public web client API key"
 regexTarget = "secret"
