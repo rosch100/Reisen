@@ -8,21 +8,26 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   scorecard:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
+      contents: read
+      security-events: write
       id-token: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
       - name: Run Scorecard
         uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3 (latest)
         with:
           publish_results: true
-
           results_file: results.sarif
           results_format: sarif
 
