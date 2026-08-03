@@ -84,4 +84,17 @@ public struct Booking: Identifiable, Equatable, Sendable {
         self.rateDetails = rateDetails
         self.passengers = passengers
     }
+
+    /// Hotel-Wall-Clock-TZ über Domain-SSOT (`HotelTimeZone`).
+    public var resolvedHotelTimeZone: TimeZone {
+        HotelTimeZone.resolve(
+            bookingOffsetSeconds: hotelOffsetSeconds,
+            deadlineOffsetSeconds: cancellationDeadlines.compactMap(\.hotelOffsetSeconds).first
+        )
+    }
+
+    /// Browser-öffentliche URL (ohne `reisen://manual/…`).
+    public var browserURL: URL? {
+        BookingExternalURL.browserURL(from: externalUrl)
+    }
 }

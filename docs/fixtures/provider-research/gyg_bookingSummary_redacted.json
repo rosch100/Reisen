@@ -1,0 +1,199 @@
+{
+  "_meta": {
+    "source": "GYG HAR booking detail SSR booking.bookingSummary",
+    "note": "PII/tokens redacted"
+  },
+  "bookingSummary": {
+    "activity": {
+      "activityTitle": "Yogyakarta: Ramayana Ballett Prambanan",
+      "activityOptionTitle": "Tickets der 2. Klasse",
+      "meetingPoint": {
+        "description": "Treffen Sie unser Team zwischen 19:00 und 19:15 Uhr neben dem Schild “RAMAYANA BALLET”. Du musst nicht anstehen oder zum Ticketschalter gehen, wir kümmern uns um die Reservierung",
+        "minutesBefore": 5,
+        "location": {
+          "coordinates": {
+            "lat": -7.7530267,
+            "long": 110.4884829
+          },
+          "mapZoomLevel": 16,
+          "address": "<REDACTED>",
+          "exact": false
+        }
+      },
+      "itinerary": {
+        "id": 1383082,
+        "items": [
+          {
+            "title": "Yogyakarta",
+            "type": "pick_up",
+            "flags": [],
+            "isImportant": true,
+            "displayOnMap": true,
+            "isOptional": false,
+            "isPrimaryStop": true,
+            "isTransit": true,
+            "coordinates": {
+              "latitude": -7.801367200000001,
+              "longitude": 110.3647568
+            },
+            "locationName": "Yogyakarta",
+            "isEndpoint": false
+          },
+          {
+            "title": "Ramayana Ballet Prambanan",
+            "type": "meeting_point",
+            "flags": [],
+            "isImportant": true,
+            "displayOnMap": true,
+            "isOptional": false,
+            "isPrimaryStop": true,
+            "isTransit": true,
+            "coordinates": {
+              "latitude": -7.7530267,
+              "longitude": 110.4884829
+            },
+            "locationName": "Ramayana Ballet Prambanan",
+            "isEndpoint": false
+          },
+          {
+            "type": "transfer",
+            "flags": [],
+            "isImportant": true,
+            "displayOnMap": false,
+            "isOptional": false,
+            "transitDuration": {
+              "value": 1,
+              "unit": "hour"
+            },
+            "transportationType": "car",
+            "isPrimaryStop": false,
+            "isTransit": true,
+            "isEndpoint": false
+          },
+          {
+            "title": "Ramayana Ballett Prambanan",
+            "type": "activity",
+            "flags": [],
+            "isImportant": true,
+            "displayOnMap": true,
+            "isOptional": false,
+            "transitDuration": {
+              "value": 2,
+              "unit": "hour"
+            },
+            "isPrimaryStop": false,
+            "isTransit": false,
+            "coordinates": {
+              "latitude": -7.753026700000002,
+              "longitude": 110.4884829
+            },
+            "locationName": "Ramayana Ballett Prambanan",
+            "isEndpoint": false,
+            "activityLabel": "Besuch, Sightseeing, Tanzshow, Show mit traditionellen Tänzen"
+          },
+          {
+            "type": "transfer",
+            "flags": [],
+            "isImportant": true,
+            "displayOnMap": false,
+            "isOptional": false,
+            "transitDuration": {
+              "value": 1,
+              "unit": "hour"
+            },
+            "transportationType": "car",
+            "isPrimaryStop": false,
+            "isTransit": true,
+            "isEndpoint": false
+          },
+          {
+            "title": "Yogyakarta",
+            "type": "drop_off",
+            "flags": [],
+            "isImportant": true,
+            "displayOnMap": false,
+            "isOptional": false,
+            "isPrimaryStop": true,
+            "isTransit": true,
+            "coordinates": {
+              "latitude": -7.801367200000001,
+              "longitude": 110.3647568
+            },
+            "locationName": "Yogyakarta",
+            "isEndpoint": false
+          }
+        ],
+        "mapLegend": {
+          "hasMinorStop": false
+        }
+      },
+      "activityLocations": {
+        "city": {
+          "id": 349,
+          "name": "<REDACTED>",
+          "urlPath": "/yogyakarta-l349/"
+        },
+        "country": {
+          "id": 62,
+          "name": "<REDACTED>",
+          "urlPath": "/indonesien-l169044/"
+        }
+      },
+      "imageUrl": "https://cdn.getyourguide.com/img/tour/12cedc28089afb2eda4169be58b51e0a82ebd38ce68fe2db884bb22789f13e9b.png/{format_id}.jpg",
+      "url": "/yogyakarta-l349/ramayana-ballett-prambanan-t1383082/",
+      "isMobileVoucherAccepted": true,
+      "inclusions": [
+        "Show-Ticket",
+        "Ohne Anstehen",
+        "Geführt"
+      ],
+      "restrictions": [
+        "Alkohol und Drogen"
+      ]
+    },
+    "booking": {
+      "status": "active",
+      "bookingHash": "<REDACTED>",
+      "bookingReference": "<REDACTED>",
+      "bookingFinishDate": "2026-08-08T21:00:00+07:00",
+      "startingTime": {
+        "startTime": "2026-08-08T19:00:00+07:00",
+        "startTimeType": "datetime"
+      },
+      "price": {
+        "currencyIsoCode": "EUR",
+        "amount": 53.94
+      },
+      "bookingCancellationPolicy": {
+        "type": "freeCancellation",
+        "policyType": "freeCancellation",
+        "expirationDate": "2026-08-07T19:00:00+07:00",
+        "message": "Storniere bis 19:00 am 7. August für eine vollständige Rückerstattung",
+        "feeUnit": "percentage",
+        "feeValue": 0,
+        "policyExpirationDate": "2026-08-07T19:00:00+07:00"
+      },
+      "activityParticipants": [
+        {
+          "type": "per_persons",
+          "pricingCategoryCode": 1,
+          "description": "Erwachsene",
+          "descriptionInSupplierLanguage": "Adults",
+          "count": 3,
+          "priceCategoryLabel": "adult",
+          "ageRange": {
+            "minAge": 0,
+            "maxAge": 99
+          },
+          "localizedCount": "3 Erwachsene",
+          "localizedCountInSupplierLanguage": "3 adults",
+          "pricePerPerson": {
+            "currencyIsoCode": "EUR",
+            "amount": 17.98
+          }
+        }
+      ],
+      "activityType": "dayTrip"
+    }
+  }
+}

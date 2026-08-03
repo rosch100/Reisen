@@ -5,6 +5,8 @@ import AppKit
 import ReisenDomain
 import ReisenData
 import ReisenProviders
+import ReisenAppCore
+import ReisenSharedUI
 
 /// Provider-Login und Sync als primäre Inhaltsfläche (kein Sheet).
 struct SyncView: View {
@@ -172,7 +174,10 @@ struct SyncView: View {
         .navigationTitle("Provider Sync")
         .sheet(isPresented: $isSaveCredentialSheetPresented) {
             if let keychainServerHost {
-                SaveProviderCredentialSheet(serverHost: keychainServerHost) { account in
+                SaveProviderCredentialSheet(
+                    serverHost: keychainServerHost,
+                    onOpenPasswordManager: { MacSystemApps.openPasswords() }
+                ) { account in
                     preferredKeychainAccountID = account.id
                     reloadKeychainAccounts(selecting: account)
                 }
@@ -274,16 +279,22 @@ struct SyncView: View {
         }
     }
 
+    private var loginTrafficLight: ProviderLoginTrafficLight {
+        .resolve(isEnabled: true, isLoggedIn: sessionStatus == .sessionReady)
+    }
+
     private var sessionBanner: some View {
         HStack(alignment: .center, spacing: 12) {
-            Image(systemName: sessionStatus == .sessionReady ? "checkmark.circle.fill" : "person.crop.circle.badge.questionmark")
-                .foregroundStyle(sessionStatus == .sessionReady ? .green : .secondary)
+            Image(systemName: loginTrafficLight == .green
+                  ? "checkmark.circle.fill"
+                  : "person.crop.circle.badge.questionmark")
+                .foregroundStyle(loginTrafficLight.color)
                 .imageScale(.large)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(sessionStatus == .sessionReady ? "Angemeldet" : "Anmeldung erforderlich")
+                Text(loginTrafficLight.displayLabel)
                     .font(.headline)
-                Text(sessionStatus == .sessionReady
+                Text(loginTrafficLight == .green
                      ? "Du kannst jetzt die Buchungen synchronisieren."
                      : "Melde dich im Browser unten beim Provider an (inkl. 2FA falls nötig).")
                     .font(.callout)

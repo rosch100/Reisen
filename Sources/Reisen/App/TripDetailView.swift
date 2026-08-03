@@ -2,49 +2,10 @@ import SwiftUI
 import SwiftData
 import ReisenDomain
 import ReisenData
-import ReisenProviders
 import ReisenSharedUI
+import ReisenProviders
 import AppKit
 import Foundation
-
-func formatCurrencyAmount(_ amount: Double, currencyCode: String?) -> String {
-    let currency = currencyCode ?? "EUR"
-    let formatter = NumberFormatter()
-    formatter.locale = Locale(identifier: "de_DE_POSIX")
-    formatter.numberStyle = .currency
-    formatter.currencyCode = currency
-    formatter.maximumFractionDigits = 2
-    return formatter.string(from: NSNumber(value: amount)) ?? "\(amount) \(currency)"
-}
-
-func isOpenBookingCandidate(
-    _ booking: SDBooking,
-    for trip: SDTrip,
-    calendar: Calendar = .current,
-    now: Date = Date()
-) -> Bool {
-    guard booking.trip == nil, booking.status != .cancelled else { return false }
-    let startOfToday = calendar.startOfDay(for: now)
-    let tripStartDay = calendar.startOfDay(for: trip.startDate)
-    let tripEndDay = calendar.startOfDay(for: trip.endDate)
-    let bookingStartDay = calendar.startOfDay(for: booking.startAt)
-    let bookingEndDay = calendar.startOfDay(for: booking.endAt)
-    return bookingStartDay >= startOfToday
-        && bookingStartDay >= tripStartDay
-        && bookingEndDay <= tripEndDay
-}
-
-private func formatOrtszeit(_ date: Date, dateFormat: String, timeZone: TimeZone) -> String {
-    let df = DateFormatter()
-    df.locale = Locale(identifier: "de_DE_POSIX")
-    df.timeZone = timeZone
-    df.dateFormat = dateFormat
-    return df.string(from: date)
-}
-
-private func minutesToHHmm(_ minutes: Int) -> String {
-    String(format: "%02d:%02d", minutes / 60, minutes % 60)
-}
 
 struct TripDetailView: View {
     enum Mode {
@@ -55,7 +16,6 @@ struct TripDetailView: View {
     let mode: Mode
     @Bindable var trip: SDTrip
     @Binding var selectedTimelineID: String?
-    @Binding var gapOverrides: [String: GapOverride]
     @Binding var gapEditorPayload: GapEditorPayload?
     @Binding var bookingEditorSession: BookingEditorSession?
 
@@ -63,36 +23,15 @@ struct TripDetailView: View {
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @Query(sort: \SDGap.gapStart, order: .forward) private var allGaps: [SDGap]
 
-    struct GapOverride {
-        var title: String
-        var kind: GapKind
-    }
-
-    struct GapEditorPayload: Identifiable, Equatable {
-        let id: String
-        let title: String
-        let kind: GapKind
-        let priceAmount: Double?
-        let priceCurrencyCode: String?
-        let gapStart: Date
-        let gapEnd: Date
-        let fromBookingID: UUID
-        let toBookingID: UUID
-    }
-
     private var sortedBookings: [SDBooking] {
-        let startOfToday = Calendar.current.startOfDay(for: Date())
-        return trip.bookings
-            .filter { $0.startAt >= startOfToday && $0.status != .cancelled }
-            .sorted { $0.startAt < $1.startAt }
+        trip.timelineBookings()
     }
 
     private var tripTotalPriceText: String {
         let bookingAmounts = sortedBookings.compactMap { $0.rateDetails?.totalPriceAmount }
 
         let gapAmounts = gaps.compactMap { gap in
-            let key = gapKey(for: gap)
-            return savedGapsByKey[key]?.priceAmount
+            savedGapsByKey[gap.identityKey]?.priceAmount
         }
 
         let amounts = bookingAmounts + gapAmounts
@@ -100,66 +39,24 @@ struct TripDetailView: View {
 
         let bookingCurrency = sortedBookings.compactMap { $0.rateDetails?.totalPriceCurrency }.first
         let gapCurrency = gaps.compactMap { gap in
-            let key = gapKey(for: gap)
-            return savedGapsByKey[key]?.priceCurrencyCode
+            savedGapsByKey[gap.identityKey]?.priceCurrencyCode
         }.first
 
         let currency = bookingCurrency ?? gapCurrency
         let total = amounts.reduce(0, +)
-        return formatCurrencyAmount(total, currencyCode: currency)
+        return Formatting.formatCurrencyAmount(total, currencyCode: currency)
     }
 
     private var savedGapsByKey: [String: SDGap] {
-        let tripGaps = allGaps.filter { $0.trip?.id == trip.id }
-        var result: [String: SDGap] = [:]
-        for g in tripGaps {
-            if let key = g.identityKey, !key.isEmpty {
-                result[key] = g
-            }
-        }
-        return result
+        TripGapTimeline.savedGapsByKey(allGaps: allGaps, tripID: trip.id)
     }
 
     private var overlapCountsByBookingID: [UUID: Int] {
-        var counts: [UUID: Int] = [:]
-        let calendar = Calendar.current
-
-        func day(_ d: Date) -> Date { calendar.startOfDay(for: d) }
-
-        func samePlaceAndDates(_ a: SDBooking, _ b: SDBooking) -> Bool {
-            // Mehrfachbuchungen (z.B. mehrere Zimmer) sollen nicht als „Überschneidung“ markiert werden.
-            let aLoc = a.locationTo ?? a.locationFrom ?? ""
-            let bLoc = b.locationTo ?? b.locationFrom ?? ""
-            guard !aLoc.isEmpty, !bLoc.isEmpty, aLoc == bLoc else { return false }
-            return day(a.startAt) == day(b.startAt) && day(a.endAt) == day(b.endAt)
-        }
-
-        for a in sortedBookings {
-            var overlapCount = 0
-            for b in sortedBookings where b.id != a.id {
-                guard !samePlaceAndDates(a, b) else { continue }
-
-                // Keine Überschneidung, wenn Abreise-Datum == Anreise-Datum (Kalendertag-beruhigt).
-                // Wir betrachten das Ende als „exclusive“ (Anreise am gleichen Tag teilt keinen Tag).
-                let aStart = day(a.startAt)
-                let aEnd = day(a.endAt)
-                let bStart = day(b.startAt)
-                let bEnd = day(b.endAt)
-
-                let overlaps = max(aStart, bStart) < min(aEnd, bEnd)
-                if overlaps { overlapCount += 1 }
-            }
-            if overlapCount > 0 { counts[a.id] = overlapCount }
-        }
-        return counts
+        BookingDayOverlap.countsByID(sortedBookings.map(\.daySpan))
     }
 
     private var gaps: [ComputedGap] {
-        GapDetector().computeGaps(
-            bookings: sortedBookings.map(DomainMapper.booking(from:)),
-            tripStart: trip.startDate,
-            tripEnd: trip.endDate
-        )
+        TripGapTimeline.computedGaps(trip: trip, bookings: sortedBookings)
     }
 
     private func selectTimelineID(_ id: String) {
@@ -209,9 +106,40 @@ struct TripDetailView: View {
     @State private var pendingRemoveFromTripBookingID: UUID?
     @State private var showRemoveFromTripConfirmation = false
 
+
+    private func confirmDeleteManualBooking() {
+        guard let bookingIDToDelete = pendingManualDeleteBookingID else { return }
+
+        if let bookingToDelete = trip.resolvedBookings.first(where: { $0.id == bookingIDToDelete }) {
+            modelContext.delete(bookingToDelete)
+            try? modelContext.save()
+        }
+
+        let newSelection = trip.timelineBookings().first?.id.uuidString
+
+        if selectedTimelineID == bookingIDToDelete.uuidString {
+            selectedTimelineID = newSelection
+        }
+
+        if case .edit(let editingID) = bookingEditorSession,
+           editingID == bookingIDToDelete {
+            bookingEditorSession = nil
+        }
+
+        pendingManualDeleteBookingID = nil
+    }
+
+    private func confirmRemoveBookingFromTrip() {
+        guard let bookingID = pendingRemoveFromTripBookingID,
+              let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
+        let fallbackTimelineID = sortedBookings.first(where: { $0.id != bookingID })?.id.uuidString
+        removeBookingFromTrip(booking, fallbackTimelineID: fallbackTimelineID)
+        pendingRemoveFromTripBookingID = nil
+    }
+
     var body: some View {
         let timelineItems = timelineItems(gaps: gaps, bookings: sortedBookings)
-        let selectedTimelineItem: TimelineItem? = {
+        let selectedTimelineItem: TripTimelineItem? = {
             guard let selectedTimelineID else { return nil }
             return timelineItems.first { $0.id == selectedTimelineID }
         }()
@@ -222,6 +150,7 @@ struct TripDetailView: View {
             return false
         }?.id
 
+        Group {
         if mode == .list {
             VStack(alignment: .leading, spacing: 0) {
                 tripOverviewSection
@@ -304,68 +233,14 @@ struct TripDetailView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenRequestRemoveBookingFromTrip)) { note in
                 guard let bookingID = note.object as? UUID,
-                      let booking = trip.bookings.first(where: { $0.id == bookingID }) else { return }
+                      let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
                 requestRemoveBookingFromTrip(booking)
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenRequestDeleteManualBooking)) { note in
                 guard let bookingID = note.object as? UUID,
-                      let booking = trip.bookings.first(where: { $0.id == bookingID }),
+                      let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }),
                       booking.provider == .manual else { return }
                 requestDeleteManualBooking(booking)
-            }
-            .confirmationDialog(
-                "Buchung wirklich löschen?",
-                isPresented: $showManualDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Löschen", role: .destructive) {
-                    guard let bookingIDToDelete = pendingManualDeleteBookingID else { return }
-
-                    if let bookingToDelete = trip.bookings.first(where: { $0.id == bookingIDToDelete }) {
-                        modelContext.delete(bookingToDelete)
-                        try? modelContext.save()
-                    }
-
-                    // Auswahl zurück auf die erste verbleibende Buchung setzen.
-                    let startOfToday = Calendar.current.startOfDay(for: Date())
-                    let remaining = trip.bookings
-                        .filter { $0.startAt >= startOfToday && $0.status != .cancelled }
-                        .sorted { $0.startAt < $1.startAt }
-                    let newSelection = remaining.first?.id.uuidString
-
-                    if selectedTimelineID == bookingIDToDelete.uuidString {
-                        selectedTimelineID = newSelection
-                    }
-
-                    if case .edit(let editingID) = bookingEditorSession,
-                       editingID == bookingIDToDelete {
-                        bookingEditorSession = nil
-                    }
-
-                    pendingManualDeleteBookingID = nil
-                }
-
-                Button("Abbrechen", role: .cancel) {
-                    pendingManualDeleteBookingID = nil
-                }
-            }
-            .confirmationDialog(
-                "Buchung von Reise entfernen?",
-                isPresented: $showRemoveFromTripConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Entfernen", role: .destructive) {
-                    guard let bookingID = pendingRemoveFromTripBookingID,
-                          let booking = trip.bookings.first(where: { $0.id == bookingID }) else { return }
-                    let fallbackTimelineID = sortedBookings.first(where: { $0.id != bookingID })?.id.uuidString
-                    removeBookingFromTrip(booking, fallbackTimelineID: fallbackTimelineID)
-                    pendingRemoveFromTripBookingID = nil
-                }
-                Button("Abbrechen", role: .cancel) {
-                    pendingRemoveFromTripBookingID = nil
-                }
-            } message: {
-                Text("Die Buchung wird der Reise entzogen und erscheint unter „Offene Buchungen“.")
             }
         } else {
             BookingDetailPanel(
@@ -381,7 +256,7 @@ struct TripDetailView: View {
                         showManualDeleteConfirmation = true
                     },
                     onRequestRemoveFromTrip: { bookingID in
-                        guard let booking = trip.bookings.first(where: { $0.id == bookingID }) else { return }
+                        guard let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
                         requestRemoveBookingFromTrip(booking)
                     }
             )
@@ -393,105 +268,39 @@ struct TripDetailView: View {
                     priceAmount: payload.priceAmount,
                     priceCurrencyCode: payload.priceCurrencyCode
                 ) { newTitle, newKind, newPriceAmount, newCurrencyCode in
-                    gapOverrides[payload.id] = GapOverride(title: newTitle, kind: newKind)
-
-                    let currencyCode = newCurrencyCode ?? "EUR"
-                    let fromBooking = sortedBookings.first(where: { $0.id == payload.fromBookingID })
-                    let toBooking = sortedBookings.first(where: { $0.id == payload.toBookingID })
-
-                    if let fromBooking, let toBooking {
-                        if let existing = savedGapsByKey[payload.id] {
-                            existing.titleOverride = newTitle
-                            existing.kindRaw = newKind.rawValue
-                            existing.gapStart = payload.gapStart
-                            existing.gapEnd = payload.gapEnd
-                            existing.fromBooking = fromBooking
-                            existing.toBooking = toBooking
-                            existing.trip = trip
-                            existing.identityKey = payload.id
-                            existing.priceAmount = newPriceAmount
-                            existing.priceCurrencyCode = currencyCode
-                        } else {
-                            let g = SDGap(
-                                trip: trip,
-                                fromBooking: fromBooking,
-                                toBooking: toBooking,
-                                gapStart: payload.gapStart,
-                                gapEnd: payload.gapEnd,
-                                kindRaw: newKind.rawValue,
-                                titleOverride: newTitle,
-                                identityKey: payload.id,
-                                priceAmount: newPriceAmount,
-                                priceCurrencyCode: currencyCode,
-                                suggestionStateRaw: "none"
-                            )
-                            modelContext.insert(g)
-                        }
-                        try? modelContext.save()
+                    do {
+                        try GapPersistence.upsert(
+                            payload: payload,
+                            title: newTitle,
+                            kind: newKind,
+                            price: newPriceAmount,
+                            currency: newCurrencyCode,
+                            trip: trip,
+                            bookings: sortedBookings,
+                            existing: savedGapsByKey[payload.key],
+                            context: modelContext
+                        )
+                    } catch {
+                        assertionFailure("Gap save failed: \(error)")
                     }
-
                     gapEditorPayload = nil
                 }
             }
-            .confirmationDialog(
-                "Buchung wirklich löschen?",
-                isPresented: $showManualDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Löschen", role: .destructive) {
-                    guard let bookingIDToDelete = pendingManualDeleteBookingID else { return }
-
-                    if let bookingToDelete = trip.bookings.first(where: { $0.id == bookingIDToDelete }) {
-                        modelContext.delete(bookingToDelete)
-                        try? modelContext.save()
-                    }
-
-                    let startOfToday = Calendar.current.startOfDay(for: Date())
-                    let remaining = trip.bookings
-                        .filter { $0.startAt >= startOfToday && $0.status != .cancelled }
-                        .sorted { $0.startAt < $1.startAt }
-                    let newSelection = remaining.first?.id.uuidString
-
-                    if selectedTimelineID == bookingIDToDelete.uuidString {
-                        selectedTimelineID = newSelection
-                    }
-
-                    if case .edit(let editingID) = bookingEditorSession,
-                       editingID == bookingIDToDelete {
-                        bookingEditorSession = nil
-                    }
-
-                    pendingManualDeleteBookingID = nil
-                }
-
-                Button("Abbrechen", role: .cancel) {
-                    pendingManualDeleteBookingID = nil
-                }
-            }
-            .confirmationDialog(
-                "Buchung von Reise entfernen?",
-                isPresented: $showRemoveFromTripConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Entfernen", role: .destructive) {
-                    guard let bookingID = pendingRemoveFromTripBookingID,
-                          let booking = trip.bookings.first(where: { $0.id == bookingID }) else { return }
-                    let fallbackTimelineID = sortedBookings.first(where: { $0.id != bookingID })?.id.uuidString
-                    removeBookingFromTrip(booking, fallbackTimelineID: fallbackTimelineID)
-                    pendingRemoveFromTripBookingID = nil
-                }
-                Button("Abbrechen", role: .cancel) {
-                    pendingRemoveFromTripBookingID = nil
-                }
-            } message: {
-                Text("Die Buchung wird der Reise entzogen und erscheint unter „Offene Buchungen“.")
-            }
         }
+        }
+        .bookingTripConfirmDialogs(
+            showDeleteConfirmation: $showManualDeleteConfirmation,
+            showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
+            onConfirmDelete: confirmDeleteManualBooking,
+            onConfirmRemove: confirmRemoveBookingFromTrip,
+            onCancelDelete: { pendingManualDeleteBookingID = nil },
+            onCancelRemove: { pendingRemoveFromTripBookingID = nil }
+        )
     }
 
     @ViewBuilder
     private func bookingsList(
-        timelineItems: [TimelineItem],
+        timelineItems: [TripTimelineItem],
         fallbackTimelineID: String?
     ) -> some View {
         // Keine SwiftUI-List/Table: deren Scroll-vs.-Tap-Erkennung verzögert Klicks
@@ -534,9 +343,7 @@ struct TripDetailView: View {
                                         selectID: booking.id.uuidString
                                     )
                                 }
-                                if let urlString = booking.externalUrl,
-                                   let url = URL(string: urlString),
-                                   !urlString.hasPrefix("reisen://manual/") {
+                                if let url = booking.browserURL {
                                     Button("Buchung im Browser öffnen") {
                                         NSWorkspace.shared.open(url)
                                     }
@@ -554,18 +361,7 @@ struct TripDetailView: View {
                                 }
 
                             case .gap(let gap):
-                                let presentation = gapPresentation(for: gap)
-                                let editPayload = TripDetailView.GapEditorPayload(
-                                    id: presentation.key,
-                                    title: presentation.displayTitle,
-                                    kind: presentation.effectiveKind,
-                                    priceAmount: presentation.priceAmount,
-                                    priceCurrencyCode: presentation.priceCurrencyCode,
-                                    gapStart: gap.gapStart,
-                                    gapEnd: gap.gapEnd,
-                                    fromBookingID: gap.fromBooking.id,
-                                    toBookingID: gap.toBooking.id
-                                )
+                                let editPayload = gapPresentation(for: gap).editorPayload(for: gap)
 
                                 Button("Lücke bearbeiten…") {
                                     selectTimelineID(item.id)
@@ -607,65 +403,12 @@ struct TripDetailView: View {
         }
     }
 
-    private func timelineItems(gaps: [ComputedGap], bookings: [SDBooking]) -> [TimelineItem] {
-        let bookingItems = bookings.map { TimelineItem.booking($0) }
-        let gapItems = gaps.map { TimelineItem.gap($0) }
-
-        return (bookingItems + gapItems).sorted { lhs, rhs in
-            if lhs.startDate == rhs.startDate {
-                // Bei identischem Start: echte Buchung vor Lücke.
-                switch (lhs, rhs) {
-                case (.booking, .gap): return true
-                case (.gap, .booking): return false
-                default: return lhs.id < rhs.id
-                }
-            }
-            return lhs.startDate < rhs.startDate
-        }
-    }
-
-    private func gapKey(for gap: ComputedGap) -> String {
-        let fromID = gap.fromBooking.id.uuidString
-        let toID = gap.toBooking.id.uuidString
-        let start = Int(gap.gapStart.timeIntervalSince1970)
-        let end = Int(gap.gapEnd.timeIntervalSince1970)
-        return "\(fromID)|\(toID)|\(start)|\(end)"
-    }
-
-    private func defaultGapTitle(for gap: ComputedGap) -> String {
-        switch gap.kind {
-        case .lodging:
-            return "Private Übernachtung"
-        case .transport:
-            return "Zwischen-Transport"
-        case .both:
-            return "Lücke"
-        }
+    private func timelineItems(gaps: [ComputedGap], bookings: [SDBooking]) -> [TripTimelineItem] {
+        TripTimelineItem.sorted(bookings: bookings, gaps: gaps)
     }
 
     private func gapPresentation(for gap: ComputedGap) -> GapPresentation {
-        let key = gapKey(for: gap)
-        let override = gapOverrides[key]
-        let displayTitle = override?.title ?? defaultGapTitle(for: gap)
-        let effectiveKind = override?.kind ?? gap.kind
-        let savedGap = savedGapsByKey[key]
-
-        let priceAmount = savedGap?.priceAmount
-        let priceCurrencyCode = savedGap?.priceCurrencyCode
-        let priceText: String? = {
-            guard let priceAmount else { return nil }
-            let currencyCode = priceCurrencyCode ?? "EUR"
-            return formatCurrencyAmount(priceAmount, currencyCode: currencyCode)
-        }()
-
-        return GapPresentation(
-            key: key,
-            displayTitle: displayTitle,
-            effectiveKind: effectiveKind,
-            priceAmount: priceAmount,
-            priceCurrencyCode: priceCurrencyCode,
-            priceText: priceText
-        )
+        GapPresentation.resolve(computed: gap, saved: savedGapsByKey[gap.identityKey])
     }
 
     @ViewBuilder
@@ -709,34 +452,7 @@ struct TripDetailView: View {
     }
 
     private func openBookingsCandidates() -> [SDBooking] {
-        allBookings.filter { isOpenBookingCandidate($0, for: trip) }
-    }
-}
-
-private enum TimelineItem: Identifiable {
-    case booking(SDBooking)
-    case gap(ComputedGap)
-
-    var id: String {
-        switch self {
-        case .booking(let booking):
-            return booking.id.uuidString
-        case .gap(let gap):
-            let fromID = gap.fromBooking.id.uuidString
-            let toID = gap.toBooking.id.uuidString
-            let start = Int(gap.gapStart.timeIntervalSince1970)
-            let end = Int(gap.gapEnd.timeIntervalSince1970)
-            return "gap|\(fromID)|\(toID)|\(start)|\(end)"
-        }
-    }
-
-    var startDate: Date {
-        switch self {
-        case .booking(let booking):
-            return booking.startAt
-        case .gap(let gap):
-            return gap.gapStart
-        }
+        allBookings.filter { OpenBookingMatching.isCandidate($0, for: trip) }
     }
 }
 
@@ -745,20 +461,11 @@ private enum TimelineRowDisplayMode {
     case details
 }
 
-private struct GapPresentation {
-    let key: String
-    let displayTitle: String
-    let effectiveKind: GapKind
-    let priceAmount: Double?
-    let priceCurrencyCode: String?
-    let priceText: String?
-}
-
 private struct TimelineRowLabel: View {
-    let item: TimelineItem
+    let item: TripTimelineItem
     let overlapCountsByBookingID: [UUID: Int]
     let gapPresentation: (ComputedGap) -> GapPresentation
-    let onEditGap: (TripDetailView.GapEditorPayload) -> Void
+    let onEditGap: (GapEditorPayload) -> Void
 
     var body: some View {
         switch item {
@@ -774,26 +481,13 @@ private struct TimelineRowLabel: View {
 
         case .gap(let gap):
             let presentation = gapPresentation(gap)
-
-            let editPayload = TripDetailView.GapEditorPayload(
-                id: presentation.key,
-                title: presentation.displayTitle,
-                kind: presentation.effectiveKind,
-                priceAmount: presentation.priceAmount,
-                priceCurrencyCode: presentation.priceCurrencyCode,
-                gapStart: gap.gapStart,
-                gapEnd: gap.gapEnd,
-                fromBookingID: gap.fromBooking.id,
-                toBookingID: gap.toBooking.id
-            )
-
             GapRow(
                 gap: gap,
                 displayMode: .summary,
                 displayTitle: presentation.displayTitle,
                 effectiveKind: presentation.effectiveKind,
                 priceText: presentation.priceText,
-                onEdit: { onEditGap(editPayload) },
+                onEdit: { onEditGap(presentation.editorPayload(for: gap)) },
                 onSelect: nil
             )
         }
@@ -815,12 +509,12 @@ private struct ContentHeightReader: View {
 }
 
 private struct BookingDetailPanel: View {
-    let selectedTimelineItem: TimelineItem?
+    let selectedTimelineItem: TripTimelineItem?
     let trip: SDTrip
     let overlapCountsByBookingID: [UUID: Int]
     @Binding var bookingEditorSession: BookingEditorSession?
     @Binding var selectedTimelineID: String?
-    let onEditGap: (TripDetailView.GapEditorPayload) -> Void
+    let onEditGap: (GapEditorPayload) -> Void
     let gapPresentation: (ComputedGap) -> GapPresentation
     let onRequestManualDeleteBooking: (UUID) -> Void
     let onRequestRemoveFromTrip: (UUID) -> Void
@@ -955,19 +649,7 @@ private struct BookingDetailPanel: View {
                                 effectiveKind: presentation.effectiveKind,
                                 priceText: presentation.priceText,
                                 onEdit: {
-                                    onEditGap(
-                                        TripDetailView.GapEditorPayload(
-                                            id: presentation.key,
-                                            title: presentation.displayTitle,
-                                            kind: presentation.effectiveKind,
-                                            priceAmount: presentation.priceAmount,
-                                            priceCurrencyCode: presentation.priceCurrencyCode,
-                                            gapStart: gap.gapStart,
-                                            gapEnd: gap.gapEnd,
-                                            fromBookingID: gap.fromBooking.id,
-                                            toBookingID: gap.toBooking.id
-                                        )
-                                    )
+                                    onEditGap(presentation.editorPayload(for: gap))
                                 }
                             )
                         }
@@ -1050,59 +732,10 @@ private struct BookingDetailContent: View {
     private var priceText: String {
         let details = booking.rateDetails
         guard let amount = details?.totalPriceAmount else { return "k.A." }
-        return formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
+        return Formatting.formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
     }
 
-    private var hotelTimeZone: TimeZone {
-        if let offsetSeconds = booking.hotelOffsetSeconds {
-            return TimeZone(secondsFromGMT: offsetSeconds) ?? .current
-        }
-        let deadlineOffset = booking.cancellationDeadlines.compactMap(\.hotelOffsetSeconds).first
-        if let deadlineOffset { return TimeZone(secondsFromGMT: deadlineOffset) ?? .current }
-        return TimeZone(secondsFromGMT: 0) ?? .current
-    }
-
-    private func displayTimeZone(forStartOf booking: SDBooking) -> TimeZone {
-        switch booking.bookingType {
-        case .flight, .ferry:
-            if let offset = booking.flightDepartureOffsetSeconds {
-                return TimeZone(secondsFromGMT: offset) ?? .current
-            }
-            return .current
-        case .hotel, .other:
-            return hotelTimeZone
-        }
-    }
-
-    private func displayTimeZone(forEndOf booking: SDBooking) -> TimeZone {
-        switch booking.bookingType {
-        case .flight, .ferry:
-            if let offset = booking.flightArrivalOffsetSeconds {
-                return TimeZone(secondsFromGMT: offset) ?? .current
-            }
-            return .current
-        case .hotel, .other:
-            return hotelTimeZone
-        }
-    }
-
-    private func formatDate(_ date: Date, format: String, timeZone: TimeZone) -> String {
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "de_DE_POSIX")
-        df.timeZone = timeZone
-        df.dateFormat = format
-        return df.string(from: date)
-    }
-
-    private func localizedBoardLabel(for boardType: BookingBoardType) -> String? {
-        switch boardType {
-        case .roomOnly: return "Nur Zimmer"
-        case .breakfastIncluded: return "Frühstück"
-        case .halfBoard: return "Halbpension"
-        case .fullBoard: return "Vollpension"
-        case .unknown: return nil
-        }
-    }
+    private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -1131,53 +764,8 @@ private struct BookingDetailContent: View {
             LazyVGrid(columns: [
                 GridItem(.adaptive(minimum: 160), spacing: 8, alignment: .leading),
             ], alignment: .leading, spacing: 6) {
-                detailRow("Status", booking.status.rawValue)
-                if let from = booking.locationFrom, !from.isEmpty {
-                    detailRow("Von", from)
-                }
-                if let to = booking.locationTo, !to.isEmpty {
-                    detailRow("Nach", to)
-                }
-                if booking.bookingType == .hotel {
-                    detailRow(
-                        "Start",
-                        HotelStayDate.format(
-                            booking.startAt,
-                            dateFormat: "d.M.yyyy",
-                            legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
-                        )
-                    )
-                    detailRow(
-                        "Ende",
-                        HotelStayDate.format(
-                            booking.endAt,
-                            dateFormat: "d.M.yyyy",
-                            legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
-                        )
-                    )
-                } else {
-                    detailRow(
-                        "Start",
-                        formatDate(
-                            booking.startAt,
-                            format: "d.M.yyyy HH:mm",
-                            timeZone: displayTimeZone(forStartOf: booking)
-                        )
-                    )
-                    detailRow(
-                        "Ende",
-                        formatDate(
-                            booking.endAt,
-                            format: "d.M.yyyy HH:mm",
-                            timeZone: displayTimeZone(forEndOf: booking)
-                        )
-                    )
-                }
-                if let checkIn = booking.hotelCheckInMinutes {
-                    detailRow("Check-in", minutesToHHmm(checkIn))
-                }
-                if let checkOut = booking.hotelCheckOutMinutes {
-                    detailRow("Check-out", minutesToHHmm(checkOut))
+                ForEach(BookingScheduleFields.make(booking: booking)) { field in
+                    detailRow(field.label, field.value)
                 }
             }
 
@@ -1188,124 +776,27 @@ private struct BookingDetailContent: View {
                 LazyVGrid(columns: [
                     GridItem(.adaptive(minimum: 160), spacing: 8, alignment: .leading),
                 ], alignment: .leading, spacing: 6) {
-                    if let amount = rate.totalPriceAmount {
-                        detailRow("Preis", formatCurrencyAmount(amount, currencyCode: rate.totalPriceCurrency))
-                    }
-                    if let currency = rate.totalPriceCurrency, !currency.isEmpty {
-                        detailRow("Währung", currency)
-                    }
-                    if rate.roomItems.isEmpty, let room = rate.roomCategory, !room.isEmpty {
-                        detailRow("Zimmerkategorie", room)
-                    }
-                    if let breakfast = rate.includedBreakfast {
-                        detailRow("Frühstück", breakfast ? "ja" : "nein")
-                    }
-                    if let guests = rate.guestCount {
-                        detailRow("Gäste", "\(guests)")
-                    }
-                    if let rooms = rate.roomCount {
-                        detailRow("Zimmer", "\(rooms)")
-                    }
-                    if let airline = rate.airline, !airline.isEmpty {
-                        detailRow("Airline", airline)
-                    }
-                    if !booking.passengers.isEmpty {
-                        // HIG: Unwichtige Titel (MR/MS/Mx) nicht anzeigen, nur Vor-/Nachname.
-                        let names = booking.passengers.compactMap { pax -> String? in
-                            let parts = [pax.givenName, pax.familyName]
-                                .compactMap { part -> String? in
-                                    let trimmed = part?.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    return (trimmed?.isEmpty == false) ? trimmed : nil
-                                }
-                            let fullName = parts.joined(separator: " ")
-                            return fullName.isEmpty ? nil : fullName
-                        }
-                        detailRow("Passagiere", names.joined(separator: ", "))
-                    } else if let passengers = rate.passengerCount {
-                        detailRow("Passagiere", "\(passengers)")
-                    }
-                    if let baggage = rate.baggageInfoRaw, !baggage.isEmpty {
-                        detailRow("Gepäck", baggage)
-                    }
-                    if let rawBoardType = rate.boardTypeRaw,
-                       !rawBoardType.isEmpty,
-                       let boardType = BookingBoardType(rawValue: rawBoardType),
-                       let boardLabel = localizedBoardLabel(for: boardType) {
-                        detailRow("Verpflegung", boardLabel)
-                    }
-                    if let parsed = rate.lastParsedAt {
-                        detailRow("Tarif gelesen", parsed.formatted(date: .abbreviated, time: .shortened))
+                    ForEach(BookingRateFields.make(rate: rate, booking: booking)) { field in
+                        detailRow(field.label, field.value)
                     }
                 }
 
-                if !rate.roomItems.isEmpty {
+                if !rate.resolvedRoomItems.isEmpty {
                     Divider()
                     Text("Zimmer / Positionen")
                         .font(.subheadline.weight(.semibold))
-
-                    ForEach(rate.roomItems.sorted(by: { ($0.sortIndex ?? 0) < ($1.sortIndex ?? 0) })) { item in
-                        VStack(alignment: .leading, spacing: 3) {
-                            if let category = item.category, !category.isEmpty {
-                                Text(category)
-                                    .font(.caption.weight(.medium))
-                            }
-                            if let code = item.confirmationCode, !code.isEmpty {
-                                Text("Buchungsnr.: \(code)")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            if let guest = item.guestSummary, !guest.isEmpty {
-                                Text(guest)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            if let amount = item.priceAmount {
-                                let currency = item.priceCurrency ?? rate.totalPriceCurrency
-                                detailRow("Einzelpreis", formatCurrencyAmount(amount, currencyCode: currency))
-                            }
-                        }
-                    }
+                    BookingRoomItemsView(rate: rate)
                 }
             }
 
-            if !booking.cancellationDeadlines.isEmpty {
+            if !booking.resolvedCancellationDeadlines.isEmpty {
                 Divider()
                 Text("Stornierung")
                     .font(.subheadline.weight(.semibold))
-                ForEach(booking.cancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt }), id: \.id) { deadline in
-                    let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? hotelTimeZone
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(formatDate(deadline.deadlineAt, format: "d.M.yyyy HH:mm", timeZone: tz))
-                            .font(.caption.weight(.medium))
-                        HStack(spacing: 8) {
-                            Text(deadline.isFreeCancellation ? "Kostenlos" : "Kostenpflichtig")
-                                .font(.caption2)
-                                .foregroundStyle(deadline.isFreeCancellation ? .green : .secondary)
-                            if let fee = deadline.cancellationFeeAmount {
-                                Text(formatCurrencyAmount(fee, currencyCode: booking.rateDetails?.totalPriceCurrency))
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            if deadline.isStrict {
-                                Text("strikt")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        if let policy = deadline.policyText, !policy.isEmpty {
-                            Text(policy)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .textSelection(.enabled)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
+                BookingCancellationDeadlinesView(booking: booking, hotelTimeZone: hotelTimeZone)
             }
 
-            if let urlString = booking.externalUrl,
-               let url = URL(string: urlString),
-               !urlString.hasPrefix("reisen://manual/") {
+            if let url = booking.browserURL {
                 Divider()
                 Link("Buchung im Browser öffnen", destination: url)
                     .font(.caption)
@@ -1367,23 +858,14 @@ private struct BookingRow: View {
     private var bookingPriceText: String {
         let details = booking.rateDetails
         guard let amount = details?.totalPriceAmount else { return "k.A." }
-        return formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
+        return Formatting.formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
     }
 
     private func bookingTypeTitle(_ booking: SDBooking) -> String {
         booking.bookingType.rawValue.capitalized
     }
 
-    private var hotelTimeZone: TimeZone {
-        if let offsetSeconds = booking.hotelOffsetSeconds {
-            return TimeZone(secondsFromGMT: offsetSeconds) ?? .current
-        }
-        // Fallback: wenn der Booking-Offset noch nicht persistiert ist.
-        let deadlineOffsetSeconds = booking.cancellationDeadlines.compactMap(\.hotelOffsetSeconds).first
-        if let deadlineOffsetSeconds { return TimeZone(secondsFromGMT: deadlineOffsetSeconds) ?? .current }
-        // Default: Opodo/Provider-Offsets kommen in der Regel als "Wall-Clock UTC" (Offset 0).
-        return TimeZone(secondsFromGMT: 0) ?? .current
-    }
+    private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
 
     private func cancellationCopyText(
         futureDeadlinesForDisplay: [SDCancellationDeadline],
@@ -1400,12 +882,12 @@ private struct BookingRow: View {
             let tz = timeZone(forDeadline: deadline)
             if deadline.isFreeCancellation {
                 lines.append(
-                    "Kostenlos stornierbar bis \(formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: tz))"
+                    "Kostenlos stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: tz))"
                 )
             } else {
                 let paidText = (deadline.policyText?.isEmpty == false)
                     ? deadline.policyText!
-                    : "Kostenpflichtig stornierbar bis \(formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: tz))"
+                    : "Kostenpflichtig stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: tz))"
                 lines.append(paidText)
             }
         }
@@ -1415,9 +897,9 @@ private struct BookingRow: View {
 
     private func computeFutureDeadlinesForDisplay(now: Date = Date()) -> [SDCancellationDeadline] {
         let service = CancellationDeadlineDisplayService()
-        let domainDeadlines = booking.cancellationDeadlines.map(DomainMapper.deadline(from:))
+        let domainDeadlines = booking.resolvedCancellationDeadlines.map(DomainMapper.deadline(from:))
         let filteredDomainDeadlines = service.deadlinesForDisplay(domainDeadlines, now: now)
-        let deadlinesByID = Dictionary(uniqueKeysWithValues: booking.cancellationDeadlines.map { ($0.id, $0) })
+        let deadlinesByID = Dictionary(uniqueKeysWithValues: booking.resolvedCancellationDeadlines.map { ($0.id, $0) })
         // Preserve the ascending order returned by the domain/service layer.
         return filteredDomainDeadlines.compactMap { deadlinesByID[$0.id] }
     }
@@ -1435,8 +917,8 @@ private struct BookingRow: View {
                 dateFormat: "d.M.",
                 legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
             )
-            let checkInTime = booking.hotelCheckInMinutes.map(minutesToHHmm) ?? "—"
-            let checkOutTime = booking.hotelCheckOutMinutes.map(minutesToHHmm) ?? "—"
+            let checkInTime = booking.hotelCheckInMinutes.map(Formatting.minutesToHHmm) ?? "—"
+            let checkOutTime = booking.hotelCheckOutMinutes.map(Formatting.minutesToHHmm) ?? "—"
 
             return "Check-in: \(checkInDate) ab \(checkInTime) (\(hotelLocationLabel))\nCheck-out: \(checkOutDate) bis \(checkOutTime) (\(hotelLocationLabel))"
 
@@ -1452,12 +934,12 @@ private struct BookingRow: View {
                 return ""
             }()
 
-            let departure = formatOrtszeit(
+            let departure = Formatting.formatOrtszeit(
                 booking.startAt,
                 dateFormat: "d.M. HH:mm",
                 timeZone: departureTZ
             )
-            let arrival = formatOrtszeit(
+            let arrival = Formatting.formatOrtszeit(
                 booking.endAt,
                 dateFormat: "d.M. HH:mm",
                 timeZone: arrivalTZ
@@ -1465,52 +947,8 @@ private struct BookingRow: View {
 
             return "Abflug: \(departure) (\(flightOriginLabel))\(tzHint)\nAnkunft: \(arrival) (\(flightDestinationLabel))"
 
-        case .other:
+        case .activity, .other:
             return "\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))"
-        }
-    }
-
-    /// Listen-Zusammenfassung: Storno-Zeilen mit Icons/Urgency-Farben (wie früher im Attributed-Text).
-    private struct SummaryStornoLine: Identifiable {
-        let id: String
-        let systemImage: String
-        let text: String
-        let color: Color
-    }
-
-    private func bookingSummaryStornoLines(now: Date = Date()) -> [SummaryStornoLine] {
-        guard !booking.cancellationDeadlines.isEmpty else { return [] }
-
-        let domainDeadlines = booking.cancellationDeadlines.map(DomainMapper.deadline(from:))
-        let service = CancellationDeadlineDisplayService()
-        let summaryLines = service.summaryLines(
-            deadlines: domainDeadlines,
-            hotelTimeZone: hotelTimeZone,
-            now: now
-        )
-
-        return summaryLines.map { summaryLine in
-            let color: Color = {
-                switch summaryLine.kind {
-                case .fix, .paid:
-                    return .secondary
-                case .free:
-                    guard let urgency = summaryLine.urgency else { return .secondary }
-                    switch urgency {
-                    case .ok: return .green
-                    case .warning: return .orange
-                    case .critical: return .red
-                    case .fix: return .secondary
-                    }
-                }
-            }()
-
-            return SummaryStornoLine(
-                id: summaryLine.id.uuidString,
-                systemImage: summaryLine.systemImageName,
-                text: summaryLine.text,
-                color: color
-            )
         }
     }
 
@@ -1531,7 +969,7 @@ private struct BookingRow: View {
             return "\(start) – \(end) (\(hotelLocationLabel))"
         case .flight, .ferry:
             return bookingTimeCopyText()
-        case .other:
+        case .activity, .other:
             return "\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))"
         }
     }
@@ -1551,7 +989,7 @@ private struct BookingRow: View {
 
         // Für Copy müssen auch Fälle abgedeckt werden, in denen es Stornofristen gibt,
         // aber keine zukünftigen Freistornierungen mehr (UI zeigt dann "Fix ...").
-        if !booking.cancellationDeadlines.isEmpty {
+        if !booking.resolvedCancellationDeadlines.isEmpty {
             let futureDeadlinesForDisplay = computeFutureDeadlinesForDisplay(now: now)
             let hasFutureFreeCancellation = futureDeadlinesForDisplay.contains { $0.isFreeCancellation }
             parts.append(cancellationCopyText(
@@ -1612,7 +1050,7 @@ private struct BookingRow: View {
     }
 
     private func appendCancellationBlockAttributed(to ns: NSMutableAttributedString, now: Date) {
-        guard displayMode == .details, !booking.cancellationDeadlines.isEmpty else { return }
+        guard displayMode == .details, !booking.resolvedCancellationDeadlines.isEmpty else { return }
 
         let captionFont = NSFont.preferredFont(forTextStyle: .caption1)
         let secondary = NSColor.secondaryLabelColor
@@ -1685,14 +1123,14 @@ private struct BookingRow: View {
             appendIconLine(
                 to: ns,
                 systemName: "checkmark.circle.fill",
-                text: "Kostenlos stornierbar bis \(formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))",
+                text: "Kostenlos stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))",
                 font: font,
                 color: color
             )
         } else {
             let paidText = (deadline.policyText?.isEmpty == false)
                 ? deadline.policyText!
-                : "Kostenpflichtig stornierbar bis \(formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))"
+                : "Kostenpflichtig stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))"
 
             appendIconLine(
                 to: ns,
@@ -1799,7 +1237,7 @@ private struct BookingRow: View {
 
     private var bookingSummaryBody: some View {
         let now = Date()
-        let stornoLines = bookingSummaryStornoLines(now: now)
+        let stornoLines = BookingStornoSummary.lines(for: booking, now: now)
 
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
@@ -1893,10 +1331,10 @@ private struct GapRow: View {
     @Environment(\.providerRegistry) private var providerRegistry
 
     private var hotelTimeZone: TimeZone {
-        let offsetSeconds = (gap.fromBooking.hotelOffsetSeconds
-            ?? gap.toBooking.hotelOffsetSeconds)
-        if let offsetSeconds { return TimeZone(secondsFromGMT: offsetSeconds) ?? .current }
-        return .current
+        HotelTimeZone.resolve(
+            fromOffsetSeconds: gap.fromBooking.hotelOffsetSeconds,
+            toOffsetSeconds: gap.toBooking.hotelOffsetSeconds
+        )
     }
 
     private var linkSuggestions: (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
@@ -1933,7 +1371,7 @@ private struct GapRow: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
-                Text("\(formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))")
+                Text("\(Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -1952,7 +1390,7 @@ private struct GapRow: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .lineLimit(2)
-                    Text("\(formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))")
+                    Text("\(Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

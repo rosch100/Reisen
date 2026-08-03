@@ -2,6 +2,9 @@
 
 Zweck: Prüfen, ob offizielle APIs für **private Kontodaten / eigene Buchungen** nutzbar sind.
 
+Siehe auch neuere Kandidaten-Recherche (GYG, Airbnb Experiences, Expedia, Opodo-HAR-Verdict):
+[`API_Research_Provider_Candidates.md`](API_Research_Provider_Candidates.md).
+
 ## Booking.com
 
 | API | Zweck | Für privaten My-Trips-Sync? |

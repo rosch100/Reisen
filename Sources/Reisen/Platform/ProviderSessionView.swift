@@ -2,11 +2,7 @@ import SwiftUI
 import WebKit
 import AppKit
 import ReisenProviders
-
-enum ProviderSessionStatus: Equatable {
-    case needsLogin
-    case sessionReady
-}
+import ReisenAppCore
 
 /// Vollflächiger Provider-Browser für alle Provider (Check24, Opodo, Booking.com, …).
 /// Kein ScrollView/Form-Container — sonst ist der Login auf macOS oft nicht bedienbar.

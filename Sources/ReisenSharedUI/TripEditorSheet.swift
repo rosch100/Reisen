@@ -90,7 +90,9 @@ public struct TripEditorSheet: View {
             }
             .padding(16)
         }
+#if os(macOS)
         .frame(width: 480, height: 320)
+#endif
     }
 
     private func save() {

@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import AppKit
+import Observation
 import ReisenDomain
 import ReisenData
 import ReisenProviders
@@ -8,6 +9,8 @@ import ReisenCheck24
 import ReisenOpodo
 import ReisenBookingCom
 import ReisenAirbnb
+import ReisenAppCore
+import ReisenSharedUI
 
 @main
 struct ReisenApp: App {
@@ -24,9 +27,26 @@ struct ReisenApp: App {
                         .environment(\.syncStore, syncStore)
                         .environment(\.providerSessionHub, sessionHub)
                         .modelContainer(container)
+                        .task(id: ObjectIdentifier(syncStore)) {
+                            // Verification first: rebuild/EventKit must not block seed/expect.
+                            await CloudKitTwoDeviceVerification.runIfRequested(
+                                modelContext: container.mainContext
+                            )
+                            // Rebuild local EventKit/Reminders after CloudKit catch-up on launch.
+                            await syncStore.rebuildLocalSideEffects(announceProgress: false)
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                            Task {
+                                await syncStore.rebuildLocalSideEffects(announceProgress: false)
+                            }
+                        }
                 case .failed(let message):
-                    StoreFailureView(message: message) {
-                        bootstrap.resetStoreAndRetry()
+                    StoreFailureView(
+                        message: message,
+                        contentPadding: 32,
+                        minFrame: CGSize(width: 520, height: 240)
+                    ) { wipeCloud in
+                        bootstrap.resetStoreAndRetry(wipeCloudDataBeforeReset: wipeCloud)
                     }
                 }
             }
@@ -96,8 +116,16 @@ struct ReisenApp: App {
 
         Settings {
             if case .ready(let container, _, _, _) = bootstrap.state {
-                SettingsView()
-                    .modelContainer(container)
+                ReisenSharedUI.SettingsView(
+                    showsDataManagement: true,
+                    onResetLocalStores: {
+                        bootstrap.resetStoreAndRetry(wipeCloudDataBeforeReset: false)
+                    },
+                    onWipeCloudAndReset: {
+                        bootstrap.resetStoreAndRetry(wipeCloudDataBeforeReset: true)
+                    }
+                )
+                .modelContainer(container)
             } else {
                 Text("Einstellungen sind erst nach erfolgreichem Store-Start verfügbar.")
                     .padding()
@@ -106,84 +134,3 @@ struct ReisenApp: App {
     }
 }
 
-@MainActor
-@Observable
-final class AppBootstrap {
-    enum State {
-        case ready(ModelContainer, ProviderRegistry, SyncStore, ProviderSessionHub)
-        case failed(String)
-    }
-
-    private(set) var state: State
-
-    init() {
-        do {
-            self.state = try Self.makeReadyState()
-        } catch {
-            self.state = .failed(error.localizedDescription)
-        }
-    }
-
-    func resetStoreAndRetry() {
-        do {
-            try PersistenceBootstrap.resetStoreFiles()
-            state = try Self.makeReadyState()
-        } catch {
-            state = .failed(error.localizedDescription)
-        }
-    }
-
-    private static func makeReadyState() throws -> State {
-        let container = try PersistenceBootstrap.makeContainer()
-        let registry = makeRegistry()
-        let syncStore = SyncStore(modelContext: container.mainContext, registry: registry)
-        let sessionHub = ProviderSessionHub()
-        return .ready(container, registry, syncStore, sessionHub)
-    }
-
-    private static func makeRegistry() -> ProviderRegistry {
-        ProviderRegistry(
-            providers: [
-                Check24TravelProvider(),
-                OpodoTravelProvider(),
-                BookingComTravelProvider(),
-                AirbnbTravelProvider()
-            ],
-            deepLinkBuilders: [Check24DeepLinkBuilder()]
-        )
-    }
-}
-
-private struct StoreFailureView: View {
-    let message: String
-    let onReset: () -> Void
-    @State private var showResetConfirmation = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Datenbank konnte nicht geladen werden")
-                .font(.title2)
-            CopyableTextView(
-                text: message,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: .secondaryLabelColor
-            )
-            Button("Lokale Datenbank zurücksetzen und erneut versuchen…") {
-                showResetConfirmation = true
-            }
-                .buttonStyle(.borderedProminent)
-                .confirmationDialog(
-                    "Lokale Datenbank zurücksetzen?",
-                    isPresented: $showResetConfirmation,
-                    titleVisibility: .visible
-                ) {
-                    Button("Zurücksetzen", role: .destructive, action: onReset)
-                    Button("Abbrechen", role: .cancel) {}
-                } message: {
-                    Text("Alle lokal gespeicherten Reisen und Buchungen werden unwiderruflich gelöscht.")
-                }
-        }
-        .padding(32)
-        .frame(minWidth: 520, minHeight: 240)
-    }
-}

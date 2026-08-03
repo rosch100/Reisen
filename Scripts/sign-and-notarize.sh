@@ -134,12 +134,21 @@ notarize_submit() {
     --wait
 }
 
+ENTITLEMENTS="${ENTITLEMENTS:-$ROOT/Resources/Reisen.entitlements}"
+
 if [[ -n "$APP_PATH" ]]; then
   echo "Codesign .app (Developer ID)..." >&2
-  codesign --force --sign "$IDENTITY" --timestamp --options runtime "$APP_PATH" >/dev/null
+  if [[ -f "$ENTITLEMENTS" ]]; then
+    codesign --force --sign "$IDENTITY" --timestamp --options runtime \
+      --entitlements "$ENTITLEMENTS" "$APP_PATH" >/dev/null
 
-  # Deep sign für nested resource bundles (sichert Notary-Checks ab).
-  codesign --force --sign "$IDENTITY" --timestamp --options runtime --deep "$APP_PATH" >/dev/null
+    # Deep sign für nested resource bundles (sichert Notary-Checks ab).
+    codesign --force --sign "$IDENTITY" --timestamp --options runtime --deep \
+      --entitlements "$ENTITLEMENTS" "$APP_PATH" >/dev/null
+  else
+    echo "error: Entitlements fehlen: $ENTITLEMENTS" >&2
+    exit 1
+  fi
 
   if [[ -z "$ZIP_PATH" ]]; then
     ZIP_PATH="$ROOT/.build/notarize/$(basename "$APP_PATH" .app).zip"

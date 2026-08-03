@@ -55,6 +55,12 @@ jobs:
           CI: "true"
         run: bash ./Scripts/ci-test.sh
 
+      - name: iOS Simulator tests
+        env:
+          CI: "true"
+          REISEN_CLOUDKIT: "0"
+        run: bash ./Scripts/ios-test.sh
+
       - name: Publish legacy commit status "CI"
         if: always()
         env:

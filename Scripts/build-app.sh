@@ -85,6 +85,10 @@ cp "$BIN" "$MACOS/Reisen"
 chmod +x "$MACOS/Reisen"
 cp "$ROOT/Resources/Info.plist" "$CONTENTS/Info.plist"
 cp "$ROOT/Resources/AppIcon.icns" "$RESOURCES/AppIcon.icns"
+ENTITLEMENTS="$ROOT/Resources/Reisen.entitlements"
+if [[ -f "$ENTITLEMENTS" ]]; then
+  cp "$ENTITLEMENTS" "$CONTENTS/Reisen.entitlements"
+fi
 
 # SPM Bundle.module-Pfad: Contents/Resources/Reisen_Reisen.bundle
 cp -R "$RESOURCE_BUNDLE" "$RESOURCES/$BUNDLE_NAME"
@@ -98,9 +102,13 @@ if [[ -d "$LOGO_DIR" ]]; then
 fi
 
 # Codesign ad-hoc, damit Gatekeeper/TCC die App als Bundle akzeptiert.
-# Nested resource bundle zuerst einzeln, dann App (deep).
+# Nested resource bundle zuerst einzeln, dann App (deep) inkl. iCloud/CloudKit-Entitlements.
 codesign --force --sign - "$RESOURCES/$BUNDLE_NAME" >/dev/null 2>&1 || true
 codesign --force --sign - "$MACOS/$BUNDLE_NAME" >/dev/null 2>&1 || true
-codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+if [[ -f "$ENTITLEMENTS" ]]; then
+  codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$APP" >/dev/null 2>&1 || true
+else
+  codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+fi
 
 printf '%s\n' "$APP"

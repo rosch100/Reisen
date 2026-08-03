@@ -180,7 +180,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             passengerCountText: booking.rateDetails?.passengerCount.map { String($0) } ?? "",
             baggageInfoRaw: booking.rateDetails?.baggageInfoRaw ?? "",
             lastParsedAt: booking.rateDetails?.lastParsedAt,
-            cancellationDeadlines: booking.cancellationDeadlines
+            cancellationDeadlines: booking.resolvedCancellationDeadlines
                 .map { deadline in
                     CancellationDeadlineDraft(
                         id: deadline.id,
@@ -193,7 +193,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     )
                 }
                 .sorted { $0.deadlineAt < $1.deadlineAt },
-            passengers: booking.passengers.map(DomainMapper.passenger(from:))
+            passengers: booking.resolvedPassengers.map(DomainMapper.passenger(from:))
         )
     }
 
@@ -284,7 +284,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
         var working = draft
         working.provider = .manual
         if working.externalUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            working.externalUrl = "reisen://manual/\(UUID().uuidString)"
+            working.externalUrl = BookingExternalURL.makeManual()
         }
         try working.validate()
 
@@ -338,7 +338,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
 
         // Structured passengers/baggage for flights.
         // Replace-Strategy: delete all existing SwiftData child models and recreate from the edited draft.
-        for existing in booking.passengers {
+        for existing in booking.resolvedPassengers {
             modelContext.delete(existing)
         }
         if bookingType == .flight {
@@ -408,7 +408,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             booking.rateDetails = nil
         }
 
-        for existing in booking.cancellationDeadlines {
+        for existing in booking.resolvedCancellationDeadlines {
             modelContext.delete(existing)
         }
         booking.cancellationDeadlines = cancellationDeadlines
@@ -814,12 +814,7 @@ public struct BookingEditorForm: View {
     }
 
     private func localizedBookingType(_ type: BookingType) -> String {
-        switch type {
-        case .flight: return "Flug"
-        case .hotel: return "Hotel"
-        case .ferry: return "Fähre"
-        case .other: return "Sonstiges"
-        }
+        type.displayLabel
     }
 
     private func localizedBookingStatus(_ status: BookingStatus) -> String {
@@ -831,13 +826,7 @@ public struct BookingEditorForm: View {
     }
 
     private func localizedBoardType(_ type: BookingBoardType) -> String {
-        switch type {
-        case .roomOnly: return "Nur Zimmer"
-        case .breakfastIncluded: return "Frühstück"
-        case .halfBoard: return "Halbpension"
-        case .fullBoard: return "Vollpension"
-        case .unknown: return "Unbekannt"
-        }
+        type.displayLabel
     }
 }
 

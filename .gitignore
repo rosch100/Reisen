@@ -10,6 +10,10 @@ DerivedData/
 # Superpowers SDD scratch
 .superpowers/
 
+# Browser HARs (often contain JWTs / PII) — use redacted docs/fixtures instead
+HAR/
+*.har
+
 # iOS / XcodeGen / SweetPad (generated)
 *.xcodeproj/
 *.xcworkspace/

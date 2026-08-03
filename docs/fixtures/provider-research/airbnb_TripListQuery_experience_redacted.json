@@ -1,0 +1,108 @@
+{
+  "_meta": {
+    "source": "Airbnb HAR TripListQuery (experience trip)",
+    "note": "PII/tokens redacted"
+  },
+  "data": {
+    "viewer": {
+      "__typename": "Viewer",
+      "trips": {
+        "__typename": "ViewerToTripsConnection",
+        "edges": [
+          {
+            "__typename": "ViewerToTripsEdge",
+            "node": {
+              "__typename": "Trip",
+              "id": "VHJpcDoxNzQ0MTA1MjQyMDc1MDk0Nzkz",
+              "displayName": "Gedong Tengen",
+              "coverPhoto": {
+                "__typename": "ImageEntity",
+                "uri": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/08dd2265-6dea-4965-837e-e7d57e6b5397.png"
+              },
+              "startTime": {
+                "__typename": "ZonedDateTime",
+                "listingTimeZone": "Asia/Jakarta",
+                "dateTime": "2026-08-10T11:00:00.000Z"
+              },
+              "endTime": {
+                "__typename": "ZonedDateTime",
+                "listingTimeZone": "Asia/Jakarta",
+                "dateTime": "2026-08-10T14:00:00.000Z"
+              },
+              "status": "UPCOMING",
+              "scheduledItems": {
+                "__typename": "TripToScheduledItemConnection",
+                "pageInfo": {
+                  "__typename": "PageInfoWithCount",
+                  "totalCount": 1
+                },
+                "edges": [
+                  {
+                    "__typename": "TripToScheduledItemEdge",
+                    "node": {
+                      "__typename": "ScheduledItem",
+                      "details": {
+                        "__typename": "ActivityScheduledItemDetails",
+                        "schedulableType": "EXPERIENCE_RESERVATION",
+                        "activityReservation": {
+                          "__typename": "ExperienceReservationV2",
+                          "confirmationCode": "<REDACTED>",
+                          "reservationType": "EXPERIENCE"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "actionRequiredAlerts": [],
+              "reviews": {
+                "__typename": "TripToReviewsConnection",
+                "edges": []
+              },
+              "location": {
+                "__typename": "TripLocationInfo",
+                "coordinate": {
+                  "__typename": "Coordinate",
+                  "latitude": -7.790219530616704,
+                  "longitude": 110.36446266959285
+                }
+              },
+              "travelerCapacity": {
+                "__typename": "GuestCountDetails",
+                "numberOfAdults": 3
+              },
+              "travelers": {
+                "__typename": "TripToTravelerConnection",
+                "edges": [
+                  {
+                    "__typename": "TripToTravelerEdge",
+                    "node": {
+                      "__typename": "TripTraveler",
+                      "role": "OWNER",
+                      "user": {
+                        "__typename": "ContextualUser",
+                        "id": "Q29udGV4dHVhbFVzZXI6MTc0NDEwNTI0MDgyOTU2NjU3OQ==",
+                        "displayFirstName": "<REDACTED>",
+                        "userRepresentationUrl": {
+                          "__typename": "UserRepresentationUrl",
+                          "profilePictureUrl": "https://a0.muscache.com/im/pictures/user/ebc8158e-c018-455d-97a3-b89c5d51cbb6.jpg?aki_policy=profile_x_medium"
+                        }
+                      },
+                      "proxyUsers": []
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "pageInfo": {
+          "__typename": "PageInfoWithCount",
+          "hasNextPage": false,
+          "endCursor": null,
+          "totalCount": 1
+        }
+      }
+    }
+  }
+}

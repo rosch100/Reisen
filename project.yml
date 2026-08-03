@@ -33,6 +33,7 @@ targets:
         MARKETING_VERSION: 0.2.1
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+        CODE_SIGN_ENTITLEMENTS: Apps/ReiseniOS/ReiseniOS.entitlements
     dependencies:
       - package: Reisen
         product: ReisenAppCore

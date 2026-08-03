@@ -107,6 +107,10 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
     public var flightArrivalOffsetSeconds: Int?
     /// Wenn gesetzt, überschreibt den Katalog-Status (z. B. Opodo-Storno erst im Detail sichtbar).
     public var status: BookingStatus?
+    /// Optional: Enrichment-Titel (z. B. Experience-Marquee statt Orts-`displayName`).
+    public var title: String?
+    public var locationTo: String?
+    public var locationToAddress: String?
 
     public init(
         deadlines: [CancellationDeadline] = [],
@@ -117,7 +121,10 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         hotelCheckOutMinutes: Int? = nil,
         flightDepartureOffsetSeconds: Int? = nil,
         flightArrivalOffsetSeconds: Int? = nil,
-        status: BookingStatus? = nil
+        status: BookingStatus? = nil,
+        title: String? = nil,
+        locationTo: String? = nil,
+        locationToAddress: String? = nil
     ) {
         self.deadlines = deadlines
         self.rateDetails = rateDetails
@@ -128,5 +135,8 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         self.flightDepartureOffsetSeconds = flightDepartureOffsetSeconds
         self.flightArrivalOffsetSeconds = flightArrivalOffsetSeconds
         self.status = status
+        self.title = title
+        self.locationTo = locationTo
+        self.locationToAddress = locationToAddress
     }
 }
