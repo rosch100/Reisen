@@ -9,8 +9,8 @@ func activityListExcludesCancelledAndPast() throws {
     {
       "activities": [
         {
-          "startDate": "2026-08-11T23:59:00",
-          "endDate": "2026-08-14T12:00:00",
+          "startDate": "2099-08-11T23:59:00",
+          "endDate": "2099-08-14T12:00:00",
           "status": { "key": "upcoming" },
           "product": { "key": "hotel" },
           "detail": { "line1": "Zukunft Hotel" },
