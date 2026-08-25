@@ -43,6 +43,7 @@ private enum TravelokaFixtureLoader {
     let hotel = try #require(byType[.hotel])
     #expect(hotel.confirmationCode == "1387353870")
     #expect(hotel.title?.contains("Example Hotel") == true)
+    #expect(hotel.rateDetails?.boardType == .roomOnly)
 
     let vehicle = try #require(byType[.other])
     #expect(vehicle.confirmationCode == "1387355867")
@@ -52,6 +53,60 @@ private enum TravelokaFixtureLoader {
     let flight = try #require(catalog.bookings.first { $0.bookingType == .flight })
     #expect(flight.confirmationCode == "1000000001")
     #expect(flight.title?.contains("Jakarta") == true)
+}
+
+@Test func travelokaCatalogUsesSessionRoutePrefixInDetailURL() throws {
+    let text = try TravelokaFixtureLoader.load("traveloka_itineraries_fetch_redacted.json")
+    let catalog = try TravelokaCatalogParser.parse(from: text, routePrefix: "id-id")
+    let activity = try #require(catalog.bookings.first { $0.bookingType == .activity })
+    #expect(activity.externalUrl?.contains("/id-id/item/details/1387358428") == true)
+}
+
+@Test func travelokaHotelBoardTypeFromBreakfastIncluded() throws {
+    let baseEntry: [String: Any] = [
+        "bookingId": "999",
+        "itineraryId": "888",
+        "itineraryType": "HOTEL",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_086_400_000,
+            ],
+            "hotelSummary": [
+                "hotelName": "Board Test Hotel",
+                "checkInDate": ["day": 1, "month": 1, "year": 2026],
+                "checkOutDate": ["day": 2, "month": 1, "year": 2026],
+            ],
+        ],
+        "cardDetailInfo": [
+            "hotelDetail": [:],
+        ],
+    ]
+
+    var missingBreakfast = baseEntry
+    let draftUnknown = try TravelokaItineraryEntryParser.draft(from: missingBreakfast)
+    #expect(draftUnknown.rateDetails?.boardType == .unknown)
+    #expect(draftUnknown.rateDetails?.includedBreakfast == nil)
+
+    var withFalse = baseEntry
+    var summaryFalse = (withFalse["cardSummaryInfo"] as! [String: Any])
+    var hotelSummaryFalse = (summaryFalse["hotelSummary"] as! [String: Any])
+    hotelSummaryFalse["breakfastIncluded"] = false
+    summaryFalse["hotelSummary"] = hotelSummaryFalse
+    withFalse["cardSummaryInfo"] = summaryFalse
+    let draftRoomOnly = try TravelokaItineraryEntryParser.draft(from: withFalse)
+    #expect(draftRoomOnly.rateDetails?.boardType == .roomOnly)
+    #expect(draftRoomOnly.rateDetails?.includedBreakfast == false)
+
+    var withTrue = baseEntry
+    var summaryTrue = (withTrue["cardSummaryInfo"] as! [String: Any])
+    var hotelSummaryTrue = (summaryTrue["hotelSummary"] as! [String: Any])
+    hotelSummaryTrue["breakfastIncluded"] = true
+    summaryTrue["hotelSummary"] = hotelSummaryTrue
+    withTrue["cardSummaryInfo"] = summaryTrue
+    let draftBreakfast = try TravelokaItineraryEntryParser.draft(from: withTrue)
+    #expect(draftBreakfast.rateDetails?.boardType == .breakfastIncluded)
+    #expect(draftBreakfast.rateDetails?.includedBreakfast == true)
 }
 
 @Test func travelokaEnrichmentExperience() throws {

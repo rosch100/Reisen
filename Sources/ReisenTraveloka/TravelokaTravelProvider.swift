@@ -112,7 +112,10 @@ private extension TravelokaTravelProvider {
             ),
             context: context
         )
-        return try TravelokaCatalogParser.parse(from: text).bookings
+        return try TravelokaCatalogParser.parse(
+            from: text,
+            routePrefix: context.resolvedRoutePrefix
+        ).bookings
     }
 
     func postJSON(
@@ -158,6 +161,14 @@ private extension TravelokaTravelProvider {
                 accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 referer: referer
             )
+        } catch let error as AuthenticatedFetchError {
+            switch error {
+            case .httpStatus(let code) where code == 401 || code == 403:
+                onProgress?("Traveloka Refund: Session abgelaufen — bitte neu anmelden.")
+            case .httpStatus, .emptyBody:
+                onProgress?("Traveloka Refund-Seite nicht erreichbar — Detail ohne Fristen belassen.")
+            }
+            return enrichment
         } catch {
             onProgress?("Traveloka Refund-Seite nicht erreichbar — Detail ohne Fristen belassen.")
             return enrichment

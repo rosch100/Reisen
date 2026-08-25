@@ -22,7 +22,12 @@ enum TravelokaAPI {
         URL(string: "\(origin)/api/v2/tripitinerary/itineraries/v2/single")!
     }
 
-    static func detailURL(bookingId: String, itineraryId: String, productType: String) -> URL {
+    static func detailURL(
+        bookingId: String,
+        itineraryId: String,
+        productType: String,
+        routePrefix: String = TravelokaWebConstants.routePrefix
+    ) -> URL {
         routeURL(routePrefix, "item/details/\(bookingId)?type=\(productType)&id=\(itineraryId)")
     }
 
@@ -48,7 +53,7 @@ enum TravelokaAPI {
         ])
     }
 
-    static let catalogItineraryStatuses = ["UPCOMING", "PAST"]
+    static let catalogItineraryStatuses = ["UPCOMING"]
 
     static func catalogFetchBody(
         itineraryTypes: [String],

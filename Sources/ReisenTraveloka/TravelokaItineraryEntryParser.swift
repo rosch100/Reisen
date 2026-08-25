@@ -2,7 +2,10 @@ import Foundation
 import ReisenDomain
 
 enum TravelokaItineraryEntryParser {
-    static func draft(from entry: [String: Any]) throws -> ProviderBookingDraft {
+    static func draft(
+        from entry: [String: Any],
+        routePrefix: String = TravelokaAPI.routePrefix
+    ) throws -> ProviderBookingDraft {
         let bookingId = TravelokaJSON.string(entry["bookingId"])
         let itineraryId = TravelokaJSON.string(entry["itineraryId"])
         guard let bookingId, let itineraryId else {
@@ -115,9 +118,13 @@ enum TravelokaItineraryEntryParser {
                 }
             }
             let breakfast = TravelokaJSON.bool(hotelDetail["breakfastIncluded"] ?? hotelSummary["breakfastIncluded"])
+            let boardType: BookingBoardType = {
+                guard let breakfast else { return .unknown }
+                return breakfast ? .breakfastIncluded : .roomOnly
+            }()
             rateDetails = BookingRateDetails(
                 roomCategory: TravelokaJSON.string(hotelDetail["roomName"] ?? hotelSummary["roomName"]),
-                boardType: breakfast == true ? .breakfastIncluded : .roomOnly,
+                boardType: boardType,
                 includedBreakfast: breakfast,
                 guestCount: TravelokaJSON.int(hotelDetail["guestCount"] ?? hotelSummary["guestCount"]),
                 roomCount: TravelokaJSON.int(hotelDetail["roomCount"] ?? hotelSummary["roomCount"])
@@ -205,7 +212,8 @@ enum TravelokaItineraryEntryParser {
             itineraryId: itineraryId,
             productType: product == .other
                 ? (TravelokaJSON.string(entry["itineraryType"]) ?? "OTHER")
-                : product.rawValue
+                : product.rawValue,
+            routePrefix: routePrefix
         ).absoluteString
 
         return ProviderBookingDraft(
