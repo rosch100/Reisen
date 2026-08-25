@@ -37,8 +37,12 @@ require_cmd() {
 require_cmd gh
 require_cmd jq
 require_cmd curl
-require_cmd rg
 require_cmd perl
+
+file_contains() {
+  # Portable replacement for `rg -q` (ripgrep is not preinstalled on macOS runners).
+  grep -Fq "$2" "$1"
+}
 
 tmpdir="$(mktemp -d)"
 cleanup() { rm -rf "$tmpdir"; }
@@ -122,7 +126,7 @@ update_xcode_versions_in_workflows() {
   # Best practice: let setup-xcode select the newest stable Xcode for the runner image.
   # This avoids fragile scraping of upstream markdown tables.
   for wf in .github/workflows/*.yml; do
-    if rg -q "xcode-version:" "$wf"; then
+    if file_contains "$wf" "xcode-version:"; then
       sed -E -i.bak \
         "s/(xcode-version:[[:space:]]*)\"[0-9]+\\.[0-9.]+\"/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)'[0-9]+\\.[0-9.]+'/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)[0-9]+\\.[0-9.]+/\\1latest-stable/g" \
         "$wf"
@@ -154,7 +158,7 @@ update_action_pins_in_workflows() {
     tag="$(get_latest_release_tag "$action")"
     sha="$(get_release_tag_commit_sha "$action" "$tag")"
     for wf in "${files[@]}"; do
-      if rg -q "uses: ${action}@" "$wf"; then
+      if file_contains "$wf" "uses: ${action}@"; then
         replace_uses_sha "$wf" "$action" "$sha"
       fi
     done
@@ -170,7 +174,7 @@ update_action_pins_in_workflows() {
 
   for wf in "${files[@]}"; do
     for variant in "${variants[@]}"; do
-      if rg -q "uses: ${codeql_owner_repo}/${variant}@" "$wf"; then
+      if file_contains "$wf" "uses: ${codeql_owner_repo}/${variant}@"; then
         replace_codeql_uses_sha "$wf" "$variant" "$sha"
       fi
     done
