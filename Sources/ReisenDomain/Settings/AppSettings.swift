@@ -80,10 +80,11 @@ public struct AppSettings: Equatable, Sendable {
     }
 
     public var leadTimesDays: [Int] {
-        leadTimesDaysRaw
-            .split(separator: ",")
-            .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
-            .filter { $0 > 0 }
+        LeadTimesDays.normalized(
+            leadTimesDaysRaw
+                .split(separator: ",")
+                .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        )
     }
 
     public static func fromUserDefaults(_ defaults: UserDefaults = .standard) -> AppSettings {

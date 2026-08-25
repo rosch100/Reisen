@@ -15,6 +15,7 @@ extension PersistenceBootstrap {
                 notes: reminder.notes,
                 cancellationDeadlineID: reminder.cancellationDeadlineID,
                 gapID: reminder.gapID,
+                bookingID: reminder.bookingID,
                 externalAlarmId: reminder.externalAlarmId
             )
             target.insert(copy)
@@ -54,9 +55,26 @@ extension PersistenceBootstrap {
         }
     }
 
+    static func copyLocalPreTravelHintLinks(from source: ModelContext, to target: ModelContext) throws {
+        let preTravelLinks = try source.fetch(FetchDescriptor<SDPreTravelHintLink>())
+        for link in preTravelLinks {
+            let copy = SDPreTravelHintLink(
+                id: link.id,
+                ownerTripID: link.ownerTripID,
+                ownerBookingID: link.ownerBookingID,
+                leadDays: link.leadDays,
+                eventIdentifier: link.eventIdentifier,
+                reminderIdentifier: link.reminderIdentifier,
+                lastSyncedAt: link.lastSyncedAt
+            )
+            target.insert(copy)
+        }
+    }
+
     static func copyLocalEntities(from source: ModelContext, to target: ModelContext) throws {
         try copyLocalReminders(from: source, to: target)
         try copyLocalCalendarLinks(from: source, to: target)
         try copyLocalDeadlineLinks(from: source, to: target)
+        try copyLocalPreTravelHintLinks(from: source, to: target)
     }
 }

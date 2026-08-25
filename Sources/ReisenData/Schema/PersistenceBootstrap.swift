@@ -10,7 +10,7 @@ public enum PersistenceBootstrap {
     /// Non-versioned schema — `Schema(versionedSchema:)` + shared `@Model` types can abort with
     /// `Duplicate version checksums detected` (ObjC exception, not catchable as Swift Error).
     static func currentSchema() -> Schema {
-        Schema(ReisenSchemaV8.models)
+        Schema(ReisenSchemaV9.models)
     }
 
     static func sidecarURLs(for url: URL) -> [URL] {

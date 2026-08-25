@@ -1,4 +1,5 @@
 import Foundation
+import ReisenDomain
 
 extension Check24TravelProvider {
     func persistBasketState(
@@ -37,7 +38,10 @@ extension Check24TravelProvider {
         deadlinesByBasketId: inout [String: [ParsedCancellationDeadline]],
         deadlinesByBookingURL: inout [String: [ParsedCancellationDeadline]],
         hotelStayByBasketId: inout [String: HotelCheckInOut],
-        hotelStayByBookingURL: inout [String: HotelCheckInOut]
+        hotelStayByBookingURL: inout [String: HotelCheckInOut],
+        guestHintsByBasketId: inout [String: [BookingGuestHint]],
+        guestHintsByBookingURL: inout [String: [BookingGuestHint]],
+        guestHints: [BookingGuestHint]
     ) {
         if bookingDetailsByBasketId[basketId] == nil {
             bookingDetailsByBasketId[basketId] = parsedDetails
@@ -52,6 +56,14 @@ extension Check24TravelProvider {
             hotelStayByBasketId[basketId] = stay
             hotelStayByBookingURL[bookingURLString] = stay
         }
+
+        persistGuestHints(
+            guestHints,
+            basketId: basketId,
+            bookingURLString: bookingURLString,
+            guestHintsByBasketId: &guestHintsByBasketId,
+            guestHintsByBookingURL: &guestHintsByBookingURL
+        )
     }
 
     func persistNonBasketDetails(
@@ -62,7 +74,9 @@ extension Check24TravelProvider {
         bookingURLString: String,
         bookingDetailsByBookingKey: inout [String: ParsedBookingDetails],
         hotelStayByBookingURL: inout [String: HotelCheckInOut],
-        deadlinesByBookingURL: inout [String: [ParsedCancellationDeadline]]
+        deadlinesByBookingURL: inout [String: [ParsedCancellationDeadline]],
+        guestHintsByBookingURL: inout [String: [BookingGuestHint]],
+        guestHints: [BookingGuestHint]
     ) {
         if let key = identityKey(for: parsedBooking) {
             bookingDetailsByBookingKey[key] = parsedDetails
@@ -75,5 +89,30 @@ extension Check24TravelProvider {
         if !policyDeadlines.isEmpty {
             deadlinesByBookingURL[bookingURLString] = policyDeadlines
         }
+
+        if !guestHints.isEmpty {
+            guestHintsByBookingURL[bookingURLString] = BookingGuestHint.merged(
+                existing: guestHintsByBookingURL[bookingURLString] ?? [],
+                with: guestHints
+            )
+        }
+    }
+
+    private func persistGuestHints(
+        _ guestHints: [BookingGuestHint],
+        basketId: String,
+        bookingURLString: String,
+        guestHintsByBasketId: inout [String: [BookingGuestHint]],
+        guestHintsByBookingURL: inout [String: [BookingGuestHint]]
+    ) {
+        guard !guestHints.isEmpty else { return }
+        guestHintsByBasketId[basketId] = BookingGuestHint.merged(
+            existing: guestHintsByBasketId[basketId] ?? [],
+            with: guestHints
+        )
+        guestHintsByBookingURL[bookingURLString] = BookingGuestHint.merged(
+            existing: guestHintsByBookingURL[bookingURLString] ?? [],
+            with: guestHints
+        )
     }
 }

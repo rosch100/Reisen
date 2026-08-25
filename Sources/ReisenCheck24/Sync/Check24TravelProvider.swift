@@ -26,6 +26,7 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
 
         var deadlinesByBookingURL: [String: [ParsedCancellationDeadline]] = [:]
         var hotelStayByBookingURL: [String: HotelCheckInOut] = [:]
+        var guestHintsByBookingURL: [String: [BookingGuestHint]] = [:]
         var bookingDetailsByBookingKey: [String: ParsedBookingDetails] = [:]
 
         // Multi-Room/Basket: Hotels werden zu einer Buchung pro `basketId` gemerged.
@@ -34,6 +35,7 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
         var canonicalBookingUuidByBasketId: [String: String] = [:]
         var deadlinesByBasketId: [String: [ParsedCancellationDeadline]] = [:]
         var hotelStayByBasketId: [String: HotelCheckInOut] = [:]
+        var guestHintsByBasketId: [String: [BookingGuestHint]] = [:]
         var bookingDetailsByBasketId: [String: ParsedBookingDetails] = [:]
 
         var parsedBookingByBookingUuid: [String: ParsedBooking] = [:]
@@ -46,12 +48,14 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
             webView: webView,
             deadlinesByBookingURL: &deadlinesByBookingURL,
             hotelStayByBookingURL: &hotelStayByBookingURL,
+            guestHintsByBookingURL: &guestHintsByBookingURL,
             bookingDetailsByBookingKey: &bookingDetailsByBookingKey,
             basketsByBasketId: &basketsByBasketId,
             bookingUuidToBasketId: &bookingUuidToBasketId,
             canonicalBookingUuidByBasketId: &canonicalBookingUuidByBasketId,
             deadlinesByBasketId: &deadlinesByBasketId,
             hotelStayByBasketId: &hotelStayByBasketId,
+            guestHintsByBasketId: &guestHintsByBasketId,
             bookingDetailsByBasketId: &bookingDetailsByBasketId,
             parsedBookingByBookingUuid: &parsedBookingByBookingUuid
         )
@@ -71,6 +75,8 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
             deadlinesByBookingURL: deadlinesByBookingURL,
             hotelStayByBasketId: hotelStayByBasketId,
             hotelStayByBookingURL: hotelStayByBookingURL,
+            guestHintsByBasketId: guestHintsByBasketId,
+            guestHintsByBookingURL: guestHintsByBookingURL,
             bookingDetailsByBasketId: bookingDetailsByBasketId,
             bookingDetailsByBookingKey: bookingDetailsByBookingKey
         )
@@ -80,6 +86,7 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
             bookingUuidToBasketId: bookingUuidToBasketId,
             deadlinesByBookingURL: deadlinesByBookingURL,
             hotelStayByBookingURL: hotelStayByBookingURL,
+            guestHintsByBookingURL: guestHintsByBookingURL,
             bookingDetailsByBookingKey: bookingDetailsByBookingKey,
             draftByExternalUrl: &draftByExternalUrl
         )

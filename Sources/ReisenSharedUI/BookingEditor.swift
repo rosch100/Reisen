@@ -428,23 +428,10 @@ public struct BookingEditorDraft: Equatable, Sendable {
                 )
             }
 
-        for existing in booking.resolvedGuestHints {
-            modelContext.delete(existing)
+        let persistedHints = guestHints.compactMap {
+            BookingGuestHint.manualPersistable(from: $0, bookingID: booking.id)
         }
-        booking.guestHints = guestHints.map { hint in
-            SDBookingGuestHint(
-                id: hint.id,
-                booking: booking,
-                bookingID: booking.id,
-                categoryRaw: hint.category.rawValue,
-                title: hint.title,
-                detail: hint.detail,
-                sourceKey: hint.sourceKey.isEmpty
-                    ? "manual:\(hint.id.uuidString)"
-                    : hint.sourceKey,
-                providerRaw: hint.providerRaw ?? ProviderID.manual.rawValue
-            )
-        }
+        SwiftDataBookingGuestHintUpsert.upsert(persistedHints, on: booking, in: modelContext)
 
         try modelContext.save()
     }

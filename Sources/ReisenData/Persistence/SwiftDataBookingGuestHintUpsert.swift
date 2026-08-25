@@ -2,8 +2,8 @@ import Foundation
 import SwiftData
 import ReisenDomain
 
-enum SwiftDataBookingGuestHintUpsert {
-    static func upsert(_ hints: [BookingGuestHint], on model: SDBooking, in context: ModelContext) {
+public enum SwiftDataBookingGuestHintUpsert {
+    public static func upsert(_ hints: [BookingGuestHint], on model: SDBooking, in context: ModelContext) {
         var remaining = model.guestHints ?? []
         var kept: [SDBookingGuestHint] = []
 

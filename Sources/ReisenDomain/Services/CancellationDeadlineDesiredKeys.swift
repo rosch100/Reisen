@@ -9,7 +9,7 @@ public enum CancellationDeadlineDesiredKeys {
         now: Date,
         calendar: Calendar = .current
     ) -> Set<CancellationDeadlineKeying.LinkKey> {
-        let leadTimes = leadTimesDays.sorted().filter { $0 > 0 }
+        let leadTimes = LeadTimesDays.normalized(leadTimesDays)
         guard !leadTimes.isEmpty else { return [] }
 
         var desired: Set<CancellationDeadlineKeying.LinkKey> = []

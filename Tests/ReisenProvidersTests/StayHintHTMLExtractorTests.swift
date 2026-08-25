@@ -9,6 +9,13 @@ func stayHintHTMLExtractorParsesCheck24Synthetic() throws {
     #expect(hints.contains { $0.sourceKey.contains("linen") || $0.sourceKey.contains("towels") })
 }
 
+@Test("StayHintHTMLExtractor findet Bettwäsche/Handtücher in Opodo-HTML")
+func stayHintHTMLExtractorParsesOpodoSynthetic() throws {
+    let html = try loadResearchFixture("opodo_trip_detail_hints_synthetic.html")
+    let hints = StayHintHTMLExtractor.extract(from: html, providerRaw: "opodo")
+    #expect(hints.contains { $0.sourceKey.contains("linen") || $0.sourceKey.contains("towels") })
+}
+
 @Test("StayHintHTMLExtractor liefert leer ohne Treffer")
 func stayHintHTMLExtractorEmptyWithoutMatch() {
     let hints = StayHintHTMLExtractor.extract(

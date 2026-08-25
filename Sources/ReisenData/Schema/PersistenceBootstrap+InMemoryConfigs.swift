@@ -3,8 +3,8 @@ import SwiftData
 
 extension PersistenceBootstrap {
     static func inMemoryDualConfigurations() -> (ModelConfiguration, ModelConfiguration) {
-        let cloudSchema = Schema(ReisenSchemaV8.cloudModels)
-        let localSchema = Schema(ReisenSchemaV8.localModels)
+        let cloudSchema = Schema(ReisenSchemaV9.cloudModels)
+        let localSchema = Schema(ReisenSchemaV9.localModels)
         let cloud = ModelConfiguration(
             cloudStoreName,
             schema: cloudSchema,

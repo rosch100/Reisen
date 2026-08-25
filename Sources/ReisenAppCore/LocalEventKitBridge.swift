@@ -13,15 +13,18 @@ extension EKEventStore: @unchecked Sendable {}
 public final class LocalEventKitBridge: CalendarSyncing {
     private let calendarEventLinkRepository: CalendarEventLinkRepository?
     private let cancellationDeadlineLinkRepository: CancellationDeadlineLinkRepository?
+    var preTravelHintLinkRepository: PreTravelHintLinkRepository?
 
     public init() {
         self.calendarEventLinkRepository = nil
         self.cancellationDeadlineLinkRepository = nil
+        self.preTravelHintLinkRepository = nil
     }
 
     public init(modelContext: ModelContext) {
         self.calendarEventLinkRepository = SwiftDataCalendarEventLinkRepository(modelContext: modelContext)
         self.cancellationDeadlineLinkRepository = SwiftDataCancellationDeadlineLinkRepository(modelContext: modelContext)
+        self.preTravelHintLinkRepository = SwiftDataPreTravelHintLinkRepository(modelContext: modelContext)
     }
 
     public enum EventKitError: LocalizedError {
@@ -122,8 +125,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         let eligibleDeadlines = deadlines.filter { $0.isFreeCancellation }
         guard !eligibleDeadlines.isEmpty else { return }
 
-        let leadTimes = leadTimesDays.sorted().filter { $0 > 0 }
-        guard !leadTimes.isEmpty else { throw RepositoryError.invalidState("Keine gültigen Vorlaufzeiten für Kalender-Alarme.") }
+        let leadTimes = try LeadTimesDays.requireNonEmpty(leadTimesDays)
         let calendarDuration: TimeInterval = 60 * 60 // 1 hour per discrete reminder time
         var firstError: Error?
         var failureCount = 0
@@ -203,7 +205,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         )
     }
 
-    private func calendarTitle(
+    func calendarTitle(
         for trip: Trip,
         kind: EKEntityType,
         calendarTitleMode: CalendarTitleMode,
@@ -218,7 +220,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         }
     }
 
-    private func requestAccess(store: EKEventStore) async throws -> Bool {
+    func requestAccess(store: EKEventStore) async throws -> Bool {
         let eventsGranted = try await store.requestEventAccess()
         guard eventsGranted else { throw EventKitError.accessDenied }
         return try await store.requestReminderAccess()
@@ -245,7 +247,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         }
     }
 
-    private func reminderCalendarIfNeeded(
+    func reminderCalendarIfNeeded(
         shouldWriteReminders: Bool,
         trip: Trip,
         store: EKEventStore,
@@ -680,7 +682,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         }
     }
 
-    private func ensureCalendar(
+    func ensureCalendar(
         named title: String,
         kind: EKEntityType,
         store: EKEventStore,
@@ -698,7 +700,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         return try createCalendar(named: title, kind: kind, store: store)
     }
 
-    private func createCalendar(named title: String, kind: EKEntityType, store: EKEventStore) throws -> EKCalendar {
+    func createCalendar(named title: String, kind: EKEntityType, store: EKEventStore) throws -> EKCalendar {
         let calendar = EKCalendar(for: kind, eventStore: store)
         calendar.title = title
 

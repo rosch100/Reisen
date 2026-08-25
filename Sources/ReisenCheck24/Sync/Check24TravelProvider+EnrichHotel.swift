@@ -1,5 +1,7 @@
 import Foundation
 import WebKit
+import ReisenDomain
+import ReisenProviders
 
 extension Check24TravelProvider {
     func enrichHotelDetail(
@@ -9,6 +11,7 @@ extension Check24TravelProvider {
         bookingURLString: String,
         deadlinesByBookingURL: inout [String: [ParsedCancellationDeadline]],
         hotelStayByBookingURL: inout [String: HotelCheckInOut],
+        guestHintsByBookingURL: inout [String: [BookingGuestHint]],
         bookingDetailsByBookingKey: inout [String: ParsedBookingDetails],
 
         basketsByBasketId: inout [String: HotelBasketParser.ParsedHotelBasket],
@@ -16,6 +19,7 @@ extension Check24TravelProvider {
         canonicalBookingUuidByBasketId: inout [String: String],
         deadlinesByBasketId: inout [String: [ParsedCancellationDeadline]],
         hotelStayByBasketId: inout [String: HotelCheckInOut],
+        guestHintsByBasketId: inout [String: [BookingGuestHint]],
         bookingDetailsByBasketId: inout [String: ParsedBookingDetails]
     ) async throws {
         let alreadyThere = webView.url?.absoluteString == bookingURL.absoluteString
@@ -36,6 +40,10 @@ extension Check24TravelProvider {
         let policy = CancellationPolicyParser().parseCancellationPolicy(from: html)
         let parsedDetails = BookingDetailsParser().parse(from: html, bookingType: parsedBooking.type)
         let stay = HotelCheckInOutParser().parse(from: html)
+        let guestHints = StayHintHTMLExtractor.extract(
+            from: html,
+            providerRaw: ProviderID.check24.rawValue
+        )
 
         if let basketId {
             persistBasketState(
@@ -57,7 +65,10 @@ extension Check24TravelProvider {
                 deadlinesByBasketId: &deadlinesByBasketId,
                 deadlinesByBookingURL: &deadlinesByBookingURL,
                 hotelStayByBasketId: &hotelStayByBasketId,
-                hotelStayByBookingURL: &hotelStayByBookingURL
+                hotelStayByBookingURL: &hotelStayByBookingURL,
+                guestHintsByBasketId: &guestHintsByBasketId,
+                guestHintsByBookingURL: &guestHintsByBookingURL,
+                guestHints: guestHints
             )
         } else {
             persistNonBasketDetails(
@@ -68,7 +79,9 @@ extension Check24TravelProvider {
                 bookingURLString: bookingURLString,
                 bookingDetailsByBookingKey: &bookingDetailsByBookingKey,
                 hotelStayByBookingURL: &hotelStayByBookingURL,
-                deadlinesByBookingURL: &deadlinesByBookingURL
+                deadlinesByBookingURL: &deadlinesByBookingURL,
+                guestHintsByBookingURL: &guestHintsByBookingURL,
+                guestHints: guestHints
             )
         }
     }

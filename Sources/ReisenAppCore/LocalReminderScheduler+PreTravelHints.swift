@@ -6,13 +6,9 @@ import ReisenData
 import SwiftData
 
 extension LocalReminderScheduler {
-    private struct PreTravelKey: Hashable {
-        let bookingID: UUID
-        let fireAt: Date
-    }
-
     public func schedulePreTravelHints(
         bookings: [Booking],
+        bookingTitles: [UUID: String],
         leadTimesDays: [Int]
     ) async throws -> [Reminder] {
         guard Bundle.main.bundleURL.path.hasSuffix(".app") else {
@@ -23,98 +19,171 @@ extension LocalReminderScheduler {
         let leadTimes = try normalizedLeadTimes(leadTimesDays)
         try await requestAuthorization(center: center)
 
-        let eligible = bookings.filter { booking in
-            booking.guestHints.contains { $0.category == .preTravelImportant }
-        }
+        let eligible = bookings.withPreTravelImportantHints()
         let eligibleIDs = Set(eligible.map(\.id))
-        let desiredKeys = preTravelDesiredKeys(bookings: eligible, leadTimes: leadTimes)
+        let now = Date()
+        let desiredKeys = PreTravelHintKeying.notificationDesiredKeys(
+            bookings: eligible,
+            bookingTitles: bookingTitles,
+            leadTimes: leadTimes,
+            now: now
+        )
 
         let existing = try reminderRepository.fetchAll()
         let existingPreTravel = existing.filter {
             $0.target == .preTravelHints && $0.channel == .notification
         }
 
-        var existingByKey: [PreTravelKey: Reminder] = [:]
-        for reminder in existingPreTravel {
-            guard let bookingID = reminder.bookingID, eligibleIDs.contains(bookingID) else { continue }
-            existingByKey[PreTravelKey(bookingID: bookingID, fireAt: reminder.fireAt)] = reminder
-        }
+        var existingByKey = existingPreTravelRemindersByKey(
+            existingPreTravel: existingPreTravel,
+            eligibleBookingIDs: eligibleIDs
+        )
 
-        for reminder in existingPreTravel {
-            let shouldKeep: Bool
-            if let bookingID = reminder.bookingID, eligibleIDs.contains(bookingID) {
-                shouldKeep = desiredKeys.contains(PreTravelKey(bookingID: bookingID, fireAt: reminder.fireAt))
-            } else {
-                shouldKeep = false
-            }
-            guard !shouldKeep else { continue }
-            if let externalAlarmId = reminder.externalAlarmId, !externalAlarmId.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: [externalAlarmId])
-            }
-            try reminderRepository.deleteByIDs([reminder.id])
-        }
+        try await deleteUnwantedPreTravelReminders(
+            existingPreTravel: existingPreTravel,
+            eligibleBookingIDs: eligibleIDs,
+            desiredKeys: desiredKeys,
+            center: center,
+            existingByKey: &existingByKey
+        )
 
-        var created: [Reminder] = []
-        let now = Date()
-        for booking in eligible {
-            let hints = booking.guestHints.filter { $0.category == .preTravelImportant }
-            guard !hints.isEmpty else { continue }
-            let bookingTitle = booking.title ?? "Buchung"
-            for leadDays in leadTimes {
-                guard let fireAt = Calendar.current.date(byAdding: .day, value: -leadDays, to: booking.startAt)
-                else { continue }
-                guard fireAt > now else { continue }
-                let key = PreTravelKey(bookingID: booking.id, fireAt: fireAt)
-                if existingByKey[key] != nil { continue }
-                if !desiredKeys.contains(key) { continue }
-
-                let content = UNMutableNotificationContent()
-                content.title = GuestHintCategory.preTravelImportant.displayTitle
-                content.body = BookingGuestHintSummary.notificationBody(bookingTitle: bookingTitle, hints: hints)
-                content.sound = .default
-
-                let triggerDate = Calendar.current.dateComponents(
-                    [.year, .month, .day, .hour, .minute],
-                    from: fireAt
-                )
-                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-                let request = UNNotificationRequest(
-                    identifier: UUID().uuidString,
-                    content: content,
-                    trigger: trigger
-                )
-                try await center.add(request)
-
-                let reminder = Reminder(
-                    fireAt: fireAt,
-                    target: .preTravelHints,
-                    channel: .notification,
-                    status: .scheduled,
-                    title: GuestHintCategory.preTravelImportant.displayTitle,
-                    notes: bookingTitle,
-                    bookingID: booking.id,
-                    externalAlarmId: request.identifier
-                )
-                try reminderRepository.insert(reminder)
-                created.append(reminder)
-            }
-        }
+        let created = try await upsertPreTravelReminders(
+            eligible: eligible,
+            bookingTitles: bookingTitles,
+            leadTimes: leadTimes,
+            desiredKeys: desiredKeys,
+            existingByKey: existingByKey,
+            now: now,
+            center: center
+        )
 
         try reminderRepository.save()
         return created
     }
 
-    private func preTravelDesiredKeys(bookings: [Booking], leadTimes: [Int]) -> Set<PreTravelKey> {
-        var keys: Set<PreTravelKey> = []
-        let now = Date()
-        for booking in bookings {
-            for leadDays in leadTimes {
-                guard let fireAt = Calendar.current.date(byAdding: .day, value: -leadDays, to: booking.startAt)
-                else { continue }
-                guard fireAt > now else { continue }
-                keys.insert(PreTravelKey(bookingID: booking.id, fireAt: fireAt))
+    private func existingPreTravelRemindersByKey(
+        existingPreTravel: [Reminder],
+        eligibleBookingIDs: Set<UUID>
+    ) -> [PreTravelHintKeying.NotificationKey: Reminder] {
+        var existingByKey: [PreTravelHintKeying.NotificationKey: Reminder] = [:]
+        for reminder in existingPreTravel {
+            guard let bookingID = reminder.bookingID,
+                  eligibleBookingIDs.contains(bookingID) else { continue }
+            let key = PreTravelHintKeying.NotificationKey(bookingID: bookingID, fireAt: reminder.fireAt)
+            existingByKey[key] = reminder
+        }
+        return existingByKey
+    }
+
+    private func deleteUnwantedPreTravelReminders(
+        existingPreTravel: [Reminder],
+        eligibleBookingIDs: Set<UUID>,
+        desiredKeys: Set<PreTravelHintKeying.NotificationKey>,
+        center: UNUserNotificationCenter,
+        existingByKey: inout [PreTravelHintKeying.NotificationKey: Reminder]
+    ) async throws {
+        for reminder in existingPreTravel {
+            let shouldKeep: Bool
+            if let key = PreTravelHintKeying.NotificationKey(reminder: reminder),
+               eligibleBookingIDs.contains(key.bookingID) {
+                shouldKeep = desiredKeys.contains(key)
+            } else {
+                shouldKeep = false
+            }
+            guard !shouldKeep else { continue }
+
+            removePendingNotification(for: reminder, center: center)
+            try reminderRepository.deleteByIDs([reminder.id])
+            if let key = PreTravelHintKeying.NotificationKey(reminder: reminder) {
+                existingByKey.removeValue(forKey: key)
             }
         }
-        return keys
+    }
+
+    private func upsertPreTravelReminders(
+        eligible: [Booking],
+        bookingTitles: [UUID: String],
+        leadTimes: [Int],
+        desiredKeys: Set<PreTravelHintKeying.NotificationKey>,
+        existingByKey: [PreTravelHintKeying.NotificationKey: Reminder],
+        now: Date,
+        center: UNUserNotificationCenter
+    ) async throws -> [Reminder] {
+        var created: [Reminder] = []
+        let displayTitle = GuestHintCategory.preTravelImportant.displayTitle
+        let notificationItems = PreTravelHintNotificationItems.items(
+            bookings: eligible,
+            bookingTitles: bookingTitles,
+            leadTimes: leadTimes,
+            now: now
+        )
+
+        for item in notificationItems {
+            guard desiredKeys.contains(item.notificationKey) else { continue }
+
+            let fingerprint = BookingGuestHintSummary.contentFingerprint(hints: item.hints)
+            let body = BookingGuestHintSummary.notificationBody(
+                bookingTitle: item.bookingTitle,
+                hints: item.hints
+            )
+
+            if let existing = existingByKey[item.notificationKey] {
+                if existing.notes == fingerprint { continue }
+                removePendingNotification(for: existing, center: center)
+                try reminderRepository.deleteByIDs([existing.id])
+            }
+
+            let request = try await scheduleNotification(
+                title: displayTitle,
+                body: body,
+                fireAt: item.fireAt,
+                center: center
+            )
+
+            let reminder = Reminder(
+                fireAt: item.fireAt,
+                target: .preTravelHints,
+                channel: .notification,
+                status: .scheduled,
+                title: displayTitle,
+                notes: fingerprint,
+                bookingID: item.booking.id,
+                externalAlarmId: request.identifier
+            )
+            try reminderRepository.insert(reminder)
+            created.append(reminder)
+        }
+
+        return created
+    }
+
+    func removePendingNotification(for reminder: Reminder, center: UNUserNotificationCenter) {
+        guard let externalAlarmId = reminder.externalAlarmId, !externalAlarmId.isEmpty else { return }
+        center.removePendingNotificationRequests(withIdentifiers: [externalAlarmId])
+    }
+
+    private func scheduleNotification(
+        title: String,
+        body: String,
+        fireAt: Date,
+        center: UNUserNotificationCenter
+    ) async throws -> UNNotificationRequest {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        let triggerDate = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: fireAt
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: trigger
+        )
+        try await center.add(request)
+        return request
     }
 }

@@ -10,6 +10,7 @@ public protocol ReminderScheduling: AnyObject {
 
     func schedulePreTravelHints(
         bookings: [Booking],
+        bookingTitles: [UUID: String],
         leadTimesDays: [Int]
     ) async throws -> [Reminder]
 }
@@ -20,6 +21,18 @@ public protocol CalendarSyncing: AnyObject {
         trips: [Trip],
         bookings: [Booking],
         deadlines: [CancellationDeadline],
+        bookingTitles: [UUID: String],
+        eventCalendarTitle: String,
+        reminderCalendarTitle: String,
+        eventCreateIfMissing: Bool,
+        reminderCreateIfMissing: Bool,
+        calendarTitleMode: CalendarTitleMode,
+        leadTimesDays: [Int]
+    ) async throws
+
+    func syncPreTravelHints(
+        trips: [Trip],
+        bookings: [Booking],
         bookingTitles: [UUID: String],
         eventCalendarTitle: String,
         reminderCalendarTitle: String,

@@ -26,4 +26,16 @@ extension DomainMapper {
             lastSyncedAt: model.lastSyncedAt
         )
     }
+
+    public static func preTravelHintLink(from model: SDPreTravelHintLink) -> PreTravelHintLink {
+        PreTravelHintLink(
+            id: model.id,
+            ownerTripID: model.ownerTripID,
+            ownerBookingID: model.ownerBookingID,
+            leadDays: model.leadDays,
+            eventIdentifier: model.eventIdentifier,
+            reminderIdentifier: model.reminderIdentifier,
+            lastSyncedAt: model.lastSyncedAt
+        )
+    }
 }

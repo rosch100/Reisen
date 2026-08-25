@@ -17,7 +17,7 @@ CloudKit is disabled when `REISEN_CLOUDKIT=0`, `CI=true`, or an XCTest host is d
 
 Instead:
 
-1. Open containers with a non-versioned `Schema(ReisenSchemaV8.models)`.
+1. Open containers with a non-versioned `Schema(ReisenSchemaV9.models)`.
 2. One-time rewrite of legacy `ReisenData.sqlite` → hybrid cloud/local via `migrateLegacyMonolithicStoreIfNeeded()`.
 3. On incompatible leftover stores: wipe store files once and retry.
 

@@ -369,6 +369,7 @@ public final class SyncStore {
             )
             _ = try await reminderScheduler.schedulePreTravelHints(
                 bookings: bookings,
+                bookingTitles: bookingTitles,
                 leadTimesDays: settings.leadTimesDays
             )
         }
@@ -390,6 +391,17 @@ public final class SyncStore {
                 trips: trips,
                 bookings: bookings,
                 deadlines: deadlines,
+                bookingTitles: bookingTitles,
+                eventCalendarTitle: settings.calendarTitle,
+                reminderCalendarTitle: settings.reminderCalendarTitle,
+                eventCreateIfMissing: effectiveEventCreateIfMissing,
+                reminderCreateIfMissing: effectiveReminderCreateIfMissing,
+                calendarTitleMode: settings.calendarTitleMode,
+                leadTimesDays: settings.leadTimesDays
+            )
+            try await calendarSync.syncPreTravelHints(
+                trips: trips,
+                bookings: bookings,
                 bookingTitles: bookingTitles,
                 eventCalendarTitle: settings.calendarTitle,
                 reminderCalendarTitle: settings.reminderCalendarTitle,

@@ -11,6 +11,8 @@ extension Check24TravelProvider {
         deadlinesByBookingURL: [String: [ParsedCancellationDeadline]],
         hotelStayByBasketId: [String: HotelCheckInOut],
         hotelStayByBookingURL: [String: HotelCheckInOut],
+        guestHintsByBasketId: [String: [BookingGuestHint]],
+        guestHintsByBookingURL: [String: [BookingGuestHint]],
         bookingDetailsByBasketId: [String: ParsedBookingDetails],
         bookingDetailsByBookingKey: [String: ParsedBookingDetails]
     ) -> [String: ProviderBookingDraft] {
@@ -30,6 +32,9 @@ extension Check24TravelProvider {
                 ?? deadlinesByBookingURL[canonicalExternalUrl]
                 ?? []
             let stay = hotelStayByBasketId[basketId] ?? hotelStayByBookingURL[canonicalExternalUrl]
+            let guestHints = guestHintsByBasketId[basketId]
+                ?? guestHintsByBookingURL[canonicalExternalUrl]
+                ?? []
 
             let enrichedDetails = bookingDetailsByBasketId[basketId]
                 ?? identityKey(for: canonicalBooking)
@@ -62,7 +67,8 @@ extension Check24TravelProvider {
                 hotelOffsetSeconds: deadlines.compactMap(\.hotelOffsetSeconds).first,
                 hotelCheckInMinutes: stay?.checkInMinutes,
                 hotelCheckOutMinutes: stay?.checkOutMinutes,
-                rawPayloadFingerprint: mergedDetails?.rawDetailsFingerprint
+                rawPayloadFingerprint: mergedDetails?.rawDetailsFingerprint,
+                guestHints: guestHints
             )
 
             draftByExternalUrl[canonicalExternalUrl] = draft
@@ -76,6 +82,7 @@ extension Check24TravelProvider {
         bookingUuidToBasketId: [String: String],
         deadlinesByBookingURL: [String: [ParsedCancellationDeadline]],
         hotelStayByBookingURL: [String: HotelCheckInOut],
+        guestHintsByBookingURL: [String: [BookingGuestHint]],
         bookingDetailsByBookingKey: [String: ParsedBookingDetails],
         draftByExternalUrl: inout [String: ProviderBookingDraft]
     ) {
@@ -94,6 +101,7 @@ extension Check24TravelProvider {
                 allBookings: activity.bookings,
                 deadlinesByBookingURL: deadlinesByBookingURL,
                 hotelStayByBookingURL: hotelStayByBookingURL,
+                guestHintsByBookingURL: guestHintsByBookingURL,
                 bookingDetailsByBookingKey: bookingDetailsByBookingKey
             )
             guard let key = draft.externalUrl else { continue }

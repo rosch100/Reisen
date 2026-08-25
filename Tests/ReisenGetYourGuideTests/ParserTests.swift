@@ -62,6 +62,7 @@ func gygBookingSummaryParsesEnrichment() throws {
     #expect(hints.contains { $0.sourceKey.hasPrefix("gyg:restriction:") })
     #expect(hints.contains { $0.sourceKey == "gyg:inclusions" })
     #expect(hints.contains { $0.sourceKey == "gyg:mobileVoucher" })
+    #expect(hints.contains { $0.sourceKey.hasPrefix("gyg:itinerary:") })
 }
 
 @Test("GetYourGuideInitialState extrahiert JSON-Objekt per Brace-Scan")

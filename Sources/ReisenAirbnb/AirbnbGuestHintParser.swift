@@ -10,7 +10,7 @@ public struct AirbnbGuestHintParser: Sendable {
         let lower = responseText.lowercased()
         var hints: [BookingGuestHint] = []
 
-        if looksLikeMissingEssentials(lower) {
+        if looksLikeMissingEssentials(responseText) {
             hints.append(
                 BookingGuestHint(
                     category: .preTravelImportant,
@@ -53,35 +53,33 @@ public struct AirbnbGuestHintParser: Sendable {
             )
         }
 
-        if let houseRulesSnippet = extractHouseRulesSnippet(from: responseText) {
-            let prepRelevant = houseRulesSnippet.lowercased()
-            if prepRelevant.contains("towel")
-                || prepRelevant.contains("linen")
-                || prepRelevant.contains("handtuch")
-                || prepRelevant.contains("bettwäsche")
-                || prepRelevant.contains("mitbringen")
-            {
-                hints.append(
-                    BookingGuestHint(
-                        category: .preTravelImportant,
-                        title: "Hausregeln",
-                        detail: houseRulesSnippet,
-                        sourceKey: "airbnb:house_rules:prep",
-                        providerRaw: provider
-                    )
+        if let houseRulesSnippet = extractHouseRulesSnippet(from: responseText),
+           BookingGuestHintPrepKeywords.matches(houseRulesSnippet) {
+            hints.append(
+                BookingGuestHint(
+                    category: .preTravelImportant,
+                    title: "Hausregeln",
+                    detail: houseRulesSnippet,
+                    sourceKey: "airbnb:house_rules:prep",
+                    providerRaw: provider
                 )
-            }
+            )
         }
 
-        return dedupe(hints)
+        return BookingGuestHint.dedupedBySourceKey(hints)
     }
 
-    private func looksLikeMissingEssentials(_ lower: String) -> Bool {
-        if lower.contains("\"essentials\"") && lower.contains("\"available\":false") {
-            return true
-        }
-        if lower.contains("essentials") && lower.contains("not included") {
-            return true
+    private func looksLikeMissingEssentials(_ text: String) -> Bool {
+        let patterns = [
+            #""title"\s*:\s*"Essentials"[\s\S]{0,120}?"available"\s*:\s*false"#,
+            #""available"\s*:\s*false[\s\S]{0,120}?"title"\s*:\s*"Essentials""#,
+            #""id"\s*:\s*"essentials"[\s\S]{0,120}?"available"\s*:\s*false"#,
+            #""available"\s*:\s*false[\s\S]{0,120}?"id"\s*:\s*"essentials""#,
+        ]
+        for pattern in patterns {
+            if text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil {
+                return true
+            }
         }
         return false
     }
@@ -99,10 +97,5 @@ public struct AirbnbGuestHintParser: Sendable {
             if cleaned.count > 20 { return String(cleaned.prefix(280)) }
         }
         return nil
-    }
-
-    private func dedupe(_ hints: [BookingGuestHint]) -> [BookingGuestHint] {
-        var seen = Set<String>()
-        return hints.filter { seen.insert($0.sourceKey).inserted }
     }
 }

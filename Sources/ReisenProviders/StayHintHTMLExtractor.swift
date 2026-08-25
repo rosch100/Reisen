@@ -14,7 +14,7 @@ public enum StayHintHTMLExtractor {
         var hints: [BookingGuestHint] = []
         hints.append(contentsOf: linenHints(in: text, providerRaw: providerRaw))
         hints.append(contentsOf: importantNoticeHints(in: text, providerRaw: providerRaw))
-        return dedupe(hints)
+        return BookingGuestHint.dedupedBySourceKey(hints)
     }
 
     private static func linenHints(in text: String, providerRaw: String) -> [BookingGuestHint] {
@@ -90,6 +90,7 @@ public enum StayHintHTMLExtractor {
                 .replacingOccurrences(of: "\n", with: " ")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard cleaned.count > marker.count + 10 else { continue }
+            guard BookingGuestHintPrepKeywords.matches(cleaned) else { continue }
             return [
                 BookingGuestHint(
                     category: .preTravelImportant,
@@ -121,15 +122,5 @@ public enum StayHintHTMLExtractor {
             s = s.replacingOccurrences(of: "  ", with: " ")
         }
         return s.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func dedupe(_ hints: [BookingGuestHint]) -> [BookingGuestHint] {
-        var seen = Set<String>()
-        var result: [BookingGuestHint] = []
-        for hint in hints {
-            guard seen.insert(hint.sourceKey).inserted else { continue }
-            result.append(hint)
-        }
-        return result
     }
 }
