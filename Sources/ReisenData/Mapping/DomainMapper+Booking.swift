@@ -23,6 +23,8 @@ extension DomainMapper {
             locationTo: model.locationTo,
             locationFromAddress: model.locationFromAddress,
             locationToAddress: model.locationToAddress,
+            operatorName: model.operatorName,
+            isAllDay: model.isAllDay,
             status: BookingStatus(rawValue: model.statusRaw) ?? .unknown,
             lastSyncedAt: model.lastSyncedAt,
             rawPayloadFingerprint: model.rawPayloadFingerprint,

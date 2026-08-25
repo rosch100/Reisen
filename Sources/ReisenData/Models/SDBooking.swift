@@ -22,6 +22,8 @@ public final class SDBooking {
     public var locationTo: String?
     public var locationFromAddress: String?
     public var locationToAddress: String?
+    public var operatorName: String?
+    public var isAllDay: Bool?
     public var statusRaw: String = ""
     public var lastSyncedAt: Date?
     public var rawPayloadFingerprint: String?
@@ -56,6 +58,8 @@ public final class SDBooking {
         locationTo: String? = nil,
         locationFromAddress: String? = nil,
         locationToAddress: String? = nil,
+        operatorName: String? = nil,
+        isAllDay: Bool? = nil,
         statusRaw: String,
         lastSyncedAt: Date? = nil,
         rawPayloadFingerprint: String? = nil,
@@ -83,6 +87,8 @@ public final class SDBooking {
         self.locationTo = locationTo
         self.locationFromAddress = locationFromAddress
         self.locationToAddress = locationToAddress
+        self.operatorName = operatorName
+        self.isAllDay = isAllDay
         self.statusRaw = statusRaw
         self.lastSyncedAt = lastSyncedAt
         self.rawPayloadFingerprint = rawPayloadFingerprint

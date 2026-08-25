@@ -8,6 +8,7 @@ import ReisenOpodo
 import ReisenBookingCom
 import ReisenAirbnb
 import ReisenGetYourGuide
+import ReisenTraveloka
 
 /// Plattformneutraler App- und Store-Bootstrap.
 /// UI-spezifische Views (z. B. CopyableText via AppKit) bleiben weiterhin in den UI-Modulen.
@@ -118,9 +119,13 @@ public final class AppBootstrap {
                 OpodoTravelProvider(),
                 BookingComTravelProvider(),
                 AirbnbTravelProvider(),
-                GetYourGuideTravelProvider()
+                GetYourGuideTravelProvider(),
+                TravelokaTravelProvider(),
             ],
-            deepLinkBuilders: [Check24DeepLinkBuilder()]
+            deepLinkBuilders: [
+                Check24DeepLinkBuilder(),
+                TravelokaDeepLinkBuilder(),
+            ]
         )
     }
 }

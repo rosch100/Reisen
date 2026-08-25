@@ -21,6 +21,8 @@ Instead:
 2. One-time rewrite of legacy `ReisenData.sqlite` → hybrid cloud/local via `migrateLegacyMonolithicStoreIfNeeded()`.
 3. On incompatible leftover stores: wipe store files once and retry.
 
+Optional Attribute auf `SDBooking` (`operatorName`, `isAllDay`): SwiftData lightweight Migration über denselben `Schema(ReisenSchemaV7.models)`-Pfad; bei inkompatiblem Store greift Wipe+Retry. Legacy-Monolith-Copy setzt die Felder in `makeLegacyBookingCopy` mit.
+
 ## Side effects after CloudKit import
 
 EventKit links and notification IDs stay device-local. After remote merges (`NSPersistentStoreRemoteChange`) and on app activation, `SyncStore.rebuildLocalSideEffects` rebuilds calendars/reminders from the synced domain data.

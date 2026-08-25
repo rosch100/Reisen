@@ -1,0 +1,59 @@
+{
+  "data": {
+    "status": "SUCCESS",
+    "itineraryEntryList": [
+      {
+        "bookingId": "1000000001",
+        "itineraryId": "2000000001",
+        "itineraryType": "FLIGHT",
+        "itineraryTags": [
+          {
+            "text": "E-ticket issued",
+            "status": "STATUS_OK"
+          }
+        ],
+        "paymentInfo": {
+          "userTripStatus": "ETICKET_PUBLISHED"
+        },
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "tripType": "FLIGHT",
+            "itineraryTimestampBegin": "1791000000000",
+            "ianaTimezoneBegin": "Asia/Jakarta",
+            "itineraryTimestampEnd": "1791007200000",
+            "ianaTimezoneEnd": "Asia/Makassar",
+            "sectionType": "ACTIVE_BOOKING",
+            "productName": "Flight"
+          },
+          "flightSummary": null
+        },
+        "cardDetailInfo": {
+          "flightDetail": {
+            "originCity": "Jakarta",
+            "originAirportCode": "CGK",
+            "originAirportName": "Soekarno-Hatta",
+            "originTerminal": "2",
+            "destinationCity": "Denpasar",
+            "destinationAirportCode": "DPS",
+            "destinationAirportName": "Ngurah Rai",
+            "destinationTerminal": "Domestic",
+            "airlineName": "AirAsia",
+            "airlineCode": "QZ",
+            "passengerCount": 1,
+            "cabinBaggage": "7 kg",
+            "checkedBaggage": "20 kg",
+            "refundable": false,
+            "refundPolicyLabel": "Non-Refundable",
+            "passengers": [
+              {
+                "firstName": "REDACTED",
+                "lastName": "REDACTED",
+                "type": "ADULT"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

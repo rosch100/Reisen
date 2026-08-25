@@ -65,6 +65,8 @@ struct ContentView: View {
     private var bookingEnabled: Bool
     @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .airbnb))
     private var airbnbEnabled: Bool
+    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .traveloka))
+    private var travelokaEnabled: Bool
 
     var body: some View {
         PersistentHorizontalSplitView(
@@ -281,6 +283,7 @@ struct ContentView: View {
         if opodoEnabled { ids.append(.opodo) }
         if bookingEnabled { ids.append(.booking) }
         if airbnbEnabled { ids.append(.airbnb) }
+        if travelokaEnabled { ids.append(.traveloka) }
         return ids
     }
 
@@ -345,6 +348,9 @@ struct ContentView: View {
 
                 ProviderSidebarRow(providerID: .airbnb)
                     .tag(SidebarSelection.providerSync(.airbnb))
+
+                ProviderSidebarRow(providerID: .traveloka)
+                    .tag(SidebarSelection.providerSync(.traveloka))
             }
 
             Section("Offene Buchungen") {

@@ -58,6 +58,8 @@ flowchart LR
 |----------|-----------|---------|------------------|
 | **Airbnb Experiences** | `TripListQuery` + `activity_reservation_details` | Niedrig | HAR ausgewertet; [Impl-Spec](dev/airbnb-experiences-impl-spec.md) |
 | **GetYourGuide** | SSR `__INITIAL_STATE__` auf `/customer-bookings/` + `/booking/{hash}` | Niedrig–mittel | HAR ausgewertet; [Impl-Spec](dev/getyourguide-impl-spec.md) |
+| **Traveloka** | Cookie-Session + `tripitinerary` fetch/single; Login E-Mail/OTP + Sign in with Apple | Mittel | HAR ausgewertet; [Impl-Spec](dev/traveloka-impl-spec.md) |
+| Expedia / TripAdvisor | Account-Portal | Hoch | Auth/Captcha; siehe unten |
 | Viator | Session/Login | Mittel–hoch | noch ohne HAR |
 | TUI Musement | myTUI / Musement | Mittel | noch ohne HAR |
 
@@ -213,6 +215,68 @@ Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage
 - Kritische Catalog/Enrichment-Lücken Hotel/Flug: **keine**
 - Optional später (separat spezifizieren): Departure-Offset aus ISO — nur mit Wall-Clock-Tests
 - **Opodo-Produktivcode in diesem Recherche-Schritt nicht anfassen**
+
+---
+
+## Teil A.4 – Traveloka HAR-Befunde
+
+**HAR-SSOT** (Surfaces, Product-Types, Login TV+AP).  
+**Mapping-SSOT:** [`traveloka-impl-spec.md`](dev/traveloka-impl-spec.md).
+
+**Quelle:** `HAR/www.traveloka.com_Archive [26-08-25 17-53-21].har` (gitignored).  
+**Fixtures:** `traveloka_itineraries_fetch_redacted.json`, `traveloka_itinerary_single_{hotel,experience,vehicle,flight,flight_fee}_redacted.json`, `traveloka_whoami_*.json`, `traveloka_transactions_number_redacted.json`.
+
+### Surfaces
+
+| Rolle | URL / Endpoint | Inhalt |
+|-------|----------------|--------|
+| Login | `GET …/en-en/user/signin?referrer=…/mybooking` | E-Mail/OTP + Sign in with Apple / Google / Facebook |
+| Session-Probe | `POST /api/v2/user/whoami` | `loginMethod` ∈ {`TV`,`AP`,…}; `revoked` |
+| Catalog | `POST /api/v2/tripitinerary/itineraries/v2/fetch` | `itineraryEntryList` (Gruppen ACTIVE_BOOKING) |
+| Enrich | `POST /api/v2/tripitinerary/itineraries/v2/single` | `cardSummaryInfo` + `cardDetailInfo` |
+| Optional Count | `POST …/transactions/number` | Badge-Zahlen — Sync nicht nötig |
+| Detail-Deep-Link | `/en-en/item/details/{bookingId}?type={PRODUCT}&id={itineraryId}` | `externalUrl` |
+
+**Pflicht-Header (Trip-Itinerary):** `x-domain: tripItinerary`, `x-client-interface: desktop`, `x-route-prefix: en-en`, `tv-language` / `tv-country` / `tv-currency`.
+
+```mermaid
+flowchart TD
+  SignIn["signin E-Mail/OTP oder Apple"]
+  WhoAmI["whoami loginMethod TV oder AP"]
+  Catalog["itineraries/v2/fetch"]
+  Drafts[ProviderBookingDraft]
+  Enrich["itineraries/v2/single"]
+  Sync[SyncProviderBookings]
+  SignIn --> WhoAmI --> Catalog --> Drafts --> Enrich --> Sync
+```
+
+### Product-Type → Domain
+
+| Traveloka | Domain |
+|-----------|--------|
+| `FLIGHT` | `.flight` |
+| `HOTEL` (Villa/Apartment analog) | `.hotel` |
+| `EXPERIENCE` | `.activity` |
+| `VEHICLE_RENTAL`, Airport Transport, Train, Ancillary, Insurance, unbekannt | `.other` |
+
+### Feldinventar (Kurz)
+
+- **Hotel:** dual Free+Fee-`cancellationPolicies`; Check-in/out Minuten; `hotelOffsetSeconds` aus `ianaTimezoneBegin`
+- **Experience:** `operatorInfo.name` → `operatorName`; All-Day → `isAllDay`; `travelersInfo` / `experiencePaxType` → `travellerType`; Policy-Strings für Free-Deadline
+- **Vehicle:** `providerName` → `operatorName`; Pick-up/Drop-off Adressen; Free-Cancel-Local
+- **Flight:** Route/Airline/Offsets/Baggage; `passengers[]`; Non-Refundable ohne Deadline; Fee-Refund nur mit `refundFeeAmount` + `refundDeadlineLocal` (keine Free-Deadline erfinden)
+
+### Login (TV + AP)
+
+1. E-Mail → MFA (`getotpinfo` / `sendotp` / `verifymfa`) → Cookies → `whoami` (`TV`)
+2. Apple-Button im WKWebView → `appleid.apple.com` → `signinexternalaccount` (`AP`) — **kein** natives `ASAuthorization`
+3. Autofill nur auf `*.traveloka.com`; IdP-Hosts nicht `sessionReady`
+
+### Offene Punkte
+
+- Live-HAR für Fee-Refund-Flug (Fixture synthetisch, Schema-aligned)
+- `sentinel` / `x-did` / `tv-clientsessionid` aus WebView-Session (`sen_t`, `clientSessionId`, Device-ID Storage) — implementiert in `TravelokaSessionContext`
+- Train Desktop nicht sync-/deep-link-fähig
 
 ---
 

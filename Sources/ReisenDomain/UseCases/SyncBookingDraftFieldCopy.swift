@@ -13,6 +13,8 @@ public enum SyncBookingDraftFieldCopy {
         booking.locationTo = draft.locationTo
         booking.locationFromAddress = draft.locationFromAddress
         booking.locationToAddress = draft.locationToAddress
+        booking.operatorName = draft.operatorName
+        booking.isAllDay = draft.isAllDay
         booking.status = draft.status
         booking.lastSyncedAt = now
         booking.rawPayloadFingerprint = draft.rawPayloadFingerprint

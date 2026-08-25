@@ -111,6 +111,14 @@ public enum BookingScheduleFields {
         if let to = booking.locationTo, !to.isEmpty {
             fields.append(BookingRateField(label: "Nach", value: to))
         }
+        if let operatorName = booking.operatorName, !operatorName.isEmpty {
+            fields.append(BookingRateField(label: "Anbieter", value: operatorName))
+        }
+        if booking.isAllDay == true {
+            fields.append(BookingRateField(label: "Ganztägig", value: "ja"))
+        }
+
+        let activityDateFormat = booking.isAllDay == true ? "d.M.yyyy" : "d.M.yyyy HH:mm"
 
         switch booking.bookingType {
         case .hotel:
@@ -161,7 +169,7 @@ public enum BookingScheduleFields {
                     label: "Start",
                     value: Formatting.formatOrtszeit(
                         booking.startAt,
-                        dateFormat: "d.M.yyyy HH:mm",
+                        dateFormat: activityDateFormat,
                         timeZone: booking.resolvedHotelTimeZone
                     )
                 )
@@ -171,7 +179,7 @@ public enum BookingScheduleFields {
                     label: "Ende",
                     value: Formatting.formatOrtszeit(
                         booking.endAt,
-                        dateFormat: "d.M.yyyy HH:mm",
+                        dateFormat: activityDateFormat,
                         timeZone: booking.resolvedHotelTimeZone
                     )
                 )
