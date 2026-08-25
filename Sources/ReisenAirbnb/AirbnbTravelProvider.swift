@@ -142,17 +142,15 @@ private extension AirbnbTravelProvider {
         )
 
         let guestAdults = parsed.guestAdults ?? tripDetails.guestAdults
-        let passengers: [BookingPassenger]? = {
-            guard let guestAdults, guestAdults > 0 else { return nil }
-            return (1...guestAdults).map { passengerNumber in
-                BookingPassenger(passengerNumber: passengerNumber, travellerType: .adult)
-            }
-        }()
+        var rateDetails = parsed.rateDetails ?? BookingRateDetails()
+        if let guestAdults, guestAdults > 0 {
+            rateDetails.guestCount = guestAdults
+        }
 
         return ProviderBookingEnrichment(
             deadlines: parsed.deadlines,
-            rateDetails: parsed.rateDetails,
-            passengers: passengers,
+            rateDetails: rateDetails,
+            passengers: nil,
             hotelOffsetSeconds: nil,
             hotelCheckInMinutes: nil,
             hotelCheckOutMinutes: nil,
