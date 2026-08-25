@@ -15,6 +15,8 @@ public final class SDReminder {
     public var cancellationDeadlineID: UUID?
     /// Soft reference into the cloud store (no cross-store relationship).
     public var gapID: UUID?
+    /// Soft reference for pre-travel hint reminders (booking in cloud store).
+    public var bookingID: UUID?
     public var externalAlarmId: String?
 
     public init(
@@ -27,6 +29,7 @@ public final class SDReminder {
         notes: String? = nil,
         cancellationDeadlineID: UUID? = nil,
         gapID: UUID? = nil,
+        bookingID: UUID? = nil,
         externalAlarmId: String? = nil
     ) {
         self.id = id
@@ -38,6 +41,7 @@ public final class SDReminder {
         self.notes = notes
         self.cancellationDeadlineID = cancellationDeadlineID
         self.gapID = gapID
+        self.bookingID = bookingID
         self.externalAlarmId = externalAlarmId
     }
 }

@@ -283,16 +283,17 @@ import ReisenDomain
 
 @MainActor
 @Test func hybridStoreKeepsLocalModelsOutOfCloudConfiguration() throws {
-    #expect(ReisenSchemaV7.cloudModels.contains { $0 == SDTrip.self })
-    #expect(ReisenSchemaV7.cloudModels.contains { $0 == SDBooking.self })
-    #expect(ReisenSchemaV7.cloudModels.contains { $0 == SDGap.self })
-    #expect(!ReisenSchemaV7.cloudModels.contains { $0 == SDReminder.self })
-    #expect(!ReisenSchemaV7.cloudModels.contains { $0 == SDCalendarEventLink.self })
-    #expect(!ReisenSchemaV7.cloudModels.contains { $0 == SDCancellationDeadlineLink.self })
+    #expect(ReisenSchemaV8.cloudModels.contains { $0 == SDTrip.self })
+    #expect(ReisenSchemaV8.cloudModels.contains { $0 == SDBooking.self })
+    #expect(ReisenSchemaV8.cloudModels.contains { $0 == SDBookingGuestHint.self })
+    #expect(ReisenSchemaV8.cloudModels.contains { $0 == SDGap.self })
+    #expect(!ReisenSchemaV8.cloudModels.contains { $0 == SDReminder.self })
+    #expect(!ReisenSchemaV8.cloudModels.contains { $0 == SDCalendarEventLink.self })
+    #expect(!ReisenSchemaV8.cloudModels.contains { $0 == SDCancellationDeadlineLink.self })
 
-    #expect(ReisenSchemaV7.localModels.contains { $0 == SDReminder.self })
-    #expect(ReisenSchemaV7.localModels.contains { $0 == SDCalendarEventLink.self })
-    #expect(ReisenSchemaV7.localModels.contains { $0 == SDCancellationDeadlineLink.self })
+    #expect(ReisenSchemaV8.localModels.contains { $0 == SDReminder.self })
+    #expect(ReisenSchemaV8.localModels.contains { $0 == SDCalendarEventLink.self })
+    #expect(ReisenSchemaV8.localModels.contains { $0 == SDCancellationDeadlineLink.self })
 
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext

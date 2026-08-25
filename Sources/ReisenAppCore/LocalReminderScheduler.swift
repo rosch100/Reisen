@@ -21,8 +21,8 @@ public final class LocalReminderScheduler: ReminderScheduling {
         }
     }
 
-    private let modelContext: ModelContext
-    private let reminderRepository: SwiftDataReminderRepository
+    let modelContext: ModelContext
+    let reminderRepository: SwiftDataReminderRepository
 
     private struct ReminderKey: Hashable {
         let deadlineID: UUID
@@ -96,7 +96,7 @@ public final class LocalReminderScheduler: ReminderScheduling {
         return formatter.string(from: deadline.deadlineAt)
     }
 
-    private func normalizedLeadTimes(_ leadTimesDays: [Int]) throws -> [Int] {
+    func normalizedLeadTimes(_ leadTimesDays: [Int]) throws -> [Int] {
         let leadTimes = leadTimesDays.sorted().filter { $0 > 0 }
         guard !leadTimes.isEmpty else {
             throw RepositoryError.invalidState("Keine gültigen Vorlaufzeiten konfiguriert.")
@@ -104,7 +104,7 @@ public final class LocalReminderScheduler: ReminderScheduling {
         return leadTimes
     }
 
-    private func requestAuthorization(center: UNUserNotificationCenter) async throws {
+    func requestAuthorization(center: UNUserNotificationCenter) async throws {
         let authorization = try await center.requestAuthorization(options: [.alert, .sound, .badge])
         guard authorization else { throw SchedulerError.authorizationDenied }
     }

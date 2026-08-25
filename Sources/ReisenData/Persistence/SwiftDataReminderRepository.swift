@@ -25,6 +25,7 @@ public final class SwiftDataReminderRepository: ReminderRepository {
             notes: reminder.notes,
             cancellationDeadlineID: reminder.cancellationDeadlineID,
             gapID: reminder.gapID,
+            bookingID: reminder.bookingID,
             externalAlarmId: reminder.externalAlarmId
         )
         modelContext.insert(model)

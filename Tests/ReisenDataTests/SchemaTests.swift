@@ -6,20 +6,20 @@ import ReisenDomain
 
 @Test func persistenceBootstrapCreatesContainer() throws {
     #expect(!ReisenSchemaV1.models.isEmpty)
-    #expect(!ReisenSchemaV7.models.isEmpty)
-    #expect(ReisenMigrationPlan.schemas.contains { $0 == ReisenSchemaV7.self })
+    #expect(!ReisenSchemaV8.models.isEmpty)
+    #expect(ReisenMigrationPlan.schemas.contains { $0 == ReisenSchemaV8.self })
     #expect(ReisenMigrationPlan.stages.isEmpty)
     #expect(PersistenceBootstrap.cloudKitContainerID == "iCloud.de.roschmac.Reisen")
     #expect(PersistenceBootstrap.cloudStoreName == "reisen-cloud")
     #expect(PersistenceBootstrap.localStoreName == "reisen-local")
-    #expect(!ReisenSchemaV7.cloudModels.isEmpty)
-    #expect(!ReisenSchemaV7.localModels.isEmpty)
+    #expect(!ReisenSchemaV8.cloudModels.isEmpty)
+    #expect(!ReisenSchemaV8.localModels.isEmpty)
 }
 
 @MainActor
 @Test func hybridStoreSplitKeepsCloudAndLocalModelsApart() throws {
-    let cloudTypes = Set(ReisenSchemaV7.cloudModels.map { ObjectIdentifier($0) })
-    let localTypes = Set(ReisenSchemaV7.localModels.map { ObjectIdentifier($0) })
+    let cloudTypes = Set(ReisenSchemaV8.cloudModels.map { ObjectIdentifier($0) })
+    let localTypes = Set(ReisenSchemaV8.localModels.map { ObjectIdentifier($0) })
     #expect(cloudTypes.isDisjoint(with: localTypes))
 
     #expect(cloudTypes.contains(ObjectIdentifier(SDTrip.self)))

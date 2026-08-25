@@ -56,6 +56,12 @@ func gygBookingSummaryParsesEnrichment() throws {
     #expect(passengers.allSatisfy { $0.travellerType == .adult })
     #expect(passengers.allSatisfy { $0.givenName == nil && $0.familyName == nil })
     #expect(passengers.first?.title == "Erwachsene")
+
+    let hints = try #require(enrichment.guestHints)
+    #expect(hints.contains { $0.sourceKey == "gyg:meetingPoint" })
+    #expect(hints.contains { $0.sourceKey.hasPrefix("gyg:restriction:") })
+    #expect(hints.contains { $0.sourceKey == "gyg:inclusions" })
+    #expect(hints.contains { $0.sourceKey == "gyg:mobileVoucher" })
 }
 
 @Test("GetYourGuideInitialState extrahiert JSON-Objekt per Brace-Scan")

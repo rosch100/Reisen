@@ -28,6 +28,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
     public var cancellationDeadlines: [CancellationDeadline]
     public var rateDetails: BookingRateDetails?
     public var passengers: [BookingPassenger]
+    public var guestHints: [BookingGuestHint]
 
     public init(
         id: UUID = UUID(),
@@ -55,7 +56,8 @@ public struct Booking: Identifiable, Equatable, Sendable {
         tripID: UUID? = nil,
         cancellationDeadlines: [CancellationDeadline] = [],
         rateDetails: BookingRateDetails? = nil,
-        passengers: [BookingPassenger] = []
+        passengers: [BookingPassenger] = [],
+        guestHints: [BookingGuestHint] = []
     ) {
         self.id = id
         self.provider = provider
@@ -83,6 +85,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
         self.cancellationDeadlines = cancellationDeadlines
         self.rateDetails = rateDetails
         self.passengers = passengers
+        self.guestHints = guestHints
     }
 
     /// Hotel-Wall-Clock-TZ über Domain-SSOT (`HotelTimeZone`).

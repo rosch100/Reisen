@@ -7,6 +7,11 @@ public protocol ReminderScheduling: AnyObject {
         bookingTitles: [UUID: String],
         leadTimesDays: [Int]
     ) async throws -> [Reminder]
+
+    func schedulePreTravelHints(
+        bookings: [Booking],
+        leadTimesDays: [Int]
+    ) async throws -> [Reminder]
 }
 
 @MainActor

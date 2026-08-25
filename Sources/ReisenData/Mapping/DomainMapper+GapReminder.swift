@@ -30,6 +30,7 @@ extension DomainMapper {
             notes: model.notes,
             cancellationDeadlineID: model.cancellationDeadlineID,
             gapID: model.gapID,
+            bookingID: model.bookingID,
             externalAlarmId: model.externalAlarmId
         )
     }

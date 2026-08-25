@@ -28,9 +28,11 @@ extension BookingComTravelProvider {
             hotelOffsetSeconds: ref.hotelOffsetSeconds
         )
         let rateDetails = BookingComHotelConfirmationParser().parseRateDetails(from: html)
+        let guestHints = BookingComGuestHintParser().parse(from: html)
         return ProviderBookingEnrichment(
             deadlines: deadlines,
             rateDetails: rateDetails,
+            guestHints: guestHints.isEmpty ? nil : guestHints,
             hotelOffsetSeconds: ref.hotelOffsetSeconds
         )
     }

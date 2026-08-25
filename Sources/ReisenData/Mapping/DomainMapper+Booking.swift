@@ -29,7 +29,20 @@ extension DomainMapper {
             tripID: model.trip?.id,
             cancellationDeadlines: (model.cancellationDeadlines ?? []).map(deadline(from:)),
             rateDetails: model.rateDetails.map(rateDetails(from:)),
-            passengers: (model.passengers ?? []).map(passenger(from:))
+            passengers: (model.passengers ?? []).map(passenger(from:)),
+            guestHints: (model.guestHints ?? []).map(guestHint(from:))
+        )
+    }
+
+    public static func guestHint(from model: SDBookingGuestHint) -> BookingGuestHint {
+        BookingGuestHint(
+            id: model.id,
+            bookingID: model.bookingID ?? model.booking?.id,
+            category: GuestHintCategory(rawValue: model.categoryRaw) ?? .preTravelImportant,
+            title: model.title,
+            detail: model.detail,
+            sourceKey: model.sourceKey,
+            providerRaw: model.providerRaw
         )
     }
 }

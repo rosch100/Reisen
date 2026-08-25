@@ -23,6 +23,7 @@ public struct ProviderBookingDraft: Equatable, Sendable {
     public var flightArrivalOffsetSeconds: Int?
     public var rawPayloadFingerprint: String?
     public var passengers: [BookingPassenger]
+    public var guestHints: [BookingGuestHint]
 
     public init(
         provider: ProviderID,
@@ -45,7 +46,8 @@ public struct ProviderBookingDraft: Equatable, Sendable {
         flightDepartureOffsetSeconds: Int? = nil,
         flightArrivalOffsetSeconds: Int? = nil,
         rawPayloadFingerprint: String? = nil,
-        passengers: [BookingPassenger] = []
+        passengers: [BookingPassenger] = [],
+        guestHints: [BookingGuestHint] = []
     ) {
         self.provider = provider
         self.bookingType = bookingType
@@ -68,6 +70,7 @@ public struct ProviderBookingDraft: Equatable, Sendable {
         self.flightArrivalOffsetSeconds = flightArrivalOffsetSeconds
         self.rawPayloadFingerprint = rawPayloadFingerprint
         self.passengers = passengers
+        self.guestHints = guestHints
     }
 }
 
@@ -100,6 +103,7 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
     public var deadlines: [CancellationDeadline]
     public var rateDetails: BookingRateDetails?
     public var passengers: [BookingPassenger]?
+    public var guestHints: [BookingGuestHint]?
     public var hotelOffsetSeconds: Int?
     public var hotelCheckInMinutes: Int?
     public var hotelCheckOutMinutes: Int?
@@ -116,6 +120,7 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         deadlines: [CancellationDeadline] = [],
         rateDetails: BookingRateDetails? = nil,
         passengers: [BookingPassenger]? = nil,
+        guestHints: [BookingGuestHint]? = nil,
         hotelOffsetSeconds: Int? = nil,
         hotelCheckInMinutes: Int? = nil,
         hotelCheckOutMinutes: Int? = nil,
@@ -129,6 +134,7 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         self.deadlines = deadlines
         self.rateDetails = rateDetails
         self.passengers = passengers
+        self.guestHints = guestHints
         self.hotelOffsetSeconds = hotelOffsetSeconds
         self.hotelCheckInMinutes = hotelCheckInMinutes
         self.hotelCheckOutMinutes = hotelCheckOutMinutes

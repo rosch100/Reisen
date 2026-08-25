@@ -8,7 +8,7 @@ public enum ReisenMigrationPlan: SchemaMigrationPlan {
     /// The monolithic → hybrid store rewrite lives in
     /// `PersistenceBootstrap.migrateLegacyMonolithicStoreIfNeeded()`.
     public static var schemas: [any VersionedSchema.Type] {
-        [ReisenSchemaV7.self]
+        [ReisenSchemaV8.self]
     }
 
     public static var stages: [MigrationStage] {

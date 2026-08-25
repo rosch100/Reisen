@@ -59,6 +59,13 @@ extension Check24TravelProvider {
             deadlines: policy.deadlines.map(mapDeadline),
             rateDetails: rate,
             passengers: passengers,
+            guestHints: {
+                let hints = StayHintHTMLExtractor.extract(
+                    from: snapshot.html,
+                    providerRaw: ProviderID.check24.rawValue
+                )
+                return hints.isEmpty ? nil : hints
+            }(),
             hotelOffsetSeconds: policy.deadlines.compactMap(\.hotelOffsetSeconds).first,
             hotelCheckInMinutes: stay.checkInMinutes,
             hotelCheckOutMinutes: stay.checkOutMinutes
