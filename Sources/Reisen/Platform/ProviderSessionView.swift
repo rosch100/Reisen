@@ -13,7 +13,8 @@ struct ProviderSessionView: View {
     @Binding var webView: WKWebView?
 
     let autofillCredentials: ProviderCredentials?
-    let rememberTrustedDeviceAutomatically: Bool
+    let onCapturedCredentials: ((ProviderCredentials) -> Void)?
+    let onNavigationBlocked: (() -> Void)?
 
     init(
         loginURL: URL?,
@@ -21,14 +22,16 @@ struct ProviderSessionView: View {
         lastURLString: Binding<String?>,
         webView: Binding<WKWebView?>,
         autofillCredentials: ProviderCredentials? = nil,
-        rememberTrustedDeviceAutomatically: Bool = true
+        onCapturedCredentials: ((ProviderCredentials) -> Void)? = nil,
+        onNavigationBlocked: (() -> Void)? = nil
     ) {
         self.loginURL = loginURL
         self._sessionStatus = sessionStatus
         self._lastURLString = lastURLString
         self._webView = webView
         self.autofillCredentials = autofillCredentials
-        self.rememberTrustedDeviceAutomatically = rememberTrustedDeviceAutomatically
+        self.onCapturedCredentials = onCapturedCredentials
+        self.onNavigationBlocked = onNavigationBlocked
     }
 
     var body: some View {
@@ -38,7 +41,8 @@ struct ProviderSessionView: View {
             lastURLString: $lastURLString,
             webViewRef: $webView,
             autofillCredentials: autofillCredentials,
-            rememberTrustedDeviceAutomatically: rememberTrustedDeviceAutomatically
+            onCapturedCredentials: onCapturedCredentials,
+            onNavigationBlocked: onNavigationBlocked
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -154,14 +158,16 @@ private struct ProviderWebView: NSViewRepresentable {
     @Binding var webViewRef: WKWebView?
 
     let autofillCredentials: ProviderCredentials?
-    let rememberTrustedDeviceAutomatically: Bool
+    let onCapturedCredentials: ((ProviderCredentials) -> Void)?
+    let onNavigationBlocked: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
             autofillCredentials: autofillCredentials,
-            rememberTrustedDeviceAutomatically: rememberTrustedDeviceAutomatically
+            onCapturedCredentials: onCapturedCredentials,
+            onNavigationBlocked: onNavigationBlocked
         )
     }
 
@@ -203,7 +209,8 @@ private struct ProviderWebView: NSViewRepresentable {
         context.coordinator.update(
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
-            rememberTrustedDeviceAutomatically: rememberTrustedDeviceAutomatically
+            onCapturedCredentials: onCapturedCredentials,
+            onNavigationBlocked: onNavigationBlocked
         )
 
         let webView = resolveWebView(context: context)
@@ -271,6 +278,7 @@ private struct ProviderWebView: NSViewRepresentable {
         config.defaultWebpagePreferences = preferences
         config.preferences.isElementFullscreenEnabled = true
         config.userContentController.add(context.coordinator, name: LoginFieldHints.messageHandlerName)
+        config.userContentController.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
         LoginSubmitDebugProbe.addMessageHandler(to: config.userContentController, handler: context.coordinator)
         LoginSubmitDebugProbe.addUserScript(to: config.userContentController)
 
@@ -292,6 +300,8 @@ private struct ProviderWebView: NSViewRepresentable {
         let ucc = webView.configuration.userContentController
         ucc.removeScriptMessageHandler(forName: LoginFieldHints.messageHandlerName)
         ucc.add(context.coordinator, name: LoginFieldHints.messageHandlerName)
+        ucc.removeScriptMessageHandler(forName: LoginFormCapture.messageHandlerName)
+        ucc.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
         LoginSubmitDebugProbe.addMessageHandler(to: ucc, handler: context.coordinator)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
@@ -304,7 +314,8 @@ private struct ProviderWebView: NSViewRepresentable {
         private var sessionStatus: Binding<ProviderSessionStatus>
         private var lastURLString: Binding<String?>
         private var autofillCredentials: ProviderCredentials?
-        private var rememberTrustedDeviceAutomatically: Bool
+        private var onCapturedCredentials: ((ProviderCredentials) -> Void)?
+        private var onNavigationBlocked: (() -> Void)?
         private var becomeKeyObserver: NSObjectProtocol?
         private weak var trackedWebView: WKWebView?
         private var loginAssistanceWorkItem: DispatchWorkItem?
@@ -323,22 +334,26 @@ private struct ProviderWebView: NSViewRepresentable {
             sessionStatus: Binding<ProviderSessionStatus>,
             lastURLString: Binding<String?>,
             autofillCredentials: ProviderCredentials?,
-            rememberTrustedDeviceAutomatically: Bool
+            onCapturedCredentials: ((ProviderCredentials) -> Void)?,
+            onNavigationBlocked: (() -> Void)?
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
             self.autofillCredentials = autofillCredentials
-            self.rememberTrustedDeviceAutomatically = rememberTrustedDeviceAutomatically
+            self.onCapturedCredentials = onCapturedCredentials
+            self.onNavigationBlocked = onNavigationBlocked
         }
 
         func update(
             sessionStatus: Binding<ProviderSessionStatus>,
             lastURLString: Binding<String?>,
-            rememberTrustedDeviceAutomatically: Bool
+            onCapturedCredentials: ((ProviderCredentials) -> Void)?,
+            onNavigationBlocked: (() -> Void)?
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
-            self.rememberTrustedDeviceAutomatically = rememberTrustedDeviceAutomatically
+            self.onCapturedCredentials = onCapturedCredentials
+            self.onNavigationBlocked = onNavigationBlocked
         }
 
         @discardableResult
@@ -387,6 +402,15 @@ private struct ProviderWebView: NSViewRepresentable {
         ) {
             if message.name == LoginSubmitDebugProbe.messageHandlerName {
                 handleLoginDebugMessage(message)
+                return
+            }
+            if message.name == LoginFormCapture.messageHandlerName {
+                LoginFormCapture.handleScriptMessage(
+                    message,
+                    webView: trackedWebView ?? message.webView
+                ) { credentials in
+                    onCapturedCredentials?(credentials)
+                }
                 return
             }
             guard message.name == LoginFieldHints.messageHandlerName else { return }
@@ -601,6 +625,12 @@ private struct ProviderWebView: NSViewRepresentable {
                 )
             }
             // #endregion
+            if let requestURL = navigationAction.request.url,
+               !ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: isMain) {
+                onNavigationBlocked?()
+                decisionHandler(.cancel)
+                return
+            }
             decisionHandler(.allow)
         }
 
@@ -659,7 +689,6 @@ private struct ProviderWebView: NSViewRepresentable {
                     "url": url.absoluteString,
                     "isLogin": isLogin,
                     "suspended": loginAssistanceSuspended,
-                    "willRemember": rememberTrustedDeviceAutomatically && isLogin && !loginAssistanceSuspended,
                     "hasCredentials": autofillCredentials != nil,
                 ]
             )
@@ -729,7 +758,7 @@ private struct ProviderWebView: NSViewRepresentable {
                 ]
             )
             // #endregion
-            LoginAutofill.apply(in: webView, credentials: credentials)
+            ProviderLoginAssistance.applyCredentials(in: webView, credentials: credentials)
         }
 
         // MARK: - WKUIDelegate (Popups / target=_blank)
@@ -754,7 +783,13 @@ private struct ProviderWebView: NSViewRepresentable {
             // #endregion
             // Ohne Handler gehen target=_blank/SSO-Fenster verloren → Login hängt.
             if navigationAction.targetFrame == nil {
-                webView.load(navigationAction.request)
+                if let requestURL = navigationAction.request.url {
+                    if ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: true) {
+                        webView.load(navigationAction.request)
+                    } else {
+                        onNavigationBlocked?()
+                    }
+                }
             }
             return nil
         }
@@ -802,6 +837,10 @@ private struct ProviderWebView: NSViewRepresentable {
                 }
             }
 
+            if AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute) {
+                ProviderLoginAssistance.installOnLoginPage(in: webView)
+            }
+
             // OTP-Hints nicht auf Account-Seiten — nur Login/OTP-Challenge.
             let wantsOTP = AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(absolute)
                 && !loginAssistanceSuspended
@@ -823,12 +862,13 @@ private struct ProviderWebView: NSViewRepresentable {
 
         @MainActor
         private func runOpodoSessionProbe(in webView: WKWebView) {
-            guard let url = webView.url, OpodoSessionProbe.applies(to: url) else { return }
-            // Secure-URL ist bereits Account — Probe nur wenn Heuristik unklar.
-            let absolute = url.absoluteString.lowercased()
-            if AuthPageURLHeuristic.looksLikeAccountPage(absolute),
-               !AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
-                return
+            guard hasOpodoNavigationHint(in: webView) else { return }
+            if let url = webView.url {
+                let absolute = url.absoluteString.lowercased()
+                if AuthPageURLHeuristic.looksLikeAccountPage(absolute),
+                   !AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
+                    return
+                }
             }
 
             Task { @MainActor [weak self, weak webView] in
@@ -886,22 +926,25 @@ private struct ProviderWebView: NSViewRepresentable {
 
         @MainActor
         private func runTravelokaSessionProbe(in webView: WKWebView) {
-            guard let url = webView.url, TravelokaSessionProbe.applies(to: url) else { return }
-            let absolute = url.absoluteString.lowercased()
-            if AuthPageURLHeuristic.looksLikeAccountPage(absolute),
-               !AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
-                return
+            guard hasTravelokaNavigationHint(in: webView) else { return }
+            if let url = webView.url {
+                let absolute = url.absoluteString.lowercased()
+                if AuthPageURLHeuristic.looksLikeAccountPage(absolute),
+                   !AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
+                    return
+                }
             }
 
             Task { @MainActor [weak self, weak webView] in
                 guard let self, let webView else { return }
                 do {
-                    let context = await webView.travelokaSessionContext()
+                    let hintURLs = self.lastURLString.wrappedValue.flatMap(URL.init(string:)).map { [$0] } ?? []
+                    let context = await webView.travelokaSessionContext(additionalHintURLs: hintURLs)
                     let text = try await webView.fetchAuthenticatedText(
                         url: TravelokaSessionProbe.whoamiURL,
                         method: "POST",
                         accept: "application/json",
-                        referer: TravelokaSessionProbe.signInReferer,
+                        referer: context.apiReferer(),
                         contentType: "application/json",
                         body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
                         headers: TravelokaSessionProbe.whoamiHeaders(context: context)
@@ -918,12 +961,32 @@ private struct ProviderWebView: NSViewRepresentable {
                 }
             }
         }
+
+        private func hasOpodoNavigationHint(in webView: WKWebView) -> Bool {
+            if let url = webView.url, OpodoSessionProbe.applies(to: url) { return true }
+            if let hint = lastURLString.wrappedValue.flatMap(URL.init(string:)),
+               OpodoSessionProbe.applies(to: hint) {
+                return true
+            }
+            return false
+        }
+
+        private func hasTravelokaNavigationHint(in webView: WKWebView) -> Bool {
+            if let url = webView.url, TravelokaSessionProbe.applies(to: url) { return true }
+            if let hint = lastURLString.wrappedValue.flatMap(URL.init(string:)),
+               TravelokaSessionProbe.applies(to: hint) {
+                return true
+            }
+            return false
+        }
     }
 }
 
 // #region agent log
 enum AgentDebugLog {
-    private static let path = "/Users/roschmac/Entwicklung/Reisen/.cursor/debug-33f094.log"
+    private static let path = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-agent-debug-33f094.log")
+        .path
     private static let lock = NSLock()
 
     static func write(

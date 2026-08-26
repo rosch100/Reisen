@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import ReisenProviders
 
 extension Check24TravelProvider {
     func fetchActivitiesJSON(using webView: WKWebView) async throws -> String {
@@ -10,23 +11,17 @@ extension Check24TravelProvider {
         var lastDetail = "unbekannt"
         for attempt in 1...3 {
             do {
-                let request = await webView.authenticatedRequest(url: url)
-                let (data, response) = try await URLSession.shared.data(for: request)
-                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-                guard (200..<300).contains(status) else {
-                    throw Check24ProviderError.activitiesFetchFailed("HTTP \(status)")
-                }
-                guard let text = String(data: data, encoding: .utf8) else {
-                    throw Check24ProviderError.activitiesFetchFailed("Antwort ist kein UTF-8-Text")
-                }
+                let text = try await webView.fetchAuthenticatedText(url: url)
                 guard text.contains("\"activities\"") else {
                     let preview = String(text.prefix(120)).replacingOccurrences(of: "\n", with: " ")
                     throw Check24ProviderError.activitiesFetchFailed(
-                        "Antwort enthält keine activities (HTTP \(status)): \(preview)"
+                        "Antwort enthält keine activities: \(preview)"
                     )
                 }
                 try persistActivitiesJSONSnapshot(text)
                 return text
+            } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+                throw Check24ProviderError.sessionNotEstablished
             } catch let error as Check24ProviderError {
                 lastDetail = error.localizedDescription
                 if attempt < 3 {
@@ -43,6 +38,18 @@ extension Check24TravelProvider {
             }
         }
         throw Check24ProviderError.activitiesFetchFailed(lastDetail)
+    }
+
+    func fetchActivitiesHTML(using webView: WKWebView) async throws -> String {
+        do {
+            return try await webView.fetchAuthenticatedHTML(
+                url: Check24TravelProvider.activitiesPageURL,
+                referer: Check24TravelProvider.activitiesPageURL.absoluteString,
+                isLoginHTML: AuthPageHTMLHeuristic.check24HTMLLooksLikeLogin
+            )
+        } catch AuthenticatedSessionError.notEstablished {
+            throw Check24ProviderError.sessionNotEstablished
+        }
     }
 
     func persistActivitiesJSONSnapshot(_ json: String) throws {

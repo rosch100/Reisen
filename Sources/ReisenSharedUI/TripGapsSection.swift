@@ -52,12 +52,7 @@ public struct TripTimelineSection<BookingRow: View>: View {
             }
         }
         .sheet(item: $editorPayload) { payload in
-            GapEditorSheet(
-                titleText: payload.title,
-                kind: payload.kind,
-                priceAmount: payload.priceAmount,
-                priceCurrencyCode: payload.priceCurrencyCode
-            ) { title, kind, price, currency in
+            GapEditorSheet(payload: payload) { title, kind, price, currency in
                 saveGap(payload: payload, title: title, kind: kind, price: price, currency: currency)
             }
         }

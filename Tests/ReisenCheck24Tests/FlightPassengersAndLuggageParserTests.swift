@@ -7,12 +7,12 @@ import Foundation
 func check24GuestNamesParses() {
     let html = """
     <div class="whatever">
-      <div class="guestNames">Roland Schramme, Danila Liebe</div>
+      <div class="guestNames">Anna Example, Ben Sample</div>
     </div>
     """
 
     let parsed = Check24FlightPassengersAndLuggageParser().guestNames(from: html)
-    #expect(parsed == ["Roland Schramme", "Danila Liebe"])
+    #expect(parsed == ["Anna Example", "Ben Sample"])
 }
 
 @Test("Check24 status JSON: baggageAllowances maps types + aggregates flights")
@@ -26,9 +26,9 @@ func check24BaggageAllowancesFromStatusMapsAndAggregates() throws {
           {
             "title": "",
             "gender": "male",
-            "firstname": "Roland",
-            "surname": "Schramme",
-            "birthday": "1968-07-09T00:00:00+01:00",
+            "firstname": "Anna",
+            "surname": "Example",
+            "birthday": "1980-01-01T00:00:00+01:00",
             "luggages": [],
             "type": "adt",
             "id": "dummy"
@@ -73,9 +73,9 @@ func check24BaggageAllowancesAggregatesWhenIncludedLuggageNotEqual() throws {
           {
             "title": "",
             "gender": "male",
-            "firstname": "Roland",
-            "surname": "Schramme",
-            "birthday": "1968-07-09T00:00:00+01:00",
+            "firstname": "Anna",
+            "surname": "Example",
+            "birthday": "1980-01-01T00:00:00+01:00",
             "luggages": [],
             "type": "adt",
             "id": "dummy"
@@ -111,7 +111,7 @@ func check24BaggageAllowancesAggregatesWhenIncludedLuggageNotEqual() throws {
 @Test("Check24 buildPassengers: attaches baggage allowances per passenger")
 func check24BuildPassengersAttachesBaggagePerPassenger() {
     let parser = Check24FlightPassengersAndLuggageParser()
-    let guestNames = ["Roland Schramme", "Danila Liebe"]
+    let guestNames = ["Anna Example", "Ben Sample"]
     let allowances = [
         BaggageAllowance(type: .cabinBag, pieceCount: 1, weightKg: 8),
         BaggageAllowance(type: .personalItem, pieceCount: 1, weightKg: nil),
@@ -125,8 +125,8 @@ func check24BuildPassengersAttachesBaggagePerPassenger() {
 
     #expect(passengers.count == 2)
     #expect(passengers[0].passengerNumber == 1)
-    #expect(passengers[0].givenName == "Roland")
-    #expect(passengers[0].familyName == "Schramme")
+    #expect(passengers[0].givenName == "Anna")
+    #expect(passengers[0].familyName == "Example")
     #expect(passengers[0].baggageAllowances.count == 2)
     #expect(passengers[1].baggageAllowances.count == 2)
     // Ensure we copied baggage allowances (fresh IDs per passenger).

@@ -12,11 +12,20 @@ extension Check24TravelProvider {
         do {
             let activitiesJSON = try await fetchActivitiesJSON(using: webView)
             return try parseCatalogAllowingEmpty(activitiesJSON)
+        } catch let error as Check24ProviderError {
+            if case .sessionNotEstablished = error {
+                throw error
+            }
+            return try await fetchActivityHTMLFallback(using: webView)
         } catch {
-            onProgress?("Activities-API fehlgeschlagen, nutze HTML-Snapshot…")
-            let currentHTML = try await snapshotHTML(from: webView)
-            return try parseCatalogAllowingEmpty(currentHTML.html)
+            return try await fetchActivityHTMLFallback(using: webView)
         }
+    }
+
+    private func fetchActivityHTMLFallback(using webView: WKWebView) async throws -> ParsedActivity {
+        onProgress?("Activities-API fehlgeschlagen, lade Activities-HTML…")
+        let html = try await fetchActivitiesHTML(using: webView)
+        return try parseCatalogAllowingEmpty(html)
     }
 
     /// Leerer Katalog ist ein gültiges Ergebnis (wie Booking.com/Airbnb), kein Parser-Fehler.
@@ -32,11 +41,15 @@ extension Check24TravelProvider {
         from webView: WKWebView,
         into deadlinesByBookingURL: inout [String: [ParsedCancellationDeadline]]
     ) async throws {
-        if let currentHTML = try? await snapshotHTML(from: webView) {
-            let initialPolicy = CancellationPolicyParser().parseCancellationPolicy(from: currentHTML.html)
-            if !initialPolicy.deadlines.isEmpty {
-                deadlinesByBookingURL[currentHTML.url.absoluteString] = initialPolicy.deadlines
-            }
+        guard let currentURL = webView.url,
+              isHotelBookingDetailURL(currentURL) || isNonHotelBookingDetailURL(currentURL),
+              let currentHTML = try? await snapshotHTML(from: webView)
+        else {
+            return
+        }
+        let initialPolicy = CancellationPolicyParser().parseCancellationPolicy(from: currentHTML.html)
+        if !initialPolicy.deadlines.isEmpty {
+            deadlinesByBookingURL[currentHTML.url.absoluteString] = initialPolicy.deadlines
         }
     }
 

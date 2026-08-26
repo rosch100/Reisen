@@ -14,7 +14,7 @@ func bookingComParsesGetTripsIDs() throws {
 
 @Test("BookingComTripsGraphQLParser parst Flug und Hotel aus SingleTimelineQuery")
 func bookingComGraphQLParsesFlightAndHotel() throws {
-    let json = try fixtureJSON("single_timeline_kuta_muenchen.json")
+    let json = try fixtureJSON("single_timeline_beach_sample.json")
     let bookings = try BookingComTripsGraphQLParser().parseTimeline(from: json)
 
     #expect(bookings.count == 2)
@@ -25,9 +25,9 @@ func bookingComGraphQLParsesFlightAndHotel() throws {
 
     let flight = try #require(byType[.flight]?.first)
     #expect(flight.externalUrl?.contains("flights.booking.com") == true)
-    #expect(flight.title == "Yogyakarta → Kuta")
+    #expect(flight.title == "Yogyakarta → Beach City")
     #expect(flight.locationFrom == "Yogyakarta (YIA)")
-    #expect(flight.locationTo == "Kuta (DPS)")
+    #expect(flight.locationTo == "Beach City (DPS)")
     #expect(flight.status == .confirmed)
     #expect(flight.confirmationCode == "5031303168853001")
     #expect(flight.rateDetails?.totalPriceAmount == 229.55)
@@ -63,9 +63,9 @@ func bookingComGraphQLParsesFlightAndHotel() throws {
 
     let hotel = try #require(byType[.hotel]?.first)
     #expect(hotel.externalUrl?.contains("booking.com") == true)
-    #expect(hotel.title == "Hotel Am Nockherberg")
-    #expect(hotel.locationTo == "München")
-    #expect(hotel.locationToAddress == "Nockherstraße 38 A")
+    #expect(hotel.title == "Hotel Example Central")
+    #expect(hotel.locationTo == "Sample City")
+    #expect(hotel.locationToAddress == "Example Street 1")
     #expect(hotel.confirmationCode == "6806647309")
     #expect(hotel.status == .confirmed)
     #expect(hotel.rateDetails?.totalPriceAmount == 135.15)
@@ -94,18 +94,18 @@ func bookingComNormalizesHotelConfirmationURL() throws {
     let normalized = try #require(BookingComParsing.normalizedHotelConfirmationURL(raw))
     #expect(normalized.contains("confirmation.html"))
     #expect(!normalized.lowercased().contains("confirmation.de.html"))
-    #expect(normalized.contains("lang=de"))
+    #expect(normalized.contains("lang=en"))
     #expect(normalized.contains("auth_key=fixtureAuthKey0001"))
 }
 
-@Test("BookingComParsing normalisiert confirmation.en-us.html → confirmation.html lang=de")
+@Test("BookingComParsing normalisiert confirmation.en-us.html → confirmation.html lang=en")
 func bookingComNormalizesEnUsHotelConfirmationURL() throws {
-    // Live-DB 2026-07-20: Nockherberg-URL aus GraphQL bei en-us Session
+    // HAR 2026-07-20: Beispiel-Hotel-URL aus GraphQL bei en-us Session
     let raw = "https://secure.booking.com/confirmation.en-us.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips"
     let normalized = try #require(BookingComParsing.normalizedHotelConfirmationURL(raw))
     #expect(normalized.hasPrefix("https://secure.booking.com/confirmation.html?"))
     #expect(!normalized.lowercased().contains("en-us"))
-    #expect(normalized.contains("lang=de"))
+    #expect(normalized.contains("lang=en"))
     #expect(normalized.contains("auth_key=fixtureAuthKey0001"))
 }
 
@@ -297,7 +297,7 @@ func bookingComFlightOrderParsesPassengersAndBaggage() throws {
         ]
       },
       "passengers": [
-        { "travellerReference": "T1", "firstName": "Roland", "lastName": "Schramme", "type": "ADULT" }
+        { "travellerReference": "T1", "firstName": "Anna", "lastName": "Example", "type": "ADULT" }
       ]
     }
     """
@@ -305,8 +305,8 @@ func bookingComFlightOrderParsesPassengersAndBaggage() throws {
     let parsed = try BookingComFlightOrderParser().parse(from: json)
     #expect(parsed.passengers.count == 1)
     let pax = try #require(parsed.passengers.first)
-    #expect(pax.givenName == "Roland")
-    #expect(pax.familyName == "Schramme")
+    #expect(pax.givenName == "Anna")
+    #expect(pax.familyName == "Example")
     #expect(pax.travellerType == .adult)
     #expect(pax.baggageAllowances.contains { $0.type == .checkedBag && $0.pieceCount == 1 && $0.weightKg == 10 })
     #expect(pax.baggageAllowances.contains { $0.type == .cabinBag && $0.pieceCount == 1 && $0.weightKg == 5 })
@@ -315,7 +315,7 @@ func bookingComFlightOrderParsesPassengersAndBaggage() throws {
 
 @Test("Fixture-Katalog setzt Flug-Offsets aus ISO-Zeiten")
 func bookingComFixtureSetsFlightOffsetsFromISO() throws {
-    let json = try fixtureJSON("single_timeline_kuta_muenchen.json")
+    let json = try fixtureJSON("single_timeline_beach_sample.json")
     let flight = try #require(
         BookingComTripsGraphQLParser().parseTimeline(from: json).first { $0.bookingType == .flight }
     )
@@ -336,7 +336,7 @@ func bookingComTripIDsFromMyTripsHTMLDespiteEmptyMarketingCopy() {
     <html><body>
       <p>Wohin geht es als Nächstes</p>
       <p>Sie haben noch keine Reisen begonnen</p>
-      <a href="https://secure.booking.com/mytrips.de.html?trip_id=303612277422833">Kuta und München</a>
+      <a href="https://secure.booking.com/mytrips.de.html?trip_id=303612277422833">Beach and Sample City</a>
       <a href="https://secure.booking.com/mytrips.de.html?trip_id=303612277422833">dup</a>
     </body></html>
     """

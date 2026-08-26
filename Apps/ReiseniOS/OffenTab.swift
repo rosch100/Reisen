@@ -36,7 +36,9 @@ struct OffenTab: View {
                         .help("Neue Reise anlegen")
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        GlobalChromeTrailingToolbar(sessionChromeEpoch: $sessionChromeEpoch)
+                        GlobalChromeTrailingToolbar(
+                            sessionChromeEpoch: $sessionChromeEpoch
+                        )
                     }
                 }
             },

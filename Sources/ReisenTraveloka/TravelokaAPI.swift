@@ -62,12 +62,16 @@ enum TravelokaAPI {
     ) throws -> Data {
         try encodePayload(
             context.withSentinel(in: [
-                "itineraryTypes": itineraryTypes,
-                "itineraryStatus": itineraryStatus,
-                "itineraryRequestOptions": ["ISSUED_ONLY"],
-                "featureConfig": [
-                    "featureTypes": ["CUSTOMIZED_SECTION"],
-                ],
+                "fields": [] as [String],
+                "data": [
+                    "itineraryTypes": itineraryTypes,
+                    "itineraryStatus": itineraryStatus,
+                    "itineraryRequestOptions": ["ISSUED_ONLY"],
+                    "featureConfig": [
+                        "featureTypes": ["CUSTOMIZED_SECTION"],
+                    ],
+                ] as [String: Any],
+                "clientInterface": TravelokaWebConstants.clientInterface,
             ])
         )
     }

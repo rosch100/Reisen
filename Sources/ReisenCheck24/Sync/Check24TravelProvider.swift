@@ -9,6 +9,7 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
     public let displayName = "Check24"
 
     public var loginURL: URL { URL(string: "https://kundenbereich.check24.de/user/login.html")! }
+    static let activitiesPageURL = URL(string: "https://kundenbereich.check24.de/user/account/activities.html")!
     public var keychainServerHost: String { "check24.de" }
 
     public var onProgress: (@MainActor (String) -> Void)?
@@ -17,7 +18,6 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
         let webView = try webView(from: session)
-        guard webView.url != nil else { throw Check24ProviderError.sessionNotEstablished }
 
         let activity = try await fetchActivity(using: webView)
         guard !activity.bookings.isEmpty else { return ProviderCatalog(bookings: []) }

@@ -11,7 +11,7 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
     public var displayName: String { "GetYourGuide" }
 
     public var loginURL: URL {
-        URL(string: "https://www.getyourguide.com/de-de/customer-bookings/")!
+        GetYourGuideWebConstants.loginURL
     }
 
     public var keychainServerHost: String { "getyourguide.com" }
@@ -23,9 +23,9 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
 
         onProgress?("Lade Buchungen (GetYourGuide)…")
         let html = try await webView.fetchAuthenticatedText(
-            url: loginURL,
+            url: GetYourGuideWebConstants.catalogSyncURL,
             accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            referer: "https://www.getyourguide.com/"
+            referer: loginURL.absoluteString
         )
 
         guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {
@@ -41,7 +41,9 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
         ref: ProviderBookingRef
     ) async throws -> ProviderBookingEnrichment {
         let webView = try extractWebView(from: session)
-        guard let url = URL(string: ref.externalUrl), !ref.externalUrl.isEmpty else {
+        guard !ref.externalUrl.isEmpty,
+              let url = GetYourGuideWebConstants.syncBookingURL(from: ref.externalUrl)
+        else {
             throw GetYourGuideProviderError.invalidBookingURL
         }
 

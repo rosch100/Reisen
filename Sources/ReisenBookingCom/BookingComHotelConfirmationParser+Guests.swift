@@ -9,7 +9,7 @@ extension BookingComHotelConfirmationParser {
             let total = adultsCount + childrenCount
             return total > 0 ? total : nil
         }
-        if let match = BookingComParsing.capture(#"(\d+)\s+Erwachsene"#, in: html),
+        if let match = BookingComParsing.capture(#"(\d+)\s+(?:Adults|Erwachsene)"#, in: html),
            let adults = Int(match) {
             return adults
         }

@@ -57,11 +57,11 @@ public struct GapContext: Equatable, Sendable {
         self.toLocationTo = toLocationTo
     }
 
-    public init(gap: ComputedGap) {
+    public init(gap: ComputedGap, kind: GapKind? = nil) {
         self.init(
             gapStart: gap.gapStart,
             gapEnd: gap.gapEnd,
-            kind: gap.kind,
+            kind: kind ?? gap.kind,
             fromLocationFrom: gap.fromBooking.locationFrom,
             fromLocationTo: gap.fromBooking.locationTo,
             toLocationFrom: gap.toBooking.locationFrom,

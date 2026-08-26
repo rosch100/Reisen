@@ -16,7 +16,7 @@ extension BookingComCancellationDeadlineParser {
 
     func numericGermanFeeRowRegex() -> NSRegularExpression? {
         try? NSRegularExpression(
-            pattern: #"(?:bis|ab)?\s*(\d{2}\.\d{2}\.\d{4})(?:\s+(\d{2}:\d{2}))?.{0,120}?(?:€|EUR)\s*([0-9]+(?:[.,][0-9]{1,2})?)"#,
+            pattern: #"(?:bis|ab|until|from)?\s*(\d{2}\.\d{2}\.\d{4})(?:\s+(\d{2}:\d{2}))?.{0,120}?(?:€|EUR)\s*([0-9]+(?:[.,][0-9]{1,2})?)"#,
             options: [.caseInsensitive, .dotMatchesLineSeparators]
         )
     }
@@ -40,7 +40,9 @@ extension BookingComCancellationDeadlineParser {
             return nil
         }
         let matched = html.substring(with: match.range).lowercased()
-        let prefix = matched.contains("ab ") || matched.hasPrefix("ab") ? "ab" : "bis"
+        let prefix = matched.contains("from ") || matched.hasPrefix("from") || matched.contains("ab ") || matched.hasPrefix("ab")
+            ? "from"
+            : "until"
         return CancellationDeadline(
             deadlineAt: deadlineAt,
             policyText: feePolicyText(prefix: prefix, datePart: datePart, timePart: timePart, amount: amount),

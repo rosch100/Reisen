@@ -53,6 +53,11 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
     func itemAdd(add: CFDictionary) -> OSStatus {
         addCalls += 1
         lastAddQuery = add
+        if let dict = add as? [CFString: Any],
+           let account = dict[kSecAttrAccount] as? String,
+           let data = dict[kSecValueData] as? Data {
+            genericSecretByAccount[account] = data
+        }
         return addStatus
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import ReisenProviders
 
 extension BookingComParsing {
     static let secureBookingOrigin = "https://secure.booking.com"
@@ -11,7 +12,7 @@ extension BookingComParsing {
     }
 
     /// GraphQL liefert z. B. `confirmation.en-us.html` / `confirmation.de.html`.
-    /// Fee-Schedule-SSOT im HAR: `confirmation.html` mit `lang=de` (deutsche bis/ab-Zeilen).
+    /// Fee-Schedule-SSOT: locale-neutrale `confirmation.html` mit kanonischer EN-Sprache.
     static func normalizedHotelConfirmationURL(_ raw: String?) -> String? {
         guard var url = absoluteBookingURL(raw) else { return nil }
         if let regex = try? NSRegularExpression(
@@ -36,10 +37,10 @@ extension BookingComParsing {
                     in: url,
                     options: [],
                     range: range,
-                    withTemplate: "lang=de"
+                    withTemplate: "lang=\(ProviderSyncLocale.language)"
                 )
             } else {
-                url += url.contains("?") ? ";lang=de" : "?lang=de"
+                url += url.contains("?") ? ";lang=\(ProviderSyncLocale.language)" : "?lang=\(ProviderSyncLocale.language)"
             }
         }
         return url

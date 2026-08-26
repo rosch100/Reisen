@@ -8,9 +8,9 @@ cd "$ROOT"
 # shellcheck source=apple-developer.sh
 source "$ROOT/Scripts/apple-developer.sh"
 
-MACOS_BUNDLE_ID="de.roschmac.Reisen"
-IOS_BUNDLE_ID="de.roschmac.Reisen.ios"
-ICLOUD_CONTAINER="iCloud.de.roschmac.Reisen"
+MACOS_BUNDLE_ID="$(reisen_macos_bundle_id)"
+IOS_BUNDLE_ID="$(reisen_ios_bundle_id)"
+ICLOUD_CONTAINER="$(reisen_icloud_container_id)"
 
 TEAM_ID="$(reisen_apple_team_id)"
 echo "Apple Team ID: $TEAM_ID" >&2
@@ -71,9 +71,9 @@ provisioning_failed() {
   echo >&2
   echo "Nächste Schritte:" >&2
   echo "  1. open $PROJECT" >&2
-  echo "  2. Signing & Capabilities: Team „Roland Schramme“ (${TEAM_ID})" >&2
+  echo "  2. Signing & Capabilities: passendes Team wählen (${TEAM_ID})" >&2
   echo "  3. iCloud (CloudKit, Container ${ICLOUD_CONTAINER}) für ${IOS_BUNDLE_ID} und ${MACOS_BUNDLE_ID}" >&2
-  echo "  4. Für iOS-Geräteprofile: iPhone „Roland IP“ einschalten oder UDID im Developer Portal anlegen" >&2
+  echo "  4. Für iOS-Geräteprofile: iPhone einschalten oder UDID im Developer Portal anlegen" >&2
   echo >&2
   echo "Danach erneut: bash ./Scripts/setup-apple-developer.sh" >&2
 }

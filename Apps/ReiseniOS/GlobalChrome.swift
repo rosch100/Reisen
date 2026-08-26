@@ -12,18 +12,20 @@ struct GlobalChromeTrailingToolbar: View {
     /// Nur für Re-Render bei Hub-Änderungen aus Hintergrund-Probes / SyncTab.
     @Binding var sessionChromeEpoch: Int
 
+    @Environment(\.providerEnableEpoch) private var providerEnableEpoch
     @Environment(\.syncStore) private var syncStore
     @Environment(\.providerSessionHub) private var sessionHub
     @Environment(\.providerRegistry) private var providerRegistry
 
-    private var syncProviderIDs: [ProviderID] {
-        providerRegistry?.syncProviderIDs ?? []
+    private var enabledProviderIDs: [ProviderID] {
+        _ = providerEnableEpoch
+        return providerRegistry?.enabledSyncProviderIDs() ?? []
     }
 
     private var syncAllCandidates: [(ProviderID, WKWebView)] {
         _ = sessionChromeEpoch
         guard let hub = sessionHub else { return [] }
-        return syncProviderIDs.compactMap { id in
+        return enabledProviderIDs.compactMap { id in
             guard hub.status(for: id) == .sessionReady,
                   let webView = hub.webView(for: id) else { return nil }
             return (id, webView)
@@ -42,7 +44,9 @@ struct GlobalChromeTrailingToolbar: View {
             let candidates = syncAllCandidates
             guard !candidates.isEmpty else { return }
             Task {
-                await syncStore.syncAll(providers: candidates, settings: .fromUserDefaults())
+                await syncStore.syncAll(providers: candidates, settings: .fromUserDefaults()) { id in
+                    NavigationHintURLs.ordered(hubURLString: sessionHub?.lastURLString(for: id))
+                }
             }
         } label: {
             if syncStore?.isSyncing == true && syncStore?.syncingProviderID != nil {
@@ -63,13 +67,15 @@ struct GlobalChromeTrailingToolbar: View {
 struct SyncBackgroundSessionProbe: View {
     var onSessionChanged: () -> Void
 
+    @Environment(\.providerEnableEpoch) private var providerEnableEpoch
     @Environment(\.providerRegistry) private var providerRegistry
     @Environment(\.providerSessionHub) private var sessionHub
 
     @State private var webViewsByProvider: [ProviderID: WKWebView?] = [:]
 
-    private var syncProviderIDs: [ProviderID] {
-        providerRegistry?.syncProviderIDs ?? []
+    private var enabledProviderIDs: [ProviderID] {
+        _ = providerEnableEpoch
+        return providerRegistry?.enabledSyncProviderIDs() ?? []
     }
 
     private func loginURL(for providerID: ProviderID) -> URL? {
@@ -87,7 +93,7 @@ struct SyncBackgroundSessionProbe: View {
 
     @MainActor
     private func ensureSlots() {
-        sessionHub?.syncEnabledProviders(Set(syncProviderIDs))
+        sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
     }
 
     @MainActor
@@ -97,7 +103,7 @@ struct SyncBackgroundSessionProbe: View {
             webView: finishedWebView,
             providerID: providerID,
             hub: hub,
-            enabledProviderIDs: Set(syncProviderIDs),
+            enabledProviderIDs: Set(enabledProviderIDs),
             notifyAlways: false
         ) {
             onSessionChanged()
@@ -106,7 +112,7 @@ struct SyncBackgroundSessionProbe: View {
 
     var body: some View {
         ZStack {
-            ForEach(syncProviderIDs, id: \.self) { id in
+            ForEach(enabledProviderIDs, id: \.self) { id in
                 WebViewHost(
                     loginURL: loginURL(for: id),
                     providerID: id,
@@ -122,6 +128,9 @@ struct SyncBackgroundSessionProbe: View {
             }
         }
         .onAppear {
+            ensureSlots()
+        }
+        .onChange(of: enabledProviderIDs) { _, _ in
             ensureSlots()
         }
         .task {

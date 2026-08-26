@@ -2,6 +2,7 @@ import Testing
 import Foundation
 @testable import ReisenCheck24
 import ReisenDomain
+import ReisenProviders
 
 @Test("ActivityListParser schließt stornierte und vergangene Buchungen aus")
 func activityListExcludesCancelledAndPast() throws {
@@ -83,6 +84,30 @@ func activityListHTMLWithoutBookingLinksIsEmptyCatalog() throws {
         "<html><body><p>Keine Buchungen</p></body></html>"
     )
     #expect(parsed.bookings.isEmpty)
+}
+
+@Test("Check24: Login-HTML wird als fehlende Session erkannt")
+func check24LoginHTMLIndicatesMissingSession() {
+    let loginHTML = """
+    <html><body>
+    <form action="https://kundenbereich.check24.de/user/login.html">
+    <input type="password" name="password">
+    </form>
+    </body></html>
+    """
+    #expect(AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(loginHTML))
+    #expect(AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
+        loginHTML,
+        responseURL: URL(string: "https://kundenbereich.check24.de/user/login.html")
+    ))
+    #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
+        loginHTML,
+        responseURL: URL(string: "https://kundenbereich.check24.de/user/account/activities.html")
+    ))
+    #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(#"{ "activities": [] }"#))
+    #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
+        "<html><body><a href=\"/user/account/activities.html\">Aktivitäten</a></body></html>"
+    ))
 }
 
 @Test("Check24 Provider: Snapshot ohne Daten ist leerer Katalog, kein Fehler")

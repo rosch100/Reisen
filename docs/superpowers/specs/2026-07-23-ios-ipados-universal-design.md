@@ -4,7 +4,7 @@
 Eine iPadOS/iOS-App bereitstellen, die die Kernfunktionen der macOS-App abbildet (Reisen, Buchungen, Gaps, Provider-Sync über Login im eingebetteten WebView, Settings, lokale Erinnerungen/Kalender) und geräteübergreifend über SwiftData+CloudKit synchronisiert. Auslieferung ist TestFlight-bereit über ein separates iOS/iPadOS Target.
 
 ## Scope (aktuell)
-- iPhone + iPad (Universal) + macOS über gemeinsamen CloudKit-Container `iCloud.de.roschmac.Reisen`
+- iPhone + iPad (Universal) + macOS über gemeinsamen CloudKit-Container (`PersistenceBootstrap.cloudKitContainerID`)
 - Hybrid-Persistenz: Cloud-Store (Trips/Bookings/Gaps/…) + Local-Store (EventKit-Links)
 - Provider-Sync: Login im eingebetteten `WKWebView`, dann Sync-Pipeline und Darstellung von Trips/Buchungen
 - Settings: Aktivierung Erinnerungen/Apple Kalender, Vorlaufzeiten, Kalender-Strategie, iCloud-Status

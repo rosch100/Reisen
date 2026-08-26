@@ -23,35 +23,50 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
         let webView = try webView(from: session)
+        try await ensureGraphQLSession(using: webView)
+        if let catalog = try await fetchGraphQLCatalog(using: webView) {
+            return catalog
+        }
+        return try await fetchHTMLCatalogFallback(using: webView)
+    }
 
+    private func ensureGraphQLSession(using webView: WKWebView) async throws {
         onProgress?("Prüfe Opodo-Session (GraphQL)…")
-        _ = try? await fetchGraphQLUserAccount(using: webView)
+        do {
+            let accountJSON = try await fetchGraphQLUserAccount(using: webView)
+            if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: accountJSON), !loggedIn {
+                throw OpodoProviderError.sessionNotEstablished
+            }
+        } catch let error as OpodoProviderError {
+            throw error
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw OpodoProviderError.sessionNotEstablished
+        } catch {
+            // Probe fehlgeschlagen: getTrips bleibt maßgeblich.
+        }
+    }
 
+    private func fetchGraphQLCatalog(using webView: WKWebView) async throws -> ProviderCatalog? {
         onProgress?("Lade Buchungen (GraphQL getTrips)…")
         do {
             let bookings = try await fetchUpcomingTrips(using: webView)
-            if !bookings.isEmpty {
-                return ProviderCatalog(bookings: bookings)
+            guard !bookings.isEmpty else { return nil }
+            return ProviderCatalog(bookings: bookings)
+        } catch let error as OpodoProviderError {
+            if case .sessionNotEstablished = error {
+                throw error
             }
+            return nil
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw OpodoProviderError.sessionNotEstablished
         } catch {
-            onProgress?("GraphQL-Katalog fehlgeschlagen, nutze HTML-Fallback…")
+            return nil
         }
+    }
 
-        onProgress?("Lade Buchungen (HTML-Fallback)…")
-        let html: String
-        do {
-            html = try await webView.fetchAuthenticatedText(
-                url: Self.secureURL,
-                accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                referer: "https://www.opodo.de/"
-            )
-        } catch {
-            onProgress?("Secure-Abruf fehlgeschlagen, nutze WebView-HTML…")
-            guard let snapshot = try await webView.evaluateJavaScriptStringAsync("document.documentElement.outerHTML") else {
-                throw OpodoProviderError.catalogNotFound
-            }
-            html = snapshot
-        }
+    private func fetchHTMLCatalogFallback(using webView: WKWebView) async throws -> ProviderCatalog {
+        onProgress?("GraphQL-Katalog fehlgeschlagen, lade Buchungen (HTML-Fallback)…")
+        let html = try await fetchSecureHTML(using: webView)
 
         let bookings: [ProviderBookingDraft]
         do {
@@ -199,13 +214,11 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             .max(by: { $0.deadlineAt < $1.deadlineAt })
         if let latestFree { return [latestFree] }
 
-        let stornoLines = htmlDeadlines.filter {
-            ($0.policyText ?? "").localizedCaseInsensitiveContains("Stornierungsrichtlinie")
-        }
+        let stornoLines = htmlDeadlines.filter(\.isFreeCancellation)
         if !stornoLines.isEmpty { return stornoLines }
 
         let bestLongDate = htmlDeadlines
-            .filter { Self.looksLikeGermanLongPolicy($0) }
+            .filter { Self.looksLikeLongDatePolicy($0) }
             .max(by: { $0.deadlineAt < $1.deadlineAt })
         if let bestLongDate { return [bestLongDate] }
 
@@ -241,11 +254,11 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             try? await Task.sleep(nanoseconds: 500_000_000)
             guard let text = try await snapshotPageText(in: webView) else { continue }
             last = text
-            if text.localizedCaseInsensitiveContains("Stornierungsrichtlinie") {
+            if text.localizedCaseInsensitiveContains(OpodoCancellationPolicyLabel.policy)
+                || text.localizedCaseInsensitiveContains("cancellation policy") {
                 return text
             }
-            // Hotel-Policy oft als „Bis 1. August 2026 (Bis 22:00)“ ohne Label im innerText-Ausschnitt.
-            if text.range(of: #"Bis\s+\d{1,2}\.?\s*[A-Za-zÄÖÜäöü]+\s+\d{4}"#, options: [.regularExpression, .caseInsensitive]) != nil {
+            if text.range(of: #"\d{4}-\d{2}-\d{2}"#, options: .regularExpression) != nil {
                 return text
             }
         }
@@ -261,7 +274,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         return try await webView.evaluateJavaScriptStringAsync(js)
     }
 
-    private static func looksLikeGermanLongPolicy(_ deadline: CancellationDeadline) -> Bool {
+    private static func looksLikeLongDatePolicy(_ deadline: CancellationDeadline) -> Bool {
         let text = deadline.policyText ?? ""
         return text.range(
             of: #"\d{1,2}\.?\s*[A-Za-zÄÖÜäöü]+\s+\d{4}"#,
@@ -270,6 +283,30 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
     }
 
     private static let secureURL = URL(string: "https://www.opodo.de/travel/secure/")!
+
+    private func fetchSecureHTML(using webView: WKWebView) async throws -> String {
+        var lastError: Error?
+        for attempt in 1...3 {
+            do {
+                return try await webView.fetchAuthenticatedHTML(
+                    url: Self.secureURL,
+                    referer: "https://www.opodo.de/",
+                    isLoginHTML: AuthPageHTMLHeuristic.opodoHTMLLooksLikeLogin
+                )
+            } catch AuthenticatedSessionError.notEstablished {
+                throw OpodoProviderError.sessionNotEstablished
+            } catch let error as OpodoProviderError {
+                throw error
+            } catch {
+                lastError = error
+                if attempt < 3 {
+                    try await Task.sleep(nanoseconds: UInt64(attempt) * 400_000_000)
+                }
+            }
+        }
+        throw lastError ?? OpodoProviderError.catalogNotFound
+    }
+
     /// HAR nutzt 5; kleiner Page-Size hält Pagination korrekt, wenn das Backend cappt.
     private static let pageSize = 5
     private static let maxPages = 20

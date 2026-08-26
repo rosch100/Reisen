@@ -12,13 +12,16 @@ import ReisenProviders
 struct SyncTab: View {
     @Binding var sessionChromeEpoch: Int
     var isSelected: Bool
+    var onOpenSettings: () -> Void
 
     @Environment(\.syncStore) private var syncStore
     @Environment(\.providerRegistry) private var providerRegistry
     @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.providerEnableEpoch) private var providerEnableEpoch
 
-    private var syncProviderIDs: [ProviderID] {
-        providerRegistry?.syncProviderIDs ?? []
+    private var enabledProviderIDs: [ProviderID] {
+        _ = providerEnableEpoch
+        return providerRegistry?.enabledSyncProviderIDs() ?? []
     }
 
     @State private var selectedProviderID: ProviderID = .check24
@@ -26,34 +29,34 @@ struct SyncTab: View {
     @State private var showCreateTrip = false
     @State private var showCredentialSheet = false
     @State private var isKeyboardVisible = false
+    @State private var selectedKeychainAccount: KeychainCredentialAccount?
+    @State private var keychainAutoFillTask: Task<Void, Never>?
+    @State private var pendingRememberCredentials: ProviderCredentials?
+    @State private var rememberLoginMode: ProviderRememberLoginMode = .passwordManual
+    @State private var rememberLoginMessage: String?
+    @State private var navigationWasBlocked = false
+
+    @AppStorage(AppSettingsKeys.rememberLoginAutomatically)
+    private var rememberLoginAutomatically: Bool = true
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                providerPicker
-                sessionBanner
-                Divider()
-
-                WebViewHost(
-                    loginURL: loginURLForSelectedProvider(),
-                    providerID: selectedProviderID,
-                    webView: $webView,
-                    onDidFinish: { finishedWebView in
-                        handleWebDidFinish(finishedWebView)
-                    }
-                )
-                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                .clipped()
-
-                if !isKeyboardVisible {
-                    actionBar
+            Group {
+                if enabledProviderIDs.isEmpty {
+                    emptyProviders
+                } else {
+                    syncContent
                 }
             }
             .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .clipped()
             .ignoresSafeArea(.keyboard)
             .navigationTitle("Sync")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    providerSwitcher
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showCreateTrip = true
@@ -63,7 +66,9 @@ struct SyncTab: View {
                     .help("Neue Reise anlegen")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    GlobalChromeTrailingToolbar(sessionChromeEpoch: $sessionChromeEpoch)
+                    GlobalChromeTrailingToolbar(
+                        sessionChromeEpoch: $sessionChromeEpoch
+                    )
                 }
             }
             .sheet(isPresented: $showCreateTrip) {
@@ -72,23 +77,42 @@ struct SyncTab: View {
             }
             .sheet(isPresented: $showCredentialSheet) {
                 if let host = credentialServerHost() {
-                    SaveProviderCredentialSheet(serverHost: host) { _ in
+                    SaveProviderCredentialSheet(
+                        serverHost: host,
+                        mode: rememberLoginMode
+                    ) { account in
                         showCredentialSheet = false
+                        setPreferredKeychainAccountID(account.id)
+                        selectedKeychainAccount = account
+                        rememberLoginMessage = "Passwort-Konto für \(host) gespeichert."
+                        scheduleAutoFillFromKeychain()
                     }
                 }
             }
             .onAppear {
-                guard let sessionHub else { return }
-                sessionHub.syncEnabledProviders(Set(syncProviderIDs))
-                ensureSelectedProviderIsRegistered()
+                sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
+                ensureSelectedProviderIsEnabled()
             }
-            .onChange(of: syncProviderIDs) { _, _ in
-                ensureSelectedProviderIsRegistered()
+            .onChange(of: enabledProviderIDs) { _, _ in
+                sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
+                ensureSelectedProviderIsEnabled()
             }
             .onChange(of: selectedProviderID) { _, newProviderID in
+                navigationWasBlocked = false
+                guard enabledProviderIDs.contains(newProviderID) else { return }
                 guard let sessionHub else { return }
                 if sessionHub.status(for: newProviderID) != .sessionReady {
                     sessionHub.updateStatus(newProviderID, status: .needsLogin)
+                }
+                clearKeychainRuntimeState()
+                pendingRememberCredentials = nil
+                if sessionHub.status(for: newProviderID) == .needsLogin {
+                    scheduleKeychainReloadIfLoginStillRequired()
+                }
+            }
+            .onChange(of: sessionChromeEpoch) { _, _ in
+                if sessionStatus == .sessionReady {
+                    navigationWasBlocked = false
                 }
             }
             .onChange(of: isSelected) { _, selected in
@@ -104,25 +128,83 @@ struct SyncTab: View {
         }
     }
 
-    private var providerPicker: some View {
-        HStack(spacing: 12) {
-            Picker("Provider", selection: $selectedProviderID) {
-                ForEach(syncProviderIDs, id: \.self) { id in
-                    Text(providerName(for: id)).tag(id)
-                }
+    private var emptyProviders: some View {
+        ContentUnavailableView {
+            Label("Keine Portale aktiv", systemImage: "switch.2")
+        } description: {
+            Text("Aktiviere unter Mehr die Buchungsportale, die du synchronisieren möchtest.")
+        } actions: {
+            Button("Zu den Einstellungen") {
+                onOpenSettings()
             }
-            .pickerStyle(.segmented)
-            .fixedSize(horizontal: true, vertical: false)
-
-            trafficLightDot(size: 10)
-                .accessibilityLabel(Text(trafficLightAccessibilityLabel))
-
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, isKeyboardVisible ? 6 : 12)
-        .padding(.bottom, isKeyboardVisible ? 4 : 8)
-        .background(.bar)
+    }
+
+    private var syncContent: some View {
+        VStack(spacing: 0) {
+            sessionBanner
+            Divider()
+
+            WebViewHost(
+                loginURL: loginURLForSelectedProvider(),
+                providerID: selectedProviderID,
+                webView: $webView,
+                onDidFinish: { finishedWebView in
+                    handleWebDidFinish(finishedWebView)
+                },
+                onCapturedCredentials: { credentials in
+                    pendingRememberCredentials = credentials
+                },
+                onNavigationBlocked: {
+                    navigationWasBlocked = true
+                }
+            )
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+            .clipped()
+
+            if !isKeyboardVisible {
+                actionBar
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var providerSwitcher: some View {
+        if enabledProviderIDs.isEmpty {
+            Text("Sync")
+                .font(.headline)
+        } else if enabledProviderIDs.count == 1 {
+            providerSwitcherLabel
+        } else {
+            Menu {
+                Picker("Provider", selection: $selectedProviderID) {
+                    ForEach(enabledProviderIDs, id: \.self) { id in
+                        Text(providerName(for: id)).tag(id)
+                    }
+                }
+            } label: {
+                providerSwitcherLabel
+            }
+            .menuIndicator(.hidden)
+            .accessibilityLabel("Provider")
+            .accessibilityValue(providerName(for: selectedProviderID))
+            .accessibilityHint("Wähle das Buchungsportal für die Anmeldung und Synchronisation.")
+        }
+    }
+
+    private var providerSwitcherLabel: some View {
+        HStack(spacing: 6) {
+            Text(providerName(for: selectedProviderID))
+                .font(.headline)
+                .lineLimit(1)
+            if enabledProviderIDs.count > 1 {
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            trafficLightDot(size: 8)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var trafficLight: ProviderLoginTrafficLight {
@@ -145,7 +227,7 @@ struct SyncTab: View {
     }
 
     private func providerName(for id: ProviderID) -> String {
-        providerRegistry?.providers.first(where: { $0.id == id })?.displayName ?? id.rawValue
+        providerRegistry?.provider(id: id)?.displayName ?? id.displayName
     }
 
     private var sessionStatus: ProviderSessionStatus {
@@ -167,13 +249,38 @@ struct SyncTab: View {
     }
 
     private func loginURLForSelectedProvider() -> URL? {
-        let provider = providerRegistry?.provider(id: selectedProviderID)
-        let loginConfig = provider as? any TravelProviderLoginConfiguration
-        return loginConfig?.loginURL
+        loginConfiguration?.loginURL
+    }
+
+    private var loginConfiguration: (any TravelProviderLoginConfiguration)? {
+        providerRegistry?.provider(id: selectedProviderID) as? TravelProviderLoginConfiguration
     }
 
     private func credentialServerHost() -> String? {
-        loginURLForSelectedProvider()?.host
+        loginConfiguration?.keychainServerHost
+    }
+
+    private func preferredKeychainAccountID() -> String {
+        UserDefaults.standard.string(
+            forKey: AppSettingsKeys.preferredKeychainAccountKey(for: selectedProviderID)
+        ) ?? ""
+    }
+
+    private func setPreferredKeychainAccountID(_ value: String) {
+        UserDefaults.standard.set(
+            value,
+            forKey: AppSettingsKeys.preferredKeychainAccountKey(for: selectedProviderID)
+        )
+    }
+
+    @Environment(\.providerNativeAppPresence) private var nativeAppPresence
+
+    private var sessionBannerSubtitle: String {
+        ProviderSessionCopy.iosSubtitle(
+            navigationWasBlocked: navigationWasBlocked,
+            isSessionReady: sessionStatus == .sessionReady,
+            isNativeAppInstalled: nativeAppPresence.isInstalled(selectedProviderID)
+        )
     }
 
     private var sessionBanner: some View {
@@ -185,12 +292,10 @@ struct SyncTab: View {
                 Text(trafficLight.displayLabel)
                     .font(.headline)
                 if !isKeyboardVisible {
-                    Text(sessionStatus == .sessionReady
-                         ? "WebView ist bereit — Buchungen können synchronisiert werden."
-                         : "Melde dich im WebView beim Provider an (inkl. 2FA falls nötig).")
+                    Text(sessionBannerSubtitle)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(3)
                 }
             }
 
@@ -213,6 +318,11 @@ struct SyncTab: View {
 
     private var actionBar: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let rememberLoginMessage {
+                Text(rememberLoginMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             if let statusMessage = syncStore?.statusMessage {
                 Text(statusMessage).foregroundStyle(.secondary)
             }
@@ -225,9 +335,9 @@ struct SyncTab: View {
 
             HStack(spacing: 12) {
                 Button {
-                    showCredentialSheet = true
+                    openRememberLoginSheet()
                 } label: {
-                    Label("Konto", systemImage: "key")
+                    Label("Anmeldung merken", systemImage: "key")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -243,7 +353,8 @@ struct SyncTab: View {
                         await syncStore.sync(
                             providerID: selectedProviderID,
                             webView: targetWebView,
-                            settings: .fromUserDefaults()
+                            settings: .fromUserDefaults(),
+                            navigationHintURLs: navigationHintURLsForSync()
                         )
                     }
                 } label: {
@@ -291,10 +402,21 @@ struct SyncTab: View {
         .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private func ensureSelectedProviderIsRegistered() {
-        guard !syncProviderIDs.contains(selectedProviderID),
-              let first = syncProviderIDs.first else { return }
-        selectedProviderID = first
+    private func ensureSelectedProviderIsEnabled() {
+        guard let resolved = EnabledProviderSelection.resolved(
+            selected: selectedProviderID,
+            enabled: enabledProviderIDs
+        ) else { return }
+        if resolved != selectedProviderID {
+            selectedProviderID = resolved
+        }
+    }
+
+    private func navigationHintURLsForSync() -> [URL] {
+        NavigationHintURLs.ordered(
+            localURLString: webView?.url?.absoluteString,
+            hubURLString: sessionHub?.lastURLString(for: selectedProviderID)
+        )
     }
 
     @MainActor
@@ -304,10 +426,129 @@ struct SyncTab: View {
             webView: finishedWebView,
             providerID: selectedProviderID,
             hub: hub,
-            enabledProviderIDs: Set(syncProviderIDs),
+            enabledProviderIDs: Set(enabledProviderIDs),
             notifyAlways: true
         ) {
             sessionChromeEpoch &+= 1
+        }
+        if hub.status(for: selectedProviderID) == .needsLogin {
+            scheduleKeychainReloadIfLoginStillRequired()
+        } else if hub.status(for: selectedProviderID) == .sessionReady {
+            tryAutoSavePendingCredentials()
+            clearKeychainRuntimeState()
+        } else {
+            clearKeychainRuntimeState()
+        }
+    }
+
+    private func openRememberLoginSheet() {
+        ProviderRememberLogin.beginSheet(
+            sessionReady: sessionStatus == .sessionReady,
+            pending: pendingRememberCredentials,
+            mode: &rememberLoginMode,
+            message: &rememberLoginMessage
+        )
+        showCredentialSheet = true
+    }
+
+    @MainActor
+    private func tryAutoSavePendingCredentials() {
+        ProviderRememberLogin.autoSaveIfPending(
+            pending: &pendingRememberCredentials,
+            serverHost: credentialServerHost(),
+            rememberAutomatically: rememberLoginAutomatically,
+            message: &rememberLoginMessage
+        ) { account in
+            setPreferredKeychainAccountID(account.id)
+            selectedKeychainAccount = account
+        }
+    }
+
+    private func clearKeychainRuntimeState() {
+        keychainAutoFillTask?.cancel()
+        keychainAutoFillTask = nil
+        selectedKeychainAccount = nil
+    }
+
+    private func scheduleKeychainReloadIfLoginStillRequired() {
+        keychainAutoFillTask?.cancel()
+        keychainAutoFillTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: KeychainAutoFill.loginSettleDelayNanoseconds)
+            guard !Task.isCancelled else { return }
+            guard sessionStatus == .needsLogin else { return }
+            reloadKeychainAccounts(autoFill: true)
+        }
+    }
+
+    @MainActor
+    private func reloadKeychainAccounts(autoFill: Bool = false) {
+        guard sessionStatus == .needsLogin else { return }
+        selectedKeychainAccount = nil
+
+        guard let host = credentialServerHost() else { return }
+
+        do {
+            let accounts = try KeychainCredentialStore().accounts(serverHost: host)
+            applyAccountSelection(accounts: accounts, autoFill: autoFill)
+        } catch {
+            selectedKeychainAccount = nil
+        }
+    }
+
+    @MainActor
+    private func applyAccountSelection(
+        accounts: [KeychainCredentialAccount],
+        autoFill: Bool = false
+    ) {
+        if accounts.isEmpty {
+            setPreferredKeychainAccountID("")
+            selectedKeychainAccount = nil
+            return
+        }
+
+        let storedID = preferredKeychainAccountID()
+        if let selected = KeychainAutoFill.pickAccount(
+            from: accounts,
+            storedPreferredID: storedID
+        ) {
+            selectAccount(selected, autoFill: autoFill)
+            return
+        }
+
+        setPreferredKeychainAccountID("")
+        selectedKeychainAccount = nil
+    }
+
+    @MainActor
+    private func selectAccount(_ account: KeychainCredentialAccount, autoFill: Bool = false) {
+        selectedKeychainAccount = account
+        setPreferredKeychainAccountID(account.id)
+        if autoFill {
+            scheduleAutoFillFromKeychain()
+        }
+    }
+
+    private func scheduleAutoFillFromKeychain() {
+        KeychainAutoFill.startWebViewReadyTask(
+            existing: &keychainAutoFillTask,
+            shouldContinue: {
+                !Task.isCancelled
+                    && sessionStatus == .needsLogin
+                    && selectedKeychainAccount != nil
+            },
+            webView: { webView ?? sessionHub?.webView(for: selectedProviderID) },
+            action: { insertKeychainCredentials(in: $0) }
+        )
+    }
+
+    @MainActor
+    private func insertKeychainCredentials(in targetWebView: WKWebView? = nil) {
+        guard let account = selectedKeychainAccount else { return }
+        guard let webView = targetWebView ?? webView ?? sessionHub?.webView(for: selectedProviderID) else { return }
+        do {
+            try KeychainAutoFill.applyAccount(account, in: webView)
+        } catch {
+            selectedKeychainAccount = nil
         }
     }
 }

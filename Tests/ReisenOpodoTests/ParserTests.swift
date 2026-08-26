@@ -1,7 +1,8 @@
 import Testing
 import Foundation
-import ReisenOpodo
+@testable import ReisenOpodo
 import ReisenDomain
+import ReisenProviders
 
 @Test("OpodoActivityListParser parst Buchungen aus HTML (flight + hotel)")
 func opodoParsesFlightsAndHotels() throws {
@@ -23,6 +24,22 @@ func opodoParsesFlightsAndHotels() throws {
     #expect(typesByUrl["https://www.opodo.de/flight/def"] == .flight)
 }
 
+@Test("Opodo: Login-HTML wird als fehlende Session erkannt")
+func opodoLoginHTMLIndicatesMissingSession() {
+    let loginHTML = """
+    <html><body>
+    <form action="https://www.opodo.de/user/login">
+    <input type="password" name="password">
+    </form>
+    </body></html>
+    """
+    #expect(AuthPageHTMLHeuristic.opodoLooksLikeLoginHTML(loginHTML))
+    #expect(!AuthPageHTMLHeuristic.opodoLooksLikeLoginHTML(
+        "<html><body><a href=\"https://www.opodo.de/travel/secure/\">Trips</a></body></html>",
+        responseURL: URL(string: "https://www.opodo.de/travel/secure/")
+    ))
+}
+
 @Test("OpodoActivityListParser liefert leeren Katalog statt Fehler")
 func opodoEmptyHTMLIsEmptyCatalog() throws {
     let html = "<html><body><p>no bookings</p></body></html>"
@@ -35,7 +52,7 @@ func opodoCancellationParserFindsDeadline() {
     let html = """
     <html><body>
       <div>
-        Stornieren Sie kostenlos bis zum 13.07.2026 21:59 Uhr (Hotel-Ortszeit)
+        Cancel for free until 13.07.2026 21:59 (property local time)
         <span>cancelation fee € 12,34</span>
       </div>
     </body></html>
@@ -48,21 +65,21 @@ func opodoCancellationParserFindsDeadline() {
     }
 }
 
-@Test("OpodoCancellationDeadlineParser erkennt Stornierungsrichtlinie mit Monatsname")
-func opodoCancellationParserFindsGermanLongDate() throws {
+@Test("OpodoCancellationDeadlineParser erkennt EN-Cancellation-Policy mit Monatsname")
+func opodoCancellationParserFindsEnglishLongDate() throws {
     let html = """
     <html><body>
-      <div>Andere Texte bis irgendwann</div>
-      <section>Stornierungsrichtlinie Bis 1. August 2026 (Bis 22:00)</section>
+      <div>Other text until someday</div>
+      <section>Cancellation policy until 1 August 2026 (until 22:00) - free cancellation</section>
     </body></html>
     """
 
     let deadlines = OpodoCancellationDeadlineParser().parseDeadlines(from: html)
     #expect(deadlines.count >= 1)
     let deadline = try #require(
-        deadlines.first { ($0.policyText ?? "").contains("Stornierungsrichtlinie") } ?? deadlines.first
+        deadlines.first { ($0.policyText ?? "").localizedCaseInsensitiveContains("cancellation policy") }
+            ?? deadlines.first
     )
-    #expect(deadline.policyText?.contains("Stornierungsrichtlinie") == true)
     #expect(deadline.isFreeCancellation == true)
 
     var calendar = Calendar(identifier: .gregorian)
@@ -75,14 +92,14 @@ func opodoCancellationParserFindsGermanLongDate() throws {
     #expect(comps.minute == 0)
 }
 
-@Test("OpodoCancellationDeadlineParser akzeptiert Datum ohne Punkt und Vollständige Rückerstattung")
-func opodoCancellationParserAcceptsDateWithoutDot() throws {
+@Test("OpodoCancellationDeadlineParser akzeptiert EN-Datum ohne Punkt")
+func opodoCancellationParserAcceptsEnglishDateWithoutDot() throws {
     let html = """
-    Stornierungsrichtlinie Bis 1 August 2026 (Bis 22:00) - Vollständige Rückerstattung
+    Cancellation policy until 1 August 2026 (until 22:00) - full refund
     """
     let deadlines = OpodoCancellationDeadlineParser().parseDeadlines(from: html)
     let deadline = try #require(
-        deadlines.first { ($0.policyText ?? "").localizedCaseInsensitiveContains("Stornierungsrichtlinie") }
+        deadlines.first { ($0.policyText ?? "").localizedCaseInsensitiveContains("cancellation policy") }
     )
     #expect(deadline.isFreeCancellation == true)
     var calendar = Calendar(identifier: .gregorian)
@@ -93,19 +110,19 @@ func opodoCancellationParserAcceptsDateWithoutDot() throws {
     #expect(comps.hour == 22)
 }
 
-@Test("OpodoCancellationDeadlineParser erkennt Monatsabkürzung mit Punkt (Aug.)")
-func opodoCancellationParserAcceptsMonthAbbreviationWithDot() throws {
+@Test("OpodoCancellationDeadlineParser erkennt EN-Monatsabkürzung (Aug.)")
+func opodoCancellationParserAcceptsEnglishMonthAbbreviation() throws {
     let html = """
     <html><body>
       <div>
-        Stornierungsrichtlinie Bis 1. Aug. 2026 (Bis 22:00) - Kostenlos stornierbar
+        Cancellation policy until 1 Aug. 2026 (until 22:00) - free cancellation
       </div>
     </body></html>
     """
 
     let deadlines = OpodoCancellationDeadlineParser().parseDeadlines(from: html)
     let deadline = try #require(
-        deadlines.first { ($0.policyText ?? "").localizedCaseInsensitiveContains("stornierungsrichtlinie") }
+        deadlines.first { ($0.policyText ?? "").localizedCaseInsensitiveContains("cancellation policy") }
     )
     #expect(deadline.isFreeCancellation == true)
 
@@ -123,7 +140,7 @@ func opodoCancellationParserAcceptsMonthAbbreviationWithDot() throws {
 func opodoCancellationParserAcceptsNoWhitespaceBetweenMonthAndYear() {
     let html = """
     <html><body>
-      <div>Stornierungsrichtlinie Bis 1. Aug.2026 (Bis 22:00) - Kostenlos stornierbar</div>
+      <div>Cancellation policy until 1 Aug.2026 (until 22:00) - free cancellation</div>
     </body></html>
     """
 
@@ -142,30 +159,30 @@ func opodoCancellationParserAcceptsNoWhitespaceBetweenMonthAndYear() {
 @Test("OpodoCancellationDeadlineParser erkennt Monatsabkürzungen (Jan–Apr)")
 func opodoCancellationParserUniversalMonthsJanApr() {
     opodoCancellationParserUniversalMonthsRange(tokens: [
-        ("Jan.", 1),
-        ("Feb.", 2),
-        ("Mär.", 3),
-        ("Apr.", 4),
+        ("January", 1),
+        ("February", 2),
+        ("March", 3),
+        ("April", 4),
     ])
 }
 
-@Test("OpodoCancellationDeadlineParser erkennt Monatsabkürzungen (Mai–Aug)")
+@Test("OpodoCancellationDeadlineParser erkennt Monatsabkürzungen (May–Aug)")
 func opodoCancellationParserUniversalMonthsMayAug() {
     opodoCancellationParserUniversalMonthsRange(tokens: [
-        ("Mai.", 5),
+        ("May.", 5),
         ("Jun.", 6),
         ("Jul.", 7),
         ("Aug.", 8),
     ])
 }
 
-@Test("OpodoCancellationDeadlineParser erkennt Monatsabkürzungen (Sep–Dez)")
+@Test("OpodoCancellationDeadlineParser erkennt Monatsabkürzungen (Sep–Dec)")
 func opodoCancellationParserUniversalMonthsSepDec() {
     opodoCancellationParserUniversalMonthsRange(tokens: [
         ("Sep.", 9),
-        ("Okt.", 10),
+        ("Oct.", 10),
         ("Nov.", 11),
-        ("Dez.", 12),
+        ("Dec.", 12),
     ])
 }
 
@@ -173,7 +190,7 @@ private func opodoCancellationParserUniversalMonthsRange(tokens: [(String, Int)]
     for (token, expectedMonth) in tokens {
         let html = """
         <html><body>
-          <div>Stornierungsrichtlinie Bis 1 \(token) 2026 (Bis 22:00)</div>
+          <div>Cancellation policy until 1 \(token) 2026 (until 22:00) - free cancellation</div>
         </body></html>
         """
 

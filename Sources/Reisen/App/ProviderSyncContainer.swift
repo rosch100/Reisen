@@ -3,6 +3,7 @@ import WebKit
 import ReisenDomain
 import ReisenProviders
 import ReisenAppCore
+import ReisenSharedUI
 
 /// Zeigt die Sync-UI des ausgewählten Providers.
 /// Start: alle enabled Provider per Cookie/Session prüfen (1×1-Hosts), danach
@@ -84,8 +85,7 @@ struct ProviderSyncContainer: View {
                     sessionStatus: backgroundSessionStatusBinding(for: backgroundProviderID),
                     lastURLString: backgroundLastURLBinding(for: backgroundProviderID),
                     webView: backgroundWebViewBinding(for: backgroundProviderID),
-                    autofillCredentials: nil,
-                    rememberTrustedDeviceAutomatically: true
+                    autofillCredentials: nil
                 )
                 .frame(width: 1, height: 1)
                 .opacity(0.01)
@@ -95,12 +95,7 @@ struct ProviderSyncContainer: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { syncHub() }
-        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { note in
-            guard let key = note.userInfo?["NSKey"] as? String,
-                  key.hasPrefix(AppSettingsKeys.providerEnabledPrefix) else { return }
-            providerEnableEpoch &+= 1
-        }
-        .onChange(of: providerEnableEpoch) { _, _ in syncHub() }
+        .onProviderEnabledChange(bump: $providerEnableEpoch, perform: syncHub)
         .onAppear {
             if hub?.didCompleteStartupProbe == true {
                 phase = .ready

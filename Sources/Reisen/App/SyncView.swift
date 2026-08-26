@@ -27,6 +27,7 @@ struct SyncView: View {
     @AppStorage(AppSettingsKeys.calendarFlightTimesEnabled) private var calendarFlightTimesEnabled: Bool = false
     @AppStorage(AppSettingsKeys.calendarHotelStaysEnabled) private var calendarHotelStaysEnabled: Bool = false
     @AppStorage(AppSettingsKeys.calendarTitleMode) private var calendarTitleModeRaw: String = CalendarTitleMode.tripTitle.rawValue
+    @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = true
     @AppStorage private var isProviderEnabled: Bool
     @AppStorage private var preferredKeychainAccountID: String
 
@@ -42,6 +43,10 @@ struct SyncView: View {
     @State private var isSaveCredentialSheetPresented = false
     /// Keychain erst nach Cookie-/Session-Probe laden — sonst Dialog trotz gültiger Cookies.
     @State private var keychainReloadTask: Task<Void, Never>?
+    @State private var pendingRememberCredentials: ProviderCredentials?
+    @State private var rememberLoginMode: ProviderRememberLoginMode = .passwordManual
+    @State private var rememberLoginMessage: String?
+    @State private var navigationWasBlocked = false
 
     init(providerID: ProviderID) {
         self.providerID = providerID
@@ -151,7 +156,13 @@ struct SyncView: View {
                         sessionStatus: $sessionStatus,
                         lastURLString: $lastURLString,
                         webView: webViewBinding,
-                        autofillCredentials: autofillCredentials
+                        autofillCredentials: autofillCredentials,
+                        onCapturedCredentials: { credentials in
+                            pendingRememberCredentials = credentials
+                        },
+                        onNavigationBlocked: {
+                            navigationWasBlocked = true
+                        }
                     )
                     .frame(
                         maxWidth: .infinity,
@@ -176,10 +187,12 @@ struct SyncView: View {
             if let keychainServerHost {
                 SaveProviderCredentialSheet(
                     serverHost: keychainServerHost,
+                    mode: rememberLoginMode,
                     onOpenPasswordManager: { MacSystemApps.openPasswords() }
                 ) { account in
                     preferredKeychainAccountID = account.id
                     reloadKeychainAccounts(selecting: account)
+                    rememberLoginMessage = "Passwort-Konto für \(keychainServerHost) gespeichert."
                 }
             }
         }
@@ -223,6 +236,8 @@ struct SyncView: View {
                 scheduleKeychainReloadIfLoginStillRequired()
             case .sessionReady:
                 isBrowserExpanded = false
+                navigationWasBlocked = false
+                tryAutoSavePendingCredentials()
                 clearKeychainRuntimeState()
             }
         }
@@ -279,6 +294,13 @@ struct SyncView: View {
         .resolve(isEnabled: true, isLoggedIn: sessionStatus == .sessionReady)
     }
 
+    private var sessionBannerSubtitle: String {
+        ProviderSessionCopy.macSubtitle(
+            navigationWasBlocked: navigationWasBlocked,
+            isSessionReady: loginTrafficLight == .green
+        )
+    }
+
     private var sessionBanner: some View {
         HStack(alignment: .center, spacing: 12) {
             Image(systemName: loginTrafficLight == .green
@@ -290,9 +312,7 @@ struct SyncView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(loginTrafficLight.displayLabel)
                     .font(.headline)
-                Text(loginTrafficLight == .green
-                     ? "Du kannst jetzt die Buchungen synchronisieren."
-                     : "Melde dich im Browser unten beim Provider an (inkl. 2FA falls nötig).")
+                Text(sessionBannerSubtitle)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -359,14 +379,14 @@ struct SyncView: View {
             )
 
             Button {
-                isSaveCredentialSheetPresented = true
+                openRememberLoginSheet()
             } label: {
-                Label("Konto speichern…", systemImage: "plus")
+                Label("Anmeldung merken…", systemImage: "plus")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
             .disabled(keychainServerHost == nil)
-            .help("Konto aus Passwords hier speichern — Hauptweg, weil Passwords-App-Einträge für Apps gesperrt sind.")
+            .help("Passwort-Konto speichern oder Session-Hinweis (Apple/Passkey/OAuth).")
         }
     }
 
@@ -381,6 +401,11 @@ struct SyncView: View {
 
     private var actionBar: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let rememberLoginMessage {
+                Text(rememberLoginMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             if let compositionErrorMessage {
                 CopyableLabel(
                     title: compositionErrorMessage,
@@ -429,9 +454,9 @@ struct SyncView: View {
                     )
                     HStack(spacing: 8) {
                         Button {
-                            isSaveCredentialSheetPresented = true
+                            openRememberLoginSheet()
                         } label: {
-                            Label("Konto speichern…", systemImage: "plus")
+                            Label("Anmeldung merken…", systemImage: "plus")
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -512,7 +537,15 @@ struct SyncView: View {
         await store.sync(
             providerID: providerID,
             webView: sessionWebView,
-            settings: settings
+            settings: settings,
+            navigationHintURLs: navigationHintURLs(for: providerID)
+        )
+    }
+
+    private func navigationHintURLs(for providerID: ProviderID) -> [URL] {
+        NavigationHintURLs.ordered(
+            localURLString: lastURLString,
+            hubURLString: sessionHub?.lastURLString(for: providerID)
         )
     }
 
@@ -575,6 +608,29 @@ struct SyncView: View {
         keychainMessage = nil
     }
 
+    private func openRememberLoginSheet() {
+        ProviderRememberLogin.beginSheet(
+            sessionReady: sessionStatus == .sessionReady,
+            pending: pendingRememberCredentials,
+            mode: &rememberLoginMode,
+            message: &rememberLoginMessage
+        )
+        isSaveCredentialSheetPresented = true
+    }
+
+    @MainActor
+    private func tryAutoSavePendingCredentials() {
+        ProviderRememberLogin.autoSaveIfPending(
+            pending: &pendingRememberCredentials,
+            serverHost: keychainServerHost,
+            rememberAutomatically: rememberLoginAutomatically,
+            message: &rememberLoginMessage
+        ) { account in
+            preferredKeychainAccountID = account.id
+            reloadKeychainAccounts(selecting: account)
+        }
+    }
+
     private func reloadKeychainAccounts(
         selecting preferred: KeychainCredentialAccount? = nil,
         autoFill: Bool = false
@@ -611,18 +667,12 @@ struct SyncView: View {
             return
         }
 
-        if let preferred, accounts.contains(preferred) {
-            selectAccount(preferred, autoFill: autoFill)
-            return
-        }
-
-        if let stored = accounts.first(where: { $0.id == preferredKeychainAccountID }) {
-            selectAccount(stored, autoFill: autoFill)
-            return
-        }
-
-        if accounts.count == 1 {
-            selectAccount(accounts[0], autoFill: autoFill)
+        if let selected = KeychainAutoFill.pickAccount(
+            from: accounts,
+            storedPreferredID: preferredKeychainAccountID,
+            explicitPreferred: preferred
+        ) {
+            selectAccount(selected, autoFill: autoFill)
             return
         }
 
@@ -659,73 +709,27 @@ struct SyncView: View {
     /// Automatisches Ausfüllen + Submit, wenn Login nötig und Konto bekannt.
     private func scheduleAutoFillFromKeychain() {
         Task { @MainActor in
-            for _ in 0..<10 {
-                guard sessionStatus == .needsLogin else { return }
-                guard selectedKeychainAccount != nil else { return }
-                if sessionWebView != nil || sessionHub?.webView(for: providerID) != nil {
-                    insertKeychainCredentials()
-                    return
-                }
-                try? await Task.sleep(nanoseconds: 250_000_000)
-            }
+            await KeychainAutoFill.runWhenWebViewReady(
+                shouldContinue: {
+                    sessionStatus == .needsLogin && selectedKeychainAccount != nil
+                },
+                webView: { sessionWebView ?? sessionHub?.webView(for: providerID) },
+                action: { insertKeychainCredentials(in: $0) }
+            )
         }
     }
 
     @MainActor
-    private func insertKeychainCredentials() {
+    private func insertKeychainCredentials(in targetWebView: WKWebView? = nil) {
         guard let account = selectedKeychainAccount else { return }
-        guard let targetWebView = sessionWebView ?? sessionHub?.webView(for: providerID) else { return }
-        let credentials: ProviderCredentials
+        guard let webView = targetWebView ?? sessionWebView ?? sessionHub?.webView(for: providerID) else { return }
         do {
-            credentials = try KeychainCredentialStore().credentials(for: account)
-            autofillCredentials = credentials
+            autofillCredentials = try KeychainAutoFill.applyAccount(account, in: webView)
+            keychainMessage = nil
         } catch {
             autofillCredentials = nil
             keychainMessage = error.localizedDescription
-            return
         }
-        // Kein LoginFieldHints vor Fill — autocomplete-Mutation brach Opodo PasswordLogin.
-        // #region agent log
-        AgentDebugLog.write(
-            hypothesisId: "S",
-            location: "SyncView.swift:insertKeychainCredentials",
-            message: "Ausfüllen (pre-submit, no hints)",
-            data: [
-                "usernameLen": credentials.username.count,
-                "url": targetWebView.url?.absoluteString ?? "nil",
-            ]
-        )
-        // #endregion
-
-        let maxAttempts = 3
-        let delays: [TimeInterval] = [0.25, 0.75] // wait for DOM to settle between attempts
-
-        var attempt = 0
-        func attemptFill() {
-            attempt += 1
-            LoginAutofill.apply(in: targetWebView, credentials: credentials) { filled in
-                // #region agent log
-                AgentDebugLog.write(
-                    hypothesisId: "S",
-                    location: "SyncView.swift:insertKeychainCredentials.callback",
-                    message: "Ausfüllen result",
-                    data: [
-                        "attempt": attempt,
-                        "maxAttempts": maxAttempts,
-                        "filled": filled,
-                    ]
-                )
-                // #endregion
-
-                guard !filled, attempt < maxAttempts else { return }
-                let delay = delays[min(attempt - 1, delays.count - 1)]
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    attemptFill()
-                }
-            }
-        }
-
-        attemptFill()
     }
 
     private func appendKeychainMessage(_ suffix: String) {

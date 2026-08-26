@@ -3,7 +3,7 @@ import Foundation
 extension OpodoCancellationDeadlineParser {
     func parseOpodoBisDateFromSnippet(_ snippet: String) -> Date? {
         let match = firstMatch(
-            pattern: #"(?i)(\d{1,2}\.?\s*\p{L}+\.?\s*\d{4})(?:\s*\(\s*Bis\s+(\d{1,2}:\d{2})\s*\))?"#,
+            pattern: #"(?i)(\d{1,2}\.?\s*\p{L}+\.?\s*\d{4})(?:\s*\(\s*(?:Bis|until)\s+(\d{1,2}:\d{2})\s*\))?"#,
             in: snippet
         ) ?? nil
 
@@ -15,7 +15,7 @@ extension OpodoCancellationDeadlineParser {
         ) else { return nil }
 
         let timePart = firstMatch(
-            pattern: #"(?i)\(\s*Bis\s+(\d{1,2}:\d{2})\s*\)"#,
+            pattern: #"(?i)\(\s*(?:Bis|until)\s+(\d{1,2}:\d{2})\s*\)"#,
             in: snippet
         )
 

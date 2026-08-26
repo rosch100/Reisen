@@ -4,7 +4,7 @@ import ReisenDomain
 
 @Test func composeTripStartEndCreatesAllDayDrafts() {
     let trip = Trip(
-        title: "Berlin",
+        title: "Sample Trip",
         startDate: Date(timeIntervalSince1970: 1_700_000_000),
         endDate: Date(timeIntervalSince1970: 1_700_086_400),
         bookingIDs: []
@@ -46,7 +46,7 @@ import ReisenDomain
     )
 
     let trip = Trip(
-        title: "Berlin",
+        title: "Sample Trip",
         startDate: Date(timeIntervalSince1970: 1_700_000_000),
         endDate: Date(timeIntervalSince1970: 1_700_086_400),
         bookingIDs: [bookingID]
@@ -94,7 +94,7 @@ import ReisenDomain
     )
 
     let trip = Trip(
-        title: "Berlin",
+        title: "Sample Trip",
         startDate: Date(timeIntervalSince1970: 1_700_000_000),
         endDate: Date(timeIntervalSince1970: 1_700_086_400),
         bookingIDs: [bookingID]
@@ -140,7 +140,7 @@ import ReisenDomain
     )
 
     let trip = Trip(
-        title: "Berlin",
+        title: "Sample Trip",
         startDate: Date(timeIntervalSince1970: 1_700_000_000),
         endDate: Date(timeIntervalSince1970: 1_700_003_600),
         bookingIDs: [bookingID]

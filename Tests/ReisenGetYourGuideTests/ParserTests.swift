@@ -16,7 +16,7 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     #expect(draft.status == .confirmed)
     #expect(draft.title == "Yogyakarta: Ramayana Ballett Prambanan")
     #expect(draft.confirmationCode == "<REDACTED>")
-    #expect(draft.externalUrl == "https://www.getyourguide.com/de-de/booking/<REDACTED>")
+    #expect(draft.externalUrl == "https://www.getyourguide.com/en-us/booking/<REDACTED>")
     #expect(draft.startAt == iso8601("2026-08-08T19:00:00+07:00"))
     #expect(draft.endAt == iso8601("2026-08-08T21:00:00+07:00"))
     #expect(draft.locationTo == "<REDACTED>")

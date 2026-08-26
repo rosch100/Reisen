@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>Reisen</string>
 	<key>CFBundleIdentifier</key>
-	<string>de.roschmac.Reisen</string>
+	<string>de.reisen.Reisen</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

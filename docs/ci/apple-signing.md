@@ -1,18 +1,18 @@
 # Apple Signing (macOS + iOS)
 
-Team-ID und Bundle-IDs sind **keine Secrets**. Die Team-ID steht in `project.yml` (`DEVELOPMENT_TEAM`) und gilt für macOS und iOS.
+Team-ID und Bundle-IDs sind **keine Secrets**, werden aber nicht in dieser Doku dupliziert — SSOT ist `project.yml` (`DEVELOPMENT_TEAM`, Bundle-IDs pro Target) und `Scripts/setup-apple-developer.sh`.
 
 | Plattform | Bundle-ID | Container |
 |-----------|-----------|-----------|
-| macOS | `de.roschmac.Reisen` | `iCloud.de.roschmac.Reisen` |
-| iOS / iPadOS | `de.roschmac.Reisen.ios` | `iCloud.de.roschmac.Reisen` |
+| macOS | siehe `project.yml` → ReisenMac | siehe `PersistenceBootstrap.cloudKitContainerID` |
+| iOS / iPadOS | siehe `project.yml` → ReiseniOS | gemeinsamer CloudKit-Container (wie macOS) |
 
-Team: **4N6AJL9EX5** (Individual, Roland Schramme).
+Team: **DEVELOPMENT_TEAM** aus `project.yml` oder Umgebungsvariable `APPLE_TEAM_ID` (Automatic Signing).
 
 Lokal eingerichtet (nach `setup-apple-developer.sh`):
 
-- App-IDs `de.roschmac.Reisen` und `de.roschmac.Reisen.ios`
-- iCloud-Container `iCloud.de.roschmac.Reisen` (CloudKit) an die macOS-App gebunden
+- App-IDs für macOS und iOS gemäß `project.yml`
+- iCloud-Container (CloudKit) an die macOS-App gebunden
 - Mac-Development-Profil in `.signing/Reisen.provisionprofile` (gitignored)
 - Keychain: Apple Development, Apple Distribution, Developer ID Application für dieses Team
 - GitHub-Secret `APPLE_TEAM_ID`
@@ -38,8 +38,8 @@ Wenn Xcode nicht mit der Apple-ID angemeldet ist, schlägt Schritt 3 fehl. Dann:
 
 1. `open Reisen.xcodeproj`
 2. Xcode → Settings → Accounts → Apple-ID anmelden
-3. Targets **ReiseniOS** und **ReisenMac** → Signing & Capabilities → Team „Roland Schramme“
-4. Capabilities: **iCloud** (CloudKit, Container `iCloud.de.roschmac.Reisen`) und **Push Notifications** (iOS)
+3. Targets **ReiseniOS** und **ReisenMac** → Signing & Capabilities → passendes Team wählen
+4. Capabilities: **iCloud** (CloudKit, Container laut `project.yml`) und **Push Notifications** (iOS)
 5. Script erneut ausführen
 
 `Scripts/build-app.sh` / `Scripts/run-app.sh` signieren lokal mit **Apple Development**, sobald das Profil in `.signing/` liegt. Fehlt es, bleibt der Pfad explizit ad-hoc (CloudKit inaktiv, Hinweis auf das Setup-Script). In CI (`CI=true` / GitHub Actions) ist ad-hoc fest verdrahtet.
@@ -89,4 +89,4 @@ Optional lokal: `~/keys/AuthKey_<KEY_ID>.p8` (Fallback: `~/private_keys/AuthKey_
 - Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)
 - Keychain Identity für Notary nicht gefunden: importiertes Zertifikat muss **Developer ID Application** sein; Keychain entsperrt/importiert
 - Notarization: `notarytool submit --wait` liefert die Apple-Antwort in den Workflow-Logs
-- CloudKit: Container `iCloud.de.roschmac.Reisen` muss im Portal an **beide** App-IDs gebunden sein
+- CloudKit: Container laut `PersistenceBootstrap.cloudKitContainerID` muss im Portal an **beide** App-IDs gebunden sein

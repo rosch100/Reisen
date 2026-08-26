@@ -262,12 +262,7 @@ struct TripDetailView: View {
             )
             .navigationTitle(trip.title)
             .sheet(item: $gapEditorPayload) { payload in
-                GapEditorSheet(
-                    titleText: payload.title,
-                    kind: payload.kind,
-                    priceAmount: payload.priceAmount,
-                    priceCurrencyCode: payload.priceCurrencyCode
-                ) { newTitle, newKind, newPriceAmount, newCurrencyCode in
+                GapEditorSheet(payload: payload) { newTitle, newKind, newPriceAmount, newCurrencyCode in
                     do {
                         try GapPersistence.upsert(
                             payload: payload,
@@ -1345,19 +1340,7 @@ private struct GapRow: View {
     }
 
     private var linkSuggestions: (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
-        let context = GapContext(
-            gapStart: gap.gapStart,
-            gapEnd: gap.gapEnd,
-            kind: effectiveKind,
-            fromLocationFrom: gap.fromBooking.locationFrom,
-            fromLocationTo: gap.fromBooking.locationTo,
-            toLocationFrom: gap.toBooking.locationFrom,
-            toLocationTo: gap.toBooking.locationTo
-        )
-        if let builder = providerRegistry?.deepLinkBuilder(id: .check24) {
-            return builder.suggestions(for: context)
-        }
-        return ([], [])
+        providerRegistry?.gapDeepLinkSuggestions(for: gap, kind: effectiveKind) ?? ([], [])
     }
 
     var body: some View {
@@ -1420,22 +1403,18 @@ private struct GapRow: View {
             }
 
             HStack(spacing: 12) {
-                ForEach(Array(linkSuggestions.links.enumerated()), id: \.offset) { _, suggestion in
-                    if let url = suggestion.url {
-                        let isHotel = suggestion.title.localizedCaseInsensitiveContains("hotel")
-                        if !isHotel || effectiveKind == .lodging || effectiveKind == .both {
-                            Button(suggestion.title) {
-                                NSWorkspace.shared.open(url)
-                            }
-                        }
-                    }
+                GapDeepLinkButtons(
+                    links: linkSuggestions.links,
+                    gapKind: effectiveKind
+                ) { url in
+                    NSWorkspace.shared.open(url)
                 }
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
 
-            if !linkSuggestions.issues.isEmpty {
-                Text(linkSuggestions.issues.compactMap(\.errorDescription).joined(separator: " "))
+            if let issuesMessage = ProviderDeepLinks.issuesMessage(linkSuggestions.issues) {
+                Text(issuesMessage)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

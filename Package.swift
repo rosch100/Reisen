@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "ReisenGetYourGuide", targets: ["ReisenGetYourGuide"]),
         .library(name: "ReisenTraveloka", targets: ["ReisenTraveloka"]),
         .executable(name: "Reisen", targets: ["Reisen"]),
+        .executable(name: "SyncIOSQuerySchemes", targets: ["SyncIOSQuerySchemes"]),
     ],
     targets: [
         .target(
@@ -47,6 +48,9 @@ let package = Package(
             path: "Sources/ReisenProviders",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("WebKit"),
             ]
         ),
         .target(
@@ -151,6 +155,14 @@ let package = Package(
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
         ),
+        .executableTarget(
+            name: "SyncIOSQuerySchemes",
+            dependencies: ["ReisenProviders"],
+            path: "Sources/SyncIOSQuerySchemes",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
         .testTarget(
             name: "ReisenDomainTests",
             dependencies: ["ReisenDomain"],
@@ -219,6 +231,14 @@ let package = Package(
             name: "ReisenProvidersTests",
             dependencies: ["ReisenProviders"],
             path: "Tests/ReisenProvidersTests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenAppCoreTests",
+            dependencies: ["ReisenAppCore", "ReisenDomain"],
+            path: "Tests/ReisenAppCoreTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

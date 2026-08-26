@@ -1,5 +1,17 @@
 import Foundation
 
+extension Notification.Name {
+    /// Provider-Aktivierung in den Einstellungen geändert.
+    public static let providerEnabledDidChange = Notification.Name("reisen_providerEnabledDidChange")
+}
+
+/// SSOT für Provider-Aktivierungsänderungen (Toggle, Auto-Enable).
+public enum ProviderEnabledChange {
+    public static func notify() {
+        NotificationCenter.default.post(name: .providerEnabledDidChange, object: nil)
+    }
+}
+
 public struct AppSettingsKeys {
     public static let notificationEnabled = "reisen_notificationEnabled"
     public static let eventKitEnabled = "reisen_eventKitEnabled"
@@ -19,6 +31,9 @@ public struct AppSettingsKeys {
 
     public static let providerEnabledPrefix = "reisen_providerEnabled_"
     public static let preferredKeychainAccountPrefix = "reisen_preferredKeychainAccount_"
+
+    /// Passwort-Konten nach erfolgreichem Login automatisch in der App-Keychain speichern.
+    public static let rememberLoginAutomatically = "reisen_rememberLoginAutomatically"
 
     /// Sichtbarkeit des Buchungs-Detailpanels (SceneStorage / UserDefaults).
     public static let tripDetailPanelVisible = "reisen_tripDetailPanelVisible"
@@ -47,6 +62,12 @@ public struct AppSettingsKeys {
     /// Persistierte Account-Auswahl: `"serverHost\\u{1F}username"`.
     public static func preferredKeychainAccountKey(for providerID: ProviderID) -> String {
         "\(preferredKeychainAccountPrefix)\(providerID.rawValue)"
+    }
+
+    /// Default: automatisches Speichern aktiv (abschaltbar in den Einstellungen).
+    public static func isRememberLoginAutomatically(defaults: UserDefaults = .standard) -> Bool {
+        guard defaults.object(forKey: rememberLoginAutomatically) != nil else { return true }
+        return defaults.bool(forKey: rememberLoginAutomatically)
     }
 }
 

@@ -32,6 +32,7 @@ public struct SettingsView: View {
     @AppStorage(AppSettingsKeys.eventCalendarCreateIfMissing) private var eventCalendarCreateIfMissing: Bool = false
     @AppStorage(AppSettingsKeys.reminderCalendarCreateIfMissing) private var reminderCalendarCreateIfMissing: Bool = false
     @AppStorage(AppSettingsKeys.calendarTitleMode) private var calendarTitleModeRaw: String = CalendarTitleMode.tripTitle.rawValue
+    @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = true
 
     @State private var eventCalendarNames: [String] = []
     @State private var reminderCalendarNames: [String] = []
@@ -65,6 +66,19 @@ public struct SettingsView: View {
 
     public var body: some View {
         Form {
+            ProviderEnabledSettingsSection()
+
+            Section {
+                Toggle("Passwort nach Login speichern", isOn: $rememberLoginAutomatically)
+            } header: {
+                Text("Provider-Anmeldung")
+            } footer: {
+                Text(
+                    "Speichert E-Mail und Kennwort nach erfolgreichem Passwort-Login automatisch in Reisen. "
+                        + "Apple-, Passkey- und OAuth-Anmeldungen werden nicht als Kennwort gespeichert."
+                )
+            }
+
             Section {
                 Toggle("Lokale Benachrichtigungen", isOn: $notificationEnabled)
             } header: {

@@ -9,10 +9,7 @@ public struct OpodoCancellationDeadlineParser: Sendable {
     public func parseDeadlines(from html: String) -> [CancellationDeadline] {
         var deadlines: [CancellationDeadline] = []
 
-        // 1) Explizite Opodo-Zeile: „Stornierungsrichtlinie Bis 1. August 2026 (Bis 22:00)“
-        deadlines.append(contentsOf: parseStornierungsrichtlinieLines(in: html))
-
-        // 2) Keyword-Fenster (alle Treffer, nicht nur der erste „bis“)
+        // Keyword-Fenster (ISO/EN-Keywords; kein DE-Label-SSOT)
         deadlines.append(contentsOf: parseKeywordWindows(from: html))
 
         return dedupeDeadlines(deadlines)
@@ -27,7 +24,7 @@ public struct OpodoCancellationDeadlineParser: Sendable {
                 if deadline.isFreeCancellation && !existing.isFreeCancellation {
                     byKey[key] = deadline
                 } else if deadline.isFreeCancellation == existing.isFreeCancellation,
-                          (deadline.policyText?.contains("Stornierungsrichtlinie") == true) {
+                          (deadline.policyText?.contains(OpodoCancellationPolicyLabel.policy) == true) {
                     byKey[key] = deadline
                 }
             } else {

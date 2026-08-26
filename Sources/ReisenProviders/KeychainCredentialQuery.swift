@@ -6,7 +6,7 @@ import Security
 /// Safari-/iCloud-Internetpasswörter (`kSecClassInternetPassword` + `kSecAttrSynchronizableAny`)
 /// lösen den Login-Schlüsselbund-Dialog aus; „Immer erlauben“ hält dort nicht.
 enum KeychainCredentialQuery {
-    static let service = "de.roschmac.Reisen.provider-credential"
+    static let service = "de.reisen.Reisen.provider-credential"
 
     static func genericBase(account: String? = nil) -> [CFString: Any] {
         var query: [CFString: Any] = [

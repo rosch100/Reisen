@@ -41,18 +41,28 @@ struct ProviderSidebarRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ProviderLogo(providerID: providerID)
+            HStack(spacing: 10) {
+                ProviderLogo(providerID: providerID)
 
-            Text(providerDisplayName)
-                .lineLimit(1)
+                Text(providerDisplayName)
+                    .lineLimit(1)
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
 
-            Circle()
-                .fill(trafficLightColor)
-                .frame(width: 9, height: 9)
-                .accessibilityLabel(Text(trafficLightAccessibilityLabel))
-                .help(trafficLightAccessibilityLabel)
+                Circle()
+                    .fill(trafficLightColor)
+                    .frame(width: 9, height: 9)
+                    .accessibilityLabel(Text(trafficLightAccessibilityLabel))
+                    .help(trafficLightAccessibilityLabel)
+
+                if isSyncingThisProvider {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(Text("Synchronisiere \(providerDisplayName)"))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(Text(providerDisplayName))
 
             Button {
                 isEnabled.toggle()
@@ -70,12 +80,6 @@ struct ProviderSidebarRow: View {
             ))
             .accessibilityAddTraits(isEnabled ? .isSelected : [])
             .help(isEnabled ? "Provider deaktivieren" : "Provider aktivieren")
-
-            if isSyncingThisProvider {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(Text("Synchronisiere \(providerDisplayName)"))
-            }
         }
         .contextMenu {
             Button(isEnabled ? "Deaktivieren" : "Aktivieren") {

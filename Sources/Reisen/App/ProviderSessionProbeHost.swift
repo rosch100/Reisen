@@ -3,6 +3,7 @@ import WebKit
 import ReisenDomain
 import ReisenProviders
 import ReisenAppCore
+import ReisenSharedUI
 
 /// Unsichtbarer App-Start-Probe: prüft Cookies/Sessions aller enabled Provider.
 /// Ruft `onFinished` mit den Providern auf, die noch Login brauchen.
@@ -33,8 +34,7 @@ struct ProviderSessionProbeHost: View {
                     sessionStatus: backgroundSessionStatusBinding(for: backgroundProviderID),
                     lastURLString: backgroundLastURLBinding(for: backgroundProviderID),
                     webView: backgroundWebViewBinding(for: backgroundProviderID),
-                    autofillCredentials: nil,
-                    rememberTrustedDeviceAutomatically: true
+                    autofillCredentials: nil
                 )
                 .frame(width: 1, height: 1)
             }
@@ -42,12 +42,7 @@ struct ProviderSessionProbeHost: View {
             // ZStack muss "echte" View-Hierarchie erzeugen, damit SwiftUI Lifecycle/Tasks zuverlässig feuern.
             Color.clear
         }
-        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { note in
-            guard let key = note.userInfo?["NSKey"] as? String,
-                  key.hasPrefix(AppSettingsKeys.providerEnabledPrefix) else { return }
-            providerEnableEpoch &+= 1
-        }
-        .onChange(of: providerEnableEpoch) { _, _ in
+        .onProviderEnabledChange(bump: $providerEnableEpoch) {
             hub?.syncEnabledProviders(Set(enabledProviderIDs))
         }
         .task {

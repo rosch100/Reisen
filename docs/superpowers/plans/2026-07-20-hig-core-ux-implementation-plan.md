@@ -224,7 +224,7 @@ Button("Lokale Datenbank zurücksetzen und erneut versuchen…") {
 Store-Fehler nur schwer zu provozieren: UI-Preview oder temporär `bootstrap.state = .failed("test")` in DEBUG — **nicht committen**. Alternativ Code-Review + Build.
 
 ```bash
-cd /Users/roschmac/Entwicklung/Reisen && swift build --target Reisen
+swift build --target Reisen
 ```
 
 Expected: Build succeeds.
@@ -676,7 +676,7 @@ Section {
 - [ ] **Step 4: Build + kurzer UI-Smoke**
 
 ```bash
-cd /Users/roschmac/Entwicklung/Reisen && swift build --target Reisen
+swift build --target Reisen
 ```
 
 Esc schließt Sheets; Checkbox VoiceOver-Label passt.

@@ -29,10 +29,16 @@ enum AirbnbScheduledEventsCancellation {
     ) -> Bool? {
         let refundType = (entry.refundType ?? "").lowercased()
         let termLower = (entry.refundTerm ?? "").lowercased()
-        if refundType.contains("keine rückerstattung") || termLower.contains("nicht erstattungsfähig") {
+        if refundType.contains("no refund")
+            || refundType.contains("non_refundable")
+            || termLower.contains("non-refundable")
+            || termLower.contains("not refundable") {
             return false
         }
-        if refundType.contains("kostenlose") || termLower.contains("kostenlos") {
+        if refundType.contains("full")
+            || refundType.contains("free")
+            || termLower.contains("free cancellation")
+            || termLower.contains("full refund") {
             return true
         }
         return nil

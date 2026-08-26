@@ -86,7 +86,7 @@ func bookingComCancellationParserDoesNotKeywordFallbackWhenFeeMarkupPresent() {
 @Test("BookingComCancellationDeadlineParser parst HAR Confirmation Fee-Schedule (Langdatum + Hotel-TZ)")
 func bookingComCancellationParserParsesHarConfirmationFeeSchedule() throws {
     let html = try fixtureJSON("hotel_confirmation_sample.html")
-    let offset = 2 * 3600 // Europe/Berlin Sommerzeit (Unterkunft München)
+    let offset = 2 * 3600 // Europe/Berlin Sommerzeit (Unterkunft Sample City)
     let deadlines = BookingComCancellationDeadlineParser().parseDeadlines(
         from: html,
         hotelOffsetSeconds: offset
@@ -135,7 +135,7 @@ func bookingComCancellationParserParsesNumericFeeSchedule() throws {
 
 @Test("Fixture-Katalog liefert alle persistierbaren Kernfelder für Flug und Hotel")
 func bookingComFixtureFillsPersistableCoreFields() throws {
-    let json = try fixtureJSON("single_timeline_kuta_muenchen.json")
+    let json = try fixtureJSON("single_timeline_beach_sample.json")
     let bookings = try BookingComTripsGraphQLParser().parseTimeline(from: json)
     let byType = Dictionary(grouping: bookings, by: \.bookingType)
 
@@ -160,9 +160,9 @@ func bookingComFixtureFillsPersistableCoreFields() throws {
     #expect(hotel.provider == .booking)
     #expect(hotel.externalUrl != nil)
     #expect(hotel.confirmationCode == "6806647309")
-    #expect(hotel.title == "Hotel Am Nockherberg")
-    #expect(hotel.locationTo == "München")
-    #expect(hotel.locationToAddress == "Nockherstraße 38 A")
+    #expect(hotel.title == "Hotel Example Central")
+    #expect(hotel.locationTo == "Sample City")
+    #expect(hotel.locationToAddress == "Example Street 1")
     #expect(hotel.hotelOffsetSeconds == 7200)
     #expect(hotel.hotelCheckInMinutes == 900)
     #expect(hotel.hotelCheckOutMinutes == 660)

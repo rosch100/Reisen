@@ -9,7 +9,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-BUNDLE_ID="de.roschmac.Reisen.ios"
+# shellcheck source=apple-developer.sh
+source "$ROOT/Scripts/apple-developer.sh"
+
+BUNDLE_ID="$(reisen_ios_bundle_id)"
 SCHEME="ReiseniOS"
 PROJECT="$ROOT/Reisen.xcodeproj"
 DERIVED="$ROOT/DerivedData/ReiseniOS"

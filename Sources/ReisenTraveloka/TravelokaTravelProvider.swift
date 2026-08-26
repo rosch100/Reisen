@@ -17,8 +17,8 @@ public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginC
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
         let webView = try extractWebView(from: session)
-        let context = try await requireSessionContext(from: webView)
-        let referer = TravelokaAPI.myBookingURL(routePrefix: context.resolvedRoutePrefix).absoluteString
+        let context = try await requireSessionContext(from: session)
+        let referer = context.apiReferer()
 
         var byFingerprint: [String: ProviderBookingDraft] = [:]
         for status in TravelokaAPI.catalogItineraryStatuses {
@@ -45,7 +45,7 @@ public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginC
     ) async throws -> ProviderBookingEnrichment {
         let webView = try extractWebView(from: session)
         let ids = try TravelokaExternalURL.detailIds(from: ref.externalUrl)
-        let context = try await requireSessionContext(from: webView)
+        let context = try await requireSessionContext(from: session)
 
         onProgress?("Lade Buchungsdetails (Traveloka)…")
         let text = try await postJSON(
@@ -86,8 +86,10 @@ private extension TravelokaTravelProvider {
         return web
     }
 
-    func requireSessionContext(from webView: WKWebView) async throws -> TravelokaSessionContext {
-        let context = await webView.travelokaSessionContext()
+    func requireSessionContext(from session: any ProviderSession) async throws -> TravelokaSessionContext {
+        let webView = try extractWebView(from: session)
+        let hintURLs = (session as? WebViewProviderSession)?.navigationHintURLs ?? []
+        let context = await webView.travelokaSessionContext(additionalHintURLs: hintURLs)
         guard context.hasSentinel else {
             onProgress?("Traveloka-Session ohne Sentinel (sen_t) — bitte neu anmelden.")
             throw TravelokaProviderError.missingSessionSentinel

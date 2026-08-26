@@ -5,9 +5,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=apple-developer.sh
+source "$ROOT/Scripts/apple-developer.sh"
+
 SIMULATOR_NAME="${IOS_SIMULATOR:-iPad Pro 13-inch (M5)}"
 SCHEME="ReiseniOS"
-BUNDLE_ID="de.roschmac.Reisen.ios"
+BUNDLE_ID="$(reisen_ios_bundle_id)"
 PROJECT="$ROOT/Reisen.xcodeproj"
 DERIVED="$ROOT/DerivedData/ReiseniOS"
 

@@ -19,21 +19,21 @@
 ### Task 1: Domain-Modell erweitern (Passagiere/Gepäck)
 
 **Files:**
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenDomain/Entities/Booking.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenDomain/Entities/ProviderDrafts.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenDomain/Entities/BookingRateDetails.swift`
-- Add: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenDomain/Entities/FlightPassengers.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenDomain/Entities/BookingEnums.swift`
+- Modify: `Sources/ReisenDomain/Entities/Booking.swift`
+- Modify: `Sources/ReisenDomain/Entities/ProviderDrafts.swift`
+- Modify: `Sources/ReisenDomain/Entities/BookingRateDetails.swift`
+- Add: `Sources/ReisenDomain/Entities/FlightPassengers.swift`
+- Modify: `Sources/ReisenDomain/Entities/BookingEnums.swift`
 
 **Interfaces:**
 - Consumes: bestehende `Booking`/`ProviderBookingDraft`/`ProviderBookingEnrichment`
 - Produces: neue Typen `BookingPassenger`, `BaggageAllowance`, Enums `TravellerType`, `BaggageType`
 
 - [ ] **Step 1: Write the failing test**
-  - Create: `/Users/roschmac/Entwicklung/Reisen/Tests/ReisenDomainTests/FlightPassengersMappingTests.swift`
+  - Create: `Tests/ReisenDomainTests/FlightPassengersMappingTests.swift`
   - Erwartung: Domain-Typen sind equatable und enthalten die neuen Felder (kompilierbar + Basic Construction).
 - [ ] **Step 2: Run test to verify it fails**
-  - `cd /Users/roschmac/Entwicklung/Reisen && swift test --filter FlightPassengersMappingTests -v`
+  - `swift test --filter FlightPassengersMappingTests -v`
   - Expected: FAIL (Typen existieren noch nicht).
 - [ ] **Step 3: Write minimal implementation**
   - Implement new structs/enums and add `passengers: [BookingPassenger]` to `Booking` plus matching fields in Provider drafts/enrichment.
@@ -44,17 +44,17 @@
 ### Task 2: SwiftData Schema V3 + Modelle + Mapper
 
 **Files:**
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenData/Schema/ReisenSchema.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenData/Models/SwiftDataModels.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenData/Mapping/DomainMapper.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenData/Persistence/SwiftDataRepositories.swift`
+- Modify: `Sources/ReisenData/Schema/ReisenSchema.swift`
+- Modify: `Sources/ReisenData/Models/SwiftDataModels.swift`
+- Modify: `Sources/ReisenData/Mapping/DomainMapper.swift`
+- Modify: `Sources/ReisenData/Persistence/SwiftDataRepositories.swift`
 
 **Interfaces:**
 - Consumes: neue Domain-Entities
 - Produces: `SDBookingPassenger`, `SDBaggageAllowance` plus Persist/Load in Mapper & Repository
 
 - [ ] **Step 1: Write the failing test**
-  - Extend: `/Users/roschmac/Entwicklung/Reisen/Tests/ReisenDataTests/SchemaTests.swift`
+  - Extend: `Tests/ReisenDataTests/SchemaTests.swift`
   - Erwartung: Schema V3 bootet; `Booking` → SwiftData → Domain roundtrip enthält Passagiere/Gepäck.
 - [ ] **Step 2: Run test to verify it fails**
   - `swift test --filter SchemaTests -v`
@@ -68,17 +68,17 @@
 ### Task 3: Opodo Enrichment erweitert (getTripByToken + baggageInfo)
 
 **Files:**
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenOpodo/OpodoTripCancellationGraphQL.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenOpodo/OpodoTravelProvider.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenOpodo/OpodoTripsGraphQLParser.swift`
-- Add: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenOpodo/OpodoFlightPassengersGraphQL.swift`
+- Modify: `Sources/ReisenOpodo/OpodoTripCancellationGraphQL.swift`
+- Modify: `Sources/ReisenOpodo/OpodoTravelProvider.swift`
+- Modify: `Sources/ReisenOpodo/OpodoTripsGraphQLParser.swift`
+- Add: `Sources/ReisenOpodo/OpodoFlightPassengersGraphQL.swift`
 
 **Interfaces:**
 - Consumes: Opodo HAR GraphQL payloads
 - Produces: `ProviderBookingEnrichment.passengers` für `bookingType == .flight`
 
 - [ ] **Step 1: Write the failing test**
-  - Add: `/Users/roschmac/Entwicklung/Reisen/Tests/ReisenOpodoTests/OpodoFlightPassengersGraphQLTests.swift`
+  - Add: `Tests/ReisenOpodoTests/OpodoFlightPassengersGraphQLTests.swift`
   - Fixtures:
     - `getTripByToken` Flight travellers payload (aus HAR) minimal
     - `baggageInfo` payload minimal (numPassenger + baggageList types/pieces/weight)
@@ -93,16 +93,16 @@
 ### Task 4: SyncStore & SyncProviderBookings Persistieren (Replace-Strategy)
 
 **Files:**
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/Reisen/Stores/SyncStore.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenDomain/UseCases/SyncProviderBookings.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/ReisenData/Persistence/SwiftDataRepositories.swift`
+- Modify: `Sources/Reisen/Stores/SyncStore.swift`
+- Modify: `Sources/ReisenDomain/UseCases/SyncProviderBookings.swift`
+- Modify: `Sources/ReisenData/Persistence/SwiftDataRepositories.swift`
 
 **Interfaces:**
 - Consumes: `ProviderBookingEnrichment.passengers`
 - Produces: `SwiftDataBookingRepository` writes passengers/baggage
 
 - [ ] **Step 1: Write failing test**
-  - Extend `/Users/roschmac/Entwicklung/Reisen/Tests/ReisenDomainTests/SyncProviderBookingsUpsertTests.swift`
+  - Extend `Tests/ReisenDomainTests/SyncProviderBookingsUpsertTests.swift`
   - Erwartung: Upsert replace passengers list (alte löschen, neue einfügen), auch wenn booking.tripID vorhanden ist.
 - [ ] **Step 2: Run test**
 - [ ] **Step 3: Implement minimal changes**
@@ -113,8 +113,8 @@
 ### Task 5: UI minimal integrieren (TripDetail + BookingEditor)
 
 **Files:**
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/Reisen/App/TripDetailView.swift`
-- Modify: `/Users/roschmac/Entwicklung/Reisen/Sources/Reisen/App/BookingEditor.swift`
+- Modify: `Sources/Reisen/App/TripDetailView.swift`
+- Modify: `Sources/Reisen/App/BookingEditor.swift`
 
 **Interfaces:**
 - Consumes: `Booking.passengers`

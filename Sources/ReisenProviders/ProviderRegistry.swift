@@ -43,4 +43,15 @@ public struct ProviderRegistry {
             allBuilders: deepLinkBuilders
         )
     }
+
+    public func gapDeepLinkSuggestions(for context: GapContext) -> (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
+        ProviderDeepLinks.suggestions(for: context, allBuilders: deepLinkBuilders)
+    }
+
+    public func gapDeepLinkSuggestions(
+        for gap: ComputedGap,
+        kind: GapKind
+    ) -> (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
+        gapDeepLinkSuggestions(for: GapContext(gap: gap, kind: kind))
+    }
 }

@@ -26,6 +26,26 @@
       "target": "Reisen",
       "configuration": "release",
       "preLaunchTask": "swift: Build Release Reisen"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Reisen}",
+      "name": "Debug SyncIOSQuerySchemes",
+      "target": "SyncIOSQuerySchemes",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug SyncIOSQuerySchemes"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Reisen}",
+      "name": "Release SyncIOSQuerySchemes",
+      "target": "SyncIOSQuerySchemes",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release SyncIOSQuerySchemes"
     }
   ]
 }
