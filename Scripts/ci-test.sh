@@ -31,6 +31,26 @@ if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
   SKIP_BUILD="true"
 fi
 
+GENERATED_REL="Sources/ReisenAppCore/GitHubIssues/GitHubIssueToken.generated.swift"
+STUB="$ROOT/Sources/ReisenAppCore/GitHubIssues/GitHubIssueToken.generated.swift.stub"
+if git ls-files --error-unmatch "$GENERATED_REL" >/dev/null 2>&1; then
+  echo "Fehler: GitHubIssueToken.generated.swift darf nicht versioniert sein (nur .stub)." >&2
+  exit 1
+fi
+if ! grep -q 'static let bytes: \[UInt8\] = \[\]' "$STUB"; then
+  echo "Fehler: GitHubIssueToken.generated.swift.stub muss leere bytes enthalten." >&2
+  exit 1
+fi
+if ! grep -q 'static let key: \[UInt8\] = \[\]' "$STUB"; then
+  echo "Fehler: GitHubIssueToken.generated.swift.stub muss leeren XOR-Key enthalten." >&2
+  exit 1
+fi
+if grep -q '0x' "$STUB"; then
+  echo "Fehler: GitHubIssueToken.generated.swift.stub darf keine XOR-Bytes enthalten." >&2
+  exit 1
+fi
+REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash "$ROOT/Scripts/embed-github-issue-token.sh"
+
 if [[ "$SKIP_BUILD" == "true" ]]; then
   swift test -v --skip-build
 else

@@ -14,6 +14,7 @@ Vor dem Erstellen/Updaten eines PRs:
 - Nutze das PR-Template in `.github/PULL_REQUEST_TEMPLATE.md`.
 - Ziel ist immer: kleine, nachvollziehbare Änderungen.
 - Keine Secrets/Keys hinzufügen (auch nicht als Testdaten).
+- `GitHubIssueToken.generated.swift` nicht committen (gitignore). Committed bleibt nur `GitHubIssueToken.generated.swift.stub` mit leeren Arrays.
 
 ## AI-Hinweise
 

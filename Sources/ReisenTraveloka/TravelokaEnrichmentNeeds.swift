@@ -7,7 +7,9 @@ public enum TravelokaEnrichmentNeeds {
         _ draft: ProviderBookingDraft,
         requiresDeadlines: Bool
     ) -> Bool {
-        if requiresDeadlines && draft.deadlines.isEmpty { return true }
+        if requiresDeadlines && !draft.deadlines.contains(where: { !$0.isFreeCancellation }) {
+            return true
+        }
         if draft.status == .unknown { return true }
         switch draft.bookingType {
         case .activity:
@@ -16,13 +18,15 @@ public enum TravelokaEnrichmentNeeds {
                 || draft.passengers.isEmpty
                 || draft.locationToAddress == nil
         case .hotel:
-            return draft.hotelCheckInMinutes == nil || draft.hotelCheckOutMinutes == nil
+            return draft.title == nil
+                || draft.hotelCheckInMinutes == nil
+                || draft.hotelCheckOutMinutes == nil
         case .flight:
             return draft.passengers.isEmpty || draft.rateDetails?.airline == nil
         case .ferry:
             return false
         case .other:
-            return draft.operatorName == nil && draft.locationFrom == nil
+            return draft.operatorName == nil || draft.locationFrom == nil
         }
     }
 }

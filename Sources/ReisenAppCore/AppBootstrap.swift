@@ -24,11 +24,14 @@ public final class AppBootstrap {
     public private(set) var isResetting = false
 
     public init() {
+        GitHubIssueCrashCatcher.install()
         do {
             self.state = try Self.makeReadyState()
             startCloudSideEffectObserverIfReady()
+            Task { await GitHubIssueCrashCatcher.flushPending() }
         } catch {
             self.state = .failed(error.localizedDescription)
+            Task { await GitHubIssueCrashCatcher.flushPending() }
         }
     }
 

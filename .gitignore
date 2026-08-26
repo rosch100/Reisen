@@ -30,3 +30,11 @@ Apps/ReiseniOS/xcuserdata/
 
 # Lokale Provisioning-Profile (Team-Signing, nicht committen)
 .signing/
+
+# Local secrets (never commit)
+Secrets/*
+!Secrets/*.example
+!Secrets/README.md
+
+# XOR-Payload zur Compile-Zeit (SSOT: GitHubIssueToken.generated.swift.stub)
+Sources/ReisenAppCore/GitHubIssues/GitHubIssueToken.generated.swift

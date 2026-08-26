@@ -19,31 +19,85 @@
           "commonSummary": {
             "tripType": "VEHICLE_RENTAL",
             "itineraryTimestampBegin": "1790744400000",
-            "ianaTimezoneBegin": "Asia/Jakarta",
+            "ianaTimezoneBegin": "+07:00",
             "itineraryTimestampEnd": "1790748000000",
-            "ianaTimezoneEnd": "Asia/Jakarta",
+            "ianaTimezoneEnd": "+07:00",
             "sectionType": "ACTIVE_BOOKING",
             "productName": "Car Rental"
           },
           "vehicleRentalSummaryInfo": {
             "vehicleName": "Daihatsu Sigra",
-            "transmission": "Automatic",
-            "providerName": "Jayamahe Easy Ride Jakarta",
-            "pickUpAddress": "Pool Area Bandara Soekarno-Hatta",
-            "dropOffAddress": "Pool Area Bandara Soekarno-Hatta"
+            "header": "Daihatsu Sigra",
+            "detail": "Automatic  •  7 Sep 2026 09:00 - 7 Sep 2026 09:30",
+            "routeName": "Jakarta",
+            "pickupAddress": "Pool Area Bandara Soekarno-Hatta",
+            "startDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "7"
+            },
+            "pickupTime": {
+              "hour": "9",
+              "minute": "0"
+            }
           }
         },
         "cardDetailInfo": {
           "vehicleRentalDetailInfo": {
             "vehicleName": "Daihatsu Sigra",
-            "transmission": "Automatic",
-            "providerName": "Jayamahe Easy Ride Jakarta",
-            "pickUpAddress": "Pool Area Bandara Soekarno-Hatta, Jakarta",
-            "dropOffAddress": "Pool Area Bandara Soekarno-Hatta, Jakarta",
-            "driverName": null,
-            "travelerName": "REDACTED",
-            "isRefundable": true,
-            "freeCancellationDeadlineLocal": "2026-09-06T08:59:00"
+            "productName": "Daihatsu Sigra",
+            "supplierName": "Jayamahe Easy Ride Jakarta",
+            "pickupLocation": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+            "dropoffLocation": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+            "startDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "7"
+            },
+            "endDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "7"
+            },
+            "pickupTime": {
+              "hour": "9",
+              "minute": "0"
+            },
+            "passengerContact": {
+              "firstName": "REDACTED",
+              "lastName": "REDACTED"
+            },
+            "refundInfo": [
+              "<ul><li>A full refund will be given for cancellations made more than 24 hours before pick-up time.</li><li>No refund will be given for cancellations made less than 24 hours before pick-up time.</li></ul>"
+            ],
+            "withoutDriverDetailInfo": {
+              "vehicleName": "Daihatsu Sigra",
+              "supplierName": "Jayamahe Easy Ride Jakarta",
+              "pickupLocation": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+              "dropoffLocation": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+              "startDate": {
+                "year": "2026",
+                "month": "9",
+                "day": "7"
+              },
+              "endDate": {
+                "year": "2026",
+                "month": "9",
+                "day": "7"
+              },
+              "startTime": {
+                "hour": "9",
+                "minute": "0"
+              },
+              "endTime": {
+                "hour": "9",
+                "minute": "30"
+              },
+              "product": {
+                "transmissionType": "AUTOMATIC",
+                "transmissionTypeLabel": "Automatic"
+              }
+            }
           }
         }
       }

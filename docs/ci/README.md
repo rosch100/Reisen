@@ -9,7 +9,7 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 - `gitleaks.yml`: Secret-Scan auf PR, Push und täglichem Schedule
 - `actionlint.yml`: Workflow-Lint bei Änderungen unter `.github/workflows/`
 - `scorecard.yml`: OpenSSF Scorecard auf Push nach `master`, Branch-Protection-Events und wöchentlichem Schedule
-- `release.yml`: Tag-Releases (`v*`) inkl. optionalem Signing/Notarize
+- `release.yml`: Tag-Releases (`v*`) inkl. optionalem Signing/Notarize und Einbettung von `REISEN_GITHUB_ISSUES_TOKEN_BASE64`
 - `versions-update.yml`: Wöchentliches Update von actionlint-URL, Xcode-Pin, Swift-Tools-Version und Gitleaks-Version
 
 ## Pin-Updates (SSOT-Trennung)
@@ -49,6 +49,8 @@ Für manuelle Freigabe von Tag-Releases kann in GitHub ein Environment `release`
 ## Apple Signing / Notarization
 
 Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](apple-signing.md). Einmalig: `bash ./Scripts/setup-apple-developer.sh`.
+
+In-App öffentliche GitHub-Issues: [`github-issues-token.md`](github-issues-token.md) (optional, nur Debug/lokale Builds). App-Store-iOS ohne eingebettetes Token: [`app-store-connect.md`](app-store-connect.md).
 
 ## AI-Assistenz & kostenlose PR-Reviewer (Open Source / public)
 

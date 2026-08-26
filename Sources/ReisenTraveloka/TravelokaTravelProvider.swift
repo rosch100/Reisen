@@ -62,7 +62,11 @@ public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginC
 
         onProgress?("Parser Buchungsdetails (Traveloka)…")
         let enrichment = try TravelokaEnrichmentParser.parse(from: text)
-        guard enrichment.deadlines.isEmpty, let productType = ids.productType else {
+        guard let productType = ids.productType else {
+            return enrichment
+        }
+        // Refund-HTML liefert Fee-Beträge, die im Itinerary oft fehlen.
+        if enrichment.deadlines.contains(where: { !$0.isFreeCancellation }) {
             return enrichment
         }
         return await mergeRefundDeadlinesIfNeeded(
@@ -191,7 +195,10 @@ private extension TravelokaTravelProvider {
                 return enrichment
             }
             var merged = enrichment
-            merged.deadlines = deadlines
+            merged.deadlines = TravelokaCancellationDeadlines.combining(
+                existing: enrichment.deadlines,
+                refund: deadlines
+            )
             return merged
         } catch {
             onProgress?("Traveloka Refund-Fristen nicht lesbar — Detail ohne Fristen belassen.")

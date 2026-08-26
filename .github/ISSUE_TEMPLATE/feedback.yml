@@ -1,0 +1,12 @@
+name: Feedback
+description: Öffentliches Nutzerfeedback für Reisen
+title: "[Feedback] "
+labels: ["kind/feedback"]
+body:
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Feedback
+      description: Der Text ist öffentlich auf GitHub sichtbar.
+    validations:
+      required: true

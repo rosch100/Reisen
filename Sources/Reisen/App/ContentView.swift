@@ -256,6 +256,11 @@ struct ContentView: View {
                             .font(.callout)
                             .foregroundStyle(Color.red)
                             .textSelection(.enabled)
+                        PublicGitHubIssueReportActions(
+                            syncError: errorText,
+                            providerID: store?.messageProviderID,
+                            store: store
+                        )
                     }
                 }
                 if errorText != nil, let pane = store?.privacySettingPane {

@@ -49,7 +49,11 @@ jobs:
             ${{ runner.os }}-spm-
 
       - name: Build tests
-        run: swift build --build-tests -v
+        env:
+          REISEN_GITHUB_ISSUE_TOKEN_EMPTY: "true"
+        run: |
+          bash ./Scripts/embed-github-issue-token.sh
+          swift build --build-tests -v
 
       - name: Test
         env:

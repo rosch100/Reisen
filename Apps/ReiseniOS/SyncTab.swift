@@ -37,7 +37,7 @@ struct SyncTab: View {
     @State private var navigationWasBlocked = false
 
     @AppStorage(AppSettingsKeys.rememberLoginAutomatically)
-    private var rememberLoginAutomatically: Bool = true
+    private var rememberLoginAutomatically: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -125,6 +125,7 @@ struct SyncTab: View {
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
                 isKeyboardVisible = false
             }
+            .providerLoginDisclosure(isActive: !enabledProviderIDs.isEmpty)
         }
     }
 
@@ -396,6 +397,11 @@ struct SyncTab: View {
             if let privacyPane {
                 OpenPrivacySettingsButton(pane: privacyPane)
             }
+            PublicGitHubIssueReportActions(
+                syncError: errorMessage,
+                providerID: syncStore?.messageProviderID ?? selectedProviderID,
+                store: syncStore
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)

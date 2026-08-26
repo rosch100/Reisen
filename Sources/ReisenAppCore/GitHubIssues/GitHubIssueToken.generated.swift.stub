@@ -1,0 +1,4 @@
+enum GitHubIssueTokenPayload {
+    static let bytes: [UInt8] = []
+    static let key: [UInt8] = []
+}

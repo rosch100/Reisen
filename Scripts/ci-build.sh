@@ -30,4 +30,5 @@ if [[ -z "$ARCH" ]]; then
 fi
 
 # Kein --build-tests: CodeQL braucht nur getracte Product-Sources.
+REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash "$ROOT/Scripts/embed-github-issue-token.sh"
 swift build --arch "$ARCH"

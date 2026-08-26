@@ -20,6 +20,8 @@
 	<string>0.2.1</string>
 	<key>CFBundleVersion</key>
 	<string>3</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>airbnb</string>
@@ -38,6 +40,8 @@
 	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Reisen. Alle Rechte vorbehalten.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Reisen benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
 	<key>NSRemindersUsageDescription</key>

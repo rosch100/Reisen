@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datenschutzerklärung — Reisen</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 42rem;
+      margin: 2rem auto;
+      padding: 0 1.25rem;
+    }
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.25rem; margin-top: 2rem; }
+    a { color: #0969da; }
+  </style>
+</head>
+<body>
+  <h1>Datenschutzerklärung — Reisen</h1>
+  <p><em>Stand: August 2026</em></p>
+
+  <h2>Verantwortlicher</h2>
+  <p>Die App <strong>Reisen</strong> wird als Open-Source-Projekt unter <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a> bereitgestellt. Für Fragen zum Datenschutz nutze die öffentlichen GitHub-Issues des Repositories.</p>
+
+  <h2>Kurzfassung</h2>
+  <p>Reisen ist eine persönliche Reiseverwaltung auf iPhone, iPad und Mac. Die App speichert Buchungen lokal und optional in deinem <strong>iCloud-Account</strong> (CloudKit). Provider-Anmeldungen erfolgen in eingebetteten Web-Ansichten der jeweiligen Anbieter; Reisen ist <strong>nicht</strong> mit Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka oder anderen OTAs verbunden.</p>
+
+  <h2>Welche Daten verarbeitet Reisen?</h2>
+
+  <h3>Buchungen und Reisen (von dir erfasst oder synchronisiert)</h3>
+  <ul>
+    <li>Reisenamen, Buchungsdetails, Stornofristen, manuelle Einträge</li>
+    <li>Speicherung in SwiftData auf dem Gerät; optional Spiegelung in deinem privaten iCloud-Container <code>iCloud.de.reisen.Reisen</code></li>
+  </ul>
+
+  <h3>Provider-Anmeldung (optional)</h3>
+  <ul>
+    <li>Login auf Websites Dritter im <strong>WKWebView</strong> mit deinem eigenen Konto</li>
+    <li>Session-Cookies verbleiben im WebView-Cookie-Store des Geräts</li>
+    <li>Optional (Opt-in): E-Mail und Kennwort nach Passwort-Login in der <strong>Geräte-Keychain</strong> der App — nicht für Apple-/Passkey-/OAuth-Logins</li>
+  </ul>
+
+  <h3>Kalender und Erinnerungen (optional, Opt-in)</h3>
+  <ul>
+    <li>Mit deiner Freigabe: Termine und Erinnerungen für Stornofristen in Apple Kalender / Erinnerungen</li>
+    <li>Lokale Mitteilungen über das Mitteilungszentrum (keine Marketing-Pushes)</li>
+  </ul>
+
+  <h3>Technische Einstellungen</h3>
+  <ul>
+    <li>App-Einstellungen in <code>UserDefaults</code> (z.&nbsp;B. aktivierte Provider, Kalenderwahl)</li>
+    <li>Kein Tracking, keine Werbe-ID, kein Verkauf von Daten</li>
+  </ul>
+
+  <h3>Feedback (optional)</h3>
+  <p>Wenn du Feedback sendest, öffnet die App ein neues GitHub-Issue mit vorausgefülltem Text (App-Version, OS, Gerätemodell, Locale). Du veröffentlichst mit <strong>deinem</strong> GitHub-Konto in einem <strong>öffentlichen</strong> Repository.</p>
+
+  <h2>iCloud / CloudKit</h2>
+  <p>Synchronisation nutzt Apple CloudKit in deinem iCloud-Account. Apple verarbeitet diese Daten gemäß den <a href="https://www.apple.com/legal/privacy/">Apple-Datenschutzrichtlinien</a>. Du kannst in den App-Einstellungen lokale Daten löschen oder iCloud-Daten leeren.</p>
+
+  <h2>Stille Push-Benachrichtigungen (iOS)</h2>
+  <p>Für CloudKit-Mirroring kann iOS stille Hintergrund-Benachrichtigungen empfangen (<code>remote-notification</code>). Es werden <strong>keine</strong> sichtbaren Remote-Push-Nachrichten an dich gesendet.</p>
+
+  <h2>Datenweitergabe an Dritte</h2>
+  <ul>
+    <li><strong>Provider-Websites:</strong> Wenn du dich anmeldest, gelten deren Datenschutzbestimmungen.</li>
+    <li><strong>GitHub:</strong> Nur wenn du Feedback über GitHub veröffentlichst.</li>
+    <li><strong>Kein</strong> Analytics-Dienst, <strong>kein</strong> Werbenetzwerk in der App.</li>
+  </ul>
+
+  <h2>Deine Rechte</h2>
+  <ul>
+    <li>Daten löschen: lokaler Reset oder „iCloud-Daten leeren“ in den Einstellungen</li>
+    <li>Provider-Passwörter: in den App-Einstellungen deaktivierbar; gespeicherte Konten in der Schlüsselbundverwaltung / Passwörter-App entfernbar</li>
+    <li>Kalender-/Mitteilungsrechte: in den Systemeinstellungen widerrufbar</li>
+  </ul>
+
+  <h2>Kontakt</h2>
+  <p>
+    <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues — rosch100/Reisen</a><br>
+    <a href="support.html">Support</a>
+  </p>
+</body>
+</html>

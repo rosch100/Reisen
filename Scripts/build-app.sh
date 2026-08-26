@@ -40,6 +40,12 @@ if [[ "$CONFIG" == "release" ]]; then
   OUT_CONFIG="Release"
 fi
 
+if [[ "$CONFIG" == "release" && "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  export REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true
+fi
+unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
+bash "$ROOT/Scripts/embed-github-issue-token.sh"
+
 swift build -c "$CONFIG" >/dev/null
 
 BIN="$ROOT/.build/$CONFIG/Reisen"

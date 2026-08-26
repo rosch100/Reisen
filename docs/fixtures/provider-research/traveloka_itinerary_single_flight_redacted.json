@@ -15,6 +15,75 @@
         "paymentInfo": {
           "userTripStatus": "ETICKET_PUBLISHED"
         },
+        "bookingInfo": {
+          "flightBookingInfo": {
+            "auth": "redacted",
+            "bookingDetail": {
+              "sourceCity": "Jakarta",
+              "destinationCity": "Denpasar",
+              "tripType": "ONE_WAY",
+              "contactEmail": "REDACTED",
+              "passengers": {
+                "adults": [
+                  { "firstName": "REDACTED", "lastName": "REDACTED", "typeDescription": "Adult" }
+                ],
+                "children": [],
+                "infants": []
+              },
+              "segments": [
+                {
+                  "airlineName": "AirAsia",
+                  "airlineCode": "QZ",
+                  "brandCode": "QZ",
+                  "seatClass": "Economy",
+                  "seatPublishedClass": "ECONOMY",
+                  "sourceAirport": {
+                    "airportCode": "CGK",
+                    "airportName": "Soekarno-Hatta",
+                    "location": "Jakarta",
+                    "terminalName": "2"
+                  },
+                  "destinationAirport": {
+                    "airportCode": "DPS",
+                    "airportName": "Ngurah Rai",
+                    "location": "Denpasar",
+                    "terminalName": "Domestic"
+                  },
+                  "departureDateTime": {
+                    "monthDayYear": { "year": "2026", "month": "9", "day": "10" },
+                    "hourMinute": { "hour": "8", "minute": "0" }
+                  },
+                  "arrivalDateTime": {
+                    "monthDayYear": { "year": "2026", "month": "9", "day": "10" },
+                    "hourMinute": { "hour": "11", "minute": "0" }
+                  },
+                  "facilities": [
+                    { "type": "cabinBaggage", "displayText": "7 kg" },
+                    { "type": "baggage", "displayText": "20 kg" }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "flightTicketInfo": {
+          "eTicketButtonInfo": {
+            "buttonRefundAvailable": false,
+            "buttonRescheduleAvailable": false
+          },
+          "eTicketDetailMap": {
+            "en_EN": {
+              "pnrCode": "REDACTED",
+              "passengers": [
+                {
+                  "name": "REDACTED",
+                  "typeDescription": "Adult",
+                  "ticketNumbers": [{ "eTicketNumber": "REDACTED" }]
+                }
+              ]
+            }
+          }
+        },
         "cardSummaryInfo": {
           "commonSummary": {
             "tripType": "FLIGHT",
@@ -25,33 +94,10 @@
             "sectionType": "ACTIVE_BOOKING",
             "productName": "Flight"
           },
-          "flightSummary": null
+          "flightCheckInSummaryInfo": null
         },
         "cardDetailInfo": {
-          "flightDetail": {
-            "originCity": "Jakarta",
-            "originAirportCode": "CGK",
-            "originAirportName": "Soekarno-Hatta",
-            "originTerminal": "2",
-            "destinationCity": "Denpasar",
-            "destinationAirportCode": "DPS",
-            "destinationAirportName": "Ngurah Rai",
-            "destinationTerminal": "Domestic",
-            "airlineName": "AirAsia",
-            "airlineCode": "QZ",
-            "passengerCount": 1,
-            "cabinBaggage": "7 kg",
-            "checkedBaggage": "20 kg",
-            "refundable": false,
-            "refundPolicyLabel": "Non-Refundable",
-            "passengers": [
-              {
-                "firstName": "REDACTED",
-                "lastName": "REDACTED",
-                "type": "ADULT"
-              }
-            ]
-          }
+          "flightDetail": null
         }
       }
     ]
