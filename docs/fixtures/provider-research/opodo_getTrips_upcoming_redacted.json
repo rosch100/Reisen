@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "source": "Opodo HAR www.opodo.de_Archive [26-08-03 17-40-03].har — getTrips(filter: UPCOMING)",
+    "note": "Research excerpt only (no PII). Full parser fixture: Tests/ReisenOpodoTests/Fixtures/getTrips_upcoming.json",
+    "tripCountObserved": 4,
+    "pastTripsObserved": 0,
+    "bookedProductTypesObserved": ["flight", "hotel"],
+    "notObservedAsBookings": ["carRental", "transfer", "activity", "rail"],
+    "upsellOnlyInHar": [
+      "GetVehicleRentalOffers*",
+      "VR_getTransferOffers*",
+      "FastTrack_*",
+      "insuranceBookings (ancillary)"
+    ]
+  },
+  "tripsSummary": [
+    {
+      "kind": "flight",
+      "transportTypes": ["PLANE"],
+      "routeExample": "SIN→CGK",
+      "hasDepartureDateEpoch": true,
+      "hasDepartureDateISO8601": true,
+      "hasArrivalDateISO8601": false,
+      "wallClockNote": "Epoch reads as pseudo-UTC wall clock; matches FlightTimeZoneAssigner.forWallClockInstant — do not blind-switch to absolute ISO"
+    },
+    {
+      "kind": "hotel",
+      "countInHar": 3,
+      "fieldsPresent": [
+        "accommodationName",
+        "checkInDate",
+        "checkOutDate",
+        "checkIn",
+        "checkOut",
+        "boardType",
+        "bookingRooms",
+        "cancellationPolicies via getTripByToken"
+      ]
+    }
+  ],
+  "implementVerdict": "no_must_implement"
+}

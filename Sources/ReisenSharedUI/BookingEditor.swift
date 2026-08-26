@@ -104,6 +104,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
     public var lastParsedAt: Date?
     public var cancellationDeadlines: [CancellationDeadlineDraft]
     public var passengers: [BookingPassenger]
+    public var guestHints: [BookingGuestHint]
 
     public static func createDefault(
         tripStartDate: Date,
@@ -145,7 +146,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
             baggageInfoRaw: "",
             lastParsedAt: nil,
             cancellationDeadlines: [],
-            passengers: []
+            passengers: [],
+            guestHints: []
         )
     }
 
@@ -180,7 +182,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             passengerCountText: booking.rateDetails?.passengerCount.map { String($0) } ?? "",
             baggageInfoRaw: booking.rateDetails?.baggageInfoRaw ?? "",
             lastParsedAt: booking.rateDetails?.lastParsedAt,
-            cancellationDeadlines: booking.cancellationDeadlines
+            cancellationDeadlines: booking.resolvedCancellationDeadlines
                 .map { deadline in
                     CancellationDeadlineDraft(
                         id: deadline.id,
@@ -193,7 +195,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     )
                 }
                 .sorted { $0.deadlineAt < $1.deadlineAt },
-            passengers: booking.passengers.map(DomainMapper.passenger(from:))
+            passengers: booking.resolvedPassengers.map(DomainMapper.passenger(from:)),
+            guestHints: booking.resolvedGuestHints.map(DomainMapper.guestHint(from:))
         )
     }
 
@@ -284,7 +287,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
         var working = draft
         working.provider = .manual
         if working.externalUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            working.externalUrl = "reisen://manual/\(UUID().uuidString)"
+            working.externalUrl = BookingExternalURL.makeManual()
         }
         try working.validate()
 
@@ -338,7 +341,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
 
         // Structured passengers/baggage for flights.
         // Replace-Strategy: delete all existing SwiftData child models and recreate from the edited draft.
-        for existing in booking.passengers {
+        for existing in booking.resolvedPassengers {
             modelContext.delete(existing)
         }
         if bookingType == .flight {
@@ -408,7 +411,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             booking.rateDetails = nil
         }
 
-        for existing in booking.cancellationDeadlines {
+        for existing in booking.resolvedCancellationDeadlines {
             modelContext.delete(existing)
         }
         booking.cancellationDeadlines = cancellationDeadlines
@@ -424,6 +427,11 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     booking: booking
                 )
             }
+
+        let persistedHints = guestHints.compactMap {
+            BookingGuestHint.manualPersistable(from: $0, bookingID: booking.id)
+        }
+        SwiftDataBookingGuestHintUpsert.upsert(persistedHints, on: booking, in: modelContext)
 
         try modelContext.save()
     }
@@ -778,6 +786,34 @@ public struct BookingEditorForm: View {
                     }
                 }
 
+                Section(GuestHintCategory.preTravelImportant.displayTitle) {
+                    ForEach($draft.guestHints) { $hint in
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Titel", text: $hint.title)
+                            TextField("Hinweis", text: $hint.detail, axis: .vertical)
+                                .lineLimit(2...5)
+                            Button("Eintrag entfernen", role: .destructive) {
+                                draft.guestHints.removeAll { $0.id == hint.id }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+
+                    Button {
+                        draft.guestHints.append(
+                            BookingGuestHint(
+                                category: .preTravelImportant,
+                                title: "",
+                                detail: "",
+                                sourceKey: "manual:\(UUID().uuidString)",
+                                providerRaw: ProviderID.manual.rawValue
+                            )
+                        )
+                    } label: {
+                        Label("Hinweis hinzufügen", systemImage: "plus")
+                    }
+                }
+
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
@@ -814,12 +850,7 @@ public struct BookingEditorForm: View {
     }
 
     private func localizedBookingType(_ type: BookingType) -> String {
-        switch type {
-        case .flight: return "Flug"
-        case .hotel: return "Hotel"
-        case .ferry: return "Fähre"
-        case .other: return "Sonstiges"
-        }
+        type.displayLabel
     }
 
     private func localizedBookingStatus(_ status: BookingStatus) -> String {
@@ -831,13 +862,7 @@ public struct BookingEditorForm: View {
     }
 
     private func localizedBoardType(_ type: BookingBoardType) -> String {
-        switch type {
-        case .roomOnly: return "Nur Zimmer"
-        case .breakfastIncluded: return "Frühstück"
-        case .halfBoard: return "Halbpension"
-        case .fullBoard: return "Vollpension"
-        case .unknown: return "Unbekannt"
-        }
+        type.displayLabel
     }
 }
 

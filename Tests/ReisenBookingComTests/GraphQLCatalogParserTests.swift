@@ -193,7 +193,7 @@ func bookingComTimelineQueryRequestsAddressViaFragment() throws {
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-        .appendingPathComponent("Sources/ReisenBookingCom/BookingComTravelProvider.swift")
+        .appendingPathComponent("Sources/ReisenBookingCom/BookingComGraphQLQueries.swift")
     let source = try String(contentsOf: sourceURL, encoding: .utf8)
     #expect(source.contains("... on AccommodationLocation"))
     #expect(source.contains("... on ReservationPropertyData"))

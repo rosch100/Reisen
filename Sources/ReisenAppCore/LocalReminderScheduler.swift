@@ -21,8 +21,8 @@ public final class LocalReminderScheduler: ReminderScheduling {
         }
     }
 
-    private let modelContext: ModelContext
-    private let reminderRepository: SwiftDataReminderRepository
+    let modelContext: ModelContext
+    let reminderRepository: SwiftDataReminderRepository
 
     private struct ReminderKey: Hashable {
         let deadlineID: UUID
@@ -96,15 +96,11 @@ public final class LocalReminderScheduler: ReminderScheduling {
         return formatter.string(from: deadline.deadlineAt)
     }
 
-    private func normalizedLeadTimes(_ leadTimesDays: [Int]) throws -> [Int] {
-        let leadTimes = leadTimesDays.sorted().filter { $0 > 0 }
-        guard !leadTimes.isEmpty else {
-            throw RepositoryError.invalidState("Keine gültigen Vorlaufzeiten konfiguriert.")
-        }
-        return leadTimes
+    func normalizedLeadTimes(_ leadTimesDays: [Int]) throws -> [Int] {
+        try LeadTimesDays.requireNonEmpty(leadTimesDays)
     }
 
-    private func requestAuthorization(center: UNUserNotificationCenter) async throws {
+    func requestAuthorization(center: UNUserNotificationCenter) async throws {
         let authorization = try await center.requestAuthorization(options: [.alert, .sound, .badge])
         guard authorization else { throw SchedulerError.authorizationDenied }
     }
@@ -118,8 +114,11 @@ public final class LocalReminderScheduler: ReminderScheduling {
 
         for deadline in deadlines {
             for leadDays in leadTimes {
-                guard let fireAt = Calendar.current.date(byAdding: .day, value: -leadDays, to: deadline.deadlineAt) else { continue }
-                guard fireAt > now else { continue }
+                guard let fireAt = LeadTimesDays.fireAt(
+                    referenceDate: deadline.deadlineAt,
+                    leadDays: leadDays
+                ) else { continue }
+                guard LeadTimesDays.isFuture(fireAt, now: now) else { continue }
                 desiredKeys.insert(ReminderKey(deadlineID: deadline.id, fireAt: fireAt))
             }
         }
@@ -163,9 +162,7 @@ public final class LocalReminderScheduler: ReminderScheduling {
 
             guard !shouldKeep else { continue }
 
-            if let externalAlarmId = reminder.externalAlarmId, !externalAlarmId.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: [externalAlarmId])
-            }
+            removePendingNotification(for: reminder, center: center)
             try reminderRepository.deleteByIDs([reminder.id])
         }
     }
@@ -183,8 +180,11 @@ public final class LocalReminderScheduler: ReminderScheduling {
 
         for deadline in eligibleDeadlines {
             for leadDays in leadTimes {
-                guard let fireAt = Calendar.current.date(byAdding: .day, value: -leadDays, to: deadline.deadlineAt) else { continue }
-                guard fireAt > now else { continue }
+                guard let fireAt = LeadTimesDays.fireAt(
+                    referenceDate: deadline.deadlineAt,
+                    leadDays: leadDays
+                ) else { continue }
+                guard LeadTimesDays.isFuture(fireAt, now: now) else { continue }
 
                 let key = ReminderKey(deadlineID: deadline.id, fireAt: fireAt)
                 if existingByKey[key] != nil { continue }

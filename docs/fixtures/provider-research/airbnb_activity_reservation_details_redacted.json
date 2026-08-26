@@ -1,0 +1,1172 @@
+{
+  "_meta": {
+    "source": "Airbnb HAR activity_reservation_details EXPERIENCE_RESERVATION",
+    "note": "Row list truncated to ids; selected rows include redacted payload"
+  },
+  "scheduled_event": {
+    "schedulable_type": "EXPERIENCE_RESERVATION",
+    "primary_key": "<REDACTED>",
+    "rows": [
+      {
+        "id": "dynamic_marquee_title_image_v3",
+        "type": "row:dynamic_marquee_title_image_v3",
+        "payload": {
+          "id": "dynamic_marquee_title_image_v3",
+          "type": "row:dynamic_marquee_title_image_v3",
+          "title": "Yogyakarta Night Tour: Food & Cultural Experience",
+          "image_urls": [
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/08dd2265-6dea-4965-837e-e7d57e6b5397.png",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/39bc16a8-70ab-4e9c-81eb-c590035c3aca.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/31a01149-a205-4957-a6ec-0dca80d9d46f.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/365c7fbd-5559-4fd2-b791-c730e445cbd3.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/90d0d332-3e7c-4a6a-a65a-74190a06ba54.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/1ac710b6-3c39-4250-8e33-e47cb1832be6.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37daae7c-5914-4c04-aa11-0f9bd9e418f1.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/62ffeb7c-7ebb-4570-8b3f-2792dc62ec49.png",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/96883978-7ff0-47b4-8745-a99ab3d7231a.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/84bc4454-d217-47f3-952c-76901b87aae9.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/7965b060-5c00-457d-ad07-7a7234bbaf8b.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37152056-3f59-4148-8ede-3c67b50d28bc.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/da165b80-b6ac-430d-95be-2b7a39babd55.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/f5fd36f3-5c3a-4a51-aff2-effebffb5429.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/3d87dcdb-8637-4344-a8fc-7f42bed7b5ee.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b6823861-8fe3-4fc1-ae46-2fe9dd96e69c.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b21e2782-1c0b-42bc-a776-6c0820b89dac.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/392a8e80-69b7-44c0-bc94-312eb7769a9e.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/a270d5cb-460f-4ee9-8f10-a4e1d80e5350.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/5c0e8c33-f84b-420a-83ff-c86bd8699db5.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/dfd1054d-148e-4971-8052-445dd0c66271.jpeg",
+            "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/8353226d-dab3-47b9-863a-01fd39986762.png"
+          ],
+          "destination": {
+            "type": "view_marquee_gallery",
+            "media_items": [
+              {
+                "id": "SW1hZ2U6LTc1OTAwNTExMzk5MzE0MTk2MDU=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/08dd2265-6dea-4965-837e-e7d57e6b5397.png",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NzI4OTk1NzM4NDUzNDI1NDkzNg==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/39bc16a8-70ab-4e9c-81eb-c590035c3aca.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6Njc4MTg3OTg4MTIzNTk2NzA2Mw==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/31a01149-a205-4957-a6ec-0dca80d9d46f.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTM0MTk1MTg5MDA4MDY0OTE0MTk=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/365c7fbd-5559-4fd2-b791-c730e445cbd3.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjExNzkxMzY3NTM3NjMzNDA5MQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/90d0d332-3e7c-4a6a-a65a-74190a06ba54.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjI3NjAwNjg1MTg2NzMzMzM0MA==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/1ac710b6-3c39-4250-8e33-e47cb1832be6.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NTg1MjQ3MTM3MzgzMjgxMjIwNA==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37daae7c-5914-4c04-aa11-0f9bd9e418f1.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjQ0NTYyNDI2NzA2ODE5NTUzMQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/62ffeb7c-7ebb-4570-8b3f-2792dc62ec49.png",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTQ2NjQ0MjU2NjI0ODEwMTM5MTg=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/96883978-7ff0-47b4-8745-a99ab3d7231a.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTcyNzYzMjMzMjY4Njk1NzIzNDc=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/84bc4454-d217-47f3-952c-76901b87aae9.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NjYxNTYwODUxOTgxMDQyNjI3MQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/7965b060-5c00-457d-ad07-7a7234bbaf8b.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NjYyNzE1OTIwMDgxOTY5NDg5MA==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37152056-3f59-4148-8ede-3c67b50d28bc.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTUyMTc0ODA2MDIyOTM2MjIyMTk=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/da165b80-b6ac-430d-95be-2b7a39babd55.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTIwMjI2ODA3NTMyODc2MjE1OTA=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/f5fd36f3-5c3a-4a51-aff2-effebffb5429.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTY0MDk1NDI4MTc2Nzk4Njg1NTc=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/3d87dcdb-8637-4344-a8fc-7f42bed7b5ee.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTc3ODA2NzA5MDgwNzkxMjk0ODA=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b6823861-8fe3-4fc1-ae46-2fe9dd96e69c.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NTc4MTI5Njc1NzI3MTk0NjE2",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b21e2782-1c0b-42bc-a776-6c0820b89dac.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTYwNDU3MTc0ODk5MDE0MTgxNzA=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/392a8e80-69b7-44c0-bc94-312eb7769a9e.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTIxMjU0NzQzMzU4NTc3ODY2MTM=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/a270d5cb-460f-4ee9-8f10-a4e1d80e5350.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjAzNDU4NDMyMzk3OTM5NjkyOQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/5c0e8c33-f84b-420a-83ff-c86bd8699db5.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTcwMjA5MDM5MDU0NzA4MDkxNzg=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/dfd1054d-148e-4971-8052-445dd0c66271.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTY3ODIyNzM1MTk3MjIwMzA3NTY=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/8353226d-dab3-47b9-863a-01fd39986762.png",
+                "image_metadata": {
+                  "caption": ""
+                }
+              }
+            ],
+            "media_items_with_type_name": [
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTc1OTAwNTExMzk5MzE0MTk2MDU=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/08dd2265-6dea-4965-837e-e7d57e6b5397.png",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NzI4OTk1NzM4NDUzNDI1NDkzNg==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/39bc16a8-70ab-4e9c-81eb-c590035c3aca.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6Njc4MTg3OTg4MTIzNTk2NzA2Mw==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/31a01149-a205-4957-a6ec-0dca80d9d46f.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTM0MTk1MTg5MDA4MDY0OTE0MTk=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/365c7fbd-5559-4fd2-b791-c730e445cbd3.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjExNzkxMzY3NTM3NjMzNDA5MQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/90d0d332-3e7c-4a6a-a65a-74190a06ba54.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjI3NjAwNjg1MTg2NzMzMzM0MA==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/1ac710b6-3c39-4250-8e33-e47cb1832be6.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NTg1MjQ3MTM3MzgzMjgxMjIwNA==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37daae7c-5914-4c04-aa11-0f9bd9e418f1.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjQ0NTYyNDI2NzA2ODE5NTUzMQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/62ffeb7c-7ebb-4570-8b3f-2792dc62ec49.png",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTQ2NjQ0MjU2NjI0ODEwMTM5MTg=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/96883978-7ff0-47b4-8745-a99ab3d7231a.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTcyNzYzMjMzMjY4Njk1NzIzNDc=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/84bc4454-d217-47f3-952c-76901b87aae9.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NjYxNTYwODUxOTgxMDQyNjI3MQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/7965b060-5c00-457d-ad07-7a7234bbaf8b.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NjYyNzE1OTIwMDgxOTY5NDg5MA==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37152056-3f59-4148-8ede-3c67b50d28bc.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTUyMTc0ODA2MDIyOTM2MjIyMTk=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/da165b80-b6ac-430d-95be-2b7a39babd55.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTIwMjI2ODA3NTMyODc2MjE1OTA=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/f5fd36f3-5c3a-4a51-aff2-effebffb5429.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTY0MDk1NDI4MTc2Nzk4Njg1NTc=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/3d87dcdb-8637-4344-a8fc-7f42bed7b5ee.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTc3ODA2NzA5MDgwNzkxMjk0ODA=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b6823861-8fe3-4fc1-ae46-2fe9dd96e69c.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NTc4MTI5Njc1NzI3MTk0NjE2",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b21e2782-1c0b-42bc-a776-6c0820b89dac.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTYwNDU3MTc0ODk5MDE0MTgxNzA=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/392a8e80-69b7-44c0-bc94-312eb7769a9e.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTIxMjU0NzQzMzU4NTc3ODY2MTM=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/a270d5cb-460f-4ee9-8f10-a4e1d80e5350.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjAzNDU4NDMyMzk3OTM5NjkyOQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/5c0e8c33-f84b-420a-83ff-c86bd8699db5.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTcwMjA5MDM5MDU0NzA4MDkxNzg=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/dfd1054d-148e-4971-8052-445dd0c66271.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTY3ODIyNzM1MTk3MjIwMzA3NTY=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/8353226d-dab3-47b9-863a-01fd39986762.png",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              }
+            ]
+          },
+          "subtitle": "6:00 pm · 3 hours · Hosted by Angelina",
+          "image_alt_texts": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "cotraveler_group": {
+            "facepile": [
+              {
+                "image_url": "https://a0.muscache.com/im/pictures/user/ebc8158e-c018-455d-97a3-b89c5d51cbb6.jpg?aki_policy=profile_x_medium"
+              }
+            ],
+            "icon": "ic_compact_edit_16",
+            "destination": {
+              "type": "cotravelers",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            },
+            "facepile_accessibility_label": "Manage your travel group",
+            "overflow_count": 2
+          },
+          "badge_text": "In 1 week",
+          "view_marquee_gallery_destination": {
+            "type": "view_marquee_gallery",
+            "media_items": [
+              {
+                "id": "SW1hZ2U6LTc1OTAwNTExMzk5MzE0MTk2MDU=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/08dd2265-6dea-4965-837e-e7d57e6b5397.png",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NzI4OTk1NzM4NDUzNDI1NDkzNg==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/39bc16a8-70ab-4e9c-81eb-c590035c3aca.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6Njc4MTg3OTg4MTIzNTk2NzA2Mw==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/31a01149-a205-4957-a6ec-0dca80d9d46f.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTM0MTk1MTg5MDA4MDY0OTE0MTk=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/365c7fbd-5559-4fd2-b791-c730e445cbd3.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjExNzkxMzY3NTM3NjMzNDA5MQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/90d0d332-3e7c-4a6a-a65a-74190a06ba54.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjI3NjAwNjg1MTg2NzMzMzM0MA==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/1ac710b6-3c39-4250-8e33-e47cb1832be6.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NTg1MjQ3MTM3MzgzMjgxMjIwNA==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37daae7c-5914-4c04-aa11-0f9bd9e418f1.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjQ0NTYyNDI2NzA2ODE5NTUzMQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/62ffeb7c-7ebb-4570-8b3f-2792dc62ec49.png",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTQ2NjQ0MjU2NjI0ODEwMTM5MTg=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/96883978-7ff0-47b4-8745-a99ab3d7231a.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTcyNzYzMjMzMjY4Njk1NzIzNDc=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/84bc4454-d217-47f3-952c-76901b87aae9.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NjYxNTYwODUxOTgxMDQyNjI3MQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/7965b060-5c00-457d-ad07-7a7234bbaf8b.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NjYyNzE1OTIwMDgxOTY5NDg5MA==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37152056-3f59-4148-8ede-3c67b50d28bc.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTUyMTc0ODA2MDIyOTM2MjIyMTk=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/da165b80-b6ac-430d-95be-2b7a39babd55.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTIwMjI2ODA3NTMyODc2MjE1OTA=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/f5fd36f3-5c3a-4a51-aff2-effebffb5429.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTY0MDk1NDI4MTc2Nzk4Njg1NTc=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/3d87dcdb-8637-4344-a8fc-7f42bed7b5ee.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTc3ODA2NzA5MDgwNzkxMjk0ODA=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b6823861-8fe3-4fc1-ae46-2fe9dd96e69c.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6NTc4MTI5Njc1NzI3MTk0NjE2",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b21e2782-1c0b-42bc-a776-6c0820b89dac.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTYwNDU3MTc0ODk5MDE0MTgxNzA=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/392a8e80-69b7-44c0-bc94-312eb7769a9e.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTIxMjU0NzQzMzU4NTc3ODY2MTM=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/a270d5cb-460f-4ee9-8f10-a4e1d80e5350.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6MjAzNDU4NDMyMzk3OTM5NjkyOQ==",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/5c0e8c33-f84b-420a-83ff-c86bd8699db5.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTcwMjA5MDM5MDU0NzA4MDkxNzg=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/dfd1054d-148e-4971-8052-445dd0c66271.jpeg",
+                "image_metadata": {
+                  "caption": ""
+                }
+              },
+              {
+                "id": "SW1hZ2U6LTY3ODIyNzM1MTk3MjIwMzA3NTY=",
+                "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/8353226d-dab3-47b9-863a-01fd39986762.png",
+                "image_metadata": {
+                  "caption": ""
+                }
+              }
+            ],
+            "media_items_with_type_name": [
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTc1OTAwNTExMzk5MzE0MTk2MDU=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/08dd2265-6dea-4965-837e-e7d57e6b5397.png",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NzI4OTk1NzM4NDUzNDI1NDkzNg==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/39bc16a8-70ab-4e9c-81eb-c590035c3aca.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6Njc4MTg3OTg4MTIzNTk2NzA2Mw==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/31a01149-a205-4957-a6ec-0dca80d9d46f.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTM0MTk1MTg5MDA4MDY0OTE0MTk=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/365c7fbd-5559-4fd2-b791-c730e445cbd3.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjExNzkxMzY3NTM3NjMzNDA5MQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/90d0d332-3e7c-4a6a-a65a-74190a06ba54.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjI3NjAwNjg1MTg2NzMzMzM0MA==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/1ac710b6-3c39-4250-8e33-e47cb1832be6.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NTg1MjQ3MTM3MzgzMjgxMjIwNA==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37daae7c-5914-4c04-aa11-0f9bd9e418f1.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjQ0NTYyNDI2NzA2ODE5NTUzMQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/62ffeb7c-7ebb-4570-8b3f-2792dc62ec49.png",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTQ2NjQ0MjU2NjI0ODEwMTM5MTg=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/96883978-7ff0-47b4-8745-a99ab3d7231a.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTcyNzYzMjMzMjY4Njk1NzIzNDc=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/84bc4454-d217-47f3-952c-76901b87aae9.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NjYxNTYwODUxOTgxMDQyNjI3MQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/7965b060-5c00-457d-ad07-7a7234bbaf8b.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NjYyNzE1OTIwMDgxOTY5NDg5MA==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/37152056-3f59-4148-8ede-3c67b50d28bc.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTUyMTc0ODA2MDIyOTM2MjIyMTk=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/da165b80-b6ac-430d-95be-2b7a39babd55.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTIwMjI2ODA3NTMyODc2MjE1OTA=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/f5fd36f3-5c3a-4a51-aff2-effebffb5429.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTY0MDk1NDI4MTc2Nzk4Njg1NTc=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/3d87dcdb-8637-4344-a8fc-7f42bed7b5ee.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTc3ODA2NzA5MDgwNzkxMjk0ODA=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b6823861-8fe3-4fc1-ae46-2fe9dd96e69c.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6NTc4MTI5Njc1NzI3MTk0NjE2",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/b21e2782-1c0b-42bc-a776-6c0820b89dac.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTYwNDU3MTc0ODk5MDE0MTgxNzA=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/392a8e80-69b7-44c0-bc94-312eb7769a9e.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTIxMjU0NzQzMzU4NTc3ODY2MTM=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/a270d5cb-460f-4ee9-8f10-a4e1d80e5350.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6MjAzNDU4NDMyMzk3OTM5NjkyOQ==",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/5c0e8c33-f84b-420a-83ff-c86bd8699db5.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTcwMjA5MDM5MDU0NzA4MDkxNzg=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/dfd1054d-148e-4971-8052-445dd0c66271.jpeg",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              },
+              {
+                "media_item": {
+                  "id": "SW1hZ2U6LTY3ODIyNzM1MTk3MjIwMzA3NTY=",
+                  "base_url": "https://a0.muscache.com/im/pictures/Mt/MtTemplate-687240/original/8353226d-dab3-47b9-863a-01fd39986762.png",
+                  "image_metadata": {
+                    "caption": ""
+                  }
+                },
+                "type_name": "IMAGE"
+              }
+            ]
+          },
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.dynamic_marquee_title_image",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "overview:dynamic_marquee_title_image",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "starts_at_ends_at_new_split_kicker",
+        "type": "row:split_title_subtitle_kicker_arrival_guide_v2",
+        "payload": {
+          "id": "starts_at_ends_at_new_split_kicker",
+          "type": "row:split_title_subtitle_kicker_arrival_guide_v2",
+          "leading_kicker": "Starts",
+          "leading_title": "Mon, 10 Aug",
+          "leading_subtitle": "6:00 pm",
+          "trailing_kicker": "Ends",
+          "trailing_title": "Mon, 10 Aug",
+          "trailing_subtitle": "9:00 pm",
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.starts_at_ends_at_new_split_kicker",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "overview:starts_at_ends_at_new_split_kicker",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "event_location",
+        "type": "row:header_action",
+        "payload": {
+          "id": "event_location",
+          "type": "row:header_action",
+          "title": "Where to meet",
+          "subtitle": "Slasar Malioboro, Jalan Pasar Kembang No.30B",
+          "icon": "ic_system_location_32",
+          "destination": {
+            "type": "directions_modal_v2",
+            "confirmation_code": "<REDACTED>",
+            "product_type": "EXPERIENCE"
+          },
+          "show_divider": true,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.event_location",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "overview:event_location",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "pdp",
+        "type": "row:header_action",
+        "payload": {
+          "id": "pdp",
+          "type": "row:header_action",
+          "title": "Your experience",
+          "subtitle": "Yogyakarta Night Tour: Food & Cultural Experience",
+          "icon": "ic_system_tour_bus_32",
+          "destination": {
+            "type": "pdp",
+            "pdp_id": "<REDACTED>",
+            "pdp_type": "experience",
+            "app_url": "airbnb://d/CityHostsGuest/template?tripTemplateId=687240",
+            "web_url": {
+              "type": "relative",
+              "value": "/experiences/687240"
+            },
+            "is_upgrade": true
+          },
+          "show_divider": false,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.pdp",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "overview:pdp",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "guest_count",
+        "type": "row:basic_title_subtitle",
+        "payload": {
+          "id": "guest_count",
+          "type": "row:basic_title_subtitle",
+          "title": "Guests",
+          "subtitle": "3 adults",
+          "selectable": false,
+          "show_divider": true,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.guest_count",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "reservation_details:guest_count",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "confirmation_code",
+        "type": "row:basic_title_subtitle",
+        "payload": {
+          "id": "confirmation_code",
+          "type": "row:basic_title_subtitle",
+          "title": "Confirmation code",
+          "subtitle": "TAJ8FMXK",
+          "selectable": true,
+          "show_divider": true,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.confirmation_code",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "reservation_details:confirmation_code",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "cancel_policy",
+        "type": "row:action_deep_link",
+        "payload": {
+          "id": "cancel_policy",
+          "type": "row:action_deep_link",
+          "subtitle": "Get a full refund if you cancel by 9 Aug, 6:00 pm (WIB).",
+          "title": "Cancellation policy",
+          "action_text": "View",
+          "app_url": "https://www.airbnb.com/experiences-cancellation-policy",
+          "web_url": {
+            "type": "relative",
+            "value": "/experiences-cancellation-policy"
+          },
+          "logging_id": "genericRDP.EXPERIENCE.row.actionDeepLink.cancel_policy",
+          "show_divider": true,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.cancel_policy",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "reservation_details:cancel_policy",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "map",
+        "type": "row:poi_map_v2",
+        "payload": {
+          "id": "map",
+          "type": "row:poi_map_v2",
+          "icon": "ic_system_tour_bus_32",
+          "lat": -7.790012199999999,
+          "lng": 110.3641003,
+          "zoom_level": 15,
+          "use_lat_lng": true,
+          "address_line1": "Slasar Malioboro, Jalan Pasar Kembang No.30B",
+          "address_line2": "Gedong Tengen, Special Region of Yogyakarta, 55272, Indonesia",
+          "logging_id": "genericRDP.EXPERIENCE.row.poiMapV2.map",
+          "show_divider": true,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.map",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "where_to_meet:map",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "event_overview",
+        "type": "row:expandable_title_subtitle",
+        "payload": {
+          "id": "event_overview",
+          "type": "row:expandable_title_subtitle",
+          "title": "What we'll do",
+          "subtitle": "Discover a Yogyakarta night tour with local food, night markets, and cultural experiences. Enjoy street food, traditional snacks, and relax like locals with evening drinks",
+          "collapse_action_text": "Hide full details",
+          "expand_action_text": "Show full details",
+          "show_divider": true,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.event_overview",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "about_the_experience:event_overview",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      },
+      {
+        "id": "payment_summary",
+        "type": "row:basic_title_subtitle",
+        "payload": {
+          "id": "payment_summary",
+          "type": "row:basic_title_subtitle",
+          "title": "Total cost",
+          "subtitle": "€41.61 EUR",
+          "show_divider": true,
+          "logging_context": {
+            "logging_id": "generic_rdp.experiences.payment_summary",
+            "event_data": {
+              "event_name": "reservations_reservation_detail",
+              "reservation_id": "experience_reservation:17071256",
+              "entrypoint": "payment_info:payment_summary",
+              "status": "accepted",
+              "is_primary_booker": true,
+              "additional_context": "",
+              "confirmation_code": "<REDACTED>",
+              "product_type": "EXPERIENCE"
+            }
+          }
+        }
+      }
+    ],
+    "allRowIdsSample": [
+      "dynamic_marquee_title_image_v3",
+      "starts_at_ends_at_new_split_kicker",
+      "event_location",
+      "event_details",
+      "message_host",
+      "pdp",
+      "section_divider_0",
+      "section_header.whos_going",
+      "my_group",
+      "skinny_row.message_group",
+      "skinny_row.manage_guests",
+      "skinny_row.profile_settings",
+      "section_divider_1",
+      "section_header.reservation_details",
+      "guest_count",
+      "confirmation_code",
+      "cancel_policy",
+      "skinny_row.change_guest_count",
+      "skinny_row.activity_reschedule",
+      "skinny_row.cancel_reservation",
+      "skinny_row.print",
+      "skinny_row.get_receipt_0",
+      "section_divider_2",
+      "translation_disclaimer",
+      "section_divider_3",
+      "section_header.where_to_meet",
+      "map",
+      "location_text",
+      "skinny_row.copy_address",
+      "skinny_row.get_directions",
+      "section_divider_4",
+      "section_header.about_the_experience",
+      "event_overview",
+      "skinny_row.event_details",
+      "section_divider_5",
+      "host_header",
+      "skinny_row.message_host",
+      "section_divider_6",
+      "section_header.payment_info",
+      "payment_summary",
+      "skinny_row.get_receipt_1",
+      "section_divider_7",
+      "section_header.support_v2",
+      "skinny_row.get_help",
+      "skinny_row.help_center"
+    ]
+  },
+  "metadata": {
+    "lat": -7.790012199999999,
+    "lng": 110.3641003,
+    "label_title": "Your experience reservation",
+    "label_subtitle": "10 Aug, 6:00 pm",
+    "airmoji": "food_restaurant",
+    "is_lat_lng_obfuscated": false,
+    "map_pin_icon": "ic_system_tour_bus_32",
+    "show_upgrade_modal": false
+  }
+}

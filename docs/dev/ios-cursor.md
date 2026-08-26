@@ -50,7 +50,7 @@ Entsprechende Cursor-Tasks: **Terminal → Run Task…** → `iOS: Generate Xcod
 
 1. Einmalig: Command Palette → **SweetPad: Generate Build Server Config**  
    → erzeugt `buildServer.json` im Repo-Root (gitignored, nicht committen).
-2. Breakpoint setzen, z. B. in `Apps/ReiseniOS/ReiseniOS.swift` (`ReiseniOSApp`-Body).
+2. Breakpoint setzen, z. B. in `Apps/ReiseniOS/ReiseniOSApp.swift` (`ReiseniOSApp`-Body).
 3. **F5** oder Launch-Konfiguration **Attach to running app (SweetPad)** — startet vorher die SweetPad-Launch-Task (`ReiseniOS`, Debug).
 4. Alternativ: SweetPad-Sidebar → Build & Run für Scheme `ReiseniOS`.
 

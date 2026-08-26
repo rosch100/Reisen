@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "ReisenOpodo", targets: ["ReisenOpodo"]),
         .library(name: "ReisenBookingCom", targets: ["ReisenBookingCom"]),
         .library(name: "ReisenAirbnb", targets: ["ReisenAirbnb"]),
+        .library(name: "ReisenGetYourGuide", targets: ["ReisenGetYourGuide"]),
         .executable(name: "Reisen", targets: ["Reisen"]),
     ],
     targets: [
@@ -54,6 +55,7 @@ let package = Package(
                 "ReisenOpodo",
                 "ReisenBookingCom",
                 "ReisenAirbnb",
+                "ReisenGetYourGuide",
             ],
             path: "Sources/ReisenAppCore",
             swiftSettings: [
@@ -66,6 +68,7 @@ let package = Package(
                 "ReisenDomain",
                 "ReisenData",
                 "ReisenAppCore",
+                "ReisenProviders",
             ],
             path: "Sources/ReisenSharedUI",
             swiftSettings: [
@@ -104,6 +107,14 @@ let package = Package(
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
         ),
+        .target(
+            name: "ReisenGetYourGuide",
+            dependencies: ["ReisenDomain", "ReisenProviders"],
+            path: "Sources/ReisenGetYourGuide",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
         .executableTarget(
             name: "Reisen",
             dependencies: [
@@ -115,6 +126,7 @@ let package = Package(
                 "ReisenOpodo",
                 "ReisenBookingCom",
                 "ReisenAirbnb",
+                "ReisenGetYourGuide",
                 "ReisenSharedUI",
             ],
             path: "Sources/Reisen",
@@ -169,6 +181,14 @@ let package = Package(
             name: "ReisenAirbnbTests",
             dependencies: ["ReisenAirbnb", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenAirbnbTests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenGetYourGuideTests",
+            dependencies: ["ReisenGetYourGuide", "ReisenDomain", "ReisenProviders"],
+            path: "Tests/ReisenGetYourGuideTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

@@ -2,6 +2,7 @@ import SwiftUI
 import WebKit
 import ReisenDomain
 import ReisenProviders
+import ReisenAppCore
 
 /// Unsichtbarer App-Start-Probe: prüft Cookies/Sessions aller enabled Provider.
 /// Ruft `onFinished` mit den Providern auf, die noch Login brauchen.

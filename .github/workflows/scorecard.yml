@@ -15,7 +15,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      security-events: write
       id-token: write
 
     steps:
@@ -30,9 +29,3 @@ jobs:
           publish_results: true
           results_file: results.sarif
           results_format: sarif
-
-      - name: Upload to code-scanning
-        uses: github/codeql-action/upload-sarif@e58424170fb0262c8d7ed60a2e84b9bffe205c67
-        with:
-          sarif_file: results.sarif
-
