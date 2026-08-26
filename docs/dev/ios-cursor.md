@@ -24,7 +24,7 @@ Beim ersten Öffnen des Repos Cursor die empfohlenen Extensions installieren las
 bash ./Scripts/generate-ios-project.sh
 ```
 
-Das erzeugt lokal `Reisen.xcodeproj` aus `project.yml` (nicht committen). Signing nutzt Team **4N6AJL9EX5** (Automatic). Einmalig Apple-ID in Xcode anmelden und App-IDs/iCloud anlegen:
+Das erzeugt lokal `Reisen.xcodeproj` aus `project.yml` (nicht committen). Signing nutzt **DEVELOPMENT_TEAM** aus `project.yml` oder `APPLE_TEAM_ID` (Automatic). Einmalig Apple-ID in Xcode anmelden und App-IDs/iCloud anlegen:
 
 ```bash
 bash ./Scripts/setup-apple-developer.sh

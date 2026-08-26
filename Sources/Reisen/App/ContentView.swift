@@ -73,12 +73,7 @@ struct ContentView: View {
         }
         .toolbarBackground(.visible, for: .windowToolbar)
         .frame(minWidth: 960, minHeight: 640)
-        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { note in
-            guard let key = note.userInfo?["NSKey"] as? String,
-                  key.hasPrefix(AppSettingsKeys.providerEnabledPrefix) else { return }
-            providerEnableEpoch &+= 1
-        }
-        .onChange(of: providerEnableEpoch) { _, _ in
+        .onProviderEnabledChange(bump: $providerEnableEpoch) {
             sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
@@ -314,7 +309,9 @@ struct ContentView: View {
     private func runSyncAll() async {
         guard let store else { return }
         let candidates = syncAllCandidates
-        await store.syncAll(providers: candidates, settings: syncAllSettings)
+        await store.syncAll(providers: candidates, settings: syncAllSettings) { id in
+            NavigationHintURLs.ordered(hubURLString: sessionHub?.lastURLString(for: id))
+        }
     }
 
     private func handleSessionProbeFinished(needingLogin: [ProviderID]) {

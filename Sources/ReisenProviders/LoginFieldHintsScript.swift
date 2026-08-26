@@ -78,8 +78,10 @@ public enum LoginFieldHintsScript {
             if (!el || el.tagName !== 'INPUT') return false;
             const type = (el.type || '').toLowerCase();
             if (type === 'password' || type === 'hidden' || type === 'submit' || type === 'button') return false;
-            if (type === 'email') return true;
-            return /(e-?mail|username|benutzer|user|login|account)/i.test(hay(el));
+            if (type === 'email' || type === 'tel') return true;
+            const inputmode = (el.getAttribute('inputmode') || '').toLowerCase();
+            if (inputmode === 'tel' || inputmode === 'email') return true;
+            return /(e-?mail|mobile|phone|telefon|handy|username|benutzer|user|login|account)/i.test(hay(el));
           }
 
           function candidatesPassword(el) {

@@ -96,7 +96,8 @@ public final class SyncStore {
     public func sync(
         providerID: ProviderID,
         webView: WKWebView,
-        settings: AppSettings
+        settings: AppSettings,
+        navigationHintURLs: [URL] = []
     ) async {
         if !providerIsEnabled(providerID) {
             assignErrorMessage("Provider \(providerID.rawValue) ist deaktiviert.")
@@ -133,7 +134,10 @@ public final class SyncStore {
                 if providerID == .check24 {
                     return Check24WebSession(webView: webView)
                 }
-                return WebViewProviderSession(webView: webView)
+                return WebViewProviderSession(
+                    webView: webView,
+                    navigationHintURLs: navigationHintURLs
+                )
             }()
 
             let catalog = try await anyProvider.fetchCatalog(session: session)
@@ -566,7 +570,8 @@ public final class SyncStore {
     /// Synchronisiert alle angegebenen Provider nacheinander (HIG: eine laufende Aktion, klarer Fortschritt).
     public func syncAll(
         providers: [(ProviderID, WKWebView)],
-        settings: AppSettings
+        settings: AppSettings,
+        resolveNavigationHintURLs: @escaping (ProviderID) -> [URL] = { _ in [] }
     ) async {
         guard !isSyncing else { return }
         guard !providers.isEmpty else {
@@ -585,7 +590,12 @@ public final class SyncStore {
             messageProviderID = providerID
             clearError()
 
-            await sync(providerID: providerID, webView: webView, settings: settings)
+            await sync(
+                providerID: providerID,
+                webView: webView,
+                settings: settings,
+                navigationHintURLs: resolveNavigationHintURLs(providerID)
+            )
 
             if let errorMessage {
                 failures.append((providerID.displayName, errorMessage))

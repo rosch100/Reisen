@@ -51,7 +51,7 @@ struct BookingComSyncPersistenceTests {
             ]
           },
           "passengers": [
-            { "travellerReference": "T1", "firstName": "Roland", "lastName": "Schramme", "type": "ADULT" }
+            { "travellerReference": "T1", "firstName": "Anna", "lastName": "Example", "type": "ADULT" }
           ],
           "orderId": "x",
           "orderToken": "y",
@@ -79,7 +79,7 @@ struct BookingComSyncPersistenceTests {
             startAt: departure,
             endAt: arrival,
             locationFrom: "YIA (Yogyakarta)",
-            locationTo: "DPS (Kuta)",
+            locationTo: "DPS (Beach City)",
             locationFromAddress: nil,
             locationToAddress: nil,
             status: .confirmed,
@@ -111,8 +111,8 @@ struct BookingComSyncPersistenceTests {
 
         #expect(booking.passengers.count == 1)
         let pax = booking.passengers.first!
-        #expect(pax.givenName == "Roland")
-        #expect(pax.familyName == "Schramme")
+        #expect(pax.givenName == "Anna")
+        #expect(pax.familyName == "Example")
 
         // Gepäck pro Reisenden:
         #expect(pax.baggageAllowances.contains { $0.type == .checkedBag && $0.pieceCount == 1 && $0.weightKg == 10 })

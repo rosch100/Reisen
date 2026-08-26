@@ -1,4 +1,5 @@
 import Foundation
+import ReisenProviders
 
 /// Airbnb web/API constants (SSOT for persisted-query SHAs + base endpoints).
 enum AirbnbAPI {
@@ -25,8 +26,8 @@ enum AirbnbAPI {
         URL(string: "/api/v3/TripListQuery/\(tripListQuerySHA)")!.appendingQueryItems(
             [
                 "operationName": "TripListQuery",
-                "locale": "de",
-                "currency": "EUR",
+                "locale": ProviderSyncLocale.language,
+                "currency": ProviderSyncLocale.currency,
             ],
             variables: "{}",
             extensionsJSON: """
@@ -42,8 +43,8 @@ enum AirbnbAPI {
         return URL(string: "/api/v3/TripDetailsQuery/\(tripDetailsQuerySHA)")!.appendingQueryItems(
             [
                 "operationName": "TripDetailsQuery",
-                "locale": "de",
-                "currency": "EUR",
+                "locale": ProviderSyncLocale.language,
+                "currency": ProviderSyncLocale.currency,
             ],
             variables: variablesJSON,
             extensionsJSON: """

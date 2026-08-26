@@ -9,7 +9,8 @@ import ReisenDomain
     #expect(!ReisenSchemaV9.models.isEmpty)
     #expect(ReisenMigrationPlan.schemas.contains { $0 == ReisenSchemaV9.self })
     #expect(ReisenMigrationPlan.stages.isEmpty)
-    #expect(PersistenceBootstrap.cloudKitContainerID == "iCloud.de.roschmac.Reisen")
+    #expect(PersistenceBootstrap.cloudKitContainerID.hasPrefix("iCloud."))
+    #expect(PersistenceBootstrap.cloudKitContainerID.hasSuffix(".Reisen"))
     #expect(PersistenceBootstrap.cloudStoreName == "reisen-cloud")
     #expect(PersistenceBootstrap.localStoreName == "reisen-local")
     #expect(!ReisenSchemaV9.cloudModels.isEmpty)
@@ -124,8 +125,8 @@ func leftoverCloudKitStoreOpensWithMirroringDisabled() throws {
 
 private func cloudKitGuardEnabled(
     env: [String: String] = [:],
-    team: String? = "4N6AJL9EX5",
-    appID: String? = "4N6AJL9EX5.de.roschmac.Reisen",
+    team: String? = "TEAMID0000",
+    appID: String? = "TEAMID0000.de.reisen.Reisen",
     containers: [String] = [PersistenceBootstrap.cloudKitContainerID],
     services: [String] = ["CloudKit"],
     containerEnvironment: String? = "Development"

@@ -10,11 +10,11 @@ public struct Check24FlightPassengersAndLuggageParser: Sendable {
     public init() {}
 
     /// Extracts passenger name strings from the booking detail HTML.
-    /// Example value in HTML: "Roland Schramme, Danila Liebe"
+    /// Example value in HTML: "Anna Example, Ben Sample"
     public func guestNames(from html: String) -> [String] {
         // Pattern mirrors BookingDetailsParser's `guestNames` heuristic, but returns the raw names.
         // Example snippet:
-        // <div class="... guestNames ...">Danila Liebe, Julian Liebe</div>
+        // <div class="... guestNames ...">Anna Example, Ben Sample</div>
         let normalized = html
             .replacingOccurrences(of: "&nbsp;", with: " ")
             .replacingOccurrences(of: "\u{00A0}", with: " ")

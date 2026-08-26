@@ -2,13 +2,19 @@ import Foundation
 import WebKit
 
 extension WKWebView {
-    /// Liest Traveloka-Session-Kontext aus Cookies (+ optional Device-ID aus Web Storage).
-    public func travelokaSessionContext() async -> TravelokaSessionContext {
+    /// Liest Traveloka-Session-Kontext aus Cookies, Navigationsverlauf und Web Storage.
+    ///
+    /// Funktioniert unabhängig von der aktuellen Seite (nach Login, Homepage, Detail, …).
+    public func travelokaSessionContext(additionalHintURLs: [URL] = []) async -> TravelokaSessionContext {
         var context = TravelokaSessionContext.from(cookies: await allHTTPCookies())
-        context.applyPageContext(from: url)
-        if context.deviceId == nil {
-            let scanned = try? await evaluateJavaScriptStringAsync(Self.travelokaDeviceIdScanScript)
-            context.mergingDeviceIdFromStorageScan(scanned)
+        let hints = navigationHintURLs(additionalHintURLs: additionalHintURLs)
+        context.applyNavigationHints(from: hints)
+
+        let shouldScanStorage = hints.contains(where: TravelokaSessionProbe.applies(to:))
+            || url.map(TravelokaSessionProbe.applies(to:)) == true
+        if shouldScanStorage {
+            let scannedJSON = try? await evaluateJavaScriptStringAsync(TravelokaStorageScan.webViewScript)
+            context.applyStorageScan(TravelokaStorageScan.parse(json: scannedJSON))
         }
         return context
     }
@@ -30,31 +36,4 @@ extension WKWebView {
             }
         }
     }
-
-    private static let travelokaDeviceIdScanScript = """
-    (() => {
-      const isId = (v) => typeof v === 'string' && /^01[0-9A-HJKMNP-TV-Z]{24}$/i.test(v.trim());
-      const keys = ['tvlk_device_id', 'tv_device_id', 'deviceId', 'tvDid', 'DID'];
-      for (const k of keys) {
-        const a = localStorage.getItem(k);
-        if (isId(a)) return a.trim();
-        const b = sessionStorage.getItem(k);
-        if (isId(b)) return b.trim();
-      }
-      for (const store of [localStorage, sessionStorage]) {
-        for (let i = 0; i < store.length; i++) {
-          const k = store.key(i);
-          if (!k) continue;
-          const v = store.getItem(k);
-          if (isId(v)) return v.trim();
-          try {
-            const o = JSON.parse(v);
-            if (o && isId(o.deviceId)) return o.deviceId.trim();
-            if (o && isId(o.did)) return o.did.trim();
-          } catch (e) {}
-        }
-      }
-      return null;
-    })()
-    """
 }

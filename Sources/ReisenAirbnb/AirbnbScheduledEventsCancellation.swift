@@ -29,12 +29,33 @@ enum AirbnbScheduledEventsCancellation {
     ) -> Bool? {
         let refundType = (entry.refundType ?? "").lowercased()
         let termLower = (entry.refundTerm ?? "").lowercased()
-        if refundType.contains("keine rückerstattung") || termLower.contains("nicht erstattungsfähig") {
+        if matchesNonRefundable(refundType: refundType, termLower: termLower) {
             return false
         }
-        if refundType.contains("kostenlose") || termLower.contains("kostenlos") {
+        if matchesFreeCancellation(refundType: refundType, termLower: termLower) {
             return true
         }
         return nil
+    }
+
+    static func matchesNonRefundable(refundType: String, termLower: String) -> Bool {
+        refundType.contains("no refund")
+            || refundType.contains("non_refundable")
+            || refundType.contains("non-refundable")
+            || termLower.contains("non-refundable")
+            || termLower.contains("not refundable")
+    }
+
+    static func matchesFreeCancellation(refundType: String, termLower: String) -> Bool {
+        let freePhrases = ["full refund", "free cancellation", "free cancel"]
+        if freePhrases.contains(where: { termLower.contains($0) }) {
+            return true
+        }
+        if freePhrases.contains(where: { refundType.contains($0) }) {
+            return true
+        }
+        return refundType == "free"
+            || refundType == "full_refund"
+            || refundType == "free_cancellation"
     }
 }

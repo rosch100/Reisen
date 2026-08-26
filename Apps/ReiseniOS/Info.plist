@@ -20,10 +20,34 @@
 	<string>0.2.1</string>
 	<key>CFBundleVersion</key>
 	<string>3</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>airbnb</string>
+		<string>booking</string>
+		<string>check24</string>
+		<string>getyourguide</string>
+		<string>gyg</string>
+		<string>opodo</string>
+		<string>traveloka</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>MinimumOSVersion</key>
 	<string>26.0</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Reisen benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Reisen legt Erinnerungen in deiner Erinnerungen-App an.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Reisen erinnert dich an bevorstehende Stornofristen.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
@@ -38,20 +62,6 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>NSCalendarsUsageDescription</key>
-	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
-	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
-	<key>NSRemindersUsageDescription</key>
-	<string>Reisen legt Erinnerungen in deiner Erinnerungen-App an.</string>
-	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Reisen benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>Reisen erinnert dich an bevorstehende Stornofristen.</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>

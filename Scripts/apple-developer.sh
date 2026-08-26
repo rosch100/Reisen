@@ -8,8 +8,13 @@ reisen_apple_developer_root() {
   printf '%s\n' "$here"
 }
 
-# Team-ID aus project.yml (einzige Definition im Repo).
+# Team-ID aus APPLE_TEAM_ID oder project.yml (optional, für lokales Signing).
 reisen_apple_team_id() {
+  if [[ -n "${APPLE_TEAM_ID:-}" && "${APPLE_TEAM_ID}" =~ ^[A-Z0-9]{10}$ ]]; then
+    printf '%s\n' "$APPLE_TEAM_ID"
+    return 0
+  fi
+
   local spec
   spec="$(reisen_apple_developer_root)/project.yml"
   if [[ ! -f "$spec" ]]; then
@@ -30,10 +35,50 @@ reisen_apple_team_id() {
     ' "$spec"
   )"
   if [[ -z "$team_id" ]]; then
-    echo "Fehler: DEVELOPMENT_TEAM (10 Zeichen) fehlt in project.yml." >&2
+    echo "Fehler: Apple Team ID fehlt. Setze APPLE_TEAM_ID oder DEVELOPMENT_TEAM in project.yml." >&2
     return 1
   fi
   printf '%s\n' "$team_id"
+}
+
+# Bundle-ID für ein XcodeGen-Target aus project.yml (SSOT).
+reisen_bundle_id_for_target() {
+  local target_name="$1"
+  local spec
+  spec="$(reisen_apple_developer_root)/project.yml"
+  if [[ ! -f "$spec" ]]; then
+    echo "Fehler: project.yml fehlt: $spec" >&2
+    return 1
+  fi
+  local bundle_id
+  bundle_id="$(
+    awk -v target="$target_name" '
+      $1 == target":" { in_target=1; next }
+      in_target && /^  [A-Za-z0-9]/ { in_target=0 }
+      in_target && /PRODUCT_BUNDLE_IDENTIFIER:/ {
+        sub(/^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER:[[:space:]]*/, "")
+        print
+        exit
+      }
+    ' "$spec"
+  )"
+  if [[ -z "$bundle_id" ]]; then
+    echo "Fehler: PRODUCT_BUNDLE_IDENTIFIER für Target ${target_name} fehlt in project.yml." >&2
+    return 1
+  fi
+  printf '%s\n' "$bundle_id"
+}
+
+reisen_macos_bundle_id() {
+  reisen_bundle_id_for_target ReisenMac
+}
+
+reisen_ios_bundle_id() {
+  reisen_bundle_id_for_target ReiseniOS
+}
+
+reisen_icloud_container_id() {
+  printf 'iCloud.%s\n' "$(reisen_macos_bundle_id)"
 }
 
 # Apple-Development-Identity, deren Zertifikat-OU zur Team-ID passt.

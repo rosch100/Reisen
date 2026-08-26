@@ -14,7 +14,7 @@ extension OpodoTripCancellationGraphQLParser {
         let parsedFromPolicyStrings = OpodoCancellationDeadlineParser().parseDeadlines(from: html)
 
         return parsedFromPolicyStrings.filter {
-            ($0.policyText ?? "").localizedCaseInsensitiveContains("Stornierungsrichtlinie")
+            ($0.policyText ?? "").localizedCaseInsensitiveContains(OpodoCancellationPolicyLabel.policy)
                 || ($0.policyText ?? "").range(
                     of: #"\d{1,2}\.?\s*[A-Za-zÄÖÜäöü]+\s+\d{4}"#,
                     options: .regularExpression

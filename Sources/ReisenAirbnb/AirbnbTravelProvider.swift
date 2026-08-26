@@ -18,8 +18,19 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
 
     public var onProgress: (@MainActor (String) -> Void)?
 
+    nonisolated static func isAirbnbHost(_ host: String?) -> Bool {
+        guard let host = host?.lowercased() else { return false }
+        if host == "airbnb.com" || host.hasSuffix(".airbnb.com") { return true }
+        if host == "airbnb.de" || host.hasSuffix(".airbnb.de") { return true }
+        return host.range(
+            of: #"(^|\.)airbnb\.(co\.)?[a-z]{2,}$"#,
+            options: .regularExpression
+        ) != nil
+    }
+
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
         let webView = try extractWebView(from: session)
+        try await ensureOnAirbnbOrigin(using: webView)
 
         onProgress?("Lade Trips (Airbnb)…")
         let jsonText = try await webView.airbnbFetchTextAsync(
@@ -36,6 +47,7 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         ref: ProviderBookingRef
     ) async throws -> ProviderBookingEnrichment {
         let webView = try extractWebView(from: session)
+        try await ensureOnAirbnbOrigin(using: webView)
         let (numericTripID, schedulableType, confirmationCode) = try parseExternalRef(externalUrl: ref.externalUrl)
 
         onProgress?("Lade Trip-Details (Airbnb)…")
@@ -107,6 +119,14 @@ private extension AirbnbTravelProvider {
             return web
         }
         throw RepositoryError.invalidState("Airbnb provider benötigt eine WKWebView-basierten Session.")
+    }
+
+    /// Same-origin fetch braucht eine Airbnb-Seite — nicht die aktuelle URL als Voraussetzung.
+    func ensureOnAirbnbOrigin(using webView: WKWebView) async throws {
+        let onAirbnb = Self.isAirbnbHost(webView.url?.host)
+        if !onAirbnb {
+            try await NavigationAwaiter().load(loginURL, in: webView)
+        }
     }
 
     func graphqlHeaders(referer: String) -> [String: String] {
@@ -187,8 +207,8 @@ private extension AirbnbTravelProvider {
         var comps = URLComponents(url: AirbnbAPI.baseURL, resolvingAgainstBaseURL: false)!
         comps.path = "\(pathPrefix)/\(schedulableType)/\(confirmationCode)"
         comps.queryItems = [
-            URLQueryItem(name: "locale", value: "de"),
-            URLQueryItem(name: "currency", value: "EUR"),
+            URLQueryItem(name: "locale", value: ProviderSyncLocale.language),
+            URLQueryItem(name: "currency", value: ProviderSyncLocale.currency),
             URLQueryItem(name: "include_header_action_rows", value: "true"),
             URLQueryItem(name: "_format", value: "for_generic_ro"),
             URLQueryItem(name: "translate_ugc", value: "false"),

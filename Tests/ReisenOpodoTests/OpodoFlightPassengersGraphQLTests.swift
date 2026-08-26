@@ -13,19 +13,19 @@ func opodoFlightPassengersJoinTravellersAndBaggage() throws {
             "travellers": [
               {
                 "travellerType": "ADULT",
-                "name": "Roland",
+                "name": "Anna",
                 "title": "MR",
-                "firstLastName": "Schramme",
+                "firstLastName": "Example",
                 "secondLastName": null,
-                "birthDate": "1968-07-09T00:00:00+01:00"
+                "birthDate": "1980-01-01T00:00:00+01:00"
               },
               {
                 "travellerType": "ADULT",
-                "name": "Julian",
+                "name": "Ben",
                 "title": "MR",
-                "firstLastName": "Liebe",
+                "firstLastName": "Sample",
                 "secondLastName": null,
-                "birthDate": "2013-03-22T00:00:00+01:00"
+                "birthDate": "2015-06-15T00:00:00+01:00"
               }
             ]
           }
@@ -87,8 +87,8 @@ func opodoFlightPassengersJoinTravellersAndBaggage() throws {
     let p1 = try #require(passengers.first { $0.passengerNumber == 1 })
     #expect(p1.travellerType == .adult)
     #expect(p1.title == "MR")
-    #expect(p1.givenName == "Roland")
-    #expect(p1.familyName == "Schramme")
+    #expect(p1.givenName == "Anna")
+    #expect(p1.familyName == "Example")
     #expect(p1.baggageAllowances.count == 1)
 
     let a1 = try #require(p1.baggageAllowances.first)

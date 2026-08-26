@@ -22,12 +22,35 @@ if [[ ! -d "$ROOT/Reisen.xcodeproj" ]]; then
   exit 1
 fi
 
+echo "Sync LSApplicationQueriesSchemes aus ProviderNativeApp-SSOT …"
+swift run --package-path "$ROOT" SyncIOSQuerySchemes "$ROOT/Apps/ReiseniOS/Info.plist"
+
 # shellcheck source=apple-developer.sh
 source "$ROOT/Scripts/apple-developer.sh"
-TEAM_ID="$(reisen_apple_team_id)"
-if ! grep -q "DEVELOPMENT_TEAM = ${TEAM_ID};" "$ROOT/Reisen.xcodeproj/project.pbxproj"; then
-  echo "Fehler: Generiertes Projekt enthält DEVELOPMENT_TEAM ${TEAM_ID} nicht." >&2
-  exit 1
+if TEAM_ID="$(reisen_apple_team_id 2>/dev/null)"; then
+  PBXPROJ="$ROOT/Reisen.xcodeproj/project.pbxproj"
+  if ! grep -q "DEVELOPMENT_TEAM = ${TEAM_ID};" "$PBXPROJ"; then
+    python3 - "$PBXPROJ" "$TEAM_ID" <<'PY'
+import sys
+path, team = sys.argv[1], sys.argv[2]
+with open(path, encoding="utf-8") as f:
+    content = f.read()
+needle = "CODE_SIGN_STYLE = Automatic;"
+replacement = f"CODE_SIGN_STYLE = Automatic;\n\t\t\t\tDEVELOPMENT_TEAM = {team};"
+if needle not in content:
+    raise SystemExit("CODE_SIGN_STYLE = Automatic; nicht in project.pbxproj gefunden")
+content = content.replace(needle, replacement)
+with open(path, "w", encoding="utf-8") as f:
+    f.write(content)
+PY
+    echo "DEVELOPMENT_TEAM ${TEAM_ID} in project.pbxproj gesetzt." >&2
+  fi
+  if ! grep -q "DEVELOPMENT_TEAM = ${TEAM_ID};" "$PBXPROJ"; then
+    echo "Fehler: DEVELOPMENT_TEAM ${TEAM_ID} konnte nicht in project.pbxproj gesetzt werden." >&2
+    exit 1
+  fi
+else
+  echo "Hinweis: Keine Team-ID konfiguriert — Signing in Xcode oder via APPLE_TEAM_ID setzen." >&2
 fi
 
 echo "OK: $ROOT/Reisen.xcodeproj"

@@ -3,12 +3,10 @@ import Foundation
 extension OpodoCancellationDeadlineParser {
     func isFreeCancellation(in snippet: String) -> Bool {
         let lower = snippet.lowercased()
-        return lower.contains("kostenlos")
-            || lower.contains("free cancellation")
+        return lower.contains("free cancellation")
             || lower.contains("free cancel")
-            || lower.contains("vollständig erstatt")
-            || lower.contains("vollständige rückerstattung")
-            || lower.contains("volle rückerstattung")
+            || lower.contains("for free")
+            || lower.contains("full refund")
             || lower.contains("100 %")
             || lower.contains("100%")
     }

@@ -33,7 +33,7 @@ public enum GetYourGuideMyBookingsParser {
         let bookingHash = booking.bookingHash?.trimmingCharacters(in: .whitespacesAndNewlines)
         let externalUrl: String? = {
             guard let hash = bookingHash, !hash.isEmpty else { return nil }
-            return "https://www.getyourguide.com/de-de/booking/\(hash)"
+            return GetYourGuideWebConstants.bookingURL(hash: hash)
         }()
 
         let title = booking.bookedOption?.activityTitle

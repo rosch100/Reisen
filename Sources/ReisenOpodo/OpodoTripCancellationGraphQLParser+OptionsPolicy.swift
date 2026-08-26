@@ -5,10 +5,10 @@ extension OpodoTripCancellationGraphQLParser {
         let pct = option.refundPercentage ?? 0
         let until = option.until ?? ""
         if pct >= 100 {
-            let prefix = label ?? "Stornierungsrichtlinie"
-            return "\(prefix) (Vollständige Rückerstattung bis \(until))"
+            let prefix = label ?? OpodoCancellationPolicyLabel.policy
+            return "\(prefix) (Full refund until \(until))"
         }
         let amount = option.refundAmount.map { "\($0.amount) \($0.currency)" } ?? ""
-        return "Erstattung \(pct)% \(amount) (bis \(until))".trimmingCharacters(in: .whitespaces)
+        return "Refund \(pct)% \(amount) (until \(until))".trimmingCharacters(in: .whitespaces)
     }
 }

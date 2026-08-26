@@ -36,4 +36,9 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
     public static let traveloka = ProviderID(rawValue: "traveloka")
     /// Lokale / benutzerdefinierte Buchung (wird nicht über Provider-Sync ersetzt).
     public static let manual = ProviderID(rawValue: "manual")
+
+    /// Registrierte Sync-Provider (SSOT; muss der App-Registry entsprechen).
+    public static let syncProviderIDs: [ProviderID] = [
+        .check24, .opodo, .booking, .airbnb, .getYourGuide, .traveloka,
+    ]
 }

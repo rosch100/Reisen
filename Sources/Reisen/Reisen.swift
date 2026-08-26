@@ -115,7 +115,7 @@ struct ReisenApp: App {
         }
 
         Settings {
-            if case .ready(let container, _, _, _) = bootstrap.state {
+            if case .ready(let container, let registry, let syncStore, _) = bootstrap.state {
                 ReisenSharedUI.SettingsView(
                     showsDataManagement: true,
                     onResetLocalStores: {
@@ -125,6 +125,8 @@ struct ReisenApp: App {
                         bootstrap.resetStoreAndRetry(wipeCloudDataBeforeReset: true)
                     }
                 )
+                .environment(\.providerRegistry, registry)
+                .environment(\.syncStore, syncStore)
                 .modelContainer(container)
             } else {
                 Text("Einstellungen sind erst nach erfolgreichem Store-Start verfügbar.")

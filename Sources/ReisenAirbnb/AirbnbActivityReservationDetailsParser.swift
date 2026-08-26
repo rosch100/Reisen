@@ -127,9 +127,7 @@ private extension AirbnbActivityReservationDetailsParser {
         guard let subtitle, let policyText = nonEmpty(subtitle) else { return [] }
         let lower = policyText.lowercased()
         let isFree = lower.contains("full refund")
-            || lower.contains("kostenlos")
-            || lower.contains("vollständige rückerstattung")
-            || lower.contains("volle rückerstattung")
+            || lower.contains("free cancellation")
 
         guard let deadlineAt = parseCancelByDate(from: policyText, referenceDate: referenceDate) else {
             // No silent dummy deadline: keep policy only when a concrete deadline is parseable.
@@ -149,13 +147,9 @@ private extension AirbnbActivityReservationDetailsParser {
     }
 
     /// e.g. EN: "Get a full refund if you cancel by 9 Aug, 6:00 pm (WIB)."
-    /// DE: "Storniere bis 9. Aug., 18:00 Uhr (WIB) für eine vollständige Rückerstattung."
     static func parseCancelByDate(from text: String, referenceDate: Date?) -> Date? {
         let normalized = normalizeCancelPolicyText(text)
-        if let english = parseEnglishCancelByDate(from: normalized, referenceDate: referenceDate) {
-            return english
-        }
-        return parseGermanCancelByDate(from: normalized, referenceDate: referenceDate)
+        return parseEnglishCancelByDate(from: normalized, referenceDate: referenceDate)
     }
 
     static func normalizeCancelPolicyText(_ text: String) -> String {
@@ -200,49 +194,6 @@ private extension AirbnbActivityReservationDetailsParser {
             timeZone: timeZone,
             referenceDate: referenceDate
         )
-    }
-
-    static func parseGermanCancelByDate(from normalized: String, referenceDate: Date?) -> Date? {
-        let patterns = [
-            // "Storniere bis 9. Aug., 18:00 Uhr (WIB) …"
-            #"(?i)(?:storniere\s+bis|kostenlose\s+stornierung\s+bis)\s+(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ\.]+),?\s+(\d{1,2}):(\d{2})\s*Uhr\s*\(([A-Za-z]+)\)"#,
-            // "… bis zum 9. Aug. um 18:00 Uhr (WIB) stornierst."
-            #"(?i)bis\s+zum\s+(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ\.]+)\s+um\s+(\d{1,2}):(\d{2})\s*Uhr\s*\(([A-Za-z]+)\)"#,
-            // "… vor dem 9. Aug. um 18:00 Uhr (WIB) stornierst."
-            #"(?i)vor\s+dem\s+(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ\.]+)\s+um\s+(\d{1,2}):(\d{2})\s*Uhr\s*\(([A-Za-z]+)\)"#,
-        ]
-        let ns = normalized as NSString
-        for pattern in patterns {
-            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
-            guard let match = regex.firstMatch(
-                in: normalized,
-                range: NSRange(location: 0, length: ns.length)
-            ), match.numberOfRanges == 6
-            else {
-                continue
-            }
-
-            let day = Int(ns.substring(with: match.range(at: 1)))
-            let monthToken = ns.substring(with: match.range(at: 2))
-            let hour = Int(ns.substring(with: match.range(at: 3)))
-            let minute = Int(ns.substring(with: match.range(at: 4)))
-            let tzToken = ns.substring(with: match.range(at: 5))
-
-            guard let day, let hour, let minute, let month = monthNumber(monthToken) else { continue }
-            guard let timeZone = timeZone(forAbbreviation: tzToken) else { continue }
-
-            if let date = cancelDeadlineDate(
-                day: day,
-                month: month,
-                hour: hour,
-                minute: minute,
-                timeZone: timeZone,
-                referenceDate: referenceDate
-            ) {
-                return date
-            }
-        }
-        return nil
     }
 
     static func cancelDeadlineDate(

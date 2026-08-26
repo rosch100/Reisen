@@ -110,7 +110,7 @@ struct OpodoSyncPersistenceTests {
         #expect(hotel.rateDetails?.roomCategory == "Family Suite")
         #expect(hotel.cancellationDeadlines.contains { $0.isFreeCancellation })
         let free = try #require(hotel.cancellationDeadlines.first { $0.isFreeCancellation })
-        #expect(free.policyText?.contains("Stornierungsrichtlinie") == true)
+        #expect(free.policyText?.contains("Cancellation policy") == true)
         #expect(free.hotelOffsetSeconds == 2 * 3600)
     }
 }

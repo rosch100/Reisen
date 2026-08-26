@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 import WebKit
 import UIKit
-import ObjectiveC
 
 import ReisenAppCore
 import ReisenSharedUI
@@ -40,12 +39,16 @@ struct WebViewHost: View {
     let providerID: ProviderID
     @Binding var webView: WKWebView?
     let onDidFinish: (WKWebView) -> Void
+    var onCapturedCredentials: ((ProviderCredentials) -> Void)?
+    var onNavigationBlocked: (() -> Void)?
 
     var body: some View {
         ProviderSessionWebView(
             loginURL: loginURL,
             webView: $webView,
-            onDidFinish: onDidFinish
+            onDidFinish: onDidFinish,
+            onCapturedCredentials: onCapturedCredentials,
+            onNavigationBlocked: onNavigationBlocked
         )
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
         .clipped()
@@ -56,9 +59,19 @@ struct ProviderSessionWebView: UIViewRepresentable {
     let loginURL: URL?
     @Binding var webView: WKWebView?
     let onDidFinish: (WKWebView) -> Void
+    var onCapturedCredentials: ((ProviderCredentials) -> Void)?
+    var onNavigationBlocked: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onDidFinish: onDidFinish)
+        Coordinator(
+            onDidFinish: onDidFinish,
+            onCapturedCredentials: onCapturedCredentials,
+            onNavigationBlocked: onNavigationBlocked
+        )
+    }
+
+    static func dismantleUIView(_ uiView: WebViewHostUIView, coordinator: Coordinator) {
+        coordinator.tearDown(from: uiView.webView)
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: WebViewHostUIView, context: Context) -> CGSize? {
@@ -96,6 +109,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         configuration.userContentController.addUserScript(
             WKUserScript(source: Self.viewportScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         )
+        configuration.userContentController.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
 
         let view = InteractiveWKWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = context.coordinator
@@ -112,7 +126,6 @@ struct ProviderSessionWebView: UIViewRepresentable {
         view.setContentHuggingPriority(.defaultLow, for: .vertical)
         view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         view.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
-        WKWebViewInputAccessory.hide(on: view)
         return view
     }
 
@@ -136,12 +149,32 @@ struct ProviderSessionWebView: UIViewRepresentable {
         })();
         """
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         let onDidFinish: (WKWebView) -> Void
+        let onCapturedCredentials: ((ProviderCredentials) -> Void)?
+        let onNavigationBlocked: (() -> Void)?
         var loadedLoginURL: URL?
 
-        init(onDidFinish: @escaping (WKWebView) -> Void) {
+        init(
+            onDidFinish: @escaping (WKWebView) -> Void,
+            onCapturedCredentials: ((ProviderCredentials) -> Void)?,
+            onNavigationBlocked: (() -> Void)?
+        ) {
             self.onDidFinish = onDidFinish
+            self.onCapturedCredentials = onCapturedCredentials
+            self.onNavigationBlocked = onNavigationBlocked
+        }
+
+        func tearDown(from webView: WKWebView?) {
+            webView?.configuration.userContentController.removeScriptMessageHandler(
+                forName: LoginFormCapture.messageHandlerName
+            )
+        }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            LoginFormCapture.handleScriptMessage(message, webView: message.webView) { credentials in
+                onCapturedCredentials?(credentials)
+            }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -161,6 +194,12 @@ struct ProviderSessionWebView: UIViewRepresentable {
             decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
         ) {
             ProviderWebViewMobileMode.apply(to: preferences)
+            let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
+            if let url = navigationAction.request.url,
+               !allowsNavigation(to: url, isMainFrame: isMainFrame) {
+                decisionHandler(.cancel, preferences)
+                return
+            }
             decisionHandler(.allow, preferences)
         }
 
@@ -178,21 +217,27 @@ struct ProviderSessionWebView: UIViewRepresentable {
             for navigationAction: WKNavigationAction,
             windowFeatures: WKWindowFeatures
         ) -> WKWebView? {
-            if navigationAction.targetFrame == nil {
-                webView.load(navigationAction.request)
-            }
+            guard navigationAction.targetFrame == nil else { return nil }
+            guard let url = navigationAction.request.url else { return nil }
+            guard allowsNavigation(to: url, isMainFrame: true) else { return nil }
+            webView.load(navigationAction.request)
             return nil
         }
 
+        private func allowsNavigation(to url: URL, isMainFrame: Bool) -> Bool {
+            guard ProviderWebViewNavigationPolicy.allows(url, isMainFrame: isMainFrame) else {
+                onNavigationBlocked?()
+                return false
+            }
+            return true
+        }
+
         private func applyAssistance(in webView: WKWebView) {
-            WKWebViewInputAccessory.hide(on: webView)
             guard let absolute = webView.url?.absoluteString, !absolute.isEmpty else { return }
             if AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(absolute) {
                 OneTimeCodeAutofill.apply(in: webView, relaxSplitFieldMaxLength: true)
             }
-            if AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
-                webView.evaluateJavaScript(LoginFieldHintsScript.build()) { _, _ in }
-            }
+            ProviderLoginAssistance.installOnLoginPage(in: webView)
         }
     }
 }
@@ -243,7 +288,6 @@ final class WebViewHostUIView: UIView {
             webView.leadingAnchor.constraint(equalTo: leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
-        WKWebViewInputAccessory.hide(on: webView)
         invalidateIntrinsicContentSize()
     }
 
@@ -300,65 +344,10 @@ final class InteractiveWKWebView: WKWebView {
 
     override var canBecomeFirstResponder: Bool { true }
 
-    override var inputAccessoryView: UIView? { nil }
-
-    override var inputAssistantItem: UITextInputAssistantItem {
-        let item = super.inputAssistantItem
-        item.leadingBarButtonGroups = []
-        item.trailingBarButtonGroups = []
-        return item
-    }
-
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
         if action == #selector(paste(_:)) || action == #selector(copy(_:)) || action == #selector(selectAll(_:)) {
             return true
         }
         return super.canPerformAction(action, withSender: sender)
-    }
-
-    override func didMoveToWindow() {
-        super.didMoveToWindow()
-        WKWebViewInputAccessory.hide(on: self)
-    }
-}
-
-/// WKContentView (nicht WKWebView) ist First Responder — Accessory nur dort abschaltbar.
-enum WKWebViewInputAccessory {
-    static func hide(on webView: WKWebView) {
-        let assistant = webView.inputAssistantItem
-        assistant.leadingBarButtonGroups = []
-        assistant.trailingBarButtonGroups = []
-        hideInSubtree(webView)
-    }
-
-    private static func hideInSubtree(_ view: UIView) {
-        let name = NSStringFromClass(type(of: view))
-        if name.contains("WKContent"), !name.contains("ReisenNoInputAccessory") {
-            installNoAccessorySubclass(on: view)
-        }
-        for subview in view.subviews {
-            hideInSubtree(subview)
-        }
-    }
-
-    private static func installNoAccessorySubclass(on view: UIView) {
-        let original = type(of: view)
-        let subclassName = "ReisenNoInputAccessory_\(NSStringFromClass(original))"
-        let subclass: AnyClass
-        if let existing = NSClassFromString(subclassName) {
-            subclass = existing
-        } else {
-            guard let allocated = objc_allocateClassPair(original, subclassName, 0) else { return }
-            let impl: @convention(block) (AnyObject) -> UIView? = { _ in nil }
-            class_addMethod(
-                allocated,
-                #selector(getter: UIResponder.inputAccessoryView),
-                imp_implementationWithBlock(impl),
-                "@@:"
-            )
-            objc_registerClassPair(allocated)
-            subclass = allocated
-        }
-        object_setClass(view, subclass)
     }
 }

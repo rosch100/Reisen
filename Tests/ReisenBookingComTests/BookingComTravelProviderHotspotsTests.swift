@@ -66,7 +66,7 @@ final class FakeBookingComWebView: BookingComWebView {
                 return try fixtureJSON("get_trips_compact.json")
             }
             if operationName == "SingleTimelineQuery" {
-                return try fixtureJSON("single_timeline_kuta_muenchen.json")
+                return try fixtureJSON("single_timeline_beach_sample.json")
             }
             throw FakeBookingComError.unexpectedCall("fetchInPageText unknown operation \(operationName ?? "nil")")
         }

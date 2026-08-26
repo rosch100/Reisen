@@ -21,7 +21,7 @@ import Foundation
                 "bookingNumber":"i22154533t",
                 "room":{
                   "categoryTitle":"Superior Doppel- oder Zweibettzimmer",
-                  "guests":[{"firstName":"Roland","lastName":"Schramme"}]
+                  "guests":[{"firstName":"Anna","lastName":"Example"}]
                 },
                 "priceTotal":{
                   "amount":114,
@@ -35,7 +35,7 @@ import Foundation
                 "bookingNumber":"1128149373567478",
                 "room":{
                   "categoryTitle":"Deluxe Doppel-/Zweibettzimmer",
-                  "guests":[{"firstName":"Danila","lastName":"Liebe"}]
+                  "guests":[{"firstName":"Ben","lastName":"Sample"}]
                 },
                 "priceTotal":{
                   "amount":128.94,
@@ -87,16 +87,16 @@ import Foundation
                 "bookingNumber":"664105651",
                 "room":{
                   "categoryTitle":"Standard Doppelzimmer",
-                  "guests":[{"firstName":"Roland","lastName":"Schramme"}]
+                  "guests":[{"firstName":"Anna","lastName":"Example"}]
                 },
                 "rooms":[
                   {
                     "categoryTitle":"Standard Doppelzimmer",
-                    "guests":[{"firstName":"Roland","lastName":"Schramme"}]
+                    "guests":[{"firstName":"Anna","lastName":"Example"}]
                   },
                   {
                     "categoryTitle":"Standard Doppelzimmer",
-                    "guests":[{"firstName":"Danila","lastName":"Liebe"}]
+                    "guests":[{"firstName":"Ben","lastName":"Sample"}]
                   }
                 ],
                 "priceTotal":{
@@ -115,8 +115,8 @@ import Foundation
 
     let basket = try #require(HotelBasketParser.parse(from: html))
     #expect(basket.items.count == 2)
-    #expect(basket.items[0].guestSummary == "Roland Schramme")
-    #expect(basket.items[1].guestSummary == "Danila Liebe")
+    #expect(basket.items[0].guestSummary == "Anna Example")
+    #expect(basket.items[1].guestSummary == "Ben Sample")
 }
 
 @Test("HotelBasketParser kanonisiert Platzhalter-Gäste als 'weitere Gäste'") func hotelBasketParserCanonicalizesPlaceholderGuests() throws {
@@ -135,7 +135,7 @@ import Foundation
                   {
                     "categoryTitle":"Standard Doppelzimmer",
                     "guests":[
-                      {"firstName":"Roland","lastName":"Schramme"},
+                      {"firstName":"Anna","lastName":"Example"},
                       {"firstName":"-","lastName":"-"},
                       {"firstName":"-","lastName":"-"}
                     ]
@@ -157,7 +157,7 @@ import Foundation
 
     let basket = try #require(HotelBasketParser.parse(from: html))
     #expect(basket.items.count == 1)
-    #expect(basket.items[0].guestSummary == "Roland Schramme und 2 weitere Gäste")
+    #expect(basket.items[0].guestSummary == "Anna Example und 2 weitere Gäste")
 }
 
 @MainActor
@@ -175,7 +175,7 @@ import Foundation
                 roomCategoryTitle: "Superior Zimmer",
                 priceTotalAmount: 109,
                 priceTotalCurrency: "EUR",
-                guestSummary: "Roland Schramme",
+                guestSummary: "Anna Example",
                 sortIndex: 0
             ),
             .init(

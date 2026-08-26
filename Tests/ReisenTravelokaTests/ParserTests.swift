@@ -55,11 +55,11 @@ private enum TravelokaFixtureLoader {
     #expect(flight.title?.contains("Jakarta") == true)
 }
 
-@Test func travelokaCatalogUsesSessionRoutePrefixInDetailURL() throws {
+@Test func travelokaCatalogUsesCanonicalRoutePrefixInDetailURL() throws {
     let text = try TravelokaFixtureLoader.load("traveloka_itineraries_fetch_redacted.json")
-    let catalog = try TravelokaCatalogParser.parse(from: text, routePrefix: "id-id")
+    let catalog = try TravelokaCatalogParser.parse(from: text)
     let activity = try #require(catalog.bookings.first { $0.bookingType == .activity })
-    #expect(activity.externalUrl?.contains("/id-id/item/details/1387358428") == true)
+    #expect(activity.externalUrl?.contains("/en-en/item/details/1387358428") == true)
 }
 
 @Test func travelokaHotelBoardTypeFromBreakfastIncluded() throws {
@@ -269,6 +269,35 @@ private enum TravelokaFixtureLoader {
     #expect(sentinel?["token"] as? String == "sentinel-token-example")
 }
 
+@Test func travelokaSessionContextMapsMccIdCookieToHeader() {
+    let mcc = HTTPCookie(properties: [
+        .name: "tv_mcc_id",
+        .value: "01M0WRDVH0NGPDPH4ZJJN0G4E7",
+        .domain: ".traveloka.com",
+        .path: "/",
+    ])!
+    let context = TravelokaSessionContext.from(cookies: [mcc])
+    let headers = context.applying(to: [:])
+    #expect(headers["tv-mcc-id"] == "01M0WRDVH0NGPDPH4ZJJN0G4E7")
+}
+
+@Test func travelokaCatalogFetchBodyUsesStandardAPIEnvelope() throws {
+    let context = TravelokaSessionContext(sentinelToken: "sentinel-token-example")
+    let data = try TravelokaAPI.catalogFetchBody(
+        itineraryTypes: ["FLIGHT"],
+        itineraryStatus: "UPCOMING",
+        context: context
+    )
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    #expect(json["fields"] as? [String] == [])
+    #expect(json["clientInterface"] as? String == "desktop")
+    let payload = try #require(json["data"] as? [String: Any])
+    #expect(payload["itineraryTypes"] as? [String] == ["FLIGHT"])
+    #expect(payload["itineraryStatus"] as? String == "UPCOMING")
+    let sentinel = try #require(json["sentinel"] as? [String: Any])
+    #expect(sentinel["token"] as? String == "sentinel-token-example")
+}
+
 @Test func travelokaEnrichmentNeedsSkipsCompleteCatalogDraft() {
     let complete = ProviderBookingDraft(
         provider: .traveloka,
@@ -310,16 +339,16 @@ private enum TravelokaFixtureLoader {
     var context = TravelokaSessionContext.from(cookies: [currency])
     context.applyPageContext(from: URL(string: "https://www.traveloka.com/id-id/user/mybooking")!)
 
-    #expect(context.resolvedRoutePrefix == "id-id")
-    #expect(context.resolvedLanguage == "id_ID")
-    #expect(context.resolvedCountry == "ID")
+    #expect(context.resolvedRoutePrefix == "en-en")
+    #expect(context.resolvedLanguage == "en_EN")
+    #expect(context.resolvedCountry == "EN")
     #expect(context.resolvedCurrency == "IDR")
 
     let headers = context.applying(to: [:])
-    #expect(headers["tv-language"] == "id_ID")
-    #expect(headers["tv-country"] == "ID")
+    #expect(headers["tv-language"] == "en_EN")
+    #expect(headers["tv-country"] == "EN")
     #expect(headers["tv-currency"] == "IDR")
-    #expect(headers["x-route-prefix"] == "id-id")
+    #expect(headers["x-route-prefix"] == "en-en")
 }
 
 @Test func travelokaRefundPresubmissionDedupesDuplicateDeadlineKeys() throws {

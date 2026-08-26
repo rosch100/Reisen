@@ -5,7 +5,7 @@
         "__typename": "TripTimeline",
         "trip": {
           "id": "303612277422833",
-          "title": "Kuta und München",
+          "title": "Beach and Sample City",
           "startDateTime": "2026-08-11T16:10:00.000+07:00",
           "endDateTime": "2026-08-13T11:00:00.000+02:00",
           "canceled": false,
@@ -50,7 +50,7 @@
                           "endLocation": {
                             "__typename": "FlightReservationAirport",
                             "location": {
-                              "city": "Kuta",
+                              "city": "Beach City",
                               "__typename": "BasicReservationLocation",
                               "countryCode": "id",
                               "ufi": "-2683839"
@@ -135,23 +135,23 @@
                       }
                     ],
                     "id": 60959,
-                    "name": "Hotel Am Nockherberg",
+                    "name": "Hotel Example Central",
                     "__typename": "ReservationPropertyData",
                     "isBookingHome": false,
                     "url": "",
-                    "pageName": "hotelamnockherberg",
+                    "pageName": "hotelexamplecentral",
                     "phoneNumbers": [
-                      "+49896230010"
+                      "+491234567890"
                     ],
                     "location": {
-                      "city": "München",
-                      "address": "Nockherstraße 38 A",
+                      "city": "Sample City",
+                      "address": "Example Street 1",
                       "__typename": "AccommodationLocation",
                       "longitude": 11.5795107185841,
                       "ufi": "-1829149",
                       "latitude": 48.1200562407373,
                       "countryCode": "de",
-                      "inCityName": "in München"
+                      "inCityName": "in Sample City"
                     }
                   },
                   "localisedDatetimeRange": "12. Aug. – 13. Aug.",

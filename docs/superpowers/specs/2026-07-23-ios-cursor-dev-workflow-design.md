@@ -9,7 +9,7 @@ Cursor soll die iOS/iPadOS-App zuverlässig **starten und debuggen** können —
 | Primärziel | Agent-autonom (A) mit Xcode-Fallback (C) |
 | Projektform | XcodeGen (`project.yml` als SSOT) |
 | Generiertes `.xcodeproj` | Nicht committen; lokal/CI generieren |
-| Bundle-ID | `de.roschmac.Reisen.ios` (getrennt von macOS `de.roschmac.Reisen`) |
+| Bundle-ID | iOS-Bundle-ID aus `project.yml` (getrennt von macOS) |
 | Default-Simulator | exakt `iPad Pro 13-inch (M5)` (überschreibbar via `IOS_SIMULATOR`) |
 
 ## Nicht-Ziele

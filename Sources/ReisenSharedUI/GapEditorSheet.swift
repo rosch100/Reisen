@@ -1,35 +1,37 @@
 import SwiftUI
 import ReisenDomain
+import ReisenAppCore
+import ReisenProviders
 
 public struct GapEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.providerRegistry) private var providerRegistry
 
-    let titleText: String
-    let kind: GapKind
-    let priceAmount: Double?
-    let priceCurrencyCode: String?
+    let payload: GapEditorPayload
     let onSave: (String, GapKind, Double?, String?) -> Void
 
     @State private var editedTitle: String
     @State private var editedKind: GapKind
     @State private var editedPriceText: String
+    @State private var gapDeepLinks: (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) = ([], [])
 
     public init(
-        titleText: String,
-        kind: GapKind,
-        priceAmount: Double? = nil,
-        priceCurrencyCode: String? = nil,
+        payload: GapEditorPayload,
         onSave: @escaping (String, GapKind, Double?, String?) -> Void
     ) {
-        self.titleText = titleText
-        self.kind = kind
-        self.priceAmount = priceAmount
-        self.priceCurrencyCode = priceCurrencyCode
+        self.payload = payload
         self.onSave = onSave
+        _editedTitle = State(initialValue: payload.title)
+        _editedKind = State(initialValue: payload.kind)
+        _editedPriceText = State(initialValue: Self.formatPriceAmount(payload.priceAmount))
+    }
 
-        _editedTitle = State(initialValue: titleText)
-        _editedKind = State(initialValue: kind)
-        _editedPriceText = State(initialValue: Self.formatPriceAmount(priceAmount))
+    private func refreshGapDeepLinks() {
+        guard let registry = providerRegistry else {
+            gapDeepLinks = ([], [])
+            return
+        }
+        gapDeepLinks = registry.gapDeepLinkSuggestions(for: payload.gapContext(kind: editedKind))
     }
 
     private var isValid: Bool {
@@ -70,12 +72,23 @@ public struct GapEditorSheet: View {
                 Section("Preis (optional)") {
                     TextField("Betrag (EUR)", text: $editedPriceText)
                 }
+
+                if !gapDeepLinks.links.isEmpty || !gapDeepLinks.issues.isEmpty {
+                    Section("Lücke füllen") {
+                        GapDeepLinkButtons(
+                            links: gapDeepLinks.links,
+                            gapKind: editedKind,
+                            openURL: SystemURLOpener.open
+                        )
+                        if let issuesMessage = ProviderDeepLinks.issuesMessage(gapDeepLinks.issues) {
+                            Text(issuesMessage)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
-#if os(iOS)
             .formStyle(.grouped)
-#else
-            .formStyle(.grouped)
-#endif
             .navigationTitle("Lücke bearbeiten")
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -88,13 +101,15 @@ public struct GapEditorSheet: View {
                     Button("Sichern") {
                         let trimmed = editedPriceText.trimmingCharacters(in: .whitespacesAndNewlines)
                         let parsedPrice = trimmed.isEmpty ? nil : Self.parsePriceAmount(from: trimmed)
-                        let currencyCode = priceCurrencyCode ?? "EUR"
+                        let currencyCode = payload.priceCurrencyCode ?? "EUR"
                         onSave(editedTitle, editedKind, parsedPrice, currencyCode)
                         dismiss()
                     }
                     .disabled(!isValid)
                 }
             }
+            .onAppear { refreshGapDeepLinks() }
+            .onChange(of: editedKind) { _, _ in refreshGapDeepLinks() }
 #if os(iOS)
             .reisenSheetDetents()
 #endif

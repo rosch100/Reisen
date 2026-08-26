@@ -1,6 +1,6 @@
 # CI- und Agents-Infrastruktur für Reisen — Design Spec
 
-> Ziel: Optimierte CI für das öffentliche SwiftPM-Projekt `rosch100/Reisen` inkl. „wichtiger Agents“ (Cursor/DevOps-Helfer), basierend auf GitHub-/Open-Source-Best-Practices.
+> Ziel: Optimierte CI für das öffentliche SwiftPM-Projekt Reisen inkl. „wichtiger Agents“ (Cursor/DevOps-Helfer), basierend auf GitHub-/Open-Source-Best-Practices.
 
 ## Kontext
 

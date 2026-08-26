@@ -2,7 +2,7 @@ import Foundation
 
 extension BookingDetailsParser {
     func parseGuestCount(from html: String) -> Int? {
-        // Beispiel: guestNames">Danila Liebe, Julian Liebe</div>
+        // Beispiel: guestNames">Anna Example, Ben Sample</div>
         let pattern = #"guestNames[^>]*>\s*([^<]+?)\s*</div>"#
         guard let guestNames = firstRegexMatch(pattern: pattern, in: html) else { return nil }
 

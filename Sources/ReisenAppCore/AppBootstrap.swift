@@ -106,22 +106,30 @@ public final class AppBootstrap {
 
     private static func makeReadyState() throws -> State {
         let container = try PersistenceBootstrap.makeContainer()
-        let registry = makeRegistry()
+        let registry = makeProviderRegistry()
         let syncStore = SyncStore(modelContext: container.mainContext, registry: registry)
         let sessionHub = ProviderSessionHub()
         return .ready(container, registry, syncStore, sessionHub)
     }
 
-    private static func makeRegistry() -> ProviderRegistry {
-        ProviderRegistry(
-            providers: [
-                Check24TravelProvider(),
-                OpodoTravelProvider(),
-                BookingComTravelProvider(),
-                AirbnbTravelProvider(),
-                GetYourGuideTravelProvider(),
-                TravelokaTravelProvider(),
-            ],
+    /// Produktions-Registry; Reihenfolge und Inhalt folgen `ProviderID.syncProviderIDs`.
+    public static func makeProviderRegistry() -> ProviderRegistry {
+        let providersByID: [ProviderID: any TravelProvider] = [
+            .check24: Check24TravelProvider(),
+            .opodo: OpodoTravelProvider(),
+            .booking: BookingComTravelProvider(),
+            .airbnb: AirbnbTravelProvider(),
+            .getYourGuide: GetYourGuideTravelProvider(),
+            .traveloka: TravelokaTravelProvider(),
+        ]
+        let providers = ProviderID.syncProviderIDs.compactMap { providersByID[$0] }
+        precondition(
+            providers.count == ProviderID.syncProviderIDs.count,
+            "ProviderRegistry: fehlende Implementierung für \(Set(ProviderID.syncProviderIDs).subtracting(providers.map(\.id)))"
+        )
+
+        return ProviderRegistry(
+            providers: providers,
             deepLinkBuilders: [
                 Check24DeepLinkBuilder(),
                 TravelokaDeepLinkBuilder(),

@@ -3,6 +3,15 @@ import Foundation
 import ReisenDomain
 @testable import ReisenAirbnb
 
+@Test("AirbnbTravelProvider erkennt internationale Airbnb-Hosts")
+func airbnbHostMatchingIncludesInternationalTLDs() {
+    #expect(AirbnbTravelProvider.isAirbnbHost("www.airbnb.co.uk"))
+    #expect(AirbnbTravelProvider.isAirbnbHost("airbnb.fr"))
+    #expect(AirbnbTravelProvider.isAirbnbHost("www.airbnb.de"))
+    #expect(!AirbnbTravelProvider.isAirbnbHost("evil-airbnb.com"))
+    #expect(!AirbnbTravelProvider.isAirbnbHost("phishing.com"))
+}
+
 @Test("AirbnbScheduledEventsParser parst Stay Preis, Check-in/out Minuten und Stornofrist")
 func airbnbScheduledEventsParsesPriceDeadlinesAndTimes() throws {
     let json = try fixtureJSON("scheduled_events_stay_sample.json")
@@ -20,7 +29,7 @@ func airbnbScheduledEventsParsesPriceDeadlinesAndTimes() throws {
     let expected = iso8601("2026-02-03T13:37:33.854Z")
     #expect(abs(deadline.deadlineAt.timeIntervalSince(expected)) < 0.01)
     #expect(deadline.isFreeCancellation == false)
-    #expect(deadline.policyText?.contains("nicht erstattungsfähig") == true)
+    #expect(deadline.policyText?.localizedCaseInsensitiveContains("non-refundable") == true)
 }
 
 @Test("AirbnbTripDetailsParser parst Zeitzone, Adresse, Gäste und Raumanzahl")
@@ -101,8 +110,8 @@ func airbnbActivityReservationDetailsParsesEnrichmentFields() throws {
     #expect(abs(deadline.deadlineAt.timeIntervalSince(expectedDeadline)) < 0.01)
 }
 
-@Test("AirbnbActivityReservationDetailsParser parst DE-Stornofrist bei locale=de")
-func airbnbActivityReservationDetailsParsesGermanCancelPolicy() throws {
+@Test("AirbnbActivityReservationDetailsParser ignoriert nicht-EN Cancel-Policy-Text")
+func airbnbActivityReservationDetailsIgnoresNonEnglishCancelPolicy() throws {
     let json = """
     {
       "scheduled_event": {
@@ -122,62 +131,7 @@ func airbnbActivityReservationDetailsParsesGermanCancelPolicy() throws {
         responseText: json,
         referenceDate: reference
     )
-
-    #expect(result.deadlines.count == 1)
-    let deadline = try #require(result.deadlines.first)
-    #expect(deadline.isFreeCancellation == true)
-    #expect(deadline.policyText?.contains("vollständige Rückerstattung") == true)
-
-    let expectedDeadline = try #require(
-        dateInTimeZone(
-            year: 2026,
-            month: 8,
-            day: 9,
-            hour: 18,
-            minute: 0,
-            timeZoneID: "Asia/Jakarta"
-        )
-    )
-    #expect(abs(deadline.deadlineAt.timeIntervalSince(expectedDeadline)) < 0.01)
-}
-
-@Test("AirbnbActivityReservationDetailsParser parst DE-Storno mit vor-dem-Muster")
-func airbnbActivityReservationDetailsParsesGermanCancelPolicyBeforeDate() throws {
-    let json = """
-    {
-      "scheduled_event": {
-        "rows": [
-          {
-            "id": "cancel_policy",
-            "payload": {
-              "subtitle": "Erhalte eine volle Rückerstattung, wenn du vor dem 9. Aug. um 18:00 Uhr (WIB) stornierst."
-            }
-          }
-        ]
-      }
-    }
-    """
-    let reference = iso8601("2026-08-10T11:00:00.000Z")
-    let result = try AirbnbActivityReservationDetailsParser.parse(
-        responseText: json,
-        referenceDate: reference
-    )
-
-    #expect(result.deadlines.count == 1)
-    let deadline = try #require(result.deadlines.first)
-    #expect(deadline.isFreeCancellation == true)
-
-    let expectedDeadline = try #require(
-        dateInTimeZone(
-            year: 2026,
-            month: 8,
-            day: 9,
-            hour: 18,
-            minute: 0,
-            timeZoneID: "Asia/Jakarta"
-        )
-    )
-    #expect(abs(deadline.deadlineAt.timeIntervalSince(expectedDeadline)) < 0.01)
+    #expect(result.deadlines.isEmpty)
 }
 
 private func fixtureJSON(_ name: String) throws -> String {
@@ -202,6 +156,36 @@ private func iso8601(_ value: String) -> Date {
     let fmt = ISO8601DateFormatter()
     fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return fmt.date(from: value)!
+}
+
+@Test("AirbnbScheduledEventsCancellation klassifiziert Free/Non-Refund ohne Substring-Falschtreffer")
+func airbnbScheduledEventsCancellationClassifiesPrecisely() {
+    let ambiguous = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "partially refundable",
+        refundTerm: "Includes full terms in footer",
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(ambiguous) == nil)
+
+    let fullRefund = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "Full refund",
+        refundTerm: nil,
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(fullRefund) == true)
+
+    let freeToken = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "free",
+        refundTerm: nil,
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(freeToken) == true)
 }
 
 private func dateInTimeZone(

@@ -7,7 +7,7 @@ import ReisenProviders
 ///
 /// Hinweis: Das macOS-System-Passwort-Popover (Passwords-App) erscheint in eingebetteten
 /// WKWebViews für Fremd-Domains ohne Browser-Entitlement nicht. Primärweg ist deshalb
-/// „Konto speichern…“ + Ausfüllen (`LoginAutofill`). Ansatz 1 (Browser-Entitlement) später optional.
+/// „Konto speichern…“ + Ausfüllen (`ProviderLoginAssistance`). Ansatz 1 (Browser-Entitlement) später optional.
 enum LoginFieldHints {
     static let messageHandlerName = LoginFieldHintsScript.messageHandlerName
 

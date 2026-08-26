@@ -41,6 +41,8 @@ struct BookingDetailIOS: View {
         return trips.first { OpenBookingMatching.isCandidate(booking, for: $0) }
     }
 
+    @Environment(\.providerNativeAppPresence) private var nativeAppPresence
+
     private var externalURL: URL? {
         booking?.browserURL
     }
@@ -156,7 +158,14 @@ struct BookingDetailIOS: View {
     private func bookingLinksSection(for booking: SDBooking) -> some View {
         Section("Links") {
             if let externalURL {
-                Link("Buchung im Browser öffnen", destination: externalURL)
+                Button {
+                    SystemURLOpener.open(externalURL)
+                } label: {
+                    Text(ProviderNativeApp.externalOpenTitle(
+                        for: booking.provider,
+                        isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
+                    ))
+                }
             } else {
                 Text("Kein Browser-Link verfügbar.")
                     .foregroundStyle(.secondary)

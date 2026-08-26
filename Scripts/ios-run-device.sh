@@ -5,13 +5,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-SCHEME="ReiseniOS"
-BUNDLE_ID="de.roschmac.Reisen.ios"
-PROJECT="$ROOT/Reisen.xcodeproj"
-DERIVED="$ROOT/DerivedData/ReiseniOS-device"
-
 # shellcheck source=apple-developer.sh
 source "$ROOT/Scripts/apple-developer.sh"
+
+SCHEME="ReiseniOS"
+BUNDLE_ID="$(reisen_ios_bundle_id)"
+PROJECT="$ROOT/Reisen.xcodeproj"
+DERIVED="$ROOT/DerivedData/ReiseniOS-device"
 
 list_physical_devices() {
   local json
@@ -57,7 +57,6 @@ rm -f "$DEVICE_LIST"
 
 if [[ -z "$DEVICE_UDID" ]]; then
   echo "Fehler: Kein verbundenes physisches iOS-Gerät." >&2
-  echo "Roland IP ist aktuell nicht erreichbar." >&2
   echo "Dann:" >&2
   echo "  1. iPhone entsperren, diesem Mac vertrauen" >&2
   echo "  2. Einstellungen, Datenschutz und Sicherheit, Entwicklermodus einschalten" >&2

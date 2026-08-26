@@ -28,6 +28,20 @@ import ReisenDomain
     )
 }
 
+@Test func rememberLoginAutomaticallyKey_isStableAndPrefixed() {
+    #expect(
+        AppSettingsKeys.rememberLoginAutomatically == "reisen_rememberLoginAutomatically"
+    )
+}
+
+@Test func rememberLoginAutomatically_defaultsToTrueWhenUnset() {
+    let defaults = UserDefaults(suiteName: "ReisenTests.rememberLogin")!
+    defaults.removePersistentDomain(forName: "ReisenTests.rememberLogin")
+    #expect(AppSettingsKeys.isRememberLoginAutomatically(defaults: defaults))
+    defaults.set(false, forKey: AppSettingsKeys.rememberLoginAutomatically)
+    #expect(!AppSettingsKeys.isRememberLoginAutomatically(defaults: defaults))
+}
+
 @Test func tripDetailSplitKeys_areStableAndPrefixed() {
     #expect(AppSettingsKeys.tripDetailPanelVisible == "reisen_tripDetailPanelVisible")
     #expect(AppSettingsKeys.tripDetailPanelHeight == "reisen_tripDetailPanelHeight")

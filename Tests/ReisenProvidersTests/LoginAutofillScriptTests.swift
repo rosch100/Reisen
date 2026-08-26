@@ -19,6 +19,8 @@ func loginAutofillScriptRecognizesGermanFieldHints() {
 
     #expect(script.contains("kennwort") || script.contains("Kennwort") || script.contains("passwort"))
     #expect(script.contains("e-mail") || script.contains("email"))
+    #expect(script.contains("type === 'tel'"))
+    #expect(script.contains("mobile"))
 }
 
 @Test

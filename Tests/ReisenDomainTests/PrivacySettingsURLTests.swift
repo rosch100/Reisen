@@ -19,14 +19,15 @@ import ReisenDomain
 }
 
 @Test func privacySettingsURL_notifications_prefersAppSpecificPane() {
+    let bundleIdentifier = "de.reisen.Reisen"
     let urls = PrivacySettingsURL.macOSCandidates(
         for: .notifications,
-        bundleIdentifier: "de.roschmac.Reisen"
+        bundleIdentifier: bundleIdentifier
     )
 
     #expect(urls.count >= 2)
     #expect(urls[0].absoluteString.contains("Notifications-Settings.extension"))
-    #expect(urls[0].absoluteString.contains("id=de.roschmac.Reisen"))
+    #expect(urls[0].absoluteString.contains("id=\(bundleIdentifier)"))
     #expect(urls[1].absoluteString.contains("Notifications-Settings.extension"))
 }
 

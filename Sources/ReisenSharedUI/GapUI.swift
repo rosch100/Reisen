@@ -14,6 +14,10 @@ public struct GapEditorPayload: Identifiable, Equatable {
     public let gapEnd: Date
     public let fromBookingID: UUID
     public let toBookingID: UUID
+    public let fromLocationFrom: String?
+    public let fromLocationTo: String?
+    public let toLocationFrom: String?
+    public let toLocationTo: String?
 
     public init(
         key: String,
@@ -24,7 +28,11 @@ public struct GapEditorPayload: Identifiable, Equatable {
         gapStart: Date,
         gapEnd: Date,
         fromBookingID: UUID,
-        toBookingID: UUID
+        toBookingID: UUID,
+        fromLocationFrom: String? = nil,
+        fromLocationTo: String? = nil,
+        toLocationFrom: String? = nil,
+        toLocationTo: String? = nil
     ) {
         self.key = key
         self.kind = kind
@@ -35,6 +43,22 @@ public struct GapEditorPayload: Identifiable, Equatable {
         self.gapEnd = gapEnd
         self.fromBookingID = fromBookingID
         self.toBookingID = toBookingID
+        self.fromLocationFrom = fromLocationFrom
+        self.fromLocationTo = fromLocationTo
+        self.toLocationFrom = toLocationFrom
+        self.toLocationTo = toLocationTo
+    }
+
+    public func gapContext(kind: GapKind) -> GapContext {
+        GapContext(
+            gapStart: gapStart,
+            gapEnd: gapEnd,
+            kind: kind,
+            fromLocationFrom: fromLocationFrom,
+            fromLocationTo: fromLocationTo,
+            toLocationFrom: toLocationFrom,
+            toLocationTo: toLocationTo
+        )
     }
 }
 
@@ -71,7 +95,11 @@ public struct GapPresentation: Equatable {
             gapStart: gap.gapStart,
             gapEnd: gap.gapEnd,
             fromBookingID: gap.fromBooking.id,
-            toBookingID: gap.toBooking.id
+            toBookingID: gap.toBooking.id,
+            fromLocationFrom: gap.fromBooking.locationFrom,
+            fromLocationTo: gap.fromBooking.locationTo,
+            toLocationFrom: gap.toBooking.locationFrom,
+            toLocationTo: gap.toBooking.locationTo
         )
     }
 }

@@ -64,7 +64,7 @@ Wenn du kostenlose (oder Free-Tier) PR-Reviewer für öffentliche Repos nutzt, g
 
 CodeRabbit bietet für **öffentliche Repos** kostenlosen PR-Code-Review über eine GitHub App. Falls du dieses Setup nutzt:
 
-1. Installiere die CodeRabbit GitHub App im Repo `rosch100/Reisen`.
+1. Installiere die CodeRabbit GitHub App im Repo.
 2. Aktiviere Review-Modi wie gewünscht (z. B. Code-Review & Security-Review).
 3. Halte dich an `.github/copilot-instructions.md`/`AI_POLICY.md` als gemeinsame Stil-/Sicherheitsreferenz für Review-Kommentare.
 

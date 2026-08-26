@@ -187,9 +187,11 @@ public enum LoginAutofillScript {
             if (!el || el.tagName !== 'INPUT') return false;
             const type = (el.type || '').toLowerCase();
             if (type === 'password' || type === 'hidden' || type === 'submit' || type === 'button' || type === 'checkbox') return false;
-            if (type === 'email') return true;
+            if (type === 'email' || type === 'tel') return true;
+            const inputmode = (el.getAttribute('inputmode') || '').toLowerCase();
+            if (inputmode === 'tel' || inputmode === 'email') return true;
             const hay = (dataHay(el) || '').toLowerCase();
-            return /(e-?mail|username|benutzer|user|login|account|cl_login)/i.test(hay);
+            return /(e-?mail|mobile|phone|telefon|handy|username|benutzer|user|login|account|cl_login)/i.test(hay);
           }
 
           function looksLikePassword(el) {

@@ -8,6 +8,7 @@ extension BookingComCancellationDeadlineParser {
         return lower.contains("e2e-cancellation-breakdown")
             || lower.contains("e2e-conf-cancellation-cost")
             || lower.contains("stornierungsgebühren")
+            || lower.contains("cancellation fee")
     }
 
     /// HAR (`confirmation.html`): `e2e-cancellation-breakdown` mit
@@ -24,7 +25,7 @@ extension BookingComCancellationDeadlineParser {
     func feeScheduleSource(from html: String) -> String {
         let normalized = BookingComParsing.normalizeEuroEntities(html)
         if let section = BookingComParsing.capture(
-            #"(?s)e2e-conf-cancellation-cost.*?gemäß der Zeitzone der Unterkunft"#,
+            #"(?s)e2e-conf-cancellation-cost.*?(?:gemäß der Zeitzone der Unterkunft|property(?:'s)? local time|in the property(?:'s)? time zone)"#,
             in: normalized
         ) {
             return section

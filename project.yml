@@ -1,6 +1,6 @@
 name: Reisen
 options:
-  bundleIdPrefix: de.roschmac
+  bundleIdPrefix: de.reisen
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
@@ -15,7 +15,6 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     TARGETED_DEVICE_FAMILY: "1,2"
-    DEVELOPMENT_TEAM: 4N6AJL9EX5
     CODE_SIGN_STYLE: Automatic
 
 targets:
@@ -28,7 +27,7 @@ targets:
           - "**/*.plist"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios
         PRODUCT_NAME: ReiseniOS
         INFOPLIST_FILE: Apps/ReiseniOS/Info.plist
         GENERATE_INFOPLIST_FILE: false
@@ -53,7 +52,7 @@ targets:
       - target: ReiseniOS
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.tests
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios.tests
         GENERATE_INFOPLIST_FILE: true
 
   ReisenMac:
@@ -65,7 +64,7 @@ targets:
           - "**/*.plist"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen
         PRODUCT_NAME: Reisen
         INFOPLIST_FILE: Resources/Info.plist
         GENERATE_INFOPLIST_FILE: false

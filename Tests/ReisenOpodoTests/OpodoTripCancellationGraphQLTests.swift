@@ -187,7 +187,7 @@ func opodoCancellationGraphQLReadsMerlynnHARPolicies() throws {
     let parsed = try OpodoTripCancellationGraphQLParser().parse(from: json)
     #expect(parsed.status == nil)
     let free = try #require(parsed.deadlines.first { $0.isFreeCancellation })
-    #expect(free.policyText?.contains("Stornierungsrichtlinie") == true)
+    #expect(free.policyText?.contains("Cancellation policy") == true)
     #expect(free.hotelOffsetSeconds == 2 * 3600)
 
     var calendar = Calendar(identifier: .gregorian)
@@ -251,7 +251,7 @@ func opodoCancellationGraphQLReadsProductBookingPolicies() throws {
     let deadlines = try OpodoTripCancellationGraphQLParser().parseDeadlines(from: json)
     #expect(deadlines.contains { $0.isFreeCancellation })
     let free = try #require(deadlines.first { $0.isFreeCancellation })
-    #expect(free.policyText?.contains("Stornierungsrichtlinie") == true)
+    #expect(free.policyText?.contains("Cancellation policy") == true)
     #expect(free.hotelOffsetSeconds == 0)
 
     let tz = TimeZone(secondsFromGMT: free.hotelOffsetSeconds ?? 0)!
