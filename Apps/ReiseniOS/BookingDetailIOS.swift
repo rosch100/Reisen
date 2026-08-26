@@ -244,6 +244,12 @@ struct BookingDetailIOS: View {
                         }
                     }
 
+                    if !booking.resolvedGuestHints.isEmpty {
+                        Section(GuestHintCategory.preTravelImportant.displayTitle) {
+                            BookingGuestHintsView(booking: booking)
+                        }
+                    }
+
                     bookingLinksSection(for: booking)
 
                     bookingSyncStatusSection(for: booking)

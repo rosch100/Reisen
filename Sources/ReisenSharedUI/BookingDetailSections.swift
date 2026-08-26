@@ -308,3 +308,29 @@ public struct BookingCancellationDeadlinesView: View {
         }
     }
 }
+
+public struct BookingGuestHintsView: View {
+    let booking: SDBooking
+
+    public init(booking: SDBooking) {
+        self.booking = booking
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(booking.resolvedGuestHints.sorted(by: { $0.title < $1.title }), id: \.id) { hint in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(hint.title)
+                        .font(.caption.weight(.medium))
+                    if !hint.detail.isEmpty {
+                        Text(hint.detail)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+}

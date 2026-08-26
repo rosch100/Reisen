@@ -17,6 +17,7 @@ public enum SyncBookingDraftFieldCopy {
         booking.lastSyncedAt = now
         booking.rawPayloadFingerprint = draft.rawPayloadFingerprint
         booking.passengers = draft.passengers
+        booking.guestHints = draft.guestHints
         SyncBookingDraftOffsets.apply(from: draft, onto: &booking)
     }
 

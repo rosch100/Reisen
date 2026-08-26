@@ -47,8 +47,9 @@ Parser: robuster Extract von `__INITIAL_STATE__` (Brace-Scan, kein naives Regex 
 
 | Quelle | Mapping |
 |--------|---------|
-| `activity.meetingPoint` | `locationToAddress` / Treffpunkt-Text |
-| `activity.itinerary` | optional Notes |
+| `activity.meetingPoint` | `locationToAddress` / Treffpunkt-Text + GuestHint „Treffpunkt“ |
+| `activity.restrictions` / `inclusions` / `isMobileVoucherAccepted` | `BookingGuestHint` (Kategorie preTravelImportant) |
+| `activity.itinerary` (wichtige Items) | GuestHints „Ablauf“ |
 | `booking.bookingCancellationPolicy` | Deadlines verfeinern |
 | `activityParticipants` | Travellers (ohne PII in Logs) |
 | QR `travelers-api…/barcode/qrcode` | optional `externalUrl`/Voucher — nicht Pflicht |

@@ -104,6 +104,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
     public var lastParsedAt: Date?
     public var cancellationDeadlines: [CancellationDeadlineDraft]
     public var passengers: [BookingPassenger]
+    public var guestHints: [BookingGuestHint]
 
     public static func createDefault(
         tripStartDate: Date,
@@ -145,7 +146,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
             baggageInfoRaw: "",
             lastParsedAt: nil,
             cancellationDeadlines: [],
-            passengers: []
+            passengers: [],
+            guestHints: []
         )
     }
 
@@ -193,7 +195,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     )
                 }
                 .sorted { $0.deadlineAt < $1.deadlineAt },
-            passengers: booking.resolvedPassengers.map(DomainMapper.passenger(from:))
+            passengers: booking.resolvedPassengers.map(DomainMapper.passenger(from:)),
+            guestHints: booking.resolvedGuestHints.map(DomainMapper.guestHint(from:))
         )
     }
 
@@ -424,6 +427,11 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     booking: booking
                 )
             }
+
+        let persistedHints = guestHints.compactMap {
+            BookingGuestHint.manualPersistable(from: $0, bookingID: booking.id)
+        }
+        SwiftDataBookingGuestHintUpsert.upsert(persistedHints, on: booking, in: modelContext)
 
         try modelContext.save()
     }
@@ -775,6 +783,34 @@ public struct BookingEditorForm: View {
                         )
                     } label: {
                         Label("Stornofrist hinzufügen", systemImage: "plus")
+                    }
+                }
+
+                Section(GuestHintCategory.preTravelImportant.displayTitle) {
+                    ForEach($draft.guestHints) { $hint in
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Titel", text: $hint.title)
+                            TextField("Hinweis", text: $hint.detail, axis: .vertical)
+                                .lineLimit(2...5)
+                            Button("Eintrag entfernen", role: .destructive) {
+                                draft.guestHints.removeAll { $0.id == hint.id }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+
+                    Button {
+                        draft.guestHints.append(
+                            BookingGuestHint(
+                                category: .preTravelImportant,
+                                title: "",
+                                detail: "",
+                                sourceKey: "manual:\(UUID().uuidString)",
+                                providerRaw: ProviderID.manual.rawValue
+                            )
+                        )
+                    } label: {
+                        Label("Hinweis hinzufügen", systemImage: "plus")
                     }
                 }
 

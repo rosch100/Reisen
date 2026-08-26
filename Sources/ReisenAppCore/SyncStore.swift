@@ -305,6 +305,7 @@ public final class SyncStore {
             // Replace-Strategy: Passagiere/Gepäck hängen an Flight-Tripdetails
             // und müssen vollständig durch das Enrichment überschrieben werden.
             drafts[i].passengers = enrichment.passengers ?? drafts[i].passengers
+            drafts[i].guestHints = enrichment.guestHints ?? drafts[i].guestHints
 
             drafts[i].rateDetails = Self.mergeRateDetails(
                 existing: drafts[i].rateDetails,
@@ -366,6 +367,11 @@ public final class SyncStore {
                 bookingTitles: bookingTitles,
                 leadTimesDays: settings.leadTimesDays
             )
+            _ = try await reminderScheduler.schedulePreTravelHints(
+                bookings: bookings,
+                bookingTitles: bookingTitles,
+                leadTimesDays: settings.leadTimesDays
+            )
         }
 
         if settings.eventKitEnabled {
@@ -385,6 +391,17 @@ public final class SyncStore {
                 trips: trips,
                 bookings: bookings,
                 deadlines: deadlines,
+                bookingTitles: bookingTitles,
+                eventCalendarTitle: settings.calendarTitle,
+                reminderCalendarTitle: settings.reminderCalendarTitle,
+                eventCreateIfMissing: effectiveEventCreateIfMissing,
+                reminderCreateIfMissing: effectiveReminderCreateIfMissing,
+                calendarTitleMode: settings.calendarTitleMode,
+                leadTimesDays: settings.leadTimesDays
+            )
+            try await calendarSync.syncPreTravelHints(
+                trips: trips,
+                bookings: bookings,
                 bookingTitles: bookingTitles,
                 eventCalendarTitle: settings.calendarTitle,
                 reminderCalendarTitle: settings.reminderCalendarTitle,

@@ -80,6 +80,7 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         )
 
         let scheduledParsed = try AirbnbScheduledEventsParser.parse(responseText: scheduledEventsText)
+        let guestHints = AirbnbGuestHintParser().parse(from: scheduledEventsText)
 
         let hotelOffsetSeconds: Int? = {
             guard ref.bookingType == .hotel else { return nil }
@@ -91,6 +92,7 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
             deadlines: scheduledParsed.deadlines,
             rateDetails: scheduledParsed.rateDetails,
             passengers: nil,
+            guestHints: guestHints.isEmpty ? nil : guestHints,
             hotelOffsetSeconds: hotelOffsetSeconds,
             hotelCheckInMinutes: scheduledParsed.hotelCheckInMinutes,
             hotelCheckOutMinutes: scheduledParsed.hotelCheckOutMinutes,

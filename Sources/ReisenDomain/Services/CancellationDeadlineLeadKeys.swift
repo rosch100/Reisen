@@ -9,10 +9,12 @@ public enum CancellationDeadlineLeadKeys {
         into desired: inout Set<CancellationDeadlineKeying.LinkKey>
     ) {
         for leadDays in leadTimes {
-            guard let fireAt = calendar.date(byAdding: .day, value: -leadDays, to: deadline.deadlineAt) else {
-                continue
-            }
-            if fireAt <= now { continue }
+            guard let fireAt = LeadTimesDays.fireAt(
+                referenceDate: deadline.deadlineAt,
+                leadDays: leadDays,
+                calendar: calendar
+            ) else { continue }
+            guard LeadTimesDays.isFuture(fireAt, now: now) else { continue }
             desired.insert(
                 CancellationDeadlineKeying.LinkKey(
                     cancellationDeadlineID: deadline.id,

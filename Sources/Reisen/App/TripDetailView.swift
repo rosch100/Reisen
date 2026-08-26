@@ -796,6 +796,13 @@ private struct BookingDetailContent: View {
                 BookingCancellationDeadlinesView(booking: booking, hotelTimeZone: hotelTimeZone)
             }
 
+            if !booking.resolvedGuestHints.isEmpty {
+                Divider()
+                Text(GuestHintCategory.preTravelImportant.displayTitle)
+                    .font(.subheadline.weight(.semibold))
+                BookingGuestHintsView(booking: booking)
+            }
+
             if let url = booking.browserURL {
                 Divider()
                 Link("Buchung im Browser öffnen", destination: url)

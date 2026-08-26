@@ -21,6 +21,7 @@ extension PersistenceBootstrap {
             try deleteAll(SDReminder.self, in: context)
             try deleteAll(SDCalendarEventLink.self, in: context)
             try deleteAll(SDCancellationDeadlineLink.self, in: context)
+            try deleteAll(SDPreTravelHintLink.self, in: context)
         }
 
         try context.save()

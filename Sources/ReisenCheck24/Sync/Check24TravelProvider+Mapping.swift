@@ -8,11 +8,13 @@ extension Check24TravelProvider {
         allBookings: [ParsedBooking],
         deadlinesByBookingURL: [String: [ParsedCancellationDeadline]],
         hotelStayByBookingURL: [String: HotelCheckInOut],
+        guestHintsByBookingURL: [String: [BookingGuestHint]],
         bookingDetailsByBookingKey: [String: ParsedBookingDetails]
     ) -> ProviderBookingDraft {
         let url = parsed.externalUrl
         let deadlines = (url.flatMap { deadlinesByBookingURL[$0] } ?? []).map(mapDeadline)
         let stay = url.flatMap { hotelStayByBookingURL[$0] }
+        let guestHints = url.flatMap { guestHintsByBookingURL[$0] } ?? []
         let enrichedDetails = identityKey(for: parsed).flatMap { bookingDetailsByBookingKey[$0] }
         let details = mergeBookingDetails(primary: enrichedDetails, secondary: parsed.details)
         let rateDetails = HotelBookingPriceResolver.resolve(
@@ -39,7 +41,8 @@ extension Check24TravelProvider {
             hotelOffsetSeconds: deadlines.compactMap(\.hotelOffsetSeconds).first,
             hotelCheckInMinutes: stay?.checkInMinutes,
             hotelCheckOutMinutes: stay?.checkOutMinutes,
-            rawPayloadFingerprint: details?.rawDetailsFingerprint
+            rawPayloadFingerprint: details?.rawDetailsFingerprint,
+            guestHints: guestHints
         )
     }
 

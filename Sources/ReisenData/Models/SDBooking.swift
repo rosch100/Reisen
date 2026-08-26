@@ -37,6 +37,9 @@ public final class SDBooking {
     @Relationship(deleteRule: .cascade, inverse: \SDBookingPassenger.booking)
     public var passengers: [SDBookingPassenger]? = []
 
+    @Relationship(deleteRule: .cascade, inverse: \SDBookingGuestHint.booking)
+    public var guestHints: [SDBookingGuestHint]? = []
+
     @Relationship(deleteRule: .nullify, inverse: \SDGap.fromBooking)
     public var gapsFrom: [SDGap]? = []
 
@@ -69,7 +72,8 @@ public final class SDBooking {
         timesSourceFingerprint: String? = nil,
         timesNormalized: Bool? = nil,
         rateDetails: SDBookingRateDetails? = nil,
-        passengers: [SDBookingPassenger] = []
+        passengers: [SDBookingPassenger] = [],
+        guestHints: [SDBookingGuestHint] = []
     ) {
         self.id = id
         self.providerRaw = providerRaw
@@ -97,5 +101,6 @@ public final class SDBooking {
         self.timesNormalized = timesNormalized
         self.rateDetails = rateDetails
         self.passengers = passengers
+        self.guestHints = guestHints
     }
 }

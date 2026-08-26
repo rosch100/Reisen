@@ -46,10 +46,20 @@ public struct SettingsView: View {
     private let newCalendarTag = "__NEUER_KALENDER__"
 
     private var leadTimesDays: [Int] {
+        LeadTimesDays.normalized(
+            leadTimesDaysRaw
+                .split(separator: ",")
+                .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        )
+    }
+
+    private var leadTimesDaysDisplayText: String {
         leadTimesDaysRaw
             .split(separator: ",")
             .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
             .filter { $0 > 0 }
+            .map(String.init)
+            .joined(separator: ", ")
     }
 
     public var body: some View {
@@ -155,7 +165,7 @@ public struct SettingsView: View {
                     Text("Keine gültigen Vorläufe. Beispiel: 7,3,1")
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Erinnerungen \(leadTimesDays.map(String.init).joined(separator: ", ")) Tage vor der Frist.")
+                    Text("Erinnerungen \(leadTimesDaysDisplayText) Tage vor der Frist.")
                         .foregroundStyle(.secondary)
                 }
             } header: {
