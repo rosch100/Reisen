@@ -55,6 +55,9 @@ jobs:
           CI: "true"
         run: bash ./Scripts/ci-test.sh
 
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
       - name: iOS Simulator tests
         env:
           CI: "true"

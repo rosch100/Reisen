@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import ReisenDomain
 
 extension Check24TravelProvider {
     func enrichHotelBookings(
@@ -7,12 +8,14 @@ extension Check24TravelProvider {
         webView: WKWebView,
         deadlinesByBookingURL: inout [String: [ParsedCancellationDeadline]],
         hotelStayByBookingURL: inout [String: HotelCheckInOut],
+        guestHintsByBookingURL: inout [String: [BookingGuestHint]],
         bookingDetailsByBookingKey: inout [String: ParsedBookingDetails],
         basketsByBasketId: inout [String: HotelBasketParser.ParsedHotelBasket],
         bookingUuidToBasketId: inout [String: String],
         canonicalBookingUuidByBasketId: inout [String: String],
         deadlinesByBasketId: inout [String: [ParsedCancellationDeadline]],
         hotelStayByBasketId: inout [String: HotelCheckInOut],
+        guestHintsByBasketId: inout [String: [BookingGuestHint]],
         bookingDetailsByBasketId: inout [String: ParsedBookingDetails],
         parsedBookingByBookingUuid: inout [String: ParsedBooking]
     ) async throws {
@@ -25,7 +28,8 @@ extension Check24TravelProvider {
                 parsedBookingByBookingUuid[bookingUuid] = parsedBooking
 
                 if let basketId = bookingUuidToBasketId[bookingUuid],
-                   basketsByBasketId[basketId] != nil {
+                   basketsByBasketId[basketId] != nil,
+                   let hints = guestHintsByBasketId[basketId], !hints.isEmpty {
                     continue
                 }
             }
@@ -43,6 +47,7 @@ extension Check24TravelProvider {
                 bookingURLString: bookingURLString,
                 deadlinesByBookingURL: &deadlinesByBookingURL,
                 hotelStayByBookingURL: &hotelStayByBookingURL,
+                guestHintsByBookingURL: &guestHintsByBookingURL,
                 bookingDetailsByBookingKey: &bookingDetailsByBookingKey,
 
                 basketsByBasketId: &basketsByBasketId,
@@ -50,6 +55,7 @@ extension Check24TravelProvider {
                 canonicalBookingUuidByBasketId: &canonicalBookingUuidByBasketId,
                 deadlinesByBasketId: &deadlinesByBasketId,
                 hotelStayByBasketId: &hotelStayByBasketId,
+                guestHintsByBasketId: &guestHintsByBasketId,
                 bookingDetailsByBasketId: &bookingDetailsByBasketId
             )
         }

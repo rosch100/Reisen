@@ -725,6 +725,14 @@ struct ContentView: View {
                                 description: Text("Für diese Buchung sind keine Stornobedingungen hinterlegt.")
                             )
                         }
+
+                        if !booking.resolvedGuestHints.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(GuestHintCategory.preTravelImportant.displayTitle)
+                                    .font(.subheadline.weight(.semibold))
+                                BookingGuestHintsView(booking: booking)
+                            }
+                        }
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)

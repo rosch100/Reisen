@@ -38,6 +38,7 @@ public enum GetYourGuideBookingSummaryParser {
         let deadlines = mapDeadlines(summary.booking?.bookingCancellationPolicy)
         let participants = mapPassengers(summary.booking?.activityParticipants ?? [])
         let passengerCount = participants.count
+        let guestHints = mapGuestHints(summary.activity)
 
         let status: BookingStatus? = {
             guard let raw = summary.booking?.status?.lowercased() else { return nil }
@@ -64,10 +65,29 @@ public enum GetYourGuideBookingSummaryParser {
             deadlines: deadlines,
             rateDetails: rateDetails,
             passengers: participants.isEmpty ? nil : participants,
+            guestHints: guestHints.isEmpty ? nil : guestHints,
             status: status,
             title: summary.activity?.activityTitle,
             locationTo: summary.activity?.activityLocations?.city?.name,
             locationToAddress: locationToAddress
+        )
+    }
+
+    private static func mapGuestHints(_ activity: ActivityDTO?) -> [BookingGuestHint] {
+        guard let activity else { return [] }
+        let itineraryLines: [String] = (activity.itinerary?.items ?? []).compactMap { item in
+            guard item.isImportant == true || item.type == "meeting_point" else { return nil }
+            return firstNonEmpty(item.activityLabel, item.title, item.locationName)
+        }
+        return GetYourGuideGuestHintMapper.hints(
+            from: GetYourGuideGuestHintActivity(
+                meetingPointDescription: activity.meetingPoint?.description,
+                meetingPointMinutesBefore: activity.meetingPoint?.minutesBefore,
+                restrictions: activity.restrictions ?? [],
+                inclusions: activity.inclusions ?? [],
+                isMobileVoucherAccepted: activity.isMobileVoucherAccepted,
+                importantItineraryLines: itineraryLines
+            )
         )
     }
 
@@ -155,10 +175,14 @@ private struct ActivityDTO: Decodable {
     let meetingPoint: MeetingPointDTO?
     let itinerary: GYGItinerary?
     let activityLocations: ActivityLocationsDTO?
+    let inclusions: [String]?
+    let restrictions: [String]?
+    let isMobileVoucherAccepted: Bool?
 }
 
 private struct MeetingPointDTO: Decodable {
     let description: String?
+    let minutesBefore: Int?
     let location: MeetingLocationDTO?
 }
 
@@ -194,4 +218,6 @@ private struct GYGItineraryItem: Decodable {
     let title: String?
     let locationName: String?
     let type: String?
+    let isImportant: Bool?
+    let activityLabel: String?
 }

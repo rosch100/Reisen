@@ -6,20 +6,20 @@ import ReisenDomain
 
 @Test func persistenceBootstrapCreatesContainer() throws {
     #expect(!ReisenSchemaV1.models.isEmpty)
-    #expect(!ReisenSchemaV7.models.isEmpty)
-    #expect(ReisenMigrationPlan.schemas.contains { $0 == ReisenSchemaV7.self })
+    #expect(!ReisenSchemaV9.models.isEmpty)
+    #expect(ReisenMigrationPlan.schemas.contains { $0 == ReisenSchemaV9.self })
     #expect(ReisenMigrationPlan.stages.isEmpty)
     #expect(PersistenceBootstrap.cloudKitContainerID == "iCloud.de.roschmac.Reisen")
     #expect(PersistenceBootstrap.cloudStoreName == "reisen-cloud")
     #expect(PersistenceBootstrap.localStoreName == "reisen-local")
-    #expect(!ReisenSchemaV7.cloudModels.isEmpty)
-    #expect(!ReisenSchemaV7.localModels.isEmpty)
+    #expect(!ReisenSchemaV9.cloudModels.isEmpty)
+    #expect(!ReisenSchemaV9.localModels.isEmpty)
 }
 
 @MainActor
 @Test func hybridStoreSplitKeepsCloudAndLocalModelsApart() throws {
-    let cloudTypes = Set(ReisenSchemaV7.cloudModels.map { ObjectIdentifier($0) })
-    let localTypes = Set(ReisenSchemaV7.localModels.map { ObjectIdentifier($0) })
+    let cloudTypes = Set(ReisenSchemaV9.cloudModels.map { ObjectIdentifier($0) })
+    let localTypes = Set(ReisenSchemaV9.localModels.map { ObjectIdentifier($0) })
     #expect(cloudTypes.isDisjoint(with: localTypes))
 
     #expect(cloudTypes.contains(ObjectIdentifier(SDTrip.self)))
@@ -29,6 +29,7 @@ import ReisenDomain
     #expect(localTypes.contains(ObjectIdentifier(SDReminder.self)))
     #expect(localTypes.contains(ObjectIdentifier(SDCalendarEventLink.self)))
     #expect(localTypes.contains(ObjectIdentifier(SDCancellationDeadlineLink.self)))
+    #expect(localTypes.contains(ObjectIdentifier(SDPreTravelHintLink.self)))
 
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
@@ -83,6 +84,6 @@ import ReisenDomain
     #expect(settings.notificationEnabled == false)
     #expect(settings.eventKitEnabled == true)
     #expect(settings.calendarTitle == "MeinKalender")
-    #expect(settings.leadTimesDays == [7, 1])
+    #expect(settings.leadTimesDays == [1, 7])
     #expect(settings.calendarTitleMode == .fixed)
 }

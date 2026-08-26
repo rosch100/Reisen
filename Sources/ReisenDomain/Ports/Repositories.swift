@@ -91,3 +91,19 @@ public protocol CancellationDeadlineLinkRepository: AnyObject {
 
     func save() throws
 }
+
+@MainActor
+public protocol PreTravelHintLinkRepository: AnyObject {
+    func fetchAll() throws -> [PreTravelHintLink]
+    func fetchLinks(forTripID tripID: UUID) throws -> [PreTravelHintLink]
+    func fetchLinks(forBookingID bookingID: UUID) throws -> [PreTravelHintLink]
+
+    /// Upsert by logical identity `(ownerBookingID, leadDays)`.
+    func upsert(_ link: PreTravelHintLink) throws
+
+    func deleteLinks(forTripID tripID: UUID) throws
+    func deleteLinks(forBookingID bookingID: UUID) throws
+    func deleteLinks(ids: [UUID]) throws
+
+    func save() throws
+}

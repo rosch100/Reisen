@@ -3,6 +3,7 @@ import Foundation
 public enum ReminderTarget: String, Codable, CaseIterable, Identifiable, Sendable {
     case cancellationDeadline
     case gap
+    case preTravelHints
     case custom
 
     public var id: String { rawValue }
