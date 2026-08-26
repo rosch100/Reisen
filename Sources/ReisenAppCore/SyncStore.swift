@@ -23,6 +23,8 @@ public final class SyncStore {
     public var messageProviderID: ProviderID?
     public var errorMessage: String?
     public var statusMessage: String?
+    /// Datenschutz-Pane, falls `errorMessage` eine verweigerte Sicherheitsoption ist.
+    public var privacySettingPane: PrivacySettingPane?
 
     private let modelContext: ModelContext
     private let registry: ProviderRegistry
@@ -65,10 +67,7 @@ public final class SyncStore {
                 announceProgress: announceProgress
             )
         } catch {
-            errorMessage = error.localizedDescription
-            if !announceProgress {
-                statusMessage = nil
-            }
+            assignError(error, clearStatus: !announceProgress)
             messageProviderID = nil
         }
     }
@@ -100,8 +99,7 @@ public final class SyncStore {
         settings: AppSettings
     ) async {
         if !providerIsEnabled(providerID) {
-            errorMessage = "Provider \(providerID.rawValue) ist deaktiviert."
-            statusMessage = nil
+            assignErrorMessage("Provider \(providerID.rawValue) ist deaktiviert.")
             messageProviderID = providerID
             return
         }
@@ -109,7 +107,7 @@ public final class SyncStore {
         syncingProviderID = providerID
         messageProviderID = providerID
         isSyncing = true
-        errorMessage = nil
+        clearError()
         statusMessage = "Synchronisiere…"
         defer {
             isSyncing = false
@@ -188,7 +186,7 @@ public final class SyncStore {
 
             let deadlineRepo = SwiftDataCancellationDeadlineRepository(modelContext: modelContext)
             let deadlines = try deadlineRepo.fetchAll()
-            var bookings = try bookingRepo.fetchAll()
+            let bookings = try bookingRepo.fetchAll()
             let titles = Dictionary(uniqueKeysWithValues: bookings.map { ($0.id, $0.title ?? $0.bookingType.rawValue.capitalized) })
 
             try await maybeScheduleAndSyncCalendars(
@@ -212,8 +210,7 @@ public final class SyncStore {
                 "result=success provider=\(providerID.rawValue) bookings=\(stats.bookingsPersisted) deadlines=\(stats.deadlinesPersisted) cancelledDropped=\(cancelledCount) durationMs=\(Int(Date().timeIntervalSince(attemptStart) * 1000))"
             )
         } catch {
-            errorMessage = error.localizedDescription
-            statusMessage = nil
+            assignError(error, clearStatus: true)
             messageProviderID = providerID
             SyncLog.append(
                 "result=failure provider=\(providerID.rawValue) durationMs=\(Int(Date().timeIntervalSince(attemptStart) * 1000)) error=\(error.localizedDescription)"
@@ -562,7 +559,7 @@ public final class SyncStore {
         if syncingProviderID == providerID { return }
         guard messageProviderID == providerID else { return }
         statusMessage = nil
-        errorMessage = nil
+        clearError()
         messageProviderID = nil
     }
 
@@ -573,48 +570,66 @@ public final class SyncStore {
     ) async {
         guard !isSyncing else { return }
         guard !providers.isEmpty else {
-            errorMessage = "Keine angemeldeten Provider zum Synchronisieren."
-            statusMessage = nil
+            assignErrorMessage("Keine angemeldeten Provider zum Synchronisieren.")
             messageProviderID = nil
             return
         }
 
         var successCount = 0
-        var failureCount = 0
-        var lastError: String?
+        var failures: [(providerName: String, message: String)] = []
+        var lastPrivacyPane: PrivacySettingPane?
 
         for (index, item) in providers.enumerated() {
             let (providerID, webView) = item
             statusMessage = "Synchronisiere \(index + 1)/\(providers.count)…"
             messageProviderID = providerID
-            errorMessage = nil
+            clearError()
 
             await sync(providerID: providerID, webView: webView, settings: settings)
 
             if let errorMessage {
-                failureCount += 1
-                lastError = errorMessage
+                failures.append((providerID.displayName, errorMessage))
+                lastPrivacyPane = privacySettingPane
             } else {
                 successCount += 1
             }
         }
 
         messageProviderID = nil
-        if failureCount == 0 {
-            errorMessage = nil
+        if failures.isEmpty {
+            clearError()
             statusMessage = "Alle Provider synchronisiert (\(successCount))."
         } else {
-            errorMessage = lastError
-            statusMessage = "Sync beendet: \(successCount) ok, \(failureCount) fehlgeschlagen."
+            errorMessage = SyncAllSummary.errorDetails(failures: failures)
+            privacySettingPane = lastPrivacyPane
+            statusMessage = SyncAllSummary.statusLine(
+                successCount: successCount,
+                failureCount: failures.count
+            )
         }
     }
 
-    private func providerIsEnabled(_ providerID: ProviderID) -> Bool {
-        let key = AppSettingsKeys.providerEnabledKey(for: providerID)
+    private func assignError(_ error: Error, clearStatus: Bool) {
+        errorMessage = error.localizedDescription
+        privacySettingPane = PrivacyAccessDenial.pane(from: error)
+        if clearStatus {
+            statusMessage = nil
+        }
+    }
 
-        // Default: alle Provider aktiv, solange der User nichts deaktiviert hat.
-        guard UserDefaults.standard.object(forKey: key) != nil else { return true }
-        return UserDefaults.standard.bool(forKey: key)
+    private func assignErrorMessage(_ message: String) {
+        errorMessage = message
+        privacySettingPane = nil
+        statusMessage = nil
+    }
+
+    private func clearError() {
+        errorMessage = nil
+        privacySettingPane = nil
+    }
+
+    private func providerIsEnabled(_ providerID: ProviderID) -> Bool {
+        AppSettingsKeys.isProviderEnabled(providerID)
     }
 
     /// Enrichment füllt fehlende Felder; bestehende Werte (z. B. Katalogpreis) bleiben,

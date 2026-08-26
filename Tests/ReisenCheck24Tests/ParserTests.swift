@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-import ReisenCheck24
+@testable import ReisenCheck24
 import ReisenDomain
 
 @Test("ActivityListParser schließt stornierte und vergangene Buchungen aus")
@@ -39,6 +39,60 @@ func activityListExcludesCancelledAndPast() throws {
     let parsed = try ActivityListParser().parseActivityListHTML(json)
     #expect(parsed.bookings.count == 1)
     #expect(parsed.bookings[0].title == "Zukunft Hotel")
+}
+
+@Test("ActivityListParser: leeres activities-Array ist leerer Katalog")
+func activityListEmptyJSONIsEmptyCatalog() throws {
+    let parsed = try ActivityListParser().parseActivityListHTML("""
+    { "activities": [] }
+    """)
+    #expect(parsed.bookings.isEmpty)
+}
+
+@Test("ActivityListParser: nur stornierte/vergangene Buchungen sind leerer Katalog")
+func activityListOnlyCancelledAndPastIsEmptyCatalog() throws {
+    let json = """
+    {
+      "activities": [
+        {
+          "startDate": "2026-08-20T23:59:00",
+          "endDate": "2026-08-21T12:00:00",
+          "status": { "key": "cancelled" },
+          "product": { "key": "hotel" },
+          "detail": { "line1": "Storniert Hotel" },
+          "link": { "link": "https://hotel.check24.de/kundenbereich/buchung/22222222-2222-2222-2222-222222222222" }
+        },
+        {
+          "startDate": "2025-01-01T00:00:00",
+          "endDate": "2025-01-02T00:00:00",
+          "status": { "key": "ended" },
+          "product": { "key": "hotel" },
+          "detail": { "line1": "Vergangen Hotel" },
+          "link": { "link": "https://hotel.check24.de/kundenbereich/buchung/33333333-3333-3333-3333-333333333333" }
+        }
+      ]
+    }
+    """
+    let parsed = try ActivityListParser().parseActivityListHTML(json)
+    #expect(parsed.bookings.isEmpty)
+}
+
+@Test("ActivityListParser: HTML ohne Buchungslinks ist leerer Katalog")
+func activityListHTMLWithoutBookingLinksIsEmptyCatalog() throws {
+    let parsed = try ActivityListParser().parseActivityListHTML(
+        "<html><body><p>Keine Buchungen</p></body></html>"
+    )
+    #expect(parsed.bookings.isEmpty)
+}
+
+@Test("Check24 Provider: Snapshot ohne Daten ist leerer Katalog, kein Fehler")
+@MainActor
+func check24ProviderEmptySnapshotIsEmptyCatalog() throws {
+    let provider = Check24TravelProvider()
+    let parsed = try provider.parseCatalogAllowingEmpty(
+        "<html><body><a href=\"/hotel\">Nav</a></body></html>"
+    )
+    #expect(parsed.bookings.isEmpty)
 }
 
 @Test("Check24DeepLinkBuilder erzeugt Hotel-URL aus Destination-Hint")

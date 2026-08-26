@@ -9,90 +9,108 @@ public struct MapKitAddressResolver: AddressResolving, Sendable {
     public func resolveAddress(query: String) async throws -> String? {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
+        return await Self.bestFormattedAddress(matching: trimmed)
+    }
 
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = trimmed
-
-        return await withCheckedContinuation { continuation in
-            let search = MKLocalSearch(request: request)
-            search.start { (response: MKLocalSearch.Response?, error: Error?) in
-                if error != nil {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                guard let mapItems = response?.mapItems else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                let queryLower = trimmed.lowercased()
-                let queryTokens: [String] = trimmed
-                    .lowercased()
-                    .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-                    .map(String.init)
-                    .filter { $0.count > 2 }
-
-                func score(place: MKPlacemark) -> Int {
-                    let nameLower = place.name?.lowercased() ?? ""
-                    let localityLower = place.locality?.lowercased() ?? ""
-                    let adminLower = place.administrativeArea?.lowercased() ?? ""
-                    let postalLower = place.postalCode?.lowercased() ?? ""
-                    let countryLower = place.country?.lowercased() ?? ""
-
-                    let combined = [nameLower, localityLower, adminLower, postalLower, countryLower]
-                        .joined(separator: " ")
-
-                    var score = 0
-
-                    // Strong signal: query is contained in the candidate.
-                    if !queryLower.isEmpty, combined.contains(queryLower) {
-                        score += 200
-                    }
-                    if !queryLower.isEmpty, nameLower.contains(queryLower) {
-                        score += 300
-                    }
-
-                    // Token overlap (hotel names / city names).
-                    for token in queryTokens where !token.isEmpty {
-                        if combined.contains(token) { score += 20 }
-                    }
-
-                    // Mild boost for exact token in name.
-                    for token in queryTokens where !token.isEmpty {
-                        if nameLower.contains(token) { score += 10 }
-                    }
-
-                    return score
-                }
-
-                // Pick the most relevant map item (avoids wrong "first match").
-                let bestPlacemark: MKPlacemark? = mapItems
-                    .map(\.placemark)
-                    .max(by: { score(place: $0) < score(place: $1) })
-
-                guard let placemark = bestPlacemark else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                // Build a lightweight, sendable representation immediately.
-                let parts: [String?] = [
-                    placemark.name,
-                    placemark.locality,
-                    placemark.administrativeArea,
-                    placemark.postalCode,
-                    placemark.country
-                ]
-
-                let formattedParts = parts
-                    .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-
-                let formatted = formattedParts.isEmpty ? nil : formattedParts.joined(separator: ", ")
-                continuation.resume(returning: formatted)
-            }
+    @MainActor
+    private static func bestFormattedAddress(matching query: String) async -> String? {
+        let mapItems: [MKMapItem]
+        do {
+            mapItems = try await MapKitQuery.mapItems(matching: query)
+        } catch {
+            return nil
         }
+
+        let queryLower = query.lowercased()
+        let queryTokens: [String] = query
+            .lowercased()
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+            .filter { $0.count > 2 }
+
+        guard let best = mapItems
+            .map(AddressCandidate.init)
+            .max(by: { $0.score(queryLower: queryLower, queryTokens: queryTokens) < $1.score(queryLower: queryLower, queryTokens: queryTokens) })
+        else {
+            return nil
+        }
+
+        return best.formatted
     }
 }
 
+private struct AddressCandidate {
+    let nameLower: String
+    let combined: String
+    let formatted: String?
+
+    func score(queryLower: String, queryTokens: [String]) -> Int {
+        var score = 0
+
+        if !queryLower.isEmpty, combined.contains(queryLower) {
+            score += 200
+        }
+        if !queryLower.isEmpty, nameLower.contains(queryLower) {
+            score += 300
+        }
+
+        for token in queryTokens where !token.isEmpty {
+            if combined.contains(token) { score += 20 }
+            if nameLower.contains(token) { score += 10 }
+        }
+
+        return score
+    }
+}
+
+private extension AddressCandidate {
+    init(_ item: MKMapItem) {
+        let fields = MapItemAddressFields(item: item)
+        let name = fields.name
+        self.nameLower = name?.lowercased() ?? ""
+        self.combined = fields.combined.lowercased()
+        self.formatted = fields.formatted
+    }
+}
+
+private struct MapItemAddressFields {
+    let name: String?
+    let combined: String
+    let formatted: String?
+
+    init(item: MKMapItem) {
+        let name = item.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let full = item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true)
+            ?? item.address?.fullAddress
+        let city = item.addressRepresentations?.cityName
+        let region = item.addressRepresentations?.regionName
+        self.name = name?.isEmpty == false ? name : nil
+        self.combined = Self.nonEmpty([self.name, city, region, full]).joined(separator: " ")
+        self.formatted = Self.formattedAddress(name: self.name, full: full)
+    }
+
+    private static func nonEmpty(_ parts: [String?]) -> [String] {
+        parts
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private static func formattedAddress(name: String?, full: String?) -> String? {
+        let trimmedFull = full?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasFull = trimmedFull.map { !$0.isEmpty } ?? false
+        let hasName = name.map { !$0.isEmpty } ?? false
+
+        switch (hasName, hasFull, name, trimmedFull) {
+        case (true, true, let name?, let full?) where full.localizedCaseInsensitiveContains(name):
+            return full
+        case (true, true, let name?, let full?):
+            return "\(name), \(full)"
+        case (false, true, _, let full?):
+            return full
+        case (true, false, let name?, _):
+            return name
+        default:
+            return nil
+        }
+    }
+}

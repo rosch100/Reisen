@@ -1,5 +1,5 @@
 import Foundation
-import CoreLocation
+import MapKit
 
 import ReisenDomain
 import ReisenData
@@ -12,7 +12,6 @@ public final class FlightTimeZoneAssigner {
     }
 
     private let bookingRepository: SwiftDataBookingRepository
-    private let geocoder = CLGeocoder()
     private var cachedTimeZoneByIata: [String: TimeZone] = [:]
 
     public init(bookingRepository: SwiftDataBookingRepository) {
@@ -80,26 +79,16 @@ public final class FlightTimeZoneAssigner {
 
     private func resolveTimeZone(for iata: String) async throws -> TimeZone {
         if let cached = cachedTimeZoneByIata[iata] { return cached }
-        let placemarks = try await geocode(query: "\(iata) airport")
-        guard let tz = placemarks.first?.timeZone else { throw ResolveError.noTimeZoneFound }
+        let mapItems = try await geocode(query: "\(iata) airport")
+        guard let tz = mapItems.compactMap(\.timeZone).first else { throw ResolveError.noTimeZoneFound }
         cachedTimeZoneByIata[iata] = tz
         return tz
     }
 
-    private func geocode(query: String) async throws -> [CLPlacemark] {
-        try await withCheckedThrowingContinuation { continuation in
-            geocoder.geocodeAddressString(query) { placemarks, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                guard let placemarks, !placemarks.isEmpty else {
-                    continuation.resume(throwing: ResolveError.noTimeZoneFound)
-                    return
-                }
-                continuation.resume(returning: placemarks)
-            }
-        }
+    private func geocode(query: String) async throws -> [MKMapItem] {
+        let items = try await MapKitQuery.geocodedMapItems(addressString: query)
+        guard !items.isEmpty else { throw ResolveError.noTimeZoneFound }
+        return items
     }
 
     private func offsetSeconds(forWallClockInstant wallClockInstant: Date, in timeZone: TimeZone) -> Int {

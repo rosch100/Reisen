@@ -2,7 +2,8 @@ name: Reisen
 options:
   bundleIdPrefix: de.roschmac
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "26.0"
+    macOS: "26.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
@@ -14,6 +15,8 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     TARGETED_DEVICE_FAMILY: "1,2"
+    DEVELOPMENT_TEAM: 4N6AJL9EX5
+    CODE_SIGN_STYLE: Automatic
 
 targets:
   ReiseniOS:
@@ -31,8 +34,6 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         CURRENT_PROJECT_VERSION: 3
         MARKETING_VERSION: 0.2.1
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
         CODE_SIGN_ENTITLEMENTS: Apps/ReiseniOS/ReiseniOS.entitlements
     dependencies:
       - package: Reisen
@@ -55,7 +56,52 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.tests
         GENERATE_INFOPLIST_FILE: true
 
+  ReisenMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Reisen
+        excludes:
+          - "**/*.plist"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen
+        PRODUCT_NAME: Reisen
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: 0.2.1
+        CODE_SIGN_ENTITLEMENTS: Resources/Reisen.entitlements
+        COMBINE_HIDPI_IMAGES: true
+    dependencies:
+      - package: Reisen
+        product: ReisenAppCore
+      - package: Reisen
+        product: ReisenSharedUI
+      - package: Reisen
+        product: ReisenData
+      - package: Reisen
+        product: ReisenProviders
+      - package: Reisen
+        product: ReisenDomain
+      - package: Reisen
+        product: ReisenCheck24
+      - package: Reisen
+        product: ReisenOpodo
+      - package: Reisen
+        product: ReisenBookingCom
+      - package: Reisen
+        product: ReisenAirbnb
+      - package: Reisen
+        product: ReisenGetYourGuide
+
 schemes:
+  ReisenMac:
+    build:
+      targets:
+        ReisenMac: all
+    run:
+      config: Debug
   ReiseniOS:
     build:
       targets:

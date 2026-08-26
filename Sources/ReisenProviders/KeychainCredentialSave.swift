@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Speichern/Normalisieren von Internetpasswörtern (SSOT).
+/// Speichern/Normalisieren von Provider-Credentials (SSOT).
 internal enum KeychainCredentialSave {
     struct NormalizedInputs {
         let username: String

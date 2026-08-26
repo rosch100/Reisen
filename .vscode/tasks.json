@@ -9,9 +9,9 @@
       "problemMatcher": []
     },
     {
-      "label": "iOS: Run on Simulator",
+      "label": "iOS: Run on Device",
       "type": "shell",
-      "command": "bash ./Scripts/ios-run.sh",
+      "command": "bash ./Scripts/ios-run-device.sh",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },

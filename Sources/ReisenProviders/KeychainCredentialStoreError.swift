@@ -17,7 +17,6 @@ extension KeychainCredentialStore {
                 Kein lesbares Konto für '\(serverHost)'.
                 Passwords-App-Einträge sind für andere Apps gesperrt.
                 Primärweg: „Konto speichern…“ — E-Mail und Kennwort aus Passwords hier hinterlegen.
-                (Optional: Internetpasswort in der Schlüsselbundverwaltung für '\(serverHost)' anlegen.)
                 """
             case .unsupportedItem:
                 return "Keychain-Eintrag hat ein unerwartetes Format."

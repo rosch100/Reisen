@@ -1,6 +1,6 @@
 import Foundation
 
-/// Host-Matching für Keychain-Internetpasswörter (Subdomain ↔ Apex).
+/// Host-Matching für Provider-Keychain-Accounts (Subdomain ↔ Apex).
 public enum KeychainHostMatching {
     public static func candidates(for configuredHost: String) -> [String] {
         KeychainHostCandidates.candidates(for: configuredHost)

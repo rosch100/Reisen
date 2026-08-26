@@ -53,7 +53,12 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             html = snapshot
         }
 
-        let bookings = try OpodoActivityListParser().parseBookings(from: html)
+        let bookings: [ProviderBookingDraft]
+        do {
+            bookings = try OpodoActivityListParser().parseBookings(from: html)
+        } catch is OpodoActivityListParserError {
+            bookings = []
+        }
         return ProviderCatalog(bookings: bookings)
     }
 

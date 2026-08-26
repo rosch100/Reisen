@@ -5,6 +5,11 @@ import ReisenProviders
 func keychainCredentialAccountIDIsStable() {
     let account = KeychainCredentialAccount(serverHost: "booking.com", username: "a@b.de")
     #expect(account.id == "booking.com\u{1f}a@b.de")
+    #expect(KeychainCredentialAccount.makeID(serverHost: "booking.com", username: "a@b.de") == account.id)
+    let parsed = KeychainCredentialAccount.parseID(account.id)
+    #expect(parsed?.serverHost == "booking.com")
+    #expect(parsed?.username == "a@b.de")
+    #expect(KeychainCredentialAccount.parseID("noneseparator") == nil)
     #expect(account.displayTitle == "a@b.de")
     #expect(account.displaySubtitle == "booking.com")
 }

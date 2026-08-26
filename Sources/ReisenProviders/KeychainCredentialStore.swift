@@ -3,10 +3,9 @@ import Security
 
 /// Read-only/write store for provider credentials.
 ///
-/// Liest und schreibt Internetpasswörter (`kSecClassInternetPassword`).
-/// Einträge nur in der Passwords-App sind für Drittanbieter-Apps nicht lesbar
-/// (Apple Access-Group-Schutz) — deshalb können Konten hier manuell gespeichert werden
-/// (z. B. nach Kopieren aus Passwords).
+/// Speichert app-eigene Generic Passwords in der Data-Protection-Keychain
+/// (kein Login-Schlüsselbund-Dialog). Passwords-App-Einträge sind für Drittanbieter
+/// nicht lesbar — Konten deshalb hier manuell speichern (z. B. nach Kopieren aus Passwords).
 public final class KeychainCredentialStore {
     private let keychain: KeychainInternetPasswordKeychainAPI
 
@@ -18,7 +17,7 @@ public final class KeychainCredentialStore {
         self.keychain = keychain
     }
 
-    /// Alle lesbaren Internetpasswort-Accounts für den konfigurierten Host (inkl. Subdomains).
+    /// Lesbare Accounts für den konfigurierten Host (nur app-eigene Generic Passwords).
     public func accounts(serverHost: String) throws -> [KeychainCredentialAccount] {
         try KeychainCredentialAccounts.list(keychain: keychain, serverHost: serverHost)
     }
@@ -28,7 +27,7 @@ public final class KeychainCredentialStore {
         try KeychainCredentialLoad.credentials(keychain: keychain, for: account)
     }
 
-    /// Speichert/aktualisiert ein Internetpasswort für den Provider-Host (lesbar für diese App).
+    /// Speichert/aktualisiert das app-eigene Generic Password für den Provider-Host.
     public func save(credentials: ProviderCredentials, serverHost: String) throws {
         try KeychainCredentialSave.upsert(
             keychain: keychain,

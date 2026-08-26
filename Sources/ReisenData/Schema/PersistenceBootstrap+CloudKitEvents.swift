@@ -20,6 +20,7 @@ extension PersistenceBootstrap {
 
     /// Account status for Settings UX (`CKContainer` for `cloudKitContainerID`).
     public static func fetchCloudKitAccountStatus() async -> CKAccountStatus {
+        guard isCloudKitEnabledByEnvironment() else { return .couldNotDetermine }
         do {
             return try await CKContainer(identifier: cloudKitContainerID).accountStatus()
         } catch {

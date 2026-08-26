@@ -1,8 +1,54 @@
-# Apple Signing & Notarization (CI vorbereitet, secrets-gated)
+# Apple Signing (macOS + iOS)
 
-## Wann läuft Signing/Notarize?
+Team-ID und Bundle-IDs sind **keine Secrets**. Die Team-ID steht in `project.yml` (`DEVELOPMENT_TEAM`) und gilt für macOS und iOS.
 
-Im `release.yml` wird Signing/Notarization **nur** gestartet, wenn folgende Secrets/Env-Variablen gesetzt sind:
+| Plattform | Bundle-ID | Container |
+|-----------|-----------|-----------|
+| macOS | `de.roschmac.Reisen` | `iCloud.de.roschmac.Reisen` |
+| iOS / iPadOS | `de.roschmac.Reisen.ios` | `iCloud.de.roschmac.Reisen` |
+
+Team: **4N6AJL9EX5** (Individual, Roland Schramme).
+
+Lokal eingerichtet (nach `setup-apple-developer.sh`):
+
+- App-IDs `de.roschmac.Reisen` und `de.roschmac.Reisen.ios`
+- iCloud-Container `iCloud.de.roschmac.Reisen` (CloudKit) an die macOS-App gebunden
+- Mac-Development-Profil in `.signing/Reisen.provisionprofile` (gitignored)
+- Keychain: Apple Development, Apple Distribution, Developer ID Application für dieses Team
+- GitHub-Secret `APPLE_TEAM_ID`
+
+Noch offen für Geräte-Builds und CI-Notarize: iPhone im Developer Portal (Gerät einschalten und Script erneut), Developer-ID-`.p12` plus App-Store-Connect-API-Key als GitHub-Secrets.
+
+## Lokales Setup
+
+Einmalig (Keychain braucht ein **Apple Development**-Zertifikat dieses Teams):
+
+```bash
+bash ./Scripts/setup-apple-developer.sh
+```
+
+Das Script:
+
+1. prüft die Development-Identity zur Team-ID aus `project.yml`
+2. erzeugt `Reisen.xcodeproj` (XcodeGen, Targets `ReiseniOS` + `ReisenMac`)
+3. registriert App-IDs/Profiles per Automatic Signing (`xcodebuild -allowProvisioningUpdates`)
+4. legt `.signing/Reisen.provisionprofile` ab (gitignored) für `Scripts/build-app.sh`
+
+Wenn Xcode nicht mit der Apple-ID angemeldet ist, schlägt Schritt 3 fehl. Dann:
+
+1. `open Reisen.xcodeproj`
+2. Xcode → Settings → Accounts → Apple-ID anmelden
+3. Targets **ReiseniOS** und **ReisenMac** → Signing & Capabilities → Team „Roland Schramme“
+4. Capabilities: **iCloud** (CloudKit, Container `iCloud.de.roschmac.Reisen`) und **Push Notifications** (iOS)
+5. Script erneut ausführen
+
+`Scripts/build-app.sh` / `Scripts/run-app.sh` signieren lokal mit **Apple Development**, sobald das Profil in `.signing/` liegt. Fehlt es, bleibt der Pfad explizit ad-hoc (CloudKit inaktiv, Hinweis auf das Setup-Script). In CI (`CI=true` / GitHub Actions) ist ad-hoc fest verdrahtet.
+
+iOS-Simulator-Tests in CI setzen `CODE_SIGNING_ALLOWED=NO` — die Runner haben keine Team-Zertifikate.
+
+## Release: Developer ID + Notarization (secrets-gated)
+
+Im `release.yml` startet Signing/Notarization **nur**, wenn alle folgenden GitHub-Secrets gesetzt sind:
 
 - `APPLE_DEVELOPER_ID_P12_BASE64`
 - `APPLE_DEVELOPER_ID_P12_PASSWORD`
@@ -11,39 +57,36 @@ Im `release.yml` wird Signing/Notarization **nur** gestartet, wenn folgende Secr
 - `APP_STORE_CONNECT_API_KEY_KEY_ID`
 - `APP_STORE_CONNECT_API_KEY_ISSUER`
 
-Wenn diese Werte fehlen, erzeugt der Release-Workflow weiterhin ein Artifact (Unsigned Pfad) und der Job bleibt erfolgreich.
-
-## Welche Secrets werden benötigt?
+Fehlen Werte, bleibt der Unsigned-Pfad (kein stiller „signed“-Fallback). `APPLE_TEAM_ID` kann `setup-apple-developer.sh` setzen; die übrigen Secrets kommen aus Zertifikat und App-Store-Connect-Key.
 
 ### Developer ID Application Zertifikat
 
-1. Exportiere ein **Developer ID Application** Zertifikat als `.p12`
-2. Base64-encode den `.p12` Inhalt:
-   - Ergebnis in `APPLE_DEVELOPER_ID_P12_BASE64`
-3. Setze das `.p12` Export-Passwort in `APPLE_DEVELOPER_ID_P12_PASSWORD`
-4. Setze den Team Identifier in `APPLE_TEAM_ID`
+1. [Certificates](https://developer.apple.com/account/resources/certificates/list): **Developer ID Application** erzeugen (CSR aus der Schlüsselbundverwaltung)
+2. Zertifikat als `.p12` exportieren
+3. Base64 des `.p12` → `APPLE_DEVELOPER_ID_P12_BASE64`
+4. Export-Passwort → `APPLE_DEVELOPER_ID_P12_PASSWORD`
 
-### App Store Connect API Key (.p8) für Notarization
+### App Store Connect API Key (.p8)
 
-1. Lade den `.p8` Schlüssel herunter (App Store Connect API Key)
-2. Base64-encode den `.p8` Inhalt:
-   - Ergebnis in `APP_STORE_CONNECT_API_KEY_BASE64`
-3. Setze:
-   - `APP_STORE_CONNECT_API_KEY_KEY_ID` (aus dem Key-Name / Key-ID)
-   - `APP_STORE_CONNECT_API_KEY_ISSUER` (Issuer UUID)
+1. [Integrations → App Store Connect API](https://appstoreconnect.apple.com/access/integrations/api): Key mit Zugang zu Certificates/Identifiers/Profiles (und Notary) anlegen
+2. `.p8` Base64 → `APP_STORE_CONNECT_API_KEY_BASE64`
+3. Key-ID → `APP_STORE_CONNECT_API_KEY_KEY_ID`
+4. Issuer-UUID → `APP_STORE_CONNECT_API_KEY_ISSUER`
+
+Optional lokal: `~/keys/AuthKey_<KEY_ID>.p8` (Fallback: `~/private_keys/AuthKey_<KEY_ID>.p8`). Dann kann `setup-apple-developer.sh` Provisioning nicht-interaktiv über `xcodebuild -authenticationKeyPath` fahren (`APP_STORE_CONNECT_API_KEY_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER`, optional `APP_STORE_CONNECT_API_KEY_PATH`).
 
 ## Befehlspfade (SSOT)
 
-- Signing/Notarize Shell Helper: `Scripts/sign-and-notarize.sh`
+- Team/Identity-Helfer: `Scripts/apple-developer.sh` (sourced)
+- Erstes Team-Setup: `bash ./Scripts/setup-apple-developer.sh`
+- Signing/Notarize: `Scripts/sign-and-notarize.sh`
   - `.app`: `bash ./Scripts/sign-and-notarize.sh --app-path /abs/path/to/Reisen.app`
   - `.dmg`: `bash ./Scripts/sign-and-notarize.sh --dmg-path /abs/path/to/Reisen.dmg` (sign → notarytool → staple)
 - Release Workflow: erst `.app` signieren/notarizen/staplen, dann DMG erzeugen, danach dieselbe Helper-API für die DMG
 
 ## Validierung / Troubleshooting
 
-- Wenn Keychain Identity nicht gefunden wird, prüfe:
-  - ob das importierte Zertifikat wirklich „Developer ID Application“ ist
-  - ob die Keychain erfolgreich entsperrt/importiert wurde
-- Wenn Notarization fehlschlägt:
-  - `notarytool submit --wait` liefert die konkrete Apple-Antwort in den Workflow-Logs
-
+- Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)
+- Keychain Identity für Notary nicht gefunden: importiertes Zertifikat muss **Developer ID Application** sein; Keychain entsperrt/importiert
+- Notarization: `notarytool submit --wait` liefert die Apple-Antwort in den Workflow-Logs
+- CloudKit: Container `iCloud.de.roschmac.Reisen` muss im Portal an **beide** App-IDs gebunden sein

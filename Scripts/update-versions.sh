@@ -15,7 +15,7 @@ Usage: Scripts/update-versions.sh [--verify] [--no-update-swift-tools-version]
 
 Updates toolchain/version pins not covered by Dependabot:
   - actionlint download URL (commit SHA in installer script)
-  - setup-xcode xcode-version (latest-stable)
+  - setup-xcode xcode-version (latest on self-hosted xcode-27)
   - Package.swift swift-tools-version (optional)
   - GITLEAKS_VERSION in gitleaks.yml
 
@@ -109,11 +109,11 @@ replace_swift_tools_version() {
 }
 
 update_xcode_versions_in_workflows() {
-  # Prefer setup-xcode latest-stable over fragile scraped Xcode numbers.
+  # Self-hosted xcode-27 may only have beta Xcode until a stable 27.x ships.
   local wf
   for wf in .github/workflows/*.yml; do
     replace_in_file "$wf" \
-      "s/(xcode-version:[[:space:]]*)\"[0-9]+\\.[0-9.]+\"/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)'[0-9]+\\.[0-9.]+'/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)[0-9]+\\.[0-9.]+/\\1latest-stable/g"
+      "s/(xcode-version:[[:space:]]*)\"[0-9]+\\.[0-9.]+\"/\\1latest/g; s/(xcode-version:[[:space:]]*)'[0-9]+\\.[0-9.]+'/\\1latest/g; s/(xcode-version:[[:space:]]*)[0-9]+\\.[0-9.]+/\\1latest/g; s/(xcode-version:[[:space:]]*)latest-stable/\\1latest/g"
   done
 }
 

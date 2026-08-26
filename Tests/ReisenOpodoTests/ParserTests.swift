@@ -23,12 +23,11 @@ func opodoParsesFlightsAndHotels() throws {
     #expect(typesByUrl["https://www.opodo.de/flight/def"] == .flight)
 }
 
-@Test("OpodoActivityListParser wirft bei fehlenden Bookings")
-func opodoThrowsWhenNoBookingsFound() {
+@Test("OpodoActivityListParser liefert leeren Katalog statt Fehler")
+func opodoEmptyHTMLIsEmptyCatalog() throws {
     let html = "<html><body><p>no bookings</p></body></html>"
-    #expect(throws: OpodoActivityListParserError.noBookingsFound) {
-        _ = try OpodoActivityListParser().parseBookings(from: html)
-    }
+    let bookings = try OpodoActivityListParser().parseBookings(from: html)
+    #expect(bookings.isEmpty)
 }
 
 @Test("OpodoCancellationDeadlineParser erkennt Storno Datum aus HTML")

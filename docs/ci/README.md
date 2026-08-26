@@ -17,7 +17,7 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 | Was | Werkzeug |
 |-----|----------|
 | GitHub-Action-SHAs (`uses: …@<sha> # vX.Y.Z`) | [Dependabot](../../.github/dependabot.yml) (`github-actions`, wöchentlich) |
-| actionlint-Installer-URL, `xcode-version: latest-stable`, `swift-tools-version`, `GITLEAKS_VERSION` | [`Scripts/update-versions.sh`](../../Scripts/update-versions.sh) via `versions-update.yml` |
+| actionlint-Installer-URL, `xcode-version: latest`, `swift-tools-version`, `GITLEAKS_VERSION` | [`Scripts/update-versions.sh`](../../Scripts/update-versions.sh) via `versions-update.yml` |
 
 Dependabot-PRs laufen durch die echte CI. Der Versions-Workflow nutzt `--verify` nur, wenn Dateien geändert wurden.
 
@@ -48,7 +48,7 @@ Für manuelle Freigabe von Tag-Releases kann in GitHub ein Environment `release`
 
 ## Apple Signing / Notarization
 
-Siehe [`apple-signing.md`](apple-signing.md).
+Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](apple-signing.md). Einmalig: `bash ./Scripts/setup-apple-developer.sh`.
 
 ## AI-Assistenz & kostenlose PR-Reviewer (Open Source / public)
 

@@ -6,7 +6,7 @@ let package = Package(
     name: "Reisen",
     platforms: [
         .macOS(.v26),
-        .iOS(.v17),
+        .iOS(.v26),
     ],
     products: [
         .library(name: "ReisenDomain", targets: ["ReisenDomain"]),
@@ -36,6 +36,9 @@ let package = Package(
             path: "Sources/ReisenData",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("Security"),
             ]
         ),
         .target(

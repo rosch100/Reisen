@@ -269,9 +269,7 @@ private struct ProviderWebView: NSViewRepresentable {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
         config.defaultWebpagePreferences = preferences
-        if #available(macOS 15.0, *) {
-            config.preferences.isElementFullscreenEnabled = true
-        }
+        config.preferences.isElementFullscreenEnabled = true
         config.userContentController.add(context.coordinator, name: LoginFieldHints.messageHandlerName)
         LoginSubmitDebugProbe.addMessageHandler(to: config.userContentController, handler: context.coordinator)
         LoginSubmitDebugProbe.addUserScript(to: config.userContentController)

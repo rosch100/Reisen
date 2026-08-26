@@ -22,4 +22,12 @@ if [[ ! -d "$ROOT/Reisen.xcodeproj" ]]; then
   exit 1
 fi
 
+# shellcheck source=apple-developer.sh
+source "$ROOT/Scripts/apple-developer.sh"
+TEAM_ID="$(reisen_apple_team_id)"
+if ! grep -q "DEVELOPMENT_TEAM = ${TEAM_ID};" "$ROOT/Reisen.xcodeproj/project.pbxproj"; then
+  echo "Fehler: Generiertes Projekt enthält DEVELOPMENT_TEAM ${TEAM_ID} nicht." >&2
+  exit 1
+fi
+
 echo "OK: $ROOT/Reisen.xcodeproj"

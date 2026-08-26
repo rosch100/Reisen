@@ -1,3 +1,4 @@
+import Foundation
 import ReisenDomain
 
 public protocol GapDeepLinkBuilding: Sendable {
@@ -16,6 +17,14 @@ public struct ProviderRegistry {
     ) {
         self.providers = providers
         self.deepLinkBuilders = deepLinkBuilders
+    }
+
+    public var syncProviderIDs: [ProviderID] {
+        providers.map(\.id)
+    }
+
+    public func enabledSyncProviderIDs(defaults: UserDefaults = .standard) -> [ProviderID] {
+        syncProviderIDs.filter { AppSettingsKeys.isProviderEnabled($0, defaults: defaults) }
     }
 
     public func provider(id: ProviderID) -> (any TravelProvider)? {

@@ -6,11 +6,11 @@
 
 Das Repo ist ein lokales SwiftPM-Projekt (macOS primär) ohne bestehende GitHub Actions / Workflows. Der relevante Build-/Testpfad ist über `swift build` und `swift test` (Swift Testing) sowie ein lokales App-Build-Skript `Scripts/build-app.sh`.
 
-Wichtig: Die Package-Konfiguration setzt `.macOS(.v27)` in `Package.swift`. Daher muss die CI einen kompatiblen Runner/Xcode verwenden, sonst schlagen Build/Test fehl.
+Wichtig: Die Package-Konfiguration setzt `.macOS(.v26)` und `.iOS(.v26)` in `Package.swift`. Die CI baut mit Xcode 27 / SDK 27.
 
 ## Entscheidungen (fix)
 
-1. **Platform/Runner:** macOS Runner `macos-26` und Xcode **26.x** gepinnt.
+1. **Platform/Runner:** Runner `xcode-27` und Xcode **27**.
 2. **Build/Test:** getrennt in „Build → Test“ innerhalb eines Jobs auf macOS (für klare CI-Zeitsignale und bessere Debuggability).
 3. **Keine Linux-Tests:** kein Linux `swift test`, da AppKit/SwiftData/WebView-Integration erwartet wird.
 4. **Signing/Notarize:** als „vorbereitetes, aber secrets-gegate“ Feature:

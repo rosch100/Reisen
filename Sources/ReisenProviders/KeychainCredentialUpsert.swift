@@ -6,16 +6,12 @@ internal enum KeychainCredentialUpsert {
         keychain: KeychainInternetPasswordKeychainAPI,
         normalized: KeychainCredentialSave.NormalizedInputs
     ) throws {
-        let existingQuery: [CFString: Any] = [
-            kSecClass: kSecClassInternetPassword,
-            kSecAttrServer: normalized.server,
-            kSecAttrAccount: normalized.username,
-            kSecAttrSynchronizable: kSecAttrSynchronizableAny
-        ]
-        let update: [CFString: Any] = [
-            kSecValueData: normalized.passwordData,
-            kSecAttrProtocol: kSecAttrProtocolHTTPS
-        ]
+        let accountID = KeychainCredentialAccount.makeID(
+            serverHost: normalized.server,
+            username: normalized.username
+        )
+        let existingQuery = KeychainCredentialQuery.genericBase(account: accountID)
+        let update = KeychainCredentialQuery.genericUpdateData(normalized.passwordData)
 
         let updateStatus = keychain.itemUpdate(
             existingQuery: existingQuery as CFDictionary,
@@ -26,14 +22,12 @@ internal enum KeychainCredentialUpsert {
             throw KeychainCredentialStore.CredentialStoreError.saveFailed(status: updateStatus)
         }
 
-        let add: [CFString: Any] = [
-            kSecClass: kSecClassInternetPassword,
-            kSecAttrServer: normalized.server,
-            kSecAttrAccount: normalized.username,
-            kSecAttrProtocol: kSecAttrProtocolHTTPS,
-            kSecValueData: normalized.passwordData,
-            kSecAttrLabel: "\(normalized.server) (\(normalized.username))"
-        ]
+        let add = KeychainCredentialQuery.genericAdd(
+            accountID: accountID,
+            passwordData: normalized.passwordData,
+            server: normalized.server,
+            username: normalized.username
+        )
         let addStatus = keychain.itemAdd(add: add as CFDictionary)
         guard addStatus == errSecSuccess else {
             throw KeychainCredentialStore.CredentialStoreError.saveFailed(status: addStatus)

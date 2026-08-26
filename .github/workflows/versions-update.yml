@@ -12,7 +12,7 @@ permissions:
 jobs:
   bump:
     name: Version Pins aktualisieren
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 45
     if: github.repository == 'rosch100/Reisen'
 
@@ -26,7 +26,7 @@ jobs:
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
-          xcode-version: latest-stable
+          xcode-version: latest
 
       - name: Versions aktualisieren
         env:

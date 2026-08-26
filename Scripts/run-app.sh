@@ -10,8 +10,7 @@ APP="$("$ROOT/Scripts/build-app.sh")"
 pkill -x Reisen 2>/dev/null || true
 sleep 0.3
 
-# open -a aktiviert zuverlässiger als open <path> (sonst oft hinter Cursor).
-open -a "$APP"
-sleep 0.4
-osascript -e 'tell application "Reisen" to activate' >/dev/null 2>&1 || true
+# Launch Services trifft bei gleicher Bundle-ID oft /Applications (ältere Kopie).
+# `-n` + Pfad startet genau dieses Bundle; kein `open -a` / Bundle-ID-Activate.
+open -n "$APP"
 echo "Gestartet: $APP" >&2

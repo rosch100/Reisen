@@ -86,6 +86,37 @@ public enum ProviderSessionNavigation {
                     // Probe fehlgeschlagen: Status bleibt konservativ.
                 }
             }
+        case .shouldProbeTraveloka:
+            Task {
+                do {
+                    let context = await webView.travelokaSessionContext()
+                    guard context.hasSentinel else { return }
+                    let text = try await webView.fetchAuthenticatedText(
+                        url: TravelokaSessionProbe.whoamiURL,
+                        method: "POST",
+                        accept: "application/json",
+                        referer: TravelokaSessionProbe.signInReferer(routePrefix: context.routePrefix),
+                        contentType: "application/json",
+                        body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
+                        headers: TravelokaSessionProbe.whoamiHeaders(context: context)
+                    )
+                    if let loggedIn = TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text) {
+                        await MainActor.run {
+                            if let enabledProviderIDs {
+                                hub.syncEnabledProviders(enabledProviderIDs)
+                            }
+                            if loggedIn {
+                                hub.updateStatus(providerID, status: .sessionReady)
+                            } else if hub.status(for: providerID) != .sessionReady {
+                                hub.updateStatus(providerID, status: .needsLogin)
+                            }
+                            onChanged()
+                        }
+                    }
+                } catch {
+                    // Probe fehlgeschlagen: Status bleibt konservativ.
+                }
+            }
         }
 
         let nowReady = hub.status(for: providerID) == .sessionReady

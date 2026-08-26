@@ -14,11 +14,16 @@ struct GlobalChromeTrailingToolbar: View {
 
     @Environment(\.syncStore) private var syncStore
     @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.providerRegistry) private var providerRegistry
+
+    private var syncProviderIDs: [ProviderID] {
+        providerRegistry?.syncProviderIDs ?? []
+    }
 
     private var syncAllCandidates: [(ProviderID, WKWebView)] {
         _ = sessionChromeEpoch
         guard let hub = sessionHub else { return [] }
-        return iosSyncProviderIDs.compactMap { id in
+        return syncProviderIDs.compactMap { id in
             guard hub.status(for: id) == .sessionReady,
                   let webView = hub.webView(for: id) else { return nil }
             return (id, webView)
@@ -63,6 +68,10 @@ struct SyncBackgroundSessionProbe: View {
 
     @State private var webViewsByProvider: [ProviderID: WKWebView?] = [:]
 
+    private var syncProviderIDs: [ProviderID] {
+        providerRegistry?.syncProviderIDs ?? []
+    }
+
     private func loginURL(for providerID: ProviderID) -> URL? {
         let provider = providerRegistry?.provider(id: providerID)
         let loginConfig = provider as? any TravelProviderLoginConfiguration
@@ -78,7 +87,7 @@ struct SyncBackgroundSessionProbe: View {
 
     @MainActor
     private func ensureSlots() {
-        sessionHub?.syncEnabledProviders(Set(iosSyncProviderIDs))
+        sessionHub?.syncEnabledProviders(Set(syncProviderIDs))
     }
 
     @MainActor
@@ -88,7 +97,7 @@ struct SyncBackgroundSessionProbe: View {
             webView: finishedWebView,
             providerID: providerID,
             hub: hub,
-            enabledProviderIDs: Set(iosSyncProviderIDs),
+            enabledProviderIDs: Set(syncProviderIDs),
             notifyAlways: false
         ) {
             onSessionChanged()
@@ -97,7 +106,7 @@ struct SyncBackgroundSessionProbe: View {
 
     var body: some View {
         ZStack {
-            ForEach(iosSyncProviderIDs, id: \.self) { id in
+            ForEach(syncProviderIDs, id: \.self) { id in
                 WebViewHost(
                     loginURL: loginURL(for: id),
                     providerID: id,

@@ -7,7 +7,7 @@ import SwiftData
 
 @MainActor
 public final class LocalReminderScheduler: ReminderScheduling {
-    public enum SchedulerError: LocalizedError {
+    public enum SchedulerError: LocalizedError, PrivacyAccessDenying {
         case notRunningAsAppBundle
         case authorizationDenied
 
@@ -16,7 +16,14 @@ public final class LocalReminderScheduler: ReminderScheduling {
             case .notRunningAsAppBundle:
                 return "Benachrichtigungen erfordern die App als .app-Bundle (Scripts/run-app.sh)."
             case .authorizationDenied:
-                return "Benachrichtigungen wurden nicht autorisiert."
+                return PrivacySettingPane.notifications.denialMessage
+            }
+        }
+
+        public var privacySettingPane: PrivacySettingPane? {
+            switch self {
+            case .authorizationDenied: return .notifications
+            case .notRunningAsAppBundle: return nil
             }
         }
     }

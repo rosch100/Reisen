@@ -13,16 +13,8 @@ public struct ActivityListParser {
         }
 
         let candidateLinks = extractBookingLinks(from: html)
-        guard !candidateLinks.isEmpty else {
-            throw Check24ParseError.noBookingLinkFound
-        }
-
-        let parsedBookings = try candidateLinks.compactMap { link in
-            try parseBookingWindow(for: link, in: html)
-        }
-
-        if parsedBookings.isEmpty {
-            throw Check24ParseError.noBookingDatesFound
+        let parsedBookings = candidateLinks.compactMap { link in
+            try? parseBookingWindow(for: link, in: html)
         }
 
         let cancellationDeadlines = (try? parseCancellationDeadlines(from: html)) ?? []
