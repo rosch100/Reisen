@@ -7,9 +7,10 @@ import ReisenCheck24
 import ReisenOpodo
 import ReisenBookingCom
 import ReisenAirbnb
+import ReisenGetYourGuide
 
 /// Plattformneutraler App- und Store-Bootstrap.
-/// UI-spezifische Views (z. B. Copyable Text via AppKit) bleiben weiterhin in den UI-Modulen.
+/// UI-spezifische Views (z. B. CopyableText via AppKit) bleiben weiterhin in den UI-Modulen.
 @MainActor
 @Observable
 public final class AppBootstrap {
@@ -19,21 +20,86 @@ public final class AppBootstrap {
     }
 
     public private(set) var state: State
+    public private(set) var isResetting = false
 
     public init() {
         do {
             self.state = try Self.makeReadyState()
+            startCloudSideEffectObserverIfReady()
         } catch {
             self.state = .failed(error.localizedDescription)
         }
     }
 
-    public func resetStoreAndRetry() {
+    /// Wipes local store files and reopens the container.
+    /// - Note: With iCloud/CloudKit enabled, syncable data may reappear from the account
+    ///   unless it was previously deleted via `wipeCloudDataBeforeReset`.
+    public func resetStoreAndRetry(wipeCloudDataBeforeReset: Bool = false) {
+        guard !isResetting else { return }
+        isResetting = true
+        Task { @MainActor in
+            defer { isResetting = false }
+            await performReset(wipeCloudDataBeforeReset: wipeCloudDataBeforeReset)
+        }
+    }
+
+    private func performReset(wipeCloudDataBeforeReset: Bool) async {
         do {
-            try PersistenceBootstrap.resetStoreFiles()
-            state = try Self.makeReadyState()
+            stopCloudSideEffectObserverIfReady()
+
+            if wipeCloudDataBeforeReset {
+                try await wipeCloudThenResetLocal()
+            } else {
+                try PersistenceBootstrap.resetStoreFiles()
+                try activateReadyState()
+            }
         } catch {
             state = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Cloud wipe works from `.ready` (delete+export) or `.failed` (reopen → import → delete → export).
+    private func wipeCloudThenResetLocal() async throws {
+        if case .ready(let container, _, _, _) = state {
+            try await wipeCloud(from: container.mainContext)
+            try PersistenceBootstrap.resetStoreFiles()
+            try activateReadyState()
+            return
+        }
+
+        // Store could not open: recreate local files, pull cloud data, then tombstone it.
+        try PersistenceBootstrap.resetStoreFiles()
+        let provisional = try Self.makeReadyState()
+        guard case .ready(let container, _, _, _) = provisional else {
+            throw PersistenceStoreError.storeIncompatible(
+                "Cloud-Wipe nach Store-Fehler: Container konnte nicht geöffnet werden."
+            )
+        }
+        await PersistenceBootstrap.awaitCloudKitImportIfNeeded()
+        try await wipeCloud(from: container.mainContext)
+        state = provisional
+        startCloudSideEffectObserverIfReady()
+    }
+
+    private func wipeCloud(from context: ModelContext) async throws {
+        try PersistenceBootstrap.wipeSyncedEntities(in: context, includeLocal: true)
+        await PersistenceBootstrap.awaitCloudKitExportIfNeeded()
+    }
+
+    private func activateReadyState() throws {
+        state = try Self.makeReadyState()
+        startCloudSideEffectObserverIfReady()
+    }
+
+    private func startCloudSideEffectObserverIfReady() {
+        if case .ready(_, _, let syncStore, _) = state {
+            syncStore.startObservingCloudSideEffects()
+        }
+    }
+
+    private func stopCloudSideEffectObserverIfReady() {
+        if case .ready(_, _, let syncStore, _) = state {
+            syncStore.stopObservingCloudSideEffects()
         }
     }
 
@@ -51,10 +117,10 @@ public final class AppBootstrap {
                 Check24TravelProvider(),
                 OpodoTravelProvider(),
                 BookingComTravelProvider(),
-                AirbnbTravelProvider()
+                AirbnbTravelProvider(),
+                GetYourGuideTravelProvider()
             ],
             deepLinkBuilders: [Check24DeepLinkBuilder()]
         )
     }
 }
-

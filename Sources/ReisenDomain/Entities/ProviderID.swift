@@ -18,6 +18,7 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
     public static let opodo = ProviderID(rawValue: "opodo")
     public static let booking = ProviderID(rawValue: "booking")
     public static let airbnb = ProviderID(rawValue: "airbnb")
+    public static let getYourGuide = ProviderID(rawValue: "getyourguide")
     /// Lokale / benutzerdefinierte Buchung (wird nicht über Provider-Sync ersetzt).
     public static let manual = ProviderID(rawValue: "manual")
 }

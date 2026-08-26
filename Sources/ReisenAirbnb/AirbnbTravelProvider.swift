@@ -51,8 +51,26 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
             confirmationCode: confirmationCode
         )
 
+        let resolvedStatus: BookingStatus? = {
+            guard let reservationStatus = tripDetails.reservationStatus else { return nil }
+            let haystack = reservationStatus.lowercased()
+            if haystack.contains("cancel") { return .cancelled }
+            return .confirmed
+        }()
+
+        if schedulableType.uppercased().contains("EXPERIENCE") {
+            return try await enrichExperience(
+                webView: webView,
+                schedulableType: schedulableType,
+                confirmationCode: confirmationCode,
+                tripDetails: tripDetails,
+                resolvedStatus: resolvedStatus
+            )
+        }
+
         onProgress?("Lade Reservation-Overview (Airbnb)…")
-        let scheduledEventsURL = scheduledEventsURL(
+        let scheduledEventsURL = reservationOverviewURL(
+            pathPrefix: "/api/v2/scheduled_events",
             schedulableType: schedulableType,
             confirmationCode: confirmationCode
         )
@@ -62,6 +80,7 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         )
 
         let scheduledParsed = try AirbnbScheduledEventsParser.parse(responseText: scheduledEventsText)
+        let guestHints = AirbnbGuestHintParser().parse(from: scheduledEventsText)
 
         let hotelOffsetSeconds: Int? = {
             guard ref.bookingType == .hotel else { return nil }
@@ -69,17 +88,11 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
             return timeZone.secondsFromGMT(for: tripDetails.tripStartAt)
         }()
 
-        let resolvedStatus: BookingStatus? = {
-            guard let reservationStatus = tripDetails.reservationStatus else { return nil }
-            let haystack = reservationStatus.lowercased()
-            if haystack.contains("cancel") { return .cancelled }
-            return .confirmed
-        }()
-
         return ProviderBookingEnrichment(
             deadlines: scheduledParsed.deadlines,
             rateDetails: scheduledParsed.rateDetails,
             passengers: nil,
+            guestHints: guestHints.isEmpty ? nil : guestHints,
             hotelOffsetSeconds: hotelOffsetSeconds,
             hotelCheckInMinutes: scheduledParsed.hotelCheckInMinutes,
             hotelCheckOutMinutes: scheduledParsed.hotelCheckOutMinutes,
@@ -108,6 +121,50 @@ private extension AirbnbTravelProvider {
         ]
     }
 
+    func enrichExperience(
+        webView: WKWebView,
+        schedulableType: String,
+        confirmationCode: String,
+        tripDetails: AirbnbTripDetails,
+        resolvedStatus: BookingStatus?
+    ) async throws -> ProviderBookingEnrichment {
+        onProgress?("Lade Experience-Details (Airbnb)…")
+        let detailsURL = reservationOverviewURL(
+            pathPrefix: "/api/v2/activity_reservation_details",
+            schedulableType: schedulableType,
+            confirmationCode: confirmationCode
+        )
+        let detailsText = try await webView.airbnbFetchTextAsync(
+            url: detailsURL,
+            headers: scheduledEventsHeaders(referer: loginURL.absoluteString)
+        )
+        let parsed = try AirbnbActivityReservationDetailsParser.parse(
+            responseText: detailsText,
+            referenceDate: tripDetails.tripStartAt
+        )
+
+        let guestAdults = parsed.guestAdults ?? tripDetails.guestAdults
+        let passengers: [BookingPassenger]? = {
+            guard let guestAdults, guestAdults > 0 else { return nil }
+            return (1...guestAdults).map { passengerNumber in
+                BookingPassenger(passengerNumber: passengerNumber, travellerType: .adult)
+            }
+        }()
+
+        return ProviderBookingEnrichment(
+            deadlines: parsed.deadlines,
+            rateDetails: parsed.rateDetails,
+            passengers: passengers,
+            hotelOffsetSeconds: nil,
+            hotelCheckInMinutes: nil,
+            hotelCheckOutMinutes: nil,
+            status: resolvedStatus,
+            title: parsed.title,
+            locationTo: parsed.locationTo,
+            locationToAddress: parsed.locationToAddress
+        )
+    }
+
     func scheduledEventsHeaders(referer: String) -> [String: String] {
         [
             "Accept": "application/json",
@@ -115,9 +172,14 @@ private extension AirbnbTravelProvider {
         ]
     }
 
-    func scheduledEventsURL(schedulableType: String, confirmationCode: String) -> URL {
+    /// Shared query params for Stay `scheduled_events` and Experience `activity_reservation_details`.
+    func reservationOverviewURL(
+        pathPrefix: String,
+        schedulableType: String,
+        confirmationCode: String
+    ) -> URL {
         var comps = URLComponents(url: AirbnbAPI.baseURL, resolvingAgainstBaseURL: false)!
-        comps.path = "/api/v2/scheduled_events/\(schedulableType)/\(confirmationCode)"
+        comps.path = "\(pathPrefix)/\(schedulableType)/\(confirmationCode)"
         comps.queryItems = [
             URLQueryItem(name: "locale", value: "de"),
             URLQueryItem(name: "currency", value: "EUR"),

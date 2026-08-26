@@ -10,6 +10,8 @@ public struct Reminder: Identifiable, Equatable, Sendable {
     public var notes: String?
     public var cancellationDeadlineID: UUID?
     public var gapID: UUID?
+    /// Soft reference for `preTravelHints` (one reminder set per booking).
+    public var bookingID: UUID?
     public var externalAlarmId: String?
 
     public init(
@@ -22,6 +24,7 @@ public struct Reminder: Identifiable, Equatable, Sendable {
         notes: String? = nil,
         cancellationDeadlineID: UUID? = nil,
         gapID: UUID? = nil,
+        bookingID: UUID? = nil,
         externalAlarmId: String? = nil
     ) {
         self.id = id
@@ -33,6 +36,7 @@ public struct Reminder: Identifiable, Equatable, Sendable {
         self.notes = notes
         self.cancellationDeadlineID = cancellationDeadlineID
         self.gapID = gapID
+        self.bookingID = bookingID
         self.externalAlarmId = externalAlarmId
     }
 }

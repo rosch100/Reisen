@@ -125,10 +125,16 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         )
 
         let hotelOffsetSeconds: Int? = deadlines.compactMap(\.hotelOffsetSeconds).first ?? 0
+        let pageText = try await loadTripDetailsPageText(in: webView, externalURL: externalUrl)
+        let guestHints = StayHintHTMLExtractor.extract(
+            from: pageText,
+            providerRaw: ProviderID.opodo.rawValue
+        )
 
         return ProviderBookingEnrichment(
             deadlines: deadlines,
             rateDetails: nil,
+            guestHints: guestHints.isEmpty ? nil : guestHints,
             hotelOffsetSeconds: hotelOffsetSeconds,
             status: resolvedStatus
         )

@@ -1,6 +1,8 @@
 import SwiftUI
 import AppKit
 import ReisenDomain
+import ReisenAppCore
+import ReisenSharedUI
 
 struct ProviderSidebarRow: View {
     let providerID: ProviderID
@@ -38,21 +40,9 @@ struct ProviderSidebarRow: View {
         )
     }
 
-    private var trafficLightColor: Color {
-        switch trafficLight {
-        case .green: return .green
-        case .red: return .red
-        case .gray: return Color(nsColor: .tertiaryLabelColor)
-        }
-    }
+    private var trafficLightColor: Color { trafficLight.color }
 
-    private var trafficLightAccessibilityLabel: String {
-        switch trafficLight {
-        case .green: return "Angemeldet"
-        case .red: return "Anmeldung erforderlich"
-        case .gray: return "Provider deaktiviert"
-        }
-    }
+    private var trafficLightAccessibilityLabel: String { trafficLight.displayLabel }
 
     var body: some View {
         HStack(spacing: 10) {

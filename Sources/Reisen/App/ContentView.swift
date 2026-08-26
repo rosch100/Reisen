@@ -3,6 +3,7 @@ import SwiftData
 import ReisenDomain
 import ReisenData
 import ReisenProviders
+import ReisenAppCore
 import ReisenSharedUI
 import AppKit
 import Foundation
@@ -29,10 +30,8 @@ struct ContentView: View {
     /// Selektion der mittleren Buchungsliste → rechte Detailspalte.
     @State private var selectedTimelineID: String? = nil
     @State private var bookingEditorSession: BookingEditorSession? = nil
-    /// Lücke/Buchung-Titel Overrides aus dem Gap-Editor.
-    @State private var gapOverrides: [String: TripDetailView.GapOverride] = [:]
     /// Payload des aktiven Gap-Editors (Sheet in Detailspalte).
-    @State private var gapEditorPayload: TripDetailView.GapEditorPayload? = nil
+    @State private var gapEditorPayload: GapEditorPayload? = nil
 
     @State private var activeTripID: UUID? = nil
 
@@ -147,7 +146,6 @@ struct ContentView: View {
             guard newTripID != activeTripID else { return }
             activeTripID = newTripID
             selectedTimelineID = nil
-            gapOverrides = [:]
             gapEditorPayload = nil
         }
         .sheet(isPresented: $showCreateTrip) {
@@ -179,15 +177,14 @@ struct ContentView: View {
                     selection = trips.first(where: { $0.id != trip.id }).map { .trip($0.id) }
                         ?? .providerSync(enabledProviderIDs.first ?? .check24)
                 }
-                modelContext.delete(trip)
-                try? modelContext.save()
+                try? TripDeletion.perform(trip: trip, in: modelContext)
                 tripPendingDelete = nil
             }
             Button("Abbrechen", role: .cancel) {
                 tripPendingDelete = nil
             }
         } message: {
-            Text("Die Reise und zugeordnete Lücken-Metadaten werden entfernt. Buchungen bleiben als offene Buchungen erhalten, sofern sie nicht gelöscht werden.")
+            Text(TripDeletion.confirmationMessage)
         }
     }
 
@@ -472,9 +469,7 @@ struct ContentView: View {
                                         Button("Buchung hinzufügen…") {
                                             startCreateBooking(in: trip, selectBookingID: booking.id)
                                         }
-                                        if let urlString = booking.externalUrl,
-                                           let url = URL(string: urlString),
-                                           !urlString.hasPrefix("reisen://manual/") {
+                                        if let url = booking.browserURL {
                                             Button("Buchung im Browser öffnen") {
                                                 NSWorkspace.shared.open(url)
                                             }
@@ -526,19 +521,12 @@ struct ContentView: View {
         .navigationTitle("Reisen")
     }
 
-    private var startOfToday: Date {
-        Calendar.current.startOfDay(for: Date())
-    }
     private var openBookings: [SDBooking] {
-        allBookings.filter { booking in
-            booking.trip == nil &&
-            booking.startAt >= startOfToday &&
-            booking.status != .cancelled
-        }
+        allBookings.filter { OpenBookingMatching.isOpenUnassigned($0) }
     }
 
     private func matchingTrip(for booking: SDBooking) -> SDTrip? {
-        trips.first { isOpenBookingCandidate(booking, for: $0) }
+        trips.first { OpenBookingMatching.isCandidate(booking, for: $0) }
     }
 
     @ViewBuilder
@@ -550,7 +538,6 @@ struct ContentView: View {
                     mode: .list,
                     trip: trip,
                     selectedTimelineID: $selectedTimelineID,
-                    gapOverrides: $gapOverrides,
                     gapEditorPayload: $gapEditorPayload,
                     bookingEditorSession: $bookingEditorSession
                 )
@@ -593,13 +580,7 @@ struct ContentView: View {
                                 Button {
                                     selectedOpenBookingID = booking.id
                                 } label: {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(booking.title ?? booking.bookingType.rawValue.capitalized)
-                                            .lineLimit(1)
-                                        Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                    OpenBookingRow(booking: booking)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -611,9 +592,7 @@ struct ContentView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .contextMenu {
-                                    if let urlString = booking.externalUrl,
-                                       let url = URL(string: urlString),
-                                       !urlString.hasPrefix("reisen://manual/") {
+                                    if let url = booking.browserURL {
                                         Button("Buchung im Browser öffnen") {
                                             NSWorkspace.shared.open(url)
                                         }
@@ -695,7 +674,6 @@ struct ContentView: View {
                     mode: .detail,
                     trip: trip,
                     selectedTimelineID: $selectedTimelineID,
-                    gapOverrides: $gapOverrides,
                     gapEditorPayload: $gapEditorPayload,
                     bookingEditorSession: $bookingEditorSession
                 )
@@ -713,17 +691,6 @@ struct ContentView: View {
     private struct OpenBookingDetailView: View {
         let booking: SDBooking
 
-        /// Stornofristen in Hotel-/Unterkunfts-Zeitzone inkl. Uhrzeit (Booking.com HAR).
-        private static func formatDeadline(_ deadline: SDCancellationDeadline, booking: SDBooking) -> String {
-            let offset = deadline.hotelOffsetSeconds ?? booking.hotelOffsetSeconds
-            let tz = offset.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "de_DE")
-            formatter.timeZone = tz
-            formatter.dateFormat = "d. MMMM yyyy HH:mm"
-            return formatter.string(from: deadline.deadlineAt)
-        }
-
         var body: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -739,45 +706,11 @@ struct ContentView: View {
                                 .foregroundStyle(.secondary)
                         }
 
-                        if !booking.cancellationDeadlines.isEmpty {
+                        if !booking.resolvedCancellationDeadlines.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Storno")
                                     .font(.subheadline.weight(.semibold))
-
-                                ForEach(booking.cancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt }), id: \.id) { deadline in
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack(alignment: .top, spacing: 10) {
-                                            Image(systemName: "exclamationmark.triangle")
-                                                .foregroundStyle(.orange)
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(Self.formatDeadline(deadline, booking: booking))
-                                                    .font(.caption.weight(.medium))
-                                                Text(deadline.isFreeCancellation ? "Kostenlos" : "Kostenpflichtig")
-                                                    .font(.caption2)
-                                                    .foregroundStyle(deadline.isFreeCancellation ? .green : .secondary)
-                                            }
-                                        }
-
-                                        if let fee = deadline.cancellationFeeAmount {
-                                            Text(formatCurrencyAmount(fee, currencyCode: booking.rateDetails?.totalPriceCurrency))
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
-                                        }
-
-                                        if deadline.isStrict {
-                                            Text("strikt")
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
-                                        }
-
-                                        if let policy = deadline.policyText, !policy.isEmpty {
-                                            Text(policy)
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
-                                                .textSelection(.enabled)
-                                        }
-                                    }
-                                }
+                                BookingCancellationDeadlinesView(booking: booking)
                             }
                         } else {
                             ContentUnavailableView(
@@ -785,6 +718,14 @@ struct ContentView: View {
                                 systemImage: "info.circle",
                                 description: Text("Für diese Buchung sind keine Stornobedingungen hinterlegt.")
                             )
+                        }
+
+                        if !booking.resolvedGuestHints.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(GuestHintCategory.preTravelImportant.displayTitle)
+                                    .font(.subheadline.weight(.semibold))
+                                BookingGuestHintsView(booking: booking)
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -803,10 +744,7 @@ struct ContentView: View {
     }
 
     private func futureBookings(for trip: SDTrip) -> [SDBooking] {
-        let startOfToday = Calendar.current.startOfDay(for: Date())
-        return trip.bookings
-            .filter { $0.startAt >= startOfToday && $0.status != .cancelled }
-            .sorted { $0.startAt < $1.startAt }
+        trip.timelineBookings()
     }
 
     private func focusTrip(_ trip: SDTrip) {

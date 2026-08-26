@@ -80,16 +80,14 @@ public struct AppSettings: Equatable, Sendable {
     }
 
     public var leadTimesDays: [Int] {
-        leadTimesDaysRaw
-            .split(separator: ",")
-            .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
-            .filter { $0 > 0 }
+        LeadTimesDays.normalized(
+            leadTimesDaysRaw
+                .split(separator: ",")
+                .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        )
     }
-}
 
-public enum CalendarTitleMode: String, CaseIterable, Codable, Equatable, Sendable {
-    /// Create/select EventKit EKEvent + EKReminder calendars per trip title.
-    case tripTitle = "tripTitle"
-    /// Use the global names `calendarTitle` + `reminderCalendarTitle`.
-    case fixed = "fixed"
+    public static func fromUserDefaults(_ defaults: UserDefaults = .standard) -> AppSettings {
+        AppSettingsUserDefaults.load(defaults)
+    }
 }

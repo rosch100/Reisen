@@ -1,19 +1,19 @@
 # Universal iOS/iPadOS App Design (Reisen)
 
 ## Ziel
-Eine iPadOS/iOS-App bereitstellen, die die Kernfunktionen der macOS-App abbildet (Reisen, Buchungen, Gaps, Provider-Sync über Login im eingebetteten WebView, Settings, lokale Erinnerungen/Kalender), ohne iCloud/CloudKit in v1. Auslieferung ist TestFlight-bereit über ein separates iOS/iPadOS Target.
+Eine iPadOS/iOS-App bereitstellen, die die Kernfunktionen der macOS-App abbildet (Reisen, Buchungen, Gaps, Provider-Sync über Login im eingebetteten WebView, Settings, lokale Erinnerungen/Kalender) und geräteübergreifend über SwiftData+CloudKit synchronisiert. Auslieferung ist TestFlight-bereit über ein separates iOS/iPadOS Target.
 
-## Scope (v1)
-- iPhone + iPad (Universal)
-- Lokale SwiftData-Persistenz pro Gerät (kein Cloud Sync)
+## Scope (aktuell)
+- iPhone + iPad (Universal) + macOS über gemeinsamen CloudKit-Container `iCloud.de.roschmac.Reisen`
+- Hybrid-Persistenz: Cloud-Store (Trips/Bookings/Gaps/…) + Local-Store (EventKit-Links)
 - Provider-Sync: Login im eingebetteten `WKWebView`, dann Sync-Pipeline und Darstellung von Trips/Buchungen
-- Settings: Aktivierung Erinnerungen/Apple Kalender, Vorlaufzeiten, Kalender-Strategie
-- Side Effects: Kalender-Einträge + Reminder/Notifications (wenn Nutzer aktiviert)
-- Fehlerzustände: Store-Init-Fehler mit Reset-Dialog (destruktiv nur mit Confirm)
+- Settings: Aktivierung Erinnerungen/Apple Kalender, Vorlaufzeiten, Kalender-Strategie, iCloud-Status
+- Side Effects: Kalender-Einträge + Reminder/Notifications lokal nach Cloud-Änderungen neu aufbauen
+- Fehlerzustände: Store-Init-Fehler mit Reset-Dialog (optional inkl. Cloud-Wipe, destruktiv nur mit Confirm)
 
 ## Nicht-Ziele
-- iCloud/CloudKit Sync zwischen Geräten
-- App Store Release-Workflow und Screenshots in v1
+- Sync von WebView-Cookies/Keychain-Credentials zwischen Geräten
+- App Store Release-Workflow und Screenshots
 - Catalyst
 - macOS-Menü-Shortcuts 1:1 auf iOS
 

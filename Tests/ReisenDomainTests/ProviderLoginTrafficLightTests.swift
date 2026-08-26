@@ -18,3 +18,9 @@ import ReisenDomain
 @Test func trafficLight_enabledUnknownSession_isRed() {
     #expect(ProviderLoginTrafficLight.resolve(isEnabled: true, isLoggedIn: nil) == .red)
 }
+
+@Test func trafficLight_displayLabels_areStable() {
+    #expect(ProviderLoginTrafficLight.green.displayLabel == "Angemeldet")
+    #expect(ProviderLoginTrafficLight.red.displayLabel == "Anmeldung erforderlich")
+    #expect(ProviderLoginTrafficLight.gray.displayLabel == "Provider deaktiviert")
+}
