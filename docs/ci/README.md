@@ -48,7 +48,7 @@ Für manuelle Freigabe von Tag-Releases kann in GitHub ein Environment `release`
 
 ## Apple Signing / Notarization
 
-Siehe [`apple-signing.md`](apple-signing.md).
+Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](apple-signing.md). Einmalig: `bash ./Scripts/setup-apple-developer.sh`.
 
 ## AI-Assistenz & kostenlose PR-Reviewer (Open Source / public)
 

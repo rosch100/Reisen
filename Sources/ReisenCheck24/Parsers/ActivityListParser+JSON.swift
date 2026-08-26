@@ -35,10 +35,6 @@ extension ActivityListParser {
             }
         }
 
-        guard !parsedBookings.isEmpty else {
-            throw Check24ParseError.noBookingDatesFound
-        }
-
         return ParsedActivity(bookings: parsedBookings, cancellationDeadlines: [])
     }
 }

@@ -1,0 +1,99 @@
+{
+  "data": {
+    "status": "SUCCESS",
+    "message": null,
+    "itineraryDisplayId": {
+      "bookingId": "1387353870",
+      "itineraryId": "20261123186899",
+      "itineraryType": "HOTEL"
+    },
+    "itineraryEntryList": [
+      {
+        "bookingId": "1387353870",
+        "itineraryId": "20261123186899",
+        "tripId": "1387353870",
+        "itineraryType": "HOTEL",
+        "itineraryTags": [
+          {
+            "text": "Voucher issued",
+            "status": "STATUS_OK"
+          }
+        ],
+        "paymentInfo": {
+          "userTripStatus": "ETICKET_PUBLISHED",
+          "latestPaymentStatus": "PAID"
+        },
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "tripType": "HOTEL",
+            "itineraryBookingStatus": "SUCCESS",
+            "itineraryTimestampBegin": "1790143200000",
+            "ianaTimezoneBegin": "Asia/Jakarta",
+            "itineraryTimestampEnd": "1790229600000",
+            "ianaTimezoneEnd": "Asia/Jakarta",
+            "sectionType": "ACTIVE_BOOKING",
+            "productName": "Hotel",
+            "bookingContact": {
+              "firstName": "REDACTED",
+              "lastName": "REDACTED"
+            }
+          },
+          "hotelSummary": {
+            "hotelName": "Example Hotel South Jakarta",
+            "roomName": "Standard Double",
+            "checkInDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "1"
+            },
+            "checkOutDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "2"
+            },
+            "checkInTime": "14:00",
+            "checkOutTime": "12:00",
+            "cityName": "South Jakarta",
+            "guestCount": 2,
+            "roomCount": 1,
+            "breakfastIncluded": false
+          }
+        },
+        "cardDetailInfo": {
+          "commonDetail": {
+            "bookingContact": {
+              "firstName": "REDACTED",
+              "lastName": "REDACTED"
+            }
+          },
+          "hotelDetail": {
+            "hotelName": "Example Hotel South Jakarta",
+            "roomName": "Standard Double",
+            "cityName": "South Jakarta",
+            "address": "Jl. Example No. 1, South Jakarta",
+            "checkInTime": "14:00",
+            "checkOutTime": "12:00",
+            "guestCount": 2,
+            "roomCount": 1,
+            "breakfastIncluded": false,
+            "bedType": "1 double bed",
+            "cancellationPolicies": [
+              {
+                "type": "FREE",
+                "deadlineLocal": "2026-09-01T12:59:00",
+                "feeAmount": null,
+                "feeCurrency": "EUR"
+              },
+              {
+                "type": "FEE",
+                "deadlineLocal": "2026-09-01T12:59:00",
+                "feeAmount": 4.37,
+                "feeCurrency": "EUR"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

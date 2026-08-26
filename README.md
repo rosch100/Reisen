@@ -18,7 +18,7 @@ ReisenCheck24     Check24-Adapter (Session, API/HTML-Parser → Domain-Drafts)
 Reisen (App)      SwiftUI, SyncStore, Platform (Notifications, EventKit, WebView-UI)
 ```
 
-Shared Domain/Data/Providers sind für **macOS 14+ und iOS 17+** vorbereitet; die App-UI ist derzeit macOS-only.
+Shared Domain/Data/Providers und die Apps unterstützen **macOS 26+** und **iOS 26+**. Gebaut wird mit **Xcode 27 / SDK 27**.
 
 ### Sync-Flow
 
@@ -75,3 +75,4 @@ Lizenz-Links:
 
 - Weitere Provider: `TravelProvider` + optional `GapDeepLinkBuilding` registrieren
 - iOS/iPadOS: App-Target und WebView-UI sind vorhanden; Cursor/Simulator-Workflow: [docs/dev/ios-cursor.md](docs/dev/ios-cursor.md)
+- Apple Developer (Signing, iCloud, Notarize): [docs/ci/apple-signing.md](docs/ci/apple-signing.md) — Setup: `bash ./Scripts/setup-apple-developer.sh`

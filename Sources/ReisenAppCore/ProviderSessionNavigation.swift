@@ -3,7 +3,7 @@ import WebKit
 import ReisenDomain
 import ReisenProviders
 
-/// Gemeinsame Pipeline: Navigation finished → Heuristik → Hub-Update → Opodo-Probe.
+/// Gemeinsame Pipeline: Navigation finished → Heuristik → Hub-Update → Session-Probe.
 @MainActor
 public enum ProviderSessionNavigation {
     public static func handleDidFinish(
@@ -46,6 +46,37 @@ public enum ProviderSessionNavigation {
                         body: OpodoSessionProbe.getUserAccountRequestBody()
                     )
                     if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text) {
+                        await MainActor.run {
+                            if let enabledProviderIDs {
+                                hub.syncEnabledProviders(enabledProviderIDs)
+                            }
+                            if loggedIn {
+                                hub.updateStatus(providerID, status: .sessionReady)
+                            } else if hub.status(for: providerID) != .sessionReady {
+                                hub.updateStatus(providerID, status: .needsLogin)
+                            }
+                            onChanged()
+                        }
+                    }
+                } catch {
+                    // Probe fehlgeschlagen: Status bleibt konservativ.
+                }
+            }
+        case .shouldProbeTraveloka:
+            Task {
+                do {
+                    let context = await webView.travelokaSessionContext()
+                    guard context.hasSentinel else { return }
+                    let text = try await webView.fetchAuthenticatedText(
+                        url: TravelokaSessionProbe.whoamiURL,
+                        method: "POST",
+                        accept: "application/json",
+                        referer: TravelokaSessionProbe.signInReferer(routePrefix: context.routePrefix),
+                        contentType: "application/json",
+                        body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
+                        headers: TravelokaSessionProbe.whoamiHeaders(context: context)
+                    )
+                    if let loggedIn = TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text) {
                         await MainActor.run {
                             if let enabledProviderIDs {
                                 hub.syncEnabledProviders(enabledProviderIDs)

@@ -22,14 +22,8 @@ struct RootTabView: View {
     @ViewBuilder
     var body: some View {
         ZStack {
-            Group {
-                if #available(iOS 18.0, *) {
-                    tabs
-                        .tabViewStyle(.sidebarAdaptable)
-                } else {
-                    tabs
-                }
-            }
+            tabs
+                .tabViewStyle(.sidebarAdaptable)
 
             SyncBackgroundSessionProbe(onSessionChanged: {
                 sessionChromeEpoch &+= 1
@@ -57,7 +51,10 @@ struct RootTabView: View {
             .tabItem { Label("Offen", systemImage: "list.bullet.rectangle") }
             .tag(AppTab.offen)
 
-            SyncTab(sessionChromeEpoch: $sessionChromeEpoch)
+            SyncTab(
+                sessionChromeEpoch: $sessionChromeEpoch,
+                isSelected: selectedTab == .sync
+            )
                 .tabItem { Label("Sync", systemImage: "arrow.triangle.2.circlepath") }
                 .tag(AppTab.sync)
 

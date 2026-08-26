@@ -19,7 +19,7 @@ defaults:
 jobs:
   release:
     name: Build Release Artifact
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 60
 
     env:
@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Select Xcode 26
+      - name: Select Xcode 27
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable

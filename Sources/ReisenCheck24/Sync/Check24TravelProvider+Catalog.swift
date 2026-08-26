@@ -11,11 +11,20 @@ extension Check24TravelProvider {
         onProgress?("Lade Aktivitäten (API)…")
         do {
             let activitiesJSON = try await fetchActivitiesJSON(using: webView)
-            return try ActivityListParser().parseActivityListHTML(activitiesJSON)
+            return try parseCatalogAllowingEmpty(activitiesJSON)
         } catch {
             onProgress?("Activities-API fehlgeschlagen, nutze HTML-Snapshot…")
             let currentHTML = try await snapshotHTML(from: webView)
-            return try ActivityListParser().parseActivityListHTML(currentHTML.html)
+            return try parseCatalogAllowingEmpty(currentHTML.html)
+        }
+    }
+
+    /// Leerer Katalog ist ein gültiges Ergebnis (wie Booking.com/Airbnb), kein Parser-Fehler.
+    func parseCatalogAllowingEmpty(_ text: String) throws -> ParsedActivity {
+        do {
+            return try ActivityListParser().parseActivityListHTML(text)
+        } catch Check24ParseError.noBookingDatesFound, Check24ParseError.noBookingLinkFound {
+            return ParsedActivity(bookings: [], cancellationDeadlines: [])
         }
     }
 

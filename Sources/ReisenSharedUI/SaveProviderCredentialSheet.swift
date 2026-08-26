@@ -1,7 +1,7 @@
 import SwiftUI
 import ReisenProviders
 
-/// Speichert ein Provider-Konto als Internetpasswort — ohne macOS-Passwords-App-Deep-Link.
+/// Speichert ein Provider-Konto in der App-Keychain — ohne macOS-Passwords-App-Deep-Link.
 public struct SaveProviderCredentialSheet: View {
     let serverHost: String
     var onSaved: (KeychainCredentialAccount) -> Void

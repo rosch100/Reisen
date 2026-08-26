@@ -21,7 +21,7 @@ public final class NavigationAwaiter: NSObject {
             return
         }
 
-        webView.load(URLRequest(url: url))
+        _ = webView.load(URLRequest(url: url))
 
         try await NavigationSettleLoop.wait(
             webView: webView,

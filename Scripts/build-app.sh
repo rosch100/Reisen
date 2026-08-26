@@ -5,6 +5,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=apple-developer.sh
+source "$ROOT/Scripts/apple-developer.sh"
+
 CONFIG="debug"
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -86,8 +89,9 @@ chmod +x "$MACOS/Reisen"
 cp "$ROOT/Resources/Info.plist" "$CONTENTS/Info.plist"
 cp "$ROOT/Resources/AppIcon.icns" "$RESOURCES/AppIcon.icns"
 ENTITLEMENTS="$ROOT/Resources/Reisen.entitlements"
-if [[ -f "$ENTITLEMENTS" ]]; then
-  cp "$ENTITLEMENTS" "$CONTENTS/Reisen.entitlements"
+if [[ ! -f "$ENTITLEMENTS" ]]; then
+  echo "Fehler: Entitlements fehlen: $ENTITLEMENTS" >&2
+  exit 1
 fi
 
 # SPM Bundle.module-Pfad: Contents/Resources/Reisen_Reisen.bundle
@@ -101,14 +105,59 @@ if [[ -d "$LOGO_DIR" ]]; then
   cp "$LOGO_DIR"/*.svg "$RESOURCES/" 2>/dev/null || true
 fi
 
-# Codesign ad-hoc, damit Gatekeeper/TCC die App als Bundle akzeptiert.
-# Nested resource bundle zuerst einzeln, dann App (deep) inkl. iCloud/CloudKit-Entitlements.
-codesign --force --sign - "$RESOURCES/$BUNDLE_NAME" >/dev/null 2>&1 || true
-codesign --force --sign - "$MACOS/$BUNDLE_NAME" >/dev/null 2>&1 || true
-if [[ -f "$ENTITLEMENTS" ]]; then
-  codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$APP" >/dev/null 2>&1 || true
+PROFILE="$ROOT/.signing/Reisen.provisionprofile"
+MERGED_ENTITLEMENTS=""
+cleanup_merged_entitlements() {
+  if [[ -n "${MERGED_ENTITLEMENTS:-}" ]]; then
+    rm -f "$MERGED_ENTITLEMENTS"
+  fi
+}
+trap cleanup_merged_entitlements EXIT
+
+# Restricted Entitlements (iCloud) auf Ad-hoc → launchd POSIX 163.
+strip_icloud_entitlements() {
+  local src="$1"
+  local dest="$2"
+  cp "$src" "$dest"
+  /usr/libexec/PlistBuddy -c 'Delete :com.apple.developer.icloud-container-identifiers' "$dest" >/dev/null 2>&1 || true
+  /usr/libexec/PlistBuddy -c 'Delete :com.apple.developer.icloud-services' "$dest" >/dev/null 2>&1 || true
+}
+
+# CI: explizit ad-hoc. Lokal mit Profil: Apple Development (CloudKit).
+# Ohne Profil kein Apple Development — launchd lehnt das mit POSIX 163 ab.
+if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  SIGN_IDENTITY="-"
+  MERGED_ENTITLEMENTS="$(mktemp)"
+  strip_icloud_entitlements "$ENTITLEMENTS" "$MERGED_ENTITLEMENTS"
+  SIGN_ENTITLEMENTS="$MERGED_ENTITLEMENTS"
+  echo "Codesign Identity: ad-hoc (CI)" >&2
+elif [[ -f "$PROFILE" ]]; then
+  SIGN_IDENTITY="$(reisen_apple_development_identity)"
+  TEAM_ID="$(reisen_apple_team_id)"
+  BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$CONTENTS/Info.plist")"
+  MERGED_ENTITLEMENTS="$(mktemp)"
+  cp "$ENTITLEMENTS" "$MERGED_ENTITLEMENTS"
+  /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string ${TEAM_ID}.${BUNDLE_ID}" "$MERGED_ENTITLEMENTS"
+  /usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string ${TEAM_ID}" "$MERGED_ENTITLEMENTS"
+  # Profil listet erlaubte Umgebungen als Array; die Signatur braucht genau einen Wert.
+  # Launchd prüft gegen das Profil (`Development`/`Production`); CloudKit erwartet denselben Token.
+  /usr/libexec/PlistBuddy -c 'Delete :com.apple.developer.icloud-container-environment' "$MERGED_ENTITLEMENTS" >/dev/null 2>&1 || true
+  /usr/libexec/PlistBuddy -c 'Add :com.apple.developer.icloud-container-environment string Development' "$MERGED_ENTITLEMENTS"
+  SIGN_ENTITLEMENTS="$MERGED_ENTITLEMENTS"
+  cp "$PROFILE" "$CONTENTS/embedded.provisionprofile"
+  echo "Codesign Identity: $SIGN_IDENTITY (Provisioning-Profil)" >&2
 else
-  codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+  SIGN_IDENTITY="-"
+  MERGED_ENTITLEMENTS="$(mktemp)"
+  strip_icloud_entitlements "$ENTITLEMENTS" "$MERGED_ENTITLEMENTS"
+  SIGN_ENTITLEMENTS="$MERGED_ENTITLEMENTS"
+  echo "Hinweis: Kein .signing/Reisen.provisionprofile — ad-hoc ohne iCloud-Entitlements." >&2
+  echo "  Team-Signing: bash ./Scripts/setup-apple-developer.sh" >&2
 fi
+cp "$SIGN_ENTITLEMENTS" "$CONTENTS/Reisen.entitlements"
+
+codesign --force --sign "$SIGN_IDENTITY" "$RESOURCES/$BUNDLE_NAME"
+codesign --force --sign "$SIGN_IDENTITY" "$MACOS/$BUNDLE_NAME"
+codesign --force --deep --sign "$SIGN_IDENTITY" --entitlements "$SIGN_ENTITLEMENTS" "$APP"
 
 printf '%s\n' "$APP"

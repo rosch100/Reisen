@@ -37,6 +37,7 @@ public struct SettingsView: View {
     @State private var reminderCalendarNames: [String] = []
     @State private var isLoadingCalendarNames = false
     @State private var calendarNamesError: String?
+    @State private var calendarNamesPrivacyPanes: [PrivacySettingPane] = []
     @State private var calendarNamesReloadToken = UUID()
     @State private var showLocalResetConfirm = false
     @State private var showCloudWipeConfirm = false
@@ -124,6 +125,10 @@ public struct SettingsView: View {
                             if let calendarNamesError {
                                 Text(calendarNamesError)
                                     .foregroundStyle(.secondary)
+
+                                ForEach(calendarNamesPrivacyPanes, id: \.self) { pane in
+                                    OpenPrivacySettingsButton(pane: pane)
+                                }
 
                                 Button("Erneut laden") {
                                     calendarNamesReloadToken = UUID()
@@ -354,6 +359,7 @@ public struct SettingsView: View {
 
         isLoadingCalendarNames = true
         calendarNamesError = nil
+        calendarNamesPrivacyPanes = []
 
         if forceReload {
             eventCalendarNames = []
@@ -362,24 +368,37 @@ public struct SettingsView: View {
 
         let bridge = LocalEventKitBridge()
         var errors: [String] = []
+        var panes: [PrivacySettingPane] = []
 
         do {
             eventCalendarNames = try await bridge.fetchEventCalendarTitles()
         } catch {
-            errors.append(error.localizedDescription)
+            recordCalendarNameFailure(error, errors: &errors, panes: &panes)
         }
 
         do {
             reminderCalendarNames = try await bridge.fetchReminderCalendarTitles()
         } catch {
-            errors.append(error.localizedDescription)
+            recordCalendarNameFailure(error, errors: &errors, panes: &panes)
         }
 
         if !errors.isEmpty {
             calendarNamesError = errors.joined(separator: " ")
+            calendarNamesPrivacyPanes = panes
         }
 
         isLoadingCalendarNames = false
+    }
+
+    private func recordCalendarNameFailure(
+        _ error: Error,
+        errors: inout [String],
+        panes: inout [PrivacySettingPane]
+    ) {
+        errors.append(error.localizedDescription)
+        if let pane = PrivacyAccessDenial.pane(from: error), !panes.contains(pane) {
+            panes.append(pane)
+        }
     }
 }
 

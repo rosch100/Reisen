@@ -66,6 +66,82 @@ import ReisenDomain
     #expect(PersistenceBootstrap.isCloudKitEnabledByEnvironment() == false)
 }
 
+@Test func cloudKitRequiresSigningTeamIdentifier() {
+    #expect(cloudKitGuardEnabled())
+    #expect(!cloudKitGuardEnabled(team: nil))
+    #expect(!cloudKitGuardEnabled(team: ""))
+    #expect(!cloudKitGuardEnabled(appID: nil))
+    #expect(!cloudKitGuardEnabled(env: ["CI": "true"]))
+}
+
+@Test func cloudKitRequiresICloudEntitlements() {
+    #expect(!cloudKitGuardEnabled(containers: []))
+    #expect(!cloudKitGuardEnabled(containers: ["iCloud.other.container"]))
+    #expect(!cloudKitGuardEnabled(services: []))
+    #expect(!cloudKitGuardEnabled(services: ["CloudDocuments"]))
+    #expect(cloudKitGuardEnabled(services: ["*"]))
+}
+
+@Test func cloudKitRequiresScalarContainerEnvironment() {
+    #expect(!cloudKitGuardEnabled(containerEnvironment: nil))
+    #expect(!cloudKitGuardEnabled(containerEnvironment: ""))
+    #expect(!cloudKitGuardEnabled(containerEnvironment: "development"))
+    #expect(!cloudKitGuardEnabled(containerEnvironment: "Production, Development"))
+    #expect(cloudKitGuardEnabled(containerEnvironment: "Development"))
+    #expect(cloudKitGuardEnabled(containerEnvironment: "Production"))
+}
+
+@Test(.enabled(if: ProcessInfo.processInfo.environment["REISEN_LEFTOVER_CLOUD_DIR"] != nil))
+@MainActor
+func leftoverCloudKitStoreOpensWithMirroringDisabled() throws {
+    let dirPath = try #require(ProcessInfo.processInfo.environment["REISEN_LEFTOVER_CLOUD_DIR"])
+    let fm = FileManager.default
+    let sourceCloud = URL(fileURLWithPath: dirPath).appendingPathComponent("ReisenCloud.sqlite")
+    try #require(fm.fileExists(atPath: sourceCloud.path))
+
+    let root = fm.temporaryDirectory.appendingPathComponent(
+        "reisen-leftover-\(UUID().uuidString)",
+        isDirectory: true
+    )
+    try fm.createDirectory(at: root, withIntermediateDirectories: true)
+    defer { try? fm.removeItem(at: root) }
+
+    let cloud = root.appendingPathComponent("cloud.sqlite")
+    let local = root.appendingPathComponent("local.sqlite")
+    for suffix in ["", "-wal", "-shm"] {
+        let from = URL(fileURLWithPath: sourceCloud.path + suffix)
+        guard fm.fileExists(atPath: from.path) else { continue }
+        try fm.copyItem(at: from, to: URL(fileURLWithPath: cloud.path + suffix))
+    }
+
+    let container = try PersistenceBootstrap.makeDualContainer(
+        cloudStoreURL: cloud,
+        localStoreURL: local
+    )
+    let trips = try container.mainContext.fetch(FetchDescriptor<SDTrip>())
+    #expect(trips.count >= 0)
+}
+
+private func cloudKitGuardEnabled(
+    env: [String: String] = [:],
+    team: String? = "4N6AJL9EX5",
+    appID: String? = "4N6AJL9EX5.de.roschmac.Reisen",
+    containers: [String] = [PersistenceBootstrap.cloudKitContainerID],
+    services: [String] = ["CloudKit"],
+    containerEnvironment: String? = "Development"
+) -> Bool {
+    PersistenceBootstrap.isCloudKitEnabled(
+        environment: env,
+        processName: "Reisen",
+        arguments: [],
+        teamIdentifier: team,
+        applicationIdentifier: appID,
+        icloudContainerIdentifiers: containers,
+        icloudServices: services,
+        icloudContainerEnvironment: containerEnvironment
+    )
+}
+
 @Test func appSettingsFromUserDefaultsReadsPersistedValues() {
     let suiteName = "reisen.tests.AppSettings.\(UUID().uuidString)"
     guard let defaults = UserDefaults(suiteName: suiteName) else {

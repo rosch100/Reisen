@@ -5,12 +5,11 @@ import Security
 
 final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI {
     var copyMatchingCallCount: Int = 0
+    private(set) var copyMatchingQueries: [[CFString: Any]] = []
 
-    var directResultsByServer: [String: [[CFString: Any]]] = [:]
-    var fullScanResults: Any = [[CFString: Any]]()
-
-    var fullScanStatus: OSStatus = errSecSuccess
-    var directStatus: OSStatus = errSecSuccess
+    var genericAttributeResults: Any = [[CFString: Any]]()
+    var genericCopyStatus: OSStatus = errSecSuccess
+    var genericSecretByAccount: [String: Data] = [:]
 
     var updateCalls: Int = 0
     var addCalls: Int = 0
@@ -23,19 +22,26 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
 
     func itemCopyMatching(query: CFDictionary) -> (status: OSStatus, item: CFTypeRef?) {
         copyMatchingCallCount += 1
+        let dict = (query as? [CFString: Any]) ?? [:]
+        copyMatchingQueries.append(dict)
 
-        if let dict = query as? [CFString: Any],
-           let server = dict[kSecAttrServer] as? String {
-            let results = directResultsByServer[server] ?? []
-            return (directStatus, results as CFTypeRef)
+        let wantsData = dict[kSecReturnData] as? Bool == true
+
+        if keychainQueryIsGenericPassword(dict) {
+            if wantsData {
+                let account = dict[kSecAttrAccount] as? String ?? ""
+                if let data = genericSecretByAccount[account] {
+                    return (errSecSuccess, data as CFTypeRef)
+                }
+                return (errSecItemNotFound, nil)
+            }
+            if let typed = genericAttributeResults as? [[CFString: Any]] {
+                return (genericCopyStatus, typed as CFTypeRef)
+            }
+            return (genericCopyStatus, genericAttributeResults as AnyObject)
         }
 
-        // Fallback full scan: no server attribute in query.
-        if let typed = fullScanResults as? [[CFString: Any]] {
-            return (fullScanStatus, typed as CFTypeRef)
-        }
-        // Unsupported type for `[[CFString: Any]]` cast.
-        return (fullScanStatus, fullScanResults as? CFTypeRef)
+        return (errSecParam, nil)
     }
 
     func itemUpdate(existingQuery: CFDictionary, update: CFDictionary) -> OSStatus {
@@ -53,6 +59,13 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
 
 extension FakeKeychainInternetPasswordAPI: @unchecked Sendable {}
 
+private func genericAccountAttributes(server: String, username: String) -> [CFString: Any] {
+    [
+        kSecAttrService as CFString: KeychainCredentialQuery.service,
+        kSecAttrAccount as CFString: KeychainCredentialAccount.makeID(serverHost: server, username: username),
+    ]
+}
+
 struct KeychainCredentialStoreHotspotsTests {
     @Test("KeychainCredentialStore accounts: leerer Host ergibt leere Liste ohne Keychain-Aufrufe")
     func accounts_emptyConfiguredHost_returnsEmpty_withoutKeychainCalls() throws {
@@ -69,11 +82,10 @@ struct KeychainCredentialStoreHotspotsTests {
         let fake = FakeKeychainInternetPasswordAPI()
         let store = KeychainCredentialStore(keychain: fake)
 
-        fake.directResultsByServer["booking.com"] = [
-            [kSecAttrServer as CFString: "booking.com", kSecAttrAccount as CFString: "b@a.de"],
-            [kSecAttrServer as CFString: "booking.com", kSecAttrAccount as CFString: "a@b.de"],
-            // Duplicate of first entry (same server + username).
-            [kSecAttrServer as CFString: "booking.com", kSecAttrAccount as CFString: "b@a.de"],
+        fake.genericAttributeResults = [
+            genericAccountAttributes(server: "booking.com", username: "b@a.de"),
+            genericAccountAttributes(server: "booking.com", username: "a@b.de"),
+            genericAccountAttributes(server: "booking.com", username: "b@a.de"),
         ]
 
         let accounts = try store.accounts(serverHost: "booking.com")
@@ -81,21 +93,23 @@ struct KeychainCredentialStoreHotspotsTests {
         #expect(accounts.map(\.username) == ["a@b.de", "b@a.de"])
     }
 
-    @Test("KeychainCredentialStore accounts: Fallback Full-Scan wird genutzt wenn direkte Matches leer sind")
-    func accounts_fallbackFullScan_usedWhenDirectEmpty() throws {
+    @Test("KeychainCredentialStore accounts: Host-Filter trifft Subdomains ohne Full-Scan")
+    func accounts_hostFilter_matchesSubdomainsWithoutFullScan() throws {
         let fake = FakeKeychainInternetPasswordAPI()
         let store = KeychainCredentialStore(keychain: fake)
 
-        fake.directResultsByServer["booking.com"] = []
-        fake.fullScanResults = [
-            [kSecAttrServer as CFString: "secure.booking.com", kSecAttrAccount as CFString: "user1@x.de"],
-            [kSecAttrServer as CFString: "other.com", kSecAttrAccount as CFString: "ignored@x.de"],
+        fake.genericAttributeResults = [
+            genericAccountAttributes(server: "secure.booking.com", username: "user1@x.de"),
+            genericAccountAttributes(server: "other.com", username: "ignored@x.de"),
         ]
 
         let accounts = try store.accounts(serverHost: "booking.com")
         #expect(accounts.count == 1)
         #expect(accounts.first?.serverHost == "secure.booking.com")
         #expect(accounts.first?.username == "user1@x.de")
+
+        let unconstrainedInternetScans = fake.copyMatchingQueries.filter(keychainQueryIsInternetPassword)
+        #expect(unconstrainedInternetScans.isEmpty)
     }
 
     @Test("KeychainCredentialStore save: Update success beendet ohne Add")
@@ -114,10 +128,11 @@ struct KeychainCredentialStoreHotspotsTests {
         #expect(fake.updateCalls == 1)
         #expect(fake.addCalls == 0)
         if let dict = fake.lastUpdateExistingQuery as? [CFString: Any] {
-            #expect((dict[kSecAttrAccount] as? String) == "u@x.de")
-            #expect((dict[kSecAttrServer] as? String) == "booking.com")
+            #expect((dict[kSecAttrAccount] as? String) == "booking.com\u{1f}u@x.de")
+            #expect((dict[kSecAttrService] as? String) == KeychainCredentialQuery.service)
+            #expect(keychainQueryIsGenericPassword(dict))
         } else {
-            #expect(false)
+            #expect(Bool(false))
         }
     }
 
@@ -137,9 +152,9 @@ struct KeychainCredentialStoreHotspotsTests {
         #expect(fake.updateCalls == 1)
         #expect(fake.addCalls == 1)
         if let dict = fake.lastAddQuery as? [CFString: Any] {
-            #expect((dict[kSecAttrAccount] as? String) == "u2@x.de")
+            #expect((dict[kSecAttrAccount] as? String) == "booking.com\u{1f}u2@x.de")
         } else {
-            #expect(false)
+            #expect(Bool(false))
         }
     }
 
@@ -206,12 +221,116 @@ struct KeychainCredentialStoreHotspotsTests {
         let fake = FakeKeychainInternetPasswordAPI()
         let store = KeychainCredentialStore(keychain: fake)
 
-        fake.directResultsByServer["booking.com"] = []
-        fake.fullScanResults = "not-a-[[CFString:Any]]"
+        fake.genericAttributeResults = "not-a-[[CFString:Any]]"
 
         #expect(throws: KeychainCredentialStore.CredentialStoreError.unsupportedItem) {
             _ = try store.accounts(serverHost: "booking.com")
         }
     }
+
+    @Test("accounts: keine kSecAttrSynchronizableAny-Queries (keine Safari/iCloud-Dialoge)")
+    func accounts_doesNotQuerySynchronizableAny() throws {
+        let fake = FakeKeychainInternetPasswordAPI()
+        let store = KeychainCredentialStore(keychain: fake)
+
+        _ = try store.accounts(serverHost: "booking.com")
+
+        #expect(!fake.copyMatchingQueries.isEmpty)
+        for dict in fake.copyMatchingQueries {
+            #expect(!keychainQueryUsesSynchronizableAny(dict))
+        }
+    }
+
+    @Test("accounts: kein unbeschränkter Internetpasswort-Scan ohne Server")
+    func accounts_doesNotScanAllInternetPasswords() throws {
+        let fake = FakeKeychainInternetPasswordAPI()
+        let store = KeychainCredentialStore(keychain: fake)
+
+        _ = try store.accounts(serverHost: "booking.com")
+
+        let internetQueries = fake.copyMatchingQueries.filter(keychainQueryIsInternetPassword)
+        #expect(internetQueries.isEmpty)
+    }
+
+    @Test("accounts: Generic-Password-Lookup ohne Auth-UI")
+    func accounts_usesGenericPasswordWithoutAuthUI() throws {
+        let fake = FakeKeychainInternetPasswordAPI()
+        let store = KeychainCredentialStore(keychain: fake)
+
+        _ = try store.accounts(serverHost: "booking.com")
+
+        let genericQueries = fake.copyMatchingQueries.filter(keychainQueryIsGenericPassword)
+        #expect(!genericQueries.isEmpty)
+        for dict in genericQueries {
+            #expect((dict[kSecAttrService] as? String) == KeychainCredentialQuery.service)
+            #expect((dict[kSecUseAuthenticationUI] as? String) == (kSecUseAuthenticationUISkip as String))
+            #expect(dict[kSecUseDataProtectionKeychain] as? Bool == true)
+            #expect(dict[kSecReturnData] as? Bool == false)
+        }
+    }
+
+    @Test("save: schreibt Generic Password in Data-Protection-Keychain")
+    func save_writesGenericPasswordInDataProtectionKeychain() throws {
+        let fake = FakeKeychainInternetPasswordAPI()
+        let store = KeychainCredentialStore(keychain: fake)
+        fake.updateStatus = errSecItemNotFound
+        fake.addStatus = errSecSuccess
+
+        try store.save(
+            credentials: ProviderCredentials(username: "u@x.de", password: "pw"),
+            serverHost: "booking.com"
+        )
+
+        let dict = fake.lastAddQuery as? [CFString: Any]
+        #expect(keychainQueryIsGenericPassword(dict ?? [:]))
+        #expect((dict?[kSecAttrService] as? String) == KeychainCredentialQuery.service)
+        #expect((dict?[kSecAttrAccount] as? String) == "booking.com\u{1f}u@x.de")
+        #expect(dict?[kSecUseDataProtectionKeychain] as? Bool == true)
+        #expect(!keychainQueryUsesSynchronizableAny(dict ?? [:]))
+        #expect(keychainQueryIsInternetPassword(dict ?? [:]) == false)
+    }
+
+    @Test("credentials: lädt Generic-Password ohne Auth-UI")
+    func credentials_loadsGenericPasswordWithoutAuthUI() throws {
+        let fake = FakeKeychainInternetPasswordAPI()
+        let store = KeychainCredentialStore(keychain: fake)
+        let account = KeychainCredentialAccount(serverHost: "booking.com", username: "u@x.de")
+        fake.genericSecretByAccount[account.id] = Data("secret".utf8)
+
+        let credentials = try store.credentials(for: account)
+        #expect(credentials.username == "u@x.de")
+        #expect(credentials.password == "secret")
+
+        let secretQueries = fake.copyMatchingQueries.filter { dict in
+            keychainQueryIsGenericPassword(dict) && dict[kSecReturnData] as? Bool == true
+        }
+        #expect(secretQueries.count == 1)
+        #expect((secretQueries[0][kSecUseAuthenticationUI] as? String) == (kSecUseAuthenticationUISkip as String))
+        #expect(keychainQueryUsesSynchronizableAny(secretQueries[0]) == false)
+        #expect(fake.copyMatchingQueries.filter(keychainQueryIsInternetPassword).isEmpty)
+    }
 }
 
+private func keychainQueryUsesSynchronizableAny(_ dict: [CFString: Any]) -> Bool {
+    guard let value = dict[kSecAttrSynchronizable] else { return false }
+    if let asString = value as? String {
+        return asString == (kSecAttrSynchronizableAny as String)
+    }
+    return CFEqual(value as CFTypeRef, kSecAttrSynchronizableAny)
+}
+
+private func keychainQueryIsInternetPassword(_ dict: [CFString: Any]) -> Bool {
+    guard let value = dict[kSecClass] else { return false }
+    if let asString = value as? String {
+        return asString == (kSecClassInternetPassword as String)
+    }
+    return CFEqual(value as CFTypeRef, kSecClassInternetPassword)
+}
+
+private func keychainQueryIsGenericPassword(_ dict: [CFString: Any]) -> Bool {
+    guard let value = dict[kSecClass] else { return false }
+    if let asString = value as? String {
+        return asString == (kSecClassGenericPassword as String)
+    }
+    return CFEqual(value as CFTypeRef, kSecClassGenericPassword)
+}

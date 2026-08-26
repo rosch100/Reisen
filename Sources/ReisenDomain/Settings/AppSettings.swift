@@ -34,6 +34,16 @@ public struct AppSettingsKeys {
         "\(providerEnabledPrefix)\(providerID.rawValue)"
     }
 
+    /// Default: Provider ist aktiv, solange der User nichts deaktiviert hat.
+    public static func isProviderEnabled(
+        _ providerID: ProviderID,
+        defaults: UserDefaults = .standard
+    ) -> Bool {
+        let key = providerEnabledKey(for: providerID)
+        guard defaults.object(forKey: key) != nil else { return true }
+        return defaults.bool(forKey: key)
+    }
+
     /// Persistierte Account-Auswahl: `"serverHost\\u{1F}username"`.
     public static func preferredKeychainAccountKey(for providerID: ProviderID) -> String {
         "\(preferredKeychainAccountPrefix)\(providerID.rawValue)"

@@ -24,3 +24,6 @@ HAR/
 buildServer.json
 .sweetpad/
 Apps/ReiseniOS/xcuserdata/
+
+# Lokale Provisioning-Profile (Team-Signing, nicht committen)
+.signing/

@@ -24,13 +24,20 @@ Beim ersten Öffnen des Repos Cursor die empfohlenen Extensions installieren las
 bash ./Scripts/generate-ios-project.sh
 ```
 
-Das erzeugt lokal `Reisen.xcodeproj` aus `project.yml` (nicht committen).
+Das erzeugt lokal `Reisen.xcodeproj` aus `project.yml` (nicht committen). Signing nutzt Team **4N6AJL9EX5** (Automatic). Einmalig Apple-ID in Xcode anmelden und App-IDs/iCloud anlegen:
+
+```bash
+bash ./Scripts/setup-apple-developer.sh
+```
+
+Details: [Apple Signing](../ci/apple-signing.md).
 
 ## Agent / CLI: Run und Test
 
 | Aktion | Befehl |
 |--------|--------|
 | App auf Simulator starten | `bash ./Scripts/ios-run.sh` |
+| App auf dem iPhone starten | `bash ./Scripts/ios-run-device.sh` |
 | Unit-Tests auf Simulator | `bash ./Scripts/ios-test.sh` |
 | Nur Projekt generieren | `bash ./Scripts/generate-ios-project.sh` |
 
@@ -41,7 +48,7 @@ Unter **Xcode 27+** zeigt `ios-run.sh` die Geräte-UI über **Device Hub** (`Dev
 Anderen Simulator wählen (kein stiller Fallback — fehlt der Name, bricht das Script ab und listet verfügbare Geräte):
 
 ```bash
-IOS_SIMULATOR="iPhone 16" bash ./Scripts/ios-run.sh
+IOS_SIMULATOR="iPhone 17" bash ./Scripts/ios-run.sh
 ```
 
 Entsprechende Cursor-Tasks: **Terminal → Run Task…** → `iOS: Generate Xcode project`, `iOS: Run on Simulator`, `iOS: Test on Simulator`.

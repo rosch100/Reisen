@@ -9,6 +9,7 @@ struct ProviderSidebarRow: View {
 
     @Environment(\.syncStore) private var store
     @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.providerRegistry) private var providerRegistry
     @AppStorage private var isEnabled: Bool
 
     init(providerID: ProviderID) {
@@ -20,13 +21,7 @@ struct ProviderSidebarRow: View {
     }
 
     private var providerDisplayName: String {
-        switch providerID {
-        case .check24: return "Check24"
-        case .opodo: return "Opodo"
-        case .booking: return "Booking.com"
-        case .airbnb: return "Airbnb"
-        default: return providerID.rawValue.capitalized
-        }
+        providerRegistry?.provider(id: providerID)?.displayName ?? providerID.displayName
     }
 
     private var isSyncingThisProvider: Bool {

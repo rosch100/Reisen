@@ -1,0 +1,23 @@
+{
+  "userContext": null,
+  "data": {
+    "id": "0",
+    "firstName": "REDACTED",
+    "lastName": null,
+    "username": "REDACTED",
+    "loginMethod": "TV",
+    "authorizationLevel": "500",
+    "endTime": "0 hours: 14 minutes: 55 seconds",
+    "sessionId": "REDACTED",
+    "photoUrl": null,
+    "userTags": [],
+    "corporateUser": false,
+    "rawClientId": "REDACTED",
+    "clientId": "REDACTED",
+    "hashedPrimaryPhoneNumber": null,
+    "hashedPrimaryEmail": "REDACTED",
+    "revoked": false,
+    "identifier": "REDACTED",
+    "devicePlatform": "web"
+  }
+}

@@ -13,6 +13,8 @@ public struct ProviderBookingDraft: Equatable, Sendable {
     public var locationTo: String?
     public var locationFromAddress: String?
     public var locationToAddress: String?
+    public var operatorName: String?
+    public var isAllDay: Bool?
     public var status: BookingStatus
     public var deadlines: [CancellationDeadline]
     public var rateDetails: BookingRateDetails?
@@ -37,6 +39,8 @@ public struct ProviderBookingDraft: Equatable, Sendable {
         locationTo: String? = nil,
         locationFromAddress: String? = nil,
         locationToAddress: String? = nil,
+        operatorName: String? = nil,
+        isAllDay: Bool? = nil,
         status: BookingStatus = .unknown,
         deadlines: [CancellationDeadline] = [],
         rateDetails: BookingRateDetails? = nil,
@@ -60,6 +64,8 @@ public struct ProviderBookingDraft: Equatable, Sendable {
         self.locationTo = locationTo
         self.locationFromAddress = locationFromAddress
         self.locationToAddress = locationToAddress
+        self.operatorName = operatorName
+        self.isAllDay = isAllDay
         self.status = status
         self.deadlines = deadlines
         self.rateDetails = rateDetails
@@ -113,8 +119,12 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
     public var status: BookingStatus?
     /// Optional: Enrichment-Titel (z. B. Experience-Marquee statt Orts-`displayName`).
     public var title: String?
+    public var locationFrom: String?
     public var locationTo: String?
+    public var locationFromAddress: String?
     public var locationToAddress: String?
+    public var operatorName: String?
+    public var isAllDay: Bool?
 
     public init(
         deadlines: [CancellationDeadline] = [],
@@ -128,8 +138,12 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         flightArrivalOffsetSeconds: Int? = nil,
         status: BookingStatus? = nil,
         title: String? = nil,
+        locationFrom: String? = nil,
         locationTo: String? = nil,
-        locationToAddress: String? = nil
+        locationFromAddress: String? = nil,
+        locationToAddress: String? = nil,
+        operatorName: String? = nil,
+        isAllDay: Bool? = nil
     ) {
         self.deadlines = deadlines
         self.rateDetails = rateDetails
@@ -142,7 +156,11 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         self.flightArrivalOffsetSeconds = flightArrivalOffsetSeconds
         self.status = status
         self.title = title
+        self.locationFrom = locationFrom
         self.locationTo = locationTo
+        self.locationFromAddress = locationFromAddress
         self.locationToAddress = locationToAddress
+        self.operatorName = operatorName
+        self.isAllDay = isAllDay
     }
 }

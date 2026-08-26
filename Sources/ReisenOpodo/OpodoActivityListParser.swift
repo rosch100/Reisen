@@ -16,10 +16,6 @@ public struct OpodoActivityListParser: Sendable {
             }
         }
 
-        if bookings.isEmpty {
-            throw OpodoActivityListParserError.noBookingsFound
-        }
-
         return bookings
     }
 }

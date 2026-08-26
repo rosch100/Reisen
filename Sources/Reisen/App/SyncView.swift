@@ -215,10 +215,6 @@ struct SyncView: View {
         .onDisappear {
             store?.dismissMessages(for: providerID)
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            guard sessionStatus == .needsLogin else { return }
-            scheduleKeychainReloadIfLoginStillRequired()
-        }
         .onChange(of: sessionStatus) { _, newValue in
             sessionHub?.updateStatus(providerID, status: newValue)
             switch newValue {
@@ -402,13 +398,18 @@ struct SyncView: View {
                     iconColor: .red
                 )
             } else if let errorMessage = store?.errorMessage, storeMessageBelongsToThisProvider {
-                CopyableLabel(
-                    title: errorMessage,
-                    systemImage: "exclamationmark.triangle.fill",
-                    textStyle: .callout,
-                    textColor: .systemRed,
-                    iconColor: .red
-                )
+                VStack(alignment: .leading, spacing: 8) {
+                    CopyableLabel(
+                        title: errorMessage,
+                        systemImage: "exclamationmark.triangle.fill",
+                        textStyle: .callout,
+                        textColor: .systemRed,
+                        iconColor: .red
+                    )
+                    if let pane = store?.privacySettingPane {
+                        OpenPrivacySettingsButton(pane: pane)
+                    }
+                }
             } else if let statusMessage = store?.statusMessage, storeMessageBelongsToThisProvider {
                 CopyableLabel(
                     title: statusMessage,

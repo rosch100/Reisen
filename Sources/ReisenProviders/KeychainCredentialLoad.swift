@@ -6,16 +6,8 @@ internal enum KeychainCredentialLoad {
         keychain: KeychainInternetPasswordKeychainAPI,
         for account: KeychainCredentialAccount
     ) throws -> ProviderCredentials {
-        let secretQuery: [CFString: Any] = [
-            kSecClass: kSecClassInternetPassword,
-            kSecAttrServer: account.serverHost,
-            kSecAttrAccount: account.username,
-            kSecMatchLimit: kSecMatchLimitOne,
-            kSecReturnData: true,
-            kSecAttrSynchronizable: kSecAttrSynchronizableAny
-        ]
-
-        let (status, secretItem) = keychain.itemCopyMatching(query: secretQuery as CFDictionary)
+        let query = KeychainCredentialQuery.genericSecret(accountID: account.id)
+        let (status, secretItem) = keychain.itemCopyMatching(query: query as CFDictionary)
         guard status == errSecSuccess else {
             throw KeychainCredentialStore.CredentialStoreError.noEntry(serverHost: account.serverHost)
         }
@@ -23,7 +15,6 @@ internal enum KeychainCredentialLoad {
               let password = String(data: passwordData, encoding: .utf8) else {
             throw KeychainCredentialStore.CredentialStoreError.unsupportedItem
         }
-
         return ProviderCredentials(username: account.username, password: password)
     }
 }

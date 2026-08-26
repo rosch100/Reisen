@@ -6,7 +6,7 @@ let package = Package(
     name: "Reisen",
     platforms: [
         .macOS(.v26),
-        .iOS(.v17),
+        .iOS(.v26),
     ],
     products: [
         .library(name: "ReisenDomain", targets: ["ReisenDomain"]),
@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "ReisenBookingCom", targets: ["ReisenBookingCom"]),
         .library(name: "ReisenAirbnb", targets: ["ReisenAirbnb"]),
         .library(name: "ReisenGetYourGuide", targets: ["ReisenGetYourGuide"]),
+        .library(name: "ReisenTraveloka", targets: ["ReisenTraveloka"]),
         .executable(name: "Reisen", targets: ["Reisen"]),
     ],
     targets: [
@@ -35,6 +36,9 @@ let package = Package(
             path: "Sources/ReisenData",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("Security"),
             ]
         ),
         .target(
@@ -56,6 +60,7 @@ let package = Package(
                 "ReisenBookingCom",
                 "ReisenAirbnb",
                 "ReisenGetYourGuide",
+                "ReisenTraveloka",
             ],
             path: "Sources/ReisenAppCore",
             swiftSettings: [
@@ -115,6 +120,14 @@ let package = Package(
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
         ),
+        .target(
+            name: "ReisenTraveloka",
+            dependencies: ["ReisenDomain", "ReisenProviders"],
+            path: "Sources/ReisenTraveloka",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
         .executableTarget(
             name: "Reisen",
             dependencies: [
@@ -127,6 +140,7 @@ let package = Package(
                 "ReisenBookingCom",
                 "ReisenAirbnb",
                 "ReisenGetYourGuide",
+                "ReisenTraveloka",
                 "ReisenSharedUI",
             ],
             path: "Sources/Reisen",
@@ -189,6 +203,14 @@ let package = Package(
             name: "ReisenGetYourGuideTests",
             dependencies: ["ReisenGetYourGuide", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenGetYourGuideTests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenTravelokaTests",
+            dependencies: ["ReisenTraveloka", "ReisenDomain", "ReisenProviders"],
+            path: "Tests/ReisenTravelokaTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=apple-developer.sh
+source "$ROOT/Scripts/apple-developer.sh"
+if [[ -z "${APPLE_TEAM_ID:-}" ]]; then
+  APPLE_TEAM_ID="$(reisen_apple_team_id)"
+fi
+
 usage() {
   echo "Usage: $0 --app-path /abs/path/to/Reisen.app" >&2
   echo "       $0 --dmg-path /abs/path/to/Reisen.dmg" >&2

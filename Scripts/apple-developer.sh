@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# SSOT-Helfer für Apple-Developer-Team und Signing-Identities.
+# Wird von anderen Scripts sourced (nicht direkt ausgeführt).
+
+reisen_apple_developer_root() {
+  local here
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  printf '%s\n' "$here"
+}
+
+# Team-ID aus project.yml (einzige Definition im Repo).
+reisen_apple_team_id() {
+  local spec
+  spec="$(reisen_apple_developer_root)/project.yml"
+  if [[ ! -f "$spec" ]]; then
+    echo "Fehler: project.yml fehlt: $spec" >&2
+    return 1
+  fi
+  local team_id
+  team_id="$(
+    awk '
+      /^[[:space:]]*DEVELOPMENT_TEAM:[[:space:]]*/ {
+        val=$2
+        gsub(/"/, "", val)
+        if (val ~ /^[A-Z0-9]{10}$/) {
+          print val
+          exit
+        }
+      }
+    ' "$spec"
+  )"
+  if [[ -z "$team_id" ]]; then
+    echo "Fehler: DEVELOPMENT_TEAM (10 Zeichen) fehlt in project.yml." >&2
+    return 1
+  fi
+  printf '%s\n' "$team_id"
+}
+
+# Apple-Development-Identity, deren Zertifikat-OU zur Team-ID passt.
+reisen_apple_development_identity() {
+  local team_id="${1:-}"
+  if [[ -z "$team_id" ]]; then
+    team_id="$(reisen_apple_team_id)" || return 1
+  fi
+
+  local name subject
+  while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    subject="$(security find-certificate -c "$name" -p 2>/dev/null | openssl x509 -noout -subject 2>/dev/null || true)"
+    if [[ "$subject" == *", OU=${team_id},"* || "$subject" == *"OU=${team_id},"* ]]; then
+      printf '%s\n' "$name"
+      return 0
+    fi
+  done < <(
+    security find-identity -v -p codesigning 2>/dev/null |
+      awk -F'"' '/Apple Development:/ {print $2}'
+  )
+
+  echo "Fehler: Keine Apple-Development-Identity für Team ${team_id} in der Keychain." >&2
+  echo "Xcode → Settings → Accounts → Apple-ID anmelden, dann Signing Certificate erzeugen." >&2
+  return 1
+}
+
+# codesign-Identity: lokal Apple Development, in CI explizit ad-hoc.
+reisen_macos_codesign_identity() {
+  if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    printf '%s\n' "-"
+    return 0
+  fi
+  reisen_apple_development_identity
+}
+
+# xcodebuild-Flags für App Store Connect API Key (nicht-interaktiv).
+# Schreibt nichts, wenn die Variablen fehlen (Aufrufer entscheidet).
+reisen_xcodebuild_asc_auth_args() {
+  if [[ -z "${APP_STORE_CONNECT_API_KEY_KEY_ID:-}" ||
+        -z "${APP_STORE_CONNECT_API_KEY_ISSUER:-}" ]]; then
+    return 0
+  fi
+
+  local key_path="${APP_STORE_CONNECT_API_KEY_PATH:-}"
+  if [[ -z "$key_path" && -n "${APP_STORE_CONNECT_API_KEY_BASE64:-}" ]]; then
+    return 0
+  fi
+  if [[ -z "$key_path" ]]; then
+    local candidate
+    for candidate in \
+      "$HOME/keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8" \
+      "$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
+    do
+      if [[ -f "$candidate" ]]; then
+        key_path="$candidate"
+        break
+      fi
+    done
+  fi
+  if [[ -z "$key_path" || ! -f "$key_path" ]]; then
+    return 0
+  fi
+
+  printf '%s\n' \
+    -allowProvisioningUpdates \
+    -authenticationKeyPath "$key_path" \
+    -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_KEY_ID" \
+    -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER"
+}

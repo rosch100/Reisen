@@ -13,28 +13,16 @@ struct ProviderSessionProbeHost: View {
         self.onFinished = onFinished
     }
 
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .check24))
-    private var check24Enabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .opodo))
-    private var opodoEnabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .booking))
-    private var bookingEnabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .airbnb))
-    private var airbnbEnabled: Bool
-
     @Environment(\.providerSessionHub) private var hub
     @Environment(\.providerRegistry) private var providerRegistry
 
     @State private var backgroundProviderID: ProviderID?
     @State private var didStart = false
+    @State private var providerEnableEpoch = 0
 
     private var enabledProviderIDs: [ProviderID] {
-        var ids: [ProviderID] = []
-        if check24Enabled { ids.append(.check24) }
-        if opodoEnabled { ids.append(.opodo) }
-        if bookingEnabled { ids.append(.booking) }
-        if airbnbEnabled { ids.append(.airbnb) }
-        return ids
+        _ = providerEnableEpoch
+        return providerRegistry?.enabledSyncProviderIDs() ?? []
     }
 
     var body: some View {
@@ -53,6 +41,14 @@ struct ProviderSessionProbeHost: View {
 
             // ZStack muss "echte" View-Hierarchie erzeugen, damit SwiftUI Lifecycle/Tasks zuverlässig feuern.
             Color.clear
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { note in
+            guard let key = note.userInfo?["NSKey"] as? String,
+                  key.hasPrefix(AppSettingsKeys.providerEnabledPrefix) else { return }
+            providerEnableEpoch &+= 1
+        }
+        .onChange(of: providerEnableEpoch) { _, _ in
+            hub?.syncEnabledProviders(Set(enabledProviderIDs))
         }
         .task {
             guard !didStart else { return }

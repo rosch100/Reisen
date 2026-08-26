@@ -17,7 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         NSApp.activate(ignoringOtherApps: true)
 
-        // macOS 26 (Tahoe): SwiftUI-WindowGroup nutzt oft fullSizeContentView.
+        // macOS 26+: SwiftUI-WindowGroup nutzt oft fullSizeContentView.
         // Dann landet Sidebar-/Detail-Inhalt unter der Titlebar (Traffic-Lights-Overlap)
         // und die Action-Bar wird unten abgeschnitten — besonders mit WKWebView.
         normalizeTitlebar(for: NSApp.windows)

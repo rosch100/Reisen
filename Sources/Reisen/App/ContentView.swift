@@ -21,7 +21,9 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.syncStore) private var store
     @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.providerRegistry) private var providerRegistry
 
+    @State private var providerEnableEpoch = 0
     @State private var showCreateTrip = false
     @State private var tripToEdit: SDTrip?
     @State private var tripPendingDelete: SDTrip?
@@ -57,14 +59,6 @@ struct ContentView: View {
     @AppStorage(AppSettingsKeys.reminderCalendarCreateIfMissing) private var reminderCalendarCreateIfMissing: Bool = false
     @AppStorage(AppSettingsKeys.sidebarColumnWidth) private var sidebarColumnWidth: Double = 240
     @AppStorage(AppSettingsKeys.bookingListColumnWidth) private var bookingListColumnWidth: Double = 420
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .check24))
-    private var check24Enabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .opodo))
-    private var opodoEnabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .booking))
-    private var bookingEnabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .airbnb))
-    private var airbnbEnabled: Bool
 
     var body: some View {
         PersistentHorizontalSplitView(
@@ -79,6 +73,14 @@ struct ContentView: View {
         }
         .toolbarBackground(.visible, for: .windowToolbar)
         .frame(minWidth: 960, minHeight: 640)
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { note in
+            guard let key = note.userInfo?["NSKey"] as? String,
+                  key.hasPrefix(AppSettingsKeys.providerEnabledPrefix) else { return }
+            providerEnableEpoch &+= 1
+        }
+        .onChange(of: providerEnableEpoch) { _, _ in
+            sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
+        }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
             if let providerID = note.object as? ProviderID {
                 selection = .providerSync(providerID)
@@ -238,23 +240,37 @@ struct ContentView: View {
 
     @ViewBuilder
     private var globalSyncStatusBar: some View {
+        let statusText = store?.statusMessage
+        let errorText = store?.errorMessage
         if store?.messageProviderID == nil,
-           let text = store?.statusMessage ?? store?.errorMessage,
-           !text.isEmpty {
-            HStack(spacing: 8) {
+           (statusText?.isEmpty == false || errorText?.isEmpty == false) {
+            HStack(alignment: .top, spacing: 8) {
                 if store?.isSyncing == true {
                     ProgressView()
                         .controlSize(.small)
+                        .padding(.top, 2)
                 }
-                Text(text)
-                    .font(.callout)
-                    .foregroundStyle(store?.errorMessage != nil ? Color.red : Color.secondary)
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 4) {
+                    if let statusText, !statusText.isEmpty {
+                        Text(statusText)
+                            .font(.callout)
+                            .foregroundStyle(errorText != nil ? Color.red : Color.secondary)
+                    }
+                    if let errorText, !errorText.isEmpty {
+                        Text(errorText)
+                            .font(.callout)
+                            .foregroundStyle(Color.red)
+                            .textSelection(.enabled)
+                    }
+                }
+                if errorText != nil, let pane = store?.privacySettingPane {
+                    OpenPrivacySettingsButton(pane: pane)
+                }
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(.bar)
         }
     }
@@ -275,13 +291,14 @@ struct ContentView: View {
         )
     }
 
+    private var registeredProviderIDs: [ProviderID] {
+        _ = providerEnableEpoch
+        return providerRegistry?.syncProviderIDs ?? []
+    }
+
     private var enabledProviderIDs: [ProviderID] {
-        var ids: [ProviderID] = []
-        if check24Enabled { ids.append(.check24) }
-        if opodoEnabled { ids.append(.opodo) }
-        if bookingEnabled { ids.append(.booking) }
-        if airbnbEnabled { ids.append(.airbnb) }
-        return ids
+        _ = providerEnableEpoch
+        return providerRegistry?.enabledSyncProviderIDs() ?? []
     }
 
     private var syncAllCandidates: [(ProviderID, WKWebView)] {
@@ -334,17 +351,10 @@ struct ContentView: View {
     private var sidebar: some View {
         List(selection: $selection) {
             Section("Provider") {
-                ProviderSidebarRow(providerID: .check24)
-                    .tag(SidebarSelection.providerSync(.check24))
-
-                ProviderSidebarRow(providerID: .opodo)
-                    .tag(SidebarSelection.providerSync(.opodo))
-
-                ProviderSidebarRow(providerID: .booking)
-                    .tag(SidebarSelection.providerSync(.booking))
-
-                ProviderSidebarRow(providerID: .airbnb)
-                    .tag(SidebarSelection.providerSync(.airbnb))
+                ForEach(registeredProviderIDs, id: \.self) { providerID in
+                    ProviderSidebarRow(providerID: providerID)
+                        .tag(SidebarSelection.providerSync(providerID))
+                }
             }
 
             Section("Offene Buchungen") {

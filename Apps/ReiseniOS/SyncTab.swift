@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import WebKit
+import UIKit
 
 import ReisenAppCore
 import ReisenSharedUI
@@ -10,15 +11,21 @@ import ReisenProviders
 
 struct SyncTab: View {
     @Binding var sessionChromeEpoch: Int
+    var isSelected: Bool
 
     @Environment(\.syncStore) private var syncStore
     @Environment(\.providerRegistry) private var providerRegistry
     @Environment(\.providerSessionHub) private var sessionHub
 
+    private var syncProviderIDs: [ProviderID] {
+        providerRegistry?.syncProviderIDs ?? []
+    }
+
     @State private var selectedProviderID: ProviderID = .check24
     @State private var webView: WKWebView?
     @State private var showCreateTrip = false
     @State private var showCredentialSheet = false
+    @State private var isKeyboardVisible = false
 
     var body: some View {
         NavigationStack {
@@ -35,11 +42,16 @@ struct SyncTab: View {
                         handleWebDidFinish(finishedWebView)
                     }
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                .clipped()
 
-                actionBar
+                if !isKeyboardVisible {
+                    actionBar
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .clipped()
+            .ignoresSafeArea(.keyboard)
             .navigationTitle("Sync")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -67,7 +79,11 @@ struct SyncTab: View {
             }
             .onAppear {
                 guard let sessionHub else { return }
-                sessionHub.syncEnabledProviders(Set(iosSyncProviderIDs))
+                sessionHub.syncEnabledProviders(Set(syncProviderIDs))
+                ensureSelectedProviderIsRegistered()
+            }
+            .onChange(of: syncProviderIDs) { _, _ in
+                ensureSelectedProviderIsRegistered()
             }
             .onChange(of: selectedProviderID) { _, newProviderID in
                 guard let sessionHub else { return }
@@ -75,13 +91,23 @@ struct SyncTab: View {
                     sessionHub.updateStatus(newProviderID, status: .needsLogin)
                 }
             }
+            .onChange(of: isSelected) { _, selected in
+                if !selected { isKeyboardVisible = false }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                guard isSelected else { return }
+                isKeyboardVisible = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                isKeyboardVisible = false
+            }
         }
     }
 
     private var providerPicker: some View {
         HStack(spacing: 12) {
             Picker("Provider", selection: $selectedProviderID) {
-                ForEach(iosSyncProviderIDs, id: \.self) { id in
+                ForEach(syncProviderIDs, id: \.self) { id in
                     Text(providerName(for: id)).tag(id)
                 }
             }
@@ -94,8 +120,8 @@ struct SyncTab: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
+        .padding(.top, isKeyboardVisible ? 6 : 12)
+        .padding(.bottom, isKeyboardVisible ? 4 : 8)
         .background(.bar)
     }
 
@@ -158,17 +184,19 @@ struct SyncTab: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(trafficLight.displayLabel)
                     .font(.headline)
-                Text(sessionStatus == .sessionReady
-                     ? "WebView ist bereit — Buchungen können synchronisiert werden."
-                     : "Melde dich im WebView beim Provider an (inkl. 2FA falls nötig).")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+                if !isKeyboardVisible {
+                    Text(sessionStatus == .sessionReady
+                         ? "WebView ist bereit — Buchungen können synchronisiert werden."
+                         : "Melde dich im WebView beim Provider an (inkl. 2FA falls nötig).")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                }
             }
 
             Spacer(minLength: 8)
 
-            if let lastURLString {
+            if !isKeyboardVisible, let lastURLString {
                 Text(lastURLString)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
@@ -179,7 +207,7 @@ struct SyncTab: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, isKeyboardVisible ? 6 : 10)
         .background(.bar)
     }
 
@@ -189,7 +217,10 @@ struct SyncTab: View {
                 Text(statusMessage).foregroundStyle(.secondary)
             }
             if let errorMessage = syncStore?.errorMessage {
-                syncErrorBanner(errorMessage)
+                syncErrorBanner(
+                    errorMessage,
+                    privacyPane: syncStore?.privacySettingPane
+                )
             }
 
             HStack(spacing: 12) {
@@ -234,16 +265,14 @@ struct SyncTab: View {
     }
 
     @ViewBuilder
-    private func syncErrorBanner(_ errorMessage: String) -> some View {
-        let isPermissionDenied = errorMessage.localizedCaseInsensitiveContains("verweigert")
-            || errorMessage.localizedCaseInsensitiveContains("denied")
-            || errorMessage.localizedCaseInsensitiveContains("Kalenderzugriff")
-            || errorMessage.localizedCaseInsensitiveContains("Erinnerungen-Zugriff")
-
+    private func syncErrorBanner(
+        _ errorMessage: String,
+        privacyPane: PrivacySettingPane?
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label(
-                isPermissionDenied ? "Zugriff verweigert" : "Sync-Fehler",
-                systemImage: isPermissionDenied ? "lock.slash" : "exclamationmark.triangle.fill"
+                privacyPane != nil ? "Zugriff verweigert" : "Sync-Fehler",
+                systemImage: privacyPane != nil ? "lock.slash" : "exclamationmark.triangle.fill"
             )
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.red)
@@ -253,15 +282,19 @@ struct SyncTab: View {
                 .textSelection(.enabled)
                 .font(.footnote)
 
-            if isPermissionDenied {
-                Text("Aktiviere unter Einstellungen → Datenschutz den Zugriff auf Kalender bzw. Erinnerungen für „Reisen“.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if let privacyPane {
+                OpenPrivacySettingsButton(pane: privacyPane)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func ensureSelectedProviderIsRegistered() {
+        guard !syncProviderIDs.contains(selectedProviderID),
+              let first = syncProviderIDs.first else { return }
+        selectedProviderID = first
     }
 
     @MainActor
@@ -271,7 +304,7 @@ struct SyncTab: View {
             webView: finishedWebView,
             providerID: selectedProviderID,
             hub: hub,
-            enabledProviderIDs: Set(iosSyncProviderIDs),
+            enabledProviderIDs: Set(syncProviderIDs),
             notifyAlways: true
         ) {
             sessionChromeEpoch &+= 1

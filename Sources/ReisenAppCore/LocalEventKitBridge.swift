@@ -1,13 +1,9 @@
 import Foundation
-import EventKit
+@preconcurrency import EventKit
 
 import ReisenDomain
 import SwiftData
 import ReisenData
-
-// EventKit types are not annotated as `Sendable`, but they are main-actor bound in this codebase
-// (this bridge is a `@MainActor` type). This prevents Swift 6.2/6.3 "sending risks" build failures.
-extension EKEventStore: @unchecked Sendable {}
 
 @MainActor
 public final class LocalEventKitBridge: CalendarSyncing {
@@ -27,7 +23,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         self.preTravelHintLinkRepository = SwiftDataPreTravelHintLinkRepository(modelContext: modelContext)
     }
 
-    public enum EventKitError: LocalizedError {
+    public enum EventKitError: LocalizedError, PrivacyAccessDenying {
         case accessDenied
         case calendarNotFound
         case calendarModificationDenied
@@ -39,11 +35,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
         public var errorDescription: String? {
             switch self {
             case .accessDenied:
-                return """
-                Kalenderzugriff wurde verweigert.
-
-                Bitte aktiviere unter „Systemeinstellungen → Datenschutz & Sicherheit → Kalender“ für „Reisen“ den Schalter.
-                """
+                return PrivacySettingPane.calendars.denialMessage
             case .calendarNotFound:
                 return "Kein Kalender mit dem angegebenen Titel gefunden."
             case .calendarModificationDenied:
@@ -57,11 +49,21 @@ public final class LocalEventKitBridge: CalendarSyncing {
             case .calendarWriteFailed:
                 return "Kalender-Synchronisation fehlgeschlagen (Schreiben nicht möglich)."
             case .reminderAccessDenied:
-                return "Erinnerungen-Zugriff wurde verweigert."
+                return PrivacySettingPane.reminders.denialMessage
             case .reminderCalendarNotFound:
                 return "Kein Kalender für Erinnerungen gefunden."
             case .reminderWriteFailed:
                 return "Erinnerungen-Synchronisation fehlgeschlagen (Schreiben nicht möglich)."
+            }
+        }
+
+        public var privacySettingPane: PrivacySettingPane? {
+            switch self {
+            case .accessDenied: return .calendars
+            case .reminderAccessDenied: return .reminders
+            case .calendarNotFound, .calendarModificationDenied, .calendarWriteFailed,
+                 .reminderCalendarNotFound, .reminderWriteFailed:
+                return nil
             }
         }
     }

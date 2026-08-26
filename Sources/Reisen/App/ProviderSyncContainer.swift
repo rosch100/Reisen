@@ -10,25 +10,14 @@ import ReisenAppCore
 struct ProviderSyncContainer: View {
     @Binding var selectedProviderID: ProviderID
 
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .check24))
-    private var check24Enabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .opodo))
-    private var opodoEnabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .booking))
-    private var bookingEnabled: Bool
-    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .airbnb))
-    private var airbnbEnabled: Bool
-
     @Environment(\.providerSessionHub) private var hub
     @Environment(\.providerRegistry) private var providerRegistry
 
+    @State private var providerEnableEpoch = 0
+
     private var enabledProviderIDs: [ProviderID] {
-        var ids: [ProviderID] = []
-        if check24Enabled { ids.append(.check24) }
-        if opodoEnabled { ids.append(.opodo) }
-        if bookingEnabled { ids.append(.booking) }
-        if airbnbEnabled { ids.append(.airbnb) }
-        return ids
+        _ = providerEnableEpoch
+        return providerRegistry?.enabledSyncProviderIDs() ?? []
     }
 
     private var enabledSet: Set<ProviderID> {
@@ -106,6 +95,12 @@ struct ProviderSyncContainer: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { syncHub() }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { note in
+            guard let key = note.userInfo?["NSKey"] as? String,
+                  key.hasPrefix(AppSettingsKeys.providerEnabledPrefix) else { return }
+            providerEnableEpoch &+= 1
+        }
+        .onChange(of: providerEnableEpoch) { _, _ in syncHub() }
         .onAppear {
             if hub?.didCompleteStartupProbe == true {
                 phase = .ready
@@ -125,10 +120,6 @@ struct ProviderSyncContainer: View {
                 await runStartupBootstrapIncremental()
             }
         }
-        .onChange(of: check24Enabled) { _, _ in syncHub() }
-        .onChange(of: opodoEnabled) { _, _ in syncHub() }
-        .onChange(of: bookingEnabled) { _, _ in syncHub() }
-        .onChange(of: airbnbEnabled) { _, _ in syncHub() }
         .onChange(of: selectedHubStatus) { _, newStatus in
             guard phase == .ready, isRunningLoginQueue else { return }
             guard newStatus == .sessionReady else { return }
@@ -388,12 +379,6 @@ struct ProviderSyncContainer: View {
     }
 
     private func providerDisplayName(_ providerID: ProviderID) -> String {
-        switch providerID {
-        case .check24: return "Check24"
-        case .opodo: return "Opodo"
-        case .booking: return "Booking.com"
-        case .airbnb: return "Airbnb"
-        default: return providerID.rawValue
-        }
+        providerRegistry?.provider(id: providerID)?.displayName ?? providerID.displayName
     }
 }
