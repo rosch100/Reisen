@@ -16,7 +16,7 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 
 | Was | Werkzeug |
 |-----|----------|
-| GitHub-Action-SHAs (`uses: …@<sha> # vX.Y.Z`) | [Dependabot](../dependabot.yml) (`github-actions`, wöchentlich) |
+| GitHub-Action-SHAs (`uses: …@<sha> # vX.Y.Z`) | [Dependabot](../../.github/dependabot.yml) (`github-actions`, wöchentlich) |
 | actionlint-Installer-URL, `xcode-version: latest-stable`, `swift-tools-version`, `GITLEAKS_VERSION` | [`Scripts/update-versions.sh`](../../Scripts/update-versions.sh) via `versions-update.yml` |
 
 Dependabot-PRs laufen durch die echte CI. Der Versions-Workflow nutzt `--verify` nur, wenn Dateien geändert wurden.
@@ -31,7 +31,7 @@ restore-keys: |
   ${{ runner.os }}-spm-
 ```
 
-CodeQL cached nur SPM-/Module-Caches (nicht `.build`): der Tracer braucht ohnehin einen instrumentierten Compile. Der Build-Befehl ist `swift build --arch arm64` (keine Test-Targets, eine Architektur).
+CodeQL cached nur SPM-/Module-Caches (nicht `.build`): der Tracer braucht ohnehin einen instrumentierten Compile. Der Build läuft über [`Scripts/ci-build.sh`](../../Scripts/ci-build.sh) `--arch arm64` (keine Test-Targets, eine Architektur).
 
 ## Branch Protection
 

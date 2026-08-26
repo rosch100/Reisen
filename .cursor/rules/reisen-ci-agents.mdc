@@ -8,6 +8,7 @@ alwaysApply: true
 ## SSOT: Scripts statt doppelte CI-Logik
 - Änderungen am CI-Pfad erfolgen über:
   - `Scripts/ci-test.sh`
+  - `Scripts/ci-build.sh`
   - `Scripts/build-app.sh`
   - `Scripts/sign-and-notarize.sh`
 - Workflows rufen diese Scripts auf (keine Copy/Paste-Build-Logik in YAML).

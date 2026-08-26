@@ -54,7 +54,7 @@ jobs:
       # One architecture, no test targets: CodeQL only needs traced product sources.
       # See https://docs.github.com/en/code-security/reference/code-scanning/codeql/build-options-for-compiled-languages
       - name: Build (for CodeQL)
-        run: swift build --arch arm64
+        run: bash ./Scripts/ci-build.sh --arch arm64
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@e58424170fb0262c8d7ed60a2e84b9bffe205c67 # pinned
