@@ -13,17 +13,18 @@ jobs:
   bump:
     name: Version Pins aktualisieren
     runs-on: macos-26
-    if: github.actor != 'github-actions[bot]'
+    timeout-minutes: 45
+    if: github.repository == 'rosch100/Reisen'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable
 
@@ -33,12 +34,18 @@ jobs:
         run: bash ./Scripts/update-versions.sh --verify
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: automation/versions-update
           delete-branch: true
           commit-message: "chore: automate version pins update"
           title: "Automatisches Versions-Update"
-          body: "Automatisch aktualisierte Action-Pins, actionlint und Toolchain-Parameter (xcode-version / swift-tools-version)."
+          body: |
+            Automatisch aktualisiert:
+            - actionlint download URL
+            - setup-xcode `xcode-version`
+            - `swift-tools-version` in Package.swift
+            - `GITLEAKS_VERSION` in gitleaks.yml
 
+            GitHub-Action-SHAs werden separat über Dependabot gepflegt.
