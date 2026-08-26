@@ -38,6 +38,8 @@ extension PersistenceBootstrap {
             locationTo: booking.locationTo,
             locationFromAddress: booking.locationFromAddress,
             locationToAddress: booking.locationToAddress,
+            operatorName: booking.operatorName,
+            isAllDay: booking.isAllDay,
             statusRaw: booking.statusRaw,
             lastSyncedAt: booking.lastSyncedAt,
             rawPayloadFingerprint: booking.rawPayloadFingerprint,

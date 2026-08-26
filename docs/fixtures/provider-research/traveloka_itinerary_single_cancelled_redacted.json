@@ -1,0 +1,75 @@
+{
+  "data": {
+    "status": "SUCCESS",
+    "message": null,
+    "itineraryDisplayId": {
+      "bookingId": "1387359999",
+      "itineraryId": "9999999999999999999",
+      "itineraryType": "EXPERIENCE"
+    },
+    "itineraryEntryList": [
+      {
+        "bookingId": "1387359999",
+        "itineraryId": "9999999999999999999",
+        "tripId": "1387359999",
+        "itineraryType": "EXPERIENCE",
+        "itineraryTags": [
+          {
+            "text": "Booking cancelled",
+            "status": "STATUS_ERROR"
+          }
+        ],
+        "paymentInfo": {
+          "userTripStatus": "CANCELLED",
+          "latestPaymentStatus": "REFUNDED"
+        },
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "tripType": "EXPERIENCE",
+            "itineraryBookingStatus": "CANCELLED",
+            "itineraryTimestampBegin": "1788901200000",
+            "ianaTimezoneBegin": "Asia/Bangkok",
+            "itineraryTimestampEnd": "1788987599000",
+            "ianaTimezoneEnd": "Asia/Bangkok",
+            "sectionType": "PAST_BOOKING",
+            "productName": "Experience",
+            "bookingContact": {
+              "firstName": "REDACTED",
+              "lastName": "REDACTED"
+            }
+          },
+          "experienceSummary": {
+            "experienceName": "Cancelled Sample Experience",
+            "location": "Sample City",
+            "ticketDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "8"
+            },
+            "timeSlotId": "all_day_pass",
+            "timeSlot": "All Day Admission"
+          }
+        },
+        "cardDetailInfo": {
+          "experienceDetail": {
+            "experienceName": "Cancelled Sample Experience",
+            "location": "Sample City",
+            "ticketDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "8"
+            },
+            "timeSlotId": "all_day_pass",
+            "timeSlot": "All Day Admission",
+            "operatorInfo": {
+              "name": "Sample Operator"
+            },
+            "makeYourOwnWayInfo": {
+              "locationName": "Sample Street 1"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

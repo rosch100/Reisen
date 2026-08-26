@@ -17,6 +17,6 @@ public enum AuthPageURLMarkers {
     public static let account = [
         "airbnb", "account", "activitylist", "activities", "kundenbereich",
         "mytrips", "my-bookings", "my-trips", "travel-center", "bookings",
-        "/trips", "/travel/secure",
+        "/trips", "/travel/secure", "mybooking",
     ]
 }

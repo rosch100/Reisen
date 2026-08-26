@@ -8,5 +8,5 @@ import ReisenDomain
 import ReisenData
 import ReisenProviders
 
-let iosSyncProviderIDs: [ProviderID] = [.check24, .opodo, .booking, .airbnb, .getYourGuide]
+let iosSyncProviderIDs: [ProviderID] = [.check24, .opodo, .booking, .airbnb, .getYourGuide, .traveloka]
 
