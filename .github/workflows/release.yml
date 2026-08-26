@@ -43,6 +43,10 @@ jobs:
 
       - name: Build .app (release)
         id: build
+        env:
+          # macOS-Tag-Releases only; iOS App Store builds omit the token (see ios-archive-appstore.sh).
+          REISEN_GITHUB_ISSUES_TOKEN_BASE64: ${{ secrets.REISEN_GITHUB_ISSUES_TOKEN_BASE64 }}
+          REISEN_REQUIRE_GITHUB_ISSUE_TOKEN: "true"
         run: |
           APP_PATH="$(bash ./Scripts/build-app.sh --configuration release)"
           echo "app_path=$APP_PATH" >> "$GITHUB_OUTPUT"

@@ -1,12 +1,16 @@
 import Foundation
 
 extension PersistenceBootstrap {
+    nonisolated public static func supportDirectoryURL() -> URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Reisen", isDirectory: true)
+    }
+
     public static func supportDirectory() throws -> URL {
         let fm = FileManager.default
-        guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        guard let base = supportDirectoryURL() else {
             throw PersistenceStoreError.containerCreationFailed("Application Support Verzeichnis fehlt.")
         }
-        let base = appSupport.appendingPathComponent("Reisen", isDirectory: true)
         try fm.createDirectory(at: base, withIntermediateDirectories: true)
         return base
     }

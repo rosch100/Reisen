@@ -23,6 +23,12 @@ public final class SyncStore {
     public var messageProviderID: ProviderID?
     public var errorMessage: String?
     public var statusMessage: String?
+    /// Öffentliche GitHub-Issue-URL zum letzten gemeldeten Fehler.
+    public var lastPublicIssueURL: URL?
+    /// `false`, wenn nur auf ein bestehendes Issue verwiesen wird (Kommentar-Throttle).
+    public var lastPublicIssueDidPostUpdate = true
+    /// Expliziter Fehler, wenn das öffentliche Issue nicht angelegt werden konnte.
+    public var issueReportErrorMessage: String?
     /// Datenschutz-Pane, falls `errorMessage` eine verweigerte Sicherheitsoption ist.
     public var privacySettingPane: PrivacySettingPane?
 
@@ -30,6 +36,7 @@ public final class SyncStore {
     private let registry: ProviderRegistry
     private let reminderScheduler: LocalReminderScheduler
     private let calendarSync: LocalEventKitBridge
+    private var issueReportTask: Task<Void, Never>?
     private var cloudSideEffectTask: Task<Void, Never>?
     private var isRebuildingSideEffects = false
 
@@ -625,17 +632,62 @@ public final class SyncStore {
         if clearStatus {
             statusMessage = nil
         }
+        maybeScheduleIssueReport(error: error)
     }
 
     private func assignErrorMessage(_ message: String) {
         errorMessage = message
         privacySettingPane = nil
         statusMessage = nil
+        maybeScheduleIssueReport(message: message)
     }
 
     private func clearError() {
         errorMessage = nil
         privacySettingPane = nil
+        resetIssueReport()
+    }
+
+    private func resetIssueReport() {
+        lastPublicIssueURL = nil
+        lastPublicIssueDidPostUpdate = true
+        issueReportErrorMessage = nil
+    }
+
+    private func maybeScheduleIssueReport(error: Error) {
+        guard GitHubIssueAutoReport.shouldReport(error: error) else { return }
+        scheduleIssueReport(message: error.localizedDescription)
+    }
+
+    private func maybeScheduleIssueReport(message: String) {
+        guard GitHubIssueAutoReport.shouldReport(message: message) else { return }
+        scheduleIssueReport(message: message)
+    }
+
+    private func scheduleIssueReport(message: String) {
+        resetIssueReport()
+        guard GitHubIssueAutoReport.isAutomaticReportingEnabled() else { return }
+        let provider = messageProviderID
+        let previous = issueReportTask
+        issueReportTask = Task { @MainActor [weak self] in
+            await previous?.value
+            guard let self else { return }
+            do {
+                let created = try await GitHubIssueReporter.shared.report(
+                    kind: .error,
+                    title: GitHubIssueTitle.syncErrorReport(message: message),
+                    message: message,
+                    providerID: provider
+                )
+                self.lastPublicIssueURL = created.htmlURL
+                self.lastPublicIssueDidPostUpdate = created.didPostUpdate
+                self.issueReportErrorMessage = nil
+            } catch is GitHubIssueTokenError {
+                return
+            } catch {
+                self.issueReportErrorMessage = error.localizedDescription
+            }
+        }
     }
 
     private func providerIsEnabled(_ providerID: ProviderID) -> Bool {
@@ -695,13 +747,16 @@ public final class SyncStore {
 }
 
 public enum SyncLog {
+    private static var fileURL: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Reisen", isDirectory: true)
+            .appendingPathComponent("sync-log.txt")
+    }
+
     public static func append(_ line: String) {
         let fm = FileManager.default
-        guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return
-        }
-        let base = appSupport.appendingPathComponent("Reisen", isDirectory: true)
-        let logURL = base.appendingPathComponent("sync-log.txt")
+        guard let logURL = fileURL else { return }
+        let base = logURL.deletingLastPathComponent()
         do {
             try fm.createDirectory(at: base, withIntermediateDirectories: true)
             let fullLine = "[\(ISO8601DateFormatter().string(from: Date()))] \(line)\n"

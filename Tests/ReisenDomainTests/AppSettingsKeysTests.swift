@@ -34,12 +34,22 @@ import ReisenDomain
     )
 }
 
-@Test func rememberLoginAutomatically_defaultsToTrueWhenUnset() {
+@Test func rememberLoginAutomatically_defaultsToFalseWhenUnset() {
     let defaults = UserDefaults(suiteName: "ReisenTests.rememberLogin")!
     defaults.removePersistentDomain(forName: "ReisenTests.rememberLogin")
-    #expect(AppSettingsKeys.isRememberLoginAutomatically(defaults: defaults))
-    defaults.set(false, forKey: AppSettingsKeys.rememberLoginAutomatically)
     #expect(!AppSettingsKeys.isRememberLoginAutomatically(defaults: defaults))
+    defaults.set(true, forKey: AppSettingsKeys.rememberLoginAutomatically)
+    #expect(AppSettingsKeys.isRememberLoginAutomatically(defaults: defaults))
+}
+
+@Test func reportErrorsToGitHub_defaultsToFalseWhenUnset() {
+    let suite = "ReisenTests.reportErrorsToGitHub"
+    let defaults = UserDefaults(suiteName: suite)!
+    defaults.removePersistentDomain(forName: suite)
+    #expect(AppSettingsKeys.reportErrorsToGitHub == "reisen_reportErrorsToGitHub")
+    #expect(AppSettingsKeys.isReportErrorsToGitHub(defaults: defaults) == false)
+    defaults.set(true, forKey: AppSettingsKeys.reportErrorsToGitHub)
+    #expect(AppSettingsKeys.isReportErrorsToGitHub(defaults: defaults))
 }
 
 @Test func tripDetailSplitKeys_areStableAndPrefixed() {

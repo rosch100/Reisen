@@ -23,6 +23,52 @@
           "userTripStatus": "ETICKET_PUBLISHED",
           "latestPaymentStatus": "PAID"
         },
+        "bookingInfo": {
+            "hotelBookingInfo": {
+            "hotelGeoDisplayName": "South Jakarta",
+            "areaRegion": "Example District",
+            "cancellationPolicyInfos": [
+              {
+                "appliedDateInfoDescription": "01 Sep 2026 12:59",
+                "appliedEndDate": {
+                  "hourMinute": { "hour": "12", "minute": "59" },
+                  "monthDayYear": { "day": "1", "month": "9", "year": "2026" }
+                },
+                "appliedStartDate": {
+                  "hourMinute": { "hour": "2", "minute": "47" },
+                  "monthDayYear": { "day": "27", "month": "8", "year": "2026" }
+                },
+                "policyInfoDetail": {
+                  "description": "Free cancellation before",
+                  "fee": {
+                    "currencyValue": { "amount": "0", "currency": "EUR" },
+                    "numOfDecimalPoint": "2"
+                  },
+                  "type": "FREE_CANCELLATION"
+                }
+              },
+              {
+                "appliedDateInfoDescription": "01 Sep 2026 12:59",
+                "appliedEndDate": {
+                  "hourMinute": { "hour": "14", "minute": "0" },
+                  "monthDayYear": { "day": "2", "month": "9", "year": "2026" }
+                },
+                "appliedStartDate": {
+                  "hourMinute": { "hour": "12", "minute": "59" },
+                  "monthDayYear": { "day": "1", "month": "9", "year": "2026" }
+                },
+                "policyInfoDetail": {
+                  "description": "Cancellation fee €4.37 applies after",
+                  "fee": {
+                    "currencyValue": { "amount": "437", "currency": "EUR" },
+                    "numOfDecimalPoint": "2"
+                  },
+                  "type": "FULL_CHARGE"
+                }
+              }
+            ]
+          }
+        },
         "cardSummaryInfo": {
           "commonSummary": {
             "tripType": "HOTEL",
@@ -37,26 +83,6 @@
               "firstName": "REDACTED",
               "lastName": "REDACTED"
             }
-          },
-          "hotelSummary": {
-            "hotelName": "Example Hotel South Jakarta",
-            "roomName": "Standard Double",
-            "checkInDate": {
-              "year": "2026",
-              "month": "9",
-              "day": "1"
-            },
-            "checkOutDate": {
-              "year": "2026",
-              "month": "9",
-              "day": "2"
-            },
-            "checkInTime": "14:00",
-            "checkOutTime": "12:00",
-            "cityName": "South Jakarta",
-            "guestCount": 2,
-            "roomCount": 1,
-            "breakfastIncluded": false
           }
         },
         "cardDetailInfo": {
@@ -67,30 +93,47 @@
             }
           },
           "hotelDetail": {
-            "hotelName": "Example Hotel South Jakarta",
-            "roomName": "Standard Double",
-            "cityName": "South Jakarta",
-            "address": "Jl. Example No. 1, South Jakarta",
-            "checkInTime": "14:00",
-            "checkOutTime": "12:00",
-            "guestCount": 2,
-            "roomCount": 1,
-            "breakfastIncluded": false,
-            "bedType": "1 double bed",
-            "cancellationPolicies": [
-              {
-                "type": "FREE",
-                "deadlineLocal": "2026-09-01T12:59:00",
-                "feeAmount": null,
-                "feeCurrency": "EUR"
+            "bookingHistory": null,
+            "hotelRefundList": null,
+            "voucherInfo": {
+              "checkInDate": {
+                "year": "2026",
+                "month": "9",
+                "day": "2"
               },
-              {
-                "type": "FEE",
-                "deadlineLocal": "2026-09-01T12:59:00",
-                "feeAmount": 4.37,
-                "feeCurrency": "EUR"
-              }
-            ]
+              "checkOutDate": {
+                "year": "2026",
+                "month": "9",
+                "day": "3"
+              },
+              "checkInTime": "14:00",
+              "checkOutTime": "12:00",
+              "breakfastIncluded": false,
+              "numGuests": "2",
+              "numRooms": "1",
+              "guestName": "REDACTED",
+              "localeAwareInfos": [
+                {
+                  "locale": "en_EN",
+                  "hotelName": "Example Hotel South Jakarta",
+                  "hotelAddress": "Jl. Example No. 1, Cilandak, South Jakarta",
+                  "roomType": "Standard Double",
+                  "roomCancelationPolicy": "Free Cancellation before 01-Sep-2026 12:59.\nReservation is non-refundable after 01-Sep-2026 13:00.\nTimes displayed are based on the accommodation's local time.",
+                  "roomCancelationPolicyLabel": "Free Cancellation before 01-Sep-2026",
+                  "displayNumOfBreakfast": "Breakfast not Included",
+                  "translatedData": {
+                    "address": {
+                      "city": "Jakarta Selatan",
+                      "country": "Indonesia",
+                      "lines": [
+                        "Jl. Example No. 1"
+                      ],
+                      "postalCode": "12430"
+                    }
+                  }
+                }
+              ]
+            }
           }
         }
       }

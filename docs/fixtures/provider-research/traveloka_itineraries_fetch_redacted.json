@@ -543,6 +543,52 @@
         "paymentInfo": {
           "userTripStatus": "ETICKET_PUBLISHED"
         },
+        "bookingInfo": {
+          "hotelBookingInfo": {
+            "hotelGeoDisplayName": "South Jakarta",
+            "areaRegion": "Example District",
+            "cancellationPolicyInfos": [
+              {
+                "appliedDateInfoDescription": "01 Sep 2026 12:59",
+                "appliedEndDate": {
+                  "hourMinute": { "hour": "12", "minute": "59" },
+                  "monthDayYear": { "day": "1", "month": "9", "year": "2026" }
+                },
+                "appliedStartDate": {
+                  "hourMinute": { "hour": "2", "minute": "47" },
+                  "monthDayYear": { "day": "27", "month": "8", "year": "2026" }
+                },
+                "policyInfoDetail": {
+                  "description": "Free cancellation before",
+                  "fee": {
+                    "currencyValue": { "amount": "0", "currency": "EUR" },
+                    "numOfDecimalPoint": "2"
+                  },
+                  "type": "FREE_CANCELLATION"
+                }
+              },
+              {
+                "appliedDateInfoDescription": "01 Sep 2026 12:59",
+                "appliedEndDate": {
+                  "hourMinute": { "hour": "14", "minute": "0" },
+                  "monthDayYear": { "day": "2", "month": "9", "year": "2026" }
+                },
+                "appliedStartDate": {
+                  "hourMinute": { "hour": "12", "minute": "59" },
+                  "monthDayYear": { "day": "1", "month": "9", "year": "2026" }
+                },
+                "policyInfoDetail": {
+                  "description": "Cancellation fee €4.37 applies after",
+                  "fee": {
+                    "currencyValue": { "amount": "437", "currency": "EUR" },
+                    "numOfDecimalPoint": "2"
+                  },
+                  "type": "FULL_CHARGE"
+                }
+              }
+            ]
+          }
+        },
         "cardSummaryInfo": {
           "commonSummary": {
             "tripType": "HOTEL",
@@ -552,29 +598,38 @@
             "ianaTimezoneEnd": "Asia/Jakarta",
             "sectionType": "ACTIVE_BOOKING",
             "productName": "Hotel"
-          },
-          "hotelSummary": {
-            "hotelName": "Example Hotel South Jakarta",
-            "roomName": "Standard Double",
-            "checkInDate": {
-              "year": "2026",
-              "month": "9",
-              "day": "1"
-            },
-            "checkOutDate": {
-              "year": "2026",
-              "month": "9",
-              "day": "2"
-            },
-            "checkInTime": "14:00",
-            "checkOutTime": "12:00",
-            "cityName": "South Jakarta",
-            "guestCount": 2,
-            "roomCount": 1,
-            "breakfastIncluded": false
           }
         },
-        "cardDetailInfo": {}
+        "cardDetailInfo": {
+          "hotelDetail": {
+            "voucherInfo": {
+              "checkInDate": {
+                "year": "2026",
+                "month": "9",
+                "day": "2"
+              },
+              "checkOutDate": {
+                "year": "2026",
+                "month": "9",
+                "day": "3"
+              },
+              "checkInTime": "14:00",
+              "checkOutTime": "12:00",
+              "breakfastIncluded": false,
+              "numGuests": "2",
+              "numRooms": "1",
+              "localeAwareInfos": [
+                {
+                  "locale": "en_EN",
+                  "hotelName": "Example Hotel South Jakarta",
+                  "hotelAddress": "Jl. Example No. 1, Cilandak, South Jakarta",
+                  "roomType": "Standard Double",
+                  "roomCancelationPolicy": "Free Cancellation before 01-Sep-2026 12:59."
+                }
+              ]
+            }
+          }
+        }
       },
       {
         "bookingId": "1387355867",
@@ -593,21 +648,36 @@
           "commonSummary": {
             "tripType": "VEHICLE_RENTAL",
             "itineraryTimestampBegin": "1790744400000",
-            "ianaTimezoneBegin": "Asia/Jakarta",
+            "ianaTimezoneBegin": "+07:00",
             "itineraryTimestampEnd": "1790748000000",
-            "ianaTimezoneEnd": "Asia/Jakarta",
+            "ianaTimezoneEnd": "+07:00",
             "sectionType": "ACTIVE_BOOKING",
             "productName": "Car Rental"
           },
           "vehicleRentalSummaryInfo": {
             "vehicleName": "Daihatsu Sigra",
-            "transmission": "Automatic",
-            "providerName": "Jayamahe Easy Ride Jakarta",
-            "pickUpAddress": "Pool Area Bandara Soekarno-Hatta",
-            "dropOffAddress": "Pool Area Bandara Soekarno-Hatta"
+            "header": "Daihatsu Sigra",
+            "detail": "Automatic  •  7 Sep 2026 09:00 - 7 Sep 2026 09:30",
+            "routeName": "Jakarta",
+            "pickupAddress": "Pool Area Bandara Soekarno-Hatta"
           }
         },
-        "cardDetailInfo": {}
+        "cardDetailInfo": {
+          "vehicleRentalDetailInfo": {
+            "vehicleName": "Daihatsu Sigra",
+            "supplierName": "Jayamahe Easy Ride Jakarta",
+            "pickupLocation": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+            "dropoffLocation": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+            "refundInfo": [
+              "A full refund will be given for cancellations made more than 24 hours before pick-up time."
+            ],
+            "withoutDriverDetailInfo": {
+              "product": {
+                "transmissionTypeLabel": "Automatic"
+              }
+            }
+          }
+        }
       },
       {
         "bookingId": "1000000001",
@@ -622,6 +692,63 @@
         "paymentInfo": {
           "userTripStatus": "ETICKET_PUBLISHED"
         },
+        "bookingInfo": {
+          "flightBookingInfo": {
+            "auth": "redacted",
+            "bookingDetail": {
+              "sourceCity": "Jakarta",
+              "destinationCity": "Denpasar",
+              "tripType": "ONE_WAY",
+              "contactEmail": "REDACTED",
+              "passengers": {
+                "adults": [
+                  { "firstName": "REDACTED", "lastName": "REDACTED", "typeDescription": "Adult" }
+                ],
+                "children": [],
+                "infants": []
+              },
+              "segments": [
+                {
+                  "airlineName": "AirAsia",
+                  "airlineCode": "QZ",
+                  "brandCode": "QZ",
+                  "seatClass": "Economy",
+                  "seatPublishedClass": "ECONOMY",
+                  "sourceAirport": {
+                    "airportCode": "CGK",
+                    "airportName": "Soekarno-Hatta",
+                    "location": "Jakarta",
+                    "terminalName": "2"
+                  },
+                  "destinationAirport": {
+                    "airportCode": "DPS",
+                    "airportName": "Ngurah Rai",
+                    "location": "Denpasar",
+                    "terminalName": "Domestic"
+                  },
+                  "departureDateTime": {
+                    "monthDayYear": { "year": "2026", "month": "9", "day": "10" },
+                    "hourMinute": { "hour": "8", "minute": "0" }
+                  },
+                  "arrivalDateTime": {
+                    "monthDayYear": { "year": "2026", "month": "9", "day": "10" },
+                    "hourMinute": { "hour": "11", "minute": "0" }
+                  },
+                  "facilities": [
+                    { "type": "cabinBaggage", "displayText": "7 kg" },
+                    { "type": "baggage", "displayText": "20 kg" }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "flightTicketInfo": {
+          "eTicketButtonInfo": {
+            "buttonRefundAvailable": false,
+            "buttonRescheduleAvailable": false
+          }
+        },
         "cardSummaryInfo": {
           "commonSummary": {
             "tripType": "FLIGHT",
@@ -632,19 +759,10 @@
             "sectionType": "ACTIVE_BOOKING",
             "productName": "Flight"
           },
-          "flightSummary": null
+          "flightCheckInSummaryInfo": null
         },
         "cardDetailInfo": {
-          "flightDetail": {
-            "originCity": "Jakarta",
-            "originAirportCode": "CGK",
-            "destinationCity": "Denpasar",
-            "destinationAirportCode": "DPS",
-            "airlineName": "AirAsia",
-            "passengerCount": 1,
-            "refundable": false,
-            "refundPolicyLabel": "Non-Refundable"
-          }
+          "flightDetail": null
         }
       }
     ]

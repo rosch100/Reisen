@@ -27,7 +27,7 @@ struct SyncView: View {
     @AppStorage(AppSettingsKeys.calendarFlightTimesEnabled) private var calendarFlightTimesEnabled: Bool = false
     @AppStorage(AppSettingsKeys.calendarHotelStaysEnabled) private var calendarHotelStaysEnabled: Bool = false
     @AppStorage(AppSettingsKeys.calendarTitleMode) private var calendarTitleModeRaw: String = CalendarTitleMode.tripTitle.rawValue
-    @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = true
+    @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = false
     @AppStorage private var isProviderEnabled: Bool
     @AppStorage private var preferredKeychainAccountID: String
 
@@ -269,6 +269,7 @@ struct SyncView: View {
                     : "Sync nicht möglich — Anmeldung und aktiven Provider prüfen")
             }
         }
+        .providerLoginDisclosure(isActive: isProviderEnabled)
     }
 
     private func publishSessionToHub() {
@@ -434,6 +435,11 @@ struct SyncView: View {
                     if let pane = store?.privacySettingPane {
                         OpenPrivacySettingsButton(pane: pane)
                     }
+                    PublicGitHubIssueReportActions(
+                        syncError: errorMessage,
+                        providerID: store?.messageProviderID ?? providerID,
+                        store: store
+                    )
                 }
             } else if let statusMessage = store?.statusMessage, storeMessageBelongsToThisProvider {
                 CopyableLabel(

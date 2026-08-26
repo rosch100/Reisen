@@ -61,6 +61,15 @@ Beim Sync:
 
 Hinweis: Der Sync ist für **lokale, persönliche Nutzung** gedacht und speichert keine Credentials im Klartext; Session-Cookies bleiben im WebView-Cookie-Store.
 
+## Öffentliche Issues (Fehler und Feedback)
+
+Fehler in der App und Feedback in den Einstellungen können als **öffentliche** GitHub-Issues veröffentlicht werden: [github.com/rosch100/Reisen/issues](https://github.com/rosch100/Reisen/issues).
+
+- **App-Store-/Release-iOS-Builds** öffnen ein vorausgefülltes Issue in Safari (kein Token im Binary).
+- **Lokale Debug-Builds** können optional ein Issues-only-Token einbetten (`REISEN_EMBED_GITHUB_ISSUE_TOKEN=true` in `ios-run.sh`). Details: [docs/ci/github-issues-token.md](docs/ci/github-issues-token.md).
+
+App-Store-Einreichung: [docs/ci/app-store-connect.md](docs/ci/app-store-connect.md) — Archive: `bash ./Scripts/ios-archive-appstore.sh`
+
 ## Lizenz (nicht-kommerziell)
 
 Dieses Projekt ist unter **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** lizenziert.

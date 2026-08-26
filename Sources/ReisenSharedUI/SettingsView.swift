@@ -32,7 +32,8 @@ public struct SettingsView: View {
     @AppStorage(AppSettingsKeys.eventCalendarCreateIfMissing) private var eventCalendarCreateIfMissing: Bool = false
     @AppStorage(AppSettingsKeys.reminderCalendarCreateIfMissing) private var reminderCalendarCreateIfMissing: Bool = false
     @AppStorage(AppSettingsKeys.calendarTitleMode) private var calendarTitleModeRaw: String = CalendarTitleMode.tripTitle.rawValue
-    @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = true
+    @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = false
+    @AppStorage(AppSettingsKeys.reportErrorsToGitHub) private var reportErrorsToGitHub: Bool = false
 
     @State private var eventCalendarNames: [String] = []
     @State private var reminderCalendarNames: [String] = []
@@ -44,6 +45,7 @@ public struct SettingsView: View {
     @State private var showCloudWipeConfirm = false
     @State private var cloudAccountStatus: CKAccountStatus?
     @State private var cloudAccountStatusError: String?
+    @State private var feedbackText = ""
 
     private let newCalendarTag = "__NEUER_KALENDER__"
 
@@ -194,6 +196,15 @@ public struct SettingsView: View {
             }
 
             Section {
+                Link("Datenschutzerklärung", destination: LegalURLs.privacyPolicy)
+                Link("Support", destination: LegalURLs.support)
+            } header: {
+                Text("Datenschutz & Support")
+            } footer: {
+                Text("Beschreibt Provider-Logins, iCloud, Kalender und lokale Speicherung.")
+            }
+
+            Section {
                 Label("Daten synchronisieren über iCloud", systemImage: "icloud")
                 Text(cloudAccountStatusText)
                     .font(.footnote)
@@ -205,6 +216,30 @@ public struct SettingsView: View {
                 Text("iCloud")
             } footer: {
                 Text(cloudAccountFooterText)
+            }
+
+            Section {
+                if GitHubIssueToken.isEmbedded {
+                    Toggle("Fehler automatisch als öffentliches Issue senden", isOn: $reportErrorsToGitHub)
+                }
+                TextEditor(text: $feedbackText)
+                    .frame(minHeight: 80)
+                PublicGitHubIssueReportActions(
+                    feedbackMessage: feedbackText,
+                    onReported: { feedbackText = "" }
+                )
+                Link("Alle öffentlichen Issues", destination: GitHubRepository.issuesListURL)
+            } header: {
+                Text("Feedback")
+            } footer: {
+                Text(
+                    GitHubIssueToken.isEmbedded
+                        ? "Feedback legt ein öffentliches GitHub-Issue an. "
+                            + "Automatische Fehler-Issues nur mit dem Schalter oben; ohne Sync-Log, "
+                            + "ohne Login-/Datenschutz-Meldungen. Repo: github.com/\(GitHubRepository.publicPath)."
+                        : "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text. "
+                            + "Du sendest mit deinem GitHub-Konto. Repo: github.com/\(GitHubRepository.publicPath)."
+                )
             }
 
             if showsDataManagement {
@@ -225,7 +260,7 @@ public struct SettingsView: View {
 #if os(macOS)
         .formStyle(.grouped)
         .padding()
-        .frame(width: 520, height: 480)
+        .frame(width: 520, height: 620)
 #endif
         .confirmationDialog(
             "Lokale Stores zurücksetzen?",

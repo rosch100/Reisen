@@ -17,7 +17,7 @@ Neuer Provider `ReisenTraveloka` / `ProviderID.traveloka`: persönliche Buchunge
 | Session-Probe | `POST /api/v2/user/whoami` | `data.loginMethod` ∈ {`TV`,`AP`,…}; kein `revoked` |
 | Catalog | `POST /api/v2/tripitinerary/itineraries/v2/fetch` (+ optional `transactions/number`) | Itinerary-Entries / Gruppen `ACTIVE_BOOKING`; Phasen `UPCOMING` + `PAST` |
 | Enrich | `POST /api/v2/tripitinerary/itineraries/v2/single` | `cardSummaryInfo` + `cardDetailInfo` |
-| Refund (wenn Detail ohne Deadlines) | `GET /en-en/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | `__NEXT_DATA__` Deadline-Locals |
+| Refund (wenn Detail ohne **Fee**-Deadline) | `GET /en-en/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | `__NEXT_DATA__` Deadline-Locals; **mergen** (Itinerary-Free behalten, Fee ergänzen) |
 | Detail-Deep-Link | `/en-en/item/details/{bookingId}?type={PRODUCT}&id={itineraryId}` | `externalUrl` |
 
 ## API-Header (SSOT aus HAR)
@@ -68,9 +68,9 @@ Status-SSOT: Tag/Text `Voucher issued` / `E-ticket issued` / `userTripStatus: ET
 Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 
 - Experience: `operatorInfo.name` → `operatorName`; `timeSlotId == all_day_pass` / „All Day“ → `isAllDay`
-- Hotel: dual Free+Fee-`CancellationDeadline`; `hotelCheckInMinutes` / `hotelCheckOutMinutes`; `hotelOffsetSeconds` aus `ianaTimezoneBegin`
-- Flight: keine Free-Deadline erfinden; Fee/Non-Refundable nur aus echten Feldern
-- Vehicle: `operatorName` aus PROVIDED BY / Partner
+- Hotel: Live-API `hotelDetail.voucherInfo` + `localeAwareInfos` (kein `hotelSummary`); Ort `bookingInfo.hotelBookingInfo.hotelGeoDisplayName`; Free+Fee-Fristen primär aus `cancellationPolicyInfos` (`FREE_CANCELLATION` / `FULL_CHARGE`, Betrag = `amount` / `10^numOfDecimalPoint`); Fallback Policy-String; Check-in/out aus Voucher-Zeiten
+- Flight: Live-E-Ticket liest `bookingInfo.flightBookingInfo.bookingDetail` (Segmente `segments`, sonst `routes` / `flightRouteGroups`; Airports `sourceAirport`/`destinationAirport` oder Search-Shape `departureCity`/`arrivalCityCode`) plus `flightTicketInfo.eTicketDetailMap` / `eTicketButtonInfo`. Kein `flightSummary`. Keine Free-Deadline erfinden; Fee nur mit echter Deadline (`refundFeeAmount` + `refundDeadlineLocal` bzw. Refund-HTML)
+- Vehicle: `supplierName`, `pickupLocation`/`pickupAddress` (nicht `providerName`/`pickUpAddress`); Titel `vehicleName` + `routeName`; Transmission `withoutDriverDetailInfo.product.transmissionTypeLabel`; Free-Frist 24h vor Pickup (EN „24 hours before“ / ID „24 jam sebelum“); Zeitzone oft Offset `+07:00` statt IANA
 
 ## Login
 

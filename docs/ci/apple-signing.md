@@ -84,6 +84,31 @@ Optional lokal: `~/keys/AuthKey_<KEY_ID>.p8` (Fallback: `~/private_keys/AuthKey_
   - `.dmg`: `bash ./Scripts/sign-and-notarize.sh --dmg-path /abs/path/to/Reisen.dmg` (sign → notarytool → staple)
 - Release Workflow: erst `.app` signieren/notarizen/staplen, dann DMG erzeugen, danach dieselbe Helper-API für die DMG
 
+## iOS App Store (ReiseniOS)
+
+Distribution für den **App Store** (nicht Developer ID):
+
+```bash
+bash ./Scripts/ios-archive-appstore.sh
+```
+
+Das Script:
+
+1. setzt `REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true` (kein PAT im Store-Binary)
+2. ruft `Scripts/generate-ios-project.sh` auf
+3. erzeugt ein **Release**-Archive (`xcodebuild archive`, `generic/platform=iOS`)
+4. exportiert ein IPA (`Scripts/ios-export-appstore.plist`, `method: app-store`)
+
+Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Connect.
+
+Voraussetzungen:
+
+- Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`
+- Push Notifications + iCloud (CloudKit) in den Capabilities; Release-Entitlements `ReiseniOS-Release.entitlements` mit `aps-environment` = `production`
+- CloudKit-Container im Developer Portal an die iOS App-ID gebunden (Production)
+
+Checkliste für Metadaten, Screenshots und Review Notes: [`app-store-connect.md`](app-store-connect.md).
+
 ## Validierung / Troubleshooting
 
 - Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)

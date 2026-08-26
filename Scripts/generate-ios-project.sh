@@ -15,6 +15,13 @@ if [[ ! -f "$ROOT/project.yml" ]]; then
   exit 1
 fi
 
+if [[ "${REISEN_EMBED_GITHUB_ISSUE_TOKEN:-}" != "true" ]]; then
+  export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
+else
+  unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
+fi
+bash "$ROOT/Scripts/embed-github-issue-token.sh"
+
 xcodegen generate --spec "$ROOT/project.yml" --project "$ROOT"
 
 if [[ ! -d "$ROOT/Reisen.xcodeproj" ]]; then

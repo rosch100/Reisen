@@ -35,6 +35,9 @@ public struct AppSettingsKeys {
     /// Passwort-Konten nach erfolgreichem Login automatisch in der App-Keychain speichern.
     public static let rememberLoginAutomatically = "reisen_rememberLoginAutomatically"
 
+    /// Fehler automatisch als öffentliches GitHub-Issue senden (Opt-in, Default aus).
+    public static let reportErrorsToGitHub = "reisen_reportErrorsToGitHub"
+
     /// Sichtbarkeit des Buchungs-Detailpanels (SceneStorage / UserDefaults).
     public static let tripDetailPanelVisible = "reisen_tripDetailPanelVisible"
     /// Persistierte Höhe des Buchungs-Detailpanels in Punkten.
@@ -64,10 +67,15 @@ public struct AppSettingsKeys {
         "\(preferredKeychainAccountPrefix)\(providerID.rawValue)"
     }
 
-    /// Default: automatisches Speichern aktiv (abschaltbar in den Einstellungen).
+    /// Default: automatisches Speichern aus (Opt-in in den Einstellungen).
     public static func isRememberLoginAutomatically(defaults: UserDefaults = .standard) -> Bool {
-        guard defaults.object(forKey: rememberLoginAutomatically) != nil else { return true }
+        guard defaults.object(forKey: rememberLoginAutomatically) != nil else { return false }
         return defaults.bool(forKey: rememberLoginAutomatically)
+    }
+
+    /// Default: keine automatischen öffentlichen Fehler-Issues.
+    public static func isReportErrorsToGitHub(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: reportErrorsToGitHub)
     }
 }
 

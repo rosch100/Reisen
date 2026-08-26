@@ -1,4 +1,5 @@
 import SwiftUI
+import ReisenAppCore
 
 /// Shared store-open failure UI (iOS + macOS) with local reset / optional Cloud wipe.
 public struct StoreFailureView: View {
@@ -29,6 +30,8 @@ public struct StoreFailureView: View {
             Text(message)
                 .textSelection(.enabled)
                 .foregroundStyle(.secondary)
+
+            PublicGitHubIssueReportActions(storeLoadFailureMessage: message)
 
             Button("Lokale Stores zurücksetzen…") {
                 showResetConfirmation = true

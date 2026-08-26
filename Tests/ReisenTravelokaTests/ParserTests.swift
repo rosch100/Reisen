@@ -43,12 +43,22 @@ private enum TravelokaFixtureLoader {
     let hotel = try #require(byType[.hotel])
     #expect(hotel.confirmationCode == "1387353870")
     #expect(hotel.title?.contains("Example Hotel") == true)
+    #expect(hotel.locationTo == "South Jakarta")
+    #expect(hotel.locationToAddress?.contains("Cilandak") == true)
+    #expect(hotel.rateDetails?.roomCategory == "Standard Double")
     #expect(hotel.rateDetails?.boardType == .roomOnly)
+    #expect(hotel.hotelCheckInMinutes == 14 * 60)
+    #expect(hotel.deadlines.contains { $0.isFreeCancellation } == true)
+    #expect(hotel.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 } == true)
 
     let vehicle = try #require(byType[.other])
     #expect(vehicle.confirmationCode == "1387355867")
+    #expect(vehicle.title == "Daihatsu Sigra - Jakarta")
     #expect(vehicle.operatorName == "Jayamahe Easy Ride Jakarta")
     #expect(vehicle.locationFrom?.contains("Bandara") == true)
+    #expect(vehicle.locationFromAddress?.contains("Jakarta") == true)
+    #expect(vehicle.rateDetails?.roomCategory == "Automatic")
+    #expect(vehicle.deadlines.contains { $0.isFreeCancellation } == true)
 
     let flight = try #require(catalog.bookings.first { $0.bookingType == .flight })
     #expect(flight.confirmationCode == "1000000001")
@@ -60,6 +70,157 @@ private enum TravelokaFixtureLoader {
     let catalog = try TravelokaCatalogParser.parse(from: text)
     let activity = try #require(catalog.bookings.first { $0.bookingType == .activity })
     #expect(activity.externalUrl?.contains("/en-en/item/details/1387358428") == true)
+}
+
+@Test func travelokaHotelDeadlinesFromCancellationPoliciesArray() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "HOTEL",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_086_400_000,
+                "ianaTimezoneBegin": "Asia/Jakarta",
+            ],
+            "hotelSummary": [
+                "hotelName": "Policy Hotel",
+                "checkInDate": ["day": 1, "month": 9, "year": 2026],
+                "checkOutDate": ["day": 2, "month": 9, "year": 2026],
+            ],
+        ],
+        "cardDetailInfo": [
+            "hotelDetail": [
+                "cancellationPolicies": [
+                    ["type": "FREE", "deadlineLocal": "2026-09-01T12:59:00"],
+                    ["type": "FEE", "deadlineLocal": "2026-09-01T12:59:00", "feeAmount": 4.37],
+                ],
+            ],
+        ],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.title == "Policy Hotel")
+    #expect(draft.deadlines.count == 2)
+    #expect(draft.deadlines.contains { $0.isFreeCancellation })
+    #expect(draft.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 })
+}
+
+@Test func travelokaParsesOffsetTimezoneIdentifiers() {
+    let offset = TravelokaJSON.timeZone(iana: "+07:00")
+    #expect(offset?.secondsFromGMT() == 7 * 3600)
+    #expect(TravelokaJSON.timeZone(iana: "UTC+07:00")?.secondsFromGMT() == 7 * 3600)
+    #expect(TravelokaJSON.timeZone(iana: "GMT-05:30")?.secondsFromGMT() == -5 * 3600 - 30 * 60)
+    #expect(TravelokaJSON.timeZone(iana: "Asia/Jakarta") != nil)
+}
+
+@Test func travelokaHotelDeadlinesFromCancellationPolicyInfos() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "HOTEL",
+        "bookingInfo": [
+            "hotelBookingInfo": [
+                "hotelName": "Policy Infos Hotel",
+                "cancellationPolicyInfos": [
+                    [
+                        "appliedDateInfoDescription": "01 Sep 2026 12:59",
+                        "appliedEndDate": [
+                            "hourMinute": ["hour": "12", "minute": "59"],
+                            "monthDayYear": ["day": "1", "month": "9", "year": "2026"],
+                        ],
+                        "appliedStartDate": [
+                            "hourMinute": ["hour": "2", "minute": "47"],
+                            "monthDayYear": ["day": "27", "month": "8", "year": "2026"],
+                        ],
+                        "policyInfoDetail": [
+                            "description": "Free cancellation before",
+                            "fee": [
+                                "currencyValue": ["amount": "0", "currency": "EUR"],
+                                "numOfDecimalPoint": "2",
+                            ],
+                            "type": "FREE_CANCELLATION",
+                        ],
+                    ],
+                    [
+                        "appliedDateInfoDescription": "01 Sep 2026 12:59",
+                        "appliedEndDate": [
+                            "hourMinute": ["hour": "14", "minute": "0"],
+                            "monthDayYear": ["day": "2", "month": "9", "year": "2026"],
+                        ],
+                        "appliedStartDate": [
+                            "hourMinute": ["hour": "12", "minute": "59"],
+                            "monthDayYear": ["day": "1", "month": "9", "year": "2026"],
+                        ],
+                        "policyInfoDetail": [
+                            "description": "Cancellation fee €4.37 applies after",
+                            "fee": [
+                                "currencyValue": ["amount": "437", "currency": "EUR"],
+                                "numOfDecimalPoint": "2",
+                            ],
+                            "type": "FULL_CHARGE",
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_086_400_000,
+                "ianaTimezoneBegin": "Asia/Jakarta",
+            ],
+        ],
+        "cardDetailInfo": [
+            "hotelDetail": [:],
+        ],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.deadlines.count == 2)
+    #expect(draft.deadlines.contains { $0.isFreeCancellation })
+    let fee = try #require(draft.deadlines.first { !$0.isFreeCancellation })
+    #expect(fee.cancellationFeeAmount == 4.37)
+    let tz = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    let expected = try #require(TravelokaJSON.localDateTime("2026-09-01T12:59:00", timeZone: tz))
+    #expect(abs(draft.deadlines[0].deadlineAt.timeIntervalSince(expected)) < 0.01)
+    #expect(abs(fee.deadlineAt.timeIntervalSince(expected)) < 0.01)
+}
+
+@Test func travelokaExperienceDeadlinesFromIndonesianPolicy() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "EXPERIENCE",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_086_400_000,
+                "ianaTimezoneBegin": "Asia/Saigon",
+            ],
+            "experienceSummary": [
+                "experienceName": "Ha Noi Double Decker Bus Pass",
+                "ticketDate": ["day": 8, "month": 9, "year": 2026],
+                "timeSlotId": "all_day_pass",
+            ],
+        ],
+        "cardDetailInfo": [
+            "experienceDetail": [
+                "experienceName": "Ha Noi Double Decker Bus Pass",
+                "ticketDate": ["day": 8, "month": 9, "year": 2026],
+                "timeSlotId": "all_day_pass",
+                "cancellationPolicies": [
+                    "Semua pembatalan pesanan akan dikenakan biaya pembatalan.",
+                    "Pembatalan yang dilakukan sekurang-kurangnya 1 hari sebelum tanggal kunjungan dapat di-refund hingga 100% dari harga dasar.",
+                ],
+            ],
+        ],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.deadlines.count == 1)
+    #expect(draft.deadlines.first?.isFreeCancellation == true)
+    let tz = try #require(TimeZone(identifier: "Asia/Saigon"))
+    let visitEnd = try #require(TravelokaJSON.dateFromDay((2026, 9, 8), minutes: 23 * 60 + 59, timeZone: tz))
+    let expected = try #require(Calendar(identifier: .gregorian).date(byAdding: .day, value: -1, to: visitEnd))
+    #expect(abs((draft.deadlines.first?.deadlineAt.timeIntervalSince(expected) ?? 99)) < 0.01)
 }
 
 @Test func travelokaHotelBoardTypeFromBreakfastIncluded() throws {
@@ -83,7 +244,7 @@ private enum TravelokaFixtureLoader {
         ],
     ]
 
-    var missingBreakfast = baseEntry
+    let missingBreakfast = baseEntry
     let draftUnknown = try TravelokaItineraryEntryParser.draft(from: missingBreakfast)
     #expect(draftUnknown.rateDetails?.boardType == .unknown)
     #expect(draftUnknown.rateDetails?.includedBreakfast == nil)
@@ -123,27 +284,43 @@ private enum TravelokaFixtureLoader {
     #expect(enrichment.deadlines.first?.isFreeCancellation == true)
 }
 
-@Test func travelokaEnrichmentHotelDualDeadlines() throws {
+@Test func travelokaEnrichmentHotelFromVoucherInfo() throws {
     let text = try TravelokaFixtureLoader.load("traveloka_itinerary_single_hotel_redacted.json")
     let enrichment = try TravelokaEnrichmentParser.parse(from: text)
     #expect(enrichment.title?.contains("Example Hotel") == true)
+    #expect(enrichment.locationTo == "South Jakarta")
+    #expect(enrichment.locationToAddress?.contains("Cilandak") == true)
     #expect(enrichment.hotelCheckInMinutes == 14 * 60)
     #expect(enrichment.hotelCheckOutMinutes == 12 * 60)
-    #expect(enrichment.deadlines.count == 2)
-    #expect(enrichment.deadlines.contains { $0.isFreeCancellation })
-    #expect(enrichment.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 })
+    #expect(enrichment.rateDetails?.roomCategory == "Standard Double")
+    #expect(enrichment.rateDetails?.guestCount == 2)
     #expect(enrichment.rateDetails?.includedBreakfast == false)
+    #expect(enrichment.deadlines.count == 2)
+    #expect(enrichment.deadlines.contains { $0.isFreeCancellation } == true)
+    let fee = try #require(enrichment.deadlines.first { !$0.isFreeCancellation })
+    #expect(fee.cancellationFeeAmount == 4.37)
+    let tz = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    let expected = try #require(TravelokaJSON.localDateTime("2026-09-01T12:59:00", timeZone: tz))
+    #expect(abs((enrichment.deadlines.first { $0.isFreeCancellation }?.deadlineAt.timeIntervalSince(expected) ?? 99)) < 0.01)
+    #expect(abs(fee.deadlineAt.timeIntervalSince(expected)) < 0.01)
 }
 
 @Test func travelokaEnrichmentVehicle() throws {
     let text = try TravelokaFixtureLoader.load("traveloka_itinerary_single_vehicle_redacted.json")
     let enrichment = try TravelokaEnrichmentParser.parse(from: text)
-    #expect(enrichment.title == "Daihatsu Sigra")
+    #expect(enrichment.title == "Daihatsu Sigra - Jakarta")
     #expect(enrichment.operatorName == "Jayamahe Easy Ride Jakarta")
     #expect(enrichment.locationFrom?.contains("Bandara") == true)
     #expect(enrichment.locationFromAddress?.contains("Jakarta") == true)
+    #expect(enrichment.locationToAddress?.contains("Jakarta") == true)
+    #expect(enrichment.rateDetails?.roomCategory == "Automatic")
+    #expect(enrichment.passengers?.first?.givenName == "REDACTED")
     #expect(enrichment.deadlines.count == 1)
     #expect(enrichment.deadlines.first?.isFreeCancellation == true)
+    let tz = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    let pickup = try #require(TravelokaJSON.localDateTime("2026-09-07T09:00:00", timeZone: tz))
+    let expected = try #require(Calendar(identifier: .gregorian).date(byAdding: .hour, value: -24, to: pickup))
+    #expect(abs((enrichment.deadlines.first?.deadlineAt.timeIntervalSince(expected) ?? 99)) < 0.01)
 }
 
 @Test func travelokaEnrichmentFlightNonRefundable() throws {
@@ -156,6 +333,82 @@ private enum TravelokaFixtureLoader {
     #expect(enrichment.passengers?.count == 1)
     #expect(enrichment.passengers?.first?.travellerType == .adult)
     #expect(enrichment.locationFrom?.contains("CGK") == true)
+    #expect(enrichment.locationFromAddress?.contains("Soekarno") == true)
+    #expect(enrichment.locationFromAddress?.contains("Terminal") == true)
+    #expect(enrichment.rateDetails?.baggageInfoRaw?.contains("Cabin") == true)
+}
+
+@Test func travelokaFlightParsesLiveBookingInfoSegments() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "FLIGHT",
+        "bookingInfo": [
+            "flightBookingInfo": [
+                "bookingDetail": [
+                    "sourceCity": "Singapore",
+                    "destinationCity": "Bangkok",
+                    "passengers": [
+                        "adults": [["name": "REDACTED ADULT"]],
+                        "children": [["name": "REDACTED CHILD", "typeDescription": "Child"]],
+                        "infants": [],
+                    ],
+                    "segments": [
+                        [
+                            "airlineName": "Scoot",
+                            "sourceAirport": [
+                                "airportCode": "SIN",
+                                "airportName": "Changi",
+                                "location": "Singapore",
+                                "terminalName": "1",
+                            ],
+                            "destinationAirport": [
+                                "airportCode": "BKK",
+                                "airportName": "Suvarnabhumi",
+                                "location": "Bangkok",
+                                "terminalName": "Main",
+                            ],
+                            "departureDateTime": [
+                                "monthDayYear": ["year": "2026", "month": "10", "day": "1"],
+                                "hourMinute": ["hour": "9", "minute": "30"],
+                            ],
+                            "arrivalDateTime": [
+                                "monthDayYear": ["year": "2026", "month": "10", "day": "1"],
+                                "hourMinute": ["hour": "11", "minute": "0"],
+                            ],
+                            "facilities": [
+                                ["type": "cabinBaggage", "displayText": "7 kg"],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        "flightTicketInfo": [
+            "eTicketButtonInfo": ["buttonRefundAvailable": false],
+        ],
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_007_200_000,
+                "ianaTimezoneBegin": "Asia/Singapore",
+                "ianaTimezoneEnd": "Asia/Bangkok",
+            ],
+        ],
+        "cardDetailInfo": [:],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.title == "Singapore → Bangkok")
+    #expect(draft.rateDetails?.airline == "Scoot")
+    #expect(draft.rateDetails?.passengerCount == 2)
+    #expect(draft.passengers.contains { $0.travellerType == .child })
+    #expect(draft.locationFrom?.contains("SIN") == true)
+    #expect(draft.locationToAddress?.contains("Suvarnabhumi") == true)
+    #expect(draft.rateDetails?.baggageInfoRaw == "Cabin 7 kg")
+    #expect(draft.deadlines.isEmpty)
+    let tz = try #require(TimeZone(identifier: "Asia/Singapore"))
+    let expected = try #require(TravelokaJSON.localDateTime("2026-10-01T09:30:00", timeZone: tz))
+    #expect(abs(draft.startAt.timeIntervalSince(expected)) < 0.01)
 }
 
 @Test func travelokaEnrichmentFlightFeeRefund() throws {
@@ -302,6 +555,7 @@ private enum TravelokaFixtureLoader {
     let complete = ProviderBookingDraft(
         provider: .traveloka,
         bookingType: .hotel,
+        title: "Example Hotel",
         startAt: Date(),
         endAt: Date(),
         status: .confirmed,
@@ -310,6 +564,12 @@ private enum TravelokaFixtureLoader {
                 deadlineAt: Date(),
                 policyText: "Free",
                 isFreeCancellation: true
+            ),
+            CancellationDeadline(
+                deadlineAt: Date(),
+                policyText: "Fee",
+                isFreeCancellation: false,
+                cancellationFeeAmount: 4.37
             ),
         ],
         hotelCheckInMinutes: 14 * 60,
@@ -367,4 +627,200 @@ private enum TravelokaFixtureLoader {
     let tz = try #require(TimeZone(identifier: "Asia/Saigon"))
     let deadlines = try TravelokaRefundPresubmissionParser.deadlines(fromHTML: html, timeZone: tz)
     #expect(deadlines.count == 1)
+}
+
+@Test func travelokaRefundMergeKeepsExistingFreeAndAddsFee() {
+    let tz = TimeZone(secondsFromGMT: 7 * 3600)!
+    let freeAt = Date(timeIntervalSince1970: 1_700_000_000)
+    let feeAt = Date(timeIntervalSince1970: 1_700_086_400)
+    let existing = [
+        TravelokaCancellationDeadlines.at(
+            freeAt,
+            timeZone: tz,
+            policyText: "Free cancellation",
+            isFreeCancellation: true
+        ),
+    ]
+    let refund = [
+        TravelokaCancellationDeadlines.at(
+            Date(timeIntervalSince1970: 1_699_000_000),
+            timeZone: tz,
+            policyText: "Refund free (must not replace itinerary free)",
+            isFreeCancellation: true
+        ),
+        TravelokaCancellationDeadlines.at(
+            feeAt,
+            timeZone: tz,
+            policyText: "Full charge",
+            isFreeCancellation: false,
+            feeAmount: 12.5
+        ),
+    ]
+    let merged = TravelokaCancellationDeadlines.combining(existing: existing, refund: refund)
+    #expect(merged.count == 2)
+    let free = merged.first { $0.isFreeCancellation }
+    #expect(free?.deadlineAt == freeAt)
+    #expect(free?.policyText == "Free cancellation")
+    let fee = merged.first { !$0.isFreeCancellation }
+    #expect(fee?.deadlineAt == feeAt)
+    #expect(fee?.cancellationFeeAmount == 12.5)
+}
+
+@Test func travelokaLocalizedMapPrefersEnglishThenSortedKey() {
+    #expect(TravelokaJSON.preferredLocaleMapKey(from: ["th_TH", "id_ID"]) == "id_ID")
+    #expect(TravelokaJSON.preferredLocaleMapKey(from: ["id_ID", "en_EN", "en_US"]) == "en_EN")
+
+    let withoutEnglish: [String: Any] = [
+        "th_TH": ["pnrCode": "TH"],
+        "id_ID": ["pnrCode": "ID"],
+    ]
+    #expect(TravelokaJSON.localizedMapValue(withoutEnglish)["pnrCode"] as? String == "ID")
+
+    let withEnglish: [String: Any] = [
+        "id_ID": ["pnrCode": "ID"],
+        "en_EN": ["pnrCode": "EN"],
+    ]
+    #expect(TravelokaJSON.localizedMapValue(withEnglish)["pnrCode"] as? String == "EN")
+
+    let voucher: [String: Any] = [
+        "localeAwareInfos": [
+            ["locale": "th_TH", "hotelName": "TH"],
+            ["locale": "id_ID", "hotelName": "ID"],
+        ],
+    ]
+    #expect(TravelokaJSON.localeAwareInfo(from: voucher)["hotelName"] as? String == "ID")
+}
+
+@Test func travelokaJSONValueSkipsNSNullAndReadsLaterDict() {
+    let first: [String: Any] = ["hotelName": NSNull()]
+    let second: [String: Any] = ["hotelName": "Example Hotel"]
+    #expect(TravelokaJSON.string(fromKeys: ["hotelName"], in: [first, second]) == "Example Hotel")
+}
+
+@Test func travelokaFlightParsesBookingDetailRoutesWhenSegmentsMissing() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "FLIGHT",
+        "bookingInfo": [
+            "flightBookingInfo": [
+                "bookingDetail": [
+                    "sourceCity": "Singapore",
+                    "destinationCity": "Bangkok",
+                    "routes": [
+                        [
+                            "segments": [
+                                [
+                                    "airlineName": "Scoot",
+                                    "sourceAirport": [
+                                        "airportCode": "SIN",
+                                        "location": "Singapore",
+                                    ],
+                                    "destinationAirport": [
+                                        "airportCode": "BKK",
+                                        "location": "Bangkok",
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_007_200_000,
+                "ianaTimezoneBegin": "Asia/Singapore",
+                "ianaTimezoneEnd": "Asia/Bangkok",
+            ],
+        ],
+        "cardDetailInfo": [:],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.title == "Singapore → Bangkok")
+    #expect(draft.rateDetails?.airline == "Scoot")
+    #expect(draft.locationFrom?.contains("SIN") == true)
+    #expect(draft.locationTo?.contains("BKK") == true)
+}
+
+@Test func travelokaFlightParsesFlightRouteGroupsWhenSegmentsMissing() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "FLIGHT",
+        "bookingInfo": [
+            "flightBookingInfo": [
+                "bookingDetail": [
+                    "flightRouteGroups": [
+                        [
+                            "routes": [
+                                [
+                                    "segments": [
+                                        [
+                                            "brandName": "Scoot",
+                                            "departureCity": "Singapore",
+                                            "departureCityCode": "SIN",
+                                            "arrivalCity": "Bangkok",
+                                            "arrivalCityCode": "BKK",
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_007_200_000,
+                "ianaTimezoneBegin": "Asia/Singapore",
+                "ianaTimezoneEnd": "Asia/Bangkok",
+            ],
+        ],
+        "cardDetailInfo": [:],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.title == "Singapore → Bangkok")
+    #expect(draft.rateDetails?.airline == "Scoot")
+    #expect(draft.locationFrom?.contains("SIN") == true)
+    #expect(draft.locationTo?.contains("BKK") == true)
+}
+
+@Test func travelokaVehicleParsesIndonesian24hFreeCancellation() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "VEHICLE_RENTAL",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_086_400_000,
+                "ianaTimezoneBegin": "Asia/Jakarta",
+                "ianaTimezoneEnd": "Asia/Jakarta",
+            ],
+            "vehicleRentalSummaryInfo": [
+                "vehicleName": "Daihatsu Sigra",
+                "routeName": "Jakarta",
+            ],
+        ],
+        "cardDetailInfo": [
+            "vehicleRentalDetailInfo": [
+                "startDate": ["year": "2026", "month": "9", "day": "7"],
+                "pickupTime": "09:00",
+                "refundInfo": [
+                    "Pembatalan gratis 24 jam sebelum waktu penjemputan.",
+                ],
+            ],
+        ],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.deadlines.count == 1)
+    #expect(draft.deadlines.first?.isFreeCancellation == true)
+    let tz = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    let pickup = try #require(TravelokaJSON.localDateTime("2026-09-07T09:00:00", timeZone: tz))
+    let expected = try #require(Calendar(identifier: .gregorian).date(byAdding: .hour, value: -24, to: pickup))
+    #expect(abs((draft.deadlines.first?.deadlineAt.timeIntervalSince(expected) ?? 99)) < 0.01)
 }
