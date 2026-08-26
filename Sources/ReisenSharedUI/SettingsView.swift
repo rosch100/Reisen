@@ -1,12 +1,25 @@
 import SwiftUI
 import SwiftData
+import CloudKit
 
 import ReisenDomain
 import ReisenData
 import ReisenAppCore
 
 public struct SettingsView: View {
-    public init() {}
+    private let showsDataManagement: Bool
+    private let onResetLocalStores: (() -> Void)?
+    private let onWipeCloudAndReset: (() -> Void)?
+
+    public init(
+        showsDataManagement: Bool = false,
+        onResetLocalStores: (() -> Void)? = nil,
+        onWipeCloudAndReset: (() -> Void)? = nil
+    ) {
+        self.showsDataManagement = showsDataManagement
+        self.onResetLocalStores = onResetLocalStores
+        self.onWipeCloudAndReset = onWipeCloudAndReset
+    }
 
     @AppStorage(AppSettingsKeys.notificationEnabled) private var notificationEnabled: Bool = true
     @AppStorage(AppSettingsKeys.eventKitEnabled) private var eventKitEnabled: Bool = false
@@ -25,14 +38,28 @@ public struct SettingsView: View {
     @State private var isLoadingCalendarNames = false
     @State private var calendarNamesError: String?
     @State private var calendarNamesReloadToken = UUID()
+    @State private var showLocalResetConfirm = false
+    @State private var showCloudWipeConfirm = false
+    @State private var cloudAccountStatus: CKAccountStatus?
+    @State private var cloudAccountStatusError: String?
 
     private let newCalendarTag = "__NEUER_KALENDER__"
 
     private var leadTimesDays: [Int] {
+        LeadTimesDays.normalized(
+            leadTimesDaysRaw
+                .split(separator: ",")
+                .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        )
+    }
+
+    private var leadTimesDaysDisplayText: String {
         leadTimesDaysRaw
             .split(separator: ",")
             .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
             .filter { $0 > 0 }
+            .map(String.init)
+            .joined(separator: ", ")
     }
 
     public var body: some View {
@@ -138,7 +165,7 @@ public struct SettingsView: View {
                     Text("Keine gültigen Vorläufe. Beispiel: 7,3,1")
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Erinnerungen \(leadTimesDays.map(String.init).joined(separator: ", ")) Tage vor der Frist.")
+                    Text("Erinnerungen \(leadTimesDaysDisplayText) Tage vor der Frist.")
                         .foregroundStyle(.secondary)
                 }
             } header: {
@@ -146,14 +173,65 @@ public struct SettingsView: View {
             } footer: {
                 Text("Beispiel: 7,3,1 — Erinnerungen 7, 3 und 1 Tag vor der Frist.")
             }
+
+            Section {
+                Label("Daten synchronisieren über iCloud", systemImage: "icloud")
+                Text(cloudAccountStatusText)
+                    .font(.footnote)
+                    .foregroundStyle(cloudAccountStatusIsError ? .red : .secondary)
+                Text("Reisen, Buchungen und Lücken werden über den Container „\(PersistenceBootstrap.cloudKitContainerID)“ zwischen iPhone, iPad und Mac geteilt. Kalender-Links und Erinnerungs-IDs bleiben gerätebezogen.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("iCloud")
+            } footer: {
+                Text(cloudAccountFooterText)
+            }
+
+            if showsDataManagement {
+                Section {
+                    Button("Lokale Stores zurücksetzen…", role: .destructive) {
+                        showLocalResetConfirm = true
+                    }
+                    Button("Auch iCloud-Daten leeren…", role: .destructive) {
+                        showCloudWipeConfirm = true
+                    }
+                } header: {
+                    Text("Daten")
+                } footer: {
+                    Text("Lokales Zurücksetzen entfernt nur Store-Dateien auf diesem Gerät. iCloud kann Daten danach erneut laden. „Auch iCloud-Daten leeren“ löscht synchronisierte Datensätze geräteübergreifend.")
+                }
+            }
         }
+#if os(macOS)
         .formStyle(.grouped)
         .padding()
-#if os(macOS)
-        .frame(width: 480, height: 360)
-#else
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(width: 520, height: 480)
 #endif
+        .confirmationDialog(
+            "Lokale Stores zurücksetzen?",
+            isPresented: $showLocalResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Lokale Stores löschen", role: .destructive) {
+                onResetLocalStores?()
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Lokale Dateien werden gelöscht. Bei aktivem iCloud Sync können Daten erneut geladen werden.")
+        }
+        .confirmationDialog(
+            "iCloud-Daten wirklich leeren?",
+            isPresented: $showCloudWipeConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("iCloud und lokal leeren", role: .destructive) {
+                onWipeCloudAndReset?()
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Synchronisierte Reisen und Buchungen werden gelöscht und die Löschung über iCloud übertragen.")
+        }
         .task(id: eventKitEnabled) {
             guard eventKitEnabled else { return }
             guard CalendarTitleMode(rawValue: calendarTitleModeRaw) == .fixed else { return }
@@ -163,6 +241,61 @@ public struct SettingsView: View {
             guard eventKitEnabled else { return }
             guard CalendarTitleMode(rawValue: calendarTitleModeRaw) == .fixed else { return }
             await loadCalendarNamesIfNeeded(forceReload: true)
+        }
+        .task {
+            await refreshCloudAccountStatus()
+        }
+    }
+
+    private var cloudAccountStatusText: String {
+        if let cloudAccountStatusError {
+            return cloudAccountStatusError
+        }
+        switch cloudAccountStatus {
+        case .none:
+            return "iCloud-Status wird geprüft…"
+        case .some(.available):
+            return "iCloud-Account verfügbar — Sync aktiv, sofern nicht per Umgebung deaktiviert."
+        case .some(.noAccount):
+            return "Kein iCloud-Account angemeldet. Sync-Daten bleiben nur lokal auf diesem Gerät."
+        case .some(.restricted):
+            return "iCloud ist eingeschränkt (z. B. Screen Time / MDM). Sync ist nicht verfügbar."
+        case .some(.couldNotDetermine):
+            return "iCloud-Status konnte nicht ermittelt werden."
+        case .some(.temporarilyUnavailable):
+            return "iCloud ist vorübergehend nicht erreichbar."
+        case .some(let other):
+            return "iCloud-Status: \(String(describing: other))."
+        }
+    }
+
+    private var cloudAccountStatusIsError: Bool {
+        switch cloudAccountStatus {
+        case .some(.noAccount), .some(.restricted), .some(.couldNotDetermine), .some(.temporarilyUnavailable):
+            return true
+        default:
+            return cloudAccountStatusError != nil
+        }
+    }
+
+    private var cloudAccountFooterText: String {
+        switch cloudAccountStatus {
+        case .some(.noAccount):
+            return "Melde dich in den Systemeinstellungen bei iCloud an, damit Reisen zwischen Geräten synchronisiert."
+        case .some(.restricted), .some(.temporarilyUnavailable):
+            return "Behebe den iCloud-Zugang; bis dahin werden keine Cloud-Änderungen geladen oder geschrieben."
+        default:
+            return "Ohne iCloud-Account erscheinen Sync-Daten nur lokal auf diesem Gerät."
+        }
+    }
+
+    @MainActor
+    private func refreshCloudAccountStatus() async {
+        cloudAccountStatusError = nil
+        let status = await PersistenceBootstrap.fetchCloudKitAccountStatus()
+        cloudAccountStatus = status
+        if status == .couldNotDetermine {
+            cloudAccountStatusError = nil
         }
     }
 

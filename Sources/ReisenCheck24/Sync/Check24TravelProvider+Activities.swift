@@ -1,0 +1,62 @@
+import Foundation
+import WebKit
+
+extension Check24TravelProvider {
+    func fetchActivitiesJSON(using webView: WKWebView) async throws -> String {
+        guard let url = URL(string: "https://kundenbereich.check24.de/kb/api/activities") else {
+            throw Check24ProviderError.activitiesFetchFailed("ungültige Activities-URL")
+        }
+
+        var lastDetail = "unbekannt"
+        for attempt in 1...3 {
+            do {
+                let request = await webView.authenticatedRequest(url: url)
+                let (data, response) = try await URLSession.shared.data(for: request)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                guard (200..<300).contains(status) else {
+                    throw Check24ProviderError.activitiesFetchFailed("HTTP \(status)")
+                }
+                guard let text = String(data: data, encoding: .utf8) else {
+                    throw Check24ProviderError.activitiesFetchFailed("Antwort ist kein UTF-8-Text")
+                }
+                guard text.contains("\"activities\"") else {
+                    let preview = String(text.prefix(120)).replacingOccurrences(of: "\n", with: " ")
+                    throw Check24ProviderError.activitiesFetchFailed(
+                        "Antwort enthält keine activities (HTTP \(status)): \(preview)"
+                    )
+                }
+                try persistActivitiesJSONSnapshot(text)
+                return text
+            } catch let error as Check24ProviderError {
+                lastDetail = error.localizedDescription
+                if attempt < 3 {
+                    try await Task.sleep(nanoseconds: UInt64(attempt) * 400_000_000)
+                    continue
+                }
+                throw error
+            } catch {
+                lastDetail = error.localizedDescription
+                if attempt < 3 {
+                    try await Task.sleep(nanoseconds: UInt64(attempt) * 400_000_000)
+                    continue
+                }
+            }
+        }
+        throw Check24ProviderError.activitiesFetchFailed(lastDetail)
+    }
+
+    func persistActivitiesJSONSnapshot(_ json: String) throws {
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            throw Check24ProviderError.snapshotFailed
+        }
+        let base = appSupport.appendingPathComponent("Reisen", isDirectory: true)
+        let snapshots = base.appendingPathComponent("snapshots", isDirectory: true)
+        try FileManager.default.createDirectory(at: snapshots, withIntermediateDirectories: true)
+        let fileName = "activities-\(ISO8601DateFormatter().string(from: Date())).json"
+        let url = snapshots.appendingPathComponent(fileName)
+        guard let data = json.data(using: .utf8) else {
+            throw Check24ProviderError.snapshotFailed
+        }
+        try data.write(to: url, options: [.atomic])
+    }
+}

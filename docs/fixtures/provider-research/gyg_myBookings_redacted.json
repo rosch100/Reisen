@@ -1,0 +1,431 @@
+{
+  "_meta": {
+    "source": "GYG HAR customer-bookings SSR __INITIAL_STATE__.myBookings",
+    "note": "PII/tokens redacted; truncated lists"
+  },
+  "myBookings": {
+    "upcomingBookings": [
+      {
+        "bookingId": "<REDACTED>",
+        "price": {
+          "currencyIsoCode": "EUR",
+          "amount": 53.94
+        },
+        "originalPrice": {
+          "currencyIsoCode": "EUR",
+          "amount": 53.94
+        },
+        "supplierPrice": {
+          "currencyIsoCode": "IDR",
+          "amount": 1065000
+        },
+        "redeemedCouponAmount": {
+          "currencyIsoCode": "EUR",
+          "amount": 0
+        },
+        "bookingHash": "<REDACTED>",
+        "shoppingCartHash": "<REDACTED>",
+        "activityId": "<REDACTED>",
+        "activityOptionId": "<REDACTED>",
+        "startingTime": {
+          "startTime": "2026-08-08T19:00:00+07:00",
+          "startTimeType": "datetime"
+        },
+        "activityParticipants": [
+          {
+            "type": "per_persons",
+            "description": "Erwachsene",
+            "pricePerPerson": {
+              "currencyIsoCode": "EUR",
+              "amount": 17.98
+            },
+            "count": 3,
+            "descriptionInSupplierLanguage": "Adults",
+            "priceCategoryLabel": "adult",
+            "pricingCategoryCode": 1,
+            "ageRange": {
+              "minAge": 0,
+              "maxAge": 99
+            },
+            "localizedCount": "3 Erwachsene",
+            "localizedCountInSupplierLanguage": "3 adults"
+          }
+        ],
+        "bookingReference": "<REDACTED>",
+        "bookingPin": "<REDACTED>",
+        "status": "active",
+        "guideStatus": "confirmed",
+        "traveler": {
+          "firstName": "<REDACTED>",
+          "lastName": "<REDACTED>",
+          "countryCode": "DE",
+          "email": "<REDACTED>",
+          "phoneNumber": "<REDACTED>"
+        },
+        "manageOptions": {
+          "isSelfCancellable": true,
+          "isSelfReschedulable": true,
+          "isCancellable": true,
+          "canModifyParticipants": true,
+          "isRefundableAsGiftCode": false,
+          "allowedRefundTypes": [
+            {
+              "refundType": "account"
+            },
+            {
+              "refundType": "originalMethod"
+            }
+          ],
+          "cancellationRefund": {
+            "amount": {
+              "currencyIsoCode": "EUR",
+              "amount": 53.94
+            },
+            "isFullRefund": true
+          }
+        },
+        "deviceName": "Desktop",
+        "hasExpediaItinerary": false,
+        "bookedAddons": [],
+        "supplierId": "<REDACTED>",
+        "partnerHash": null,
+        "refunds": [],
+        "isOnDemand": false,
+        "shoppingCartItemId": "<REDACTED>",
+        "customerLocaleCode": "de-DE",
+        "activityDuration": {
+          "value": 2,
+          "unit": "hour"
+        },
+        "activityConductionLanguage": "Englisch",
+        "bookingCancellationPolicy": {
+          "type": "freeCancellation",
+          "policyType": "freeCancellation",
+          "message": "Storniere bis 19:00 am 7. August für eine vollständige Rückerstattung",
+          "expirationDate": "2026-08-07T19:00:00+07:00",
+          "feeUnit": "percentage",
+          "feeValue": 0,
+          "policyExpirationDate": "2026-08-07T19:00:00+07:00"
+        },
+        "bookingPurchaseDate": "2026-07-18T21:16:35+02:00",
+        "externalReferenceCode": "<REDACTED>",
+        "resellerReferenceCode": "<REDACTED>",
+        "customerId": "<REDACTED>",
+        "bookingFinishDate": "2026-08-08T21:00:00+07:00",
+        "activityType": "dayTrip",
+        "bookingPaymentInfo": {
+          "isFullyCoveredByWallet": false
+        },
+        "isConnectedToBoxoffice": true,
+        "hasTicketingPartner": false,
+        "isPartnerOrAppsBooking": false,
+        "isTestData": false,
+        "isMasterBill": false,
+        "bookedOption": {
+          "activityTitle": "Yogyakarta: Ramayana Ballett Prambanan",
+          "imageUrl": "https://cdn.getyourguide.com/img/tour/12cedc28089afb2eda4169be58b51e0a82ebd38ce68fe2db884bb22789f13e9b.png/[format_id].jpg",
+          "url": "https://www.getyourguide.com/de-de/yogyakarta-l349/ramayana-ballett-prambanan-t1383082/",
+          "activityLocation": {
+            "country": {
+              "id": 62,
+              "name": "<REDACTED>",
+              "urlPath": "/de-de/indonesien-n62/"
+            },
+            "city": {
+              "id": 349,
+              "name": "<REDACTED>",
+              "urlPath": "/de-de/yogyakarta-l349/"
+            },
+            "area": {
+              "id": 89567
+            }
+          },
+          "reviews": {
+            "totalCount": 22,
+            "averageRating": 4.577757812444069
+          },
+          "isMobileVoucherAccepted": true,
+          "activityOptionTitle": "Tickets der 2. Klasse"
+        }
+      }
+    ],
+    "pastBookings": [
+      {
+        "bookingId": "<REDACTED>",
+        "price": {
+          "currencyIsoCode": "EUR",
+          "amount": 959.67
+        },
+        "originalPrice": {
+          "currencyIsoCode": "EUR",
+          "amount": 959.67
+        },
+        "supplierPrice": {
+          "currencyIsoCode": "IDR",
+          "amount": 19047000
+        },
+        "redeemedCouponAmount": {
+          "currencyIsoCode": "EUR",
+          "amount": 0
+        },
+        "bookingHash": "<REDACTED>",
+        "shoppingCartHash": "<REDACTED>",
+        "activityId": "<REDACTED>",
+        "activityOptionId": "<REDACTED>",
+        "startingTime": {
+          "startTime": "2026-08-17T08:45:00+08:00",
+          "startTimeType": "datetime"
+        },
+        "activityParticipants": [
+          {
+            "type": "per_persons",
+            "description": "Erwachsene",
+            "pricePerPerson": {
+              "currencyIsoCode": "EUR",
+              "amount": 319.89
+            },
+            "count": 3,
+            "descriptionInSupplierLanguage": "Adults",
+            "priceCategoryLabel": "adult",
+            "pricingCategoryCode": 1,
+            "ageRange": {
+              "minAge": 0,
+              "maxAge": 99
+            },
+            "localizedCount": "3 Erwachsene",
+            "localizedCountInSupplierLanguage": "3 adults"
+          }
+        ],
+        "bookingReference": "<REDACTED>",
+        "bookingPin": "<REDACTED>",
+        "status": "cancelled",
+        "guideStatus": "confirmed",
+        "traveler": {
+          "firstName": "<REDACTED>",
+          "lastName": "<REDACTED>",
+          "countryCode": "DE",
+          "email": "<REDACTED>",
+          "phoneNumber": "<REDACTED>"
+        },
+        "manageOptions": {
+          "isSelfCancellable": false,
+          "isSelfReschedulable": false,
+          "isCancellable": false,
+          "canModifyParticipants": false,
+          "isRefundableAsGiftCode": false,
+          "allowedRefundTypes": []
+        },
+        "deviceName": "Desktop",
+        "hasExpediaItinerary": false,
+        "bookedAddons": [],
+        "supplierId": "<REDACTED>",
+        "partnerHash": null,
+        "refunds": [
+          {
+            "status": "done",
+            "amount": {
+              "currencyIsoCode": "EUR",
+              "amount": 959.67
+            },
+            "transactionType": "virtual",
+            "scheduledDate": "2026-07-16T13:10:26+02:00",
+            "paymentDate": "2026-07-16T13:15:04+02:00"
+          }
+        ],
+        "isOnDemand": false,
+        "shoppingCartItemId": "<REDACTED>",
+        "customerLocaleCode": "de-DE",
+        "activityDuration": {
+          "value": 3,
+          "unit": "day"
+        },
+        "activityConductionLanguage": "Englisch",
+        "bookingCancellationPolicy": {
+          "type": "freeCancellation",
+          "policyType": "freeCancellation",
+          "message": "Bereits storniert.",
+          "expirationDate": "2026-08-16T08:45:00+08:00",
+          "feeUnit": "percentage",
+          "feeValue": 0,
+          "policyExpirationDate": "2026-08-16T08:45:00+08:00"
+        },
+        "bookingCancellationDate": "2026-07-16T13:10:26+02:00",
+        "reserveNowPayLater": {
+          "dateOfCapturing": "2026-08-14T02:45:00+02:00",
+          "paymentStatus": "scheduled",
+          "paymentProcessor": "PRIMER",
+          "updatePaymentInformationUrl": "https://www.getyourguide.com/de-de/pay/MBPN2TTQTOQ6NP5C1XGTNNPHYQYHBVFH/?enabledeeplinkonsuccess=true"
+        },
+        "bookingPurchaseDate": "2026-07-09T19:21:17+02:00",
+        "externalReferenceCode": "<REDACTED>",
+        "resellerReferenceCode": "<REDACTED>",
+        "customerId": "<REDACTED>",
+        "bookingFinishDate": "2026-08-20T08:45:00+08:00",
+        "activityType": "multiDayTrip",
+        "bookingPaymentInfo": {
+          "isFullyCoveredByWallet": false
+        },
+        "cancelledBy": "customer",
+        "isPickupLocationMissing": true,
+        "hasFreeTextAnswer": false,
+        "isConnectedToBoxoffice": false,
+        "hasTicketingPartner": false,
+        "isPartnerOrAppsBooking": false,
+        "isTestData": false,
+        "isMasterBill": false,
+        "bookedOption": {
+          "activityTitle": "Labuan Bajo: 3-tägige Komodo Insel und Pink Beach Tour",
+          "imageUrl": "https://cdn.getyourguide.com/img/tour/56720b877303e266be28cb9f2d3601845b2d340f227adaef5a1f13208161162d.jpeg/[format_id].jpg",
+          "url": "https://www.getyourguide.com/de-de/labuan-bajo-l106237/labuan-bajo-3-taegige-komodo-insel-und-pink-beach-tour-t689604/",
+          "activityLocation": {
+            "country": {
+              "id": 62,
+              "name": "<REDACTED>",
+              "urlPath": "/de-de/indonesien-n62/"
+            },
+            "city": {
+              "id": 106237,
+              "name": "<REDACTED>",
+              "urlPath": "/de-de/labuan-bajo-l106237/"
+            },
+            "area": {
+              "id": 213784
+            }
+          },
+          "reviews": {
+            "totalCount": 145,
+            "averageRating": 3.800164254402077
+          },
+          "isMobileVoucherAccepted": true,
+          "activityOptionTitle": "Tour mit Eintritts- und Schnorchelgebühren inklusive"
+        }
+      },
+      {
+        "bookingId": "<REDACTED>",
+        "price": {
+          "currencyIsoCode": "EUR",
+          "amount": 265.42
+        },
+        "originalPrice": {
+          "currencyIsoCode": "EUR",
+          "amount": 265.42
+        },
+        "supplierPrice": {
+          "currencyIsoCode": "SEK",
+          "amount": 2900
+        },
+        "redeemedCouponAmount": {
+          "currencyIsoCode": "EUR",
+          "amount": 0
+        },
+        "bookingHash": "<REDACTED>",
+        "shoppingCartHash": "<REDACTED>",
+        "activityId": "<REDACTED>",
+        "activityOptionId": "<REDACTED>",
+        "startingTime": {
+          "startTime": "2025-10-31T13:30:00+01:00",
+          "startTimeType": "datetime"
+        },
+        "activityParticipants": [
+          {
+            "type": "per_persons",
+            "description": "Erwachsene",
+            "pricePerPerson": {
+              "currencyIsoCode": "EUR",
+              "amount": 132.71
+            },
+            "count": 2,
+            "descriptionInSupplierLanguage": "Adults",
+            "priceCategoryLabel": "adult",
+            "pricingCategoryCode": 1,
+            "ageRange": {
+              "minAge": 16,
+              "maxAge": 99
+            },
+            "localizedCount": "2 Erwachsene",
+            "localizedCountInSupplierLanguage": "2 adults"
+          }
+        ],
+        "bookingReference": "<REDACTED>",
+        "bookingPin": "<REDACTED>",
+        "status": "active",
+        "guideStatus": "confirmed",
+        "traveler": {
+          "firstName": "<REDACTED>",
+          "lastName": "<REDACTED>",
+          "countryCode": "DE",
+          "email": "<REDACTED>",
+          "phoneNumber": "<REDACTED>"
+        },
+        "manageOptions": {
+          "isSelfCancellable": false,
+          "isSelfReschedulable": false,
+          "isCancellable": false,
+          "canModifyParticipants": false,
+          "isRefundableAsGiftCode": false,
+          "allowedRefundTypes": []
+        },
+        "deviceName": "APP (iOS)",
+        "hasExpediaItinerary": false,
+        "bookedAddons": [],
+        "supplierId": "<REDACTED>",
+        "partnerHash": null,
+        "refunds": [],
+        "isOnDemand": false,
+        "shoppingCartItemId": "<REDACTED>",
+        "customerLocaleCode": "de-DE",
+        "activityDuration": {
+          "value": 5,
+          "unit": "hour"
+        },
+        "activityConductionLanguage": "Englisch",
+        "bookingCancellationPolicy": {
+          "type": "other",
+          "policyType": "nonRefundable",
+          "message": "Bitte beachte, dass die Frist zur Stornierung oder Verschiebung deiner Aktivität (<strong>30. Oktober 2025 um 13:30</strong>) verstrichen ist."
+        },
+        "bookingPurchaseDate": "2025-10-28T10:41:34+01:00",
+        "externalReferenceCode": "<REDACTED>",
+        "resellerReferenceCode": "<REDACTED>",
+        "customerId": "<REDACTED>",
+        "bookingFinishDate": "2025-10-31T18:30:00+01:00",
+        "activityType": "guidedTour",
+        "bookingPaymentInfo": {
+          "isFullyCoveredByWallet": false
+        },
+        "isConnectedToBoxoffice": true,
+        "hasTicketingPartner": false,
+        "isPartnerOrAppsBooking": true,
+        "isTestData": false,
+        "isMasterBill": false,
+        "apiCredentialId": 30,
+        "bookedOption": {
+          "activityTitle": "Von Stockholm aus: Elch- und Wildtiersafari mit Abendessen am Lagerfeuer",
+          "imageUrl": "https://cdn.getyourguide.com/img/tour/23a39d3a6091054dc905d1fd7ec7994a818cca5fb7ec07be235fc2ff9bf96733.png/[format_id].jpg",
+          "url": "https://www.getyourguide.com/de-de/stockholm-l50/von-stockholm-aus-elch-und-wildtiersafari-mit-abendessen-am-lagerfeuer-t53739/",
+          "activityLocation": {
+            "country": {
+              "id": 43,
+              "name": "<REDACTED>",
+              "urlPath": "/de-de/schweden-n43/"
+            },
+            "city": {
+              "id": 50,
+              "name": "<REDACTED>",
+              "urlPath": "/de-de/stockholm-l50/"
+            },
+            "area": {
+              "id": 605
+            }
+          },
+          "reviews": {
+            "totalCount": 623,
+            "averageRating": 4.533059277501678
+          },
+          "isMobileVoucherAccepted": true,
+          "activityOptionTitle": "Von Stockholm aus: Elch- und Wildtiersafari mit Abendessen am Lagerfeuer"
+        }
+      }
+    ]
+  }
+}

@@ -47,5 +47,9 @@
 	<string>Reisen benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Reisen erinnert dich an bevorstehende Stornofristen.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

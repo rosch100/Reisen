@@ -5,10 +5,13 @@
 | Modul | Abhängigkeit | Rolle |
 |-------|--------------|--------|
 | ReisenDomain | Foundation | SSOT: Entities, Repository-/Side-Effect-Ports, Use Cases |
-| ReisenData | Domain, SwiftData | Persistenz-Adapter, `ReisenSchemaV1`, Mapper |
+| ReisenData | Domain, SwiftData | Persistenz-Adapter, Hybrid-Stores V7 (`reisen-cloud` / `reisen-local`), Mapper |
 | ReisenProviders | Domain | `TravelProvider`, Registry |
+| ReisenAppCore | Domain, Data, Providers | Bootstrap, SyncStore, EventKit/Reminder Side Effects |
 | ReisenCheck24 | Domain, Providers, WebKit | Erste Provider-Implementierung |
-| Reisen | alle | macOS Composition Root + UI |
+| Reisen | alle | macOS Composition Root + UI (nutzt `AppBootstrap` / CloudKit hybrid) |
+
+CloudKit-/Store-Details: [`docs/dev/swiftdata-hybrid-cloudkit.md`](dev/swiftdata-hybrid-cloudkit.md).
 
 ## Regeln
 

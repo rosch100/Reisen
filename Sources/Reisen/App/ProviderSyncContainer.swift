@@ -2,6 +2,7 @@ import SwiftUI
 import WebKit
 import ReisenDomain
 import ReisenProviders
+import ReisenAppCore
 
 /// Zeigt die Sync-UI des ausgewählten Providers.
 /// Start: alle enabled Provider per Cookie/Session prüfen (1×1-Hosts), danach

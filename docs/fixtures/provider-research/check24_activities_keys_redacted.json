@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "source": "Code-SSOT ActivityListParser.travelProductKeys + Unit-Tests (kein Live-HAR im Repo)",
+    "status": "partial",
+    "note": "Nur Keys, die der Produktivcode kennt/akzeptiert. Weitere Keys erfordern Live-HAR von /kb/api/activities."
+  },
+  "acceptedProductKeys": [
+    { "key": "hotel", "mapsTo": "hotel", "seenInUnitTests": true },
+    { "key": "flight", "mapsTo": "flight", "seenInUnitTests": true },
+    { "key": "ferry", "mapsTo": "ferry", "seenInUnitTests": false },
+    { "key": "holidayflat", "mapsTo": "hotel", "seenInUnitTests": false },
+    { "key": "package", "mapsTo": "hotel", "seenInUnitTests": false }
+  ],
+  "rejectedOrUnknownKeys": [],
+  "hypothesesUnverified": [
+    { "key": "rentalcar", "possibleBookingType": "other_or_new" },
+    { "key": "train", "possibleBookingType": "other_or_new" },
+    { "key": "activity", "possibleBookingType": "activity" }
+  ]
+}

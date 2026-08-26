@@ -24,28 +24,17 @@ public enum CancellationDeadlineKeying {
         now: Date,
         calendar: Calendar = .current
     ) -> Set<LinkKey> {
-        let leadTimes = leadTimesDays.sorted().filter { $0 > 0 }
-        guard !leadTimes.isEmpty else { return [] }
-
-        var desired: Set<LinkKey> = []
-
-        for deadline in deadlines where deadline.isFreeCancellation {
-            guard let bookingID = deadline.bookingID,
-                  let booking = bookingsByID[bookingID],
-                  booking.tripID == tripID else { continue }
-
-            for leadDays in leadTimes {
-                guard let fireAt = calendar.date(byAdding: .day, value: -leadDays, to: deadline.deadlineAt) else { continue }
-                if fireAt <= now { continue }
-                desired.insert(LinkKey(cancellationDeadlineID: deadline.id, leadDays: leadDays))
-            }
-        }
-
-        return desired
+        CancellationDeadlineDesiredKeys.desiredKeys(
+            tripID: tripID,
+            deadlines: deadlines,
+            bookingsByID: bookingsByID,
+            leadTimesDays: leadTimesDays,
+            now: now,
+            calendar: calendar
+        )
     }
 
     public static func unwantedKeys(existing: Set<LinkKey>, desired: Set<LinkKey>) -> Set<LinkKey> {
         existing.subtracting(desired)
     }
 }
-

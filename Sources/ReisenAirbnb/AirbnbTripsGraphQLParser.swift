@@ -7,7 +7,7 @@ import ReisenDomain
 /// `ProviderBookingDraft`s (IDs, dates, scheduled item type + confirmation codes).
 enum AirbnbTripsGraphQLParser {
     static func parseTripList(from responseText: String) throws -> ProviderCatalog {
-        let decoded = try JSONDecoder.airbnb.decode(
+        let decoded = try AirbnbJSONDecoder.shared.decode(
             AirbnbTripListQueryEnvelope.self,
             from: Data(responseText.utf8)
         )
@@ -43,11 +43,10 @@ private extension AirbnbTripNode {
                 )
             }
 
-            // Experience is represented as scheduled items too, but mapped to `.other` for now.
             if let activity = details.activityReservation, let confirmationCode = activity.confirmationCode, !confirmationCode.isEmpty {
                 return ProviderBookingDraft(
                     provider: .airbnb,
-                    bookingType: .other,
+                    bookingType: .activity,
                     title: displayName,
                     confirmationCode: confirmationCode,
                     externalUrl: externalUrl(schedulableType: details.schedulableType, confirmationCode: confirmationCode),
@@ -57,7 +56,7 @@ private extension AirbnbTripNode {
                     locationToAddress: nil,
                     status: Self.mapStatus(tripStatus: status, reservationStatus: activity.status),
                     deadlines: [],
-                    passengers: []
+                    passengers: Self.passengers(fromAdultCount: travelerCapacity?.numberOfAdults)
                 )
             }
 
@@ -75,6 +74,13 @@ private extension AirbnbTripNode {
         let haystack = ([tripStatus, reservationStatus].compactMap { $0 }).joined(separator: " ").lowercased()
         if haystack.contains("cancel") { return .cancelled }
         return .confirmed
+    }
+
+    private static func passengers(fromAdultCount count: Int?) -> [BookingPassenger] {
+        guard let count, count > 0 else { return [] }
+        return (1...count).map { passengerNumber in
+            BookingPassenger(passengerNumber: passengerNumber, travellerType: .adult)
+        }
     }
 }
 
@@ -125,10 +131,15 @@ private struct AirbnbTripNode: Decodable {
     let startTime: AirbnbTripTime
     let endTime: AirbnbTripTime
     let scheduledItems: ScheduledItemsConnection
+    let travelerCapacity: TravelerCapacity?
 
     struct AirbnbTripTime: Decodable {
         let listingTimeZone: String
         let dateTime: Date
+    }
+
+    struct TravelerCapacity: Decodable {
+        let numberOfAdults: Int?
     }
 
     struct ScheduledItemsConnection: Decodable {
@@ -159,13 +170,5 @@ private struct AirbnbTripNode: Decodable {
             let status: String?
         }
     }
-}
-
-private extension JSONDecoder {
-    static let airbnb: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
 }
 

@@ -1,6 +1,8 @@
 import Foundation
 import Observation
 import SwiftData
+import CoreData
+import WebKit
 
 import ReisenDomain
 import ReisenData
@@ -9,7 +11,7 @@ import ReisenCheck24
 import ReisenOpodo
 import ReisenBookingCom
 import ReisenAirbnb
-import WebKit
+import ReisenGetYourGuide
 
 @MainActor
 @Observable
@@ -25,12 +27,70 @@ public final class SyncStore {
     private let registry: ProviderRegistry
     private let reminderScheduler: LocalReminderScheduler
     private let calendarSync: LocalEventKitBridge
+    private var cloudSideEffectTask: Task<Void, Never>?
+    private var isRebuildingSideEffects = false
 
     public init(modelContext: ModelContext, registry: ProviderRegistry) {
         self.modelContext = modelContext
         self.registry = registry
         self.reminderScheduler = LocalReminderScheduler(modelContext: modelContext)
         self.calendarSync = LocalEventKitBridge(modelContext: modelContext)
+    }
+
+    /// Rebuild EventKit/Reminders after CloudKit imports or app activation (device-local side effects).
+    public func rebuildLocalSideEffects(
+        settings: AppSettings = .fromUserDefaults(),
+        announceProgress: Bool = false
+    ) async {
+        guard !isSyncing else { return }
+        guard !isRebuildingSideEffects else { return }
+        isRebuildingSideEffects = true
+        defer { isRebuildingSideEffects = false }
+
+        do {
+            let bookingRepo = SwiftDataBookingRepository(modelContext: modelContext)
+            let deadlineRepo = SwiftDataCancellationDeadlineRepository(modelContext: modelContext)
+            let bookings = try bookingRepo.fetchAll()
+            let deadlines = try deadlineRepo.fetchAll()
+            let titles = Dictionary(
+                uniqueKeysWithValues: bookings.map { ($0.id, $0.title ?? $0.bookingType.rawValue.capitalized) }
+            )
+            try await maybeScheduleAndSyncCalendars(
+                settings: settings,
+                bookings: bookings,
+                deadlines: deadlines,
+                bookingTitles: titles,
+                bookingRepo: bookingRepo,
+                announceProgress: announceProgress
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+            if !announceProgress {
+                statusMessage = nil
+            }
+            messageProviderID = nil
+        }
+    }
+
+    /// Observe CloudKit/remote store merges and rebuild local EventKit/Reminder links.
+    public func startObservingCloudSideEffects() {
+        stopObservingCloudSideEffects()
+        cloudSideEffectTask = Task { @MainActor [weak self] in
+            let notifications = NotificationCenter.default.notifications(
+                named: .NSPersistentStoreRemoteChange
+            )
+            for await _ in notifications {
+                guard let self else { return }
+                // Coalesce bursts of remote merges.
+                try? await Task.sleep(for: .milliseconds(750))
+                await self.rebuildLocalSideEffects(announceProgress: false)
+            }
+        }
+    }
+
+    public func stopObservingCloudSideEffects() {
+        cloudSideEffectTask?.cancel()
+        cloudSideEffectTask = nil
     }
 
     public func sync(
@@ -135,7 +195,8 @@ public final class SyncStore {
                 bookings: bookings,
                 deadlines: deadlines,
                 bookingTitles: titles,
-                bookingRepo: bookingRepo
+                bookingRepo: bookingRepo,
+                announceProgress: true
             )
 
             if missingDeadlinesHint {
@@ -183,6 +244,11 @@ public final class SyncStore {
                 self?.messageProviderID = providerID
                 self?.statusMessage = message
             }
+        } else if providerID == .getYourGuide, let gyg = provider as? GetYourGuideTravelProvider {
+            gyg.onProgress = { [weak self] message in
+                self?.messageProviderID = providerID
+                self?.statusMessage = message
+            }
         }
     }
 
@@ -201,7 +267,14 @@ public final class SyncStore {
             let needsBookingComDeadlineRefine = providerID == .booking
             let needsStatusProbe = providerID == .opodo
             let needsAirbnbEnrichment = providerID == .airbnb
-            guard needsDeadlineEnrichment || needsBookingComDeadlineRefine || needsStatusProbe || needsAirbnbEnrichment else {
+            // GYG: Katalog kann Fristen schon haben; Enrichment liefert Treffpunkt/Teilnehmer.
+            let needsGetYourGuideEnrichment = providerID == .getYourGuide
+            guard needsDeadlineEnrichment
+                || needsBookingComDeadlineRefine
+                || needsStatusProbe
+                || needsAirbnbEnrichment
+                || needsGetYourGuideEnrichment
+            else {
                 continue
             }
 
@@ -213,6 +286,15 @@ public final class SyncStore {
             let enrichment = try await provider.enrichBooking(session: session, ref: ref)
 
             drafts[i].status = enrichment.status ?? drafts[i].status
+            if let title = enrichment.title, !title.isEmpty {
+                drafts[i].title = title
+            }
+            if let locationTo = enrichment.locationTo, !locationTo.isEmpty {
+                drafts[i].locationTo = locationTo
+            }
+            if let locationToAddress = enrichment.locationToAddress, !locationToAddress.isEmpty {
+                drafts[i].locationToAddress = locationToAddress
+            }
 
             // Präzisere Enrichment-Fristen überschreiben grobe Katalog-Policy,
             // aber nur wenn der Provider wirklich Fristen liefert.
@@ -223,6 +305,7 @@ public final class SyncStore {
             // Replace-Strategy: Passagiere/Gepäck hängen an Flight-Tripdetails
             // und müssen vollständig durch das Enrichment überschrieben werden.
             drafts[i].passengers = enrichment.passengers ?? drafts[i].passengers
+            drafts[i].guestHints = enrichment.guestHints ?? drafts[i].guestHints
 
             drafts[i].rateDetails = Self.mergeRateDetails(
                 existing: drafts[i].rateDetails,
@@ -274,19 +357,25 @@ public final class SyncStore {
         bookings: [Booking],
         deadlines: [CancellationDeadline],
         bookingTitles: [UUID: String],
-        bookingRepo: SwiftDataBookingRepository
+        bookingRepo: SwiftDataBookingRepository,
+        announceProgress: Bool
     ) async throws {
         if settings.notificationEnabled {
-            statusMessage = "Plane Erinnerungen…"
+            if announceProgress { statusMessage = "Plane Erinnerungen…" }
             _ = try await reminderScheduler.scheduleCancellationDeadlines(
                 deadlines: deadlines,
+                bookingTitles: bookingTitles,
+                leadTimesDays: settings.leadTimesDays
+            )
+            _ = try await reminderScheduler.schedulePreTravelHints(
+                bookings: bookings,
                 bookingTitles: bookingTitles,
                 leadTimesDays: settings.leadTimesDays
             )
         }
 
         if settings.eventKitEnabled {
-            statusMessage = "Schreibe Kalender…"
+            if announceProgress { statusMessage = "Schreibe Kalender…" }
 
             let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
             let trips = try tripRepo.fetchAll()
@@ -310,22 +399,32 @@ public final class SyncStore {
                 calendarTitleMode: settings.calendarTitleMode,
                 leadTimesDays: settings.leadTimesDays
             )
+            try await calendarSync.syncPreTravelHints(
+                trips: trips,
+                bookings: bookings,
+                bookingTitles: bookingTitles,
+                eventCalendarTitle: settings.calendarTitle,
+                reminderCalendarTitle: settings.reminderCalendarTitle,
+                eventCreateIfMissing: effectiveEventCreateIfMissing,
+                reminderCreateIfMissing: effectiveReminderCreateIfMissing,
+                calendarTitleMode: settings.calendarTitleMode,
+                leadTimesDays: settings.leadTimesDays
+            )
         }
 
         if settings.eventKitEnabled,
            settings.calendarTripTimesEnabled || settings.calendarFlightTimesEnabled || settings.calendarHotelStaysEnabled {
-            statusMessage = "Schreibe Reisezeiten…"
+            if announceProgress { statusMessage = "Schreibe Reisezeiten…" }
 
             var bookingsMutable = bookings
 
             // Ensure location address fields are persisted before we compose calendar events.
             // This keeps the EventKit sync purely data-driven (no best-effort UI guessing in the bridge).
-            let needsTripAddresses = settings.calendarTripTimesEnabled
             let needsHotelAddresses = settings.calendarTripTimesEnabled || settings.calendarHotelStaysEnabled
             let needsFlightAddresses = settings.calendarFlightTimesEnabled
 
             if needsHotelAddresses || needsFlightAddresses {
-                statusMessage = "Löse Adressen auf…"
+                if announceProgress { statusMessage = "Löse Adressen auf…" }
                 try await resolveAndPersistBookingAddressesIfNeeded(
                     needsHotelAddresses: needsHotelAddresses,
                     needsFlightAddresses: needsFlightAddresses,

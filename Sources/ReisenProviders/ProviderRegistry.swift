@@ -27,17 +27,11 @@ public struct ProviderRegistry {
     }
 
     public func deepLinks(for gap: ComputedGap, preferredProvider: ProviderID? = nil) -> [DeepLinkSuggestion] {
-        let context = GapContext(gap: gap)
-        let builders: [any GapDeepLinkBuilding]
-
-        if let preferredProvider,
-           let builder = deepLinkBuilder(id: preferredProvider) {
-            builders = [builder]
-        } else {
-            builders = deepLinkBuilders
-        }
-
-        return builders.flatMap { $0.suggestions(for: context).links.filter { $0.url != nil } }
+        ProviderDeepLinks.suggestions(
+            for: gap,
+            preferredProvider: preferredProvider,
+            deepLinkBuilder: { deepLinkBuilder(id: $0) },
+            allBuilders: deepLinkBuilders
+        )
     }
 }
-
