@@ -126,7 +126,10 @@ private extension AirbnbActivityReservationDetailsParser {
     ) -> [CancellationDeadline] {
         guard let subtitle, let policyText = nonEmpty(subtitle) else { return [] }
         let lower = policyText.lowercased()
-        let isFree = lower.contains("full refund") || lower.contains("kostenlos")
+        let isFree = lower.contains("full refund")
+            || lower.contains("kostenlos")
+            || lower.contains("vollständige rückerstattung")
+            || lower.contains("volle rückerstattung")
 
         guard let deadlineAt = parseCancelByDate(from: policyText, referenceDate: referenceDate) else {
             // No silent dummy deadline: keep policy only when a concrete deadline is parseable.
@@ -145,11 +148,23 @@ private extension AirbnbActivityReservationDetailsParser {
         ]
     }
 
-    /// e.g. "Get a full refund if you cancel by 9 Aug, 6:00 pm (WIB)."
+    /// e.g. EN: "Get a full refund if you cancel by 9 Aug, 6:00 pm (WIB)."
+    /// DE: "Storniere bis 9. Aug., 18:00 Uhr (WIB) für eine vollständige Rückerstattung."
     static func parseCancelByDate(from text: String, referenceDate: Date?) -> Date? {
-        let normalized = text
+        let normalized = normalizeCancelPolicyText(text)
+        if let english = parseEnglishCancelByDate(from: normalized, referenceDate: referenceDate) {
+            return english
+        }
+        return parseGermanCancelByDate(from: normalized, referenceDate: referenceDate)
+    }
+
+    static func normalizeCancelPolicyText(_ text: String) -> String {
+        text
             .replacingOccurrences(of: "\u{00A0}", with: " ")
             .replacingOccurrences(of: "\u{202F}", with: " ")
+    }
+
+    static func parseEnglishCancelByDate(from normalized: String, referenceDate: Date?) -> Date? {
         let pattern =
             #"(?i)cancel by\s+(\d{1,2})\s+([A-Za-z]{3}),?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*\(([A-Za-z]+)\)"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
@@ -163,13 +178,13 @@ private extension AirbnbActivityReservationDetailsParser {
         }
 
         let day = Int(ns.substring(with: match.range(at: 1)))
-        let monthToken = ns.substring(with: match.range(at: 2)).lowercased()
+        let monthToken = ns.substring(with: match.range(at: 2))
         let hour12 = Int(ns.substring(with: match.range(at: 3)))
         let minute = Int(ns.substring(with: match.range(at: 4)))
         let ampm = ns.substring(with: match.range(at: 5)).lowercased()
-        let tzToken = ns.substring(with: match.range(at: 6)).uppercased()
+        let tzToken = ns.substring(with: match.range(at: 6))
 
-        guard let day, let hour12, let minute, let month = englishMonthNumber(monthToken) else {
+        guard let day, let hour12, let minute, let month = monthNumber(monthToken) else {
             return nil
         }
         guard let timeZone = timeZone(forAbbreviation: tzToken) else { return nil }
@@ -177,6 +192,67 @@ private extension AirbnbActivityReservationDetailsParser {
         var hour = hour12 % 12
         if ampm == "pm" { hour += 12 }
 
+        return cancelDeadlineDate(
+            day: day,
+            month: month,
+            hour: hour,
+            minute: minute,
+            timeZone: timeZone,
+            referenceDate: referenceDate
+        )
+    }
+
+    static func parseGermanCancelByDate(from normalized: String, referenceDate: Date?) -> Date? {
+        let patterns = [
+            // "Storniere bis 9. Aug., 18:00 Uhr (WIB) …"
+            #"(?i)(?:storniere\s+bis|kostenlose\s+stornierung\s+bis)\s+(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ\.]+),?\s+(\d{1,2}):(\d{2})\s*Uhr\s*\(([A-Za-z]+)\)"#,
+            // "… bis zum 9. Aug. um 18:00 Uhr (WIB) stornierst."
+            #"(?i)bis\s+zum\s+(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ\.]+)\s+um\s+(\d{1,2}):(\d{2})\s*Uhr\s*\(([A-Za-z]+)\)"#,
+            // "… vor dem 9. Aug. um 18:00 Uhr (WIB) stornierst."
+            #"(?i)vor\s+dem\s+(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ\.]+)\s+um\s+(\d{1,2}):(\d{2})\s*Uhr\s*\(([A-Za-z]+)\)"#,
+        ]
+        let ns = normalized as NSString
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            guard let match = regex.firstMatch(
+                in: normalized,
+                range: NSRange(location: 0, length: ns.length)
+            ), match.numberOfRanges == 6
+            else {
+                continue
+            }
+
+            let day = Int(ns.substring(with: match.range(at: 1)))
+            let monthToken = ns.substring(with: match.range(at: 2))
+            let hour = Int(ns.substring(with: match.range(at: 3)))
+            let minute = Int(ns.substring(with: match.range(at: 4)))
+            let tzToken = ns.substring(with: match.range(at: 5))
+
+            guard let day, let hour, let minute, let month = monthNumber(monthToken) else { continue }
+            guard let timeZone = timeZone(forAbbreviation: tzToken) else { continue }
+
+            if let date = cancelDeadlineDate(
+                day: day,
+                month: month,
+                hour: hour,
+                minute: minute,
+                timeZone: timeZone,
+                referenceDate: referenceDate
+            ) {
+                return date
+            }
+        }
+        return nil
+    }
+
+    static func cancelDeadlineDate(
+        day: Int,
+        month: Int,
+        hour: Int,
+        minute: Int,
+        timeZone: TimeZone,
+        referenceDate: Date?
+    ) -> Date? {
         let year: Int = {
             if let referenceDate {
                 return Calendar(identifier: .gregorian).component(.year, from: referenceDate)
@@ -196,20 +272,26 @@ private extension AirbnbActivityReservationDetailsParser {
         return components.date
     }
 
-    static func englishMonthNumber(_ token: String) -> Int? {
+    static func monthNumber(_ token: String) -> Int? {
+        let normalized = token
+            .lowercased()
+            .replacingOccurrences(of: ".", with: "")
+            .prefix(3)
         let map: [String: Int] = [
-            "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-            "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            "jan": 1, "feb": 2, "mar": 3, "mär": 3, "apr": 4, "may": 5, "mai": 5,
+            "jun": 6, "jul": 7, "aug": 8, "sep": 9, "oct": 10, "okt": 10, "nov": 11,
+            "dec": 12, "dez": 12,
         ]
-        return map[String(token.prefix(3))]
+        return map[String(normalized)]
     }
 
     static func timeZone(forAbbreviation abbreviation: String) -> TimeZone? {
-        switch abbreviation {
+        let token = abbreviation.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        switch token {
         case "WIB":
             return TimeZone(identifier: "Asia/Jakarta")
         default:
-            return TimeZone(abbreviation: abbreviation)
+            return TimeZone(abbreviation: token)
         }
     }
 }

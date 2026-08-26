@@ -55,9 +55,10 @@ func airbnbTripListMapsExperienceToActivity() throws {
     #expect(draft.provider == .airbnb)
     #expect(draft.confirmationCode == "<REDACTED>")
     #expect(draft.status == .confirmed)
-    #expect(draft.title == "Gedong Tengen")
-    #expect(draft.passengers.count == 3)
-    #expect(draft.passengers.allSatisfy { $0.travellerType == .adult })
+    #expect(draft.title == nil)
+    #expect(draft.locationTo == "Gedong Tengen")
+    #expect(draft.passengers.isEmpty)
+    #expect(draft.rateDetails?.guestCount == 3)
     #expect(draft.startAt == iso8601("2026-08-10T11:00:00.000Z"))
     #expect(draft.endAt == iso8601("2026-08-10T14:00:00.000Z"))
     #expect(draft.externalUrl?.contains("EXPERIENCE_RESERVATION") == true)
@@ -86,6 +87,85 @@ func airbnbActivityReservationDetailsParsesEnrichmentFields() throws {
     let deadline = try #require(result.deadlines.first)
     #expect(deadline.isFreeCancellation == true)
     #expect(deadline.policyText?.contains("full refund") == true)
+
+    let expectedDeadline = try #require(
+        dateInTimeZone(
+            year: 2026,
+            month: 8,
+            day: 9,
+            hour: 18,
+            minute: 0,
+            timeZoneID: "Asia/Jakarta"
+        )
+    )
+    #expect(abs(deadline.deadlineAt.timeIntervalSince(expectedDeadline)) < 0.01)
+}
+
+@Test("AirbnbActivityReservationDetailsParser parst DE-Stornofrist bei locale=de")
+func airbnbActivityReservationDetailsParsesGermanCancelPolicy() throws {
+    let json = """
+    {
+      "scheduled_event": {
+        "rows": [
+          {
+            "id": "cancel_policy",
+            "payload": {
+              "subtitle": "Storniere bis 9. Aug., 18:00 Uhr (WIB) für eine vollständige Rückerstattung."
+            }
+          }
+        ]
+      }
+    }
+    """
+    let reference = iso8601("2026-08-10T11:00:00.000Z")
+    let result = try AirbnbActivityReservationDetailsParser.parse(
+        responseText: json,
+        referenceDate: reference
+    )
+
+    #expect(result.deadlines.count == 1)
+    let deadline = try #require(result.deadlines.first)
+    #expect(deadline.isFreeCancellation == true)
+    #expect(deadline.policyText?.contains("vollständige Rückerstattung") == true)
+
+    let expectedDeadline = try #require(
+        dateInTimeZone(
+            year: 2026,
+            month: 8,
+            day: 9,
+            hour: 18,
+            minute: 0,
+            timeZoneID: "Asia/Jakarta"
+        )
+    )
+    #expect(abs(deadline.deadlineAt.timeIntervalSince(expectedDeadline)) < 0.01)
+}
+
+@Test("AirbnbActivityReservationDetailsParser parst DE-Storno mit vor-dem-Muster")
+func airbnbActivityReservationDetailsParsesGermanCancelPolicyBeforeDate() throws {
+    let json = """
+    {
+      "scheduled_event": {
+        "rows": [
+          {
+            "id": "cancel_policy",
+            "payload": {
+              "subtitle": "Erhalte eine volle Rückerstattung, wenn du vor dem 9. Aug. um 18:00 Uhr (WIB) stornierst."
+            }
+          }
+        ]
+      }
+    }
+    """
+    let reference = iso8601("2026-08-10T11:00:00.000Z")
+    let result = try AirbnbActivityReservationDetailsParser.parse(
+        responseText: json,
+        referenceDate: reference
+    )
+
+    #expect(result.deadlines.count == 1)
+    let deadline = try #require(result.deadlines.first)
+    #expect(deadline.isFreeCancellation == true)
 
     let expectedDeadline = try #require(
         dateInTimeZone(

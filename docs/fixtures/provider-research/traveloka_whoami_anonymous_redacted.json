@@ -1,0 +1,12 @@
+{
+  "userContext": null,
+  "data": {
+    "id": "0",
+    "firstName": null,
+    "lastName": null,
+    "username": null,
+    "authorizationLevel": "0",
+    "revoked": false,
+    "devicePlatform": "web"
+  }
+}

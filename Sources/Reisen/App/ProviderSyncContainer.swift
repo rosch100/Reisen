@@ -18,6 +18,8 @@ struct ProviderSyncContainer: View {
     private var bookingEnabled: Bool
     @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .airbnb))
     private var airbnbEnabled: Bool
+    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .traveloka))
+    private var travelokaEnabled: Bool
 
     @Environment(\.providerSessionHub) private var hub
     @Environment(\.providerRegistry) private var providerRegistry
@@ -28,6 +30,7 @@ struct ProviderSyncContainer: View {
         if opodoEnabled { ids.append(.opodo) }
         if bookingEnabled { ids.append(.booking) }
         if airbnbEnabled { ids.append(.airbnb) }
+        if travelokaEnabled { ids.append(.traveloka) }
         return ids
     }
 
@@ -129,6 +132,7 @@ struct ProviderSyncContainer: View {
         .onChange(of: opodoEnabled) { _, _ in syncHub() }
         .onChange(of: bookingEnabled) { _, _ in syncHub() }
         .onChange(of: airbnbEnabled) { _, _ in syncHub() }
+        .onChange(of: travelokaEnabled) { _, _ in syncHub() }
         .onChange(of: selectedHubStatus) { _, newStatus in
             guard phase == .ready, isRunningLoginQueue else { return }
             guard newStatus == .sessionReady else { return }

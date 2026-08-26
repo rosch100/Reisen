@@ -44,10 +44,12 @@ private extension AirbnbTripNode {
             }
 
             if let activity = details.activityReservation, let confirmationCode = activity.confirmationCode, !confirmationCode.isEmpty {
+                let guestCount = travelerCapacity?.numberOfAdults
                 return ProviderBookingDraft(
                     provider: .airbnb,
                     bookingType: .activity,
-                    title: displayName,
+                    // TripList `displayName` is the location, not the experience title (see enrichment).
+                    title: nil,
                     confirmationCode: confirmationCode,
                     externalUrl: externalUrl(schedulableType: details.schedulableType, confirmationCode: confirmationCode),
                     startAt: startTime.dateTime,
@@ -56,7 +58,8 @@ private extension AirbnbTripNode {
                     locationToAddress: nil,
                     status: Self.mapStatus(tripStatus: status, reservationStatus: activity.status),
                     deadlines: [],
-                    passengers: Self.passengers(fromAdultCount: travelerCapacity?.numberOfAdults)
+                    rateDetails: Self.rateDetails(fromGuestCount: guestCount),
+                    passengers: []
                 )
             }
 
@@ -76,11 +79,9 @@ private extension AirbnbTripNode {
         return .confirmed
     }
 
-    private static func passengers(fromAdultCount count: Int?) -> [BookingPassenger] {
-        guard let count, count > 0 else { return [] }
-        return (1...count).map { passengerNumber in
-            BookingPassenger(passengerNumber: passengerNumber, travellerType: .adult)
-        }
+    private static func rateDetails(fromGuestCount count: Int?) -> BookingRateDetails? {
+        guard let count, count > 0 else { return nil }
+        return BookingRateDetails(guestCount: count)
     }
 }
 

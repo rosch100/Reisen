@@ -1,0 +1,652 @@
+{
+  "data": {
+    "status": "SUCCESS",
+    "message": null,
+    "itineraryDisplayIdList": [
+      {
+        "bookingId": "1387358428",
+        "itineraryId": "1874509835987345547",
+        "productMappingId": null,
+        "itineraryType": "EXPERIENCE"
+      },
+      {
+        "bookingId": "1387353870",
+        "itineraryId": "20261123186899",
+        "productMappingId": null,
+        "itineraryType": "HOTEL"
+      },
+      {
+        "bookingId": "1387355867",
+        "itineraryId": "1387355867",
+        "productMappingId": null,
+        "itineraryType": "VEHICLE_RENTAL"
+      },
+      {
+        "bookingId": "1000000001",
+        "itineraryId": "2000000001",
+        "productMappingId": null,
+        "itineraryType": "FLIGHT"
+      }
+    ],
+    "itineraryEntryList": [
+      {
+        "bookingId": "1387358428",
+        "itineraryId": "1874509835987345547",
+        "tripId": "1387358428",
+        "productMappingId": null,
+        "itineraryType": "EXPERIENCE",
+        "itineraryDetailId": null,
+        "relatedItems": [],
+        "bookingInfo": null,
+        "paymentInfo": {
+          "bookingId": "1387358428",
+          "paymentConfirmationTime": "0",
+          "paymentVerificationTime": "1787671920438",
+          "paymentExpirationTime": "1787678948514",
+          "paymentMethod": "DIGITAL_WALLET",
+          "paymentMethodShortName": "Digital Wallet",
+          "inReview": false,
+          "userTripStatus": "ETICKET_PUBLISHED",
+          "failureReason": "NONE",
+          "failureMessage": "Please complete your payment within the given time limit.",
+          "expectedAmount": {
+            "currencyValue": {
+              "currency": "EUR",
+              "amount": "362",
+              "nullOrEmpty": false
+            },
+            "numOfDecimalPoint": "2"
+          },
+          "enablePaymentSupport": false,
+          "isTotalPriceHidden": false,
+          "transactionStatusCorporateData": null,
+          "latestPaymentStatus": "PAID",
+          "subInvoiceDtos": [
+            {
+              "id": "880217839422705664",
+              "masterInvoiceId": "1874509836083822487",
+              "outstandingAmount": {
+                "currency": "EUR",
+                "amount": "0",
+                "nullOrEmpty": false
+              },
+              "paymentMethod": "DIGITAL_WALLET",
+              "paymentScope": "cybersource_applepay_2ds_EUR",
+              "paymentExpirationTime": "1787678948514",
+              "paymentProofUrl": null,
+              "paymentSubmissionTime": "1787671920446",
+              "confirmed": false,
+              "selectedPaymentScope": "apple_pay",
+              "subInvoiceStatus": "VERIFIED"
+            }
+          ],
+          "bookingWithSrvCoupon": false,
+          "paymentChargingTimestamp": null,
+          "invoiceType": "STANDARD",
+          "outstandingAmount": {
+            "currency": "EUR",
+            "amount": "0",
+            "nullOrEmpty": false
+          },
+          "paymentTypeInformation": {},
+          "totalPriceHidden": false
+        },
+        "hotelVoucherInfo": null,
+        "flightTicketInfo": null,
+        "itineraryTags": [
+          {
+            "text": "Voucher issued",
+            "status": "STATUS_OK",
+            "iconType": null,
+            "expirationTime": null
+          }
+        ],
+        "preIssuancePage": null,
+        "preIssuancePageV2": null,
+        "insuranceInfoList": null,
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "invoiceId": "1874509836083822487",
+            "bookingTime": "1787671886462",
+            "auth": "4380f12ce9",
+            "bookingContact": {
+              "personTitle": "MR",
+              "firstName": "REDACTED",
+              "lastName": "REDACTED",
+              "phone": "REDACTED",
+              "email": "REDACTED"
+            },
+            "tripType": "EXPERIENCE",
+            "attentionNeeded": true,
+            "itineraryBookingStatus": "SUCCESS",
+            "itineraryId": "1874509835987345547",
+            "issuingTime": "1800000",
+            "title": null,
+            "subtitles": null,
+            "itineraryTimestampBegin": "1788825600000",
+            "ianaTimezoneBegin": "Asia/Saigon",
+            "itineraryTimestampEnd": "1788912000000",
+            "ianaTimezoneEnd": "Asia/Saigon",
+            "itineraryTimestampGroup": "0",
+            "imageUrl": null,
+            "locale": "en_EN",
+            "actions": null,
+            "affiliateData": null,
+            "isActiveBooking": false,
+            "productIcon": "https://ik.imagekit.io/tvlk/image/imageResource/2022/07/14/1657779959031-225242c76e77c97c67a6814158a9b086.webp?tr=q-75",
+            "productName": "Xperience",
+            "sectionType": "ACTIVE_BOOKING",
+            "displayed": true,
+            "activeBooking": false
+          },
+          "experienceSummary": {
+            "experienceName": "Ha Noi Double Decker Bus Pass by City Sightseeing",
+            "location": "Hoan Kiem, Vietnam",
+            "ticketDate": {
+              "month": "9",
+              "day": "8",
+              "year": "2026"
+            },
+            "timeSlot": "All Day Admission",
+            "timeSlotId": "all_day_pass",
+            "validityType": "SINGLE",
+            "voucherImageURL": "https://example.com/redacted",
+            "isEligibleForReview": false,
+            "reservationIds": null
+          },
+          "trainSummary": null,
+          "bundleSummary": null,
+          "shuttleSummary": null,
+          "pointToPointSummary": null,
+          "busSummaryInfo": null,
+          "vehicleRentalSummaryInfo": null,
+          "flightCheckInSummaryInfo": null,
+          "giftVoucherSummaryInfo": null,
+          "voucherPackageSummaryInfo": null,
+          "giftSummaryInfo": null,
+          "insuranceSummaryInfo": null,
+          "trainGlobalSummaryInfo": null,
+          "flightAncillarySummaryInfo": null,
+          "flightPriceFreezeSummaryInfo": null,
+          "packageSummaryInfo": null
+        },
+        "cardDetailInfo": {
+          "commonDetail": {
+            "bookingContact": {
+              "personTitle": "MR",
+              "firstName": "REDACTED",
+              "lastName": "REDACTED",
+              "phone": "REDACTED",
+              "email": "REDACTED"
+            },
+            "bookingNavigation": null,
+            "topBannerMap": null,
+            "requestTaxInvoiceEnabled": false,
+            "requestTaxInvoiceInfo": null,
+            "crossSellWidget": null
+          },
+          "experienceDetail": {
+            "experienceName": "Ha Noi Double Decker Bus Pass by City Sightseeing",
+            "location": "Hoan Kiem, Vietnam",
+            "ticketDate": {
+              "month": "9",
+              "day": "8",
+              "year": "2026"
+            },
+            "timeSlot": "All Day Admission",
+            "timeSlotId": "all_day_pass",
+            "validityType": "SINGLE",
+            "voucherImageURL": "https://example.com/redacted",
+            "isEligibleForReview": false,
+            "reservationIds": null,
+            "isUsed": false,
+            "ticketName": "(Nighttime) Bus Pass Around Hanoi",
+            "experienceId": "2000536971739",
+            "experienceNameEN": "Ha Noi Double Decker Bus Pass by City Sightseeing",
+            "seatMapURL": null,
+            "validityPeriod": {
+              "validFrom": {
+                "month": "9",
+                "day": "8",
+                "year": "2026"
+              },
+              "validThrough": {
+                "month": "9",
+                "day": "8",
+                "year": "2026"
+              }
+            },
+            "numAdult": "0",
+            "numChild": "0",
+            "selectedTicketDisplay": "Child: 1 ",
+            "whatToPrepare": null,
+            "pickupInfo": null,
+            "makeYourOwnWayInfo": {
+              "extraInformation": [
+                {
+                  "id": "0",
+                  "componentName": "Paragraph",
+                  "type": "VIEW",
+                  "children": [],
+                  "marginTop": "16",
+                  "marginBottom": "16",
+                  "marginLeft": "16",
+                  "marginRight": "16",
+                  "validations": [],
+                  "htmlText": "Hanoi Opera House: 1 Tràng Tiền, Phan Chu Trinh, Hoàn Kiếm, Hà Nội, Vietnam",
+                  "style": "BODY_1",
+                  "linkHandler": "IN_APP_BROWSER"
+                }
+              ],
+              "experienceExtraInformation": null,
+              "locationInfo": {
+                "lon": 0,
+                "lat": 0,
+                "valid": true
+              },
+              "locationName": "Hanoi Opera House: 1 Tràng Tiền, Phan Chu Trinh, Hoàn Kiếm, Hà Nội, Vietnam",
+              "locationAddress": null,
+              "indoorMapUrl": null,
+              "supplierNumber": null
+            },
+            "messageToHost": null,
+            "operatorInfo": {
+              "name": "AXES",
+              "phoneNumber": "REDACTED",
+              "emailAddress": "REDACTED",
+              "informationList": null,
+              "timeComponents": [
+                {
+                  "iconText": {
+                    "iconUrl": "https://example.com/redacted",
+                    "description": "<b>Start Time: </b>09:15",
+                    "hexColorCode": null,
+                    "detailText": null
+                  },
+                  "infoDetail": null,
+                  "itemId": "DEFAULT",
+                  "accordionInfos": null
+                },
+                {
+                  "iconText": {
+                    "iconUrl": "https://example.com/redacted",
+                    "description": "Service available in:<br />Vietnamese<br />English<br />",
+                    "hexColorCode": null,
+                    "detailText": null
+                  },
+                  "infoDetail": null,
+                  "itemId": "DEFAULT",
+                  "accordionInfos": null
+                }
+              ]
+            },
+            "termsAndCondition": null,
+            "howToRedeem": null,
+            "redeemAddress": null,
+            "cancellationPolicies": [
+              "All booking cancellations are subject to cancellation fees.",
+              "Cancellations made at least 1 day(s) prior to selected visit date are eligible for up to 100% refund of the original price (not including service fees, discount coupons, and bank transfer unique code charge).",
+              "This voucher’s validity period can’t be rescheduled.",
+              "To cancel your booking and request a refund, please go to My Booking and tap on Refund (available on Traveloka App version 3.18 and above or Traveloka desktop website)."
+            ],
+            "directAdmission": false,
+            "ticketRedemptionType": "PAPERLESS",
+            "bookingInformation": null,
+            "barCodeFormat": "QR_CODE",
+            "barCodeInfos": [
+              {
+                "ticketId": "TVX8E9BB55E",
+                "partnerBookingId": "37405951",
+                "redeemStatus": false,
+                "experiencePaxType": "CHILD"
+              }
+            ],
+            "howToUse": null,
+            "importantNotice": null,
+            "isRefundable": true,
+            "isEasyRefund": true,
+            "csNumber": null,
+            "mainInfoList": null,
+            "extraSectionInfoList": null,
+            "reservationInfo": null,
+            "howToRedeemSection": null,
+            "termsAndConditionSection": null,
+            "cancellationPoliciesSection": null,
+            "additionalBookingInformation": {
+              "travelerList": [
+                {
+                  "title": "Rol Sch",
+                  "infoList": [
+                    {
+                      "id": "salutation",
+                      "label": ""
+                    },
+                    {
+                      "id": "name",
+                      "label": "Rol Sch"
+                    },
+                    {
+                      "id": "contactNumber",
+                      "label": "+17813504303"
+                    },
+                    {
+                      "id": "emailId",
+                      "label": "redacted@example.com"
+                    }
+                  ]
+                }
+              ],
+              "otherBookingInfoList": []
+            },
+            "onlineProductLink": null,
+            "importantNote": null,
+            "isReschedulable": false,
+            "rescheduleStatusType": null,
+            "rescheduleStatus": null,
+            "inactiveBookingInfo": null,
+            "travelersInfo": [
+              {
+                "entranceTypeId": "CHILD",
+                "entranceTypeTitle": "Child",
+                "isVisible": true,
+                "preferences": [],
+                "visible": true
+              }
+            ],
+            "voucherStatus": null,
+            "merchandisingConfig": null,
+            "meetingPoint": null,
+            "easyReservation": false,
+            "experienceProductInfo": null,
+            "experienceBookingInfo": null,
+            "isSwipeToRedeem": false,
+            "locationInfos": null,
+            "isIssued": true,
+            "timeComponentsV2": [
+              {
+                "iconText": {
+                  "iconUrl": "https://example.com/redacted",
+                  "description": "<b>Nearest Tour Date</b> | 09:15",
+                  "hexColorCode": null,
+                  "detailText": null
+                },
+                "infoDetail": null,
+                "itemId": "TOUR_DATE",
+                "accordionInfos": null
+              },
+              {
+                "iconText": {
+                  "iconUrl": "https://example.com/redacted",
+                  "description": "Service available in:<br />Vietnamese<br />English<br />",
+                  "hexColorCode": null,
+                  "detailText": null
+                },
+                "infoDetail": null,
+                "itemId": "SERVICE_LANGUAGE",
+                "accordionInfos": null
+              }
+            ],
+            "selectedTicketDisplayV2": "1 x Child ",
+            "nonInstantBooking": false,
+            "rescheduleLimitReached": false,
+            "cruiseAdditionalData": null,
+            "redemptionMethod": {
+              "title": "Redemption Method",
+              "redemptionMethodItems": [],
+              "howToRedeem": {
+                "accordionInformation": {
+                  "iconUrl": "https://example.com/redacted",
+                  "title": "How to Redeem",
+                  "hexCode": "#D99800",
+                  "description": null,
+                  "initiallyExpanded": false
+                },
+                "contentVD": [
+                  {
+                    "id": "0",
+                    "componentName": "Title",
+                    "type": "VIEW",
+                    "children": [],
+                    "marginTop": "8",
+                    "marginBottom": "8",
+                    "marginLeft": "16",
+                    "marginRight": "16",
+                    "validations": [],
+                    "text": "How to redeem",
+                    "style": "title2",
+                    "styleSheetGroup": {
+                      "text": {
+                        "color": "#03121A"
+                      }
+                    }
+                  },
+                  {
+                    "id": "1",
+                    "componentName": "UnorderedList",
+                    "type": "VIEW",
+                    "children": [],
+                    "marginTop": "8",
+                    "marginBottom": "8",
+                    "marginLeft": "16",
+                    "marginRight": "16",
+                    "validations": [],
+                    "list": [
+                      "Please be present at least 15 minutes prior to your departure time at the City Sightseeing ticket counters:",
+                      "Exchange your voucher for a physical pass at the ticket office for entry.",
+                      "Only your voucher is valid. Proofs of payment and receipts cannot be used for entry."
+                    ],
+                    "linkHandler": "IN_APP_BROWSER"
+                  },
+                  {
+                    "id": "2",
+                    "componentName": "UnorderedList",
+                    "type": "VIEW",
+                    "children": [],
+                    "marginTop": "8",
+                    "marginBottom": "8",
+                    "marginLeft": "16",
+                    "marginRight": "16",
+                    "validations": [],
+                    "list": [
+                      "19/8 Flower Garden near Hanoi Opera House (red kiosk with City Sightseeing logo)",
+                      "Tourist Information Counter: opposite to 13 Dinh Tien Hoang Str., Hoan Kiem Lake (counter closed from 19:00 on Friday to 23:59 on Sunday)",
+                      "In front of Thang Long Water Puppet Theater: 57B Dinh Tien Hoang Str. (counter closed from 19:00 on Friday to 23:59 on Sunday)",
+                      "In front of Bong Sen Water Puppet Theater: 16 Le Thai To Str."
+                    ],
+                    "linkHandler": "IN_APP_BROWSER"
+                  },
+                  {
+                    "id": "3",
+                    "componentName": "Title",
+                    "type": "VIEW",
+                    "children": [],
+                    "marginTop": "8",
+                    "marginBottom": "8",
+                    "marginLeft": "16",
+                    "marginRight": "16",
+                    "validations": [],
+                    "text": "How to use",
+                    "style": "title2",
+                    "styleSheetGroup": {
+                      "text": {
+                        "color": "#03121A"
+                      }
+                    }
+                  },
+                  {
+                    "id": "4",
+                    "componentName": "UnorderedList",
+                    "type": "VIEW",
+                    "children": [],
+                    "marginTop": "8",
+                    "marginBottom": "8",
+                    "marginLeft": "16",
+                    "marginRight": "16",
+                    "validations": [],
+                    "list": [
+                      "Scan your pass on the ticket reader or show the pass to the driver.",
+                      "The bus runs continuously, no hop-on hop-off.",
+                      "Passengers can wait for the next schedule if you cannot board the first bus (all seats are full). Buses arrive every 30 minutes (approximately)."
+                    ],
+                    "linkHandler": "IN_APP_BROWSER"
+                  }
+                ]
+              }
+            },
+            "experienceTypes": [
+              "DAY_TOUR"
+            ],
+            "experienceBookingDetailInfo": null,
+            "isBundleBooking": false,
+            "staggeredPaymentStatus": null,
+            "bpgClaimLink": null,
+            "bpgExpirationTimestamp": null,
+            "operationalInformation": null,
+            "travelPassRedemption": null,
+            "bundleBooking": false,
+            "easyRefund": true,
+            "issued": true,
+            "reschedulable": false,
+            "refundable": true
+          },
+          "trainDetail": null,
+          "hotelDetail": null,
+          "flightDetail": null,
+          "bundleDetail": null,
+          "shuttleDetail": null,
+          "pointToPointDetailInfo": null,
+          "busDetail": null,
+          "vehicleRentalDetailInfo": null,
+          "giftVoucherDetailInfo": null,
+          "voucherPackageDetailInfo": null,
+          "giftDetailInfo": null,
+          "insuranceDetailInfo": null,
+          "trainGlobalDetailInfo": null,
+          "flightPriceFreezeDetailInfo": null,
+          "packageDetailInfo": null
+        },
+        "hash": "ef2b079db481fc32aa21a938c9443a1b",
+        "travelChecklist": null,
+        "itineraryMarkers": [],
+        "eTicket": null
+      },
+      {
+        "bookingId": "1387353870",
+        "itineraryId": "20261123186899",
+        "itineraryType": "HOTEL",
+        "itineraryTags": [
+          {
+            "text": "Voucher issued",
+            "status": "STATUS_OK"
+          }
+        ],
+        "paymentInfo": {
+          "userTripStatus": "ETICKET_PUBLISHED"
+        },
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "tripType": "HOTEL",
+            "itineraryTimestampBegin": "1790143200000",
+            "ianaTimezoneBegin": "Asia/Jakarta",
+            "itineraryTimestampEnd": "1790229600000",
+            "ianaTimezoneEnd": "Asia/Jakarta",
+            "sectionType": "ACTIVE_BOOKING",
+            "productName": "Hotel"
+          },
+          "hotelSummary": {
+            "hotelName": "Example Hotel South Jakarta",
+            "roomName": "Standard Double",
+            "checkInDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "1"
+            },
+            "checkOutDate": {
+              "year": "2026",
+              "month": "9",
+              "day": "2"
+            },
+            "checkInTime": "14:00",
+            "checkOutTime": "12:00",
+            "cityName": "South Jakarta",
+            "guestCount": 2,
+            "roomCount": 1,
+            "breakfastIncluded": false
+          }
+        },
+        "cardDetailInfo": {}
+      },
+      {
+        "bookingId": "1387355867",
+        "itineraryId": "1387355867",
+        "itineraryType": "VEHICLE_RENTAL",
+        "itineraryTags": [
+          {
+            "text": "Voucher issued",
+            "status": "STATUS_OK"
+          }
+        ],
+        "paymentInfo": {
+          "userTripStatus": "ETICKET_PUBLISHED"
+        },
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "tripType": "VEHICLE_RENTAL",
+            "itineraryTimestampBegin": "1790744400000",
+            "ianaTimezoneBegin": "Asia/Jakarta",
+            "itineraryTimestampEnd": "1790748000000",
+            "ianaTimezoneEnd": "Asia/Jakarta",
+            "sectionType": "ACTIVE_BOOKING",
+            "productName": "Car Rental"
+          },
+          "vehicleRentalSummaryInfo": {
+            "vehicleName": "Daihatsu Sigra",
+            "transmission": "Automatic",
+            "providerName": "Jayamahe Easy Ride Jakarta",
+            "pickUpAddress": "Pool Area Bandara Soekarno-Hatta",
+            "dropOffAddress": "Pool Area Bandara Soekarno-Hatta"
+          }
+        },
+        "cardDetailInfo": {}
+      },
+      {
+        "bookingId": "1000000001",
+        "itineraryId": "2000000001",
+        "itineraryType": "FLIGHT",
+        "itineraryTags": [
+          {
+            "text": "E-ticket issued",
+            "status": "STATUS_OK"
+          }
+        ],
+        "paymentInfo": {
+          "userTripStatus": "ETICKET_PUBLISHED"
+        },
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "tripType": "FLIGHT",
+            "itineraryTimestampBegin": "1791000000000",
+            "ianaTimezoneBegin": "Asia/Jakarta",
+            "itineraryTimestampEnd": "1791007200000",
+            "ianaTimezoneEnd": "Asia/Makassar",
+            "sectionType": "ACTIVE_BOOKING",
+            "productName": "Flight"
+          },
+          "flightSummary": null
+        },
+        "cardDetailInfo": {
+          "flightDetail": {
+            "originCity": "Jakarta",
+            "originAirportCode": "CGK",
+            "destinationCity": "Denpasar",
+            "destinationAirportCode": "DPS",
+            "airlineName": "AirAsia",
+            "passengerCount": 1,
+            "refundable": false,
+            "refundPolicyLabel": "Non-Refundable"
+          }
+        }
+      }
+    ]
+  }
+}
