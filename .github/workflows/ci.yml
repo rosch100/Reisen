@@ -12,7 +12,10 @@ concurrency:
 
 permissions:
   contents: read
-  statuses: write
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -eo pipefail {0}
 
 jobs:
   ci:
@@ -22,12 +25,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Select Xcode 26
-        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable
 
@@ -37,15 +38,15 @@ jobs:
           xcodebuild -version
 
       - name: Cache SwiftPM build artifacts
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .build
             ~/Library/Caches/org.swift.swiftpm
             ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
-          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift') }}-${{ hashFiles('**/Package.resolved') }}-${{ github.sha }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', '**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-${{ hashFiles('Package.swift') }}-
+            ${{ runner.os }}-spm-
 
       - name: Build tests
         run: swift build --build-tests -v
@@ -63,39 +64,3 @@ jobs:
           CI: "true"
           REISEN_CLOUDKIT: "0"
         run: bash ./Scripts/ios-test.sh
-
-      - name: Publish legacy commit status "CI"
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          sha='${{ github.sha }}'
-          context='CI'
-          run_url='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-
-          # GitHub Branch Protection verlangt Status-Kontext "CI" (legacy commit status), nicht nur Check-Runs.
-          case '${{ job.status }}' in
-            success) state='success' ;;
-            failure) state='failure' ;;
-            cancelled) state='error' ;;
-            *) state='error' ;;
-          esac
-
-          payload=$(cat <<EOF
-          {
-            "state": "${state}",
-            "context": "${context}",
-            "description": "CI workflow completed",
-            "target_url": "${run_url}"
-          }
-          EOF
-          )
-
-          curl -sS -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/statuses/${sha}" \
-            -d "${payload}" > /dev/null
-

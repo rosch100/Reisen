@@ -3,10 +3,15 @@ name: CodeQL
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   schedule:
     - cron: "0 3 * * 2"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   analyze:
@@ -21,37 +26,37 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Select Xcode 26
-        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@e58424170fb0262c8d7ed60a2e84b9bffe205c67
+        uses: github/codeql-action/init@e58424170fb0262c8d7ed60a2e84b9bffe205c67 # pinned
         with:
           languages: swift
           build-mode: manual
 
       - name: Cache SwiftPM build artifacts
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/Library/Caches/org.swift.swiftpm
             ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
-          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift') }}-${{ hashFiles('**/Package.resolved') }}-${{ github.sha }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', '**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-${{ hashFiles('Package.swift') }}-
+            ${{ runner.os }}-spm-
 
+      # One architecture, no test targets: CodeQL only needs traced product sources.
+      # See https://docs.github.com/en/code-security/reference/code-scanning/codeql/build-options-for-compiled-languages
       - name: Build (for CodeQL)
-        run: swift build --build-tests -v
+        run: bash ./Scripts/ci-build.sh --arch arm64
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@e58424170fb0262c8d7ed60a2e84b9bffe205c67
-        continue-on-error: true
+        uses: github/codeql-action/analyze@e58424170fb0262c8d7ed60a2e84b9bffe205c67 # pinned
         with:
           category: "/language:swift"
-

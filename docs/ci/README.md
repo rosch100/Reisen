@@ -4,19 +4,51 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 
 ## Verfügbare Workflows
 
-- `ci.yml`: Build+Test auf PRs und Push auf `master`
-- `codeql.yml`: CodeQL (Scheduled + PR)
-- `scorecard.yml`: OpenSSF Scorecard
+- `ci.yml`: Build+Test (macOS + iOS-Simulator) auf PRs und Push auf `master`
+- `codeql.yml`: CodeQL auf Push nach `master` und wöchentlichem Schedule (nicht auf jedem PR — der instrumentierte Swift-Build kostet ~30 min macOS)
+- `gitleaks.yml`: Secret-Scan auf PR, Push und täglichem Schedule
+- `actionlint.yml`: Workflow-Lint bei Änderungen unter `.github/workflows/`
+- `scorecard.yml`: OpenSSF Scorecard auf Push nach `master`, Branch-Protection-Events und wöchentlichem Schedule
 - `release.yml`: Tag-Releases (`v*`) inkl. optionalem Signing/Notarize
+- `versions-update.yml`: Wöchentliches Update von actionlint-URL, Xcode-Pin, Swift-Tools-Version und Gitleaks-Version
+
+## Pin-Updates (SSOT-Trennung)
+
+| Was | Werkzeug |
+|-----|----------|
+| GitHub-Action-SHAs (`uses: …@<sha> # vX.Y.Z`) | [Dependabot](../../.github/dependabot.yml) (`github-actions`, wöchentlich) |
+| actionlint-Installer-URL, `xcode-version: latest-stable`, `swift-tools-version`, `GITLEAKS_VERSION` | [`Scripts/update-versions.sh`](../../Scripts/update-versions.sh) via `versions-update.yml` |
+
+Dependabot-PRs laufen durch die echte CI. Der Versions-Workflow nutzt `--verify` nur, wenn Dateien geändert wurden.
+
+## SwiftPM-Cache (CI + CodeQL)
+
+Cache-Key (ohne Commit-SHA, damit Einträge wiederverwendet werden):
+
+```yaml
+key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', '**/Package.resolved') }}
+restore-keys: |
+  ${{ runner.os }}-spm-
+```
+
+CodeQL cached nur SPM-/Module-Caches (nicht `.build`): der Tracer braucht ohnehin einen instrumentierten Compile. Der Build läuft über [`Scripts/ci-build.sh`](../../Scripts/ci-build.sh) `--arch arm64` (keine Test-Targets, eine Architektur).
+
+## Branch Protection
+
+- Pflicht-Check für Merges: GitHub-Actions-Check **`CI`** aus [`ci.yml`](../../.github/workflows/ci.yml) (Check-Run, kein separater Legacy-Commit-Status)
+- CodeQL läuft nicht auf PRs; Scorecard/Gitleaks optional, nicht als Pflicht
+
+## Dependency Review (Follow-up)
+
+Der Workflow `dependency-review.yml` ist entfernt, solange keine [`Package.resolved`](../../Package.resolved) im Repo liegt. Nach Commit des Lockfiles kann der Workflow wieder ergänzt werden.
+
+## Release-Environment (optional)
+
+Für manuelle Freigabe von Tag-Releases kann in GitHub ein Environment `release` mit Required Reviewers angelegt werden — aktuell nicht im Workflow verdrahtet (Repo-Setting nötig).
 
 ## Apple Signing / Notarization
 
 Siehe [`apple-signing.md`](apple-signing.md).
-
-## Branch Protection (Empfehlung)
-
-- Pflicht-Check für Merges: Workflow `CI` aus [`ci.yml`](../../.github/workflows/ci.yml)
-- Optional: CodeQL/Scorecard nicht als Pflicht setzen (sie laufen als Security-Workflows und können bei Toolchain-Mismatches temporär fehlschlagen)
 
 ## AI-Assistenz & kostenlose PR-Reviewer (Open Source / public)
 
@@ -45,4 +77,3 @@ Wenn du GitHub Copilot (Pro/Org/Business, je nach Verfügbarkeit) nutzt, kannst 
 Wichtig:
 - Copilot-Reviews sind Hinweise, die vom Beitragenden verstanden und verifiziert werden müssen (siehe `AI_POLICY.md`).
 - Für die gewünschte Review-Qualität nutze `.github/copilot-instructions.md` als gemeinsame Referenz im Repo.
-
