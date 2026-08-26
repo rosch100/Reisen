@@ -12,6 +12,7 @@ import ReisenOpodo
 import ReisenBookingCom
 import ReisenAirbnb
 import ReisenGetYourGuide
+import ReisenTraveloka
 
 @MainActor
 @Observable
@@ -249,6 +250,11 @@ public final class SyncStore {
                 self?.messageProviderID = providerID
                 self?.statusMessage = message
             }
+        } else if providerID == .traveloka, let traveloka = provider as? TravelokaTravelProvider {
+            traveloka.onProgress = { [weak self] message in
+                self?.messageProviderID = providerID
+                self?.statusMessage = message
+            }
         }
     }
 
@@ -269,11 +275,14 @@ public final class SyncStore {
             let needsAirbnbEnrichment = providerID == .airbnb
             // GYG: Katalog kann Fristen schon haben; Enrichment liefert Treffpunkt/Teilnehmer.
             let needsGetYourGuideEnrichment = providerID == .getYourGuide
+            let needsTravelokaEnrichment = providerID == .traveloka
+                && TravelokaEnrichmentNeeds.shouldEnrich(drafts[i], requiresDeadlines: requiresDeadlines)
             guard needsDeadlineEnrichment
                 || needsBookingComDeadlineRefine
                 || needsStatusProbe
                 || needsAirbnbEnrichment
                 || needsGetYourGuideEnrichment
+                || needsTravelokaEnrichment
             else {
                 continue
             }
@@ -289,8 +298,14 @@ public final class SyncStore {
             if let title = enrichment.title, !title.isEmpty {
                 drafts[i].title = title
             }
+            if let locationFrom = enrichment.locationFrom, !locationFrom.isEmpty {
+                drafts[i].locationFrom = locationFrom
+            }
             if let locationTo = enrichment.locationTo, !locationTo.isEmpty {
                 drafts[i].locationTo = locationTo
+            }
+            if let locationFromAddress = enrichment.locationFromAddress, !locationFromAddress.isEmpty {
+                drafts[i].locationFromAddress = locationFromAddress
             }
             if let locationToAddress = enrichment.locationToAddress, !locationToAddress.isEmpty {
                 drafts[i].locationToAddress = locationToAddress
@@ -318,6 +333,8 @@ public final class SyncStore {
                 ?? drafts[i].flightDepartureOffsetSeconds
             drafts[i].flightArrivalOffsetSeconds = enrichment.flightArrivalOffsetSeconds
                 ?? drafts[i].flightArrivalOffsetSeconds
+            drafts[i].operatorName = enrichment.operatorName ?? drafts[i].operatorName
+            drafts[i].isAllDay = enrichment.isAllDay ?? drafts[i].isAllDay
         }
     }
 
@@ -649,6 +666,7 @@ public final class SyncStore {
         guard !incoming.isEmpty else { return }
         target.roomItems = incoming
     }
+
 }
 
 public enum SyncLog {

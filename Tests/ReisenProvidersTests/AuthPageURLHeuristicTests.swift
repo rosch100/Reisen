@@ -75,3 +75,21 @@ import ReisenProviders
     #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill("https://www.opodo.de/travel/secure/"))
     #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill("https://kundenbereich.check24.de/account/activities"))
 }
+
+@Test func appleAccountHostIsNotSessionReady() {
+    let url = "https://account.apple.com/account/manage"
+    #expect(!AuthPageURLHeuristic.looksLikeAccountPage(url))
+    #expect(!AuthPageURLHeuristic.shouldApplyPasswordAutofill(url))
+}
+
+@Test func appleIdAuthIsLoginButNoPasswordAutofill() {
+    let url = "https://appleid.apple.com/auth/authorize?client_id=x"
+    #expect(AuthPageURLHeuristic.looksLikeLoginPage(url))
+    #expect(!AuthPageURLHeuristic.shouldApplyPasswordAutofill(url))
+    #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(url))
+}
+
+@Test func travelokaMyBookingIsAccountPage() {
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage("https://www.traveloka.com/en-en/user/mybooking"))
+    #expect(AuthPageURLHeuristic.looksLikeLoginPage("https://www.traveloka.com/en-en/user/signin"))
+}

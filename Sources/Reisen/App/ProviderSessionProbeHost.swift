@@ -21,6 +21,8 @@ struct ProviderSessionProbeHost: View {
     private var bookingEnabled: Bool
     @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .airbnb))
     private var airbnbEnabled: Bool
+    @AppStorage(wrappedValue: true, AppSettingsKeys.providerEnabledKey(for: .traveloka))
+    private var travelokaEnabled: Bool
 
     @Environment(\.providerSessionHub) private var hub
     @Environment(\.providerRegistry) private var providerRegistry
@@ -34,6 +36,7 @@ struct ProviderSessionProbeHost: View {
         if opodoEnabled { ids.append(.opodo) }
         if bookingEnabled { ids.append(.booking) }
         if airbnbEnabled { ids.append(.airbnb) }
+        if travelokaEnabled { ids.append(.traveloka) }
         return ids
     }
 

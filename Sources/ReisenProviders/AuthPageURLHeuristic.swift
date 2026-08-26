@@ -17,7 +17,10 @@ public enum AuthPageURLHeuristic {
     }
 
     public static func looksLikeAccountPage(_ absoluteURL: String) -> Bool {
-        AuthPageURLHaystack.containsAnyMarker(
+        if AuthIdentityProviderHost.matches(urlAbsoluteString: absoluteURL) {
+            return false
+        }
+        return AuthPageURLHaystack.containsAnyMarker(
             AuthPageURLHaystack.classificationHaystack(for: absoluteURL),
             AuthPageURLMarkers.account
         )
@@ -25,6 +28,17 @@ public enum AuthPageURLHeuristic {
 
     /// Prefer applying OTP AutoFill whenever navigation may show an auth challenge.
     public static func shouldApplyOneTimeCodeAutofill(_ absoluteURL: String) -> Bool {
-        looksLikeLoginPage(absoluteURL) || looksLikeOneTimeCodeChallenge(absoluteURL)
+        if AuthIdentityProviderHost.matches(urlAbsoluteString: absoluteURL) {
+            return false
+        }
+        return looksLikeLoginPage(absoluteURL) || looksLikeOneTimeCodeChallenge(absoluteURL)
+    }
+
+    /// Keychain password autofill only on non-IdP pages (Sign in with Apple/Google must stay untouched).
+    public static func shouldApplyPasswordAutofill(_ absoluteURL: String) -> Bool {
+        if AuthIdentityProviderHost.matches(urlAbsoluteString: absoluteURL) {
+            return false
+        }
+        return looksLikeLoginPage(absoluteURL)
     }
 }

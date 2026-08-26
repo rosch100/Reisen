@@ -649,7 +649,7 @@ private struct ProviderWebView: NSViewRepresentable {
         func applyLoginAssistance(in webView: WKWebView) {
             guard let url = webView.url else { return }
             let absolute = url.absoluteString.lowercased()
-            let isLogin = AuthPageURLHeuristic.looksLikeLoginPage(absolute)
+            let isLogin = AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute)
             // #region agent log
             assistanceApplyCount += 1
             AgentDebugLog.write(
@@ -792,6 +792,8 @@ private struct ProviderWebView: NSViewRepresentable {
             case .shouldProbeOpodo:
                 // Homepage nach Login: weder Login- noch Account-URL → GraphQL-Probe.
                 scheduleOpodoSessionProbe(in: webView)
+            case .shouldProbeTraveloka:
+                scheduleTravelokaSessionProbe(in: webView)
             case .unknown:
                 break
             }
@@ -803,8 +805,8 @@ private struct ProviderWebView: NSViewRepresentable {
             }
 
             // OTP-Hints nicht auf Account-Seiten — nur Login/OTP-Challenge.
-            let wantsOTP = AuthPageURLHeuristic.looksLikeOneTimeCodeChallenge(absolute)
-                || (looksLikeLogin && !loginAssistanceSuspended)
+            let wantsOTP = AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(absolute)
+                && !loginAssistanceSuspended
             if wantsOTP {
                 OneTimeCodeAutofill.apply(in: webView)
             }
@@ -869,6 +871,52 @@ private struct ProviderWebView: NSViewRepresentable {
                         data: ["error": error.localizedDescription]
                     )
                     // #endregion
+                }
+            }
+        }
+
+        @MainActor
+        private func scheduleTravelokaSessionProbe(in webView: WKWebView) {
+            sessionProbeWorkItem?.cancel()
+            let work = DispatchWorkItem { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                self.runTravelokaSessionProbe(in: webView)
+            }
+            sessionProbeWorkItem = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
+        }
+
+        @MainActor
+        private func runTravelokaSessionProbe(in webView: WKWebView) {
+            guard let url = webView.url, TravelokaSessionProbe.applies(to: url) else { return }
+            let absolute = url.absoluteString.lowercased()
+            if AuthPageURLHeuristic.looksLikeAccountPage(absolute),
+               !AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
+                return
+            }
+
+            Task { @MainActor [weak self, weak webView] in
+                guard let self, let webView else { return }
+                do {
+                    let context = await webView.travelokaSessionContext()
+                    let text = try await webView.fetchAuthenticatedText(
+                        url: TravelokaSessionProbe.whoamiURL,
+                        method: "POST",
+                        accept: "application/json",
+                        referer: TravelokaSessionProbe.signInReferer,
+                        contentType: "application/json",
+                        body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
+                        headers: TravelokaSessionProbe.whoamiHeaders(context: context)
+                    )
+                    let loggedIn = TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text)
+                    if loggedIn == true {
+                        self.sessionStatus.wrappedValue = .sessionReady
+                        self.suspendLoginAssistance()
+                    } else if loggedIn == false {
+                        self.sessionStatus.wrappedValue = .needsLogin
+                    }
+                } catch {
+                    // Probe-Fehler: Status unverändert lassen (kein stiller Fallback).
                 }
             }
         }

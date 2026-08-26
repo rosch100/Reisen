@@ -1,0 +1,52 @@
+{
+  "data": {
+    "status": "SUCCESS",
+    "itineraryEntryList": [
+      {
+        "bookingId": "1387355867",
+        "itineraryId": "1387355867",
+        "itineraryType": "VEHICLE_RENTAL",
+        "itineraryTags": [
+          {
+            "text": "Voucher issued",
+            "status": "STATUS_OK"
+          }
+        ],
+        "paymentInfo": {
+          "userTripStatus": "ETICKET_PUBLISHED"
+        },
+        "cardSummaryInfo": {
+          "commonSummary": {
+            "tripType": "VEHICLE_RENTAL",
+            "itineraryTimestampBegin": "1790744400000",
+            "ianaTimezoneBegin": "Asia/Jakarta",
+            "itineraryTimestampEnd": "1790748000000",
+            "ianaTimezoneEnd": "Asia/Jakarta",
+            "sectionType": "ACTIVE_BOOKING",
+            "productName": "Car Rental"
+          },
+          "vehicleRentalSummaryInfo": {
+            "vehicleName": "Daihatsu Sigra",
+            "transmission": "Automatic",
+            "providerName": "Jayamahe Easy Ride Jakarta",
+            "pickUpAddress": "Pool Area Bandara Soekarno-Hatta",
+            "dropOffAddress": "Pool Area Bandara Soekarno-Hatta"
+          }
+        },
+        "cardDetailInfo": {
+          "vehicleRentalDetailInfo": {
+            "vehicleName": "Daihatsu Sigra",
+            "transmission": "Automatic",
+            "providerName": "Jayamahe Easy Ride Jakarta",
+            "pickUpAddress": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+            "dropOffAddress": "Pool Area Bandara Soekarno-Hatta, Jakarta",
+            "driverName": null,
+            "travelerName": "REDACTED",
+            "isRefundable": true,
+            "freeCancellationDeadlineLocal": "2026-09-06T08:59:00"
+          }
+        }
+      }
+    ]
+  }
+}
