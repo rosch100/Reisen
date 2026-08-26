@@ -681,6 +681,7 @@ public final class SyncStore {
         guard !incoming.isEmpty else { return }
         target.roomItems = incoming
     }
+
 }
 
 public enum SyncLog {

@@ -28,6 +28,8 @@ extension SwiftDataBookingFieldApply {
         model.locationTo = booking.locationTo
         model.locationFromAddress = booking.locationFromAddress
         model.locationToAddress = booking.locationToAddress
+        model.operatorName = booking.operatorName
+        model.isAllDay = booking.isAllDay
     }
 
     static func applyMeta(_ booking: Booking, to model: SDBooking) {

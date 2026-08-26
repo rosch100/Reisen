@@ -647,7 +647,7 @@ private struct ProviderWebView: NSViewRepresentable {
         func applyLoginAssistance(in webView: WKWebView) {
             guard let url = webView.url else { return }
             let absolute = url.absoluteString.lowercased()
-            let isLogin = AuthPageURLHeuristic.looksLikeLoginPage(absolute)
+            let isLogin = AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute)
             // #region agent log
             assistanceApplyCount += 1
             AgentDebugLog.write(
@@ -803,8 +803,8 @@ private struct ProviderWebView: NSViewRepresentable {
             }
 
             // OTP-Hints nicht auf Account-Seiten — nur Login/OTP-Challenge.
-            let wantsOTP = AuthPageURLHeuristic.looksLikeOneTimeCodeChallenge(absolute)
-                || (looksLikeLogin && !loginAssistanceSuspended)
+            let wantsOTP = AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(absolute)
+                && !loginAssistanceSuspended
             if wantsOTP {
                 OneTimeCodeAutofill.apply(in: webView)
             }

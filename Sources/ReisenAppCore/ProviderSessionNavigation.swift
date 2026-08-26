@@ -32,9 +32,6 @@ public enum ProviderSessionNavigation {
                 hub.updateStatus(providerID, status: .needsLogin)
             }
         case .shouldProbeOpodo:
-            if hub.status(for: providerID) != .sessionReady {
-                hub.updateStatus(providerID, status: .needsLogin)
-            }
             Task {
                 do {
                     let text = try await webView.fetchAuthenticatedText(
@@ -47,15 +44,42 @@ public enum ProviderSessionNavigation {
                     )
                     if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text) {
                         await MainActor.run {
-                            if let enabledProviderIDs {
-                                hub.syncEnabledProviders(enabledProviderIDs)
-                            }
-                            if loggedIn {
-                                hub.updateStatus(providerID, status: .sessionReady)
-                            } else if hub.status(for: providerID) != .sessionReady {
-                                hub.updateStatus(providerID, status: .needsLogin)
-                            }
-                            onChanged()
+                            applyProbeResult(
+                                loggedIn: loggedIn,
+                                providerID: providerID,
+                                hub: hub,
+                                enabledProviderIDs: enabledProviderIDs,
+                                onChanged: onChanged
+                            )
+                        }
+                    }
+                } catch {
+                    // Probe fehlgeschlagen: Status bleibt konservativ.
+                }
+            }
+        case .shouldProbeTraveloka:
+            Task {
+                do {
+                    let context = await webView.travelokaSessionContext()
+                    guard context.hasSentinel else { return }
+                    let text = try await webView.fetchAuthenticatedText(
+                        url: TravelokaSessionProbe.whoamiURL,
+                        method: "POST",
+                        accept: "application/json",
+                        referer: TravelokaSessionProbe.signInReferer(routePrefix: context.routePrefix),
+                        contentType: "application/json",
+                        body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
+                        headers: TravelokaSessionProbe.whoamiHeaders(context: context)
+                    )
+                    if let loggedIn = TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text) {
+                        await MainActor.run {
+                            applyProbeResult(
+                                loggedIn: loggedIn,
+                                providerID: providerID,
+                                hub: hub,
+                                enabledProviderIDs: enabledProviderIDs,
+                                onChanged: onChanged
+                            )
                         }
                     }
                 } catch {
@@ -99,5 +123,23 @@ public enum ProviderSessionNavigation {
         if notifyAlways || previousReady != nowReady || nowReady {
             onChanged()
         }
+    }
+
+    private static func applyProbeResult(
+        loggedIn: Bool,
+        providerID: ProviderID,
+        hub: ProviderSessionHub,
+        enabledProviderIDs: Set<ProviderID>?,
+        onChanged: @escaping () -> Void
+    ) {
+        if let enabledProviderIDs {
+            hub.syncEnabledProviders(enabledProviderIDs)
+        }
+        if loggedIn {
+            hub.updateStatus(providerID, status: .sessionReady)
+        } else if hub.status(for: providerID) != .sessionReady {
+            hub.updateStatus(providerID, status: .needsLogin)
+        }
+        onChanged()
     }
 }

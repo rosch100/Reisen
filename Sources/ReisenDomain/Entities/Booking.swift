@@ -21,6 +21,10 @@ public struct Booking: Identifiable, Equatable, Sendable {
     public var locationTo: String?
     public var locationFromAddress: String?
     public var locationToAddress: String?
+    /// Experience-Partner / Car-Rental-Provider (SSOT Display).
+    public var operatorName: String?
+    /// Ganztägiges Erlebnis / All-Day-Slot (z. B. Traveloka TIME SLOT).
+    public var isAllDay: Bool?
     public var status: BookingStatus
     public var lastSyncedAt: Date?
     public var rawPayloadFingerprint: String?
@@ -50,6 +54,8 @@ public struct Booking: Identifiable, Equatable, Sendable {
         locationTo: String? = nil,
         locationFromAddress: String? = nil,
         locationToAddress: String? = nil,
+        operatorName: String? = nil,
+        isAllDay: Bool? = nil,
         status: BookingStatus = .unknown,
         lastSyncedAt: Date? = nil,
         rawPayloadFingerprint: String? = nil,
@@ -78,6 +84,8 @@ public struct Booking: Identifiable, Equatable, Sendable {
         self.locationTo = locationTo
         self.locationFromAddress = locationFromAddress
         self.locationToAddress = locationToAddress
+        self.operatorName = operatorName
+        self.isAllDay = isAllDay
         self.status = status
         self.lastSyncedAt = lastSyncedAt
         self.rawPayloadFingerprint = rawPayloadFingerprint

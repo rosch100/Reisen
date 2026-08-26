@@ -17,6 +17,9 @@ DerivedData/
 HAR/
 *.har
 
+# LLVM coverage profiles (local test runs)
+*.profraw
+
 # iOS / XcodeGen / SweetPad (generated)
 *.xcodeproj/
 *.xcworkspace/
