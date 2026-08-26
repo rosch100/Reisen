@@ -31,9 +31,30 @@ import Testing
     #expect(context.apiReferer() == detail.absoluteString)
 }
 
+@Test func travelokaSessionContextApiRefererNormalizesHomepage() {
+    let home = URL(string: "https://www.traveloka.com/")!
+    var context = TravelokaSessionContext.from(cookies: [])
+    context.applyNavigationHints(from: [home])
+    #expect(context.apiReferer() == "https://www.traveloka.com/en-en")
+}
+
+@Test func travelokaSessionContextApiRefererNormalizesPathWithoutLocalePrefix() {
+    let url = URL(string: "https://www.traveloka.com/explore/sample")!
+    var context = TravelokaSessionContext.from(cookies: [])
+    context.applyNavigationHints(from: [url])
+    #expect(context.apiReferer() == "https://www.traveloka.com/en-en/explore/sample")
+}
+
+@Test func travelokaSessionContextApiRefererNormalizesLocalizedDetailPage() {
+    let detail = URL(string: "https://www.traveloka.com/id-id/item/details/1?type=HOTEL&id=2")!
+    var context = TravelokaSessionContext.from(cookies: [])
+    context.applyNavigationHints(from: [detail])
+    #expect(context.apiReferer() == "https://www.traveloka.com/en-en/item/details/1?type=HOTEL&id=2")
+}
+
 @Test func travelokaSessionContextApiRefererPrefersCurrentUserPage() {
     let detail = URL(string: "https://www.traveloka.com/en-en/item/details/1?type=HOTEL&id=2")!
-    let context = TravelokaSessionContext(routePrefix: "en-en", bestPageURL: detail)
+    let context = TravelokaSessionContext(bestPageURL: detail)
     #expect(context.apiReferer() == detail.absoluteString)
 }
 

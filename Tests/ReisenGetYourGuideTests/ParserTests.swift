@@ -5,7 +5,7 @@ import ReisenDomain
 
 @Test("GetYourGuideMyBookingsParser mappt upcomingBookings zu .activity Drafts")
 func gygMyBookingsParsesUpcomingActivityDrafts() throws {
-    let json = try researchFixture("gyg_myBookings_redacted.json")
+    let json = try GetYourGuideResearchFixture.json(named: "gyg_myBookings_redacted.json")
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
 
     #expect(catalog.bookings.count == 1)
@@ -33,7 +33,7 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
 
 @Test("GetYourGuideBookingSummaryParser mappt Treffpunkt, Fristen und Teilnehmer ohne PII-Namen")
 func gygBookingSummaryParsesEnrichment() throws {
-    let json = try researchFixture("gyg_bookingSummary_redacted.json")
+    let json = try GetYourGuideResearchFixture.json(named: "gyg_bookingSummary_redacted.json")
     let enrichment = try GetYourGuideBookingSummaryParser.parse(from: json)
 
     #expect(enrichment.status == .confirmed)
@@ -77,16 +77,6 @@ func gygInitialStateExtractsBalancedJSON() throws {
     let nested = #"{"a":{"b":"}"},"c":1}"#
     let nestedHTML = "prefix __INITIAL_STATE__ = \(nested) // trailing"
     #expect(GetYourGuideInitialState.extractJSONObject(fromHTML: nestedHTML) == nested)
-}
-
-private func researchFixture(_ name: String) throws -> String {
-    let url = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent() // Tests/ReisenGetYourGuideTests
-        .deletingLastPathComponent() // Tests
-        .deletingLastPathComponent() // repo root
-        .appendingPathComponent("docs/fixtures/provider-research")
-        .appendingPathComponent(name)
-    return try String(contentsOf: url, encoding: .utf8)
 }
 
 private func iso8601(_ value: String) -> Date {

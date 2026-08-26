@@ -158,6 +158,36 @@ private func iso8601(_ value: String) -> Date {
     return fmt.date(from: value)!
 }
 
+@Test("AirbnbScheduledEventsCancellation klassifiziert Free/Non-Refund ohne Substring-Falschtreffer")
+func airbnbScheduledEventsCancellationClassifiesPrecisely() {
+    let ambiguous = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "partially refundable",
+        refundTerm: "Includes full terms in footer",
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(ambiguous) == nil)
+
+    let fullRefund = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "Full refund",
+        refundTerm: nil,
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(fullRefund) == true)
+
+    let freeToken = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "free",
+        refundTerm: nil,
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(freeToken) == true)
+}
+
 private func dateInTimeZone(
     year: Int,
     month: Int,

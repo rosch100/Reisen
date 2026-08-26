@@ -129,20 +129,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             return ProviderBookingEnrichment(deadlines: [], status: .cancelled)
         }
 
-        // HTML: Storno-Erkennung + Fallback für Fristen (HAR-SSOT bleibt GraphQL).
-        let (htmlDeadlines, htmlResolvedStatus) = try await resolveHtmlDeadlinesIfNeeded(
-            graphqlDeadlines: graphqlDeadlines,
-            webView: webView,
-            externalUrl: externalUrl
-        )
-        if htmlResolvedStatus == .cancelled {
-            return ProviderBookingEnrichment(deadlines: [], status: .cancelled)
-        }
-
-        let deadlines = selectHotelDeadlines(
-            graphqlDeadlines: graphqlDeadlines,
-            htmlDeadlines: htmlDeadlines
-        )
+        let deadlines = selectGraphQLHotelDeadlines(graphqlDeadlines)
 
         let hotelOffsetSeconds: Int? = deadlines.compactMap(\.hotelOffsetSeconds).first ?? 0
         let pageText = try await loadTripDetailsPageText(in: webView, externalURL: externalUrl)
@@ -182,48 +169,25 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
                 let parsed = try OpodoTripCancellationGraphQLParser().parse(from: json)
                 graphqlDeadlines = parsed.deadlines
                 resolvedStatus = parsed.status
+            } catch let error as OpodoProviderError {
+                throw error
+            } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+                throw OpodoProviderError.sessionNotEstablished
             } catch {
-                onProgress?("GraphQL-Storno fehlgeschlagen, nutze HTML…")
+                // GraphQL SSOT für Storno; Guest-Hints werden separat aus Trip-Details geladen.
+                return ([], nil)
             }
         }
 
         return (graphqlDeadlines, resolvedStatus)
     }
 
-    private func resolveHtmlDeadlinesIfNeeded(
-        graphqlDeadlines: [CancellationDeadline],
-        webView: WKWebView,
-        externalUrl: String
-    ) async throws -> ([CancellationDeadline], BookingStatus?) {
-        guard graphqlDeadlines.isEmpty else { return ([], nil) }
-
-        onProgress?("Lade Trip-Details (WebView)…")
-        let pageText = try await loadTripDetailsPageText(in: webView, externalURL: externalUrl)
-        if OpodoTripCancellationGraphQLParser.looksCancelled(inPageText: pageText) {
-            return ([], .cancelled)
-        }
-        return (OpodoCancellationDeadlineParser().parseDeadlines(from: pageText), nil)
-    }
-
-    private func selectHotelDeadlines(
-        graphqlDeadlines: [CancellationDeadline],
-        htmlDeadlines: [CancellationDeadline]
-    ) -> [CancellationDeadline] {
+    private func selectGraphQLHotelDeadlines(_ graphqlDeadlines: [CancellationDeadline]) -> [CancellationDeadline] {
         let latestFree = graphqlDeadlines
             .filter(\.isFreeCancellation)
             .max(by: { $0.deadlineAt < $1.deadlineAt })
         if let latestFree { return [latestFree] }
-
-        let stornoLines = htmlDeadlines.filter(\.isFreeCancellation)
-        if !stornoLines.isEmpty { return stornoLines }
-
-        let bestLongDate = htmlDeadlines
-            .filter { Self.looksLikeLongDatePolicy($0) }
-            .max(by: { $0.deadlineAt < $1.deadlineAt })
-        if let bestLongDate { return [bestLongDate] }
-
-        if !graphqlDeadlines.isEmpty { return graphqlDeadlines }
-        return htmlDeadlines
+        return graphqlDeadlines
     }
 
     /// Opodo My-Trips ist eine Hash-SPA unter `/travel/secure/`.
@@ -254,11 +218,8 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             try? await Task.sleep(nanoseconds: 500_000_000)
             guard let text = try await snapshotPageText(in: webView) else { continue }
             last = text
-            if text.localizedCaseInsensitiveContains(OpodoCancellationPolicyLabel.policy)
-                || text.localizedCaseInsensitiveContains("cancellation policy") {
-                return text
-            }
-            if text.range(of: #"\d{4}-\d{2}-\d{2}"#, options: .regularExpression) != nil {
+            if text.count >= 120
+                || text.range(of: #"\d{4}-\d{2}-\d{2}"#, options: .regularExpression) != nil {
                 return text
             }
         }
@@ -272,14 +233,6 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         })()
         """
         return try await webView.evaluateJavaScriptStringAsync(js)
-    }
-
-    private static func looksLikeLongDatePolicy(_ deadline: CancellationDeadline) -> Bool {
-        let text = deadline.policyText ?? ""
-        return text.range(
-            of: #"\d{1,2}\.?\s*[A-Za-zÄÖÜäöü]+\s+\d{4}"#,
-            options: .regularExpression
-        ) != nil
     }
 
     private static let secureURL = URL(string: "https://www.opodo.de/travel/secure/")!

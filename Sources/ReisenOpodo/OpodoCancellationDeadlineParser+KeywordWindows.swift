@@ -12,12 +12,6 @@ extension OpodoCancellationDeadlineParser {
             "cancelation",
             "until",
             "cancel",
-            "storno",
-            "stornieren",
-            "stornierbar",
-            "stornierungsrichtlinie",
-            "kostenlos",
-            "bis",
         ]
 
         var deadlines: [CancellationDeadline] = []

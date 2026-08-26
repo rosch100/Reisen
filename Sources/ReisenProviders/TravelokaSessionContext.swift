@@ -6,9 +6,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
     public var mccId: String?
     public var clientSessionId: String?
     public var sentinelToken: String?
-    public var routePrefix: String?
-    public var language: String?
-    public var country: String?
     public var currency: String?
     /// Nutzerseite für API-Referer (HAR: aktuelle Seite, nicht immer mybooking).
     public var bestPageURL: URL?
@@ -18,9 +15,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         mccId: String? = nil,
         clientSessionId: String? = nil,
         sentinelToken: String? = nil,
-        routePrefix: String? = nil,
-        language: String? = nil,
-        country: String? = nil,
         currency: String? = nil,
         bestPageURL: URL? = nil
     ) {
@@ -28,9 +22,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         self.mccId = mccId
         self.clientSessionId = clientSessionId
         self.sentinelToken = sentinelToken
-        self.routePrefix = routePrefix
-        self.language = language
-        self.country = country
         self.currency = currency
         self.bestPageURL = bestPageURL
     }
@@ -66,9 +57,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         var mccId: String?
         var clientSessionId: String?
         var sentinelToken: String?
-        var routePrefix: String?
-        var language: String?
-        var country: String?
         var currency: String?
         for cookie in cookies {
             switch cookie.name {
@@ -97,9 +85,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
             mccId: mccId,
             clientSessionId: clientSessionId,
             sentinelToken: sentinelToken,
-            routePrefix: routePrefix,
-            language: language,
-            country: country,
             currency: currency
         )
     }
@@ -154,14 +139,30 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         mergingDeviceIdFromStorageScan(scan.deviceId)
     }
 
-    public mutating func finalizeRoutePrefix() {}
-
     /// Referer für Traveloka-API-POSTs (HAR: aktuelle Nutzerseite, sonst mybooking).
+    /// Locale-Prefix wird auf `resolvedRoutePrefix` normalisiert (Header/Referer-Konsistenz).
     public func apiReferer() -> String {
         if let bestPageURL, Self.isUserFacingPage(bestPageURL) {
-            return bestPageURL.absoluteString
+            return Self.canonicalUserPageURL(bestPageURL).absoluteString
         }
         return "\(TravelokaWebConstants.origin)/\(resolvedRoutePrefix)/user/mybooking"
+    }
+
+    static func canonicalUserPageURL(_ url: URL) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return url
+        }
+        var parts = components.path
+            .split(separator: "/")
+            .map(String.init)
+            .filter { !$0.isEmpty }
+        if let first = parts.first, TravelokaRoutePrefix.isValid(first) {
+            parts[0] = TravelokaWebConstants.routePrefix
+        } else {
+            parts.insert(TravelokaWebConstants.routePrefix, at: 0)
+        }
+        components.path = "/" + parts.joined(separator: "/")
+        return components.url ?? url
     }
 
     public static func isUserFacingPage(_ url: URL) -> Bool {

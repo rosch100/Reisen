@@ -116,6 +116,32 @@ func bookingComCancellationParserParsesHarConfirmationFeeSchedule() throws {
     #expect(paidComps.minute == 0)
 }
 
+@Test("BookingComCancellationDeadlineParser parst EN Fee-Schedule (until/from + Langdatum)")
+func bookingComCancellationParserParsesEnglishFeeSchedule() throws {
+    let html = """
+    <html><body>
+      <div class="e2e-conf-cancellation-cost">
+        <ul class="e2e-cancellation-breakdown">
+          <li>until 10 August 2026 23:59 property's local time: &euro;&nbsp;0</li>
+          <li>from 11 August 2026 00:00 property's local time: &euro;&nbsp;121.64</li>
+        </ul>
+      </div>
+    </body></html>
+    """
+    let offset = 2 * 3600
+    let deadlines = BookingComCancellationDeadlineParser().parseDeadlines(
+        from: html,
+        hotelOffsetSeconds: offset
+    )
+    #expect(deadlines.count == 2)
+    let free = try #require(deadlines.first { $0.cancellationFeeAmount == 0 })
+    let paid = try #require(deadlines.first { $0.cancellationFeeAmount == 121.64 })
+    #expect(free.isFreeCancellation)
+    #expect(!paid.isFreeCancellation)
+    #expect(free.policyText?.localizedCaseInsensitiveContains("until 10 August 2026 23:59") == true)
+    #expect(paid.policyText?.localizedCaseInsensitiveContains("from 11 August 2026 00:00") == true)
+}
+
 @Test("BookingComCancellationDeadlineParser parst numerisches dd.MM.yyyy Fee-Schedule")
 func bookingComCancellationParserParsesNumericFeeSchedule() throws {
     let html = """

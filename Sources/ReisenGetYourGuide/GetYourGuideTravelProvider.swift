@@ -25,7 +25,7 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
         let html = try await webView.fetchAuthenticatedText(
             url: GetYourGuideWebConstants.catalogSyncURL,
             accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            referer: loginURL.absoluteString
+            referer: GetYourGuideWebConstants.catalogSyncURL.absoluteString
         )
 
         guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {
@@ -51,7 +51,7 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
         let html = try await webView.fetchAuthenticatedText(
             url: url,
             accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            referer: loginURL.absoluteString
+            referer: url.absoluteString
         )
 
         guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {

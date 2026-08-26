@@ -16,7 +16,6 @@ extension WKWebView {
             let scannedJSON = try? await evaluateJavaScriptStringAsync(TravelokaStorageScan.webViewScript)
             context.applyStorageScan(TravelokaStorageScan.parse(json: scannedJSON))
         }
-        context.finalizeRoutePrefix()
         return context
     }
 
