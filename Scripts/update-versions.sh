@@ -13,11 +13,13 @@ usage() {
   cat <<'EOF'
 Usage: Scripts/update-versions.sh [--verify] [--no-update-swift-tools-version]
 
-Updates version pins in:
-  - .github/workflows/*.yml (GitHub Actions pinned SHAs)
-  - actionlint download URL (vX.Y.Z)
-  - setup-xcode xcode-version (latest stable for macos-XX)
+Updates toolchain/version pins not covered by Dependabot:
+  - actionlint download URL (commit SHA in installer script)
+  - setup-xcode xcode-version (latest-stable)
   - Package.swift swift-tools-version (optional)
+  - GITLEAKS_VERSION in gitleaks.yml
+
+GitHub Action SHA pins are updated by Dependabot (see .github/dependabot.yml).
 EOF
 }
 
@@ -35,64 +37,51 @@ require_cmd() {
 }
 
 require_cmd gh
-require_cmd jq
-require_cmd curl
 require_cmd perl
-
-file_contains() {
-  # Portable replacement for `rg -q` (ripgrep is not preinstalled on macOS runners).
-  grep -Fq "$2" "$1"
-}
 
 tmpdir="$(mktemp -d)"
 cleanup() { rm -rf "$tmpdir"; }
 trap cleanup EXIT
 
-get_latest_release_tag() {
-  # $1 = owner/repo
+# $1 = file path, $2 = sed -E expression
+replace_in_file() {
+  local file="$1"
+  local expr="$2"
+  local tmp="$tmpdir/$(basename "$file").$$.tmp"
+  sed -E "$expr" "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+latest_release_tag() {
   gh api "repos/$1/releases/latest" --jq .tag_name
 }
 
-get_release_tag_commit_sha() {
-  # $1 = owner/repo, $2 = tag_name
-  # Works for tags like "v1.7.12" and similar.
+release_tag_commit_sha() {
   gh api "repos/$1/commits/$2" --jq .sha
 }
 
-replace_uses_sha() {
-  # $1 = file, $2 = full action name without @ref (e.g. actions/checkout)
-  # $3 = sha to write
-  local file="$1"
-  local action="$2"
-  local sha="$3"
-
-  local tmp="$tmpdir/$(basename "$file").tmp"
-  # Replace only the ref part after @, keep comments.
-  sed -E "s|(uses: ${action}@)[^[:space:]]+|\\1${sha}|g" "$file" > "$tmp"
-  mv "$tmp" "$file"
-}
-
-replace_codeql_uses_sha() {
-  # $1 = file, $2 = action variant (init|analyze|upload-sarif), $3 = sha
-  local file="$1"
-  local variant="$2"
-  local sha="$3"
-  local tmp="$tmpdir/$(basename "$file").tmp"
-  sed -E "s|(uses: github/codeql-action/${variant}@)[^[:space:]]+|\\1${sha}|g" "$file" > "$tmp"
-  mv "$tmp" "$file"
-}
-
 replace_actionlint_download() {
-  # Updates: https://raw.githubusercontent.com/rhysd/actionlint/<ref>/scripts/download-actionlint.bash
   local file=".github/workflows/actionlint.yml"
   local tag sha
-  tag="$(get_latest_release_tag "rhysd/actionlint")"
-  sha="$(get_release_tag_commit_sha "rhysd/actionlint" "$tag")"
+  tag="$(latest_release_tag "rhysd/actionlint")"
+  sha="$(release_tag_commit_sha "rhysd/actionlint" "$tag")"
+  replace_in_file "$file" \
+    "s#https://raw\\.githubusercontent\\.com/rhysd/actionlint/[^/]+/scripts/download-actionlint\\.bash#https://raw.githubusercontent.com/rhysd/actionlint/${sha}/scripts/download-actionlint.bash#g"
+}
 
-  local tmp="$tmpdir/actionlint.yml.tmp"
-  sed -E "s#https://raw\\.githubusercontent\\.com/rhysd/actionlint/[^/]+/scripts/download-actionlint\\.bash#https://raw.githubusercontent.com/rhysd/actionlint/${sha}/scripts/download-actionlint.bash#g" \
-    "$file" > "$tmp"
-  mv "$tmp" "$file"
+replace_gitleaks_version() {
+  local file=".github/workflows/gitleaks.yml"
+  local tag version
+  tag="$(latest_release_tag "gitleaks/gitleaks")"
+  version="${tag#v}"
+
+  if [[ -z "$version" ]]; then
+    echo "Unable to detect latest gitleaks version from tag: $tag" >&2
+    exit 1
+  fi
+
+  replace_in_file "$file" \
+    "s/(GITLEAKS_VERSION:[[:space:]]*)[0-9]+\\.[0-9]+\\.[0-9]+/\\1${version}/"
 }
 
 replace_swift_tools_version() {
@@ -101,7 +90,6 @@ replace_swift_tools_version() {
     return 0
   fi
 
-  # Extract installed Swift major.minor (drop patch component, e.g. 6.3.3 -> 6.3)
   local swift_raw swift_tools_version
   swift_raw="$(swift --version | awk '/Apple Swift version/ {print $4; exit}')"
   swift_tools_version="$(printf '%s' "$swift_raw" | awk -F. '{print $1 "." $2}')"
@@ -111,88 +99,47 @@ replace_swift_tools_version() {
     exit 1
   fi
 
-  # Validate that the derived value matches X.Y
   if ! [[ "$swift_tools_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
     echo "Derived swift-tools-version must match pattern X.Y, got: $swift_tools_version (raw: $swift_raw)" >&2
     exit 1
   fi
 
-  # Use perl here instead of sed because the sed expression can break on macOS
-  # when constructed via shell variables.
+  # perl: macOS sed struggles with this shell-variable substitution.
   perl -pi -e 's{^// swift-tools-version: [0-9]+\.[0-9]+(\.[0-9]+)?$}{// swift-tools-version: '"$swift_tools_version"'}' "$file"
 }
 
 update_xcode_versions_in_workflows() {
-  # Best practice: let setup-xcode select the newest stable Xcode for the runner image.
-  # This avoids fragile scraping of upstream markdown tables.
+  # Prefer setup-xcode latest-stable over fragile scraped Xcode numbers.
+  local wf
   for wf in .github/workflows/*.yml; do
-    if file_contains "$wf" "xcode-version:"; then
-      sed -E -i.bak \
-        "s/(xcode-version:[[:space:]]*)\"[0-9]+\\.[0-9.]+\"/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)'[0-9]+\\.[0-9.]+'/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)[0-9]+\\.[0-9.]+/\\1latest-stable/g" \
-        "$wf"
-      rm -f "${wf}.bak"
-    fi
+    replace_in_file "$wf" \
+      "s/(xcode-version:[[:space:]]*)\"[0-9]+\\.[0-9.]+\"/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)'[0-9]+\\.[0-9.]+'/\\1latest-stable/g; s/(xcode-version:[[:space:]]*)[0-9]+\\.[0-9.]+/\\1latest-stable/g"
   done
 }
 
-update_action_pins_in_workflows() {
-  # Allowlist: only update known actions that we pinned.
-  # Each entry: owner/repo => action name used in workflow (owner/repo or owner/repo/<subaction>).
+has_uncommitted_changes() {
+  ! git diff --quiet || ! git diff --cached --quiet
+}
 
-  local files=(.github/workflows/*.yml)
-
-  # Simple actions (no subaction path in the `uses:` line).
-  declare -A simple_actions=(
-    ["actions/checkout"]=""
-    ["actions/cache"]=""
-    ["maxim-lobanov/setup-xcode"]=""
-    ["fwal/setup-swift"]=""
-    ["ossf/scorecard-action"]=""
-    ["actions/dependency-review-action"]=""
-    ["gitleaks/gitleaks-action"]=""
-    ["softprops/action-gh-release"]=""
-  )
-
-  for action in "${!simple_actions[@]}"; do
-    local tag sha
-    tag="$(get_latest_release_tag "$action")"
-    sha="$(get_release_tag_commit_sha "$action" "$tag")"
-    for wf in "${files[@]}"; do
-      if file_contains "$wf" "uses: ${action}@"; then
-        replace_uses_sha "$wf" "$action" "$sha"
-      fi
-    done
-  done
-
-  # CodeQL subactions.
-  local codeql_owner_repo="github/codeql-action"
-  local variants=(init analyze upload-sarif)
-  local tag
-  tag="$(get_latest_release_tag "$codeql_owner_repo")"
-  local sha
-  sha="$(get_release_tag_commit_sha "$codeql_owner_repo" "$tag")"
-
-  for wf in "${files[@]}"; do
-    for variant in "${variants[@]}"; do
-      if file_contains "$wf" "uses: ${codeql_owner_repo}/${variant}@"; then
-        replace_codeql_uses_sha "$wf" "$variant" "$sha"
-      fi
-    done
-  done
+run_verification_if_needed() {
+  if [[ "$VERIFY" != "true" ]]; then
+    return 0
+  fi
+  if ! has_uncommitted_changes; then
+    echo "Skipping verification: no file changes after version update."
+    return 0
+  fi
+  echo "Running verification (files changed)..."
+  swift build --build-tests -v
+  bash ./Scripts/ci-test.sh
 }
 
 main() {
-  update_action_pins_in_workflows
   replace_actionlint_download
+  replace_gitleaks_version
   update_xcode_versions_in_workflows
   replace_swift_tools_version
-
-  if [[ "$VERIFY" == "true" ]]; then
-    echo "Running verification..."
-    swift build --build-tests -v
-    bash ./Scripts/ci-test.sh
-  fi
+  run_verification_if_needed
 }
 
 main
-
