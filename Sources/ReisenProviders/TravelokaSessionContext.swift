@@ -121,7 +121,7 @@ public struct TravelokaSessionContext: Equatable, Sendable {
     /// Höher = besserer API-Referer (lokalisierte Detail-/Account-Seiten vor Homepage).
     static func refererScore(for url: URL, hintIndex: Int) -> Int {
         var score = hintIndex
-        if let prefix = TravelokaRoutePrefix.extract(from: url) {
+        if TravelokaRoutePrefix.extract(from: url) != nil {
             score += 100
             let path = url.path.lowercased()
             if path.contains("/item/details/") {

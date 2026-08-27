@@ -23,7 +23,7 @@ public struct ProviderLoginDisclosureModifier: ViewModifier {
                 }
             }
             .alert(ProviderLoginDisclosure.title, isPresented: $showDisclosure) {
-                Button("Verstanden") {
+                Button(ProviderLoginDisclosure.acceptButtonTitle) {
                     ProviderLoginDisclosure.accept()
                     disclosureAccepted = true
                 }
