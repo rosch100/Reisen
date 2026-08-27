@@ -144,6 +144,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case actionClearIcloudAndLocal = "action.clear_icloud_and_local"
     case actionCreateTrip = "action.create_trip"
     case actionCreateTripFromBookings = "action.create_trip_from_bookings"
+    case actionCreateTripFromAllOpenBookings = "action.create_trip_from_all_open_bookings"
     case actionDeleteEllipsis = "action.delete_ellipsis"
     case actionDeleteLocalStores = "action.delete_local_stores"
     case actionDeleteTrip = "action.delete_trip"

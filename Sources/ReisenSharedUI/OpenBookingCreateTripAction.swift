@@ -41,6 +41,26 @@ public enum OpenBookingCreateTripAction {
         ) ?? ""
     }
 
+    /// Sets `seed` from every open unassigned booking in `bookings`.
+    @discardableResult
+    public static func assignSeedFromAll(
+        in bookings: [SDBooking],
+        seed seedBinding: Binding<TripCreateSeed?>,
+        showFailed: Binding<Bool>,
+        locale: Locale = .current,
+        calendar: Calendar = .current
+    ) -> Bool {
+        let openUnassigned = OpenBookingMatching.openUnassigned(in: bookings, calendar: calendar)
+        return assignSeed(
+            fromIDs: Set(openUnassigned.map(\.id)),
+            in: bookings,
+            seed: seedBinding,
+            showFailed: showFailed,
+            locale: locale,
+            calendar: calendar
+        )
+    }
+
     /// Sets `seed` or toggles `showFailed`; returns whether a seed was created.
     @discardableResult
     public static func assignSeed(

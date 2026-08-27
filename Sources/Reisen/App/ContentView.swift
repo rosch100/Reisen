@@ -411,6 +411,19 @@ struct ContentView: View {
                     }
                     .tag(SidebarSelection.openBookings)
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            selection = .openBookings
+                            selectedOpenBookingIDs = Set(openBookings.map(\.id))
+                            OpenBookingCreateTripAction.assignSeedFromAll(
+                                in: allBookings,
+                                seed: $tripCreateSeed,
+                                showFailed: $showCreateTripFromBookingsFailed
+                            )
+                        } label: {
+                            CreateTripFromAllOpenBookingsLabel(count: openBookings.count)
+                        }
+                    }
                 }
             }
 
@@ -772,52 +785,45 @@ struct ContentView: View {
         @Environment(\.modelContext) private var modelContext
         @State private var assignErrorMessage: String?
         @State private var showAssignError = false
+        @State private var isEditing = false
+        @State private var bookingEditorDraft: BookingEditorDraft?
+        @State private var pendingDeleteBookingID: UUID?
+        @State private var showDeleteConfirmation = false
+        @State private var showRemoveFromTripConfirmation = false
+
+        private var draftBinding: Binding<BookingEditorDraft>? {
+            guard bookingEditorDraft != nil else { return nil }
+            return Binding(
+                get: { bookingEditorDraft! },
+                set: { bookingEditorDraft = $0 }
+            )
+        }
+
+        private var lastSyncedBarHeight: CGFloat { BookingLastSyncedBar.barHeight }
 
         var body: some View {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(booking.displayTitle)
-                                .font(.headline)
-                                .textSelection(.enabled)
-                            Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+            Group {
+                if isEditing, let draftBinding {
+                    BookingEditorForm(
+                        title: L10n.string(.editorEditTitle),
+                        showsSyncOverwriteHint: booking.provider != .manual,
+                        draft: draftBinding,
+                        providerReadOnly: booking.provider != .manual,
+                        onCancel: {
+                            isEditing = false
+                            bookingEditorDraft = nil
+                        },
+                        onSave: {
+                            guard let draft = bookingEditorDraft else { return }
+                            try draft.apply(to: booking, in: modelContext)
+                            isEditing = false
+                            bookingEditorDraft = nil
                         }
-
-                        openBookingAssignmentSection
-
-                        if !booking.resolvedCancellationDeadlines.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(L10n.string(.tripStorno))
-                                    .font(.subheadline.weight(.semibold))
-                                BookingCancellationDeadlinesView(booking: booking)
-                            }
-                        } else {
-                            ContentUnavailableView(
-                                L10n.string(.tripNoCancellationInfo),
-                                systemImage: "info.circle",
-                                description: Text(L10n.string(.tripNoCancellationTerms))
-                            )
-                        }
-
-                        if !booking.resolvedGuestHints.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(GuestHintCategory.preTravelImportant.displayTitle)
-                                    .font(.subheadline.weight(.semibold))
-                                BookingGuestHintsView(booking: booking)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    )
+                } else {
+                    openBookingDetailScroll
                 }
             }
-            .scrollBounceBehavior(.basedOnSize)
             .alert(L10n.string(.tripAssignFailed), isPresented: $showAssignError) {
                 Button(L10n.string(.commonOk), role: .cancel) {}
             } message: {
@@ -825,6 +831,57 @@ struct ContentView: View {
                     Text(assignErrorMessage)
                 }
             }
+            .bookingTripConfirmDialogs(
+                showDeleteConfirmation: $showDeleteConfirmation,
+                showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
+                onConfirmDelete: deletePendingBooking,
+                onConfirmRemove: {},
+                onCancelDelete: { pendingDeleteBookingID = nil }
+            )
+        }
+
+        private var openBookingDetailScroll: some View {
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            BookingDetailContent(
+                                booking: booking,
+                                onEditBooking: {
+                                    isEditing = true
+                                    bookingEditorDraft = BookingEditorDraft.fromExisting(booking)
+                                },
+                                onRequestManualDeleteBooking: { bookingID in
+                                    pendingDeleteBookingID = bookingID
+                                    showDeleteConfirmation = true
+                                }
+                            )
+
+                            openBookingAssignmentSection
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .padding(.bottom, booking.lastSyncedAt == nil ? 0 : lastSyncedBarHeight)
+
+                if let synced = booking.lastSyncedAt {
+                    BookingLastSyncedBar(synced: synced)
+                        .frame(height: lastSyncedBarHeight)
+                }
+            }
+        }
+
+        private func deletePendingBooking() {
+            guard let bookingID = pendingDeleteBookingID else { return }
+            guard booking.id == bookingID else { return }
+            modelContext.delete(booking)
+            try? modelContext.save()
+            pendingDeleteBookingID = nil
         }
 
         @ViewBuilder
@@ -833,10 +890,7 @@ struct ContentView: View {
                 Text(L10n.string(.tripAssign))
                     .font(.subheadline.weight(.semibold))
 
-                if let trip = booking.trip {
-                    Text(L10n.format(.tripInTrip, trip.title))
-                        .foregroundStyle(.secondary)
-                } else if let matchingTrip {
+                if let matchingTrip {
                     Button(L10n.string(.actionAssignToTrip)) {
                         do {
                             booking.trip = matchingTrip
@@ -846,12 +900,13 @@ struct ContentView: View {
                             showAssignError = true
                         }
                     }
-                    .controlSize(.large)
+                    .buttonStyle(.link)
+                    .help(L10n.string(.tripAssignOpenBookingHelp))
                 } else {
                     Button(action: onCreateTrip) {
                         CreateTripFromBookingsLabel()
                     }
-                    .controlSize(.large)
+                    .buttonStyle(.link)
                 }
             }
         }

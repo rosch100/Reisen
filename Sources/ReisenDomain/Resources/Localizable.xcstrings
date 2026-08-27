@@ -145,6 +145,22 @@
         }
       }
     },
+    "action.create_trip_from_all_open_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Reise aus allen %lld offenen Buchungen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Trip from All %lld Open Bookings…"
+          }
+        }
+      }
+    },
     "action.delete_ellipsis": {
       "localizations": {
         "de": {

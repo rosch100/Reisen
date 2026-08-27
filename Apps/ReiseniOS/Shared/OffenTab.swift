@@ -158,6 +158,15 @@ struct OpenBookingsScreen: View {
                 : L10n.string(.tabOpen)
         )
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarTitleMenu {
+            if !isSelectingForTripCreate, !openBookings.isEmpty {
+                Button {
+                    presentCreateTripFromAllOpen()
+                } label: {
+                    CreateTripFromAllOpenBookingsLabel(count: openBookings.count)
+                }
+            }
+        }
         .toolbar {
             if isSelectingForTripCreate {
                 ToolbarItem(placement: .cancellationAction) {
@@ -210,6 +219,16 @@ struct OpenBookingsScreen: View {
         guard OpenBookingCreateTripAction.assignSeed(
             fromIDs: bookingIDs,
             in: openBookings,
+            seed: $tripCreateSeed,
+            showFailed: $showCreateTripFromBookingsFailed
+        ) else { return }
+        isSelectingForTripCreate = false
+        multiSelection = []
+    }
+
+    private func presentCreateTripFromAllOpen() {
+        guard OpenBookingCreateTripAction.assignSeedFromAll(
+            in: allBookings,
             seed: $tripCreateSeed,
             showFailed: $showCreateTripFromBookingsFailed
         ) else { return }

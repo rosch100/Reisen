@@ -214,11 +214,6 @@ struct BookingDetailIOS: View {
                     Text(endText)
                 }
                 .foregroundStyle(.secondary)
-
-                if let code = booking.confirmationCode, !code.isEmpty {
-                    Text(L10n.format(.bookingDetailConfirmation, code))
-                        .foregroundStyle(.secondary)
-                }
             }
         }
     }

@@ -197,6 +197,14 @@ let package = Package(
             ]
         ),
         .testTarget(
+            name: "ReisenSharedUITests",
+            dependencies: ["ReisenSharedUI", "ReisenData", "ReisenDomain"],
+            path: "Tests/ReisenSharedUITests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
             name: "ReisenCheck24Tests",
             dependencies: ["ReisenCheck24", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenCheck24Tests",
