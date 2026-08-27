@@ -8,6 +8,15 @@ public enum PrivacySettingPane: String, Sendable, Hashable, CaseIterable {
 
     public var openButtonTitle: String { "Einstellungen öffnen" }
 
+    /// Kurzname für Statuszeilen, wenn die App ohne diese Freigabe weiterläuft.
+    public var restrictedCapabilityLabel: String {
+        switch self {
+        case .calendars: return "Kalender"
+        case .reminders: return "Erinnerungen"
+        case .notifications: return "Mitteilungen"
+        }
+    }
+
     public var denialMessage: String {
         switch self {
         case .calendars:

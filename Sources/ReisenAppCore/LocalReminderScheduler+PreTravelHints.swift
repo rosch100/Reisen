@@ -183,7 +183,7 @@ extension LocalReminderScheduler {
             content: content,
             trigger: trigger
         )
-        try await center.add(request)
+        try await addNotificationRequest(request, center: center)
         return request
     }
 }
