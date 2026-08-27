@@ -16,8 +16,7 @@ if [[ ! -f "$ROOT/project.yml" ]]; then
 fi
 
 # Tests setzen REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true (kein Live-Token).
-# Produkt-Läufe (ios-run) betten das Token ein, sofern vorhanden.
-# App-Store-Archive setzt REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true.
+# Produkt-Läufe (ios-run, Store-/Ad-hoc-Archive) betten das Token ein, sofern vorhanden.
 bash "$ROOT/Scripts/embed-github-issue-token.sh"
 
 xcodegen generate --spec "$ROOT/project.yml" --project "$ROOT"

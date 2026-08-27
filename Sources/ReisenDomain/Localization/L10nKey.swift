@@ -460,6 +460,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case settingsEnableAppleCalendarFirst = "settings.enable_apple_calendar_first"
     case settingsFeedbackAllIssues = "settings.feedback_all_issues"
     case settingsFeedbackAutoReport = "settings.feedback_auto_report"
+    case settingsFeedbackEmail = "settings.feedback_email"
     case settingsFeedbackFooterEmbedded = "settings.feedback_footer_embedded"
     case settingsFeedbackFooterManual = "settings.feedback_footer_manual"
     case settingsFeedbackGitHubUsername = "settings.feedback_github_username"

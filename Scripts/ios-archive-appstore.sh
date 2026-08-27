@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Erzeugt ein App-Store-Archive und exportiert ein IPA (ohne eingebettetes GitHub-PAT).
+# Erzeugt ein App-Store-Archive und exportiert ein IPA (mit eingebettetem Issues-PAT).
 # Stdout ist nur der IPA-Pfad; Build-Logs gehen nach stderr (CI-Command-Substitution).
 set -euo pipefail
 
@@ -12,8 +12,9 @@ ARCHIVE_PATH="${ARCHIVE_PATH:-$ROOT/.build/ReiseniOS.xcarchive}"
 EXPORT_PATH="${EXPORT_PATH:-$ROOT/.build/ReiseniOS-ipa}"
 EXPORT_OPTIONS="${EXPORT_OPTIONS:-$ROOT/Scripts/ios-export-appstore.plist}"
 
-export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
-unset REISEN_EMBED_GITHUB_ISSUE_TOKEN
+export REISEN_EMBED_GITHUB_ISSUE_TOKEN=true
+export REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true
+unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
 
 bash "$ROOT/Scripts/generate-ios-project.sh" >&2
 
