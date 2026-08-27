@@ -4,7 +4,7 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 
 ## Verfügbare Workflows
 
-- `ci.yml`: Build+Test auf **jedem PR** und Push auf `master` (macOS-Tests, iOS-Simulator Store **und** Private, Release-Binary-Isolation). Pflicht-Check für Merges.
+- `ci.yml`: Build+Test auf **jedem PR gegen `master`** und Push auf `master` (macOS-Tests, iOS-Simulator Store **und** Private, Release-Binary-Isolation). Pflicht-Check für Merges.
 - `app-store-check.yml`: manueller **App Store Check** zur Release-Vorbereitung (Store-IPA + AppCompliance). Nicht auf PRs. Siehe [`appcompliance.md`](appcompliance.md).
 - `codeql.yml`: CodeQL auf Push nach `master` und wöchentlichem Schedule (nicht auf jedem PR — der instrumentierte Swift-Build kostet ~30 min macOS)
 - `gitleaks.yml`: Secret-Scan auf PR, Push und täglichem Schedule
@@ -30,7 +30,7 @@ Dependabot-PRs laufen durch die echte CI. Der Versions-Workflow nutzt `--verify`
 | + iOS Release-Binary-Isolation | `bash ./Scripts/ci-test.sh --with-ios-release-check` |
 | iOS-Simulator (Store + Private) | `IOS_SCHEME=all bash ./Scripts/ios-test.sh` |
 
-Vollständige GitHub-CI auf PRs: `ios-test.sh` und `ios-build-release-check.sh` als Steps in [`ci.yml`](../../.github/workflows/ci.yml). App-Store-/Apple-Check vor Einreichung: Workflow **App Store Check** ([`app-store-check.yml`](../../.github/workflows/app-store-check.yml)), manuell.
+Vollständige GitHub-CI auf PRs gegen `master`: `ios-test.sh` und `ios-build-release-check.sh` als Steps in [`ci.yml`](../../.github/workflows/ci.yml). App-Store-/Apple-Check vor Einreichung: Workflow **App Store Check** ([`app-store-check.yml`](../../.github/workflows/app-store-check.yml)), manuell.
 
 ## SwiftPM-Cache (CI + CodeQL)
 

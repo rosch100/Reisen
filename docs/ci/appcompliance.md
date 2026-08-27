@@ -4,7 +4,7 @@ Zur **Release-Vorbereitung** prüft der Workflow **App Store Check** (`app-store
 
 | Wann | Was |
 |------|-----|
-| Jeder PR / Push `master` | Workflow **CI**: Swift-Tests, iOS-Simulator, Release-Binary-Isolation (Store **und** Private getrennt) |
+| Jeder PR gegen `master` / Push `master` | Workflow **CI**: Swift-Tests, iOS-Simulator, Release-Binary-Isolation (Store **und** Private getrennt) |
 | Manuell vor Einreichung | Workflow **App Store Check**: nur Store-Archive (`Scripts/ios-archive-appstore.sh`) + [AppCompliance](https://appcompliance.io/)-Scan |
 
 Der Scan folgt dem [GitHub-Action-Setup](https://appcompliance.io/blog/github-action-compliance-scanning-setup/). Das IPA enthält kein GitHub-PAT. Findings landen optional als SARIF in GitHub Code Scanning.
