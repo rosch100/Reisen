@@ -90,6 +90,29 @@ if grep -q 'ios-archive-adhoc.sh' "$ROOT/.github/workflows/app-store-check.yml";
   echo "Fehler: App Store Check darf das Private-Archive nicht bauen oder scannen." >&2
   exit 1
 fi
+WF="$ROOT/.github/workflows/app-store-check.yml"
+if grep -A8 '^    name: Archive Store IPA' "$WF" | grep -qE 'needs: (preflight|appcompliance-secrets)'; then
+  echo "Fehler: Archive Store IPA darf nicht an AppCompliance-Secrets hängen." >&2
+  exit 1
+fi
+if ! awk '
+  $0 ~ /^  scan:/ { in_scan=1; next }
+  in_scan && $0 ~ /^  [a-zA-Z]/ { exit found ? 0 : 1 }
+  in_scan && $0 ~ /outputs\.enabled/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$WF"; then
+  echo "Fehler: AppCompliance-Scan muss per Job-Output enabled skippen (kein secrets in job if:)." >&2
+  exit 1
+fi
+if awk '
+  $0 ~ /^  appcompliance-secrets:/ { in_secrets=1; next }
+  in_secrets && $0 ~ /^  [a-zA-Z]/ { exit found_exit ? 0 : 1 }
+  in_secrets && $0 ~ /exit 1/ { found_exit=1 }
+  END { exit found_exit ? 0 : 1 }
+' "$WF"; then
+  echo "Fehler: AppCompliance-Secrets-Job darf fehlende Secrets nicht mit exit 1 abbrechen." >&2
+  exit 1
+fi
 if grep -q 'REISEN_FEEDBACK_GMAIL_APP_PASSWORD' "$ROOT/.github/workflows/gmail-feedback-ingress.yml"; then
   echo "Fehler: Gmail-Ingress darf kein App-Passwort mehr nutzen." >&2
   exit 1

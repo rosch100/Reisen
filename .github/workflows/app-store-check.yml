@@ -19,26 +19,30 @@ defaults:
     shell: bash --noprofile --norc -eo pipefail {0}
 
 jobs:
-  preflight:
-    name: Secrets
+  appcompliance-secrets:
+    name: AppCompliance secrets
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
 
     steps:
-      - name: Check AppCompliance secrets
+      - name: Report AppCompliance secret presence
+        id: check
         env:
           HAS_TOKEN: ${{ secrets.APPCOMPLIANCE_TOKEN != '' }}
           HAS_URL: ${{ secrets.APPCOMPLIANCE_API_URL != '' }}
         run: |
-          if [[ "$HAS_TOKEN" != "true" || "$HAS_URL" != "true" ]]; then
-            echo "Fehler: GitHub-Secrets APPCOMPLIANCE_TOKEN und APPCOMPLIANCE_API_URL fehlen." >&2
-            echo "Siehe docs/ci/appcompliance.md" >&2
-            exit 1
+          if [[ "$HAS_TOKEN" == "true" && "$HAS_URL" == "true" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "AppCompliance-Secrets vorhanden; Scan-Job läuft nach dem Archive."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AppCompliance-Scan wird übersprungen: GitHub-Secrets APPCOMPLIANCE_TOKEN und/oder APPCOMPLIANCE_API_URL fehlen. Siehe docs/ci/appcompliance.md. Das Store-IPA-Archive läuft unabhängig."
           fi
 
   archive:
     name: Archive Store IPA
-    needs: preflight
     runs-on: xcode-27
     timeout-minutes: 45
     outputs:
@@ -90,7 +94,8 @@ jobs:
 
   scan:
     name: AppCompliance scan
-    needs: archive
+    needs: [appcompliance-secrets, archive]
+    if: needs.appcompliance-secrets.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:

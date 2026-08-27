@@ -13,7 +13,7 @@ AppCompliance ist derzeit Early Access. Die Action `appcompliance/scan@v1` wird 
 
 ## Wann der Workflow läuft
 
-Nur **on demand** (`workflow_dispatch`): Actions → **App Store Check** → Run workflow. Fehlen die Secrets, schlägt der Lauf in `preflight` fehl (kein stiller Skip).
+Nur **on demand** (`workflow_dispatch`): Actions → **App Store Check** → Run workflow. Fehlen die Secrets, wird der Scan-Job übersprungen (Actions-UI: **Skipped**, plus Notice im Job **AppCompliance secrets**). Das Store-IPA-Archive läuft trotzdem. Der Scan gilt nicht als bestanden, nur weil er nicht lief.
 
 Kein Lauf auf PRs, Push oder Tags: Archive braucht Apple Distribution, und jedes IPA würde an AppCompliance hochgeladen.
 
@@ -28,7 +28,7 @@ Repository → Settings → Secrets and variables → Actions:
 
 Beide Werte kommen nur aus GitHub-Secrets, nie aus dem Repo. Workflows loggen sie nicht.
 
-Ohne Token/URL: der manuelle Lauf bricht in `preflight` ab.
+Ohne Token/URL: Scan **Skipped**, Archive läuft. Nach dem Onboarding die beiden Secrets setzen und den Workflow erneut auslösen.
 
 ## Gating
 
