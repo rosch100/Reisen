@@ -37,6 +37,7 @@ public struct SettingsView: View {
     @AppStorage(AppSettingsKeys.calendarTitleMode) private var calendarTitleModeRaw: String = CalendarTitleMode.tripTitle.rawValue
     @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = false
     @AppStorage(AppSettingsKeys.reportErrorsToGitHub) private var reportErrorsToGitHub: Bool = false
+    @AppStorage(AppSettingsKeys.feedbackGitHubUsername) private var feedbackGitHubUsername = ""
 
     @State private var eventCalendarNames: [String] = []
     @State private var reminderCalendarNames: [String] = []
@@ -200,6 +201,7 @@ public struct SettingsView: View {
             Section {
                 Link(L10n.string(.settingsLegalPrivacy), destination: LegalURLs.privacyPolicy)
                 Link(L10n.string(.settingsLegalSupport), destination: LegalURLs.support)
+                Link(L10n.string(.settingsLegalImpressum), destination: LegalURLs.impressum)
             } header: {
                 Text(L10n.string(.settingsLegalSection))
             } footer: {
@@ -223,6 +225,12 @@ public struct SettingsView: View {
             Section {
                 if GitHubIssueToken.isEmbedded {
                     Toggle(L10n.string(.settingsFeedbackAutoReport), isOn: $reportErrorsToGitHub)
+                    TextField(L10n.string(.settingsFeedbackGitHubUsername), text: $feedbackGitHubUsername)
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.asciiCapable)
+                        #endif
                 }
                 TextEditor(text: $feedbackText)
                     .frame(minHeight: 80)

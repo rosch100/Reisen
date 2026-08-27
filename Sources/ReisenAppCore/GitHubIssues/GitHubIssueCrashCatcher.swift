@@ -25,7 +25,7 @@ enum GitHubIssueCrashCatcher {
                 at: url.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            try Data(message.utf8).write(to: url, options: [.atomic])
+            try Data(SecretRedactor.redact(message).utf8).write(to: url, options: [.atomic])
         } catch {
             #if DEBUG
             print("[Reisen] Pending-Crash-Report fehlgeschlagen: \(error)")
@@ -55,9 +55,10 @@ enum GitHubIssueCrashCatcher {
         do {
             _ = try await GitHubIssueReporter.shared.report(
                 kind: .error,
-                title: GitHubIssueTitle.uncaughtException,
                 message: message,
-                providerID: nil
+                providerID: nil,
+                titleOverride: GitHubIssueTitle.uncaughtException,
+                reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
             )
             try FileManager.default.removeItem(at: url)
         } catch is GitHubIssueTokenError {

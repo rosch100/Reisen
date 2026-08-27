@@ -2,11 +2,13 @@ import Foundation
 import ReisenDomain
 
 public enum GitHubIssueNewIssueURL {
-    /// Sicheres Limit für den `body`-Query-Parameter (Browser/GitHub-URL-Länge).
+    /// Sicheres Limit für den Formularfeld-Query-Parameter (Browser/GitHub-URL-Länge).
     public static let maxBodyCharacterCount = 6_000
     /// Obergrenze für die encodierte Gesamt-URL inkl. Query.
     public static let maxURLLength = 8_000
     public static let composeFailureMessage = "Issue-URL konnte nicht erstellt werden."
+    static let minTruncatedBodyCharacters = 200
+    static let bodyTruncationStep = 500
 
     private static let truncationSuffix = """
 
@@ -15,39 +17,51 @@ public enum GitHubIssueNewIssueURL {
 
     public static func compose(
         kind: GitHubIssueKind,
-        title: String,
         message: String,
-        providerID: ProviderID? = nil
+        providerID: ProviderID? = nil,
+        githubUsername: String? = nil,
+        titleOverride: String? = nil
     ) -> URL? {
-        let trimmedTitle = String(SecretRedactor.redact(title).prefix(240))
-        let body = bodyForQuery(
-            kind: kind,
-            title: trimmedTitle,
-            message: message,
-            providerID: providerID
+        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMessage.isEmpty else { return nil }
+        let title = GitHubIssueTitle.githubAPITitle(
+            GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage, override: titleOverride)
         )
-        return issueURL(title: trimmedTitle, body: body)
+        let origin: GitHubIssueReportOrigin = .userGitHub(
+            username: GitHubUsername.optionalValid(githubUsername)
+        )
+        let formFieldValue = formFieldValueForQuery(
+            kind: kind,
+            title: title,
+            message: trimmedMessage,
+            providerID: providerID,
+            origin: origin
+        )
+        return issueURLIfFits(kind: kind, title: title, formFieldValue: formFieldValue)
     }
 
-    static func bodyForQuery(
+    static func formFieldValueForQuery(
         kind: GitHubIssueKind,
         title: String,
         message: String,
-        providerID: ProviderID?
+        providerID: ProviderID?,
+        origin: GitHubIssueReportOrigin
     ) -> String {
-        let fullBody = GitHubIssueDiagnostic.collectedBody(
+        let fullValue = GitHubIssueDiagnostic.collectedFormFieldContent(
             kind: kind,
-            title: title,
             message: message,
-            providerID: providerID
+            providerID: providerID,
+            origin: origin
         )
         var maxChars = maxBodyCharacterCount
-        var body = truncated(fullBody, maxCharacters: maxChars)
-        while !fitsInIssueURL(title: title, body: body), maxChars > 200 {
-            maxChars -= 500
-            body = truncated(fullBody, maxCharacters: maxChars)
+        var value = truncated(fullValue, maxCharacters: maxChars)
+        while !fitsInIssueURL(kind: kind, title: title, formFieldValue: value),
+              maxChars > minTruncatedBodyCharacters
+        {
+            maxChars = max(minTruncatedBodyCharacters, maxChars - bodyTruncationStep)
+            value = truncated(fullValue, maxCharacters: maxChars)
         }
-        return body
+        return value
     }
 
     static func truncated(_ body: String, maxCharacters: Int) -> String {
@@ -56,20 +70,26 @@ public enum GitHubIssueNewIssueURL {
         return String(body.prefix(keep)) + truncationSuffix
     }
 
-    static func fitsInIssueURL(title: String, body: String) -> Bool {
-        guard let url = issueURL(title: title, body: body) else { return false }
-        return url.absoluteString.count <= maxURLLength
+    static func fitsInIssueURL(kind: GitHubIssueKind, title: String, formFieldValue: String) -> Bool {
+        issueURLIfFits(kind: kind, title: title, formFieldValue: formFieldValue) != nil
     }
 
-    private static func issueURL(title: String, body: String) -> URL? {
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = "github.com"
-        components.path = GitHubRepository.newIssuePath
-        components.queryItems = [
+    static func issueURLIfFits(kind: GitHubIssueKind, title: String, formFieldValue: String) -> URL? {
+        guard let url = issueURL(kind: kind, title: title, formFieldValue: formFieldValue),
+              url.absoluteString.count <= maxURLLength
+        else {
+            return nil
+        }
+        return url
+    }
+
+    private static func issueURL(kind: GitHubIssueKind, title: String, formFieldValue: String) -> URL? {
+        let form = kind.issueForm
+        return GitHubRepository.newIssueURL(queryItems: [
+            URLQueryItem(name: "template", value: form.templateFileName),
+            URLQueryItem(name: "labels", value: kind.githubLabels.joined(separator: ",")),
             URLQueryItem(name: "title", value: title),
-            URLQueryItem(name: "body", value: body),
-        ]
-        return components.url
+            URLQueryItem(name: form.fieldID, value: formFieldValue),
+        ])
     }
 }

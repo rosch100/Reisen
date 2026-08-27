@@ -4,57 +4,83 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Support — Reisen</title>
-  <link rel="alternate" hreflang="de" href="support.html">
-  <link rel="alternate" hreflang="en" href="en/support.html">
-  <style>
-    :root { color-scheme: light dark; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 42rem;
-      margin: 2rem auto;
-      padding: 0 1.25rem;
-    }
-    h1 { font-size: 1.75rem; }
-    h2 { font-size: 1.25rem; margin-top: 2rem; }
-    a { color: #0969da; }
-    nav.lang { margin-bottom: 1.5rem; font-size: 0.95rem; }
-  </style>
+  <meta name="description" content="Support und Feedback für die Reisen-App.">
+  <link rel="canonical" href="https://rosch100.github.io/Reisen/support.html">
+  <link rel="alternate" hreflang="de" href="https://rosch100.github.io/Reisen/support.html">
+  <link rel="alternate" hreflang="en" href="https://rosch100.github.io/Reisen/en/support.html">
+  <link rel="icon" href="assets/app-icon.png" type="image/png">
+  <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-  <nav class="lang" aria-label="Sprache">
-    <strong>Deutsch</strong> · <a href="en/support.html" hreflang="en">English</a>
-  </nav>
+  <a class="skip-link" href="#main">Zum Inhalt</a>
 
-  <h1>Support — Reisen</h1>
-  <p><em>Stand: August 2026</em></p>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="index.html">
+        <img class="site-brand__icon" src="assets/app-icon.png" width="36" height="36" alt="">
+        Reisen
+      </a>
+      <nav class="site-nav" aria-label="Hauptnavigation">
+        <span class="site-nav__links">
+          <a href="index.html#features">Funktionen</a>
+          <a href="privacy.html">Datenschutz</a>
+          <a href="https://github.com/rosch100/Reisen">GitHub</a>
+        </span>
+        <span class="site-nav__lang" aria-label="Sprache">
+          <a href="support.html" hreflang="de" aria-current="page">DE</a>
+          <a href="en/support.html" hreflang="en">EN</a>
+        </span>
+      </nav>
+    </div>
+  </header>
 
-  <p>
-    <strong>Reisen</strong> ist eine Open-Source-App für persönliche Reiseverwaltung auf iPhone, iPad und Mac.
-    Es gibt kein kommerzielles Support-Team — Hilfe erfolgt über das öffentliche GitHub-Repository.
-  </p>
+  <main id="main" class="page-content">
+    <div class="container container--narrow">
+      <h1>Support — Reisen</h1>
+      <p class="page-meta"><em>Stand: August 2026</em></p>
 
-  <h2>Feedback und Fehler</h2>
-  <p>
-    Nutze <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues</a> für Fragen, Feedback und Fehlermeldungen.
-    In der App unter Einstellungen → Feedback kannst du ohne GitHub-Konto ein öffentliches Issue anlegen.
-  </p>
+      <p>
+        <strong>Reisen</strong> ist eine kostenlose App für iPhone, iPad und Mac.
+        Der Quellcode steht unter CC BY-NC 4.0; die App darfst du privat kostenlos nutzen.
+        Fragen und Feedback kannst du direkt über GitHub stellen — oder in der App unter Einstellungen → Feedback.
+      </p>
 
-  <h2>Repository</h2>
-  <p>
-    Quellcode, CI-Status und Dokumentation:
-    <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a>
-  </p>
+      <h2>Feedback und Fehler</h2>
+      <p>
+        Schreib uns auf <a href="https://github.com/rosch100/Reisen/issues">GitHub</a> —
+        auch ohne GitHub-Konto, direkt aus der App.
+      </p>
 
-  <h2>Datenschutz</h2>
-  <p>
-    <a href="privacy.html">Datenschutzerklärung</a>
-  </p>
+      <h2>Mehr erfahren</h2>
+      <p>
+        Quellcode und Dokumentation:
+        <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a>
+      </p>
 
-  <h2>Hinweis</h2>
-  <p>
-    Reisen ist nicht mit Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka oder anderen Anbietern verbunden.
-    Provider-Anmeldungen erfolgen in eingebetteten Web-Ansichten mit deinem eigenen Konto.
-  </p>
+      <h2>Datenschutz</h2>
+      <p>
+        <a href="privacy.html">Datenschutzerklärung</a>
+      </p>
+
+      <h2>Hinweis</h2>
+      <p>
+        Reisen ist nicht mit Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka oder anderen Anbietern verbunden.
+        Du meldest dich direkt beim jeweiligen Anbieter an.
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <nav class="site-footer__links" aria-label="Rechtliches">
+        <a href="privacy.html">Datenschutz</a>
+        <a href="support.html">Support</a>
+        <a href="impressum.html">Impressum</a>
+        <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues</a>
+        <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.de">Lizenz (CC BY-NC 4.0)</a>
+      </nav>
+      <p class="site-footer__copy">© Roland Schramme · Reisen</p>
+    </div>
+  </footer>
 </body>
 </html>

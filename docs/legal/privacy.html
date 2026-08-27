@@ -4,91 +4,199 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Datenschutzerklärung — Reisen</title>
-  <link rel="alternate" hreflang="de" href="privacy.html">
-  <link rel="alternate" hreflang="en" href="en/privacy.html">
-  <style>
-    :root { color-scheme: light dark; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 42rem;
-      margin: 2rem auto;
-      padding: 0 1.25rem;
-    }
-    h1 { font-size: 1.75rem; }
-    h2 { font-size: 1.25rem; margin-top: 2rem; }
-    a { color: #0969da; }
-    nav.lang { margin-bottom: 1.5rem; font-size: 0.95rem; }
-  </style>
+  <meta name="description" content="Datenschutzerklärung für die Reisen-App und diese Website.">
+  <link rel="canonical" href="https://rosch100.github.io/Reisen/privacy.html">
+  <link rel="alternate" hreflang="de" href="https://rosch100.github.io/Reisen/privacy.html">
+  <link rel="alternate" hreflang="en" href="https://rosch100.github.io/Reisen/en/privacy.html">
+  <link rel="icon" href="assets/app-icon.png" type="image/png">
+  <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-  <nav class="lang" aria-label="Sprache">
-    <strong>Deutsch</strong> · <a href="en/privacy.html" hreflang="en">English</a>
-  </nav>
+  <a class="skip-link" href="#main">Zum Inhalt</a>
 
-  <h1>Datenschutzerklärung — Reisen</h1>
-  <p><em>Stand: August 2026</em></p>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="index.html">
+        <img class="site-brand__icon" src="assets/app-icon.png" width="36" height="36" alt="">
+        Reisen
+      </a>
+      <nav class="site-nav" aria-label="Hauptnavigation">
+        <span class="site-nav__links">
+          <a href="index.html#features">Funktionen</a>
+          <a href="support.html">Support</a>
+          <a href="https://github.com/rosch100/Reisen">GitHub</a>
+        </span>
+        <span class="site-nav__lang" aria-label="Sprache">
+          <a href="privacy.html" hreflang="de" aria-current="page">DE</a>
+          <a href="en/privacy.html" hreflang="en">EN</a>
+        </span>
+      </nav>
+    </div>
+  </header>
 
-  <h2>Verantwortlicher</h2>
-  <p>Die App <strong>Reisen</strong> wird als Open-Source-Projekt unter <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a> bereitgestellt. Für Fragen zum Datenschutz nutze die öffentlichen GitHub-Issues des Repositories.</p>
+  <main id="main" class="page-content">
+    <div class="container container--narrow">
+      <h1>Datenschutzerklärung — Reisen</h1>
+      <p class="page-meta"><em>Stand: August 2026</em></p>
 
-  <h2>Kurzfassung</h2>
-  <p>Reisen ist eine persönliche Reiseverwaltung auf iPhone, iPad und Mac. Die App speichert Buchungen lokal und optional in deinem <strong>iCloud-Account</strong> (CloudKit). Provider-Anmeldungen erfolgen in eingebetteten Web-Ansichten der jeweiligen Anbieter; Reisen ist <strong>nicht</strong> mit Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka oder anderen OTAs verbunden.</p>
+      <h2>Verantwortlicher</h2>
+      <p>
+        Verantwortlich für die App <strong>Reisen</strong> und diese Website ist
+        <strong>Roland Schramme</strong>, Deutschland. Das Projekt wird als Open-Source-Software unter
+        <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a> bereitgestellt.
+      </p>
+      <p>
+        Schnelle elektronische Kontaktaufnahme: öffentliche
+        <a href="https://github.com/rosch100/Reisen/issues">GitHub-Issues</a>.
+        Für vertrauliche Betroffenenanfragen (Auskunft, Löschung) bitte ein Issue
+        <a href="privacy-request.html">ohne Reisedaten</a>
+        eröffnen — wir antworten mit einem privaten Kontaktweg. Keine Passagier- oder Buchungsdaten
+        in den öffentlichen Issue-Text schreiben.
+      </p>
 
-  <h2>Welche Daten verarbeitet Reisen?</h2>
+      <h2>Kurzfassung</h2>
+      <p>Reisen ist eine persönliche Reiseverwaltung auf iPhone, iPad und Mac. Buchungen liegen auf deinem Gerät, optional synchronisiert über iCloud. Anmeldungen bei Buchungsportalen erfolgen mit deinem eigenen Konto beim jeweiligen Anbieter. Reisen ist <strong>nicht</strong> mit Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka oder anderen Anbietern verbunden.</p>
 
-  <h3>Buchungen und Reisen (von dir erfasst oder synchronisiert)</h3>
-  <ul>
-    <li>Reisenamen, Buchungsdetails, Stornofristen, manuelle Einträge</li>
-    <li>Speicherung in SwiftData auf dem Gerät; optional Spiegelung in deinem privaten iCloud-Container <code>iCloud.de.reisen.Reisen</code></li>
-  </ul>
+      <h2>Welche Daten verarbeitet Reisen?</h2>
 
-  <h3>Provider-Anmeldung (optional)</h3>
-  <ul>
-    <li>Login auf Websites Dritter im <strong>WKWebView</strong> mit deinem eigenen Konto</li>
-    <li>Session-Cookies verbleiben im WebView-Cookie-Store des Geräts</li>
-    <li>Optional (Opt-in): E-Mail und Kennwort nach Passwort-Login in der <strong>Geräte-Keychain</strong> der App — nicht für Apple-/Passkey-/OAuth-Logins</li>
-  </ul>
+      <h3>Buchungen und Reisen (von dir erfasst oder synchronisiert)</h3>
+      <ul>
+        <li>Reisenamen, Buchungsdetails, Bestätigungscodes, Stornofristen, manuelle Einträge, Adressen von Unterkünften und Stationen</li>
+        <li>Mitreisende: Vor- und Nachname, optional Geburtsdatum (auch von Minderjährigen, wenn du oder der Anbieter sie erfassen)</li>
+        <li>Speicherung in SwiftData auf dem Gerät; optional Spiegelung in deinem privaten iCloud-Container <code>iCloud.de.reisen.Reisen</code></li>
+      </ul>
 
-  <h3>Kalender und Erinnerungen (optional, Opt-in)</h3>
-  <ul>
-    <li>Mit deiner Freigabe: Termine und Erinnerungen für Stornofristen in Apple Kalender / Erinnerungen</li>
-    <li>Lokale Mitteilungen über das Mitteilungszentrum (keine Marketing-Pushes)</li>
-  </ul>
+      <h3>Provider-Anmeldung (optional)</h3>
+      <ul>
+        <li>Login auf Websites Dritter im <strong>WKWebView</strong> mit deinem eigenen Konto</li>
+        <li>Session-Cookies verbleiben im WebView-Cookie-Store des Geräts</li>
+        <li>Optional (Opt-in, Standard aus): E-Mail und Kennwort nach Passwort-Login in der <strong>Geräte-Keychain</strong> der App — nicht für Apple-/Passkey-/OAuth-Logins. Diese Zugangsdaten verlassen das Gerät nicht.</li>
+      </ul>
 
-  <h3>Technische Einstellungen</h3>
-  <ul>
-    <li>App-Einstellungen in <code>UserDefaults</code> (z.&nbsp;B. aktivierte Provider, Kalenderwahl)</li>
-    <li>Kein Tracking, keine Werbe-ID, kein Verkauf von Daten</li>
-  </ul>
+      <h3>Kalender und Erinnerungen (optional, Opt-in)</h3>
+      <ul>
+        <li>Mit deiner Freigabe: Termine und Erinnerungen für Stornofristen in Apple Kalender / Erinnerungen (voller Zugriff, damit Einträge aktualisiert und entfernt werden können)</li>
+        <li>Lokale Mitteilungen über das Mitteilungszentrum (keine Marketing-Pushes)</li>
+      </ul>
 
-  <h3>Feedback (optional)</h3>
-  <p>Wenn du Feedback oder einen Fehlerbericht sendest, legt die App ein <strong>öffentliches</strong> GitHub-Issue an (Text, App-Version, OS, Gerätemodell, Locale, optional Provider). Dafür brauchst du <strong>kein</strong> GitHub-Konto; die App nutzt ein eingebettetes, auf Issues beschränktes Token. Der Inhalt ist für jeden lesbar unter <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.</p>
+      <h3>Ortsauflösung (MapKit)</h3>
+      <p>
+        Zur Darstellung von Kalenderorten und Flug-Zeitzonen sendet die App Such- bzw. Geocoding-Anfragen
+        (z.&nbsp;B. Flughafen-IATA oder Hotelname) an <strong>Apple MapKit</strong>. Es wird nicht dein GPS-Standort erfasst.
+      </p>
 
-  <h2>iCloud / CloudKit</h2>
-  <p>Synchronisation nutzt Apple CloudKit in deinem iCloud-Account. Apple verarbeitet diese Daten gemäß den <a href="https://www.apple.com/legal/privacy/">Apple-Datenschutzrichtlinien</a>. Du kannst in den App-Einstellungen lokale Daten löschen oder iCloud-Daten leeren.</p>
+      <h3>Installierte Provider-Apps (nur Gerät)</h3>
+      <p>
+        Auf iOS prüft Reisen lokal per URL-Schema, ob eine native App eines Anbieters installiert ist,
+        und kann den zugehörigen Provider einmalig voreinstellen. Diese Information wird <strong>nicht</strong>
+        übermittelt.
+      </p>
 
-  <h2>Stille Push-Benachrichtigungen (iOS)</h2>
-  <p>Für CloudKit-Mirroring kann iOS stille Hintergrund-Benachrichtigungen empfangen (<code>remote-notification</code>). Es werden <strong>keine</strong> sichtbaren Remote-Push-Nachrichten an dich gesendet.</p>
+      <h3>Technische Einstellungen</h3>
+      <ul>
+        <li>App-Einstellungen in <code>UserDefaults</code> (z.&nbsp;B. aktivierte Provider, Kalenderwahl)</li>
+        <li>Kein Tracking, keine Werbe-ID, kein Verkauf von Daten</li>
+      </ul>
 
-  <h2>Datenweitergabe an Dritte</h2>
-  <ul>
-    <li><strong>Provider-Websites:</strong> Wenn du dich anmeldest, gelten deren Datenschutzbestimmungen.</li>
-    <li><strong>GitHub:</strong> Nur wenn du in der App Feedback oder einen Fehlerbericht sendest (öffentliche Issues, kein GitHub-Konto nötig).</li>
-    <li><strong>Kein</strong> Analytics-Dienst, <strong>kein</strong> Werbenetzwerk in der App.</li>
-  </ul>
+      <h3>Feedback und Fehler (optional)</h3>
+      <p>
+        Wenn du Feedback oder einen Fehlerbericht sendest, legt die App ein <strong>öffentliches</strong>
+        GitHub-Issue an (Text, App-Version, OS, Gerätemodell, Locale, Zeitzone, optional Provider,
+        optional dein GitHub-Benutzername zur Zuordnung). Automatische Fehler-Issues inkl. Crash-Stack
+        nur, wenn du den Schalter „Fehler automatisch als öffentliches Issue senden“ einschaltest
+        (Einwilligung, Standard aus). Dafür brauchst du <strong>kein</strong> GitHub-Konto; die App nutzt
+        ein eingebettetes, auf Issues beschränktes Token. Der Inhalt ist für jeden lesbar unter
+        <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
+            Offensichtliche Geheimnisse sowie Personenbezüge in Meldungstexten (E-Mail, Namen,
+            Telefon, Adressen, Geburtsdaten, Buchungsnummern, IBAN) werden vor dem Versand geschwärzt;
+        schreibe trotzdem keine Passagierdaten in Feedback.
+      </p>
 
-  <h2>Deine Rechte</h2>
-  <ul>
-    <li>Daten löschen: lokaler Reset oder „iCloud-Daten leeren“ in den Einstellungen</li>
-    <li>Provider-Passwörter: in den App-Einstellungen deaktivierbar; gespeicherte Konten in der Schlüsselbundverwaltung / Passwörter-App entfernbar</li>
-    <li>Kalender-/Mitteilungsrechte: in den Systemeinstellungen widerrufbar</li>
-  </ul>
+      <h2>Rechtsgrundlagen (Art. 6 DSGVO)</h2>
+      <ul>
+        <li><strong>Art. 6 Abs. 1 lit. b:</strong> Bereitstellung der von dir angeforderten App-Funktionen (lokale Reiseverwaltung, optionale iCloud-Spiegelung)</li>
+        <li><strong>Art. 6 Abs. 1 lit. a:</strong> Einwilligung für Keychain-Passwortspeicherung, Kalender/Erinnerungen/Mitteilungen, automatische öffentliche Fehler-Issues</li>
+        <li><strong>Art. 6 Abs. 1 lit. f:</strong> berechtigtes Interesse am Betrieb dieser Informationsseite und am optionalen, von dir ausgelösten Support über GitHub</li>
+      </ul>
+      <p>Einwilligungen kannst du in den App- bzw. Systemeinstellungen widerrufen; die Rechtmäßigkeit der Verarbeitung bis zum Widerruf bleibt unberührt.</p>
 
-  <h2>Kontakt</h2>
-  <p>
-    <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues — rosch100/Reisen</a><br>
-    <a href="support.html">Support</a>
-  </p>
+      <h2>iCloud / CloudKit</h2>
+      <p>Synchronisation nutzt Apple CloudKit in deinem iCloud-Account. Apple verarbeitet diese Daten gemäß den <a href="https://www.apple.com/legal/privacy/">Apple-Datenschutzrichtlinien</a>. Du kannst in den App-Einstellungen lokale Daten löschen oder iCloud-Daten leeren.</p>
+
+      <h2>Stille Push-Benachrichtigungen (iOS)</h2>
+      <p>Für CloudKit-Mirroring kann iOS stille Hintergrund-Benachrichtigungen empfangen (<code>remote-notification</code>). Es werden <strong>keine</strong> sichtbaren Remote-Push-Nachrichten an dich gesendet.</p>
+
+      <h2>Empfänger und Drittlandübermittlung</h2>
+      <ul>
+        <li><strong>Apple</strong> (USA/EU): CloudKit, MapKit, EventKit, Systemdienste — siehe Apple-Datenschutz; Apple nutzt u.&nbsp;a. das EU-US Data Privacy Framework bzw. Standardvertragsklauseln</li>
+        <li><strong>Provider-Websites:</strong> Wenn du dich anmeldest, gelten deren Datenschutzbestimmungen (Übermittlung in Drittländer je nach Anbieter)</li>
+        <li><strong>GitHub, Inc.</strong> (USA): nur bei Feedback/Fehlerbericht oder Aufruf dieser Website; GitHub nutzt u.&nbsp;a. Standardvertragsklauseln (SCC)</li>
+        <li><strong>Kein</strong> Analytics-Dienst, <strong>kein</strong> Werbenetzwerk in der App</li>
+      </ul>
+
+      <h2>Speicherdauer</h2>
+      <ul>
+        <li>Buchungen, Mitreisende und Einstellungen: bis du sie in der App löschst bzw. lokale Stores / iCloud-Daten leerst</li>
+        <li>Keychain-Zugangsdaten: bis du sie deaktivierst oder in der Schlüsselbund-/Passwörter-App entfernst</li>
+        <li>Kalender-/Reminder-Einträge: bis Widerruf der Freigabe oder Löschung in Kalender/Erinnerungen</li>
+        <li>Öffentliche GitHub-Issues: nach den Regeln von GitHub; wir können öffentliche Issues schließen, nicht die Historie Dritter kontrollieren</li>
+      </ul>
+
+      <h2>Deine Rechte</h2>
+      <ul>
+        <li>Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit, Widerspruch (Art. 15–21 DSGVO)</li>
+        <li>Daten löschen in der App: lokaler Reset oder „iCloud-Daten leeren“</li>
+        <li>Provider-Passwörter: in den App-Einstellungen deaktivierbar; gespeicherte Konten in der Schlüsselbundverwaltung / Passwörter-App entfernbar</li>
+        <li>Kalender-/Mitteilungsrechte: in den Systemeinstellungen widerrufbar</li>
+        <li>Beschwerde bei einer Aufsichtsbehörde, in Deutschland typisch der
+          <a href="https://www.bfdi.bund.de/">Bundesbeauftragte für den Datenschutz und die Informationsfreiheit (BfDI)</a>
+          oder die zuständige Landesbehörde</li>
+      </ul>
+
+      <h2>Diese Website (GitHub Pages)</h2>
+      <p>
+        Die Informationsseite unter <a href="https://rosch100.github.io/Reisen/">rosch100.github.io/Reisen</a>
+        wird über GitHub Pages bereitgestellt. Beim Aufruf verarbeitet GitHub, Inc. technische Zugriffsdaten
+        (z.&nbsp;B. IP-Adresse, Browsertyp, Zeitstempel, angeforderte URL) in Server-Logs — laut
+        <a href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement">GitHub Privacy Statement</a>
+        u.&nbsp;a. zur Sicherheit und zum Betrieb des Dienstes.
+      </p>
+      <ul>
+        <li><strong>Speicherdauer:</strong> nach den in der GitHub-Datenschutzerklärung genannten Kriterien
+          (Zweck, gesetzliche Pflichten, Streitbeilegung); keine feste Frist in unserer Kontrolle</li>
+        <li><strong>Empfänger:</strong> GitHub, Inc. (USA) und von GitHub eingesetzte
+          <a href="https://docs.github.com/en/site-policy/privacy-policies/github-subprocessors">Subprozessoren</a>
+          (z.&nbsp;B. Cloud-Infrastruktur)</li>
+        <li><strong>Drittlandübermittlung:</strong> Verarbeitung u.&nbsp;a. in den USA; GitHub nutzt u.&nbsp;a.
+          Standardvertragsklauseln (SCC) gemäß ihrer Datenschutzerklärung</li>
+        <li>Keine First-Party-Cookies, kein Analytics, keine eingebetteten Dritt-Skripte oder externen Schriftarten
+          auf unseren statischen Seiten</li>
+        <li>Kein Tracking oder Profiling durch uns; für die reine Bereitstellung statischer Inhalte ist kein
+          Cookie-Banner erforderlich (technische Verarbeitung durch GitHub siehe oben)</li>
+        <li>Rechtsgrundlage: berechtigtes Interesse am Betrieb einer öffentlichen Projekt- und Informationsseite
+          (Art. 6 Abs. 1 lit. f DSGVO)</li>
+      </ul>
+
+      <h2>Kontakt</h2>
+      <p>
+        <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues — rosch100/Reisen</a><br>
+        <a href="privacy-request.html">Vertrauliche Datenschutzanfrage</a> ·
+        <a href="support.html">Support</a> · <a href="impressum.html">Impressum</a>
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <nav class="site-footer__links" aria-label="Rechtliches">
+        <a href="privacy.html">Datenschutz</a>
+        <a href="support.html">Support</a>
+        <a href="impressum.html">Impressum</a>
+        <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues</a>
+        <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.de">Lizenz (CC BY-NC 4.0)</a>
+      </nav>
+      <p class="site-footer__copy">© Roland Schramme · Reisen</p>
+    </div>
+  </footer>
 </body>
 </html>

@@ -66,12 +66,43 @@ private struct PrivacyDenied: Error, PrivacyAccessDenying {
     #expect(!FileManager.default.fileExists(atPath: url.path))
 }
 
-@Test func githubIssueCrashPending_keptWhenOptedIn() throws {
+@Test func githubIssueCrashPending_keepsTechnicalMessageWhenOptedIn() throws {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("reisen-crash-\(UUID().uuidString).txt")
     defer { try? FileManager.default.removeItem(at: url) }
     GitHubIssueCrashCatcher.writePending("boom", to: url, optedIn: true)
     let message = GitHubIssueCrashCatcher.pendingMessageForReport(at: url, optedIn: true)
     #expect(message == "boom")
-    #expect(FileManager.default.fileExists(atPath: url.path))
+}
+
+@Test func githubIssueCrashPending_anonymizesPrivateDataBeforeWrite() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-crash-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+    GitHubIssueCrashCatcher.writePending(
+        "NSException: Sync für test@example.com Vorname: Erika",
+        to: url,
+        optedIn: true
+    )
+    let message = GitHubIssueCrashCatcher.pendingMessageForReport(at: url, optedIn: true)
+    let stored = try #require(message)
+    #expect(stored.contains("NSException:"))
+    #expect(!stored.contains("test@example.com"))
+    #expect(!stored.contains("Erika"))
+    #expect(stored.contains("[redacted]"))
+}
+
+@Test func githubIssueCrashPending_anonymizesHomePathsBeforeWrite() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-crash-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+    GitHubIssueCrashCatcher.writePending(
+        "NSRangeException\n0  Reisen  /Users/roschmac/Library/Reisen.debug.dylib",
+        to: url,
+        optedIn: true
+    )
+    let stored = try #require(GitHubIssueCrashCatcher.pendingMessageForReport(at: url, optedIn: true))
+    #expect(stored.contains("NSRangeException"))
+    #expect(!stored.contains("roschmac"))
+    #expect(stored.contains("/Users/[redacted]/"))
 }

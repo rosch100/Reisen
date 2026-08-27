@@ -5,13 +5,49 @@ public enum GitHubIssueKind: String, Sendable {
     case error
     case feedback
 
-    public var githubLabels: [String] {
+    /// Anzeige in der Diagnose-Tabelle (deutsch, konsistent mit Issue-Templates).
+    public var displayName: String {
         switch self {
         case .error:
-            ["kind/error"]
+            "Fehler"
         case .feedback:
-            ["kind/feedback"]
+            "Feedback"
         }
+    }
+
+    /// Präfix im Issue-Titel (SSOT mit `.github/ISSUE_TEMPLATE/*.yml`).
+    public var titlePrefix: String { "[\(displayName)]" }
+
+    /// Bezeichnung für erneute Meldungen als Kommentar.
+    public var repeatReportLabel: String {
+        switch self {
+        case .error:
+            "Fehlerbericht"
+        case .feedback:
+            displayName
+        }
+    }
+
+    /// Entspricht dem Label `source/in-app`.
+    public var sourceLabel: String { "In-App" }
+
+    /// `.github/ISSUE_TEMPLATE/…` und Feld-`id` für vorausgefüllte „New issue“-URLs.
+    public struct IssueForm: Equatable, Sendable {
+        public let templateFileName: String
+        public let fieldID: String
+    }
+
+    public var issueForm: IssueForm {
+        switch self {
+        case .error:
+            IssueForm(templateFileName: "bug.yml", fieldID: "what")
+        case .feedback:
+            IssueForm(templateFileName: "feedback.yml", fieldID: "feedback")
+        }
+    }
+
+    public var githubLabels: [String] {
+        ["kind/\(rawValue)", "source/\(sourceLabel.lowercased())"]
     }
 }
 

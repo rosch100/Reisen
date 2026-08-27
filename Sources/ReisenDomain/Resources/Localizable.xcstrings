@@ -4598,13 +4598,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Feedback legt ein öffentliches GitHub-Issue an. Automatische Fehler-Issues nur mit dem Schalter oben; ohne Sync-Log, ohne Login-/Datenschutz-Meldungen. Repo: github.com/%1$@."
+            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Automatische Fehler-Issues nur mit dem Schalter oben und sind öffentlich; ohne Sync-Log, ohne Login- oder Datenschutz-Verweigerungen. Repo: github.com/%1$@."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Feedback creates a public GitHub issue. Automatic error issues only with the toggle above; no sync log or login/privacy messages. Repo: github.com/%1$@."
+            "value": "Optional GitHub username is used only for attribution in the issue text; submission uses the embedded token (no GitHub sign-in). Automatic error issues require the toggle above and are public; no sync log, login, or privacy denials. Repo: github.com/%1$@."
           }
         }
       }
@@ -4621,6 +4621,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "“Publish on GitHub…” opens a new Safari issue with prefilled text. You submit with your GitHub account. Repo: github.com/%1$@."
+          }
+        }
+      }
+    },
+    "settings.feedback_github_username": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub-Benutzername (optional)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub username (optional)"
           }
         }
       }
@@ -5014,13 +5030,29 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Beschreibt Provider-Logins, iCloud, Kalender und lokale Speicherung."
+            "value": "Beschreibt Provider-Logins, iCloud, Kalender, Diagnosen und lokale Speicherung."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Describes provider logins, iCloud, calendar, and local storage."
+            "value": "Describes provider logins, iCloud, calendar, diagnostics, and local storage."
+          }
+        }
+      }
+    },
+    "settings.legal.impressum": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impressum"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legal notice"
           }
         }
       }
@@ -5409,6 +5441,54 @@
         }
       }
     },
+    "sync.account_label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ @ %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ @ %2$@"
+          }
+        }
+      }
+    },
+    "sync.account_picker": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        }
+      }
+    },
+    "sync.after_login_hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach dem Login synchronisiert die App Aktivitäten und Stornofristen lokal."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After login, the app syncs activities and cancellation deadlines locally."
+          }
+        }
+      }
+    },
     "sync.all.all_providers_synced": {
       "localizations": {
         "de": {
@@ -5501,54 +5581,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$d with restricted permissions"
-          }
-        }
-      }
-    },
-    "sync.account_label": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ @ %2$@"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ @ %2$@"
-          }
-        }
-      }
-    },
-    "sync.account_picker": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Konto"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Account"
-          }
-        }
-      }
-    },
-    "sync.after_login_hint": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nach dem Login synchronisiert die App Aktivitäten und Stornofristen lokal."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After login, the app syncs activities and cancellation deadlines locally."
           }
         }
       }
@@ -5697,22 +5729,6 @@
         }
       }
     },
-    "sync.unknown_error": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unbekannter Sync-Fehler."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unknown sync error."
-          }
-        }
-      }
-    },
     "sync.fill_credentials_help": {
       "localizations": {
         "de": {
@@ -5761,22 +5777,6 @@
         }
       }
     },
-    "sync.no_logged_in_providers": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keine angemeldeten Provider zum Synchronisieren."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No signed-in providers to sync."
-          }
-        }
-      }
-    },
     "sync.no_account_selected": {
       "localizations": {
         "de": {
@@ -5805,6 +5805,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "No keychain host configured for this provider."
+          }
+        }
+      }
+    },
+    "sync.no_logged_in_providers": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine angemeldeten Provider zum Synchronisieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No signed-in providers to sync."
           }
         }
       }
@@ -6125,6 +6141,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sync unavailable — check sign-in and active provider"
+          }
+        }
+      }
+    },
+    "sync.unknown_error": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekannter Sync-Fehler."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown sync error."
           }
         }
       }

@@ -2,7 +2,7 @@ import SwiftUI
 import ReisenAppCore
 import ReisenDomain
 
-/// Melde-Button für öffentliche GitHub-Issues (API mit Token oder vorausgefüllte URL).
+/// Melde-Button für öffentliche GitHub-Issues (Token-API oder vorausgefüllte URL mit eigenem Konto).
 public struct PublicGitHubIssueReportActions: View {
     private enum ButtonLabel {
         static let directReport = "Als öffentliches Issue melden"
@@ -10,7 +10,7 @@ public struct PublicGitHubIssueReportActions: View {
     }
 
     public let kind: GitHubIssueKind
-    public let issueTitle: String
+    public let titleOverride: String?
     public let message: String
     public let providerID: ProviderID?
     public var reportedURL: URL?
@@ -19,18 +19,19 @@ public struct PublicGitHubIssueReportActions: View {
     public var onReported: (() -> Void)?
 
     @Environment(\.openURL) private var openURL
+    @AppStorage(AppSettingsKeys.feedbackGitHubUsername) private var feedbackGitHubUsername = ""
 
     @State private var localURL: URL?
     @State private var localError: String?
     @State private var localDidPostUpdate = true
     @State private var isReporting = false
 
-    private var canSubmitDirectly: Bool {
+    private var usesEmbeddedToken: Bool {
         GitHubIssueToken.isEmbedded
     }
 
     private var reportButtonLabel: String {
-        canSubmitDirectly ? ButtonLabel.directReport : ButtonLabel.openInGitHub
+        usesEmbeddedToken ? ButtonLabel.directReport : ButtonLabel.openInGitHub
     }
 
     private var displayURL: URL? {
@@ -55,7 +56,7 @@ public struct PublicGitHubIssueReportActions: View {
 
     public init(
         kind: GitHubIssueKind = .error,
-        issueTitle: String,
+        titleOverride: String? = nil,
         message: String,
         providerID: ProviderID? = nil,
         reportedURL: URL? = nil,
@@ -64,7 +65,7 @@ public struct PublicGitHubIssueReportActions: View {
         onReported: (() -> Void)? = nil
     ) {
         self.kind = kind
-        self.issueTitle = issueTitle
+        self.titleOverride = titleOverride
         self.message = message
         self.providerID = providerID
         self.reportedURL = reportedURL
@@ -75,9 +76,9 @@ public struct PublicGitHubIssueReportActions: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if canSubmitDirectly || displayError != nil {
+            if usesEmbeddedToken || displayError != nil {
                 PublicGitHubIssueLink(
-                    url: canSubmitDirectly ? displayURL : nil,
+                    url: usesEmbeddedToken ? displayURL : nil,
                     errorMessage: displayError,
                     didPostUpdate: displayDidPostUpdate
                 )
@@ -98,30 +99,46 @@ public struct PublicGitHubIssueReportActions: View {
         localError = nil
         localURL = nil
 
-        if !canSubmitDirectly {
-            guard let url = GitHubIssueNewIssueURL.compose(
-                kind: kind,
-                title: issueTitle,
-                message: trimmedMessage,
-                providerID: providerID
-            ) else {
-                localError = GitHubIssueNewIssueURL.composeFailureMessage
-                return
-            }
-            openURL(url)
-            onReported?()
+        let attribution = GitHubUsername.attribution(
+            from: feedbackGitHubUsername,
+            requireValid: usesEmbeddedToken
+        )
+        if let validationError = attribution.error {
+            localError = validationError
+            return
+        }
+        let githubForOrigin = attribution.username
+
+        if usesEmbeddedToken {
+            reportWithEmbeddedToken(githubUsername: githubForOrigin)
             return
         }
 
+        guard let url = GitHubIssueNewIssueURL.compose(
+            kind: kind,
+            message: trimmedMessage,
+            providerID: providerID,
+            githubUsername: githubForOrigin,
+            titleOverride: titleOverride
+        ) else {
+            localError = GitHubIssueNewIssueURL.composeFailureMessage
+            return
+        }
+        openURL(url)
+        onReported?()
+    }
+
+    private func reportWithEmbeddedToken(githubUsername: String?) {
         isReporting = true
         Task { @MainActor in
             defer { isReporting = false }
             do {
                 let created = try await GitHubIssueReporter.shared.report(
                     kind: kind,
-                    title: issueTitle,
                     message: trimmedMessage,
-                    providerID: providerID
+                    providerID: providerID,
+                    titleOverride: titleOverride,
+                    reporterGitHubUsername: githubUsername
                 )
                 localURL = created.htmlURL
                 localDidPostUpdate = created.didPostUpdate
@@ -141,7 +158,6 @@ public extension PublicGitHubIssueReportActions {
         store: SyncStore?
     ) {
         self.init(
-            issueTitle: GitHubIssueTitle.syncErrorReport(message: errorMessage),
             message: errorMessage,
             providerID: providerID,
             reportedURL: store?.lastPublicIssueURL,
@@ -152,7 +168,7 @@ public extension PublicGitHubIssueReportActions {
 
     init(storeLoadFailureMessage message: String) {
         self.init(
-            issueTitle: GitHubIssueTitle.storeLoadFailure,
+            titleOverride: GitHubIssueTitle.storeLoadFailure,
             message: message
         )
     }
@@ -160,7 +176,6 @@ public extension PublicGitHubIssueReportActions {
     init(feedbackMessage: String, onReported: (() -> Void)? = nil) {
         self.init(
             kind: .feedback,
-            issueTitle: GitHubIssueTitle.feedbackReport(message: feedbackMessage),
             message: feedbackMessage,
             onReported: onReported
         )

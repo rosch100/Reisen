@@ -3,42 +3,305 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Reisen — Legal</title>
-  <style>
-    :root { color-scheme: light dark; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 42rem;
-      margin: 2rem auto;
-      padding: 0 1.25rem;
-    }
-    h1 { font-size: 1.75rem; }
-    h2 { font-size: 1.25rem; margin-top: 1.5rem; }
-    a { color: #0969da; }
-    ul { padding-left: 1.25rem; }
-  </style>
+  <title>Reisen — Persönliche Reiseverwaltung für iPhone, iPad und Mac</title>
+  <meta name="description" content="Alle Buchungen an einem Ort — Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka. Für iPhone, iPad und Mac.">
+  <link rel="canonical" href="https://rosch100.github.io/Reisen/">
+  <link rel="alternate" hreflang="de" href="https://rosch100.github.io/Reisen/">
+  <link rel="alternate" hreflang="en" href="https://rosch100.github.io/Reisen/en/">
+  <link rel="alternate" hreflang="x-default" href="https://rosch100.github.io/Reisen/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Reisen — Persönliche Reiseverwaltung">
+  <meta property="og:description" content="Alle Buchungen an einem Ort. Stornofristen im Blick. Für iPhone, iPad und Mac.">
+  <meta property="og:url" content="https://rosch100.github.io/Reisen/">
+  <meta property="og:image" content="https://rosch100.github.io/Reisen/assets/app-icon.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="assets/app-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-  <h1>Reisen — Legal</h1>
-  <p>Open-source trip manager for iPhone, iPad, and Mac.</p>
+  <a class="skip-link" href="#main">Zum Inhalt</a>
 
-  <h2>Deutsch</h2>
-  <ul>
-    <li><a href="privacy.html" hreflang="de">Datenschutzerklärung</a></li>
-    <li><a href="support.html" hreflang="de">Support</a></li>
-  </ul>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="index.html">
+        <img class="site-brand__icon" src="assets/app-icon.png" width="36" height="36" alt="">
+        Reisen
+      </a>
+      <nav class="site-nav" aria-label="Hauptnavigation">
+        <span class="site-nav__links">
+          <a href="#providers">Anbieter</a>
+          <a href="#scenarios">Alltag</a>
+          <a href="#features">Funktionen</a>
+          <a href="#platforms">Plattformen</a>
+          <a href="#feedback">Feedback</a>
+          <a href="https://github.com/rosch100/Reisen">GitHub</a>
+        </span>
+        <span class="site-nav__lang" aria-label="Sprache">
+          <a href="index.html" hreflang="de" aria-current="page">DE</a>
+          <a href="en/index.html" hreflang="en">EN</a>
+        </span>
+      </nav>
+    </div>
+  </header>
 
-  <h2>English</h2>
-  <ul>
-    <li><a href="en/privacy.html" hreflang="en">Privacy Policy</a></li>
-    <li><a href="en/support.html" hreflang="en">Support</a></li>
-  </ul>
+  <main id="main">
+    <section class="hero">
+      <div class="container">
+        <span class="hero__badge">Open Source</span>
+        <h1>Deine Reisen.<br>Ein Ort. Alle Geräte.</h1>
+        <p class="hero__lead">
+          Flüge, Hotels und Termine übersichtlich — auf iPhone, iPad und Mac.
+          Optional über iCloud synchronisiert, ohne Werbung.
+        </p>
+        <div class="btn-group">
+          <a class="btn btn--primary" href="https://github.com/rosch100/Reisen">Auf GitHub ansehen</a>
+          <span class="btn btn--muted" aria-disabled="true">App Store — demnächst</span>
+        </div>
+        <div class="hero__visual" aria-hidden="true">
+          <div class="device-mockup">
+            <div class="device-mockup__bar">Meine Reisen</div>
+            <ul class="device-mockup__list">
+              <li class="device-mockup__item">
+                <span class="device-mockup__dot device-mockup__dot--flight"></span>
+                <div class="device-mockup__text">
+                  <strong>Barcelona</strong>
+                  <span>Flug · Storno bis 12. Sep.</span>
+                </div>
+              </li>
+              <li class="device-mockup__item">
+                <span class="device-mockup__dot device-mockup__dot--hotel"></span>
+                <div class="device-mockup__text">
+                  <strong>Hotel Casa Nova</strong>
+                  <span>3 Nächte · Check-in Fr.</span>
+                </div>
+              </li>
+              <li class="device-mockup__item">
+                <span class="device-mockup__dot device-mockup__dot--other"></span>
+                <div class="device-mockup__text">
+                  <strong>Städtetrip Wien</strong>
+                  <span>4 Buchungen</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <h2>Repository</h2>
-  <ul>
-    <li><a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a></li>
-    <li><a href="https://github.com/rosch100/Reisen/issues">GitHub Issues</a></li>
-  </ul>
+    <section id="scenarios" class="scenarios">
+      <div class="container">
+        <div class="scenarios__header">
+          <h2>Kommt dir bekannt vor?</h2>
+          <p>Reisen ist für genau diese Momente gemacht.</p>
+        </div>
+        <div class="scenario-grid">
+          <article class="scenario-card">
+            <p class="scenario-card__question">Hast du schon mal die Bettwäsche für eine Airbnb-Buchung vergessen?</p>
+            <p class="scenario-card__answer"><strong>Reisen</strong> erinnert dich an wichtige Details vor der Anreise — Check-in, Adresse und alles, was du nicht vergessen willst.</p>
+          </article>
+          <article class="scenario-card">
+            <p class="scenario-card__question">Du jagst Schnäppchen, buchst auf Check24 und Booking.com dasselbe Wochenende — und vergisst, eines zu stornieren?</p>
+            <p class="scenario-card__answer"><strong>Reisen</strong> erinnert dich rechtzeitig an die Stornofrist und zeigt dir Mehrfachbuchungen auf einen Blick.</p>
+          </article>
+          <article class="scenario-card">
+            <p class="scenario-card__question">Die kostenlose Stornierung war gestern — und du merkst es erst auf der Abrechnung?</p>
+            <p class="scenario-card__answer"><strong>Reisen</strong> warnt dich vor ablaufenden Fristen — per Mitteilung, Erinnerung oder im Kalender.</p>
+          </article>
+          <article class="scenario-card">
+            <p class="scenario-card__question">Flug bei Opodo, Hotel bei Airbnb, Stadtführung bei GetYourGuide — und du weißt nicht mehr, was wann ist?</p>
+            <p class="scenario-card__answer"><strong>Reisen</strong> führt alles in einer Reise zusammen — egal von welchem Portal.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="feature">
+      <div class="container">
+        <div class="feature__grid">
+          <div>
+            <h2>Buchungen von deinen Anbietern</h2>
+            <p>
+              Verbinde Check24, Opodo, Booking.com, Airbnb, GetYourGuide oder Traveloka —
+              mit deinem bestehenden Konto. Reisen holt deine Buchungen und zeigt alles in einer Liste.
+            </p>
+            <ul>
+              <li>Anmeldung beim Anbieter, nicht bei Reisen</li>
+              <li>Deine Zugangsdaten bleiben bei dir</li>
+              <li>Kein extra Account nötig</li>
+            </ul>
+          </div>
+          <div class="feature__visual">
+            <div class="feature-card">
+              <div class="feature-card__label">Import</div>
+              <div class="feature-card__title">6 Portale · 1 App</div>
+              <div class="feature-card__meta">Flüge, Hotels, Erlebnisse — importiert oder manuell</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature feature--alt">
+      <div class="container">
+        <div class="feature__grid feature__grid--reverse">
+          <div>
+            <h2>Nichts verpassen</h2>
+            <p>
+              Trage Reisen selbst ein oder importiere sie. Reisen erkennt Stornofristen
+              und erinnert dich rechtzeitig — per Mitteilung, Erinnerung oder im Kalender.
+            </p>
+            <ul>
+              <li>Erinnerung vor ablaufender Stornofrist</li>
+              <li>Optional im Apple-Kalender</li>
+              <li>Alles auf einen Blick</li>
+            </ul>
+          </div>
+          <div class="feature__visual">
+            <div class="feature-card">
+              <div class="feature-card__label">Stornofrist</div>
+              <div class="feature-card__title">Erinnerung in 3 Tagen</div>
+              <div class="feature-card__meta">Hotel Barcelona · kostenfrei stornierbar bis 15. Sep.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature">
+      <div class="container">
+        <div class="feature__grid">
+          <div>
+            <h2>Deine Daten bleiben deine</h2>
+            <p>
+              Buchungen liegen auf deinem Gerät. Wenn du möchtest, synchronisierst du sie
+              über iCloud zwischen iPhone, iPad und Mac — ohne Werbung und ohne Weitergabe
+              an Dritte.
+            </p>
+            <ul>
+              <li>Kein Tracking, kein Datenverkauf</li>
+              <li>iCloud-Sync optional</li>
+              <li>Jederzeit löschbar in den Einstellungen</li>
+            </ul>
+          </div>
+          <div class="feature__visual">
+            <div class="feature-card">
+              <div class="feature-card__label">Speicher</div>
+              <div class="feature-card__title">Auf dem Gerät · optional iCloud</div>
+              <div class="feature-card__meta">Auf allen Geräten verfügbar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="providers" class="providers">
+      <div class="container">
+        <h2>Sechs Portale, eine App</h2>
+        <p class="providers__lead">Melde dich mit deinem bestehenden Konto an — Reisen importiert Flüge, Hotels, Erlebnisse und mehr.</p>
+        <div class="provider-grid">
+          <div class="provider-chip">Check24</div>
+          <div class="provider-chip">Opodo</div>
+          <div class="provider-chip">Booking.com</div>
+          <div class="provider-chip">Airbnb</div>
+          <div class="provider-chip">GetYourGuide</div>
+          <div class="provider-chip">Traveloka</div>
+        </div>
+        <p class="provider-types">Flug · Hotel · Fähre · Erlebnis · Sonstiges — plus manuelle Einträge ohne Portal</p>
+      </div>
+    </section>
+
+    <section id="platforms" class="platforms">
+      <div class="container">
+        <h2>Für iPhone, iPad und Mac</h2>
+        <p class="platforms__lead">Dieselbe App — unterwegs am iPhone, bequem am iPad, vollständig am Mac.</p>
+        <div class="platform-grid">
+          <div class="platform-card">
+            <div class="platform-card__icon" aria-hidden="true">📱</div>
+            <h3>iPhone</h3>
+            <p>Reisen unterwegs — kompakt und schnell.</p>
+          </div>
+          <div class="platform-card">
+            <div class="platform-card__icon" aria-hidden="true">📋</div>
+            <h3>iPad</h3>
+            <p>Mehr Platz für Listen und Details.</p>
+          </div>
+          <div class="platform-card">
+            <div class="platform-card__icon" aria-hidden="true">💻</div>
+            <h3>Mac</h3>
+            <p>Vollständige Verwaltung am Schreibtisch.</p>
+          </div>
+        </div>
+        <div class="btn-group" style="justify-content: center;">
+          <a class="btn btn--secondary" href="https://github.com/rosch100/Reisen/releases">Reisen für Mac herunterladen</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust">
+      <div class="container">
+        <div class="trust__grid">
+          <div class="trust-item">
+            <div class="trust-item__icon" aria-hidden="true">🔒</div>
+            <h3>Privatsphäre</h3>
+            <p>Keine Werbung, kein Profiling, kein Verkauf deiner Daten.</p>
+          </div>
+          <div class="trust-item">
+            <div class="trust-item__icon" aria-hidden="true">☁️</div>
+            <h3>iCloud optional</h3>
+            <p>Sync zwischen Geräten — nur wenn du es willst.</p>
+          </div>
+          <div class="trust-item">
+            <div class="trust-item__icon" aria-hidden="true">🐙</div>
+            <h3>Open Source</h3>
+            <p>Quellcode einsehbar auf GitHub. Feedback direkt aus der App.</p>
+          </div>
+          <div class="trust-item">
+            <div class="trust-item__icon" aria-hidden="true">📄</div>
+            <h3>Kostenlos nutzen</h3>
+            <p>Die App ist kostenlos. CC BY-NC 4.0 gilt für den Quellcode, nicht für die private App-Nutzung.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="feedback" class="feedback">
+      <div class="container">
+        <h2>Wünsche &amp; Verbesserungen</h2>
+        <p class="feedback__lead">
+          Fehlt ein Anbieter? Hast du eine Idee für eine bessere Erinnerung oder einen anderen Ablauf?
+          Schreib uns — Reisen ist Open Source und lebt von deinem Feedback.
+        </p>
+        <div class="btn-group" style="justify-content: center;">
+          <a class="btn btn--primary" href="https://github.com/rosch100/Reisen/issues/new">Feature vorschlagen</a>
+          <a class="btn btn--secondary" href="https://github.com/rosch100/Reisen/issues">Alle Issues ansehen</a>
+        </div>
+        <p class="feedback__note">Ohne GitHub-Konto: In der App unter Einstellungen → Feedback.</p>
+      </div>
+    </section>
+
+    <section class="disclaimer">
+      <div class="container">
+        <p>
+          Reisen ist nicht mit Booking.com, Airbnb, Check24, Opodo,
+          GetYourGuide, Traveloka oder anderen Anbietern verbunden.
+          Du meldest dich direkt beim jeweiligen Anbieter an.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <nav class="site-footer__links" aria-label="Rechtliches">
+        <a href="privacy.html">Datenschutz</a>
+        <a href="support.html">Support</a>
+        <a href="impressum.html">Impressum</a>
+        <a href="https://github.com/rosch100/Reisen/issues">Feedback &amp; Hilfe</a>
+        <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.de">Lizenz (CC BY-NC 4.0)</a>
+      </nav>
+      <p class="site-footer__copy">© Roland Schramme · Reisen</p>
+    </div>
+  </footer>
 </body>
 </html>

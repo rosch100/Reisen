@@ -10,33 +10,118 @@ public enum GitHubRepository {
     public enum LegalDocument: Sendable {
         case privacy
         case support
+        case impressum
+
+        fileprivate func page(german: Bool) -> LegalPage {
+            switch self {
+            case .privacy: german ? .privacyDE : .privacyEN
+            case .support: german ? .supportDE : .supportEN
+            case .impressum: german ? .impressumDE : .impressumEN
+            }
+        }
     }
 
-    public enum LegalPage: String, Sendable {
+    public enum LegalPage: String, Sendable, CaseIterable {
         case privacyDE = "privacy.html"
         case privacyEN = "en/privacy.html"
         case supportDE = "support.html"
         case supportEN = "en/support.html"
+        case impressumDE = "impressum.html"
+        case impressumEN = "en/impressum.html"
+
+        private static let englishDirectoryPrefix = "en/"
+
+        /// GitHub-Pages-Pfad: EN-Inhalte unter `en/`, öffentliche URLs als `*.en.html` am Root.
+        public var pagesPath: String {
+            guard rawValue.hasPrefix(Self.englishDirectoryPrefix) else { return rawValue }
+            return String(rawValue.dropFirst(Self.englishDirectoryPrefix.count))
+                .replacingOccurrences(of: ".html", with: ".en.html")
+        }
+    }
+
+    public static let privacyRequestPage = "privacy-request.html"
+    public static let contactIssuePage = "contact-request.html"
+
+    public static var publicPath: String {
+        "\(owner)/\(name)"
     }
 
     public static var webBaseURL: URL {
-        URL(string: "https://github.com/\(owner)/\(name)")!
+        URL(string: "https://github.com/\(publicPath)")!
+    }
+
+    public static var apiRepoURL: URL {
+        URL(string: "https://api.github.com/repos/\(publicPath)")!
+    }
+
+    public static var apiIssuesURL: URL {
+        apiRepoURL.appending(path: "issues")
     }
 
     public static var issuesListURL: URL {
         webBaseURL.appending(path: "issues")
     }
 
-    public static var newIssuePath: String {
-        "/\(owner)/\(name)/issues/new"
+    public static var newIssueFormURL: URL {
+        issuesListURL.appending(path: "new")
     }
 
     public static var pagesBaseURL: URL {
         URL(string: "https://\(owner).github.io/\(name)")!
     }
 
-    public static var apiRepoURL: URL {
-        URL(string: "https://api.github.com/repos/\(owner)/\(name)")!
+    /// Trailing slash für Site-Root-URLs (404-Assets, Navigation).
+    public static var pagesSiteRootURL: URL {
+        URL(string: pagesBaseURL.absoluteString + "/")!
+    }
+
+    /// Vorausgefülltes Issue ohne personenbezogene Angaben im öffentlichen Text.
+    public static let publicIssueNoPersonalDataBody = """
+        Bitte keine Reisedaten, Passagierdaten, E-Mail-Adressen, Postanschriften oder sonstigen personenbezogenen Angaben in dieses Issue schreiben. Wir antworten mit einem privaten Kontaktweg.
+
+        Please do not include trip, passenger, email, postal, or other personal data in this issue. We will reply with a private contact channel.
+        """
+
+    /// Vorausgefülltes Issue für Impressum-/Kontaktanfragen (Website).
+    public static var contactIssueURL: URL {
+        publicIssue(title: "Kontakt Impressum / Legal contact")
+    }
+
+    /// Datenschutzanfrage ohne Reisedaten im öffentlichen Issue-Text.
+    public static var privacyRequestIssueURL: URL {
+        publicIssue(title: "Datenschutzanfrage / Privacy request")
+    }
+
+    private static var apiSearchIssuesURL: URL {
+        URL(string: "https://api.github.com/search/issues")!
+    }
+
+    public static func searchOpenIssuesURL(fingerprint: String) -> URL? {
+        url(from: apiSearchIssuesURL, queryItems: [
+            URLQueryItem(
+                name: "q",
+                value: "repo:\(publicPath) is:issue state:open in:body \(fingerprint)"
+            ),
+        ])
+    }
+
+    public static func newIssueURL(queryItems: [URLQueryItem]) -> URL? {
+        url(from: newIssueFormURL, queryItems: queryItems)
+    }
+
+    public static func newIssueURL(title: String, body: String) -> URL {
+        guard let url = newIssueURL(queryItems: [
+            URLQueryItem(name: "title", value: title),
+            URLQueryItem(name: "body", value: body),
+        ]) else {
+            preconditionFailure("GitHub-Issue-URL aus gültiger Formular-URL muss konstruierbar sein.")
+        }
+        return url
+    }
+
+    /// `href`/`url=` in statischem HTML (`&` → `&amp;`).
+    public static func htmlEncodedURL(_ url: URL) -> String {
+        url.absoluteString.replacingOccurrences(of: "&", with: "&amp;")
     }
 
     public static func issueURL(number: Int) -> URL {
@@ -44,23 +129,17 @@ public enum GitHubRepository {
     }
 
     public static func legalPage(for document: LegalDocument, locale: Locale = .current) -> LegalPage {
-        let isGerman = locale.reisenPrefersGerman
-        switch document {
-        case .privacy:
-            return isGerman ? .privacyDE : .privacyEN
-        case .support:
-            return isGerman ? .supportDE : .supportEN
-        }
+        document.page(german: locale.reisenPrefersGerman)
     }
 
     public static func rawLegalURL(_ page: LegalPage) -> URL {
         URL(
-            string: "https://raw.githubusercontent.com/\(owner)/\(name)/\(defaultBranch)/\(legalDirectory)/\(page.rawValue)"
+            string: "https://raw.githubusercontent.com/\(publicPath)/\(defaultBranch)/\(legalDirectory)/\(page.rawValue)"
         )!
     }
 
     public static func pagesLegalURL(_ page: LegalPage) -> URL {
-        pagesBaseURL.appending(path: page.rawValue)
+        pagesBaseURL.appending(path: page.pagesPath)
     }
 
     public static func pagesLegalURL(for document: LegalDocument, locale: Locale = .current) -> URL {
@@ -71,7 +150,15 @@ public enum GitHubRepository {
         rawLegalURL(legalPage(for: document, locale: locale))
     }
 
-    public static var publicPath: String {
-        "\(owner)/\(name)"
+    private static func publicIssue(title: String) -> URL {
+        newIssueURL(title: title, body: publicIssueNoPersonalDataBody)
+    }
+
+    private static func url(from base: URL, queryItems: [URLQueryItem]) -> URL? {
+        guard var components = URLComponents(url: base, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+        components.queryItems = queryItems
+        return components.url
     }
 }
