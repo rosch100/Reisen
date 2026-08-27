@@ -110,7 +110,8 @@ collect_mach_o_files() {
 contains_string() {
   local file="$1"
   local marker="$2"
-  strings "$file" | grep -Fq "$marker"
+  # grep -a auf der Binary vermeidet strings|grep-Pipefail/SIGPIPE auf großen CI-Binaries.
+  grep -aFq "$marker" "$file" 2>/dev/null
 }
 
 contains_symbol() {
