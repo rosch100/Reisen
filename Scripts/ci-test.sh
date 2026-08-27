@@ -82,14 +82,43 @@ if ! grep -q -- '--mode store --ipa' "$ROOT/Scripts/ios-archive-appstore.sh"; th
   echo "Fehler: App-Store-Archive muss das exportierte IPA store-isolieren (--ipa)." >&2
   exit 1
 fi
-if ! grep -q 'ios-archive-appstore.sh' "$ROOT/.github/workflows/app-store-check.yml"; then
-  echo "Fehler: App Store Check muss Scripts/ios-archive-appstore.sh verwenden (nur Store-Target)." >&2
+python3 "$ROOT/Scripts/tests/check-app-store-check-workflow.py" "$ROOT/.github/workflows/app-store-check.yml"
+if ! grep -q 'reisen_xcodebuild_asc_auth_args' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive muss xcodebuild mit App-Store-Connect-API-Key authentifizieren." >&2
   exit 1
 fi
-if grep -q 'ios-archive-adhoc.sh' "$ROOT/.github/workflows/app-store-check.yml"; then
-  echo "Fehler: App Store Check darf das Private-Archive nicht bauen oder scannen." >&2
+if grep -q 'AUTH_OUT="$(reisen_xcodebuild_asc_auth_args)"' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: reisen_xcodebuild_asc_auth_args darf nicht in Command-Substitution laufen (Subshell löscht den Temp-Key)." >&2
   exit 1
 fi
+(
+  # shellcheck source=apple-developer.sh
+  source "$ROOT/Scripts/apple-developer.sh"
+  APP_STORE_CONNECT_API_KEY_KEY_ID="TESTKEYID"
+  APP_STORE_CONNECT_API_KEY_ISSUER="00000000-0000-0000-0000-000000000000"
+  APP_STORE_CONNECT_API_KEY_BASE64="$(printf 'reisen-asc-key-fixture' | base64)"
+  unset APP_STORE_CONNECT_API_KEY_PATH
+  reisen_xcodebuild_asc_auth_args
+  key_path="$(reisen_asc_auth_key_path)" || {
+    echo "Fehler: reisen_xcodebuild_asc_auth_args muss BASE64 in einen Key-Pfad materialisieren." >&2
+    exit 1
+  }
+  if [[ ! -f "$key_path" ]]; then
+    echo "Fehler: materialisierter App-Store-Connect-Key fehlt: ${key_path}" >&2
+    exit 1
+  fi
+  reisen_cleanup_asc_auth_key
+  if [[ -e "$key_path" ]]; then
+    echo "Fehler: reisen_cleanup_asc_auth_key muss die materialisierte Key-Datei entfernen." >&2
+    exit 1
+  fi
+  unset APP_STORE_CONNECT_API_KEY_KEY_ID APP_STORE_CONNECT_API_KEY_ISSUER APP_STORE_CONNECT_API_KEY_BASE64
+  reisen_xcodebuild_asc_auth_args
+  if [[ "${REISEN_ASC_AUTH_ARGS[*]}" != "-allowProvisioningUpdates" ]]; then
+    echo "Fehler: ohne Key muss REISEN_ASC_AUTH_ARGS nur -allowProvisioningUpdates enthalten." >&2
+    exit 1
+  fi
+)
 if grep -q 'REISEN_FEEDBACK_GMAIL_APP_PASSWORD' "$ROOT/.github/workflows/gmail-feedback-ingress.yml"; then
   echo "Fehler: Gmail-Ingress darf kein App-Passwort mehr nutzen." >&2
   exit 1

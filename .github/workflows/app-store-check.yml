@@ -19,30 +19,35 @@ defaults:
     shell: bash --noprofile --norc -eo pipefail {0}
 
 jobs:
-  preflight:
-    name: Secrets
+  appcompliance-secrets:
+    name: AppCompliance secrets
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
 
     steps:
-      - name: Check AppCompliance secrets
+      - name: Report AppCompliance secret presence
+        id: check
         env:
           HAS_TOKEN: ${{ secrets.APPCOMPLIANCE_TOKEN != '' }}
           HAS_URL: ${{ secrets.APPCOMPLIANCE_API_URL != '' }}
         run: |
-          if [[ "$HAS_TOKEN" != "true" || "$HAS_URL" != "true" ]]; then
-            echo "Fehler: GitHub-Secrets APPCOMPLIANCE_TOKEN und APPCOMPLIANCE_API_URL fehlen." >&2
-            echo "Siehe docs/ci/appcompliance.md" >&2
-            exit 1
+          if [[ "$HAS_TOKEN" == "true" && "$HAS_URL" == "true" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "AppCompliance-Secrets vorhanden; Scan-Job läuft nach dem Archive."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AppCompliance-Scan wird übersprungen: GitHub-Secrets APPCOMPLIANCE_TOKEN und/oder APPCOMPLIANCE_API_URL fehlen. Siehe docs/ci/appcompliance.md. Das Store-IPA-Archive läuft unabhängig."
           fi
 
   archive:
     name: Archive Store IPA
-    needs: preflight
     runs-on: xcode-27
     timeout-minutes: 45
     outputs:
       ipa_name: ${{ steps.archive.outputs.ipa_name }}
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
 
     steps:
       - name: Checkout
@@ -60,6 +65,12 @@ jobs:
 
       - name: Archive Store IPA
         id: archive
+        env:
+          REISEN_GITHUB_ISSUES_TOKEN_BASE64: ${{ secrets.REISEN_GITHUB_ISSUES_TOKEN_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           IPA="$(bash ./Scripts/ios-archive-appstore.sh)"
           if [[ ! -f "$IPA" ]]; then
@@ -81,6 +92,7 @@ jobs:
           echo "ipa_name=$IPA_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload Store IPA
+        id: upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: reisen-ios-ipa
@@ -90,7 +102,8 @@ jobs:
 
   scan:
     name: AppCompliance scan
-    needs: archive
+    needs: [appcompliance-secrets, archive]
+    if: needs.appcompliance-secrets.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -133,3 +146,25 @@ jobs:
         with:
           sarif_file: appcompliance.sarif
           category: appcompliance
+
+  retract-ipa-artifact:
+    name: Retract Store IPA artifact
+    needs: [archive, scan]
+    if: always() && needs.archive.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: Delete Store IPA artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.archive.outputs.artifact_id }}
+        run: |
+          if [[ -z "$ARTIFACT_ID" ]]; then
+            echo "Fehler: archive.outputs.artifact_id fehlt; Store-IPA-Artifact würde auf dem öffentlichen Repo liegen bleiben." >&2
+            exit 1
+          fi
+          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}"

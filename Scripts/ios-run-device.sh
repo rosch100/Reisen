@@ -69,14 +69,7 @@ export REISEN_EMBED_GITHUB_ISSUE_TOKEN=true
 bash "$ROOT/Scripts/generate-ios-project.sh"
 
 TEAM_ID="$(reisen_apple_team_id)"
-AUTH_ARGS=()
-while IFS= read -r arg; do
-  [[ -n "$arg" ]] && AUTH_ARGS+=("$arg")
-done < <(reisen_xcodebuild_asc_auth_args || true)
-if [[ ${#AUTH_ARGS[@]} -eq 0 ]]; then
-  AUTH_ARGS+=(-allowProvisioningUpdates)
-fi
-AUTH_ARGS+=(-allowProvisioningDeviceRegistration)
+reisen_xcodebuild_asc_device_auth_args
 
 echo "Baue ReiseniOS für ${DEVICE_NAME} (${DEVICE_UDID})…" >&2
 xcodebuild \
@@ -85,7 +78,7 @@ xcodebuild \
   -destination "platform=iOS,id=${DEVICE_UDID}" \
   -derivedDataPath "$DERIVED" \
   -configuration Debug \
-  "${AUTH_ARGS[@]}" \
+  "${REISEN_ASC_AUTH_ARGS[@]}" \
   CODE_SIGN_STYLE=Automatic \
   DEVELOPMENT_TEAM="$TEAM_ID" \
   build
