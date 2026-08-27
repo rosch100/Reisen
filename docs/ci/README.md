@@ -4,7 +4,8 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 
 ## Verfügbare Workflows
 
-- `ci.yml`: Build+Test (macOS + iOS-Simulator Store **und** Private + Release-Binary-Check) auf PRs und Push auf `master`
+- `ci.yml`: Build+Test auf **jedem PR gegen `master`** und Push auf `master` (macOS-Tests, iOS-Simulator Store **und** Private, Release-Binary-Isolation). Pflicht-Check für Merges.
+- `app-store-check.yml`: manueller **App Store Check** zur Release-Vorbereitung (Store-IPA + AppCompliance). Nicht auf PRs. Siehe [`appcompliance.md`](appcompliance.md).
 - `codeql.yml`: CodeQL auf Push nach `master` und wöchentlichem Schedule (nicht auf jedem PR — der instrumentierte Swift-Build kostet ~30 min macOS)
 - `gitleaks.yml`: Secret-Scan auf PR, Push und täglichem Schedule
 - `actionlint.yml`: Workflow-Lint bei Änderungen unter `.github/workflows/`
@@ -29,7 +30,7 @@ Dependabot-PRs laufen durch die echte CI. Der Versions-Workflow nutzt `--verify`
 | + iOS Release-Binary-Isolation | `bash ./Scripts/ci-test.sh --with-ios-release-check` |
 | iOS-Simulator (Store + Private) | `IOS_SCHEME=all bash ./Scripts/ios-test.sh` |
 
-Vollständige GitHub-CI: zusätzlich `ios-test.sh` und `ios-build-release-check.sh` als eigene Steps in [`ci.yml`](../../.github/workflows/ci.yml).
+Vollständige GitHub-CI auf PRs gegen `master`: `ios-test.sh` und `ios-build-release-check.sh` als Steps in [`ci.yml`](../../.github/workflows/ci.yml). App-Store-/Apple-Check vor Einreichung: Workflow **App Store Check** ([`app-store-check.yml`](../../.github/workflows/app-store-check.yml)), manuell.
 
 ## SwiftPM-Cache (CI + CodeQL)
 
@@ -47,6 +48,7 @@ CodeQL cached nur SPM-/Module-Caches (nicht `.build`): der Tracer braucht ohnehi
 
 - Pflicht-Check für Merges: GitHub-Actions-Check **`CI`** aus [`ci.yml`](../../.github/workflows/ci.yml) (Check-Run, kein separater Legacy-Commit-Status)
 - CodeQL läuft nicht auf PRs; Scorecard/Gitleaks optional, nicht als Pflicht
+- **App Store Check** ist kein Merge-Gate: nur manuell vor der Store-Einreichung
 
 ## Dependency Review (Follow-up)
 
@@ -63,6 +65,7 @@ Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](app
 | Variante | Doku |
 |----------|------|
 | App Store (Store-iOS) | [`app-store-connect.md`](app-store-connect.md) |
+| App Store Check (manuell, IPA + AppCompliance) | [`appcompliance.md`](appcompliance.md) |
 | Private-iOS (Ad Hoc / Internal TestFlight) | [`ios-private-distribution.md`](ios-private-distribution.md) |
 | macOS Developer ID | [`apple-signing.md`](apple-signing.md) (Release-Section) |
 

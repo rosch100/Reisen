@@ -111,7 +111,7 @@ Das Script:
 3. erzeugt ein **Release**-Archive (`xcodebuild archive`, `generic/platform=iOS`)
 4. exportiert ein IPA (`Scripts/ios-export-appstore.plist`, `method: app-store`)
 
-Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Connect.
+Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Connect. Vor dem Upload: manueller Workflow **App Store Check** ([`appcompliance.md`](appcompliance.md)).
 
 Voraussetzungen:
 
