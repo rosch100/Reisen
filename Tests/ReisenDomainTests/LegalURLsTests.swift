@@ -32,6 +32,7 @@ import ReisenDomain
     )
 }
 
+/// Verifies that every legal page path referenced in code exists under `docs/legal/`.
 @Test func legalURLs_allHTMLFilesExistInRepo() throws {
     let repoRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
