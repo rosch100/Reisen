@@ -4,7 +4,7 @@ import ReisenDomain
 import ReisenProviders
 
 @MainActor
-public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfiguration {
+public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
     public init() {}
 
     public var id: ProviderID { .opodo }

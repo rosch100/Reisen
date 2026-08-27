@@ -46,20 +46,36 @@ import ReisenDomain
 }
 
 @Test func privacySettingPane_denialMessages_nameThePane() {
-    #expect(PrivacySettingPane.calendars.denialMessage.contains("Kalenderzugriff"))
-    #expect(PrivacySettingPane.calendars.denialMessage.contains("Kalender"))
-    #expect(PrivacySettingPane.reminders.denialMessage.contains("Erinnerungen"))
-    #expect(PrivacySettingPane.notifications.denialMessage.contains("Mitteilungen"))
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+
+    #if os(iOS)
+    let privacyRootPath = L10n.format(.settingsPathPrivacy, L10n.string(.settingsAppIos))
+    let notificationsPath = L10n.format(.settingsPathNotifications, L10n.string(.settingsAppIos))
+    #else
+    let privacyRootPath = L10n.format(.settingsPathPrivacy, L10n.string(.settingsAppMacos))
+    let notificationsPath = L10n.format(.settingsPathNotifications, L10n.string(.settingsAppMacos))
+    #endif
+
+    #expect(PrivacySettingPane.calendars.denialMessage == L10n.format(.privacyDenialCalendars, privacyRootPath))
+    #expect(PrivacySettingPane.reminders.denialMessage == L10n.format(.privacyDenialReminders, privacyRootPath))
+    #expect(PrivacySettingPane.notifications.denialMessage == L10n.format(.privacyDenialNotifications, notificationsPath))
 }
 
 @Test func privacySettingPane_openButtonTitle_isStable() {
-    #expect(PrivacySettingPane.calendars.openButtonTitle == "Einstellungen öffnen")
-    #expect(PrivacySettingPane.reminders.openButtonTitle == "Einstellungen öffnen")
-    #expect(PrivacySettingPane.notifications.openButtonTitle == "Einstellungen öffnen")
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+
+    #expect(PrivacySettingPane.calendars.openButtonTitle == L10n.string(.privacyOpenSettings))
+    #expect(PrivacySettingPane.reminders.openButtonTitle == L10n.string(.privacyOpenSettings))
+    #expect(PrivacySettingPane.notifications.openButtonTitle == L10n.string(.privacyOpenSettings))
 }
 
 @Test func privacySettingPane_restrictedCapabilityLabels_areStable() {
-    #expect(PrivacySettingPane.calendars.restrictedCapabilityLabel == "Kalender")
-    #expect(PrivacySettingPane.reminders.restrictedCapabilityLabel == "Erinnerungen")
-    #expect(PrivacySettingPane.notifications.restrictedCapabilityLabel == "Mitteilungen")
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+
+    #expect(PrivacySettingPane.calendars.restrictedCapabilityLabel == L10n.string(.privacyCalendars))
+    #expect(PrivacySettingPane.reminders.restrictedCapabilityLabel == L10n.string(.privacyReminders))
+    #expect(PrivacySettingPane.notifications.restrictedCapabilityLabel == L10n.string(.privacyNotifications))
 }

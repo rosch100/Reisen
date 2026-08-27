@@ -27,6 +27,10 @@ public extension SDBooking {
         BookingExternalURL.browserURL(from: externalUrl)
     }
 
+    var displayTitle: String {
+        title ?? bookingType.defaultDisplayTitle
+    }
+
     var daySpan: BookingDaySpan {
         BookingDaySpan(
             id: id,

@@ -22,16 +22,6 @@
 	<string>3</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>airbnb</string>
-		<string>booking</string>
-		<string>check24</string>
-		<string>getyourguide</string>
-		<string>gyg</string>
-		<string>opodo</string>
-		<string>traveloka</string>
-	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>MinimumOSVersion</key>

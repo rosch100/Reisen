@@ -4,7 +4,7 @@ import ReisenDomain
 import ReisenProviders
 
 @MainActor
-public final class Check24TravelProvider: TravelProvider, TravelProviderLoginConfiguration {
+public final class Check24TravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
     public let id = ProviderID.check24
     public let displayName = "Check24"
 

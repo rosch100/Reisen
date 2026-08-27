@@ -49,9 +49,9 @@ public enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, S
     public var id: String { rawValue }
     public var label: String {
         switch self {
-        case .unknown: return "Unbekannt"
-        case .yes: return "Ja"
-        case .no: return "Nein"
+        case .unknown: return L10n.string(.commonUnknown)
+        case .yes: return L10n.string(.commonYes)
+        case .no: return L10n.string(.commonNo)
         }
     }
 
@@ -208,10 +208,10 @@ public struct BookingEditorDraft: Equatable, Sendable {
 
         public var errorDescription: String? {
             switch self {
-            case .emptyTitle: return "Bitte einen Titel eingeben."
-            case .endBeforeStart: return "Ende darf nicht vor Start liegen."
-            case .invalidNumber(let field): return "Ungültiger Zahlenwert: \(field)."
-            case .invalidUrl: return "Ungültige URL."
+            case .emptyTitle: return L10n.string(.editorValidationEmptyTitle)
+            case .endBeforeStart: return L10n.string(.editorValidationEndBeforeStart)
+            case .invalidNumber(let field): return L10n.format(.editorValidationInvalidNumber, field)
+            case .invalidUrl: return L10n.string(.editorValidationInvalidUrl)
             }
         }
     }
@@ -247,19 +247,25 @@ public struct BookingEditorDraft: Equatable, Sendable {
             guard URL(string: externalUrl) != nil else { throw ValidationError.invalidUrl }
         }
 
-        try ensureOptionalInt("Hotel-Offset", hotelOffsetSecondsText)
-        try ensureOptionalInt("Abflug-Offset", flightDepartureOffsetSecondsText)
-        try ensureOptionalInt("Ankunft-Offset", flightArrivalOffsetSecondsText)
-        try ensureOptionalInt("Check-in Minuten", hotelCheckInMinutesText)
-        try ensureOptionalInt("Check-out Minuten", hotelCheckOutMinutesText)
-        try ensureOptionalDouble("Preis", totalPriceAmountText)
-        try ensureOptionalInt("Gäste", guestCountText)
-        try ensureOptionalInt("Zimmer", roomCountText)
-        try ensureOptionalInt("Passagiere", passengerCountText)
+        try ensureOptionalInt(L10n.string(.editorFieldHotelOffset), hotelOffsetSecondsText)
+        try ensureOptionalInt(L10n.string(.editorFieldDepartureOffset), flightDepartureOffsetSecondsText)
+        try ensureOptionalInt(L10n.string(.editorFieldArrivalOffset), flightArrivalOffsetSecondsText)
+        try ensureOptionalInt(L10n.string(.editorFieldCheckInMinutes), hotelCheckInMinutesText)
+        try ensureOptionalInt(L10n.string(.editorFieldCheckOutMinutes), hotelCheckOutMinutesText)
+        try ensureOptionalDouble(L10n.string(.editorFieldPrice), totalPriceAmountText)
+        try ensureOptionalInt(L10n.string(.editorFieldGuests), guestCountText)
+        try ensureOptionalInt(L10n.string(.editorFieldRooms), roomCountText)
+        try ensureOptionalInt(L10n.string(.editorFieldPassengers), passengerCountText)
 
         for (index, deadline) in cancellationDeadlines.enumerated() {
-            try ensureOptionalInt("Storno[\(index + 1)] Offset", deadline.hotelOffsetSecondsText)
-            try ensureOptionalDouble("Storno[\(index + 1)] Gebühr", deadline.cancellationFeeAmountText)
+            try ensureOptionalInt(
+                L10n.format(.editorFieldCancellationOffset, index + 1),
+                deadline.hotelOffsetSecondsText
+            )
+            try ensureOptionalDouble(
+                L10n.format(.editorFieldCancellationFee, index + 1),
+                deadline.cancellationFeeAmountText
+            )
         }
     }
 
@@ -444,12 +450,12 @@ private struct BookingPassengerEditorRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Menu {
-                Button(localizedTravellerType(.adult)) { pax.travellerType = .adult }
-                Button(localizedTravellerType(.child)) { pax.travellerType = .child }
-                Button(localizedTravellerType(.infant)) { pax.travellerType = .infant }
-                Button(localizedTravellerType(.unknown)) { pax.travellerType = .unknown }
+                Button(L10n.travellerTypeDisplay(.adult)) { pax.travellerType = .adult }
+                Button(L10n.travellerTypeDisplay(.child)) { pax.travellerType = .child }
+                Button(L10n.travellerTypeDisplay(.infant)) { pax.travellerType = .infant }
+                Button(L10n.travellerTypeDisplay(.unknown)) { pax.travellerType = .unknown }
             } label: {
-                Text(localizedTravellerType(pax.travellerType))
+                Text(L10n.travellerTypeDisplay(pax.travellerType))
             }
 
             HStack {
@@ -468,12 +474,12 @@ private struct BookingPassengerEditorRow: View {
                     }
                 )
 
-                TextField(PassengerEditorText.titleField, text: titleBinding)
-                TextField(PassengerEditorText.givenNameField, text: givenNameBinding)
+                TextField(L10n.string(.editorTitle), text: titleBinding)
+                TextField(L10n.string(.editorGivenName), text: givenNameBinding)
             }
 
             TextField(
-                PassengerEditorText.familyNameField,
+                L10n.string(.editorFamilyName),
                 text: Binding<String>(
                     get: { pax.familyName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" },
                     set: { newValue in
@@ -485,42 +491,42 @@ private struct BookingPassengerEditorRow: View {
 
             HStack {
                 DatePicker(
-                    PassengerEditorText.birthDateField,
+                    L10n.string(.editorBirthDate),
                     selection: Binding<Date>(
                         get: { pax.birthDate ?? Date() },
                         set: { pax.birthDate = $0 }
                     ),
                     displayedComponents: .date
                 )
-                Button(PassengerEditorText.clearBirthDate, role: .destructive) { pax.birthDate = nil }
+                Button(L10n.string(.editorClearBirthDate), role: .destructive) { pax.birthDate = nil }
             }
 
             Divider()
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(PassengerEditorText.baggageSectionTitle)
+                Text(L10n.string(.bookingDetailBaggage))
 
                 ForEach(pax.baggageAllowances.indices, id: \.self) { idx in
                     HStack {
                         Menu {
-                            Button(localizedBaggageType(.checkedBag)) { pax.baggageAllowances[idx].type = .checkedBag }
-                            Button(localizedBaggageType(.cabinBag)) { pax.baggageAllowances[idx].type = .cabinBag }
-                            Button(localizedBaggageType(.personalItem)) { pax.baggageAllowances[idx].type = .personalItem }
-                            Button(localizedBaggageType(.unknown)) { pax.baggageAllowances[idx].type = .unknown }
+                            Button(L10n.baggageTypeDisplay(.checkedBag)) { pax.baggageAllowances[idx].type = .checkedBag }
+                            Button(L10n.baggageTypeDisplay(.cabinBag)) { pax.baggageAllowances[idx].type = .cabinBag }
+                            Button(L10n.baggageTypeDisplay(.personalItem)) { pax.baggageAllowances[idx].type = .personalItem }
+                            Button(L10n.baggageTypeDisplay(.unknown)) { pax.baggageAllowances[idx].type = .unknown }
                         } label: {
-                            Text(localizedBaggageType(pax.baggageAllowances[idx].type))
+                            Text(L10n.baggageTypeDisplay(pax.baggageAllowances[idx].type))
                         }
 
-                        TextField(PassengerEditorText.piecesField, value: Binding<Int?>(
+                        TextField(L10n.string(.editorPieces), value: Binding<Int?>(
                             get: { pax.baggageAllowances[idx].pieceCount },
                             set: { pax.baggageAllowances[idx].pieceCount = $0 }
                         ), format: .number)
-                        TextField(PassengerEditorText.weightKgField, value: Binding<Double?>(
+                        TextField(L10n.string(.editorWeightKg), value: Binding<Double?>(
                             get: { pax.baggageAllowances[idx].weightKg },
                             set: { pax.baggageAllowances[idx].weightKg = $0 }
                         ), format: .number)
 
-                        Button(PassengerEditorText.removeBaggageAllowance, role: .destructive) {
+                        Button(L10n.string(.editorRemoveBaggage), role: .destructive) {
                             pax.baggageAllowances.remove(at: idx)
                         }
                     }
@@ -535,11 +541,11 @@ private struct BookingPassengerEditorRow: View {
                         )
                     )
                 } label: {
-                    Label(PassengerEditorText.addBaggageAllowance, systemImage: "plus")
+                    Label(L10n.string(.editorAddBaggage), systemImage: "plus")
                 }
             }
 
-            Button(PassengerEditorText.removePassenger, role: .destructive) {
+            Button(L10n.string(.editorRemovePassenger), role: .destructive) {
                 removePassenger(pax.id)
             }
             .buttonStyle(.plain)
@@ -550,47 +556,6 @@ private struct BookingPassengerEditorRow: View {
 private extension BookingEditorDraft {
     static func structuredBaggageInfoRaw(passengers: [BookingPassenger]) -> String {
         BaggageInfoFormatter.baggageInfoRaw(passengers: passengers)
-    }
-}
-
-private enum PassengerEditorText {
-    static let titleField = "Titel"
-    static let givenNameField = "Vorname"
-    static let familyNameField = "Nachname"
-
-    static let baggageSectionTitle = "Gepäck"
-
-    static let birthDateField = "Geburtsdatum"
-    static let clearBirthDate = "Datum löschen"
-
-    static let piecesField = "Stück"
-    static let weightKgField = "Gewicht (kg)"
-
-    static let removeBaggageAllowance = "Entfernen"
-    static let addBaggageAllowance = "Gepäck hinzufügen"
-
-    static let removePassenger = "Passagier entfernen"
-
-    static let passengerCountField = "Passagiere"
-    static let baggageInfoRawField = "Gepäck"
-    static let structuredBaggageDerivedText = "Gepäck wird aus den strukturierten Allowances abgeleitet."
-}
-
-private func localizedTravellerType(_ type: TravellerType) -> String {
-    switch type {
-    case .adult: return "Erwachsener"
-    case .child: return "Kind"
-    case .infant: return "Säugling"
-    case .unknown: return "Unbekannt"
-    }
-}
-
-private func localizedBaggageType(_ type: BaggageType) -> String {
-    switch type {
-    case .checkedBag: return "Aufgegebenes Gepäck"
-    case .cabinBag: return "Handgepäck"
-    case .personalItem: return "Persönlicher Gegenstand"
-    case .unknown: return "Unbekannt"
     }
 }
 
@@ -631,7 +596,7 @@ public struct BookingEditorForm: View {
                 Text(title)
                     .font(.headline)
                 if showsSyncOverwriteHint {
-                    Text("Änderungen können beim nächsten Sync überschrieben werden.")
+                    Text(L10n.string(.editorSyncOverwriteWarning))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -644,58 +609,66 @@ public struct BookingEditorForm: View {
             Divider()
 
             Form {
-                Section("Allgemein") {
+                Section(L10n.string(.editorGeneral)) {
                     if providerReadOnly {
-                        LabeledContent("Provider", value: draft.provider.rawValue.capitalized)
+                        LabeledContent(L10n.string(.editorProvider), value: draft.provider.rawValue.capitalized)
                     }
-                    TextField("Titel", text: $draft.title)
-                    Picker("Typ", selection: $draft.bookingType) {
+                    TextField(L10n.string(.editorTitle), text: $draft.title)
+                    Picker(L10n.string(.editorType), selection: $draft.bookingType) {
                         ForEach(BookingType.allCases) { type in
                             Text(localizedBookingType(type)).tag(type)
                         }
                     }
-                    Picker("Status", selection: $draft.status) {
+                    Picker(L10n.string(.bookingDetailStatus), selection: $draft.status) {
                         ForEach(BookingStatus.allCases) { status in
                             Text(localizedBookingStatus(status)).tag(status)
                         }
                     }
-                    TextField("Bestätigungscode", text: $draft.confirmationCode)
-                    TextField("URL (optional)", text: $draft.externalUrl)
+                    TextField(L10n.string(.editorConfirmationCode), text: $draft.confirmationCode)
+                    TextField(L10n.string(.editorUrlOptional), text: $draft.externalUrl)
                     DatePicker(
-                        "Start",
+                        L10n.string(.editorStart),
                         selection: $draft.startAt,
                         displayedComponents: draft.bookingType == .hotel ? [.date] : [.date, .hourAndMinute]
                     )
                     DatePicker(
-                        "Ende",
+                        L10n.string(.editorEnd),
                         selection: $draft.endAt,
                         in: computedEndAtMin...,
                         displayedComponents: draft.bookingType == .hotel ? [.date] : [.date, .hourAndMinute]
                     )
-                    TextField("Von", text: $draft.locationFrom)
-                    TextField("Nach", text: $draft.locationTo)
-                    TextField("Adresse von (optional)", text: $draft.locationFromAddress)
-                    TextField("Adresse nach (optional)", text: $draft.locationToAddress)
+                    if draft.bookingType.showsLocationFrom {
+                        TextField(draft.bookingType.locationFromLabel, text: $draft.locationFrom)
+                    }
+                    TextField(draft.bookingType.locationToLabel, text: $draft.locationTo)
+                    if let fromAddressLabel = draft.bookingType.locationFromAddressLabel {
+                        TextField(L10n.optionalFieldLabel(fromAddressLabel), text: $draft.locationFromAddress)
+                    }
+                    if let toAddressLabel = draft.bookingType.locationToAddressLabel {
+                        TextField(L10n.optionalFieldLabel(toAddressLabel), text: $draft.locationToAddress)
+                    }
                 }
 
                 if draft.bookingType == .hotel {
-                    Section("Hotel") {
-                        TextField("Hotel-Offset (s)", text: $draft.hotelOffsetSecondsText)
-                        TextField("Check-in (Minuten)", text: $draft.hotelCheckInMinutesText)
-                        TextField("Check-out (Minuten)", text: $draft.hotelCheckOutMinutesText)
+                    Section(L10n.string(.editorHotel)) {
+                        TextField(L10n.string(.editorHotelOffset), text: $draft.hotelOffsetSecondsText)
+                        TextField(L10n.string(.editorCheckInMinutes), text: $draft.hotelCheckInMinutesText)
+                        TextField(L10n.string(.editorCheckOutMinutes), text: $draft.hotelCheckOutMinutesText)
                     }
                 } else if draft.bookingType == .flight {
-                    Section("Flug") {
-                        TextField("Abflug-Offset (s)", text: $draft.flightDepartureOffsetSecondsText)
-                        TextField("Ankunft-Offset (s)", text: $draft.flightArrivalOffsetSecondsText)
+                    Section(L10n.string(.editorFlight)) {
+                        TextField(L10n.string(.editorDepartureOffset), text: $draft.flightDepartureOffsetSecondsText)
+                        TextField(L10n.string(.editorArrivalOffset), text: $draft.flightArrivalOffsetSecondsText)
                     }
                 }
 
-                Section("Preis / Tarif") {
-                    TextField("Preis", text: $draft.totalPriceAmountText)
-                    TextField("Währung", text: $draft.totalPriceCurrency)
+                Section(BookingDetailLabels.rateSection) {
+                    TextField(L10n.string(.bookingDetailPrice), text: $draft.totalPriceAmountText)
+                    TextField(L10n.string(.bookingDetailCurrency), text: $draft.totalPriceCurrency)
+                    if let roomCategoryLabel = draft.bookingType.roomCategoryLabel {
+                        TextField(roomCategoryLabel, text: $draft.roomCategory)
+                    }
                     if draft.bookingType == .hotel {
-                        TextField("Zimmerkategorie", text: $draft.roomCategory)
                         Menu {
                             ForEach(BookingBoardType.allCases) { bt in
                                 Button(localizedBoardType(bt)) { draft.boardType = bt }
@@ -711,12 +684,12 @@ public struct BookingEditorForm: View {
                         } label: {
                             Text(draft.includedBreakfastState.label)
                         }
-                        TextField("Gäste", text: $draft.guestCountText)
-                        TextField("Zimmer", text: $draft.roomCountText)
+                        TextField(L10n.string(.bookingDetailGuests), text: $draft.guestCountText)
+                        TextField(L10n.string(.editorFieldRooms), text: $draft.roomCountText)
                     }
                     if draft.bookingType == .flight {
                         if !draft.passengers.isEmpty {
-                            Section("Passagiere") {
+                            Section(L10n.string(.bookingDetailPassengers)) {
                                 let removePassengerAction: (UUID) -> Void = { id in
                                     draft.passengers.removeAll { $0.id == id }
                                 }
@@ -741,36 +714,36 @@ public struct BookingEditorForm: View {
                                         )
                                     )
                                 } label: {
-                                    Label("Passagier hinzufügen", systemImage: "plus")
+                                    Label(L10n.string(.editorAddPassenger), systemImage: "plus")
                                 }
                             }
                         } else {
                             // Fallback für Provider, die (noch) keine strukturierten Passagiere liefern.
-                            TextField(PassengerEditorText.passengerCountField, text: $draft.passengerCountText)
-                            TextField(PassengerEditorText.baggageInfoRawField, text: $draft.baggageInfoRaw)
+                            TextField(L10n.string(.editorFieldPassengers), text: $draft.passengerCountText)
+                            TextField(L10n.string(.bookingDetailBaggage), text: $draft.baggageInfoRaw)
                         }
-                        TextField("Airline", text: $draft.airline)
+                        TextField(BookingDetailLabels.airline, text: $draft.airline)
                         if !draft.passengers.isEmpty {
-                            Text("\(draft.passengers.count) Passagiere")
-                            Text(PassengerEditorText.structuredBaggageDerivedText)
+                            Text(L10n.format(.editorPassengerCount, draft.passengers.count))
+                            Text(L10n.string(.editorStructuredBaggageDerived))
                         }
                     }
                 }
 
-                Section("Stornierung") {
+                Section(L10n.string(.editorCancellation)) {
                     ForEach($draft.cancellationDeadlines) { $deadline in
                         VStack(alignment: .leading, spacing: 8) {
                             DatePicker(
-                                "Storno bis",
+                                L10n.string(.editorCancellationUntil),
                                 selection: $deadline.deadlineAt,
                                 displayedComponents: [.date, .hourAndMinute]
                             )
-                            Toggle("Kostenlos", isOn: $deadline.isFreeCancellation)
-                            Toggle("Strikt", isOn: $deadline.isStrict)
-                            TextField("Policy-Text", text: $deadline.policyText)
-                            TextField("Offset (s)", text: $deadline.hotelOffsetSecondsText)
-                            TextField("Gebühr", text: $deadline.cancellationFeeAmountText)
-                            Button("Eintrag entfernen", role: .destructive) {
+                            Toggle(L10n.string(.editorFreeCancellation), isOn: $deadline.isFreeCancellation)
+                            Toggle(BookingDetailLabels.strictDeadline, isOn: $deadline.isStrict)
+                            TextField(L10n.string(.editorPolicyText), text: $deadline.policyText)
+                            TextField(L10n.string(.editorOffsetSeconds), text: $deadline.hotelOffsetSecondsText)
+                            TextField(L10n.string(.editorFee), text: $deadline.cancellationFeeAmountText)
+                            Button(L10n.string(.editorRemoveEntry), role: .destructive) {
                                 draft.cancellationDeadlines.removeAll { $0.id == deadline.id }
                             }
                         }
@@ -782,17 +755,17 @@ public struct BookingEditorForm: View {
                             CancellationDeadlineDraft(deadlineAt: draft.startAt)
                         )
                     } label: {
-                        Label("Stornofrist hinzufügen", systemImage: "plus")
+                        Label(L10n.string(.editorAddCancellationDeadline), systemImage: "plus")
                     }
                 }
 
                 Section(GuestHintCategory.preTravelImportant.displayTitle) {
                     ForEach($draft.guestHints) { $hint in
                         VStack(alignment: .leading, spacing: 8) {
-                            TextField("Titel", text: $hint.title)
-                            TextField("Hinweis", text: $hint.detail, axis: .vertical)
+                            TextField(L10n.string(.editorTitle), text: $hint.title)
+                            TextField(L10n.string(.editorHintDetail), text: $hint.detail, axis: .vertical)
                                 .lineLimit(2...5)
-                            Button("Eintrag entfernen", role: .destructive) {
+                            Button(L10n.string(.editorRemoveEntry), role: .destructive) {
                                 draft.guestHints.removeAll { $0.id == hint.id }
                             }
                         }
@@ -810,7 +783,7 @@ public struct BookingEditorForm: View {
                             )
                         )
                     } label: {
-                        Label("Hinweis hinzufügen", systemImage: "plus")
+                        Label(L10n.string(.editorAddHint), systemImage: "plus")
                     }
                 }
 
@@ -827,10 +800,10 @@ public struct BookingEditorForm: View {
             Divider()
 
             HStack {
-                Button("Abbrechen") { onCancel() }
+                Button(L10n.string(.commonCancel)) { onCancel() }
                     .keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Sichern") {
+                Button(L10n.string(.commonSave)) {
                     do {
                         try draft.validate()
                         try onSave()
@@ -854,11 +827,7 @@ public struct BookingEditorForm: View {
     }
 
     private func localizedBookingStatus(_ status: BookingStatus) -> String {
-        switch status {
-        case .confirmed: return "Bestätigt"
-        case .cancelled: return "Storniert"
-        case .unknown: return "Unbekannt"
-        }
+        status.displayLabel
     }
 
     private func localizedBoardType(_ type: BookingBoardType) -> String {

@@ -29,8 +29,8 @@ if [[ ! -d "$ROOT/Reisen.xcodeproj" ]]; then
   exit 1
 fi
 
-echo "Sync LSApplicationQueriesSchemes aus ProviderNativeApp-SSOT …"
-swift run --package-path "$ROOT" SyncIOSQuerySchemes "$ROOT/Apps/ReiseniOS/Info.plist"
+echo "Sync LSApplicationQueriesSchemes aus ProviderNativeApp-SSOT (nur Private-iOS) …"
+swift run --package-path "$ROOT" SyncIOSQuerySchemes "$ROOT/Apps/ReiseniOSPrivate/Info.plist"
 
 # shellcheck source=apple-developer.sh
 source "$ROOT/Scripts/apple-developer.sh"

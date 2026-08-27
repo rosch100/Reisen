@@ -38,3 +38,7 @@ Secrets/*
 
 # XOR-Payload zur Compile-Zeit (SSOT: GitHubIssueToken.generated.swift.stub)
 Sources/ReisenAppCore/GitHubIssues/GitHubIssueToken.generated.swift
+
+# Python
+__pycache__/
+*.py[cod]

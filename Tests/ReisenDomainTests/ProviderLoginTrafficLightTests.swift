@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 import ReisenDomain
 
 @Test func trafficLight_disabled_isGray() {
@@ -20,7 +21,10 @@ import ReisenDomain
 }
 
 @Test func trafficLight_displayLabels_areStable() {
-    #expect(ProviderLoginTrafficLight.green.displayLabel == "Angemeldet")
-    #expect(ProviderLoginTrafficLight.red.displayLabel == "Anmeldung erforderlich")
-    #expect(ProviderLoginTrafficLight.gray.displayLabel == "Provider deaktiviert")
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+
+    #expect(ProviderLoginTrafficLight.green.displayLabel == L10n.string(.loginStatusGreen))
+    #expect(ProviderLoginTrafficLight.red.displayLabel == L10n.string(.loginStatusRed))
+    #expect(ProviderLoginTrafficLight.gray.displayLabel == L10n.string(.loginStatusGray))
 }

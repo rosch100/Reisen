@@ -6,54 +6,38 @@ public enum PrivacySettingPane: String, Sendable, Hashable, CaseIterable {
     case reminders
     case notifications
 
-    public var openButtonTitle: String { "Einstellungen öffnen" }
+    public var openButtonTitle: String { L10n.string(.privacyOpenSettings) }
 
     /// Kurzname für Statuszeilen, wenn die App ohne diese Freigabe weiterläuft.
     public var restrictedCapabilityLabel: String {
-        switch self {
-        case .calendars: return "Kalender"
-        case .reminders: return "Erinnerungen"
-        case .notifications: return "Mitteilungen"
-        }
+        L10n.privacySettingPaneDisplay(self)
     }
 
     public var denialMessage: String {
         switch self {
         case .calendars:
-            return """
-            Kalenderzugriff wurde verweigert.
-
-            Bitte aktiviere unter „\(Self.privacyRootPath) → Kalender“ für „Reisen“ den Schalter.
-            """
+            return L10n.format(.privacyDenialCalendars, Self.privacyRootPath)
         case .reminders:
-            return """
-            Erinnerungen-Zugriff wurde verweigert.
-
-            Bitte aktiviere unter „\(Self.privacyRootPath) → Erinnerungen“ für „Reisen“ den Schalter.
-            """
+            return L10n.format(.privacyDenialReminders, Self.privacyRootPath)
         case .notifications:
-            return """
-            Benachrichtigungen wurden nicht autorisiert.
-
-            Bitte aktiviere unter „\(Self.notificationsPath)“ die Mitteilungen für „Reisen“.
-            """
+            return L10n.format(.privacyDenialNotifications, Self.notificationsPath)
         }
     }
 
     private static var settingsAppName: String {
         #if os(iOS)
-        "Einstellungen"
+        L10n.string(.settingsAppIos)
         #else
-        "Systemeinstellungen"
+        L10n.string(.settingsAppMacos)
         #endif
     }
 
     private static var privacyRootPath: String {
-        "\(settingsAppName) → Datenschutz & Sicherheit"
+        L10n.format(.settingsPathPrivacy, settingsAppName)
     }
 
     private static var notificationsPath: String {
-        "\(settingsAppName) → Mitteilungen"
+        L10n.format(.settingsPathNotifications, settingsAppName)
     }
 }
 

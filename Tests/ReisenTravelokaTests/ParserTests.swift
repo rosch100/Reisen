@@ -51,7 +51,7 @@ private enum TravelokaFixtureLoader {
     #expect(hotel.deadlines.contains { $0.isFreeCancellation } == true)
     #expect(hotel.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 } == true)
 
-    let vehicle = try #require(byType[.other])
+    let vehicle = try #require(byType[.carRental])
     #expect(vehicle.confirmationCode == "1387355867")
     #expect(vehicle.title == "Daihatsu Sigra - Jakarta")
     #expect(vehicle.operatorName == "Jayamahe Easy Ride Jakarta")
@@ -558,6 +558,7 @@ private enum TravelokaFixtureLoader {
         title: "Example Hotel",
         startAt: Date(),
         endAt: Date(),
+        locationToAddress: "Jl. Example No. 1, Cilandak, South Jakarta",
         status: .confirmed,
         deadlines: [
             CancellationDeadline(
@@ -572,6 +573,7 @@ private enum TravelokaFixtureLoader {
                 cancellationFeeAmount: 4.37
             ),
         ],
+        rateDetails: BookingRateDetails(roomCategory: "Standard Double"),
         hotelCheckInMinutes: 14 * 60,
         hotelCheckOutMinutes: 12 * 60
     )
@@ -587,6 +589,49 @@ private enum TravelokaFixtureLoader {
         hotelCheckOutMinutes: 12 * 60
     )
     #expect(TravelokaEnrichmentNeeds.shouldEnrich(missingCheckIn, requiresDeadlines: true) == true)
+
+    let missingAddress = ProviderBookingDraft(
+        provider: .traveloka,
+        bookingType: .hotel,
+        title: "Example Hotel",
+        startAt: Date(),
+        endAt: Date(),
+        status: .confirmed,
+        deadlines: complete.deadlines,
+        rateDetails: BookingRateDetails(roomCategory: "Standard Double"),
+        hotelCheckInMinutes: 14 * 60,
+        hotelCheckOutMinutes: 12 * 60
+    )
+    #expect(TravelokaEnrichmentNeeds.shouldEnrich(missingAddress, requiresDeadlines: true) == true)
+
+    let completeCarRental = ProviderBookingDraft(
+        provider: .traveloka,
+        bookingType: .carRental,
+        title: "Daihatsu Sigra - Jakarta",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Bandara",
+        locationTo: "Jakarta",
+        locationFromAddress: "Pickup Jakarta",
+        locationToAddress: "Dropoff Jakarta",
+        operatorName: "Jayamahe",
+        status: .confirmed
+    )
+    #expect(TravelokaEnrichmentNeeds.shouldEnrich(completeCarRental, requiresDeadlines: false) == false)
+
+    let missingCarPickup = ProviderBookingDraft(
+        provider: .traveloka,
+        bookingType: .carRental,
+        title: "Daihatsu Sigra - Jakarta",
+        startAt: Date(),
+        endAt: Date(),
+        locationTo: "Jakarta",
+        locationFromAddress: "Pickup Jakarta",
+        locationToAddress: "Dropoff Jakarta",
+        operatorName: "Jayamahe",
+        status: .confirmed
+    )
+    #expect(TravelokaEnrichmentNeeds.shouldEnrich(missingCarPickup, requiresDeadlines: false) == true)
 }
 
 @Test func travelokaSessionContextResolvesLocaleFromURLAndCookies() {
@@ -817,6 +862,7 @@ private enum TravelokaFixtureLoader {
         ],
     ]
     let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.bookingType == .carRental)
     #expect(draft.deadlines.count == 1)
     #expect(draft.deadlines.first?.isFreeCancellation == true)
     let tz = try #require(TimeZone(identifier: "Asia/Jakarta"))

@@ -37,7 +37,9 @@ enum TravelokaProductType: String, Sendable {
             return .hotel
         case .experience:
             return .activity
-        case .vehicleRental, .airportTransport, .flightAncillary, .insurance, .train, .other:
+        case .vehicleRental:
+            return .carRental
+        case .airportTransport, .flightAncillary, .insurance, .train, .other:
             return .other
         }
     }

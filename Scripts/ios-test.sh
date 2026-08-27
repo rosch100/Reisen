@@ -1,18 +1,32 @@
 #!/usr/bin/env bash
 # Führt iOS-Unit-Tests auf dem Simulator aus (SSOT).
+# IOS_SCHEME: all (default), ReiseniOS, ReiseniOSPrivate.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+run_scheme_tests() {
+  local scheme="$1"
+  local derived="$ROOT/DerivedData/${scheme}"
+
+  echo "iOS-Tests: ${scheme} …" >&2
+  xcodebuild \
+    -project "$PROJECT" \
+    -scheme "$scheme" \
+    -destination "platform=iOS Simulator,id=$UDID" \
+    -derivedDataPath "$derived" \
+    -configuration Debug \
+    "${XCODEBUILD_SIGN_ARGS[@]}" \
+    test
+}
+
 SIMULATOR_NAME="${IOS_SIMULATOR:-iPad Pro 13-inch (M5)}"
-SCHEME="ReiseniOS"
+SCHEME="${IOS_SCHEME:-all}"
 PROJECT="$ROOT/Reisen.xcodeproj"
-DERIVED="$ROOT/DerivedData/ReiseniOS"
 
 bash "$ROOT/Scripts/generate-ios-project.sh"
 
-# Portable UDID parse (BSD sed/grep on macOS; no GNU awk)
 resolve_udid() {
   local name="$1"
   xcrun simctl list devices available \
@@ -26,7 +40,6 @@ UDID="$(resolve_udid "$SIMULATOR_NAME")"
 
 if [[ -z "${UDID}" ]]; then
   if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
-    # CI images may lack the local default device; pick first available iPhone/iPad.
     FALLBACK_LINE="$(xcrun simctl list devices available \
       | grep -E 'iPhone|iPad' \
       | grep -v unavailable \
@@ -48,16 +61,21 @@ fi
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 
-XCODEBUILD_ARGS=(
-  -project "$PROJECT"
-  -scheme "$SCHEME"
-  -destination "platform=iOS Simulator,id=$UDID"
-  -derivedDataPath "$DERIVED"
-  -configuration Debug
-)
-# CI-Runner haben kein Developer-Team; Simulator-Tests brauchen kein Device-Signing.
+XCODEBUILD_SIGN_ARGS=()
 if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
-  XCODEBUILD_ARGS+=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO)
+  XCODEBUILD_SIGN_ARGS+=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO)
 fi
 
-xcodebuild "${XCODEBUILD_ARGS[@]}" test
+case "$SCHEME" in
+  all)
+    run_scheme_tests ReiseniOS
+    run_scheme_tests ReiseniOSPrivate
+    ;;
+  ReiseniOS|ReiseniOSPrivate)
+    run_scheme_tests "$SCHEME"
+    ;;
+  *)
+    echo "Fehler: Unbekanntes Scheme: $SCHEME (ReiseniOS, ReiseniOSPrivate, all)" >&2
+    exit 2
+    ;;
+esac

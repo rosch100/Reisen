@@ -55,6 +55,8 @@ if [[ -d "$APP_IN_ARCHIVE" ]]; then
   if [[ "$APS_ENV" != "production" ]]; then
     echo "Warnung: aps-environment im Archive ist nicht 'production' (ist: ${APS_ENV:-fehlt})." >&2
   fi
+
+  bash "$ROOT/Scripts/ios-verify-binary-isolation.sh" --mode store --app "$APP_IN_ARCHIVE"
 fi
 
 echo "OK: $IPA" >&2

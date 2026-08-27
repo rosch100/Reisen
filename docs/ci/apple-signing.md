@@ -5,7 +5,8 @@ Team-ID und Bundle-IDs sind **keine Secrets**, werden aber nicht in dieser Doku 
 | Plattform | Bundle-ID | Container |
 |-----------|-----------|-----------|
 | macOS | siehe `project.yml` → ReisenMac | siehe `PersistenceBootstrap.cloudKitContainerID` |
-| iOS / iPadOS | siehe `project.yml` → ReiseniOS | gemeinsamer CloudKit-Container (wie macOS) |
+| iOS App Store | `de.reisen.Reisen.ios` (`ReiseniOS`) | gemeinsamer CloudKit-Container |
+| iOS Private | `de.reisen.Reisen.ios.private` (`ReiseniOSPrivate`) | gemeinsamer CloudKit-Container |
 
 Team: **DEVELOPMENT_TEAM** aus `project.yml` oder Umgebungsvariable `APPLE_TEAM_ID` (Automatic Signing).
 
@@ -30,7 +31,7 @@ bash ./Scripts/setup-apple-developer.sh
 Das Script:
 
 1. prüft die Development-Identity zur Team-ID aus `project.yml`
-2. erzeugt `Reisen.xcodeproj` (XcodeGen, Targets `ReiseniOS` + `ReisenMac`)
+2. erzeugt `Reisen.xcodeproj` (XcodeGen, Targets `ReiseniOS`, `ReiseniOSPrivate`, `ReisenMac`)
 3. registriert App-IDs/Profiles per Automatic Signing (`xcodebuild -allowProvisioningUpdates`)
 4. legt `.signing/Reisen.provisionprofile` ab (gitignored) für `Scripts/build-app.sh`
 
@@ -38,13 +39,24 @@ Wenn Xcode nicht mit der Apple-ID angemeldet ist, schlägt Schritt 3 fehl. Dann:
 
 1. `open Reisen.xcodeproj`
 2. Xcode → Settings → Accounts → Apple-ID anmelden
-3. Targets **ReiseniOS** und **ReisenMac** → Signing & Capabilities → passendes Team wählen
+3. Targets **ReiseniOS**, **ReiseniOSPrivate** und **ReisenMac** → Signing & Capabilities → passendes Team wählen
 4. Capabilities: **iCloud** (CloudKit, Container laut `project.yml`) und **Push Notifications** (iOS)
 5. Script erneut ausführen
 
 `Scripts/build-app.sh` / `Scripts/run-app.sh` signieren lokal mit **Apple Development**, sobald das Profil in `.signing/` liegt. Fehlt es, bleibt der Pfad explizit ad-hoc (CloudKit inaktiv, Hinweis auf das Setup-Script). In CI (`CI=true` / GitHub Actions) ist ad-hoc fest verdrahtet.
 
 iOS-Simulator-Tests in CI setzen `CODE_SIGNING_ALLOWED=NO` — die Runner haben keine Team-Zertifikate.
+
+## macOS CloudKit ohne Push (`aps-environment`)
+
+`Resources/Reisen.entitlements` enthält **kein** `aps-environment` (keine Push Notifications Capability am Mac-Target).
+
+| Plattform | Silent CloudKit Push | Sync-Strategie |
+|-----------|----------------------|----------------|
+| iOS (Store + Private) | Ja (`aps-environment` in Release-Entitlements) | Hintergrund-Sync via Remote Notifications |
+| macOS (`ReisenMac`) | Nein | Foreground-Sync, manueller Abruf, CloudKit-Remote-Change-Observer beim aktiven Fenster |
+
+Das ist bewusst: Mac nutzt denselben CloudKit-Container, aber ohne APNs-Registrierung. Neue Daten von iOS/iPadOS kommen auf dem Mac beim nächsten App-Start oder während die App im Vordergrund ist.
 
 ## Release: Developer ID + Notarization (secrets-gated)
 
@@ -109,9 +121,11 @@ Voraussetzungen:
 
 Checkliste für Metadaten, Screenshots und Review Notes: [`app-store-connect.md`](app-store-connect.md).
 
+Private-iOS (Ad Hoc): [`ios-private-distribution.md`](ios-private-distribution.md), `Scripts/ios-archive-adhoc.sh`.
+
 ## Validierung / Troubleshooting
 
 - Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)
 - Keychain Identity für Notary nicht gefunden: importiertes Zertifikat muss **Developer ID Application** sein; Keychain entsperrt/importiert
 - Notarization: `notarytool submit --wait` liefert die Apple-Antwort in den Workflow-Logs
-- CloudKit: Container laut `PersistenceBootstrap.cloudKitContainerID` muss im Portal an **beide** App-IDs gebunden sein
+- CloudKit: Container laut `PersistenceBootstrap.cloudKitContainerID` muss im Portal an **drei** App-IDs gebunden sein (macOS, Store-iOS, Private-iOS)

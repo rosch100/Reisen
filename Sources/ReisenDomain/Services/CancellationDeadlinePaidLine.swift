@@ -13,7 +13,12 @@ public enum CancellationDeadlinePaidLine {
         if let policy = deadline.policyText, !policy.isEmpty {
             paidText = policy
         } else {
-            paidText = "Kostenpflichtig stornierbar bis \(CancellationDeadlineFormatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: deadlineTimeZone))"
+            let formattedDeadline = CancellationDeadlineFormatting.formatOrtszeit(
+                deadline.deadlineAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: deadlineTimeZone
+            )
+            paidText = L10n.cancellationPaidUntilText(deadlineAt: formattedDeadline)
         }
         return CancellationSummaryLine(
             id: deadline.id,

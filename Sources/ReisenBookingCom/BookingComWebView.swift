@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import ReisenDomain
 import ReisenProviders
 
 /// WebView-Interface für Booking.com-spezifische Fetch-/JS-Operationen.

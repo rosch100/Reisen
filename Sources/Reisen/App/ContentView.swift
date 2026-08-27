@@ -4,6 +4,7 @@ import ReisenDomain
 import ReisenData
 import ReisenProviders
 import ReisenAppCore
+import ReisenProviderSync
 import ReisenSharedUI
 import AppKit
 import Foundation
@@ -103,10 +104,10 @@ struct ContentView: View {
                         ProgressView()
                             .controlSize(.small)
                     } else {
-                        Label("Alle synchronisieren", systemImage: "arrow.triangle.2.circlepath")
+                        Label(L10n.string(.actionSyncAll), systemImage: "arrow.triangle.2.circlepath")
                     }
                 }
-                .help("Alle aktivierten, angemeldeten Provider nacheinander synchronisieren")
+                .help(L10n.string(.actionSyncAllHelp))
                 .disabled(store?.isSyncing == true || syncAllCandidates.isEmpty)
 
                 Button {
@@ -114,7 +115,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-                .help("Neue Reise anlegen")
+                .help(L10n.string(.actionCreateTrip))
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -164,11 +165,12 @@ struct ContentView: View {
             )
         }
         .confirmationDialog(
-            tripPendingDelete.map { "Reise „\($0.title)“ löschen?" } ?? "Reise löschen?",
+            tripPendingDelete.map { L10n.format(.tripDeleteConfirmTitleNamed, $0.title) }
+                ?? L10n.string(.actionDeleteTripConfirm),
             isPresented: $showTripDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Löschen", role: .destructive) {
+            Button(L10n.string(.commonDelete), role: .destructive) {
                 guard let trip = tripPendingDelete else { return }
                 if selection == .trip(trip.id) {
                     selection = trips.first(where: { $0.id != trip.id }).map { .trip($0.id) }
@@ -177,11 +179,11 @@ struct ContentView: View {
                 try? TripDeletion.perform(trip: trip, in: modelContext)
                 tripPendingDelete = nil
             }
-            Button("Abbrechen", role: .cancel) {
+            Button(L10n.string(.commonCancel), role: .cancel) {
                 tripPendingDelete = nil
             }
         } message: {
-            Text(TripDeletion.confirmationMessage)
+            Text(L10n.string(.tripDeleteConfirmMessage))
         }
     }
 
@@ -191,7 +193,7 @@ struct ContentView: View {
             ZStack {
                 VStack(spacing: 12) {
                     ProgressView()
-                    Text("Provider-Sitzungen prüfen…")
+                    Text(L10n.string(.syncProviderSessionsChecking))
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -218,14 +220,14 @@ struct ContentView: View {
                 }
             case .trips, .none:
                 ContentUnavailableView {
-                    Label("Willkommen", systemImage: "airplane")
+                    Label(L10n.string(.tripWelcome), systemImage: "airplane")
                 } description: {
-                    Text("Wähle eine Reise oder einen Provider in der Seitenleiste.")
+                    Text(L10n.string(.tripSelectSidebarOrProvider))
                 } actions: {
-                    Button("Neue Reise anlegen") {
+                    Button(L10n.string(.actionCreateTrip)) {
                         showCreateTrip = true
                     }
-                    Button("Provider Sync öffnen") {
+                    Button(L10n.string(.actionOpenSync)) {
                         selection = .providerSync(enabledProviderIDs.first ?? .check24)
                     }
                 }
@@ -303,20 +305,24 @@ struct ContentView: View {
 
     private var syncAllCandidates: [(ProviderID, WKWebView)] {
         guard let sessionHub else { return [] }
-        return enabledProviderIDs.compactMap { id in
-            guard sessionHub.status(for: id) == .sessionReady,
-                  let webView = sessionHub.webView(for: id) else { return nil }
-            return (id, webView)
-        }
+        return SyncAllCoordinator.candidates(
+            enabledProviderIDs: enabledProviderIDs,
+            sessionHub: sessionHub
+        )
     }
 
     @MainActor
     private func runSyncAll() async {
-        guard let store else { return }
-        let candidates = syncAllCandidates
-        await store.syncAll(providers: candidates, settings: syncAllSettings) { id in
-            NavigationHintURLs.ordered(hubURLString: sessionHub?.lastURLString(for: id))
-        }
+        guard let store, let sessionHub else { return }
+        await SyncAllCoordinator.run(
+            syncStore: store,
+            enabledProviderIDs: enabledProviderIDs,
+            sessionHub: sessionHub,
+            settings: syncAllSettings,
+            navigationHints: { id in
+                NavigationHintURLs.ordered(hubURLString: sessionHub.lastURLString(for: id))
+            }
+        )
     }
 
     private func handleSessionProbeFinished(needingLogin: [ProviderID]) {
@@ -352,16 +358,16 @@ struct ContentView: View {
 
     private var sidebar: some View {
         List(selection: $selection) {
-            Section("Provider") {
+            Section(L10n.string(.syncProvider)) {
                 ForEach(registeredProviderIDs, id: \.self) { providerID in
                     ProviderSidebarRow(providerID: providerID)
                         .tag(SidebarSelection.providerSync(providerID))
                 }
             }
 
-            Section("Offene Buchungen") {
+            Section(L10n.string(.tripOpenBookings)) {
                 if openBookings.isEmpty {
-                    Text("Keine offenen Buchungen")
+                    Text(L10n.string(.tripNoOpenBookings))
                         .foregroundStyle(.secondary)
                 } else {
                     Button {
@@ -369,8 +375,8 @@ struct ContentView: View {
                     } label: {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Offene Buchungen")
-                                Text("\(openBookings.count) Einträge")
+                                Text(L10n.string(.tripOpenBookings))
+                                Text(L10n.format(.tripOpenEntries, openBookings.count))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -385,7 +391,7 @@ struct ContentView: View {
 
             Section {
                 if trips.isEmpty {
-                    Text("Noch keine Reisen")
+                    Text(L10n.string(.tripNoTripsYet))
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(trips) { trip in
@@ -403,7 +409,9 @@ struct ContentView: View {
                                             .frame(width: 14, height: 14)
                                     }
                                     .buttonStyle(.plain)
-                                    .help(isExpanded ? "Buchungen einklappen" : "Buchungen ausklappen")
+                                    .help(isExpanded
+                                        ? L10n.string(.tripCollapseBookings)
+                                        : L10n.string(.tripExpandBookings))
                                 }
 
                                 Button {
@@ -416,7 +424,7 @@ struct ContentView: View {
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
                                             if !tripBookings.isEmpty {
-                                                Text("\(tripBookings.count) Buchungen")
+                                                Text(L10n.format(.tripBookingCount, tripBookings.count))
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
                                             }
@@ -430,17 +438,17 @@ struct ContentView: View {
                             }
                             .tag(SidebarSelection.trip(trip.id))
                             .contextMenu {
-                                Button("Bearbeiten") {
+                                Button(L10n.string(.commonEdit)) {
                                     tripToEdit = trip
                                 }
-                                Button("Buchung hinzufügen…") {
+                                Button(L10n.string(.actionAddBooking)) {
                                     startCreateBooking(in: trip)
                                 }
                                 Button(role: .destructive) {
                                     tripPendingDelete = trip
                                     showTripDeleteConfirmation = true
                                 } label: {
-                                    Text("Reise löschen…")
+                                    Text(L10n.string(.actionDeleteTrip))
                                 }
                             }
 
@@ -456,7 +464,7 @@ struct ContentView: View {
                                         }
                                     } label: {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(booking.title ?? booking.bookingType.rawValue.capitalized)
+                                            Text(booking.displayTitle)
                                                 .lineLimit(1)
                                             Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
                                                 .font(.caption2)
@@ -475,14 +483,14 @@ struct ContentView: View {
                                     .buttonStyle(.plain)
                                     .contentShape(Rectangle())
                                     .contextMenu {
-                                        Button("Bearbeiten") {
+                                        Button(L10n.string(.commonEdit)) {
                                             editBooking(booking, in: trip)
                                         }
-                                        Button("Buchung hinzufügen…") {
+                                        Button(L10n.string(.actionAddBooking)) {
                                             startCreateBooking(in: trip, selectBookingID: booking.id)
                                         }
                                         if let url = booking.browserURL {
-                                            Button("Buchung im Browser öffnen") {
+                                            Button(L10n.string(.actionOpenInBrowser)) {
                                                 NSWorkspace.shared.open(url)
                                             }
                                         }
@@ -495,7 +503,7 @@ struct ContentView: View {
                                                 )
                                             }
                                         } label: {
-                                            Text("Von Reise entfernen…")
+                                            Text(L10n.string(.actionRemoveFromTrip))
                                         }
                                         if booking.provider == .manual {
                                             Button(role: .destructive) {
@@ -507,7 +515,7 @@ struct ContentView: View {
                                                     )
                                                 }
                                             } label: {
-                                                Text("Löschen…")
+                                                Text(L10n.string(.actionDeleteEllipsis))
                                             }
                                         }
                                     }
@@ -518,19 +526,19 @@ struct ContentView: View {
                 }
             } header: {
                 HStack {
-                    Text("Reisen")
+                    Text(L10n.string(.tripTrips))
                     Spacer()
                     Button {
                         showCreateTrip = true
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .help("Neue Reise anlegen")
+                    .help(L10n.string(.actionCreateTrip))
                 }
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle("Reisen")
+        .navigationTitle(L10n.string(.tripTrips))
     }
 
     private var openBookings: [SDBooking] {
@@ -556,9 +564,9 @@ struct ContentView: View {
                 .id(id)
             } else {
                 ContentUnavailableView(
-                    "Reise nicht gefunden",
+                    L10n.string(.tripTripMissing),
                     systemImage: "exclamationmark.triangle",
-                    description: Text("Die ausgewählte Reise ist nicht mehr vorhanden.")
+                    description: Text(L10n.string(.tripTripMissingDescription))
                 )
             }
         case .providerSync(let providerID):
@@ -567,17 +575,17 @@ struct ContentView: View {
         case .openBookings:
             if openBookings.isEmpty {
                 ContentUnavailableView {
-                    Label("Keine offenen Buchungen", systemImage: "calendar")
+                    Label(L10n.string(.tripNoOpenBookings), systemImage: "calendar")
                 } description: {
-                    Text("Aktuell gibt es keine offenen Buchungen.")
+                    Text(L10n.string(.tripNoOpenBookingsCurrent))
                 } actions: {
-                    Button("Provider Sync öffnen") {
+                    Button(L10n.string(.actionOpenSync)) {
                         selection = .providerSync(enabledProviderIDs.first ?? .check24)
                     }
                 }
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Offene Buchungen")
+                    Text(L10n.string(.tripOpenBookings))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 16)
@@ -605,12 +613,12 @@ struct ContentView: View {
                                 .buttonStyle(.plain)
                                 .contextMenu {
                                     if let url = booking.browserURL {
-                                        Button("Buchung im Browser öffnen") {
+                                        Button(L10n.string(.actionOpenInBrowser)) {
                                             NSWorkspace.shared.open(url)
                                         }
                                     }
                                     if let trip = matchingTrip(for: booking) {
-                                        Button("In Reise zuordnen…") {
+                                        Button(L10n.string(.actionAssignToTrip)) {
                                             applyAfterTripFocus(trip: trip) {
                                                 NotificationCenter.default.post(
                                                     name: .reisenAssignBookings,
@@ -627,7 +635,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                .navigationTitle("Offene Buchungen")
+                .navigationTitle(L10n.string(.tripOpenBookings))
                 .onAppear {
                     if selectedOpenBookingID == nil, let first = openBookings.first?.id {
                         selectedOpenBookingID = first
@@ -643,9 +651,9 @@ struct ContentView: View {
             }
         case .none, .trips:
             ContentUnavailableView(
-                "Reise auswählen",
+                L10n.string(.tripSelectTrip),
                 systemImage: "airplane",
-                description: Text("Wähle eine Reise in der Seitenleiste aus.")
+                description: Text(L10n.string(.tripSelectSidebar))
             )
         }
     }
@@ -662,22 +670,22 @@ struct ContentView: View {
             ProviderSyncContainer(selectedProviderID: .constant(.check24))
         case .trips:
             ContentUnavailableView(
-                "Reisen",
+                L10n.string(.tripTrips),
                 systemImage: "airplane",
-                description: Text("Wähle eine Reise in der Seitenleiste oder synchronisiere zuerst einen Anbieter.")
+                description: Text(L10n.string(.tripSelectTripOrSync))
             )
         case .openBookings:
             if let selectedOpenBookingID, let booking = openBookings.first(where: { $0.id == selectedOpenBookingID }) {
                 OpenBookingDetailView(booking: booking)
-                    .navigationTitle(booking.title ?? booking.bookingType.rawValue.capitalized)
+                    .navigationTitle(booking.displayTitle)
             } else if let first = openBookings.first {
                 OpenBookingDetailView(booking: first)
-                    .navigationTitle(first.title ?? first.bookingType.rawValue.capitalized)
+                    .navigationTitle(first.displayTitle)
             } else {
                 ContentUnavailableView(
-                    "Keine offenen Buchungen",
+                    L10n.string(.tripNoOpenBookings),
                     systemImage: "calendar",
-                    description: Text("Aktuell gibt es keine offenen Buchungen.")
+                    description: Text(L10n.string(.tripNoOpenBookingsCurrent))
                 )
             }
         case .trip(let id):
@@ -692,9 +700,9 @@ struct ContentView: View {
                 .id(id)
             } else {
                 ContentUnavailableView(
-                    "Reise nicht gefunden",
+                    L10n.string(.tripTripMissing),
                     systemImage: "exclamationmark.triangle",
-                    description: Text("Die ausgewählte Reise ist nicht mehr vorhanden.")
+                    description: Text(L10n.string(.tripTripMissingDescription))
                 )
             }
         }
@@ -710,7 +718,7 @@ struct ContentView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(booking.title ?? booking.bookingType.rawValue.capitalized)
+                            Text(booking.displayTitle)
                                 .font(.headline)
                                 .textSelection(.enabled)
                             Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
@@ -720,15 +728,15 @@ struct ContentView: View {
 
                         if !booking.resolvedCancellationDeadlines.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Storno")
+                                Text(L10n.string(.tripStorno))
                                     .font(.subheadline.weight(.semibold))
                                 BookingCancellationDeadlinesView(booking: booking)
                             }
                         } else {
                             ContentUnavailableView(
-                                "Keine Storno-Infos",
+                                L10n.string(.tripNoCancellationInfo),
                                 systemImage: "info.circle",
-                                description: Text("Für diese Buchung sind keine Stornobedingungen hinterlegt.")
+                                description: Text(L10n.string(.tripNoCancellationTerms))
                             )
                         }
 

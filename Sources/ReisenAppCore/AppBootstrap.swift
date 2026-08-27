@@ -2,13 +2,6 @@ import Observation
 import SwiftData
 import ReisenData
 import ReisenDomain
-import ReisenProviders
-import ReisenCheck24
-import ReisenOpodo
-import ReisenBookingCom
-import ReisenAirbnb
-import ReisenGetYourGuide
-import ReisenTraveloka
 
 /// Plattformneutraler App- und Store-Bootstrap.
 /// UI-spezifische Views (z. B. CopyableText via AppKit) bleiben weiterhin in den UI-Modulen.
@@ -23,10 +16,10 @@ public final class AppBootstrap {
     public private(set) var state: State
     public private(set) var isResetting = false
 
-    public init() {
+    public init(registry: ProviderRegistry = .empty) {
         GitHubIssueCrashCatcher.install()
         do {
-            self.state = try Self.makeReadyState()
+            self.state = try Self.makeReadyState(registry: registry)
             startCloudSideEffectObserverIfReady()
             Task { await GitHubIssueCrashCatcher.flushPending() }
         } catch {
@@ -73,7 +66,7 @@ public final class AppBootstrap {
 
         // Store could not open: recreate local files, pull cloud data, then tombstone it.
         try PersistenceBootstrap.resetStoreFiles()
-        let provisional = try Self.makeReadyState()
+        let provisional = try Self.makeReadyState(registry: currentRegistry)
         guard case .ready(let container, _, _, _) = provisional else {
             throw PersistenceStoreError.storeIncompatible(
                 "Cloud-Wipe nach Store-Fehler: Container konnte nicht geöffnet werden."
@@ -85,13 +78,20 @@ public final class AppBootstrap {
         startCloudSideEffectObserverIfReady()
     }
 
+    private var currentRegistry: ProviderRegistry {
+        if case .ready(_, let registry, _, _) = state {
+            return registry
+        }
+        return .empty
+    }
+
     private func wipeCloud(from context: ModelContext) async throws {
         try PersistenceBootstrap.wipeSyncedEntities(in: context, includeLocal: true)
         await PersistenceBootstrap.awaitCloudKitExportIfNeeded()
     }
 
     private func activateReadyState() throws {
-        state = try Self.makeReadyState()
+        state = try Self.makeReadyState(registry: currentRegistry)
         startCloudSideEffectObserverIfReady()
     }
 
@@ -107,36 +107,10 @@ public final class AppBootstrap {
         }
     }
 
-    private static func makeReadyState() throws -> State {
+    public static func makeReadyState(registry: ProviderRegistry = .empty) throws -> State {
         let container = try PersistenceBootstrap.makeContainer()
-        let registry = makeProviderRegistry()
         let syncStore = SyncStore(modelContext: container.mainContext, registry: registry)
         let sessionHub = ProviderSessionHub()
         return .ready(container, registry, syncStore, sessionHub)
-    }
-
-    /// Produktions-Registry; Reihenfolge und Inhalt folgen `ProviderID.syncProviderIDs`.
-    public static func makeProviderRegistry() -> ProviderRegistry {
-        let providersByID: [ProviderID: any TravelProvider] = [
-            .check24: Check24TravelProvider(),
-            .opodo: OpodoTravelProvider(),
-            .booking: BookingComTravelProvider(),
-            .airbnb: AirbnbTravelProvider(),
-            .getYourGuide: GetYourGuideTravelProvider(),
-            .traveloka: TravelokaTravelProvider(),
-        ]
-        let providers = ProviderID.syncProviderIDs.compactMap { providersByID[$0] }
-        precondition(
-            providers.count == ProviderID.syncProviderIDs.count,
-            "ProviderRegistry: fehlende Implementierung für \(Set(ProviderID.syncProviderIDs).subtracting(providers.map(\.id)))"
-        )
-
-        return ProviderRegistry(
-            providers: providers,
-            deepLinkBuilders: [
-                Check24DeepLinkBuilder(),
-                TravelokaDeepLinkBuilder(),
-            ]
-        )
     }
 }

@@ -35,7 +35,7 @@ struct TripDetailView: View {
         }
 
         let amounts = bookingAmounts + gapAmounts
-        guard !amounts.isEmpty else { return "k.A." }
+        guard !amounts.isEmpty else { return L10n.string(.commonNotAvailable) }
 
         let bookingCurrency = sortedBookings.compactMap { $0.rateDetails?.totalPriceCurrency }.first
         let gapCurrency = gaps.compactMap { gap in
@@ -160,7 +160,7 @@ struct TripDetailView: View {
 
                 Divider()
 
-                Text("Buchungen")
+                Text(L10n.string(.tripBookings))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
@@ -170,14 +170,14 @@ struct TripDetailView: View {
 
                 if timelineItems.isEmpty {
                     ContentUnavailableView {
-                        Label("Keine Buchungen", systemImage: "calendar.badge.exclamationmark")
+                        Label(L10n.string(.tripNoBookings), systemImage: "calendar.badge.exclamationmark")
                     } description: {
-                        Text("Dieser Reise sind noch keine zukünftigen Buchungen zugeordnet.")
+                        Text(L10n.string(.tripNoFutureBookings))
                     } actions: {
-                        Button("Buchung hinzufügen…") {
+                        Button(L10n.string(.actionAddBooking)) {
                             startCreateBooking(prefillStart: nil, prefillEnd: nil, selectID: nil)
                         }
-                        Button("Buchungen zuordnen…") {
+                        Button(L10n.string(.actionAssignBookings)) {
                             showAssignBookings = true
                         }
                         .disabled(openBookingsCandidates().isEmpty)
@@ -190,19 +190,19 @@ struct TripDetailView: View {
             .navigationTitle(trip.title)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button("Buchungen zuordnen…") {
+                    Button(L10n.string(.actionAssignBookings)) {
                         showAssignBookings = true
                     }
                     .disabled(openBookingsCandidates().isEmpty)
                     .help(openBookingsCandidates().isEmpty
-                        ? "Keine offenen Buchungen im Reisezeitraum"
-                        : "Offene Buchungen dieser Reise zuordnen")
+                        ? L10n.string(.tripNoOpenInRange)
+                        : L10n.string(.tripAssignOpenHelp))
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button("Buchung hinzufügen…") {
+                    Button(L10n.string(.actionAddBooking)) {
                         startCreateBooking(prefillStart: nil, prefillEnd: nil, selectID: nil)
                     }
-                    .help("Manuelle Buchung für diese Reise anlegen")
+                    .help(L10n.string(.tripAddBookingHelp))
                 }
             }
             .sheet(isPresented: $showAssignBookings) {
@@ -330,8 +330,8 @@ struct TripDetailView: View {
                         .contextMenu {
                             switch item {
                             case .booking(let booking):
-                                Button("Bearbeiten") { editBooking(booking) }
-                                Button("Buchung hinzufügen…") {
+                                Button(L10n.string(.commonEdit)) { editBooking(booking) }
+                                Button(L10n.string(.actionAddBooking)) {
                                     startCreateBooking(
                                         prefillStart: nil,
                                         prefillEnd: nil,
@@ -339,30 +339,30 @@ struct TripDetailView: View {
                                     )
                                 }
                                 if let url = booking.browserURL {
-                                    Button("Buchung im Browser öffnen") {
+                                    Button(L10n.string(.actionOpenInBrowser)) {
                                         NSWorkspace.shared.open(url)
                                     }
                                 }
                                 Button(role: .destructive) {
                                     requestRemoveBookingFromTrip(booking)
                                 } label: {
-                                    Text("Von Reise entfernen…")
+                                    Text(L10n.string(.actionRemoveFromTrip))
                                 }
 
                                 if ProviderID(rawValue: booking.providerRaw) == .manual {
                                     Button(role: .destructive) { requestDeleteManualBooking(booking) } label: {
-                                        Text("Löschen…")
+                                        Text(L10n.string(.actionDeleteEllipsis))
                                     }
                                 }
 
                             case .gap(let gap):
                                 let editPayload = gapPresentation(for: gap).editorPayload(for: gap)
 
-                                Button("Lücke bearbeiten…") {
+                                Button(L10n.string(.actionEditGap)) {
                                     selectTimelineID(item.id)
                                     gapEditorPayload = editPayload
                                 }
-                                Button("Buchung hinzufügen…") {
+                                Button(L10n.string(.actionAddBooking)) {
                                     startCreateBooking(
                                         prefillStart: gap.gapStart,
                                         prefillEnd: gap.gapEnd,
@@ -411,10 +411,10 @@ struct TripDetailView: View {
         // Kompakte Einzeiler — kein LabeledContent/NSView (das blähte die Übersicht auf).
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 16) {
-                overviewFact(label: "Zeitraum", value: dateRange)
-                overviewFact(label: "Preis", value: tripTotalPriceText)
+                overviewFact(label: L10n.string(.tripPeriod), value: dateRange)
+                overviewFact(label: L10n.string(.bookingDetailPrice), value: tripTotalPriceText)
                 if let destination = trip.destination, !destination.isEmpty {
-                    overviewFact(label: "Ziel", value: destination)
+                    overviewFact(label: L10n.string(.tripDestination), value: destination)
                 }
                 Spacer(minLength: 0)
             }
@@ -590,9 +590,9 @@ private struct BookingDetailPanel: View {
 
     private var editorTitle: String {
         switch bookingEditorSession {
-        case .create(_, _): return "Buchung hinzufügen"
-        case .edit: return "Buchung bearbeiten"
-        case nil: return "Buchung"
+        case .create(_, _): return L10n.string(.editorCreateTitle)
+        case .edit: return L10n.string(.editorEditTitle)
+        case nil: return L10n.string(.editorBooking)
         }
     }
 
@@ -653,7 +653,7 @@ private struct BookingDetailPanel: View {
                     .padding(.bottom, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Text("Buchung in der Liste auswählen, um Details anzuzeigen.")
+                    Text(L10n.string(.tripSelectBookingDetails))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 16)
@@ -700,7 +700,7 @@ private struct BookingDetailPanel: View {
 
     private func bookingStatusBar(synced: Date) -> some View {
         HStack(spacing: 8) {
-            Text("Zuletzt synchronisiert")
+            Text(L10n.string(.tripLastSynced))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
@@ -726,7 +726,7 @@ private struct BookingDetailContent: View {
 
     private var priceText: String {
         let details = booking.rateDetails
-        guard let amount = details?.totalPriceAmount else { return "k.A." }
+        guard let amount = details?.totalPriceAmount else { return BookingDetailLabels.notAvailable }
         return Formatting.formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
     }
 
@@ -736,11 +736,11 @@ private struct BookingDetailContent: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(booking.title ?? booking.bookingType.rawValue.capitalized)
+                    Text(booking.title ?? booking.bookingType.displayLabel)
                         .font(.headline)
                         .textSelection(.enabled)
                     if isOverlapping {
-                        Text(overlapCount > 0 ? "Überschneidung (+\(overlapCount))" : "Überschneidung")
+                        Text(L10n.overlapLabel(extraCount: overlapCount))
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
@@ -748,7 +748,7 @@ private struct BookingDetailContent: View {
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 2) {
                     ProviderLogo(providerID: booking.provider)
-                    Text(booking.bookingType.rawValue.capitalized)
+                    Text(booking.bookingType.displayLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(priceText)
@@ -766,7 +766,7 @@ private struct BookingDetailContent: View {
 
             if let rate = booking.rateDetails {
                 Divider()
-                Text("Preis / Tarif")
+                Text(BookingDetailLabels.rateSection)
                     .font(.subheadline.weight(.semibold))
                 LazyVGrid(columns: [
                     GridItem(.adaptive(minimum: 160), spacing: 8, alignment: .leading),
@@ -778,7 +778,7 @@ private struct BookingDetailContent: View {
 
                 if !rate.resolvedRoomItems.isEmpty {
                     Divider()
-                    Text("Zimmer / Positionen")
+                    Text(BookingDetailLabels.roomItemsSection)
                         .font(.subheadline.weight(.semibold))
                     BookingRoomItemsView(rate: rate)
                 }
@@ -786,7 +786,7 @@ private struct BookingDetailContent: View {
 
             if !booking.resolvedCancellationDeadlines.isEmpty {
                 Divider()
-                Text("Stornierung")
+                Text(BookingDetailLabels.cancellationSection)
                     .font(.subheadline.weight(.semibold))
                 BookingCancellationDeadlinesView(booking: booking, hotelTimeZone: hotelTimeZone)
             }
@@ -800,38 +800,38 @@ private struct BookingDetailContent: View {
 
             if let url = booking.browserURL {
                 Divider()
-                Link("Buchung im Browser öffnen", destination: url)
+                Link(L10n.string(.actionOpenInBrowser), destination: url)
                     .font(.caption)
             }
 
             if let onEditBooking {
-                Button("Bearbeiten") {
+                Button(L10n.string(.commonEdit)) {
                     onEditBooking()
                 }
                 .buttonStyle(.link)
                 .padding(.top, 4)
-                .help("Diese Buchung bearbeiten")
+                .help(L10n.string(.tripEditBookingHelp))
             }
 
             if ProviderID(rawValue: booking.providerRaw) == .manual {
                 Button(role: .destructive) {
                     onRequestManualDeleteBooking(booking.id)
                 } label: {
-                    Text("Löschen…")
+                    Text(L10n.string(.actionDeleteEllipsis))
                 }
                 .buttonStyle(.link)
                 .padding(.top, 4)
-                .help("Diese manuelle Buchung unwiderruflich löschen")
+                .help(L10n.string(.tripDeleteManualHelp))
             }
 
             Button(role: .destructive) {
                 onRequestRemoveFromTrip(booking.id)
             } label: {
-                Text("Von Reise entfernen…")
+                Text(L10n.string(.actionRemoveFromTrip))
             }
             .buttonStyle(.link)
             .padding(.top, 4)
-            .help("Diese Buchung aus der Reise lösen und unter „Offene Buchungen“ anzeigen")
+            .help(L10n.string(.tripRemoveFromTripHelp))
         }
     }
 
@@ -859,12 +859,12 @@ private struct BookingRow: View {
 
     private var bookingPriceText: String {
         let details = booking.rateDetails
-        guard let amount = details?.totalPriceAmount else { return "k.A." }
+        guard let amount = details?.totalPriceAmount else { return BookingDetailLabels.notAvailable }
         return Formatting.formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
     }
 
     private func bookingTypeTitle(_ booking: SDBooking) -> String {
-        booking.bookingType.rawValue.capitalized
+        booking.bookingType.displayLabel
     }
 
     private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
@@ -877,19 +877,22 @@ private struct BookingRow: View {
 
         // Nur eine Lock-Zeile, nicht mehrfach.
         if !hasFutureFreeCancellation {
-            lines.append("Fix (nicht mehr kostenlos stornierbar)")
+            lines.append(L10n.string(.bookingCancellationLocked))
         }
 
         for deadline in futureDeadlinesForDisplay {
             let tz = timeZone(forDeadline: deadline)
+            let formattedDeadline = Formatting.formatOrtszeit(
+                deadline.deadlineAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: tz
+            )
             if deadline.isFreeCancellation {
-                lines.append(
-                    "Kostenlos stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: tz))"
-                )
+                lines.append(L10n.format(.bookingCancellationFreeUntil, formattedDeadline))
             } else {
                 let paidText = (deadline.policyText?.isEmpty == false)
                     ? deadline.policyText!
-                    : "Kostenpflichtig stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: tz))"
+                    : L10n.format(.bookingCancellationPaidUntil, formattedDeadline)
                 lines.append(paidText)
             }
         }
@@ -922,9 +925,12 @@ private struct BookingRow: View {
             let checkInTime = booking.hotelCheckInMinutes.map(Formatting.minutesToHHmm) ?? "—"
             let checkOutTime = booking.hotelCheckOutMinutes.map(Formatting.minutesToHHmm) ?? "—"
 
-            return "Check-in: \(checkInDate) ab \(checkInTime) (\(hotelLocationLabel))\nCheck-out: \(checkOutDate) bis \(checkOutTime) (\(hotelLocationLabel))"
+            return [
+                L10n.format(.bookingTimelineHotelCheckIn, checkInDate, checkInTime, hotelLocationLabel),
+                L10n.format(.bookingTimelineHotelCheckOut, checkOutDate, checkOutTime, hotelLocationLabel),
+            ].joined(separator: "\n")
 
-        case .flight, .ferry:
+        case .flight:
             let departureOffsetSeconds = booking.flightDepartureOffsetSeconds
             let arrivalOffsetSeconds = booking.flightArrivalOffsetSeconds
 
@@ -932,7 +938,9 @@ private struct BookingRow: View {
             let arrivalTZ = (arrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }) ?? .current
 
             let tzHint: String = {
-                if departureOffsetSeconds == nil || arrivalOffsetSeconds == nil { return " (Zeitzone noch nicht ermittelt)" }
+                if departureOffsetSeconds == nil || arrivalOffsetSeconds == nil {
+                    return L10n.string(.bookingTimelineTimezonePending)
+                }
                 return ""
             }()
 
@@ -947,7 +955,49 @@ private struct BookingRow: View {
                 timeZone: arrivalTZ
             )
 
-            return "Abflug: \(departure) (\(flightOriginLabel))\(tzHint)\nAnkunft: \(arrival) (\(flightDestinationLabel))"
+            return [
+                L10n.format(.bookingTimelineFlightDeparture, departure, flightOriginLabel, tzHint),
+                L10n.format(.bookingTimelineFlightArrival, arrival, flightDestinationLabel),
+            ].joined(separator: "\n")
+
+        case .ferry:
+            let departureOffsetSeconds = booking.flightDepartureOffsetSeconds
+            let arrivalOffsetSeconds = booking.flightArrivalOffsetSeconds
+
+            let departureTZ = (departureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }) ?? .current
+            let arrivalTZ = (arrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }) ?? .current
+
+            let departure = Formatting.formatOrtszeit(
+                booking.startAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: departureTZ
+            )
+            let arrival = Formatting.formatOrtszeit(
+                booking.endAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: arrivalTZ
+            )
+
+            return [
+                L10n.format(.bookingTimelineFerryDeparture, departure, flightOriginLabel),
+                L10n.format(.bookingTimelineFerryArrival, arrival, flightDestinationLabel),
+            ].joined(separator: "\n")
+
+        case .carRental:
+            let pickup = Formatting.formatOrtszeit(
+                booking.startAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: booking.resolvedHotelTimeZone
+            )
+            let dropoff = Formatting.formatOrtszeit(
+                booking.endAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: booking.resolvedHotelTimeZone
+            )
+            return [
+                L10n.format(.bookingTimelineCarPickup, pickup),
+                L10n.format(.bookingTimelineCarDropoff, dropoff),
+            ].joined(separator: "\n")
 
         case .activity, .other:
             return "\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))"
@@ -971,7 +1021,9 @@ private struct BookingRow: View {
             return "\(start) – \(end) (\(hotelLocationLabel))"
         case .flight, .ferry:
             return bookingTimeCopyText()
-        case .activity, .other:
+        case .activity, .carRental:
+            return "\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))"
+        case .other:
             return "\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))"
         }
     }
@@ -981,10 +1033,10 @@ private struct BookingRow: View {
 
         parts.append(booking.title ?? bookingTypeTitle(booking))
         parts.append(bookingTypeTitle(booking))
-        parts.append("Preis: \(bookingPriceText)")
+        parts.append(L10n.format(.bookingCopyPriceLine, bookingPriceText))
 
         if isOverlapping {
-            parts.append(overlapCount > 0 ? "Überschneidung (+\(overlapCount))" : "Überschneidung")
+            parts.append(L10n.overlapLabel(extraCount: overlapCount))
         }
 
         parts.append(bookingTimeCopyText())
@@ -1019,14 +1071,14 @@ private struct BookingRow: View {
         let secondary = NSColor.secondaryLabelColor
         let orange = NSColor.systemOrange
 
-        let title = booking.title ?? booking.bookingType.rawValue.capitalized
+        let title = booking.title ?? booking.bookingType.displayLabel
         ns.append(NSAttributedString(string: title, attributes: [
             .font: headlineFont,
             .foregroundColor: secondary
         ]))
 
         if isOverlapping {
-            let overlapText = overlapCount > 0 ? "Überschneidung (+\(overlapCount))" : "Überschneidung"
+            let overlapText = L10n.overlapLabel(extraCount: overlapCount)
             ns.append(NSAttributedString(string: "  \(overlapText)", attributes: [
                 .font: caption2Font,
                 .foregroundColor: orange
@@ -1065,7 +1117,7 @@ private struct BookingRow: View {
             appendIconLine(
                 to: ns,
                 systemName: "lock.fill",
-                text: "Fix (nicht mehr kostenlos stornierbar)",
+                text: L10n.string(.bookingCancellationLocked),
                 font: captionFont,
                 color: secondary
             )
@@ -1079,7 +1131,7 @@ private struct BookingRow: View {
             appendIconLine(
                 to: ns,
                 systemName: "lock.fill",
-                text: "Fix (nicht mehr kostenlos stornierbar)",
+                text: L10n.string(.bookingCancellationLocked),
                 font: captionFont,
                 color: secondary
             )
@@ -1125,23 +1177,34 @@ private struct BookingRow: View {
             appendIconLine(
                 to: ns,
                 systemName: "checkmark.circle.fill",
-                text: "Kostenlos stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))",
+                text: cancellationDeadlineDisplayText(deadline),
                 font: font,
                 color: color
             )
         } else {
-            let paidText = (deadline.policyText?.isEmpty == false)
-                ? deadline.policyText!
-                : "Kostenpflichtig stornierbar bis \(Formatting.formatOrtszeit(deadline.deadlineAt, dateFormat: "d.M. HH:mm", timeZone: timeZone(forDeadline: deadline)))"
-
             appendIconLine(
                 to: ns,
                 systemName: "tag.fill",
-                text: paidText,
+                text: cancellationDeadlineDisplayText(deadline),
                 font: font,
                 color: secondary
             )
         }
+    }
+
+    private func cancellationDeadlineDisplayText(_ deadline: SDCancellationDeadline) -> String {
+        let formattedDeadline = Formatting.formatOrtszeit(
+            deadline.deadlineAt,
+            dateFormat: "d.M. HH:mm",
+            timeZone: timeZone(forDeadline: deadline)
+        )
+        if deadline.isFreeCancellation {
+            return L10n.cancellationFreeUntilText(deadlineAt: formattedDeadline)
+        }
+        if let policy = deadline.policyText, !policy.isEmpty {
+            return policy
+        }
+        return L10n.cancellationPaidUntilText(deadlineAt: formattedDeadline)
     }
 
     private func appendIconLine(
@@ -1212,17 +1275,17 @@ private struct BookingRow: View {
 
     private var hotelLocationLabel: String {
         let label = booking.locationTo ?? booking.locationFrom ?? ""
-        return label.isEmpty ? "Ziel" : label
+        return label.isEmpty ? L10n.string(.bookingFieldFallbackDestination) : label
     }
 
     private var flightOriginLabel: String {
         let label = booking.locationFrom ?? ""
-        return label.isEmpty ? "Abflugort" : label
+        return label.isEmpty ? L10n.string(.bookingFieldLocationFromFlight) : label
     }
 
     private var flightDestinationLabel: String {
         let label = booking.locationTo ?? ""
-        return label.isEmpty ? "Ankunftsort" : label
+        return label.isEmpty ? L10n.string(.bookingFieldLocationToFlight) : label
     }
 
     var body: some View {
@@ -1249,7 +1312,7 @@ private struct BookingRow: View {
                         .foregroundStyle(.primary)
                         .lineLimit(2)
                     if isOverlapping {
-                        Text(overlapCount > 0 ? "Überschneidung (+\(overlapCount))" : "Überschneidung")
+                        Text(L10n.overlapLabel(extraCount: overlapCount))
                             .font(.caption2)
                             .foregroundStyle(.orange)
                     }
@@ -1366,7 +1429,7 @@ private struct GapRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            Text(effectiveKind.rawValue)
+            Text(L10n.gapKindDisplay(effectiveKind))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1385,19 +1448,19 @@ private struct GapRow: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                Button("Bearbeiten") {
+                Button(L10n.string(.commonEdit)) {
                     onEdit()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             }
 
-            Text("Typ: \(effectiveKind.rawValue)")
+            Text(L10n.format(.tripGapType, L10n.gapKindDisplay(effectiveKind)))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
             if let priceText {
-                Text("Preis: \(priceText)")
+                Text(L10n.format(.bookingCopyPriceLine, priceText))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -10,7 +10,7 @@ extension BookingComTripsGraphQLParser {
         switch bookingType {
         case .hotel:
             return hotelDraftDateWindow(reservation: reservation, fields: &fields)
-        case .flight, .ferry, .activity, .other:
+        case .flight, .ferry, .activity, .carRental, .other:
             return flightLikeDraftDateWindow(reservation: reservation, bookingType: bookingType, fields: &fields)
         }
     }

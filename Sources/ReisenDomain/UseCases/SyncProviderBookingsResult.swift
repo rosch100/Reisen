@@ -17,9 +17,9 @@ public enum SyncProviderBookingsError: LocalizedError, Equatable, Sendable {
     public var errorDescription: String? {
         switch self {
         case .noBookingsFound:
-            return "Keine Buchungen gefunden."
+            return L10n.string(.sync_resultNoBookings)
         case .noDeadlinesFound(let foundBookings):
-            return "Keine Stornofristen gefunden (foundBookings=\(foundBookings))."
+            return L10n.format(.sync_resultNoDeadlines, foundBookings)
         }
     }
 }

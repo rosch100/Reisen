@@ -1,7 +1,6 @@
 import SwiftUI
 import ReisenDomain
 import ReisenAppCore
-import ReisenProviders
 
 public struct GapEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -60,21 +59,21 @@ public struct GapEditorSheet: View {
     public var body: some View {
         NavigationStack {
             Form {
-                Section("Anzeige") {
-                    TextField("Titel", text: $editedTitle)
-                    Picker("Typ", selection: $editedKind) {
+                Section(L10n.string(.gapDisplay)) {
+                    TextField(L10n.string(.editorTitle), text: $editedTitle)
+                    Picker(L10n.string(.editorType), selection: $editedKind) {
                         ForEach(GapKind.allCases) { kind in
-                            Text(kind.rawValue.capitalized).tag(kind)
+                            Text(L10n.gapKindDisplay(kind)).tag(kind)
                         }
                     }
                 }
 
-                Section("Preis (optional)") {
-                    TextField("Betrag (EUR)", text: $editedPriceText)
+                Section(L10n.string(.gapPriceOptional)) {
+                    TextField(L10n.string(.gapAmountEur), text: $editedPriceText)
                 }
 
                 if !gapDeepLinks.links.isEmpty || !gapDeepLinks.issues.isEmpty {
-                    Section("Lücke füllen") {
+                    Section(L10n.string(.gapFill)) {
                         GapDeepLinkButtons(
                             links: gapDeepLinks.links,
                             gapKind: editedKind,
@@ -89,16 +88,16 @@ public struct GapEditorSheet: View {
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle("Lücke bearbeiten")
+            .navigationTitle(L10n.string(.actionEditGap))
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button(L10n.string(.commonCancel)) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Sichern") {
+                    Button(L10n.string(.commonSave)) {
                         let trimmed = editedPriceText.trimmingCharacters(in: .whitespacesAndNewlines)
                         let parsedPrice = trimmed.isEmpty ? nil : Self.parsePriceAmount(from: trimmed)
                         let currencyCode = payload.priceCurrencyCode ?? "EUR"

@@ -18,54 +18,63 @@ public struct BookingRateField: Identifiable, Equatable, Sendable {
 public enum BookingRateFields {
     public static func make(rate: SDBookingRateDetails, booking: SDBooking) -> [BookingRateField] {
         var fields: [BookingRateField] = []
+        let bookingType = booking.bookingType
 
         if let amount = rate.totalPriceAmount {
             fields.append(
                 BookingRateField(
-                    label: "Preis",
+                    label: BookingDetailLabels.price,
                     value: Formatting.formatCurrencyAmount(amount, currencyCode: rate.totalPriceCurrency)
                 )
             )
         }
         if let currency = rate.totalPriceCurrency, !currency.isEmpty {
-            fields.append(BookingRateField(label: "Währung", value: currency))
+            fields.append(BookingRateField(label: BookingDetailLabels.currency, value: currency))
         }
-        if rate.resolvedRoomItems.isEmpty, let room = rate.roomCategory, !room.isEmpty {
-            fields.append(BookingRateField(label: "Zimmerkategorie", value: room))
+        if rate.resolvedRoomItems.isEmpty,
+           let room = rate.roomCategory,
+           !room.isEmpty,
+           let roomLabel = bookingType.roomCategoryLabel {
+            fields.append(BookingRateField(label: roomLabel, value: room))
         }
         if let breakfast = rate.includedBreakfast {
-            fields.append(BookingRateField(label: "Frühstück", value: breakfast ? "ja" : "nein"))
+            fields.append(
+                BookingRateField(
+                    label: BookingDetailLabels.breakfastIncluded,
+                    value: BookingDetailLabels.yesNo(breakfast)
+                )
+            )
         }
         if let guests = rate.guestCount {
-            fields.append(BookingRateField(label: "Gäste", value: "\(guests)"))
+            fields.append(BookingRateField(label: BookingDetailLabels.guests, value: "\(guests)"))
         }
-        if let rooms = rate.roomCount {
-            fields.append(BookingRateField(label: "Zimmer", value: "\(rooms)"))
+        if let rooms = rate.roomCount, let roomCountLabel = bookingType.roomCountLabel {
+            fields.append(BookingRateField(label: roomCountLabel, value: "\(rooms)"))
         }
         if let airline = rate.airline, !airline.isEmpty {
-            fields.append(BookingRateField(label: "Airline", value: airline))
+            fields.append(BookingRateField(label: BookingDetailLabels.airline, value: airline))
         }
 
         let names = booking.passengerDisplayNames
         if !names.isEmpty {
-            fields.append(BookingRateField(label: "Passagiere", value: names.joined(separator: ", ")))
+            fields.append(BookingRateField(label: BookingDetailLabels.passengers, value: names.joined(separator: ", ")))
         } else if let passengers = rate.passengerCount {
-            fields.append(BookingRateField(label: "Passagiere", value: "\(passengers)"))
+            fields.append(BookingRateField(label: BookingDetailLabels.passengers, value: "\(passengers)"))
         }
 
         if let baggage = rate.baggageInfoRaw, !baggage.isEmpty {
-            fields.append(BookingRateField(label: "Gepäck", value: baggage))
+            fields.append(BookingRateField(label: BookingDetailLabels.baggage, value: baggage))
         }
         if let rawBoardType = rate.boardTypeRaw,
            !rawBoardType.isEmpty,
            let boardType = BookingBoardType(rawValue: rawBoardType),
            let boardLabel = boardType.displayLabelIfKnown {
-            fields.append(BookingRateField(label: "Verpflegung", value: boardLabel))
+            fields.append(BookingRateField(label: BookingDetailLabels.boardType, value: boardLabel))
         }
         if let parsed = rate.lastParsedAt {
             fields.append(
                 BookingRateField(
-                    label: "Tarif gelesen",
+                    label: BookingDetailLabels.rateLastParsed,
                     value: parsed.formatted(date: .abbreviated, time: .shortened)
                 )
             )
@@ -102,29 +111,47 @@ public struct BookingRateFieldsView: View {
 public enum BookingScheduleFields {
     public static func make(booking: SDBooking) -> [BookingRateField] {
         var fields: [BookingRateField] = [
-            BookingRateField(label: "Status", value: booking.status.rawValue.capitalized)
+            BookingRateField(label: BookingDetailLabels.status, value: booking.status.displayLabel)
         ]
+        let bookingType = booking.bookingType
 
-        if let from = booking.locationFrom, !from.isEmpty {
-            fields.append(BookingRateField(label: "Von", value: from))
+        if bookingType.showsLocationFrom,
+           let from = booking.locationFrom,
+           !from.isEmpty {
+            fields.append(BookingRateField(label: bookingType.locationFromLabel, value: from))
         }
         if let to = booking.locationTo, !to.isEmpty {
-            fields.append(BookingRateField(label: "Nach", value: to))
+            fields.append(BookingRateField(label: bookingType.locationToLabel, value: to))
+        }
+        if bookingType.showsLocationFrom,
+           let fromAddress = booking.locationFromAddress,
+           !fromAddress.isEmpty,
+           let fromAddressLabel = bookingType.locationFromAddressLabel {
+            fields.append(BookingRateField(label: fromAddressLabel, value: fromAddress))
+        }
+        if let toAddress = booking.locationToAddress,
+           !toAddress.isEmpty,
+           let toAddressLabel = bookingType.locationToAddressLabel {
+            fields.append(BookingRateField(label: toAddressLabel, value: toAddress))
         }
         if let operatorName = booking.operatorName, !operatorName.isEmpty {
-            fields.append(BookingRateField(label: "Anbieter", value: operatorName))
+            fields.append(BookingRateField(label: bookingType.operatorNameLabel, value: operatorName))
         }
         if booking.isAllDay == true {
-            fields.append(BookingRateField(label: "Ganztägig", value: "ja"))
+            fields.append(
+                BookingRateField(label: BookingDetailLabels.allDay, value: BookingDetailLabels.yesNo(true))
+            )
         }
 
         let activityDateFormat = booking.isAllDay == true ? "d.M.yyyy" : "d.M.yyyy HH:mm"
+        let startLabel = bookingType.scheduleStartLabel
+        let endLabel = bookingType.scheduleEndLabel
 
         switch booking.bookingType {
         case .hotel:
             fields.append(
                 BookingRateField(
-                    label: "Start",
+                    label: startLabel,
                     value: HotelStayDate.format(
                         booking.startAt,
                         dateFormat: "d.M.yyyy",
@@ -134,7 +161,7 @@ public enum BookingScheduleFields {
             )
             fields.append(
                 BookingRateField(
-                    label: "Ende",
+                    label: endLabel,
                     value: HotelStayDate.format(
                         booking.endAt,
                         dateFormat: "d.M.yyyy",
@@ -145,7 +172,7 @@ public enum BookingScheduleFields {
         case .flight, .ferry:
             fields.append(
                 BookingRateField(
-                    label: "Start",
+                    label: startLabel,
                     value: Formatting.formatOrtszeit(
                         booking.startAt,
                         dateFormat: "d.M.yyyy HH:mm",
@@ -155,7 +182,7 @@ public enum BookingScheduleFields {
             )
             fields.append(
                 BookingRateField(
-                    label: "Ende",
+                    label: endLabel,
                     value: Formatting.formatOrtszeit(
                         booking.endAt,
                         dateFormat: "d.M.yyyy HH:mm",
@@ -163,10 +190,10 @@ public enum BookingScheduleFields {
                     )
                 )
             )
-        case .activity, .other:
+        case .activity, .carRental, .other:
             fields.append(
                 BookingRateField(
-                    label: "Start",
+                    label: startLabel,
                     value: Formatting.formatOrtszeit(
                         booking.startAt,
                         dateFormat: activityDateFormat,
@@ -176,7 +203,7 @@ public enum BookingScheduleFields {
             )
             fields.append(
                 BookingRateField(
-                    label: "Ende",
+                    label: endLabel,
                     value: Formatting.formatOrtszeit(
                         booking.endAt,
                         dateFormat: activityDateFormat,
@@ -187,10 +214,14 @@ public enum BookingScheduleFields {
         }
 
         if let checkIn = booking.hotelCheckInMinutes {
-            fields.append(BookingRateField(label: "Check-in", value: Formatting.minutesToHHmm(checkIn)))
+            fields.append(
+                BookingRateField(label: BookingDetailLabels.checkIn, value: Formatting.minutesToHHmm(checkIn))
+            )
         }
         if let checkOut = booking.hotelCheckOutMinutes {
-            fields.append(BookingRateField(label: "Check-out", value: Formatting.minutesToHHmm(checkOut)))
+            fields.append(
+                BookingRateField(label: BookingDetailLabels.checkOut, value: Formatting.minutesToHHmm(checkOut))
+            )
         }
 
         return fields
@@ -231,7 +262,7 @@ public struct BookingRoomItemsView: View {
                             .font(.caption.weight(.medium))
                     }
                     if let code = item.confirmationCode, !code.isEmpty {
-                        Text("Buchungsnr.: \(code)")
+                        Text("\(BookingDetailLabels.confirmationNumber): \(code)")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -242,7 +273,7 @@ public struct BookingRoomItemsView: View {
                     }
                     if let amount = item.priceAmount {
                         let currency = item.priceCurrency ?? rate.totalPriceCurrency
-                        Text("Einzelpreis: \(Formatting.formatCurrencyAmount(amount, currencyCode: currency))")
+                        Text("\(BookingDetailLabels.unitPrice): \(Formatting.formatCurrencyAmount(amount, currencyCode: currency))")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -282,7 +313,7 @@ public struct BookingCancellationDeadlinesView: View {
                     .font(.caption.weight(.medium))
 
                     HStack(spacing: 8) {
-                        Text(deadline.isFreeCancellation ? "Kostenlos" : "Kostenpflichtig")
+                        Text(deadline.isFreeCancellation ? BookingDetailLabels.cancellationFree : BookingDetailLabels.cancellationPaid)
                             .font(.caption2)
                             .foregroundStyle(deadline.isFreeCancellation ? .green : .secondary)
 
@@ -298,7 +329,7 @@ public struct BookingCancellationDeadlinesView: View {
                         }
 
                         if deadline.isStrict {
-                            Text("strikt")
+                            Text(BookingDetailLabels.strictDeadline)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }

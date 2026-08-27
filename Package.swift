@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "ReisenData", targets: ["ReisenData"]),
         .library(name: "ReisenProviders", targets: ["ReisenProviders"]),
         .library(name: "ReisenAppCore", targets: ["ReisenAppCore"]),
+        .library(name: "ReisenProviderSync", targets: ["ReisenProviderSync"]),
         .library(name: "ReisenSharedUI", targets: ["ReisenSharedUI"]),
         .library(name: "ReisenCheck24", targets: ["ReisenCheck24"]),
         .library(name: "ReisenOpodo", targets: ["ReisenOpodo"]),
@@ -27,6 +28,9 @@ let package = Package(
         .target(
             name: "ReisenDomain",
             path: "Sources/ReisenDomain",
+            resources: [
+                .process("Resources"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
@@ -58,13 +62,6 @@ let package = Package(
             dependencies: [
                 "ReisenDomain",
                 "ReisenData",
-                "ReisenProviders",
-                "ReisenCheck24",
-                "ReisenOpodo",
-                "ReisenBookingCom",
-                "ReisenAirbnb",
-                "ReisenGetYourGuide",
-                "ReisenTraveloka",
             ],
             path: "Sources/ReisenAppCore",
             exclude: [
@@ -75,12 +72,33 @@ let package = Package(
             ]
         ),
         .target(
+            name: "ReisenProviderSync",
+            dependencies: [
+                "ReisenAppCore",
+                "ReisenDomain",
+                "ReisenData",
+                "ReisenProviders",
+                "ReisenCheck24",
+                "ReisenOpodo",
+                "ReisenBookingCom",
+                "ReisenAirbnb",
+                "ReisenGetYourGuide",
+                "ReisenTraveloka",
+            ],
+            path: "Sources/ReisenProviderSync",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("WebKit"),
+            ]
+        ),
+        .target(
             name: "ReisenSharedUI",
             dependencies: [
                 "ReisenDomain",
                 "ReisenData",
                 "ReisenAppCore",
-                "ReisenProviders",
             ],
             path: "Sources/ReisenSharedUI",
             swiftSettings: [
@@ -142,12 +160,7 @@ let package = Package(
                 "ReisenData",
                 "ReisenProviders",
                 "ReisenAppCore",
-                "ReisenCheck24",
-                "ReisenOpodo",
-                "ReisenBookingCom",
-                "ReisenAirbnb",
-                "ReisenGetYourGuide",
-                "ReisenTraveloka",
+                "ReisenProviderSync",
                 "ReisenSharedUI",
             ],
             path: "Sources/Reisen",
@@ -251,6 +264,14 @@ let package = Package(
             name: "ReisenAppCoreTests",
             dependencies: ["ReisenAppCore", "ReisenDomain"],
             path: "Tests/ReisenAppCoreTests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenProviderSyncTests",
+            dependencies: ["ReisenProviderSync", "ReisenDomain"],
+            path: "Tests/ReisenProviderSyncTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

@@ -130,7 +130,7 @@ enum TravelokaItineraryEntryParser {
     }
 
     private static func keepsStayOffset(_ type: BookingType) -> Bool {
-        type == .hotel || type == .activity || type == .other
+        type == .hotel || type == .activity || type == .carRental || type == .other
     }
 
     private static func productFields(from context: EntryContext) -> ProductFields {

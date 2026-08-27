@@ -1,18 +1,9 @@
 import Foundation
 import Observation
 import SwiftData
-import CoreData
-import WebKit
 
 import ReisenDomain
 import ReisenData
-import ReisenProviders
-import ReisenCheck24
-import ReisenOpodo
-import ReisenBookingCom
-import ReisenAirbnb
-import ReisenGetYourGuide
-import ReisenTraveloka
 
 @MainActor
 @Observable
@@ -31,20 +22,27 @@ public final class SyncStore {
     public var issueReportErrorMessage: String?
     /// Datenschutz-Pane, falls `errorMessage` eine verweigerte Sicherheitsoption ist.
     public var privacySettingPane: PrivacySettingPane?
+    /// Optionale Freigaben, die beim letzten Provider-Sync übersprungen wurden (für Sync-All-Aggregation).
+    package var lastSyncSkippedPrivacyPanes: [PrivacySettingPane] = []
+    /// Abschluss des letzten Provider-Syncs (für Sync-All-Aggregation).
+    package var lastProviderSyncFinishOutcome: ProviderSyncFinishOutcome?
 
-    private let modelContext: ModelContext
-    private let registry: ProviderRegistry
-    private let reminderScheduler: LocalReminderScheduler
-    private let calendarSync: LocalEventKitBridge
-    private var issueReportTask: Task<Void, Never>?
-    private var cloudSideEffectTask: Task<Void, Never>?
-    private var isRebuildingSideEffects = false
+    package let modelContext: ModelContext
+    package let registry: ProviderRegistry
+    private let sideEffects: LocalSideEffectCoordinator
+    private let issueReporter: SyncIssueReporter
 
     public init(modelContext: ModelContext, registry: ProviderRegistry) {
         self.modelContext = modelContext
         self.registry = registry
-        self.reminderScheduler = LocalReminderScheduler(modelContext: modelContext)
-        self.calendarSync = LocalEventKitBridge(modelContext: modelContext)
+        self.sideEffects = LocalSideEffectCoordinator(modelContext: modelContext)
+        self.issueReporter = SyncIssueReporter()
+        self.issueReporter.onUpdate = { [weak self] url, didPost, issueError in
+            guard let self else { return }
+            self.lastPublicIssueURL = url
+            self.lastPublicIssueDidPostUpdate = didPost
+            self.issueReportErrorMessage = issueError
+        }
     }
 
     /// Rebuild EventKit/Reminders after CloudKit imports or app activation (device-local side effects).
@@ -52,317 +50,54 @@ public final class SyncStore {
         settings: AppSettings = .fromUserDefaults(),
         announceProgress: Bool = false
     ) async {
-        guard !isSyncing else { return }
-        guard !isRebuildingSideEffects else { return }
-        isRebuildingSideEffects = true
-        defer { isRebuildingSideEffects = false }
-
-        do {
-            let bookingRepo = SwiftDataBookingRepository(modelContext: modelContext)
-            let deadlineRepo = SwiftDataCancellationDeadlineRepository(modelContext: modelContext)
-            let bookings = try bookingRepo.fetchAll()
-            let deadlines = try deadlineRepo.fetchAll()
-            let titles = Dictionary(
-                uniqueKeysWithValues: bookings.map { ($0.id, $0.title ?? $0.bookingType.rawValue.capitalized) }
-            )
-            _ = try await maybeScheduleAndSyncCalendars(
-                settings: settings,
-                bookings: bookings,
-                deadlines: deadlines,
-                bookingTitles: titles,
-                bookingRepo: bookingRepo,
-                announceProgress: announceProgress
-            )
-        } catch {
-            if PrivacyOptionalCapability.deniedPane(from: error) != nil {
-                messageProviderID = nil
-                return
-            }
-            assignError(error, clearStatus: !announceProgress)
-            messageProviderID = nil
-        }
+        await sideEffects.rebuildLocalSideEffects(
+            isSyncing: isSyncing,
+            settings: settings,
+            announceProgress: announceProgress,
+            setStatusMessage: { [weak self] message in self?.statusMessage = message },
+            handleError: { [weak self] error, clearStatus in
+                self?.assignError(error, clearStatus: clearStatus)
+            },
+            clearMessageProvider: { [weak self] in self?.messageProviderID = nil }
+        )
     }
 
     /// Observe CloudKit/remote store merges and rebuild local EventKit/Reminder links.
     public func startObservingCloudSideEffects() {
-        stopObservingCloudSideEffects()
-        cloudSideEffectTask = Task { @MainActor [weak self] in
-            let notifications = NotificationCenter.default.notifications(
-                named: .NSPersistentStoreRemoteChange
-            )
-            for await _ in notifications {
-                guard let self else { return }
-                // Coalesce bursts of remote merges.
-                try? await Task.sleep(for: .milliseconds(750))
-                await self.rebuildLocalSideEffects(announceProgress: false)
+        sideEffects.startObservingCloudSideEffects(
+            isSyncing: { [weak self] in self?.isSyncing == true },
+            onRemoteChange: { [weak self] in
+                await self?.rebuildLocalSideEffects(announceProgress: false)
             }
-        }
+        )
     }
 
     public func stopObservingCloudSideEffects() {
-        cloudSideEffectTask?.cancel()
-        cloudSideEffectTask = nil
+        sideEffects.stopObservingCloudSideEffects()
     }
 
-    public func sync(
-        providerID: ProviderID,
-        webView: WKWebView,
-        settings: AppSettings,
-        navigationHintURLs: [URL] = []
-    ) async {
-        if !providerIsEnabled(providerID) {
-            assignErrorMessage("Provider \(providerID.rawValue) ist deaktiviert.")
-            messageProviderID = providerID
-            return
-        }
+    /// Status/Fehler dieses Providers verwerfen (z. B. beim Wegnavigieren).
+    public func dismissMessages(for providerID: ProviderID) {
+        if syncingProviderID == providerID { return }
+        guard messageProviderID == providerID else { return }
+        statusMessage = nil
+        clearSyncError()
+        messageProviderID = nil
+    }
 
-        syncingProviderID = providerID
-        messageProviderID = providerID
-        isSyncing = true
+    package func setSyncFailure(_ error: Error, clearStatus: Bool) {
+        assignError(error, clearStatus: clearStatus)
+    }
+
+    package func setSyncFailureMessage(_ message: String) {
+        assignErrorMessage(message)
+    }
+
+    package func clearSyncError() {
         clearError()
-        statusMessage = "Synchronisiere…"
-        defer {
-            isSyncing = false
-            syncingProviderID = nil
-        }
-
-        // We may need provider enrichment (incl. offsets) even if the user only wants calendar
-        // entries for trip/flight times (timezone correctness).
-        let requiresDeadlines = settings.notificationEnabled
-            || settings.eventKitEnabled
-            || settings.calendarTripTimesEnabled
-            || settings.calendarFlightTimesEnabled
-        let attemptStart = Date()
-
-        do {
-            guard let anyProvider = registry.provider(id: providerID) else {
-                throw RepositoryError.invalidState("Provider \(providerID.rawValue) ist nicht verfügbar.")
-            }
-
-            attachProviderProgressCallback(providerID: providerID, provider: anyProvider)
-
-            let session: any ProviderSession = {
-                if providerID == .check24 {
-                    return Check24WebSession(webView: webView)
-                }
-                return WebViewProviderSession(
-                    webView: webView,
-                    navigationHintURLs: navigationHintURLs
-                )
-            }()
-
-            let catalog = try await anyProvider.fetchCatalog(session: session)
-
-            // Ensure required enrichment fields (e.g. cancellation deadlines) are present.
-            // Some providers may return list-level data only; provider-specific `enrichBooking`
-            // is used as the second step.
-            var drafts = catalog.bookings
-            try await enrichDraftsIfNeeded(
-                providerID: providerID,
-                provider: anyProvider,
-                session: session,
-                requiresDeadlines: requiresDeadlines,
-                drafts: &drafts
-            )
-
-            // Stornierte Katalog-Einträge weglassen → deleteProviderBookings entfernt sie lokal.
-            let cancelledCount = drafts.filter { $0.status == .cancelled }.count
-            let activeDrafts = drafts.filter { $0.status != .cancelled }
-            // Flüge haben oft keine Stornofristen — Hinweis nur, wenn Hotels/Andere ohne Fristen bleiben.
-            let deadlineEligible = activeDrafts.filter { $0.bookingType == .hotel || $0.bookingType == .other }
-            let missingDeadlinesHint = requiresDeadlines
-                && !deadlineEligible.isEmpty
-                && deadlineEligible.allSatisfy(\.deadlines.isEmpty)
-            if providerID == .booking {
-                let hotels = activeDrafts.filter { $0.bookingType == .hotel }
-                let withDeadlines = activeDrafts.filter { !$0.deadlines.isEmpty }.count
-                let hotelURLSample = hotels.first?.externalUrl.map { String($0.prefix(120)) } ?? "-"
-                SyncLog.append(
-                    "enrich_deadlines provider=booking active=\(activeDrafts.count) hotels=\(hotels.count) withDeadlines=\(withDeadlines) hotelUrl=\(hotelURLSample)"
-                )
-            }
-
-            let bookingRepo = SwiftDataBookingRepository(modelContext: modelContext)
-            let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
-            let useCase = SyncProviderBookings(
-                bookingRepository: bookingRepo
-            )
-            statusMessage = "Speichere Daten…"
-            let stats = try useCase.execute(
-                provider: providerID,
-                drafts: activeDrafts,
-                requiresDeadlines: false
-            )
-
-            try await FlightTimeZoneAssigner(bookingRepository: bookingRepo).assignMissingOffsets()
-            try TimeNormalizationRepair(bookingRepository: bookingRepo).repairIfNeeded()
-
-            try assignTripsAfterNormalization(bookingRepo: bookingRepo, tripRepo: tripRepo)
-
-            let deadlineRepo = SwiftDataCancellationDeadlineRepository(modelContext: modelContext)
-            let deadlines = try deadlineRepo.fetchAll()
-            let bookings = try bookingRepo.fetchAll()
-            let titles = Dictionary(uniqueKeysWithValues: bookings.map { ($0.id, $0.title ?? $0.bookingType.rawValue.capitalized) })
-
-            let skippedPrivacy = try await maybeScheduleAndSyncCalendars(
-                settings: settings,
-                bookings: bookings,
-                deadlines: deadlines,
-                bookingTitles: titles,
-                bookingRepo: bookingRepo,
-                announceProgress: true
-            )
-
-            if missingDeadlinesHint {
-                statusMessage =
-                    "Synchronisiert (\(stats.bookingsPersisted) Buchungen). Hinweis: Keine Stornofristen gefunden."
-            } else {
-                statusMessage =
-                    "Synchronisation abgeschlossen. (\(stats.bookingsPersisted) Buchungen, \(stats.deadlinesPersisted) Stornofristen)"
-            }
-            if let hint = PrivacyOptionalCapability.statusHint(skipped: skippedPrivacy) {
-                statusMessage = "\(statusMessage ?? "") \(hint)"
-            }
-            messageProviderID = providerID
-            SyncLog.append(
-                "result=success provider=\(providerID.rawValue) bookings=\(stats.bookingsPersisted) deadlines=\(stats.deadlinesPersisted) cancelledDropped=\(cancelledCount) durationMs=\(Int(Date().timeIntervalSince(attemptStart) * 1000))"
-            )
-        } catch {
-            if let pane = PrivacyOptionalCapability.deniedPane(from: error) {
-                statusMessage = PrivacyOptionalCapability.statusHint(skipped: [pane])
-                    ?? "Synchronisation ohne optionale Freigaben abgeschlossen."
-                messageProviderID = providerID
-                SyncLog.append(
-                    "result=success_restricted provider=\(providerID.rawValue) durationMs=\(Int(Date().timeIntervalSince(attemptStart) * 1000)) skipped=\(pane.rawValue)"
-                )
-                return
-            }
-            assignError(error, clearStatus: true)
-            messageProviderID = providerID
-            SyncLog.append(
-                "result=failure provider=\(providerID.rawValue) durationMs=\(Int(Date().timeIntervalSince(attemptStart) * 1000)) error=\(error.localizedDescription)"
-            )
-        }
     }
 
-    private func attachProviderProgressCallback(
-        providerID: ProviderID,
-        provider: any TravelProvider
-    ) {
-        if providerID == .check24, let check24 = provider as? Check24TravelProvider {
-            check24.onProgress = { [weak self] message in
-                self?.messageProviderID = providerID
-                self?.statusMessage = message
-            }
-        } else if providerID == .opodo, let opodo = provider as? OpodoTravelProvider {
-            opodo.onProgress = { [weak self] message in
-                self?.messageProviderID = providerID
-                self?.statusMessage = message
-            }
-        } else if providerID == .booking, let booking = provider as? BookingComTravelProvider {
-            booking.onProgress = { [weak self] message in
-                self?.messageProviderID = providerID
-                self?.statusMessage = message
-            }
-        } else if providerID == .airbnb, let airbnb = provider as? AirbnbTravelProvider {
-            airbnb.onProgress = { [weak self] message in
-                self?.messageProviderID = providerID
-                self?.statusMessage = message
-            }
-        } else if providerID == .getYourGuide, let gyg = provider as? GetYourGuideTravelProvider {
-            gyg.onProgress = { [weak self] message in
-                self?.messageProviderID = providerID
-                self?.statusMessage = message
-            }
-        } else if providerID == .traveloka, let traveloka = provider as? TravelokaTravelProvider {
-            traveloka.onProgress = { [weak self] message in
-                self?.messageProviderID = providerID
-                self?.statusMessage = message
-            }
-        }
-    }
-
-    private func enrichDraftsIfNeeded(
-        providerID: ProviderID,
-        provider: any TravelProvider,
-        session: any ProviderSession,
-        requiresDeadlines: Bool,
-        drafts: inout [ProviderBookingDraft]
-    ) async throws {
-        for i in drafts.indices {
-            guard drafts[i].status != .cancelled else { continue }
-            guard let externalUrl = drafts[i].externalUrl else { continue }
-
-            let needsDeadlineEnrichment = requiresDeadlines && drafts[i].deadlines.isEmpty
-            let needsBookingComDeadlineRefine = providerID == .booking
-            let needsStatusProbe = providerID == .opodo
-            let needsAirbnbEnrichment = providerID == .airbnb
-            // GYG: Katalog kann Fristen schon haben; Enrichment liefert Treffpunkt/Teilnehmer.
-            let needsGetYourGuideEnrichment = providerID == .getYourGuide
-            let needsTravelokaEnrichment = providerID == .traveloka
-                && TravelokaEnrichmentNeeds.shouldEnrich(drafts[i], requiresDeadlines: requiresDeadlines)
-            guard needsDeadlineEnrichment
-                || needsBookingComDeadlineRefine
-                || needsStatusProbe
-                || needsAirbnbEnrichment
-                || needsGetYourGuideEnrichment
-                || needsTravelokaEnrichment
-            else {
-                continue
-            }
-
-            let ref = ProviderBookingRef(
-                externalUrl: externalUrl,
-                bookingType: drafts[i].bookingType,
-                hotelOffsetSeconds: drafts[i].hotelOffsetSeconds
-            )
-            let enrichment = try await provider.enrichBooking(session: session, ref: ref)
-
-            drafts[i].status = enrichment.status ?? drafts[i].status
-            if let title = enrichment.title, !title.isEmpty {
-                drafts[i].title = title
-            }
-            if let locationFrom = enrichment.locationFrom, !locationFrom.isEmpty {
-                drafts[i].locationFrom = locationFrom
-            }
-            if let locationTo = enrichment.locationTo, !locationTo.isEmpty {
-                drafts[i].locationTo = locationTo
-            }
-            if let locationFromAddress = enrichment.locationFromAddress, !locationFromAddress.isEmpty {
-                drafts[i].locationFromAddress = locationFromAddress
-            }
-            if let locationToAddress = enrichment.locationToAddress, !locationToAddress.isEmpty {
-                drafts[i].locationToAddress = locationToAddress
-            }
-
-            // Präzisere Enrichment-Fristen überschreiben grobe Katalog-Policy,
-            // aber nur wenn der Provider wirklich Fristen liefert.
-            if !enrichment.deadlines.isEmpty {
-                drafts[i].deadlines = enrichment.deadlines
-            }
-
-            // Replace-Strategy: Passagiere/Gepäck hängen an Flight-Tripdetails
-            // und müssen vollständig durch das Enrichment überschrieben werden.
-            drafts[i].passengers = enrichment.passengers ?? drafts[i].passengers
-            drafts[i].guestHints = enrichment.guestHints ?? drafts[i].guestHints
-
-            drafts[i].rateDetails = Self.mergeRateDetails(
-                existing: drafts[i].rateDetails,
-                incoming: enrichment.rateDetails
-            )
-            drafts[i].hotelOffsetSeconds = enrichment.hotelOffsetSeconds ?? drafts[i].hotelOffsetSeconds
-            drafts[i].hotelCheckInMinutes = enrichment.hotelCheckInMinutes ?? drafts[i].hotelCheckInMinutes
-            drafts[i].hotelCheckOutMinutes = enrichment.hotelCheckOutMinutes ?? drafts[i].hotelCheckOutMinutes
-            drafts[i].flightDepartureOffsetSeconds = enrichment.flightDepartureOffsetSeconds
-                ?? drafts[i].flightDepartureOffsetSeconds
-            drafts[i].flightArrivalOffsetSeconds = enrichment.flightArrivalOffsetSeconds
-                ?? drafts[i].flightArrivalOffsetSeconds
-            drafts[i].operatorName = enrichment.operatorName ?? drafts[i].operatorName
-            drafts[i].isAllDay = enrichment.isAllDay ?? drafts[i].isAllDay
-        }
-    }
-
-    private func assignTripsAfterNormalization(
+    package func assignTripsAfterNormalization(
         bookingRepo: SwiftDataBookingRepository,
         tripRepo: SwiftDataTripRepository
     ) throws {
@@ -393,271 +128,15 @@ public final class SyncStore {
         try tripRepo.save()
     }
 
-    private func maybeScheduleAndSyncCalendars(
+    package func scheduleSideEffectsFromStore(
         settings: AppSettings,
-        bookings: [Booking],
-        deadlines: [CancellationDeadline],
-        bookingTitles: [UUID: String],
-        bookingRepo: SwiftDataBookingRepository,
         announceProgress: Bool
     ) async throws -> [PrivacySettingPane] {
-        var skipped: [PrivacySettingPane] = []
-
-        if settings.notificationEnabled {
-            if announceProgress { statusMessage = "Plane Erinnerungen…" }
-            if let pane = try await PrivacyOptionalCapability.run({
-                _ = try await reminderScheduler.scheduleCancellationDeadlines(
-                    deadlines: deadlines,
-                    bookingTitles: bookingTitles,
-                    leadTimesDays: settings.leadTimesDays
-                )
-                _ = try await reminderScheduler.schedulePreTravelHints(
-                    bookings: bookings,
-                    bookingTitles: bookingTitles,
-                    leadTimesDays: settings.leadTimesDays
-                )
-            }) {
-                skipped.append(pane)
-            }
-        }
-
-        if settings.eventKitEnabled {
-            if announceProgress { statusMessage = "Schreibe Kalender…" }
-
-            let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
-            let trips = try tripRepo.fetchAll()
-
-            // Standard-Verhalten:
-            // Wenn der Nutzer den globalen Standardkalender "Reisen" (und die Standard-Reminder-Liste "Reisen")
-            // in der Fix/Global-Strategie ausgewählt hat, sollen diese bei Bedarf automatisch erstellt werden,
-            // damit der Sync nicht nur an "Kalender existiert nicht" scheitert.
-            let effectiveEventCreateIfMissing = settings.eventCalendarCreateIfMissing
-            let effectiveReminderCreateIfMissing = settings.reminderCalendarCreateIfMissing
-
-            if let pane = try await PrivacyOptionalCapability.run({
-                try await calendarSync.syncCancellationDeadlines(
-                    trips: trips,
-                    bookings: bookings,
-                    deadlines: deadlines,
-                    bookingTitles: bookingTitles,
-                    eventCalendarTitle: settings.calendarTitle,
-                    reminderCalendarTitle: settings.reminderCalendarTitle,
-                    eventCreateIfMissing: effectiveEventCreateIfMissing,
-                    reminderCreateIfMissing: effectiveReminderCreateIfMissing,
-                    calendarTitleMode: settings.calendarTitleMode,
-                    leadTimesDays: settings.leadTimesDays
-                )
-                try await calendarSync.syncPreTravelHints(
-                    trips: trips,
-                    bookings: bookings,
-                    bookingTitles: bookingTitles,
-                    eventCalendarTitle: settings.calendarTitle,
-                    reminderCalendarTitle: settings.reminderCalendarTitle,
-                    eventCreateIfMissing: effectiveEventCreateIfMissing,
-                    reminderCreateIfMissing: effectiveReminderCreateIfMissing,
-                    calendarTitleMode: settings.calendarTitleMode,
-                    leadTimesDays: settings.leadTimesDays
-                )
-            }) {
-                skipped.append(pane)
-            }
-        }
-
-        let calendarDenied = skipped.contains(.calendars)
-        if settings.eventKitEnabled,
-           !calendarDenied,
-           settings.calendarTripTimesEnabled || settings.calendarFlightTimesEnabled || settings.calendarHotelStaysEnabled {
-            if announceProgress { statusMessage = "Schreibe Reisezeiten…" }
-
-            var bookingsMutable = bookings
-
-            // Ensure location address fields are persisted before we compose calendar events.
-            // This keeps the EventKit sync purely data-driven (no best-effort UI guessing in the bridge).
-            let needsHotelAddresses = settings.calendarTripTimesEnabled || settings.calendarHotelStaysEnabled
-            let needsFlightAddresses = settings.calendarFlightTimesEnabled
-
-            if needsHotelAddresses || needsFlightAddresses {
-                if announceProgress { statusMessage = "Löse Adressen auf…" }
-                try await resolveAndPersistBookingAddressesIfNeeded(
-                    needsHotelAddresses: needsHotelAddresses,
-                    needsFlightAddresses: needsFlightAddresses,
-                    bookings: &bookingsMutable,
-                    bookingRepo: bookingRepo
-                )
-            }
-
-            let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
-            let trips = try tripRepo.fetchAll()
-
-            if let pane = try await PrivacyOptionalCapability.run({
-                try await calendarSync.syncTripTimelineEntries(
-                    trips: trips,
-                    bookings: bookingsMutable,
-                    bookingTitles: bookingTitles,
-                    eventCalendarTitle: settings.calendarTitle,
-                    eventCreateIfMissing:
-                        settings.eventCalendarCreateIfMissing,
-                    includeTripStartEnd: settings.calendarTripTimesEnabled,
-                    includeFlightTimes: settings.calendarFlightTimesEnabled,
-                    includeHotelStays: settings.calendarHotelStaysEnabled
-                )
-            }) {
-                skipped.append(pane)
-            }
-        }
-
-        return skipped
-    }
-
-    private func resolveAndPersistBookingAddressesIfNeeded(
-        needsHotelAddresses: Bool,
-        needsFlightAddresses: Bool,
-        bookings: inout [Booking],
-        bookingRepo: SwiftDataBookingRepository
-    ) async throws {
-        // Aufgabe: Nur die relevanten Address-Felder ergänzen, wenn sie fehlen.
-        // Durch Caching reduzieren wir die Anzahl der Geocoding-Requests.
-        let resolver = MapKitAddressResolver()
-        var addressCache: [String: String?] = [:]
-        var changedBookingIDs = Set<UUID>()
-
-        func resolveCached(_ query: String) async {
-            if addressCache.keys.contains(query) { return }
-            do {
-                addressCache[query] = try await resolver.resolveAddress(query: query)
-            } catch {
-                addressCache[query] = nil
-            }
-        }
-
-        func hotelFallbackQuery(
-            booking: Booking,
-            locationPart: String?
-        ) -> String? {
-            let title = booking.title?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let location = locationPart?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            switch (title, location) {
-            case let (t?, l?) where !t.isEmpty && !l.isEmpty:
-                return "\(t), \(l)"
-            case let (t?, nil) where !t.isEmpty:
-                return t
-            case let (nil, l?) where !l.isEmpty:
-                return l
-            default:
-                return nil
-            }
-        }
-
-        for idx in bookings.indices {
-            let booking = bookings[idx]
-
-            let shouldResolveHotel = needsHotelAddresses && booking.bookingType == .hotel
-            let shouldResolveFlight = needsFlightAddresses && booking.bookingType == .flight
-            guard shouldResolveHotel || shouldResolveFlight else { continue }
-
-            var updated = booking
-            var didChange = false
-
-            if updated.locationFromAddress == nil,
-               let fromQuery = (shouldResolveHotel
-                                ? hotelFallbackQuery(booking: updated, locationPart: updated.locationFrom)
-                                : updated.locationFrom),
-               !fromQuery.isEmpty {
-                await resolveCached(fromQuery)
-                if let resolved = addressCache[fromQuery] ?? nil {
-                    updated.locationFromAddress = resolved
-                    didChange = true
-                }
-            }
-
-            if updated.locationToAddress == nil,
-               let toQuery = (shouldResolveHotel
-                              ? hotelFallbackQuery(booking: updated, locationPart: updated.locationTo)
-                              : updated.locationTo),
-               !toQuery.isEmpty {
-                await resolveCached(toQuery)
-                if let resolved = addressCache[toQuery] ?? nil {
-                    updated.locationToAddress = resolved
-                    didChange = true
-                }
-            }
-
-            if didChange {
-                bookings[idx] = updated
-                changedBookingIDs.insert(updated.id)
-            }
-        }
-
-        guard !changedBookingIDs.isEmpty else { return }
-
-        for booking in bookings where changedBookingIDs.contains(booking.id) {
-            try bookingRepo.upsert(booking)
-        }
-        try bookingRepo.save()
-    }
-
-    /// Status/Fehler dieses Providers verwerfen (z. B. beim Wegnavigieren).
-    public func dismissMessages(for providerID: ProviderID) {
-        if syncingProviderID == providerID { return }
-        guard messageProviderID == providerID else { return }
-        statusMessage = nil
-        clearError()
-        messageProviderID = nil
-    }
-
-    /// Synchronisiert alle angegebenen Provider nacheinander (HIG: eine laufende Aktion, klarer Fortschritt).
-    public func syncAll(
-        providers: [(ProviderID, WKWebView)],
-        settings: AppSettings,
-        resolveNavigationHintURLs: @escaping (ProviderID) -> [URL] = { _ in [] }
-    ) async {
-        guard !isSyncing else { return }
-        guard !providers.isEmpty else {
-            assignErrorMessage("Keine angemeldeten Provider zum Synchronisieren.")
-            messageProviderID = nil
-            return
-        }
-
-        var successCount = 0
-        var failures: [(providerName: String, message: String)] = []
-        var lastPrivacyPane: PrivacySettingPane?
-
-        for (index, item) in providers.enumerated() {
-            let (providerID, webView) = item
-            statusMessage = "Synchronisiere \(index + 1)/\(providers.count)…"
-            messageProviderID = providerID
-            clearError()
-
-            await sync(
-                providerID: providerID,
-                webView: webView,
-                settings: settings,
-                navigationHintURLs: resolveNavigationHintURLs(providerID)
-            )
-
-            if let errorMessage {
-                failures.append((providerID.displayName, errorMessage))
-                lastPrivacyPane = privacySettingPane
-            } else {
-                successCount += 1
-            }
-        }
-
-        messageProviderID = nil
-        if failures.isEmpty {
-            clearError()
-            statusMessage = "Alle Provider synchronisiert (\(successCount))."
-        } else {
-            errorMessage = SyncAllSummary.errorDetails(failures: failures)
-            privacySettingPane = lastPrivacyPane
-            statusMessage = SyncAllSummary.statusLine(
-                successCount: successCount,
-                failureCount: failures.count
-            )
-        }
+        try await sideEffects.scheduleAndSyncFromStore(
+            settings: settings,
+            announceProgress: announceProgress,
+            setStatusMessage: { [weak self] message in self?.statusMessage = message }
+        )
     }
 
     private func assignError(_ error: Error, clearStatus: Bool) {
@@ -667,118 +146,21 @@ public final class SyncStore {
         if clearStatus {
             statusMessage = nil
         }
-        maybeScheduleIssueReport(error: mapped)
+        issueReporter.scheduleIfNeeded(error: mapped, providerID: messageProviderID)
     }
 
     private func assignErrorMessage(_ message: String) {
         errorMessage = message
         privacySettingPane = nil
         statusMessage = nil
-        maybeScheduleIssueReport(message: message)
+        issueReporter.scheduleIfNeeded(message: message, providerID: messageProviderID)
     }
 
     private func clearError() {
         errorMessage = nil
         privacySettingPane = nil
-        resetIssueReport()
+        issueReporter.reset()
     }
-
-    private func resetIssueReport() {
-        lastPublicIssueURL = nil
-        lastPublicIssueDidPostUpdate = true
-        issueReportErrorMessage = nil
-    }
-
-    private func maybeScheduleIssueReport(error: Error) {
-        guard GitHubIssueAutoReport.shouldReport(error: error) else { return }
-        scheduleIssueReport(message: error.localizedDescription)
-    }
-
-    private func maybeScheduleIssueReport(message: String) {
-        guard GitHubIssueAutoReport.shouldReport(message: message) else { return }
-        scheduleIssueReport(message: message)
-    }
-
-    private func scheduleIssueReport(message: String) {
-        resetIssueReport()
-        guard GitHubIssueAutoReport.isAutomaticReportingEnabled() else { return }
-        let provider = messageProviderID
-        let previous = issueReportTask
-        issueReportTask = Task { @MainActor [weak self] in
-            await previous?.value
-            guard let self else { return }
-            do {
-                let created = try await GitHubIssueReporter.shared.report(
-                    kind: .error,
-                    title: GitHubIssueTitle.syncErrorReport(message: message),
-                    message: message,
-                    providerID: provider
-                )
-                self.lastPublicIssueURL = created.htmlURL
-                self.lastPublicIssueDidPostUpdate = created.didPostUpdate
-                self.issueReportErrorMessage = nil
-            } catch is GitHubIssueTokenError {
-                return
-            } catch {
-                self.issueReportErrorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    private func providerIsEnabled(_ providerID: ProviderID) -> Bool {
-        AppSettingsKeys.isProviderEnabled(providerID)
-    }
-
-    /// Enrichment füllt fehlende Felder; bestehende Werte (z. B. Katalogpreis) bleiben,
-    /// wenn Enrichment sie bewusst weglässt (nil).
-    private static func mergeRateDetails(
-        existing: BookingRateDetails?,
-        incoming: BookingRateDetails?
-    ) -> BookingRateDetails? {
-        guard let incoming else { return existing }
-        guard let existing else { return incoming }
-
-        var merged = existing
-        assignOptional(incoming.rawDetailsFingerprint, into: &merged, \.rawDetailsFingerprint)
-        assignOptional(incoming.totalPriceAmount, into: &merged, \.totalPriceAmount)
-        assignOptional(incoming.totalPriceCurrency, into: &merged, \.totalPriceCurrency)
-        assignOptional(incoming.roomCategory, into: &merged, \.roomCategory)
-        assignOptional(incoming.includedBreakfast, into: &merged, \.includedBreakfast)
-        assignOptional(incoming.guestCount, into: &merged, \.guestCount)
-        assignOptional(incoming.roomCount, into: &merged, \.roomCount)
-        assignOptional(incoming.airline, into: &merged, \.airline)
-        assignOptional(incoming.passengerCount, into: &merged, \.passengerCount)
-        assignOptional(incoming.baggageInfoRaw, into: &merged, \.baggageInfoRaw)
-        assignOptional(incoming.lastParsedAt, into: &merged, \.lastParsedAt)
-        assignNonEmptyRoomItems(incoming.roomItems, into: &merged)
-        return merged
-    }
-
-    private static func assignOptional<T>(
-        _ incoming: T?,
-        into target: inout BookingRateDetails,
-        _ keyPath: WritableKeyPath<BookingRateDetails, T?>
-    ) {
-        guard let incoming else { return }
-        target[keyPath: keyPath] = incoming
-    }
-
-    private static func assignIfBoardTypeKnown(
-        _ incoming: BookingBoardType,
-        into target: inout BookingRateDetails
-    ) {
-        guard incoming != .unknown else { return }
-        target.boardType = incoming
-    }
-
-    private static func assignNonEmptyRoomItems(
-        _ incoming: [BookingRoomItem],
-        into target: inout BookingRateDetails
-    ) {
-        guard !incoming.isEmpty else { return }
-        target.roomItems = incoming
-    }
-
 }
 
 public enum SyncLog {
@@ -806,11 +188,9 @@ public enum SyncLog {
                 }
             }
         } catch {
-            // Logging must not mask sync errors; surface via stderr in debug.
             #if DEBUG
             print("[Reisen] Sync-Log fehlgeschlagen: \(error)")
             #endif
         }
     }
 }
-

@@ -2,7 +2,6 @@ import SwiftUI
 
 import ReisenAppCore
 import ReisenDomain
-import ReisenProviders
 
 /// Toggles für Buchungsportale. SSOT: `AppSettingsKeys.providerEnabledKey`.
 public struct ProviderEnabledSettingsSection: View {
@@ -16,16 +15,13 @@ public struct ProviderEnabledSettingsSection: View {
                 ForEach(registry.syncProviderIDs, id: \.self) { id in
                     ProviderEnabledToggle(
                         providerID: id,
-                        displayName: registry.provider(id: id)?.displayName ?? id.displayName
+                        displayName: id.displayName
                     )
                 }
             } header: {
-                Text("Buchungsportale")
+                Text(L10n.string(.settingsBookingPortals))
             } footer: {
-                Text(
-                    "Nur aktivierte Portale erscheinen unter Sync und werden synchronisiert. "
-                        + "Eine installierte Provider-App ersetzt nicht die Anmeldung in der WebView."
-                )
+                Text(L10n.string(.syncEnablePortalsHint))
             }
         }
     }
@@ -57,7 +53,7 @@ private struct ProviderEnabledToggle: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayName)
                 if nativeAppPresence.isInstalled(providerID) {
-                    Text("App installiert")
+                    Text(L10n.string(.settingsAppInstalled))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -70,8 +66,8 @@ private struct ProviderEnabledToggle: View {
             .accessibilityHint(
                 Text(
                     isEnabled
-                        ? "Deaktivieren blendet das Portal unter Sync aus."
-                        : "Aktivieren zeigt das Portal unter Sync an."
+                        ? L10n.string(.providerDeactivateHelp)
+                        : L10n.string(.providerActivateHelp)
                 )
             )
     }

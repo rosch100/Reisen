@@ -12,7 +12,7 @@ public enum CalendarTimelineFlightDrafts {
         for bookingID in trip.bookingIDs {
             guard let booking = bookingsByID[bookingID], booking.bookingType == .flight else { continue }
 
-            let displayTitle = bookingTitles[booking.id] ?? booking.bookingType.rawValue.capitalized
+            let displayTitle = booking.displayTitle(using: bookingTitles)
             let airline = booking.rateDetails?.airline?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let eventTitle = CalendarTimelineNotes.flightEventTitle(

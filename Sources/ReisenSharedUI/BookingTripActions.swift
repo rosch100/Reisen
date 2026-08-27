@@ -1,11 +1,11 @@
 import SwiftUI
+import ReisenDomain
 
 /// Texte und Confirm-Dialoge für Buchung löschen / von Reise entfernen.
 public enum BookingTripActions {
-    public static let deleteTitle = "Buchung wirklich löschen?"
-    public static let removeFromTripTitle = "Buchung von Reise entfernen?"
-    public static let removeFromTripMessage =
-        "Die Buchung wird der Reise entzogen und erscheint unter „Offene Buchungen“."
+    public static var deleteTitle: String { L10n.string(.actionDeleteEllipsis) }
+    public static var removeFromTripTitle: String { L10n.string(.actionRemoveFromTrip) }
+    public static var removeFromTripMessage: String { L10n.string(.tripRemoveFromTripHelp) }
 }
 
 public struct BookingTripConfirmDialogs: ViewModifier {
@@ -39,16 +39,16 @@ public struct BookingTripConfirmDialogs: ViewModifier {
                 isPresented: $showDeleteConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Löschen", role: .destructive, action: onConfirmDelete)
-                Button("Abbrechen", role: .cancel, action: onCancelDelete)
+                Button(L10n.string(.commonDelete), role: .destructive, action: onConfirmDelete)
+                Button(L10n.string(.commonCancel), role: .cancel, action: onCancelDelete)
             }
             .confirmationDialog(
                 BookingTripActions.removeFromTripTitle,
                 isPresented: $showRemoveFromTripConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Entfernen", role: .destructive, action: onConfirmRemove)
-                Button("Abbrechen", role: .cancel, action: onCancelRemove)
+                Button(L10n.string(.commonRemove), role: .destructive, action: onConfirmRemove)
+                Button(L10n.string(.commonCancel), role: .cancel, action: onCancelRemove)
             } message: {
                 Text(BookingTripActions.removeFromTripMessage)
             }

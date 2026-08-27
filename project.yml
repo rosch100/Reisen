@@ -22,12 +22,9 @@ targets:
     type: application
     platform: iOS
     sources:
-      - path: Apps/ReiseniOS
-        excludes:
-          - "**/*.plist"
-          - "**/*.entitlements"
-    resources:
+      - path: Apps/ReiseniOS/Shared
       - path: Apps/ReiseniOS/Assets.xcassets
+    resources:
       - path: Apps/ReiseniOS/PrivacyInfo.xcprivacy
     settings:
       base:
@@ -51,6 +48,55 @@ targets:
     scheme:
       testTargets:
         - ReiseniOSTests
+
+  ReiseniOSPrivate:
+    type: application
+    platform: iOS
+    sources:
+      - path: Apps/ReiseniOS/Shared
+      - path: Apps/ReiseniOS/ProviderSync
+      - path: Apps/ReiseniOS/Assets.xcassets
+    resources:
+      - path: Apps/ReiseniOSPrivate/PrivacyInfo.xcprivacy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios.private
+        PRODUCT_NAME: ReiseniOSPrivate
+        INFOPLIST_FILE: Apps/ReiseniOSPrivate/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: 0.2.1
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: Apps/ReiseniOSPrivate/ReiseniOSPrivate.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: Apps/ReiseniOSPrivate/ReiseniOSPrivate-Release.entitlements
+    dependencies:
+      - package: Reisen
+        product: ReisenAppCore
+      - package: Reisen
+        product: ReisenSharedUI
+      - package: Reisen
+        product: ReisenProviderSync
+    scheme:
+      testTargets:
+        - ReiseniOSPrivateTests
+
+  ReiseniOSPrivateTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/ReiseniOSPrivateTests
+    dependencies:
+      - target: ReiseniOSPrivate
+      - package: Reisen
+        product: ReisenProviderSync
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios.private.tests
+        GENERATE_INFOPLIST_FILE: true
 
   ReiseniOSTests:
     type: bundle.unit-test
@@ -81,27 +127,20 @@ targets:
         MARKETING_VERSION: 0.2.1
         CODE_SIGN_ENTITLEMENTS: Resources/Reisen.entitlements
         COMBINE_HIDPI_IMAGES: true
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC
     dependencies:
       - package: Reisen
         product: ReisenAppCore
       - package: Reisen
         product: ReisenSharedUI
       - package: Reisen
+        product: ReisenProviderSync
+      - package: Reisen
         product: ReisenData
       - package: Reisen
         product: ReisenProviders
       - package: Reisen
         product: ReisenDomain
-      - package: Reisen
-        product: ReisenCheck24
-      - package: Reisen
-        product: ReisenOpodo
-      - package: Reisen
-        product: ReisenBookingCom
-      - package: Reisen
-        product: ReisenAirbnb
-      - package: Reisen
-        product: ReisenGetYourGuide
 
 schemes:
   ReisenMac:
@@ -120,3 +159,13 @@ schemes:
       config: Debug
       targets:
         - ReiseniOSTests
+  ReiseniOSPrivate:
+    build:
+      targets:
+        ReiseniOSPrivate: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ReiseniOSPrivateTests

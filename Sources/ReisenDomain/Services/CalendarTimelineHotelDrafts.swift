@@ -11,7 +11,7 @@ public enum CalendarTimelineHotelDrafts {
 
         for bookingID in trip.bookingIDs {
             guard let booking = bookingsByID[bookingID], booking.bookingType == .hotel else { continue }
-            let title = bookingTitles[booking.id] ?? booking.bookingType.rawValue.capitalized
+            let title = booking.displayTitle(using: bookingTitles)
             drafts.append(
                 CalendarTimelineHotelDraftBuilder.draft(trip: trip, booking: booking, title: title)
             )
