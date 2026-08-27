@@ -26,6 +26,25 @@ public struct TripBookingAssignment: Sendable {
         }
     }
 
+    /// Without `restrictingTo`, all bookings in the trip date window. With it, only those IDs that are still open (even outside the window).
+    public func bookingIDsToAssign(
+        bookings: [Booking],
+        trip: Trip,
+        restrictingTo seedBookingIDs: Set<UUID>?,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [UUID] {
+        if let seedBookingIDs {
+            return bookings.compactMap { booking in
+                guard seedBookingIDs.contains(booking.id) else { return nil }
+                guard booking.tripID == nil else { return nil }
+                guard booking.status != .cancelled else { return nil }
+                return booking.id
+            }
+        }
+        return assignableBookingIDs(bookings: bookings, trip: trip, now: now, calendar: calendar)
+    }
+
     public func assignableCount(
         bookings: [Booking],
         startDate: Date,

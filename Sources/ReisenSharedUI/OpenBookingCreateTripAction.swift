@@ -34,11 +34,11 @@ public enum OpenBookingCreateTripAction {
     public static func dateRangeText(
         for bookings: [SDBooking],
         calendar: Calendar = .current
-    ) -> String {
+    ) -> String? {
         TripDateBounds.formattedAbbreviatedRange(
             from: domainBookings(from: bookings),
             calendar: calendar
-        ) ?? ""
+        )
     }
 
     /// Sets `seed` from every open unassigned booking in `bookings`.
@@ -100,7 +100,8 @@ public enum OpenBookingCreateTripAction {
         return TripCreateSeed(
             title: title,
             startDate: bounds.start,
-            endDate: bounds.end
+            endDate: bounds.end,
+            bookingIDs: Set(bookings.map(\.id))
         )
     }
 }

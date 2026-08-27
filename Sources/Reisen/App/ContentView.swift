@@ -789,7 +789,6 @@ struct ContentView: View {
         @State private var bookingEditorDraft: BookingEditorDraft?
         @State private var pendingDeleteBookingID: UUID?
         @State private var showDeleteConfirmation = false
-        @State private var showRemoveFromTripConfirmation = false
 
         private var draftBinding: Binding<BookingEditorDraft>? {
             guard bookingEditorDraft != nil else { return nil }
@@ -831,11 +830,9 @@ struct ContentView: View {
                     Text(assignErrorMessage)
                 }
             }
-            .bookingTripConfirmDialogs(
+            .bookingDeleteConfirmDialog(
                 showDeleteConfirmation: $showDeleteConfirmation,
-                showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
                 onConfirmDelete: deletePendingBooking,
-                onConfirmRemove: {},
                 onCancelDelete: { pendingDeleteBookingID = nil }
             )
         }

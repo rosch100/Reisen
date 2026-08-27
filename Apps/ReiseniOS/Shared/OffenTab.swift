@@ -124,6 +124,7 @@ struct OpenBookingsScreen: View {
                             .tag(booking.id)
                     }
                 }
+                .environment(\.editMode, .constant(.active))
                 .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             } else {
                 List(selection: $selectedBookingID) {

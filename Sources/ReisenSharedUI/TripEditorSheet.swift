@@ -27,7 +27,7 @@ public struct TripEditorSheet: View {
     @State private var errorMessage: String?
     @FocusState private var focusedField: FocusField?
 
-    private let showsAssignmentPreview: Bool
+    private let seedBookingIDs: Set<UUID>?
     private let focusTitleOnAppear: Bool
 
     public init(
@@ -39,7 +39,7 @@ public struct TripEditorSheet: View {
         self.mode = mode
         self.trip = trip
         self.onSaved = onSaved
-        self.showsAssignmentPreview = mode == .create && seed != nil
+        self.seedBookingIDs = seed?.bookingIDs
 
         let now = Date()
         let defaultStart = Calendar.current.startOfDay(for: now)
@@ -89,10 +89,11 @@ public struct TripEditorSheet: View {
                     DatePicker(L10n.string(.tripEndDate), selection: $endDate, displayedComponents: .date)
                 }
 
-                if showsAssignmentPreview {
+                if mode == .create {
                     TripEditorAssignmentPreviewSection(
                         startDate: startDate,
-                        endDate: endDate
+                        endDate: endDate,
+                        seedBookingIDs: seedBookingIDs
                     )
                 }
 
@@ -160,7 +161,11 @@ public struct TripEditorSheet: View {
             let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
             let domainTrip = DomainMapper.trip(from: savedTrip)
             let bookings = try bookingRepo.fetchAll()
-            let ids = TripBookingAssignment().assignableBookingIDs(bookings: bookings, trip: domainTrip)
+            let ids = TripBookingAssignment().bookingIDsToAssign(
+                bookings: bookings,
+                trip: domainTrip,
+                restrictingTo: mode == .create ? seedBookingIDs : nil
+            )
             for bookingID in ids {
                 try tripRepo.assignBooking(bookingID: bookingID, toTripID: savedTrip.id)
             }
@@ -174,7 +179,7 @@ public struct TripEditorSheet: View {
     }
 }
 
-/// Live preview of assignable open bookings; `@Query` only when seeded create flow is active.
+/// Live preview of bookings that `save()` will assign (create flow).
 private struct TripEditorAssignmentPreviewSection: View {
     private struct RefreshKey: Equatable {
         let startDate: Date
@@ -184,6 +189,7 @@ private struct TripEditorAssignmentPreviewSection: View {
 
     let startDate: Date
     let endDate: Date
+    let seedBookingIDs: Set<UUID>?
 
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @State private var assignableCount = 0
@@ -192,7 +198,7 @@ private struct TripEditorAssignmentPreviewSection: View {
         Group {
             if assignableCount > 0 {
                 Section {
-                    Text(L10n.format(.tripAssignCountInWindow, assignableCount))
+                    Text(previewText)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -204,6 +210,13 @@ private struct TripEditorAssignmentPreviewSection: View {
         .onChange(of: refreshKey) { _, _ in
             refreshAssignableCount()
         }
+    }
+
+    private var previewText: String {
+        if seedBookingIDs != nil {
+            return L10n.format(.tripAssignCountSelected, assignableCount)
+        }
+        return L10n.format(.tripAssignCountInWindow, assignableCount)
     }
 
     private var refreshKey: RefreshKey {
@@ -220,17 +233,17 @@ private struct TripEditorAssignmentPreviewSection: View {
             hasher.combine(booking.id)
             hasher.combine(booking.startAt)
             hasher.combine(booking.endAt)
-            hasher.combine(booking.trip?.id)
         }
         return hasher.finalize()
     }
 
     private func refreshAssignableCount() {
         let bookings = allBookings.map(DomainMapper.booking(from:))
-        assignableCount = TripBookingAssignment().assignableCount(
+        let draftTrip = Trip(title: "", startDate: startDate, endDate: endDate)
+        assignableCount = TripBookingAssignment().bookingIDsToAssign(
             bookings: bookings,
-            startDate: startDate,
-            endDate: endDate
-        )
+            trip: draftTrip,
+            restrictingTo: seedBookingIDs
+        ).count
     }
 }

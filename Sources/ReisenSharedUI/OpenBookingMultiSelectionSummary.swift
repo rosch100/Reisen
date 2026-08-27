@@ -20,7 +20,7 @@ public struct OpenBookingMultiSelectionSummary: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(L10n.format(.tripSelectedOpenBookings, selected.count))
                     .font(.headline)
-                if !dateRangeText.isEmpty {
+                if let dateRangeText {
                     Text(dateRangeText)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -43,7 +43,7 @@ public struct OpenBookingMultiSelectionSummary: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var dateRangeText: String {
+    private var dateRangeText: String? {
         OpenBookingCreateTripAction.dateRangeText(for: selected)
     }
 }

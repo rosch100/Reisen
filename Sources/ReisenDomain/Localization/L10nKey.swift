@@ -376,6 +376,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case tripAssignOpenBookingHelp = "trip.assign_open_booking_help"
     case tripAssignOpenHelp = "trip.assign_open_help"
     case tripAssignCountInWindow = "trip.assign_count_in_window"
+    case tripAssignCountSelected = "trip.assign_count_selected"
     case tripBookingUnavailable = "trip.booking_unavailable"
     case tripBookingCount = "trip.booking_count"
     case tripBookingMissing = "trip.booking_missing"

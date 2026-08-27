@@ -6,16 +6,19 @@ public struct TripCreateSeed: Sendable, Equatable, Identifiable {
     public var title: String?
     public var startDate: Date
     public var endDate: Date
+    public var bookingIDs: Set<UUID>
 
     public init(
         id: UUID = UUID(),
         title: String?,
         startDate: Date,
-        endDate: Date
+        endDate: Date,
+        bookingIDs: Set<UUID>
     ) {
         self.id = id
         self.title = title
         self.startDate = startDate
         self.endDate = endDate
+        self.bookingIDs = bookingIDs
     }
 }
