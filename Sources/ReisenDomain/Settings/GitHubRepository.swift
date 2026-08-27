@@ -7,9 +7,16 @@ public enum GitHubRepository {
     public static let defaultBranch = "master"
     public static let legalDirectory = "docs/legal"
 
-    public enum LegalPage: String {
-        case privacy = "privacy.html"
-        case support = "support.html"
+    public enum LegalDocument: Sendable {
+        case privacy
+        case support
+    }
+
+    public enum LegalPage: String, Sendable {
+        case privacyDE = "privacy.html"
+        case privacyEN = "privacy.en.html"
+        case supportDE = "support.html"
+        case supportEN = "support.en.html"
     }
 
     public static var webBaseURL: URL {
@@ -36,6 +43,16 @@ public enum GitHubRepository {
         issuesListURL.appending(path: String(number))
     }
 
+    public static func legalPage(for document: LegalDocument, locale: Locale = .current) -> LegalPage {
+        let isGerman = locale.reisenPrefersGerman
+        switch document {
+        case .privacy:
+            return isGerman ? .privacyDE : .privacyEN
+        case .support:
+            return isGerman ? .supportDE : .supportEN
+        }
+    }
+
     public static func rawLegalURL(_ page: LegalPage) -> URL {
         URL(
             string: "https://raw.githubusercontent.com/\(owner)/\(name)/\(defaultBranch)/\(legalDirectory)/\(page.rawValue)"
@@ -44,6 +61,14 @@ public enum GitHubRepository {
 
     public static func pagesLegalURL(_ page: LegalPage) -> URL {
         pagesBaseURL.appending(path: page.rawValue)
+    }
+
+    public static func pagesLegalURL(for document: LegalDocument, locale: Locale = .current) -> URL {
+        pagesLegalURL(legalPage(for: document, locale: locale))
+    }
+
+    public static func rawLegalURL(for document: LegalDocument, locale: Locale = .current) -> URL {
+        rawLegalURL(legalPage(for: document, locale: locale))
     }
 
     public static var publicPath: String {

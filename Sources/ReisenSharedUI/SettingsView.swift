@@ -196,12 +196,12 @@ public struct SettingsView: View {
             }
 
             Section {
-                Link("Datenschutzerklärung", destination: LegalURLs.privacyPolicy)
-                Link("Support", destination: LegalURLs.support)
+                Link(Self.legalPrivacyTitle, destination: LegalURLs.privacyPolicy)
+                Link(Self.legalSupportTitle, destination: LegalURLs.support)
             } header: {
-                Text("Datenschutz & Support")
+                Text(Self.legalSectionTitle)
             } footer: {
-                Text("Beschreibt Provider-Logins, iCloud, Kalender und lokale Speicherung.")
+                Text(Self.legalSectionFooter)
             }
 
             Section {
@@ -448,6 +448,28 @@ public struct SettingsView: View {
         if let pane = PrivacyAccessDenial.pane(from: error), !panes.contains(pane) {
             panes.append(pane)
         }
+    }
+
+    private static var usesGermanLegalCopy: Bool {
+        Locale.current.reisenPrefersGerman
+    }
+
+    private static var legalPrivacyTitle: String {
+        usesGermanLegalCopy ? "Datenschutzerklärung" : "Privacy Policy"
+    }
+
+    private static var legalSupportTitle: String {
+        "Support"
+    }
+
+    private static var legalSectionTitle: String {
+        usesGermanLegalCopy ? "Datenschutz & Support" : "Privacy & Support"
+    }
+
+    private static var legalSectionFooter: String {
+        usesGermanLegalCopy
+            ? "Beschreibt Provider-Logins, iCloud, Kalender und lokale Speicherung."
+            : "Describes provider logins, iCloud, calendar, and local storage."
     }
 }
 
