@@ -646,7 +646,7 @@ struct ContentView: View {
                                 applyAfterTripFocus(trip: trip) {
                                     NotificationCenter.default.post(
                                         name: .reisenAssignBookings,
-                                        object: nil
+                                        object: booking.id
                                     )
                                 }
                             }
@@ -735,6 +735,7 @@ struct ContentView: View {
                         )
                     }
                 )
+                .id(booking.id)
                 .navigationTitle(booking.displayTitle)
             } else if let first = openBookings.first {
                 OpenBookingDetailView(
@@ -749,6 +750,7 @@ struct ContentView: View {
                         )
                     }
                 )
+                .id(first.id)
                 .navigationTitle(first.displayTitle)
             } else {
                 ContentUnavailableView(
@@ -835,6 +837,11 @@ struct ContentView: View {
                 onConfirmDelete: deletePendingBooking,
                 onCancelDelete: { pendingDeleteBookingID = nil }
             )
+            .onChange(of: booking.id) { _, _ in
+                isEditing = false
+                bookingEditorDraft = nil
+                pendingDeleteBookingID = nil
+            }
         }
 
         private var openBookingDetailScroll: some View {
@@ -877,7 +884,13 @@ struct ContentView: View {
             guard let bookingID = pendingDeleteBookingID else { return }
             guard booking.id == bookingID else { return }
             modelContext.delete(booking)
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                assignErrorMessage = error.localizedDescription
+                showAssignError = true
+                modelContext.rollback()
+            }
             pendingDeleteBookingID = nil
         }
 

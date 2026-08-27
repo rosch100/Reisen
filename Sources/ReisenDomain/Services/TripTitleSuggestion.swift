@@ -47,10 +47,7 @@ public enum TripTitleSuggestion {
     }
 
     private static func countryCode(from booking: Booking, locale: Locale) -> String? {
-        if let code = isoCountryCode(fromAddress: booking.locationToAddress, locale: locale) {
-            return code
-        }
-        return isoCountryCode(fromAddress: booking.locationFromAddress, locale: locale)
+        isoCountryCode(fromAddress: booking.locationToAddress, locale: locale)
     }
 
     private static func isoCountryCode(fromAddress address: String?, locale: Locale) -> String? {

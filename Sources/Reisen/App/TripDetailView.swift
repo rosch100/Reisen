@@ -101,6 +101,7 @@ struct TripDetailView: View {
     }
 
     @State private var showAssignBookings = false
+    @State private var assignPreselectedBookingIDs: Set<UUID> = []
     @State private var pendingManualDeleteBookingID: UUID?
     @State private var showManualDeleteConfirmation = false
     @State private var pendingRemoveFromTripBookingID: UUID?
@@ -208,7 +209,8 @@ struct TripDetailView: View {
             .sheet(isPresented: $showAssignBookings) {
                 AssignBookingsSheet(
                     trip: trip,
-                    candidates: openBookingsCandidates()
+                    candidates: openBookingsCandidates(),
+                    initiallySelectedBookingIDs: assignPreselectedBookingIDs
                 )
             }
             .onAppear {
@@ -220,9 +222,21 @@ struct TripDetailView: View {
                 guard selectedTimelineID == nil else { return }
                 selectedTimelineID = firstBookingTimelineID
             }
-            .onReceive(NotificationCenter.default.publisher(for: .reisenAssignBookings)) { _ in
-                guard !openBookingsCandidates().isEmpty else { return }
+            .onReceive(NotificationCenter.default.publisher(for: .reisenAssignBookings)) { note in
+                let candidates = openBookingsCandidates()
+                guard !candidates.isEmpty else { return }
+                if let bookingID = note.object as? UUID,
+                   candidates.contains(where: { $0.id == bookingID }) {
+                    assignPreselectedBookingIDs = [bookingID]
+                } else {
+                    assignPreselectedBookingIDs = []
+                }
                 showAssignBookings = true
+            }
+            .onChange(of: showAssignBookings) { _, isPresented in
+                if !isPresented {
+                    assignPreselectedBookingIDs = []
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenAddBooking)) { _ in
                 startCreateBooking(

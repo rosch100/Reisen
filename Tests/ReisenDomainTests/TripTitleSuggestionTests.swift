@@ -110,3 +110,25 @@ private func booking(
 @Test func tripTitleSuggestion_emptyBookingsReturnsNil() {
     #expect(TripTitleSuggestion.from(bookings: [], locale: germanDevice) == nil)
 }
+
+@Test func tripTitleSuggestion_doesNotUseOriginCountryAsDestination() {
+    let withCity = TripTitleSuggestion.from(
+        bookings: [
+            booking(
+                locationTo: "Berlin",
+                locationToAddress: "Alexanderplatz, Berlin",
+                locationFromAddress: "Some Airport, ID"
+            )
+        ],
+        locale: germanDevice
+    )
+    #expect(withCity == "Berlin")
+
+    let originOnly = TripTitleSuggestion.from(
+        bookings: [
+            booking(locationFromAddress: "Some Airport, ID")
+        ],
+        locale: germanDevice
+    )
+    #expect(originOnly == nil)
+}
