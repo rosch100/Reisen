@@ -26,15 +26,7 @@ if ! grep -q "DEVELOPMENT_TEAM = ${TEAM_ID}" "$PROJECT/project.pbxproj"; then
   exit 1
 fi
 
-AUTH_ARGS=()
-while IFS= read -r arg; do
-  [[ -n "$arg" ]] && AUTH_ARGS+=("$arg")
-done < <(reisen_xcodebuild_asc_auth_args || true)
-
-if [[ ${#AUTH_ARGS[@]} -eq 0 ]]; then
-  AUTH_ARGS+=(-allowProvisioningUpdates)
-fi
-AUTH_ARGS+=(-allowProvisioningDeviceRegistration)
+reisen_xcodebuild_asc_device_auth_args
 
 SIGNING_DERIVED="$ROOT/DerivedData/Reisen-signing"
 mkdir -p "$ROOT/.signing"
@@ -58,7 +50,7 @@ run_signing_build() {
     -project "$PROJECT" \
     -derivedDataPath "$SIGNING_DERIVED" \
     -configuration Debug \
-    "${AUTH_ARGS[@]}" \
+    "${REISEN_ASC_AUTH_ARGS[@]}" \
     CODE_SIGN_STYLE=Automatic \
     DEVELOPMENT_TEAM="$TEAM_ID" \
     "$@"

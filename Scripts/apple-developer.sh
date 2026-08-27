@@ -115,32 +115,50 @@ reisen_macos_codesign_identity() {
   reisen_apple_development_identity
 }
 
-# xcodebuild-Flags für App Store Connect API Key (nicht-interaktiv).
-# Materialisiert .p8 aus APP_STORE_CONNECT_API_KEY_BASE64, wenn kein PATH gesetzt ist.
-# Gibt nichts aus, wenn KEY_ID/ISSUER fehlen (Aufrufer entscheidet: lokal Apple-ID).
-reisen_xcodebuild_asc_auth_args() {
-  if [[ -z "${APP_STORE_CONNECT_API_KEY_KEY_ID:-}" ||
-        -z "${APP_STORE_CONNECT_API_KEY_ISSUER:-}" ]]; then
+# Temp-Verzeichnis nur für aus BASE64 materialisierte .p8 (nicht für APP_STORE_CONNECT_API_KEY_PATH).
+_reisen_asc_auth_key_temp_dir=""
+_reisen_asc_auth_key_cleanup_registered=""
+_reisen_resolved_asc_key_path=""
+REISEN_ASC_AUTH_ARGS=()
+
+reisen_cleanup_asc_auth_key() {
+  if [[ -n "${_reisen_asc_auth_key_temp_dir:-}" && -d "$_reisen_asc_auth_key_temp_dir" ]]; then
+    rm -rf "$_reisen_asc_auth_key_temp_dir"
+  fi
+  _reisen_asc_auth_key_temp_dir=""
+  _reisen_resolved_asc_key_path=""
+}
+
+reisen_register_asc_auth_key_cleanup() {
+  if [[ "${_reisen_asc_auth_key_cleanup_registered}" == "1" ]]; then
     return 0
   fi
+  _reisen_asc_auth_key_cleanup_registered=1
+  trap reisen_cleanup_asc_auth_key EXIT
+}
 
+# Setzt _reisen_resolved_asc_key_path (leer = kein Key). Nicht per stdout — $() wäre eine Subshell.
+reisen_resolve_asc_auth_key_path() {
+  _reisen_resolved_asc_key_path=""
   local key_path="${APP_STORE_CONNECT_API_KEY_PATH:-}"
+  local key_name="AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
   if [[ -z "$key_path" && -n "${APP_STORE_CONNECT_API_KEY_BASE64:-}" ]]; then
     local key_dir
+    reisen_cleanup_asc_auth_key
     key_dir="$(mktemp -d "${TMPDIR:-/tmp}/reisen-asc-key.XXXXXX")"
-    key_path="$key_dir/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
+    _reisen_asc_auth_key_temp_dir="$key_dir"
+    key_path="$key_dir/$key_name"
     if ! printf '%s' "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode >"$key_path"; then
       echo "Fehler: APP_STORE_CONNECT_API_KEY_BASE64 ist kein gültiges Base64." >&2
+      reisen_cleanup_asc_auth_key
       return 1
     fi
     chmod 600 "$key_path"
+    reisen_register_asc_auth_key_cleanup
   fi
   if [[ -z "$key_path" ]]; then
     local candidate
-    for candidate in \
-      "$HOME/keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8" \
-      "$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
-    do
+    for candidate in "$HOME/keys/$key_name" "$HOME/private_keys/$key_name"; do
       if [[ -f "$candidate" ]]; then
         key_path="$candidate"
         break
@@ -152,12 +170,42 @@ reisen_xcodebuild_asc_auth_args() {
   fi
   if [[ ! -s "$key_path" ]]; then
     echo "Fehler: App Store Connect API Key-Datei ist leer: $key_path" >&2
+    reisen_cleanup_asc_auth_key
     return 1
   fi
+  _reisen_resolved_asc_key_path="$key_path"
+}
 
-  printf '%s\n' \
-    -allowProvisioningUpdates \
-    -authenticationKeyPath "$key_path" \
-    -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_KEY_ID" \
+reisen_asc_auth_key_path() {
+  if [[ -z "${_reisen_resolved_asc_key_path:-}" ]]; then
+    return 1
+  fi
+  printf '%s\n' "$_reisen_resolved_asc_key_path"
+}
+
+# Schreibt REISEN_ASC_AUTH_ARGS im aktuellen Shell (nicht per stdout).
+# Immer mindestens -allowProvisioningUpdates; mit Key zusätzlich ASC-Auth-Flags.
+# Materialisiert .p8 aus APP_STORE_CONNECT_API_KEY_BASE64, wenn kein PATH gesetzt ist.
+reisen_xcodebuild_asc_auth_args() {
+  REISEN_ASC_AUTH_ARGS=(-allowProvisioningUpdates)
+  _reisen_resolved_asc_key_path=""
+  if [[ -z "${APP_STORE_CONNECT_API_KEY_KEY_ID:-}" ||
+        -z "${APP_STORE_CONNECT_API_KEY_ISSUER:-}" ]]; then
+    return 0
+  fi
+  reisen_resolve_asc_auth_key_path || return 1
+  local key_path="${_reisen_resolved_asc_key_path}"
+  if [[ -z "$key_path" ]]; then
+    return 0
+  fi
+  REISEN_ASC_AUTH_ARGS+=(
+    -authenticationKeyPath "$key_path"
+    -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_KEY_ID"
     -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER"
+  )
+}
+
+reisen_xcodebuild_asc_device_auth_args() {
+  reisen_xcodebuild_asc_auth_args || return 1
+  REISEN_ASC_AUTH_ARGS+=(-allowProvisioningDeviceRegistration)
 }

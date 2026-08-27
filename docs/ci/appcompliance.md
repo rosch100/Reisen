@@ -7,7 +7,7 @@ Zur **Release-Vorbereitung** prüft der Workflow **App Store Check** (`app-store
 | Jeder PR gegen `master` / Push `master` | Workflow **CI**: Swift-Tests, iOS-Simulator, Release-Binary-Isolation (Store **und** Private getrennt) |
 | Manuell vor Einreichung | Workflow **App Store Check**: nur Store-Archive (`Scripts/ios-archive-appstore.sh`) + [AppCompliance](https://appcompliance.io/)-Scan |
 
-Der Scan folgt dem [GitHub-Action-Setup](https://appcompliance.io/blog/github-action-compliance-scanning-setup/). Das IPA enthält kein GitHub-PAT. Findings landen optional als SARIF in GitHub Code Scanning.
+Der Scan folgt dem [GitHub-Action-Setup](https://appcompliance.io/blog/github-action-compliance-scanning-setup/). Das Store-IPA ist dasselbe Produkt-Binary wie zur Einreichung: es enthält das eingebettete Issues-only-PAT (XOR), siehe [`github-issues-token.md`](github-issues-token.md). Das GitHub-Artifact `reisen-ios-ipa` dient nur dem Scan-Job auf einem anderen Runner und wird danach gelöscht (öffentliches Repo). Findings landen optional als SARIF in GitHub Code Scanning.
 
 AppCompliance ist derzeit Early Access. Die Action `appcompliance/scan@v1` wird auf den Commit-SHA gepinnt, sobald das Action-Repo öffentlich ist (Dependabot).
 
@@ -38,10 +38,12 @@ Hard Gate (blocking findings stoppen den Lauf): `continue-on-error` am Scan-Step
 
 ## Voraussetzungen für das Archive
 
-Derselbe Runner und dasselbe Signing wie lokal für `bash ./Scripts/ios-archive-appstore.sh`:
+Runner und Signing für `bash ./Scripts/ios-archive-appstore.sh`:
 
 - `xcode-27` mit XcodeGen (`brew install xcodegen`)
-- Apple Distribution für `de.reisen.Reisen.ios` und Automatic Signing (`-allowProvisioningUpdates`)
+- In GitHub Actions: App-Store-Connect-API-Key (`APP_STORE_CONNECT_API_KEY_BASE64`, `KEY_ID`, `ISSUER`) plus `APPLE_TEAM_ID`. Der Key braucht Zugriff auf **Cloud Managed Distribution Certificates** (Account Holder/Admin). Details: [`apple-signing.md`](apple-signing.md).
+- Lokal: Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`, oder derselbe API-Key wie in CI.
+- Automatic Signing (`-allowProvisioningUpdates`)
 
 Das Archive-Script archiviert ausschließlich Scheme `ReiseniOS`. Vor dem Scan muss Isolation greifen (sonst Abbruch, kein Upload):
 
@@ -56,9 +58,10 @@ Details: [`apple-signing.md`](apple-signing.md), [`app-store-connect.md`](app-st
 ## Ablauf
 
 1. Store-IPA erzeugen (`Scripts/ios-archive-appstore.sh`).
-2. IPA als Artifact `reisen-ios-ipa` (Retention 1 Tag) an den Scan-Job.
+2. IPA als Artifact `reisen-ios-ipa` an den Scan-Job (Retention 1 Tag als Fallback).
 3. `appcompliance/scan@v1` lädt das IPA hoch, schreibt `appcompliance-report.json` und `appcompliance.sarif`.
 4. SARIF-Upload, falls die Datei existiert (`if: always()`).
+5. Job **Retract Store IPA artifact** löscht das Artifact (auch wenn der Scan übersprungen wurde).
 
 Exit-Codes der Action (laut AppCompliance): 0 pass, 1 fail (blocking findings), 2 Fehler (Auth/Netz/Timeout). Bei Notify-only scheitert der Job trotzdem nicht.
 
