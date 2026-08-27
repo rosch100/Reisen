@@ -10,6 +10,7 @@ public enum LoginFormCapture {
     }
 
     /// Nur Main-Frame und Provider-Login-URLs (keine IdP-/iframe-Injection).
+    @MainActor
     public static func accepts(message: WKScriptMessage, webView: WKWebView?) -> Bool {
         guard message.frameInfo.isMainFrame else { return false }
         guard let absolute = webView?.url?.absoluteString, !absolute.isEmpty else { return false }
@@ -32,6 +33,7 @@ public enum LoginFormCapture {
         )
     }
 
+    @MainActor
     public static func handleScriptMessage(
         _ message: WKScriptMessage,
         webView: WKWebView?,

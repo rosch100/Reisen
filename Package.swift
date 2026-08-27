@@ -67,6 +67,9 @@ let package = Package(
                 "ReisenTraveloka",
             ],
             path: "Sources/ReisenAppCore",
+            exclude: [
+                "GitHubIssues/GitHubIssueToken.generated.swift.stub",
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
@@ -191,6 +194,9 @@ let package = Package(
             name: "ReisenOpodoTests",
             dependencies: ["ReisenOpodo", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenOpodoTests",
+            resources: [
+                .copy("Fixtures"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
@@ -199,6 +205,9 @@ let package = Package(
             name: "ReisenBookingComTests",
             dependencies: ["ReisenBookingCom", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenBookingComTests",
+            resources: [
+                .copy("Fixtures"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
@@ -207,6 +216,9 @@ let package = Package(
             name: "ReisenAirbnbTests",
             dependencies: ["ReisenAirbnb", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenAirbnbTests",
+            resources: [
+                .copy("Fixtures"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
