@@ -135,11 +135,7 @@ func airbnbActivityReservationDetailsIgnoresNonEnglishCancelPolicy() throws {
 }
 
 private func fixtureJSON(_ name: String) throws -> String {
-    let url = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .appendingPathComponent("Fixtures")
-        .appendingPathComponent(name)
-    return try String(contentsOf: url, encoding: .utf8)
+    try TestFixtures.text(name)
 }
 
 private func researchFixtureJSON(_ name: String) throws -> String {
