@@ -9,14 +9,30 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# SSOT: muss zu project.yml targets.ReiseniOS / ReiseniOSPrivate passen.
+STORE_BUNDLE_ID="de.reisen.Reisen.ios"
+STORE_APP_NAME="ReiseniOS"
+PRIVATE_BUNDLE_ID="de.reisen.Reisen.ios.private"
+PRIVATE_APP_NAME="ReiseniOSPrivate"
+
 usage() {
-  echo "Usage: $0 --mode store|private (--app PATH | --binary PATH)" >&2
+  echo "Usage: $0 --mode store|private (--app PATH | --binary PATH | --ipa PATH)" >&2
   exit 2
 }
 
 MODE=""
 APP=""
 BINARY=""
+IPA=""
+IPA_UNPACK_DIR=""
+
+cleanup_ipa_unpack() {
+  if [[ -n "${IPA_UNPACK_DIR}" && -d "${IPA_UNPACK_DIR}" ]]; then
+    rm -rf "${IPA_UNPACK_DIR}"
+  fi
+}
+
+trap cleanup_ipa_unpack EXIT
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -32,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       BINARY="${2:-}"
       shift 2
       ;;
+    --ipa)
+      IPA="${2:-}"
+      shift 2
+      ;;
     -h|--help)
       usage
       ;;
@@ -42,7 +62,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$MODE" || ( -z "$APP" && -z "$BINARY" ) ]]; then
+source_count=0
+[[ -n "$APP" ]] && source_count=$((source_count + 1))
+[[ -n "$BINARY" ]] && source_count=$((source_count + 1))
+[[ -n "$IPA" ]] && source_count=$((source_count + 1))
+
+if [[ -z "$MODE" || "$source_count" -ne 1 ]]; then
   usage
 fi
 
@@ -53,6 +78,11 @@ fi
 
 if [[ -n "$BINARY" && ! -f "$BINARY" ]]; then
   echo "Fehler: Binary fehlt: $BINARY" >&2
+  exit 1
+fi
+
+if [[ -n "$IPA" && ! -f "$IPA" ]]; then
+  echo "Fehler: IPA fehlt: $IPA" >&2
   exit 1
 fi
 
@@ -78,6 +108,56 @@ STORE_FORBIDDEN_SYMBOLS=(
   TravelokaSessionProbe
   ProviderSessionStatusResolver
 )
+
+unpack_ipa() {
+  local ipa_path="$1"
+  IPA_UNPACK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/reisen-ipa-XXXXXX")"
+  unzip -q -o "$ipa_path" -d "$IPA_UNPACK_DIR"
+
+  local -a apps=()
+  local candidate
+  while IFS= read -r -d '' candidate; do
+    apps+=("$candidate")
+  done < <(find "$IPA_UNPACK_DIR/Payload" -maxdepth 1 -name '*.app' -type d -print0 2>/dev/null)
+
+  if ((${#apps[@]} != 1)); then
+    echo "Fehler: IPA muss genau ein .app in Payload enthalten (gefunden: ${#apps[@]}): $ipa_path" >&2
+    exit 1
+  fi
+  APP="${apps[0]}"
+}
+
+read_bundle_id() {
+  local app="$1"
+  local plist="$app/Info.plist"
+  if [[ ! -f "$plist" ]]; then
+    echo "Fehler: Info.plist fehlt in $app" >&2
+    exit 1
+  fi
+  /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist"
+}
+
+verify_store_identity() {
+  local app="$1"
+  local app_basename bundle_id
+
+  app_basename="$(basename "$app" .app)"
+  if [[ "$app_basename" != "$STORE_APP_NAME" ]]; then
+    echo "Fehler: Store-Prüfung erwartet ${STORE_APP_NAME}.app, gefunden: $(basename "$app")" >&2
+    echo "Private-Binary (z. B. ${PRIVATE_APP_NAME}) wird nicht für den App Store Check verwendet." >&2
+    exit 1
+  fi
+
+  bundle_id="$(read_bundle_id "$app")"
+  if [[ "$bundle_id" == "$PRIVATE_BUNDLE_ID" ]]; then
+    echo "Fehler: IPA/App ist die Private-Variante ($PRIVATE_BUNDLE_ID). App Store Check scannt nur $STORE_BUNDLE_ID." >&2
+    exit 1
+  fi
+  if [[ "$bundle_id" != "$STORE_BUNDLE_ID" ]]; then
+    echo "Fehler: Store-Bundle-ID muss $STORE_BUNDLE_ID sein (ist: $bundle_id)." >&2
+    exit 1
+  fi
+}
 
 emit_mach_o_file() {
   local file="$1"
@@ -179,7 +259,7 @@ run_verify() {
       for file in "${files[@]}"; do
         verify_store_files "$file"
       done
-      echo "OK: Store-Bundle (${#files[@]} Mach-O) ohne Provider-Adapter- und Session-Probe-Strings." >&2
+      echo "OK: Store-Bundle ${STORE_BUNDLE_ID} (${#files[@]} Mach-O) ohne Provider-Adapter- und Session-Probe-Strings." >&2
       ;;
     private)
       verify_private_markers "${files[@]}"
@@ -187,6 +267,14 @@ run_verify() {
       ;;
   esac
 }
+
+if [[ -n "$IPA" ]]; then
+  unpack_ipa "$IPA"
+fi
+
+if [[ -n "$APP" && "$MODE" == "store" ]]; then
+  verify_store_identity "$APP"
+fi
 
 case "$MODE" in
   store|private) run_verify ;;

@@ -58,6 +58,18 @@ if ! grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-a
   echo "Fehler: App-Store-Archive darf das Issue-Token nicht einbetten (EMPTY=true Pflicht)." >&2
   exit 1
 fi
+if ! grep -q -- '--mode store --ipa' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive muss das exportierte IPA store-isolieren (--ipa)." >&2
+  exit 1
+fi
+if ! grep -q 'ios-archive-appstore.sh' "$ROOT/.github/workflows/app-store-check.yml"; then
+  echo "Fehler: App Store Check muss Scripts/ios-archive-appstore.sh verwenden (nur Store-Target)." >&2
+  exit 1
+fi
+if grep -q 'ios-archive-adhoc.sh' "$ROOT/.github/workflows/app-store-check.yml"; then
+  echo "Fehler: App Store Check darf das Private-Archive nicht bauen oder scannen." >&2
+  exit 1
+fi
 REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash "$ROOT/Scripts/embed-github-issue-token.sh"
 
 if [[ "$SKIP_BUILD" == "true" ]]; then

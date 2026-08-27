@@ -1,11 +1,11 @@
 # App Store Check (manuell)
 
-Zur **Release-Vorbereitung** prüft der Workflow **App Store Check** (`app-store-check.yml`) das Store-IPA gegen Apple-/Store-Anforderungen. Er ersetzt nicht die PR-CI.
+Zur **Release-Vorbereitung** prüft der Workflow **App Store Check** (`app-store-check.yml`) **nur** das Store-IPA (`ReiseniOS`, Bundle-ID `de.reisen.Reisen.ios`) gegen Apple-/Store-Anforderungen. Private-iOS (`ReiseniOSPrivate` / `de.reisen.Reisen.ios.private`) wird weder archiviert noch hochgeladen. Der Workflow ersetzt nicht die PR-CI.
 
 | Wann | Was |
 |------|-----|
-| Jeder PR / Push `master` | Workflow **CI**: Swift-Tests, iOS-Simulator, Release-Binary-Isolation |
-| Manuell vor Einreichung | Workflow **App Store Check**: Archive (`Scripts/ios-archive-appstore.sh`) + [AppCompliance](https://appcompliance.io/)-Scan |
+| Jeder PR / Push `master` | Workflow **CI**: Swift-Tests, iOS-Simulator, Release-Binary-Isolation (Store **und** Private getrennt) |
+| Manuell vor Einreichung | Workflow **App Store Check**: nur Store-Archive (`Scripts/ios-archive-appstore.sh`) + [AppCompliance](https://appcompliance.io/)-Scan |
 
 Der Scan folgt dem [GitHub-Action-Setup](https://appcompliance.io/blog/github-action-compliance-scanning-setup/). Das IPA enthält kein GitHub-PAT. Findings landen optional als SARIF in GitHub Code Scanning.
 
@@ -43,7 +43,13 @@ Derselbe Runner und dasselbe Signing wie lokal für `bash ./Scripts/ios-archive-
 - `xcode-27` mit XcodeGen (`brew install xcodegen`)
 - Apple Distribution für `de.reisen.Reisen.ios` und Automatic Signing (`-allowProvisioningUpdates`)
 
-Das Archive-Script prüft zusätzlich die Binary-Isolation am Store-`.app` im Archive. Die gleiche Isolation läuft in der PR-CI über Simulator-Release-Builds (`ios-build-release-check.sh`).
+Das Archive-Script archiviert ausschließlich Scheme `ReiseniOS`. Vor dem Scan muss Isolation greifen (sonst Abbruch, kein Upload):
+
+- Bundle-ID `de.reisen.Reisen.ios` (nicht `.private`)
+- App-Name `ReiseniOS.app` (nicht `ReiseniOSPrivate.app`)
+- keine Provider-Adapter-Strings/Symbole im IPA (`ios-verify-binary-isolation.sh --mode store --ipa`)
+
+Die gleiche Isolation läuft in der PR-CI über Simulator-Release-Builds (`ios-build-release-check.sh`).
 
 Details: [`apple-signing.md`](apple-signing.md), [`app-store-connect.md`](app-store-connect.md).
 
@@ -58,5 +64,5 @@ Exit-Codes der Action (laut AppCompliance): 0 pass, 1 fail (blocking findings), 
 
 ## Was nicht gescannt wird
 
-- Private-iOS (`Scripts/ios-archive-adhoc.sh`) — Provider-Binary, nicht die Store-Einreichung
+- Private-iOS (`Scripts/ios-archive-adhoc.sh`, Bundle-ID `de.reisen.Reisen.ios.private`) — Provider-Binary, nicht die Store-Einreichung
 - macOS `.app` / DMG — AppCompliance erwartet IPA, APK oder AAB

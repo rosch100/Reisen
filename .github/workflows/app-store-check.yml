@@ -1,4 +1,5 @@
 # Manueller App-Store-/Apple-Check zur Release-Vorbereitung (nicht auf PRs).
+# Nur Store-Target ReiseniOS (de.reisen.Reisen.ios) — nicht ReiseniOSPrivate.
 # IPA: Scripts/ios-archive-appstore.sh
 # Scan: https://appcompliance.io/blog/github-action-compliance-scanning-setup/
 name: App Store Check
@@ -64,9 +65,17 @@ jobs:
             exit 1
           fi
           IPA_NAME="$(basename "$IPA")"
+          case "$IPA_NAME" in
+            *Private*|*private*)
+              echo "Fehler: App Store Check akzeptiert kein Private-IPA: ${IPA_NAME}" >&2
+              exit 1
+              ;;
+          esac
           STAGING="$GITHUB_WORKSPACE/appcompliance-ipa"
+          rm -rf "$STAGING"
           mkdir -p "$STAGING"
           cp "$IPA" "$STAGING/$IPA_NAME"
+          bash ./Scripts/ios-verify-binary-isolation.sh --mode store --ipa "$STAGING/$IPA_NAME"
           echo "ipa_name=$IPA_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload Store IPA
@@ -92,6 +101,20 @@ jobs:
         with:
           name: reisen-ios-ipa
           path: build/
+
+      - name: Reject Private IPA
+        run: |
+          IPA_NAME="${{ needs.archive.outputs.ipa_name }}"
+          case "$IPA_NAME" in
+            *Private*|*private*|'')
+              echo "Fehler: App Store Check scannt nur das Store-IPA, nicht: ${IPA_NAME:-leer}" >&2
+              exit 1
+              ;;
+          esac
+          if [[ ! -f "build/${IPA_NAME}" ]]; then
+            echo "Fehler: Store-IPA fehlt: build/${IPA_NAME}" >&2
+            exit 1
+          fi
 
       - name: Run compliance scan
         id: compliance
