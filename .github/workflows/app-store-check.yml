@@ -1,0 +1,110 @@
+# Manueller App-Store-/Apple-Check zur Release-Vorbereitung (nicht auf PRs).
+# IPA: Scripts/ios-archive-appstore.sh
+# Scan: https://appcompliance.io/blog/github-action-compliance-scanning-setup/
+name: App Store Check
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: app-store-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -eo pipefail {0}
+
+jobs:
+  preflight:
+    name: Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check AppCompliance secrets
+        env:
+          HAS_TOKEN: ${{ secrets.APPCOMPLIANCE_TOKEN != '' }}
+          HAS_URL: ${{ secrets.APPCOMPLIANCE_API_URL != '' }}
+        run: |
+          if [[ "$HAS_TOKEN" != "true" || "$HAS_URL" != "true" ]]; then
+            echo "Fehler: GitHub-Secrets APPCOMPLIANCE_TOKEN und APPCOMPLIANCE_API_URL fehlen." >&2
+            echo "Siehe docs/ci/appcompliance.md" >&2
+            exit 1
+          fi
+
+  archive:
+    name: Archive Store IPA
+    needs: preflight
+    runs-on: xcode-27
+    timeout-minutes: 45
+    outputs:
+      ipa_name: ${{ steps.archive.outputs.ipa_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select Xcode 27
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Archive Store IPA
+        id: archive
+        run: |
+          IPA="$(bash ./Scripts/ios-archive-appstore.sh)"
+          if [[ ! -f "$IPA" ]]; then
+            echo "Fehler: Archive-Script lieferte keinen IPA-Pfad: ${IPA}" >&2
+            exit 1
+          fi
+          IPA_NAME="$(basename "$IPA")"
+          STAGING="$GITHUB_WORKSPACE/appcompliance-ipa"
+          mkdir -p "$STAGING"
+          cp "$IPA" "$STAGING/$IPA_NAME"
+          echo "ipa_name=$IPA_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Store IPA
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reisen-ios-ipa
+          path: appcompliance-ipa/*
+          if-no-files-found: error
+          retention-days: 1
+
+  scan:
+    name: AppCompliance scan
+    needs: archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Download Store IPA
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: reisen-ios-ipa
+          path: build/
+
+      - name: Run compliance scan
+        id: compliance
+        continue-on-error: true
+        uses: appcompliance/scan@v1
+        with:
+          api_url: ${{ secrets.APPCOMPLIANCE_API_URL }}
+          token: ${{ secrets.APPCOMPLIANCE_TOKEN }}
+          binary_path: build/${{ needs.archive.outputs.ipa_name }}
+
+      - name: Upload SARIF to Code Scanning
+        if: always() && hashFiles('appcompliance.sarif') != ''
+        uses: github/codeql-action/upload-sarif@e58424170fb0262c8d7ed60a2e84b9bffe205c67 # pinned
+        with:
+          sarif_file: appcompliance.sarif
+          category: appcompliance

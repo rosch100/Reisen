@@ -6,3 +6,5 @@ Dieses Verzeichnis ist in `.gitignore` (außer `*.example`).
 - Siehe `docs/ci/github-issues-token.md`
 
 **App-Store-iOS-Builds** betten das Token **nicht** ein (`Scripts/ios-archive-appstore.sh` setzt `REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true`).
+
+App Store Check (manueller IPA-Scan): GitHub-Secrets `APPCOMPLIANCE_TOKEN` und `APPCOMPLIANCE_API_URL` — siehe `docs/ci/appcompliance.md`. Nicht in diesem Verzeichnis ablegen.
