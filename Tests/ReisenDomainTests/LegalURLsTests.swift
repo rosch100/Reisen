@@ -114,6 +114,8 @@ private func issueQueryValue(_ url: URL, name: String) -> String? {
 @Test func githubRepository_issuesListURL() {
     #expect(GitHubRepository.issuesListURL.absoluteString == "https://github.com/rosch100/Reisen/issues")
     #expect(GitHubRepository.publicPath == "rosch100/Reisen")
+    #expect(GitHubRepository.feedbackEmail == "reisenapp100@gmail.com")
+    #expect(GitHubRepository.feedbackMailtoURL.absoluteString == "mailto:reisenapp100@gmail.com")
     #expect(GitHubRepository.issueURL(number: 42).absoluteString == "https://github.com/rosch100/Reisen/issues/42")
     #expect(GitHubRepository.newIssueFormURL.absoluteString == "https://github.com/rosch100/Reisen/issues/new")
     #expect(GitHubRepository.newIssueFormURL.path == "/rosch100/Reisen/issues/new")

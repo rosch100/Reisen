@@ -13,6 +13,7 @@ Vollständiger Provider-Sync: separate Private-iOS-App, siehe [ios-private-distr
 | Kategorie | Reisen |
 | Privacy Policy URL (DE) | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicyGerman`) |
 | Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/privacy.en.html` (`LegalURLs.privacyPolicyEnglish`; Redirect auf `en/privacy.html`) |
+| Support Email | `reisenapp100@gmail.com` (`GitHubRepository.feedbackEmail`) |
 | Support URL (DE) | `https://rosch100.github.io/Reisen/support.html` (`LegalURLs.supportGerman`) |
 | Support URL (EN) | `https://rosch100.github.io/Reisen/support.en.html` (`LegalURLs.supportEnglish`; Redirect auf `en/support.html`) |
 | Übersicht / beide Sprachen | `https://rosch100.github.io/Reisen/` — zweisprachige **Produktseite** (DE: `/`, EN: `/en/`); Legal: Datenschutz, Support, Impressum |
@@ -101,6 +102,8 @@ bash ./Scripts/ios-archive-appstore.sh
 
 Erzeugt Archive + exportiertes IPA unter `.build/ReiseniOS-ipa/`. Das Script prüft via `Scripts/ios-verify-binary-isolation.sh`, dass das Store-Binary **weder** Provider-Adapter **noch** Session-Probe-Infrastruktur (`ReisenProviders`) enthält. Upload via Transporter oder App Store Connect.
 
+Vor dem Upload: manueller Workflow **App Store Check** (Store-IPA + AppCompliance, [`appcompliance.md`](appcompliance.md)).
+
 ## Architektur (Zwei-App-Strategie)
 
 | App | Bundle-ID | Provider-Abruf | Distribution |
@@ -109,4 +112,4 @@ Erzeugt Archive + exportiertes IPA unter `.build/ReiseniOS-ipa/`. Das Script pr�
 | Reisen Sync (Private) | `de.reisen.Reisen.ios.private` | Ja | Ad Hoc / Internal TestFlight |
 | Reisen (Mac) | `de.reisen.Reisen` | Ja | Developer ID / direkt |
 
-Module: `ReisenProviders`, Provider-**Adapter** (`ReisenCheck24`, `ReisenBookingCom`, …) und `ReisenProviderSync` werden **nicht** vom Store-Target verlinkt. Store nutzt `ReisenAppCore` + `ReisenSharedUI` + Domain/Data (iCloud, manuelle Buchungen, Kalender/Erinnerungen). CI prüft Release-Binaries via `Scripts/ios-build-release-check.sh` — verboten sind u. a. Adapter-API-Strings, Session-Probe-URLs (Opodo/Traveloka) und Provider-Symbole (siehe `Scripts/ios-verify-binary-isolation.sh`).
+Module: `ReisenProviders`, Provider-**Adapter** (`ReisenCheck24`, `ReisenBookingCom`, …) und `ReisenProviderSync` werden **nicht** vom Store-Target verlinkt. Store nutzt `ReisenAppCore` + `ReisenSharedUI` + Domain/Data (iCloud, manuelle Buchungen, Kalender/Erinnerungen). CI prüft Release-Binaries auf PRs gegen `master` via `Scripts/ios-build-release-check.sh` — verboten sind u. a. Adapter-API-Strings, Session-Probe-URLs (Opodo/Traveloka) und Provider-Symbole (siehe `Scripts/ios-verify-binary-isolation.sh`).

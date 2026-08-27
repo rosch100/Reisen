@@ -106,16 +106,17 @@ bash ./Scripts/ios-archive-appstore.sh
 
 Das Script:
 
-1. setzt `REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true` (Issues-Token Pflicht, damit Nutzer ohne GitHub-Konto melden können)
+1. setzt `REISEN_EMBED_GITHUB_ISSUE_TOKEN=true` und `REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true` (Issues-Token Pflicht, damit Nutzer ohne GitHub-Konto melden können)
 2. ruft `Scripts/generate-ios-project.sh` auf
 3. erzeugt ein **Release**-Archive (`xcodebuild archive`, `generic/platform=iOS`)
 4. exportiert ein IPA (`Scripts/ios-export-appstore.plist`, `method: app-store`)
 
-Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Connect.
+Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Connect. Vor dem Upload: manueller Workflow **App Store Check** ([`appcompliance.md`](appcompliance.md)).
 
 Voraussetzungen:
 
-- Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`
+- Lokal: Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`
+- In GitHub Actions (**App Store Check**): App-Store-Connect-API-Key (`APP_STORE_CONNECT_API_KEY_*`) statt Xcode-Account; `ios-archive-appstore.sh` materialisiert das `.p8` über `reisen_xcodebuild_asc_auth_args`
 - Push Notifications + iCloud (CloudKit) in den Capabilities; Release-Entitlements `ReiseniOS-Release.entitlements` mit `aps-environment` = `production`
 - CloudKit-Container im Developer Portal an die iOS App-ID gebunden (Production)
 
@@ -127,5 +128,6 @@ Private-iOS (Ad Hoc): [`ios-private-distribution.md`](ios-private-distribution.m
 
 - Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)
 - Keychain Identity für Notary nicht gefunden: importiertes Zertifikat muss **Developer ID Application** sein; Keychain entsperrt/importiert
+- App Store Check `exportArchive` / **Cloud signing permission error**: der App-Store-Connect-API-Key braucht Zugriff auf **Cloud Managed Distribution Certificates** (Account Holder/Admin in [Users and Access](https://appstoreconnect.apple.com/access/users)). Ohne das findet Xcode kein iOS-App-Store-Profil für `de.reisen.Reisen.ios`. Developer-ID-`.p12` (macOS) ersetzt das nicht.
 - Notarization: `notarytool submit --wait` liefert die Apple-Antwort in den Workflow-Logs
 - CloudKit: Container laut `PersistenceBootstrap.cloudKitContainerID` muss im Portal an **drei** App-IDs gebunden sein (macOS, Store-iOS, Private-iOS)

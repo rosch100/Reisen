@@ -1,0 +1,8 @@
+From: Nutzer Beispiel <user@example.com>
+To: reisenapp100@gmail.com
+Subject: HTML only
+Date: Thu, 27 Aug 2026 13:00:00 +0000
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html><body><p>Erste Zeile</p><br>Zweite Zeile</body></html>

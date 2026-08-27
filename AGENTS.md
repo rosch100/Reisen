@@ -7,7 +7,7 @@ Dieses Repo nutzt Cursor-Agents primär für saubere CI-/Review-Workflows. Die �
 ### CI-Agent (Build/Test)
 - Ziel: `./Scripts/ci-test.sh` lokal und im CI zuverlässig ausführen.
 - Regel: Wenn CI fehlschlägt, wird erst Root-Cause analysiert (log/stack), dann gefixt.
-- Zielpfade: `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `Scripts/ci-test.sh`, `Scripts/ci-build.sh`, `Scripts/build-app.sh`.
+- Zielpfade: `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `.github/workflows/app-store-check.yml`, `Scripts/ci-test.sh`, `Scripts/ci-build.sh`, `Scripts/build-app.sh`.
 
 ### Review-Agent (Qualität / Grenzen)
 - Ziel: keine Scope-Ausweitung ohne Absprache.
