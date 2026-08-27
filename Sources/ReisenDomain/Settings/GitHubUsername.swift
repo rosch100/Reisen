@@ -2,6 +2,8 @@ import Foundation
 
 /// Normalisierung und Validierung optionaler GitHub-Benutzernamen für Issue-Meldungen.
 public enum GitHubUsername {
+    public static let maxLength = 39
+
     public static func normalized(_ raw: String) -> String {
         var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if value.hasPrefix("@") {
@@ -10,17 +12,30 @@ public enum GitHubUsername {
         return value
     }
 
-    /// GitHub-Login: 1–39 Zeichen, alphanumerisch und Bindestrich, kein führendes/abschließendes `-`.
+    public static func optionalValid(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let normalized = normalized(raw)
+        guard isValid(normalized) else { return nil }
+        return normalized
+    }
+
+    /// GitHub-Login: 1–`maxLength` Zeichen, alphanumerisch und Bindestrich, kein führendes/abschließendes `-`.
     public static func isValid(_ normalized: String) -> Bool {
-        guard !normalized.isEmpty, normalized.count <= 39 else { return false }
-        let pattern = #"^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$"#
-        return normalized.range(of: pattern, options: .regularExpression) != nil
+        let range = NSRange(normalized.startIndex..., in: normalized)
+        return loginRegex.firstMatch(in: normalized, range: range) != nil
     }
 
     public static func validationError(for raw: String) -> String? {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        let normalized = normalized(trimmed)
-        return isValid(normalized) ? nil : "Ungültiger GitHub-Benutzername."
+        guard !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return isValid(normalized(raw)) ? nil : "Ungültiger GitHub-Benutzername."
     }
+
+    private static let loginRegex: NSRegularExpression = {
+        let pattern = "^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,\(maxLength - 2)}[a-zA-Z0-9])?$"
+        do {
+            return try NSRegularExpression(pattern: pattern)
+        } catch {
+            preconditionFailure("GitHub-Username-Muster ungültig: \(error)")
+        }
+    }()
 }

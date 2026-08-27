@@ -83,9 +83,7 @@ public struct AppSettingsKeys {
 
     /// Normalisierter optionaler GitHub-Benutzername für Issue-Attribution.
     public static func optionalFeedbackGitHubUsername(defaults: UserDefaults = .standard) -> String? {
-        guard let raw = defaults.string(forKey: feedbackGitHubUsername) else { return nil }
-        let normalized = GitHubUsername.normalized(raw)
-        return normalized.isEmpty ? nil : normalized
+        GitHubUsername.optionalValid(defaults.string(forKey: feedbackGitHubUsername))
     }
 }
 

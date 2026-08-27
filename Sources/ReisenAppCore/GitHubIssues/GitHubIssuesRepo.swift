@@ -16,14 +16,7 @@ public enum GitHubIssueKind: String, Sendable {
     }
 
     /// Präfix im Issue-Titel (SSOT mit `.github/ISSUE_TEMPLATE/*.yml`).
-    public var titlePrefix: String {
-        switch self {
-        case .error:
-            "[Fehler]"
-        case .feedback:
-            "[Feedback]"
-        }
-    }
+    public var titlePrefix: String { "[\(displayName)]" }
 
     /// Bezeichnung für erneute Meldungen als Kommentar.
     public var repeatReportLabel: String {
@@ -31,45 +24,30 @@ public enum GitHubIssueKind: String, Sendable {
         case .error:
             "Fehlerbericht"
         case .feedback:
-            "Feedback"
+            displayName
         }
     }
 
     /// Entspricht dem Label `source/in-app`.
     public var sourceLabel: String { "In-App" }
 
-    /// Überschrift für den Nutzertext im vollständigen Issue-Body (Token-API).
-    public var messageSectionTitle: String {
-        displayName
+    /// `.github/ISSUE_TEMPLATE/…` und Feld-`id` für vorausgefüllte „New issue“-URLs.
+    public struct IssueForm: Equatable, Sendable {
+        public let templateFileName: String
+        public let fieldID: String
     }
 
-    /// `.github/ISSUE_TEMPLATE/…` für vorausgefüllte „New issue“-URLs.
-    public var issueTemplateFileName: String {
+    public var issueForm: IssueForm {
         switch self {
         case .error:
-            "bug.yml"
+            IssueForm(templateFileName: "bug.yml", fieldID: "what")
         case .feedback:
-            "feedback.yml"
-        }
-    }
-
-    /// Feld-`id` im Issue-Formular (URL-Prefill).
-    public var issueFormFieldID: String {
-        switch self {
-        case .error:
-            "what"
-        case .feedback:
-            "feedback"
+            IssueForm(templateFileName: "feedback.yml", fieldID: "feedback")
         }
     }
 
     public var githubLabels: [String] {
-        switch self {
-        case .error:
-            ["kind/error", "source/in-app"]
-        case .feedback:
-            ["kind/feedback", "source/in-app"]
-        }
+        ["kind/\(rawValue)", "source/\(sourceLabel.lowercased())"]
     }
 }
 

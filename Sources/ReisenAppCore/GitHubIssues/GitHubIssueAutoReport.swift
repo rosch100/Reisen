@@ -17,13 +17,18 @@ enum GitHubIssueAutoReport {
         !isExpectedUserState(message)
     }
 
+    private static let expectedMessageFragments: [[String]] = [
+        ["ist deaktiviert"],
+        ["keine angemeldeten provider"],
+        ["bitte", "anmelden"],
+        ["zugriff wurde verweigert"],
+        ["benachrichtigungen wurden nicht autorisiert"],
+    ]
+
     private static func isExpectedUserState(_ message: String) -> Bool {
         let text = message.lowercased()
-        if text.contains("ist deaktiviert") { return true }
-        if text.contains("keine angemeldeten provider") { return true }
-        if text.contains("bitte") && text.contains("anmelden") { return true }
-        if text.contains("zugriff wurde verweigert") { return true }
-        if text.contains("benachrichtigungen wurden nicht autorisiert") { return true }
-        return false
+        return expectedMessageFragments.contains { fragments in
+            fragments.allSatisfy { text.contains($0) }
+        }
     }
 }

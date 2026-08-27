@@ -153,6 +153,7 @@ let package = Package(
             path: "Sources/Reisen",
             resources: [
                 .process("Resources"),
+                .copy("../../Resources/PrivacyInfo.xcprivacy"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

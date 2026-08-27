@@ -1,19 +1,31 @@
 import Testing
 import Foundation
+import ReisenDomain
 @testable import ReisenAppCore
 
-@Test func githubIssueKind_labelsIncludeSourceInApp() {
-    #expect(GitHubIssueKind.error.githubLabels == ["kind/error", "source/in-app"])
-    #expect(GitHubIssueKind.feedback.githubLabels == ["kind/feedback", "source/in-app"])
+@Test func githubIssueKind_issueTemplatesDeclareSameLabels() throws {
+    let repoRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    for kind in [GitHubIssueKind.error, .feedback] {
+        let template = repoRoot.appendingPathComponent(
+            ".github/ISSUE_TEMPLATE/\(kind.issueForm.templateFileName)"
+        )
+        let yaml = try String(contentsOf: template, encoding: .utf8)
+        for label in kind.githubLabels {
+            #expect(yaml.contains("\"\(label)\""), "\(kind.issueForm.templateFileName) missing \(label)")
+        }
+    }
 }
 
 @Test func githubIssueKind_usesGermanDisplayNamesAndTemplates() {
     #expect(GitHubIssueKind.error.displayName == "Fehler")
     #expect(GitHubIssueKind.feedback.displayName == "Feedback")
-    #expect(GitHubIssueKind.error.issueTemplateFileName == "bug.yml")
-    #expect(GitHubIssueKind.feedback.issueTemplateFileName == "feedback.yml")
-    #expect(GitHubIssueKind.error.issueFormFieldID == "what")
-    #expect(GitHubIssueKind.feedback.issueFormFieldID == "feedback")
+    #expect(GitHubIssueKind.error.issueForm.templateFileName == "bug.yml")
+    #expect(GitHubIssueKind.feedback.issueForm.templateFileName == "feedback.yml")
+    #expect(GitHubIssueKind.error.issueForm.fieldID == "what")
+    #expect(GitHubIssueKind.feedback.issueForm.fieldID == "feedback")
 }
 
 @Test @MainActor func githubIssueReporter_emptyTokenMakesNoHTTP() async {
@@ -148,19 +160,9 @@ import Foundation
 }
 
 @Test func githubIssueDiagnostic_includesGitHubUsernameWhenProvided() {
-    let body = GitHubIssueDiagnostic.body(
+    let body = diagnosticBody(
         kind: .feedback,
-        title: "T",
-        message: "M",
-        providerID: nil,
-        origin: .userGitHub(username: "rosch100"),
-        appVersion: "1",
-        build: "2",
-        os: "macOS",
-        device: "Mac",
-        locale: "de_DE",
-        timeZone: "Europe/Berlin",
-        fingerprint: "abc"
+        origin: .userGitHub(username: "rosch100")
     )
     #expect(body.contains("| GitHub-Nutzer | @rosch100 |"))
     #expect(body.contains("| Meldeweg | GitHub-Konto |"))
@@ -170,39 +172,21 @@ import Foundation
 }
 
 @Test func githubIssueDiagnostic_usesGermanErrorSectionForErrors() {
-    let body = GitHubIssueDiagnostic.body(
-        kind: .error,
-        title: "T",
-        message: "M",
-        providerID: nil,
-        origin: .embeddedToken(attributedUsername: nil),
-        appVersion: "1",
-        build: "2",
-        os: "macOS",
-        device: "Mac",
-        locale: "de_DE",
-        timeZone: "Europe/Berlin",
-        fingerprint: "abc"
-    )
+    let body = diagnosticBody()
     #expect(body.contains("| Art | Fehler |"))
     #expect(body.contains("| Betriebssystem | macOS |"))
     #expect(body.contains("## Fehler"))
 }
 
 @Test func githubIssueDiagnostic_includesUnredactedErrorMessage() {
-    let body = GitHubIssueDiagnostic.body(
-        kind: .error,
+    let body = diagnosticBody(
         title: "Sync fehlgeschlagen",
         message: "Provider timeout konkret",
         providerID: .opodo,
-        origin: .embeddedToken(attributedUsername: nil),
         appVersion: "1.2.3",
         build: "45",
         os: "iOS 26.0",
-        device: "iPad",
-        locale: "de_DE",
-        timeZone: "Europe/Berlin",
-        fingerprint: "abc"
+        device: "iPad"
     )
     #expect(body.contains("Provider timeout konkret"))
     #expect(body.contains("| Provider | Opodo |"))
@@ -213,20 +197,24 @@ import Foundation
     #expect(!body.contains("logTail"))
 }
 
+@Test func githubIssueDiagnostic_redactsEmailInErrorMessage() {
+    let body = diagnosticBody(
+        title: "Kontakt test@example.com",
+        message: "Fehler für gast@domain.de bei Sync",
+        locale: "de",
+        timeZone: "UTC"
+    )
+    #expect(!body.contains("test@example.com"))
+    #expect(!body.contains("gast@domain.de"))
+    #expect(body.contains("[redacted]"))
+}
+
 @Test func githubIssueDiagnostic_redactsSecretsInErrorMessage() {
-    let body = GitHubIssueDiagnostic.body(
-        kind: .error,
+    let body = diagnosticBody(
         title: "Token ghp_abcdefghijklmnopqrstuvwxyz0123456789",
         message: "Login https://example.com/cb?token=abc&keep=1",
-        providerID: nil,
-        origin: .embeddedToken(attributedUsername: nil),
-        appVersion: "1",
-        build: "1",
-        os: "macOS",
-        device: "Mac",
         locale: "de",
-        timeZone: "UTC",
-        fingerprint: "abc"
+        timeZone: "UTC"
     )
     #expect(body.contains("keep=1"))
     #expect(!body.contains("ghp_abcdefghijklmnopqrstuvwxyz0123456789"))
@@ -386,6 +374,38 @@ import Foundation
     #expect(client.createCount == 0)
     let leftover = try String(contentsOf: stateURL, encoding: .utf8)
     #expect(leftover.contains("{not-json"))
+}
+
+private func diagnosticBody(
+    kind: GitHubIssueKind = .error,
+    title: String = "T",
+    message: String = "M",
+    providerID: ProviderID? = nil,
+    origin: GitHubIssueReportOrigin = .embeddedToken(attributedUsername: nil),
+    appVersion: String = "1",
+    build: String = "2",
+    os: String = "macOS",
+    device: String = "Mac",
+    locale: String = "de_DE",
+    timeZone: String = "Europe/Berlin",
+    fingerprint: String = "abc"
+) -> String {
+    GitHubIssueDiagnostic.body(
+        kind: kind,
+        title: title,
+        message: message,
+        providerID: providerID,
+        origin: origin,
+        diagnostics: GitHubIssueDiagnostic.DeviceDiagnostics(
+            fingerprint: fingerprint,
+            appVersion: appVersion,
+            build: build,
+            os: os,
+            device: device,
+            locale: locale,
+            timeZone: timeZone
+        )
+    )
 }
 
 final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {

@@ -26,12 +26,12 @@ public struct PublicGitHubIssueReportActions: View {
     @State private var localDidPostUpdate = true
     @State private var isReporting = false
 
-    private var submissionMode: GitHubIssueSubmissionMode {
-        GitHubIssueSubmissionMode.resolve(tokenEmbedded: GitHubIssueToken.isEmbedded)
+    private var usesEmbeddedToken: Bool {
+        GitHubIssueToken.isEmbedded
     }
 
     private var reportButtonLabel: String {
-        submissionMode == .embeddedToken ? ButtonLabel.directReport : ButtonLabel.openInGitHub
+        usesEmbeddedToken ? ButtonLabel.directReport : ButtonLabel.openInGitHub
     }
 
     private var displayURL: URL? {
@@ -48,10 +48,6 @@ public struct PublicGitHubIssueReportActions: View {
 
     private var trimmedMessage: String {
         message.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var resolvedTitle: String {
-        titleOverride ?? GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage)
     }
 
     private var canReport: Bool {
@@ -80,9 +76,9 @@ public struct PublicGitHubIssueReportActions: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if submissionMode == .embeddedToken || displayError != nil {
+            if usesEmbeddedToken || displayError != nil {
                 PublicGitHubIssueLink(
-                    url: submissionMode == .embeddedToken ? displayURL : nil,
+                    url: usesEmbeddedToken ? displayURL : nil,
                     errorMessage: displayError,
                     didPostUpdate: displayDidPostUpdate
                 )
@@ -108,43 +104,45 @@ public struct PublicGitHubIssueReportActions: View {
             return
         }
 
-        let normalizedGitHub = GitHubUsername.normalized(feedbackGitHubUsername)
-        let githubForOrigin = normalizedGitHub.isEmpty ? nil : normalizedGitHub
+        let githubForOrigin = GitHubUsername.optionalValid(feedbackGitHubUsername)
 
-        switch submissionMode {
-        case .openInGitHub:
-            guard let url = GitHubIssueNewIssueURL.compose(
-                kind: kind,
-                message: trimmedMessage,
-                providerID: providerID,
-                githubUsername: githubForOrigin,
-                titleOverride: titleOverride
-            ) else {
-                localError = GitHubIssueNewIssueURL.composeFailureMessage
-                return
-            }
-            openURL(url)
-            onReported?()
+        if usesEmbeddedToken {
+            reportWithEmbeddedToken(githubUsername: githubForOrigin)
+            return
+        }
 
-        case .embeddedToken:
-            isReporting = true
-            Task { @MainActor in
-                defer { isReporting = false }
-                do {
-                    let created = try await GitHubIssueReporter.shared.report(
-                        kind: kind,
-                        message: trimmedMessage,
-                        providerID: providerID,
-                        titleOverride: titleOverride,
-                        reporterGitHubUsername: githubForOrigin
-                    )
-                    localURL = created.htmlURL
-                    localDidPostUpdate = created.didPostUpdate
-                    localError = nil
-                    onReported?()
-                } catch {
-                    localError = error.localizedDescription
-                }
+        guard let url = GitHubIssueNewIssueURL.compose(
+            kind: kind,
+            message: trimmedMessage,
+            providerID: providerID,
+            githubUsername: githubForOrigin,
+            titleOverride: titleOverride
+        ) else {
+            localError = GitHubIssueNewIssueURL.composeFailureMessage
+            return
+        }
+        openURL(url)
+        onReported?()
+    }
+
+    private func reportWithEmbeddedToken(githubUsername: String?) {
+        isReporting = true
+        Task { @MainActor in
+            defer { isReporting = false }
+            do {
+                let created = try await GitHubIssueReporter.shared.report(
+                    kind: kind,
+                    message: trimmedMessage,
+                    providerID: providerID,
+                    titleOverride: titleOverride,
+                    reporterGitHubUsername: githubUsername
+                )
+                localURL = created.htmlURL
+                localDidPostUpdate = created.didPostUpdate
+                localError = nil
+                onReported?()
+            } catch {
+                localError = error.localizedDescription
             }
         }
     }

@@ -42,10 +42,16 @@
       <h2>Controller</h2>
       <p>
         The <strong>Reisen</strong> app and this website are provided by
-        <strong>Roland Schramme</strong> as an open-source project at
+        <strong>Roland Schramme</strong>, Germany, as an open-source project at
         <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a>.
-        For privacy questions, use the public GitHub issues:
-        <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
+      </p>
+      <p>
+        Fast electronic contact: public
+        <a href="https://github.com/rosch100/Reisen/issues">GitHub issues</a>.
+        For confidential data-subject requests (access, erasure), open an issue
+        <a href="../privacy-request.html">without trip data</a>
+        — we will reply with a private contact channel. Do not put passenger or booking details
+        in the public issue text.
       </p>
 
       <h2>Summary</h2>
@@ -55,7 +61,8 @@
 
       <h3>Trips and bookings (entered or synced by you)</h3>
       <ul>
-        <li>Trip names, booking details, cancellation deadlines, manual entries</li>
+        <li>Trip names, booking details, confirmation codes, cancellation deadlines, manual entries, addresses of stays and stations</li>
+        <li>Travellers: given name and family name, optional date of birth (including minors if you or the provider record them)</li>
         <li>Stored in SwiftData on device; optional mirroring in your private iCloud container <code>iCloud.de.reisen.Reisen</code></li>
       </ul>
 
@@ -63,14 +70,26 @@
       <ul>
         <li>Sign-in on third-party websites in a <strong>WKWebView</strong> with your own account</li>
         <li>Session cookies remain in the device web view cookie store</li>
-        <li>Optional (opt-in): email and password after password login in the app <strong>device Keychain</strong> — not for Apple / passkey / OAuth sign-in</li>
+        <li>Optional (opt-in, off by default): email and password after password login in the app <strong>device Keychain</strong> — not for Apple / passkey / OAuth sign-in. These credentials do not leave the device.</li>
       </ul>
 
       <h3>Calendar and reminders (optional, opt-in)</h3>
       <ul>
-        <li>With your permission: calendar events and reminders for cancellation deadlines in Apple Calendar / Reminders</li>
+        <li>With your permission: calendar events and reminders for cancellation deadlines in Apple Calendar / Reminders (full access so entries can be updated and removed)</li>
         <li>Local notifications via Notification Center (no marketing pushes)</li>
       </ul>
+
+      <h3>Place lookup (MapKit)</h3>
+      <p>
+        To fill calendar locations and flight time zones, the app sends search or geocoding queries
+        (e.g. airport IATA or hotel name) to <strong>Apple MapKit</strong>. Your GPS location is not collected.
+      </p>
+
+      <h3>Installed provider apps (on-device only)</h3>
+      <p>
+        On iOS, Reisen locally checks URL schemes to see whether a provider’s native app is installed
+        and may pre-enable that provider once. This information is <strong>not</strong> transmitted.
+      </p>
 
       <h3>Technical settings</h3>
       <ul>
@@ -78,8 +97,26 @@
         <li>No tracking, no advertising ID, no sale of data</li>
       </ul>
 
-      <h3>Feedback (optional)</h3>
-      <p>If you send feedback or an error report, the app creates a <strong>public</strong> GitHub issue (text, app version, OS, device model, locale, optional provider, optional GitHub username for attribution). You do <strong>not</strong> need a GitHub account; the app uses an embedded issues-only token. Anyone can read the issue at <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.</p>
+      <h3>Feedback and errors (optional)</h3>
+      <p>
+        If you send feedback or an error report, the app creates a <strong>public</strong> GitHub issue
+        (text, app version, OS, device model, locale, time zone, optional provider, optional GitHub username
+        for attribution). Automatic error issues including crash stack traces only if you enable
+        “Send errors automatically as a public issue” (consent, off by default). You do <strong>not</strong>
+        need a GitHub account; the app uses an embedded issues-only token. Anyone can read the issue at
+        <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
+        Obvious secrets and personal data in report text (email, names, phone numbers,
+        addresses, dates of birth, booking references, IBANs) are redacted before sending;
+        still do not include passenger data in feedback.
+      </p>
+
+      <h2>Legal bases (Art. 6 GDPR)</h2>
+      <ul>
+        <li><strong>Art. 6(1)(b):</strong> providing the app functions you request (local trip management, optional iCloud mirroring)</li>
+        <li><strong>Art. 6(1)(a):</strong> consent for Keychain password storage, calendar/reminders/notifications, automatic public error issues</li>
+        <li><strong>Art. 6(1)(f):</strong> legitimate interest in operating this information site and optional, user-initiated support via GitHub</li>
+      </ul>
+      <p>You may withdraw consent in app or system settings; processing until withdrawal remains lawful.</p>
 
       <h2>iCloud / CloudKit</h2>
       <p>Sync uses Apple CloudKit in your iCloud account. Apple processes this data under the <a href="https://www.apple.com/legal/privacy/">Apple Privacy Policy</a>. You can delete local data or wipe iCloud data in the app settings.</p>
@@ -87,18 +124,31 @@
       <h2>Silent push notifications (iOS)</h2>
       <p>For CloudKit mirroring, iOS may receive silent background notifications (<code>remote-notification</code>). <strong>No</strong> visible remote push messages are sent to you.</p>
 
-      <h2>Sharing with third parties</h2>
+      <h2>Recipients and international transfers</h2>
       <ul>
-        <li><strong>Provider websites:</strong> When you sign in, their privacy policies apply.</li>
-        <li><strong>GitHub:</strong> Only if you send feedback or an error report in the app (public issues; no GitHub account required).</li>
-        <li><strong>No</strong> analytics service, <strong>no</strong> ad network in the app.</li>
+        <li><strong>Apple</strong> (US/EU): CloudKit, MapKit, EventKit, system services — see Apple’s privacy policy; Apple uses the EU-US Data Privacy Framework and/or Standard Contractual Clauses</li>
+        <li><strong>Provider websites:</strong> When you sign in, their privacy policies apply (third-country transfers depending on the provider)</li>
+        <li><strong>GitHub, Inc.</strong> (USA): only if you send feedback/an error report or visit this website; GitHub uses Standard Contractual Clauses (SCCs)</li>
+        <li><strong>No</strong> analytics service, <strong>no</strong> ad network in the app</li>
+      </ul>
+
+      <h2>Retention</h2>
+      <ul>
+        <li>Bookings, travellers, and settings: until you delete them in the app or reset local stores / wipe iCloud data</li>
+        <li>Keychain credentials: until you disable the feature or remove them in Keychain / Passwords</li>
+        <li>Calendar/reminder items: until you revoke permission or delete them in Calendar/Reminders</li>
+        <li>Public GitHub issues: per GitHub’s rules; we can close issues but cannot control third-party copies</li>
       </ul>
 
       <h2>Your rights</h2>
       <ul>
-        <li>Delete data: local reset or “Also wipe iCloud data” in settings</li>
+        <li>Access, rectification, erasure, restriction, portability, objection (Art. 15–21 GDPR)</li>
+        <li>Delete data in the app: local reset or “Also wipe iCloud data”</li>
         <li>Provider passwords: can be disabled in app settings; stored accounts removable in Keychain / Passwords app</li>
         <li>Calendar / notification permissions: revocable in system settings</li>
+        <li>Lodge a complaint with a supervisory authority; in Germany typically the
+          <a href="https://www.bfdi.bund.de/EN/">Federal Commissioner for Data Protection and Freedom of Information (BfDI)</a>
+          or the competent state authority</li>
       </ul>
 
       <h2>This website (GitHub Pages)</h2>
@@ -126,6 +176,7 @@
       <h2>Contact</h2>
       <p>
         <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues — rosch100/Reisen</a><br>
+        <a href="../privacy-request.html">Confidential privacy request</a> ·
         <a href="support.html">Support</a> · <a href="impressum.html">Legal notice</a>
       </p>
     </div>

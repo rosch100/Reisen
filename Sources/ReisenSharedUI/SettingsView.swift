@@ -199,6 +199,7 @@ public struct SettingsView: View {
             Section {
                 Link(Self.legalPrivacyTitle, destination: LegalURLs.privacyPolicy)
                 Link(Self.legalSupportTitle, destination: LegalURLs.support)
+                Link(Self.legalImpressumTitle, destination: LegalURLs.impressum)
             } header: {
                 Text(Self.legalSectionTitle)
             } footer: {
@@ -243,7 +244,8 @@ public struct SettingsView: View {
                     GitHubIssueToken.isEmbedded
                         ? "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; "
                             + "die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). "
-                            + "Automatische Fehler-Issues nur mit dem Schalter oben. "
+                            + "Automatische Fehler-Issues nur mit dem Schalter oben und sind öffentlich; "
+                            + "ohne Sync-Log, ohne Login- oder Datenschutz-Verweigerungen. "
                             + "Repo: github.com/\(GitHubRepository.publicPath)."
                         : "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text. "
                             + "Du sendest mit deinem GitHub-Konto. Repo: github.com/\(GitHubRepository.publicPath)."
@@ -470,14 +472,18 @@ public struct SettingsView: View {
         "Support"
     }
 
+    private static var legalImpressumTitle: String {
+        usesGermanLegalCopy ? "Impressum" : "Legal notice"
+    }
+
     private static var legalSectionTitle: String {
         usesGermanLegalCopy ? "Datenschutz & Support" : "Privacy & Support"
     }
 
     private static var legalSectionFooter: String {
         usesGermanLegalCopy
-            ? "Beschreibt Provider-Logins, iCloud, Kalender und lokale Speicherung."
-            : "Describes provider logins, iCloud, calendar, and local storage."
+            ? "Beschreibt Provider-Logins, iCloud, Kalender, Diagnosen und lokale Speicherung."
+            : "Describes provider logins, iCloud, calendar, diagnostics, and local storage."
     }
 }
 

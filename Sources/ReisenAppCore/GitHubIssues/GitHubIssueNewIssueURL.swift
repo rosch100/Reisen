@@ -7,6 +7,8 @@ public enum GitHubIssueNewIssueURL {
     /// Obergrenze für die encodierte Gesamt-URL inkl. Query.
     public static let maxURLLength = 8_000
     public static let composeFailureMessage = "Issue-URL konnte nicht erstellt werden."
+    private static let minTruncatedBodyCharacters = 200
+    private static let bodyTruncationStep = 500
 
     private static let truncationSuffix = """
 
@@ -22,13 +24,11 @@ public enum GitHubIssueNewIssueURL {
     ) -> URL? {
         let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedMessage.isEmpty else { return nil }
-        let title = String(
-            SecretRedactor.redact(
-                titleOverride ?? GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage)
-            ).prefix(240)
+        let title = GitHubIssueTitle.githubAPITitle(
+            GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage, override: titleOverride)
         )
         let origin: GitHubIssueReportOrigin = .userGitHub(
-            username: GitHubIssueReportOrigin.optionalNormalizedUsername(githubUsername)
+            username: GitHubUsername.optionalValid(githubUsername)
         )
         let formFieldValue = formFieldValueForQuery(
             kind: kind,
@@ -55,8 +55,10 @@ public enum GitHubIssueNewIssueURL {
         )
         var maxChars = maxBodyCharacterCount
         var value = truncated(fullValue, maxCharacters: maxChars)
-        while !fitsInIssueURL(kind: kind, title: title, formFieldValue: value), maxChars > 200 {
-            maxChars -= 500
+        while !fitsInIssueURL(kind: kind, title: title, formFieldValue: value),
+              maxChars > minTruncatedBodyCharacters
+        {
+            maxChars -= bodyTruncationStep
             value = truncated(fullValue, maxCharacters: maxChars)
         }
         return value
@@ -74,16 +76,12 @@ public enum GitHubIssueNewIssueURL {
     }
 
     private static func issueURL(kind: GitHubIssueKind, title: String, formFieldValue: String) -> URL? {
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = "github.com"
-        components.path = GitHubRepository.newIssuePath
-        components.queryItems = [
-            URLQueryItem(name: "template", value: kind.issueTemplateFileName),
+        let form = kind.issueForm
+        return GitHubRepository.newIssueURL(queryItems: [
+            URLQueryItem(name: "template", value: form.templateFileName),
             URLQueryItem(name: "labels", value: kind.githubLabels.joined(separator: ",")),
             URLQueryItem(name: "title", value: title),
-            URLQueryItem(name: kind.issueFormFieldID, value: formFieldValue),
-        ]
-        return components.url
+            URLQueryItem(name: form.fieldID, value: formFieldValue),
+        ])
     }
 }

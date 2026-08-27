@@ -10,9 +10,9 @@ Technische Voraussetzungen im Repo sind in [apple-signing.md](apple-signing.md) 
 | Bundle-ID | `de.reisen.Reisen.ios` (siehe `project.yml`) |
 | Kategorie | Reisen |
 | Privacy Policy URL (DE) | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicyGerman`) |
-| Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/en/privacy.html` (`LegalURLs.privacyPolicyEnglish`) |
+| Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/privacy.en.html` (`LegalURLs.privacyPolicyEnglish`; Redirect auf `en/privacy.html`) |
 | Support URL (DE) | `https://rosch100.github.io/Reisen/support.html` (`LegalURLs.supportGerman`) |
-| Support URL (EN) | `https://rosch100.github.io/Reisen/en/support.html` (`LegalURLs.supportEnglish`) |
+| Support URL (EN) | `https://rosch100.github.io/Reisen/support.en.html` (`LegalURLs.supportEnglish`; Redirect auf `en/support.html`) |
 | Übersicht / beide Sprachen | `https://rosch100.github.io/Reisen/` — zweisprachige **Produktseite** (DE: `/`, EN: `/en/`); Legal: Datenschutz, Support, Impressum |
 | Copyright | wie in Info.plist (`NSHumanReadableCopyright`) |
 
@@ -31,20 +31,31 @@ Technische Voraussetzungen im Repo sind in [apple-signing.md](apple-signing.md) 
 
 ## App Privacy (Nutrition Labels)
 
-Abgleich mit `Apps/ReiseniOS/PrivacyInfo.xcprivacy`:
+Abgleich mit `Resources/PrivacyInfo.xcprivacy` (SSOT für iOS- und macOS-Bundle):
 
 | Datentyp | Verknüpft | Tracking | Zweck |
 |----------|-----------|----------|-------|
-| Nutzerinhalte (Buchungen, optionales Feedback) | Ja | Nein | App-Funktionalität |
-| E-Mail (Provider-Keychain, Opt-in) | Ja | Nein | App-Funktionalität |
+| Name (Mitreisende) | Ja | Nein | App-Funktionalität |
+| Geburtsdatum (Mitreisende, optional) | Ja | Nein | App-Funktionalität |
+| Physische Adresse (Unterkunft/Station) | Ja | Nein | App-Funktionalität |
+| Nutzerinhalte (`OtherUserContent`: Buchungen, Kalendertexte) | Ja | Nein | App-Funktionalität |
+| Kundensupport (Feedback-Issues) | Ja | Nein | App-Funktionalität |
+| Crash-Daten (Opt-in Auto-Report) | Ja | Nein | App-Funktionalität |
+| Sonstige Diagnosedaten (OS, Gerät, Locale, Zeitzone) | Ja | Nein | App-Funktionalität |
 | Nutzer-ID (iCloud / CloudKit) | Ja | Nein | App-Funktionalität |
-| Kalender/Erinnerungen (EventKit, Opt-in) | Ja | Nein | App-Funktionalität (`OtherUserContent` im Manifest) |
 
-Zusätzlich in ASC angeben, falls gefragt (nicht im Privacy-Manifest `PrivacyInfo.xcprivacy`):
+Nicht als „Collected“ angeben (verlassen das Gerät nicht):
 
-- **Kalender/Erinnerungen** — im Manifest als `OtherUserContent` (Opt-in EventKit); Zweck Stornofristen
-- **Provider-Zugangsdaten** in der Keychain — nur Opt-in, lokal auf dem Gerät
+- **Provider-E-Mail/Kennwort** in der Keychain — nur Opt-in, lokal
+- **Installierte Provider-Apps** (`canOpenURL`) — nur lokal
+
+Required Reason APIs im Manifest: UserDefaults `CA92.1`, File Timestamp `C617.1` (App-Container / SwiftData).
+
+Zusätzlich in ASC angeben, falls gefragt:
+
+- **Kalender/Erinnerungen** — Full Access, Zweck Stornofristen aktualisieren/entfernen
 - **Uneingeschränkter Webzugriff** in Provider-WebViews (Altersfreigabe-Fragebogen)
+- **MapKit-Geocoding** — keine Nutzer-GPS-Position, nur Ortsnamen/IATA
 
 ## Screenshots
 
@@ -66,6 +77,8 @@ Demo without provider login:
 Provider sync (optional): user signs in with their own account in an embedded web view; we cannot provide reviewer credentials for third-party OTAs.
 
 Background mode "remote-notification" is used only for CloudKit silent sync mirroring, not for user-visible push notifications.
+
+Calendar and Reminders use full access so cancellation-deadline events can be created, updated, and removed. Both are opt-in in Settings.
 
 No in-app purchases. No Reisen user account. CloudKit uses the reviewer's iCloud account if signed in.
 ```

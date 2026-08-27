@@ -42,10 +42,16 @@
       <h2>Verantwortlicher</h2>
       <p>
         Verantwortlich für die App <strong>Reisen</strong> und diese Website ist
-        <strong>Roland Schramme</strong>. Das Projekt wird als Open-Source-Software unter
+        <strong>Roland Schramme</strong>, Deutschland. Das Projekt wird als Open-Source-Software unter
         <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a> bereitgestellt.
-        Für Fragen zum Datenschutz nutze die öffentlichen GitHub-Issues:
-        <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
+      </p>
+      <p>
+        Schnelle elektronische Kontaktaufnahme: öffentliche
+        <a href="https://github.com/rosch100/Reisen/issues">GitHub-Issues</a>.
+        Für vertrauliche Betroffenenanfragen (Auskunft, Löschung) bitte ein Issue
+        <a href="privacy-request.html">ohne Reisedaten</a>
+        eröffnen — wir antworten mit einem privaten Kontaktweg. Keine Passagier- oder Buchungsdaten
+        in den öffentlichen Issue-Text schreiben.
       </p>
 
       <h2>Kurzfassung</h2>
@@ -55,7 +61,8 @@
 
       <h3>Buchungen und Reisen (von dir erfasst oder synchronisiert)</h3>
       <ul>
-        <li>Reisenamen, Buchungsdetails, Stornofristen, manuelle Einträge</li>
+        <li>Reisenamen, Buchungsdetails, Bestätigungscodes, Stornofristen, manuelle Einträge, Adressen von Unterkünften und Stationen</li>
+        <li>Mitreisende: Vor- und Nachname, optional Geburtsdatum (auch von Minderjährigen, wenn du oder der Anbieter sie erfassen)</li>
         <li>Speicherung in SwiftData auf dem Gerät; optional Spiegelung in deinem privaten iCloud-Container <code>iCloud.de.reisen.Reisen</code></li>
       </ul>
 
@@ -63,14 +70,27 @@
       <ul>
         <li>Login auf Websites Dritter im <strong>WKWebView</strong> mit deinem eigenen Konto</li>
         <li>Session-Cookies verbleiben im WebView-Cookie-Store des Geräts</li>
-        <li>Optional (Opt-in): E-Mail und Kennwort nach Passwort-Login in der <strong>Geräte-Keychain</strong> der App — nicht für Apple-/Passkey-/OAuth-Logins</li>
+        <li>Optional (Opt-in, Standard aus): E-Mail und Kennwort nach Passwort-Login in der <strong>Geräte-Keychain</strong> der App — nicht für Apple-/Passkey-/OAuth-Logins. Diese Zugangsdaten verlassen das Gerät nicht.</li>
       </ul>
 
       <h3>Kalender und Erinnerungen (optional, Opt-in)</h3>
       <ul>
-        <li>Mit deiner Freigabe: Termine und Erinnerungen für Stornofristen in Apple Kalender / Erinnerungen</li>
+        <li>Mit deiner Freigabe: Termine und Erinnerungen für Stornofristen in Apple Kalender / Erinnerungen (voller Zugriff, damit Einträge aktualisiert und entfernt werden können)</li>
         <li>Lokale Mitteilungen über das Mitteilungszentrum (keine Marketing-Pushes)</li>
       </ul>
+
+      <h3>Ortsauflösung (MapKit)</h3>
+      <p>
+        Zur Darstellung von Kalenderorten und Flug-Zeitzonen sendet die App Such- bzw. Geocoding-Anfragen
+        (z.&nbsp;B. Flughafen-IATA oder Hotelname) an <strong>Apple MapKit</strong>. Es wird nicht dein GPS-Standort erfasst.
+      </p>
+
+      <h3>Installierte Provider-Apps (nur Gerät)</h3>
+      <p>
+        Auf iOS prüft Reisen lokal per URL-Schema, ob eine native App eines Anbieters installiert ist,
+        und kann den zugehörigen Provider einmalig voreinstellen. Diese Information wird <strong>nicht</strong>
+        übermittelt.
+      </p>
 
       <h3>Technische Einstellungen</h3>
       <ul>
@@ -78,8 +98,27 @@
         <li>Kein Tracking, keine Werbe-ID, kein Verkauf von Daten</li>
       </ul>
 
-      <h3>Feedback (optional)</h3>
-      <p>Wenn du Feedback oder einen Fehlerbericht sendest, legt die App ein <strong>öffentliches</strong> GitHub-Issue an (Text, App-Version, OS, Gerätemodell, Locale, optional Provider, optional dein GitHub-Benutzername zur Zuordnung). Dafür brauchst du <strong>kein</strong> GitHub-Konto; die App nutzt ein eingebettetes, auf Issues beschränktes Token. Der Inhalt ist für jeden lesbar unter <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.</p>
+      <h3>Feedback und Fehler (optional)</h3>
+      <p>
+        Wenn du Feedback oder einen Fehlerbericht sendest, legt die App ein <strong>öffentliches</strong>
+        GitHub-Issue an (Text, App-Version, OS, Gerätemodell, Locale, Zeitzone, optional Provider,
+        optional dein GitHub-Benutzername zur Zuordnung). Automatische Fehler-Issues inkl. Crash-Stack
+        nur, wenn du den Schalter „Fehler automatisch als öffentliches Issue senden“ einschaltest
+        (Einwilligung, Standard aus). Dafür brauchst du <strong>kein</strong> GitHub-Konto; die App nutzt
+        ein eingebettetes, auf Issues beschränktes Token. Der Inhalt ist für jeden lesbar unter
+        <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
+            Offensichtliche Geheimnisse sowie Personenbezüge in Meldungstexten (E-Mail, Namen,
+            Telefon, Adressen, Geburtsdaten, Buchungsnummern, IBAN) werden vor dem Versand geschwärzt;
+        schreibe trotzdem keine Passagierdaten in Feedback.
+      </p>
+
+      <h2>Rechtsgrundlagen (Art. 6 DSGVO)</h2>
+      <ul>
+        <li><strong>Art. 6 Abs. 1 lit. b:</strong> Bereitstellung der von dir angeforderten App-Funktionen (lokale Reiseverwaltung, optionale iCloud-Spiegelung)</li>
+        <li><strong>Art. 6 Abs. 1 lit. a:</strong> Einwilligung für Keychain-Passwortspeicherung, Kalender/Erinnerungen/Mitteilungen, automatische öffentliche Fehler-Issues</li>
+        <li><strong>Art. 6 Abs. 1 lit. f:</strong> berechtigtes Interesse am Betrieb dieser Informationsseite und am optionalen, von dir ausgelösten Support über GitHub</li>
+      </ul>
+      <p>Einwilligungen kannst du in den App- bzw. Systemeinstellungen widerrufen; die Rechtmäßigkeit der Verarbeitung bis zum Widerruf bleibt unberührt.</p>
 
       <h2>iCloud / CloudKit</h2>
       <p>Synchronisation nutzt Apple CloudKit in deinem iCloud-Account. Apple verarbeitet diese Daten gemäß den <a href="https://www.apple.com/legal/privacy/">Apple-Datenschutzrichtlinien</a>. Du kannst in den App-Einstellungen lokale Daten löschen oder iCloud-Daten leeren.</p>
@@ -87,18 +126,31 @@
       <h2>Stille Push-Benachrichtigungen (iOS)</h2>
       <p>Für CloudKit-Mirroring kann iOS stille Hintergrund-Benachrichtigungen empfangen (<code>remote-notification</code>). Es werden <strong>keine</strong> sichtbaren Remote-Push-Nachrichten an dich gesendet.</p>
 
-      <h2>Datenweitergabe an Dritte</h2>
+      <h2>Empfänger und Drittlandübermittlung</h2>
       <ul>
-        <li><strong>Provider-Websites:</strong> Wenn du dich anmeldest, gelten deren Datenschutzbestimmungen.</li>
-        <li><strong>GitHub:</strong> Nur wenn du in der App Feedback oder einen Fehlerbericht sendest (öffentliche Issues, kein GitHub-Konto nötig).</li>
-        <li><strong>Kein</strong> Analytics-Dienst, <strong>kein</strong> Werbenetzwerk in der App.</li>
+        <li><strong>Apple</strong> (USA/EU): CloudKit, MapKit, EventKit, Systemdienste — siehe Apple-Datenschutz; Apple nutzt u.&nbsp;a. das EU-US Data Privacy Framework bzw. Standardvertragsklauseln</li>
+        <li><strong>Provider-Websites:</strong> Wenn du dich anmeldest, gelten deren Datenschutzbestimmungen (Übermittlung in Drittländer je nach Anbieter)</li>
+        <li><strong>GitHub, Inc.</strong> (USA): nur bei Feedback/Fehlerbericht oder Aufruf dieser Website; GitHub nutzt u.&nbsp;a. Standardvertragsklauseln (SCC)</li>
+        <li><strong>Kein</strong> Analytics-Dienst, <strong>kein</strong> Werbenetzwerk in der App</li>
+      </ul>
+
+      <h2>Speicherdauer</h2>
+      <ul>
+        <li>Buchungen, Mitreisende und Einstellungen: bis du sie in der App löschst bzw. lokale Stores / iCloud-Daten leerst</li>
+        <li>Keychain-Zugangsdaten: bis du sie deaktivierst oder in der Schlüsselbund-/Passwörter-App entfernst</li>
+        <li>Kalender-/Reminder-Einträge: bis Widerruf der Freigabe oder Löschung in Kalender/Erinnerungen</li>
+        <li>Öffentliche GitHub-Issues: nach den Regeln von GitHub; wir können öffentliche Issues schließen, nicht die Historie Dritter kontrollieren</li>
       </ul>
 
       <h2>Deine Rechte</h2>
       <ul>
-        <li>Daten löschen: lokaler Reset oder „iCloud-Daten leeren“ in den Einstellungen</li>
+        <li>Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit, Widerspruch (Art. 15–21 DSGVO)</li>
+        <li>Daten löschen in der App: lokaler Reset oder „iCloud-Daten leeren“</li>
         <li>Provider-Passwörter: in den App-Einstellungen deaktivierbar; gespeicherte Konten in der Schlüsselbundverwaltung / Passwörter-App entfernbar</li>
         <li>Kalender-/Mitteilungsrechte: in den Systemeinstellungen widerrufbar</li>
+        <li>Beschwerde bei einer Aufsichtsbehörde, in Deutschland typisch der
+          <a href="https://www.bfdi.bund.de/">Bundesbeauftragte für den Datenschutz und die Informationsfreiheit (BfDI)</a>
+          oder die zuständige Landesbehörde</li>
       </ul>
 
       <h2>Diese Website (GitHub Pages)</h2>
@@ -128,6 +180,7 @@
       <h2>Kontakt</h2>
       <p>
         <a href="https://github.com/rosch100/Reisen/issues">GitHub Issues — rosch100/Reisen</a><br>
+        <a href="privacy-request.html">Vertrauliche Datenschutzanfrage</a> ·
         <a href="support.html">Support</a> · <a href="impressum.html">Impressum</a>
       </p>
     </div>

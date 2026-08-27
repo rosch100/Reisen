@@ -25,7 +25,7 @@ enum GitHubIssueCrashCatcher {
                 at: url.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            try Data(message.utf8).write(to: url, options: [.atomic])
+            try Data(SecretRedactor.redact(message).utf8).write(to: url, options: [.atomic])
         } catch {
             #if DEBUG
             print("[Reisen] Pending-Crash-Report fehlgeschlagen: \(error)")

@@ -3,118 +3,69 @@ import Foundation
 import ReisenDomain
 
 public enum GitHubIssueDiagnostic {
-    public static func body(
+    struct DeviceDiagnostics {
+        let fingerprint: String
+        let appVersion: String
+        let build: String
+        let os: String
+        let device: String
+        let locale: String
+        let timeZone: String
+    }
+
+    static func body(
         kind: GitHubIssueKind,
         title: String,
         message: String,
         providerID: ProviderID?,
         origin: GitHubIssueReportOrigin,
-        appVersion: String,
-        build: String,
-        os: String,
-        device: String,
-        locale: String,
-        timeZone: String,
-        fingerprint: String
+        diagnostics: DeviceDiagnostics
     ) -> String {
-        let redactedMessage = SecretRedactor.redact(message)
-        let redactedTitle = SecretRedactor.redact(title)
-        return """
+        """
         ## Zusammenfassung
-        \(redactedTitle)
+        \(SecretRedactor.redact(title))
 
-        \(diagnosticTable(
-            kind: kind,
-            providerID: providerID,
-            origin: origin,
-            appVersion: appVersion,
-            build: build,
-            os: os,
-            device: device,
-            locale: locale,
-            timeZone: timeZone,
-            fingerprint: fingerprint
-        ))
+        \(diagnosticTable(kind: kind, providerID: providerID, origin: origin, diagnostics: diagnostics))
 
-        ## \(kind.messageSectionTitle)
+        ## \(kind.displayName)
         ```
-        \(redactedMessage)
+        \(SecretRedactor.redact(message))
         ```
         """
     }
 
     /// Inhalt für vorausgefüllte Issue-Formularfelder (`what` / `feedback`) ohne Titel-Dopplung.
-    public static func collectedFormFieldContent(
+    static func collectedFormFieldContent(
         kind: GitHubIssueKind,
         message: String,
         providerID: ProviderID?,
         origin: GitHubIssueReportOrigin
     ) -> String {
         let redactedMessage = SecretRedactor.redact(message)
-        let appendix = diagnosticAppendix(
-            kind: kind,
-            message: message,
-            providerID: providerID,
-            origin: origin
-        )
-        guard !appendix.isEmpty else { return redactedMessage }
         return """
         \(redactedMessage)
 
         ---
 
-        \(appendix)
+        \(diagnosticTable(
+            kind: kind,
+            providerID: providerID,
+            origin: origin,
+            diagnostics: deviceSnapshot(kind: kind, redactedMessage: redactedMessage)
+        ))
         """
     }
 
-    public static func collectedBody(
-        kind: GitHubIssueKind,
-        title: String,
-        message: String,
-        providerID: ProviderID?,
-        origin: GitHubIssueReportOrigin = .embeddedToken(attributedUsername: nil)
-    ) -> String {
-        let fingerprint = GitHubIssueFingerprint.hex(kind: kind, message: SecretRedactor.redact(message))
+    static func deviceSnapshot(kind: GitHubIssueKind, redactedMessage: String) -> DeviceDiagnostics {
         let bundle = Bundle.main
-        let appVersion = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
-        let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
-        return body(
-            kind: kind,
-            title: title,
-            message: message,
-            providerID: providerID,
-            origin: origin,
-            appVersion: appVersion,
-            build: build,
+        return DeviceDiagnostics(
+            fingerprint: GitHubIssueFingerprint.hex(kind: kind, message: redactedMessage),
+            appVersion: bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—",
+            build: bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—",
             os: ProcessInfo.processInfo.operatingSystemVersionString,
             device: deviceModel(),
             locale: Locale.current.identifier,
-            timeZone: TimeZone.current.identifier,
-            fingerprint: fingerprint
-        )
-    }
-
-    private static func diagnosticAppendix(
-        kind: GitHubIssueKind,
-        message: String,
-        providerID: ProviderID?,
-        origin: GitHubIssueReportOrigin
-    ) -> String {
-        let fingerprint = GitHubIssueFingerprint.hex(kind: kind, message: SecretRedactor.redact(message))
-        let bundle = Bundle.main
-        let appVersion = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
-        let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
-        return diagnosticTable(
-            kind: kind,
-            providerID: providerID,
-            origin: origin,
-            appVersion: appVersion,
-            build: build,
-            os: ProcessInfo.processInfo.operatingSystemVersionString,
-            device: deviceModel(),
-            locale: Locale.current.identifier,
-            timeZone: TimeZone.current.identifier,
-            fingerprint: fingerprint
+            timeZone: TimeZone.current.identifier
         )
     }
 
@@ -122,13 +73,7 @@ public enum GitHubIssueDiagnostic {
         kind: GitHubIssueKind,
         providerID: ProviderID?,
         origin: GitHubIssueReportOrigin,
-        appVersion: String,
-        build: String,
-        os: String,
-        device: String,
-        locale: String,
-        timeZone: String,
-        fingerprint: String
+        diagnostics: DeviceDiagnostics
     ) -> String {
         let provider = providerID.map(\.displayName) ?? "—"
         return """
@@ -139,15 +84,15 @@ public enum GitHubIssueDiagnostic {
         | Quelle | \(kind.sourceLabel) |
         | Meldeweg | \(origin.meldewegLabel) |
         | GitHub-Nutzer | \(origin.githubUserLabel) |
-        | App | \(appVersion) (\(build)) |
-        | Betriebssystem | \(os) |
-        | Gerät | \(device) |
-        | Sprache | \(locale) |
-        | Zeitzone | \(timeZone) |
+        | App | \(diagnostics.appVersion) (\(diagnostics.build)) |
+        | Betriebssystem | \(diagnostics.os) |
+        | Gerät | \(diagnostics.device) |
+        | Sprache | \(diagnostics.locale) |
+        | Zeitzone | \(diagnostics.timeZone) |
         | Provider | \(provider) |
 
-        reisen-fingerprint: `\(fingerprint)`
-        <!-- reisen-fingerprint: \(fingerprint) -->
+        reisen-fingerprint: `\(diagnostics.fingerprint)`
+        <!-- reisen-fingerprint: \(diagnostics.fingerprint) -->
         """
     }
 

@@ -54,3 +54,7 @@ Tag-Releases und App-Store-Archive ohne Secret brechen ab (`REISEN_REQUIRE_GITHU
 XOR ist Obfuskation, kein Schutz: das PAT ist aus einem Release-Binary rekonstruierbar. `maxCreatesPerHour` gilt nur in der App und ist mit extrahiertem Token umgehbar.
 
 Harte Grenze ist GitHub-seitig: fine-grained PAT mit **Issues: Read and write**, nur Repository `rosch100/Reisen`. Die App-Limits sind eine zusätzliche Dämpfung, keine Sicherheitsgrenze.
+
+## Issue-Labels
+
+Die App setzt beim Anlegen `kind/error` bzw. `kind/feedback` und `source/in-app` (siehe `.github/ISSUE_TEMPLATE/*.yml`). Die Labels müssen am Repo existieren — die Issues-API antwortet sonst mit 422.

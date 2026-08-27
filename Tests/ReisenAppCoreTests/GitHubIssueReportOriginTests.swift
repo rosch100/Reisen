@@ -1,4 +1,5 @@
 import Testing
+import ReisenDomain
 @testable import ReisenAppCore
 
 @Test func githubIssueReportOrigin_embeddedTokenWithoutAttribution() {
@@ -9,7 +10,7 @@ import Testing
 
 @Test func githubIssueReportOrigin_embeddedTokenWithAttribution() {
     let origin = GitHubIssueReportOrigin.embeddedToken(
-        attributedUsername: GitHubIssueReportOrigin.optionalNormalizedUsername(" @rosch100 ")
+        attributedUsername: GitHubUsername.optionalValid(" @rosch100 ")
     )
     #expect(origin == .embeddedToken(attributedUsername: "rosch100"))
     #expect(origin.meldewegLabel == "App-Token")
@@ -20,14 +21,4 @@ import Testing
     let origin = GitHubIssueReportOrigin.userGitHub(username: "rosch100")
     #expect(origin.meldewegLabel == "GitHub-Konto")
     #expect(origin.githubUserLabel == "@rosch100")
-}
-
-@Test func githubIssueTitle_feedbackUsesFirstLineLikeErrors() {
-    let title = GitHubIssueTitle.feedbackReport(message: "Zeile eins\nZeile zwei")
-    #expect(title == "[Feedback] Zeile eins")
-}
-
-@Test func githubIssueTitle_reportTitleUsesKindPrefix() {
-    #expect(GitHubIssueTitle.reportTitle(kind: .error, message: "Timeout") == "[Fehler] Timeout")
-    #expect(GitHubIssueTitle.reportTitle(kind: .feedback, message: "Wunsch") == "[Feedback] Wunsch")
 }

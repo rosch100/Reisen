@@ -16,20 +16,9 @@ public enum GitHubIssueReportOrigin: Sendable, Equatable {
     }
 
     public var githubUserLabel: String {
-        let username: String?
         switch self {
-        case .embeddedToken(let attributedUsername):
-            username = attributedUsername
-        case .userGitHub(let name):
-            username = name
+        case .embeddedToken(let name), .userGitHub(let name):
+            name.map { "@\($0)" } ?? "—"
         }
-        guard let username else { return "—" }
-        return "@\(username)"
-    }
-
-    public static func optionalNormalizedUsername(_ raw: String?) -> String? {
-        guard let raw else { return nil }
-        let normalized = GitHubUsername.normalized(raw)
-        return normalized.isEmpty ? nil : normalized
     }
 }

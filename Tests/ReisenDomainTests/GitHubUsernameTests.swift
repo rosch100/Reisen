@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ReisenDomain
 
@@ -8,6 +9,8 @@ import ReisenDomain
 @Test func githubUsername_acceptsTypicalLogin() {
     #expect(GitHubUsername.isValid("rosch100"))
     #expect(!GitHubUsername.isValid("my-user_1"))
+    #expect(GitHubUsername.isValid(String(repeating: "a", count: GitHubUsername.maxLength)))
+    #expect(!GitHubUsername.isValid(String(repeating: "a", count: GitHubUsername.maxLength + 1)))
 }
 
 @Test func githubUsername_rejectsEmptyAfterNormalization() {
@@ -17,6 +20,26 @@ import ReisenDomain
 
 @Test func githubUsername_rejectsInvalidCharacters() {
     #expect(GitHubUsername.validationError(for: "bad name") == "Ungültiger GitHub-Benutzername.")
+}
+
+@Test func githubUsername_optionalValidAcceptsOnlyGitHubLogins() {
+    #expect(GitHubUsername.optionalValid(nil) == nil)
+    #expect(GitHubUsername.optionalValid("  ") == nil)
+    #expect(GitHubUsername.optionalValid("bad name") == nil)
+    #expect(GitHubUsername.optionalValid(" @rosch100 ") == "rosch100")
+}
+
+@Test func optionalFeedbackGitHubUsername_ignoresInvalidValues() {
+    let suite = "ReisenTests.feedbackGitHubUsername.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defaults.removePersistentDomain(forName: suite)
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    defaults.set("not a login!", forKey: AppSettingsKeys.feedbackGitHubUsername)
+    #expect(AppSettingsKeys.optionalFeedbackGitHubUsername(defaults: defaults) == nil)
+
+    defaults.set("@rosch100", forKey: AppSettingsKeys.feedbackGitHubUsername)
+    #expect(AppSettingsKeys.optionalFeedbackGitHubUsername(defaults: defaults) == "rosch100")
 }
 
 @Test func feedbackGitHubUsernameKey_isStableAndPrefixed() {
