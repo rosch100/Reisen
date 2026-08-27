@@ -119,14 +119,14 @@ func check24BuildPassengersAttachesBaggagePerPassenger() {
 
     let passengers = parser.buildPassengers(
         guestNames: guestNames,
-        baggageAllowances: allowances,
-        travellerType: .adult
+        baggageAllowances: allowances
     )
 
     #expect(passengers.count == 2)
     #expect(passengers[0].passengerNumber == 1)
     #expect(passengers[0].givenName == "Anna")
     #expect(passengers[0].familyName == "Example")
+    #expect(passengers[0].travellerType == .unknown)
     #expect(passengers[0].baggageAllowances.count == 2)
     #expect(passengers[1].baggageAllowances.count == 2)
     // Ensure we copied baggage allowances (fresh IDs per passenger).

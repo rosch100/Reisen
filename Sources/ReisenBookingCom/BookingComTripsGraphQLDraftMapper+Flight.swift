@@ -18,8 +18,8 @@ extension BookingComTripsGraphQLParser {
         return (
             fromCity,
             toCity,
-            placeLabel(city: fromCity, iata: first.startLocation?.iata),
-            placeLabel(city: toCity, iata: last.endLocation?.iata),
+            PlaceLabel.make(city: fromCity, iata: first.startLocation?.iata),
+            PlaceLabel.make(city: toCity, iata: last.endLocation?.iata),
             first.marketingCarrier?.code
         )
     }

@@ -35,8 +35,7 @@ extension Check24TravelProvider {
                     let baggage = try parser.baggageAllowances(from: statusText)
                     let built = parser.buildPassengers(
                         guestNames: guestNames,
-                        baggageAllowances: baggage,
-                        travellerType: .adult
+                        baggageAllowances: baggage
                     )
                     passengers = built.isEmpty ? nil : built
                 } catch {
@@ -52,23 +51,25 @@ extension Check24TravelProvider {
            let basketRate = mapBasketRateDetails(basket: basket, details: details) {
             rate = basketRate
         } else {
-            rate = mapRateDetails(details)
+            rate = details.asRateDetails()
         }
 
-        return ProviderBookingEnrichment(
-            deadlines: policy.deadlines.map(mapDeadline),
-            rateDetails: rate,
-            passengers: passengers,
-            guestHints: {
-                let hints = StayHintHTMLExtractor.extract(
-                    from: snapshot.html,
-                    providerRaw: ProviderID.check24.rawValue
-                )
-                return hints.isEmpty ? nil : hints
-            }(),
-            hotelOffsetSeconds: policy.deadlines.compactMap(\.hotelOffsetSeconds).first,
-            hotelCheckInMinutes: stay.checkInMinutes,
-            hotelCheckOutMinutes: stay.checkOutMinutes
+        let hints = StayHintHTMLExtractor.extract(
+            from: snapshot.html,
+            providerRaw: ProviderID.check24.rawValue
+        )
+        let mappedDeadlines = policy.deadlines.map(\.asDomain)
+        return DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .check24,
+                bookingType: ref.bookingType,
+                deadlines: mappedDeadlines,
+                rateDetails: rate,
+                hotelCheckInMinutes: stay.checkInMinutes,
+                hotelCheckOutMinutes: stay.checkOutMinutes,
+                passengers: passengers ?? [],
+                guestHints: hints
+            )
         )
     }
 

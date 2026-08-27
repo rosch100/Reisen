@@ -12,15 +12,4 @@ extension BookingComTripsGraphQLParser {
         }
         return .other
     }
-
-    func status(from raw: String?) -> BookingStatus {
-        switch raw?.uppercased() {
-        case "CONFIRMED":
-            return .confirmed
-        case "CANCELLED", "CANCELED":
-            return .cancelled
-        default:
-            return .unknown
-        }
-    }
 }

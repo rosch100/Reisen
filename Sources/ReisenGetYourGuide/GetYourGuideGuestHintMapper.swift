@@ -7,7 +7,7 @@ public enum GetYourGuideGuestHintMapper {
         var hints: [BookingGuestHint] = []
         let provider = ProviderID.getYourGuide.rawValue
 
-        if let description = nonEmpty(activity.meetingPointDescription) {
+        if let description = NonEmpty.string(activity.meetingPointDescription) {
             var detail = description
             if let minutes = activity.meetingPointMinutesBefore, minutes > 0 {
                 detail += " (bitte \(minutes) Min. früher da sein)"
@@ -24,7 +24,7 @@ public enum GetYourGuideGuestHintMapper {
         }
 
         for restriction in activity.restrictions {
-            guard let text = nonEmpty(restriction) else { continue }
+            guard let text = NonEmpty.string(restriction) else { continue }
             hints.append(
                 BookingGuestHint(
                     category: .preTravelImportant,
@@ -36,7 +36,7 @@ public enum GetYourGuideGuestHintMapper {
             )
         }
 
-        let inclusions = activity.inclusions.compactMap(nonEmpty)
+        let inclusions = activity.inclusions.compactMap(NonEmpty.string)
         if !inclusions.isEmpty {
             hints.append(
                 BookingGuestHint(
@@ -62,7 +62,7 @@ public enum GetYourGuideGuestHintMapper {
         }
 
         for item in activity.importantItineraryLines {
-            guard let text = nonEmpty(item) else { continue }
+            guard let text = NonEmpty.string(item) else { continue }
             hints.append(
                 BookingGuestHint(
                     category: .preTravelImportant,
@@ -75,13 +75,6 @@ public enum GetYourGuideGuestHintMapper {
         }
 
         return hints
-    }
-
-    private static func nonEmpty(_ value: String?) -> String? {
-        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
-            return nil
-        }
-        return trimmed
     }
 }
 

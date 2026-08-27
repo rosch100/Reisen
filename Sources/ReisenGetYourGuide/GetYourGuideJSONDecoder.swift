@@ -1,4 +1,5 @@
 import Foundation
+import ReisenDomain
 
 enum GetYourGuideJSONDecoder {
     static let shared: JSONDecoder = {
@@ -6,7 +7,7 @@ enum GetYourGuideJSONDecoder {
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let raw = try container.decode(String.self)
-            if let date = parseISO8601(raw) {
+            if let date = ISODateTime.parseInstant(raw) {
                 return date
             }
             throw DecodingError.dataCorruptedError(
@@ -16,15 +17,4 @@ enum GetYourGuideJSONDecoder {
         }
         return decoder
     }()
-
-    private static func parseISO8601(_ raw: String) -> Date? {
-        let withFractional = ISO8601DateFormatter()
-        withFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = withFractional.date(from: raw) {
-            return date
-        }
-        let plain = ISO8601DateFormatter()
-        plain.formatOptions = [.withInternetDateTime]
-        return plain.date(from: raw)
-    }
 }

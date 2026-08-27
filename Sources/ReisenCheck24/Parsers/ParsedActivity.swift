@@ -12,7 +12,7 @@ public struct ParsedBooking {
     public let locationTo: String?
     public let locationFromAddress: String?
     public let locationToAddress: String?
-    public let status: BookingStatus
+    public let statusRaw: String?
     public let details: ParsedBookingDetails?
     /// Activities-API `payment.amount` (Zimmer-/Positionspreis, nicht zwingend Bestell-Gesamt).
     public let catalogPriceAmount: Double?
@@ -31,7 +31,7 @@ public struct ParsedBooking {
         locationTo: String? = nil,
         locationFromAddress: String? = nil,
         locationToAddress: String? = nil,
-        status: BookingStatus,
+        statusRaw: String? = nil,
         details: ParsedBookingDetails? = nil,
         catalogPriceAmount: Double? = nil,
         catalogPriceCurrency: String? = nil,
@@ -48,12 +48,20 @@ public struct ParsedBooking {
         self.locationTo = locationTo
         self.locationFromAddress = locationFromAddress
         self.locationToAddress = locationToAddress
-        self.status = status
+        self.statusRaw = statusRaw
         self.details = details
         self.catalogPriceAmount = catalogPriceAmount
         self.catalogPriceCurrency = catalogPriceCurrency
         self.catalogRoomCount = catalogRoomCount
         self.catalogRoomCategory = catalogRoomCategory
+    }
+
+    var identityKey: String? {
+        BookingIdentityKey.make(
+            externalUrl: externalUrl,
+            confirmationCode: confirmationCode,
+            startAt: startAt
+        )
     }
 }
 

@@ -15,22 +15,12 @@ public struct BookingComCancellationDeadlineParser: Sendable {
 
         let feeSchedule = parseFeeSchedule(from: html, hotelOffsetSeconds: offset)
         if !feeSchedule.isEmpty {
-            return dedupe(feeSchedule)
+            return feeSchedule.deduped
         }
         // Markup vorhanden, aber Zeilen nicht lesbar → kein Keyword-Müll (z. B. falsches „vor dem“).
         if hasFeeScheduleMarkup(html) {
             return []
         }
-        return dedupe(parseKeywordWindows(from: html, hotelOffsetSeconds: offset))
-    }
-
-    func dedupe(_ deadlines: [CancellationDeadline]) -> [CancellationDeadline] {
-        var byKey: [String: CancellationDeadline] = [:]
-        for d in deadlines {
-            let feeKey = d.cancellationFeeAmount.map { String(Int(($0 * 100).rounded())) } ?? ""
-            let key = "\(Int(d.deadlineAt.timeIntervalSince1970))|\(d.isFreeCancellation)|\(feeKey)"
-            byKey[key] = d
-        }
-        return byKey.values.sorted { $0.deadlineAt < $1.deadlineAt }
+        return parseKeywordWindows(from: html, hotelOffsetSeconds: offset).deduped
     }
 }

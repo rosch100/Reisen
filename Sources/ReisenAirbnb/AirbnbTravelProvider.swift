@@ -29,7 +29,10 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
     }
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: RepositoryError.invalidState("Airbnb provider benötigt eine WKWebView-basierte Session.")
+        )
         try await ensureOnAirbnbOrigin(using: webView)
 
         onProgress?("Lade Trips (Airbnb)…")
@@ -46,7 +49,10 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         session: any ProviderSession,
         ref: ProviderBookingRef
     ) async throws -> ProviderBookingEnrichment {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: RepositoryError.invalidState("Airbnb provider benötigt eine WKWebView-basierte Session.")
+        )
         try await ensureOnAirbnbOrigin(using: webView)
         let (numericTripID, schedulableType, confirmationCode) = try parseExternalRef(externalUrl: ref.externalUrl)
 
@@ -63,20 +69,12 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
             confirmationCode: confirmationCode
         )
 
-        let resolvedStatus: BookingStatus? = {
-            guard let reservationStatus = tripDetails.reservationStatus else { return nil }
-            let haystack = reservationStatus.lowercased()
-            if haystack.contains("cancel") { return .cancelled }
-            return .confirmed
-        }()
-
         if schedulableType.uppercased().contains("EXPERIENCE") {
             return try await enrichExperience(
                 webView: webView,
                 schedulableType: schedulableType,
                 confirmationCode: confirmationCode,
-                tripDetails: tripDetails,
-                resolvedStatus: resolvedStatus
+                tripDetails: tripDetails
             )
         }
 
@@ -95,33 +93,27 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         let guestHints = AirbnbGuestHintParser().parse(from: scheduledEventsText)
 
         let hotelOffsetSeconds: Int? = {
-            guard ref.bookingType == .hotel else { return nil }
             guard let timeZone = TimeZone(identifier: tripDetails.listingTimeZone) else { return nil }
             return timeZone.secondsFromGMT(for: tripDetails.tripStartAt)
         }()
 
-        return ProviderBookingEnrichment(
-            deadlines: scheduledParsed.deadlines,
-            rateDetails: scheduledParsed.rateDetails,
-            passengers: nil,
-            guestHints: guestHints.isEmpty ? nil : guestHints,
-            hotelOffsetSeconds: hotelOffsetSeconds,
-            hotelCheckInMinutes: scheduledParsed.hotelCheckInMinutes,
-            hotelCheckOutMinutes: scheduledParsed.hotelCheckOutMinutes,
-            status: resolvedStatus
+        return DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .airbnb,
+                bookingType: ref.bookingType,
+                statusRaw: tripDetails.reservationStatus,
+                deadlines: scheduledParsed.deadlines,
+                rateDetails: scheduledParsed.rateDetails,
+                hotelOffsetSeconds: hotelOffsetSeconds,
+                hotelCheckInMinutes: scheduledParsed.hotelCheckInMinutes,
+                hotelCheckOutMinutes: scheduledParsed.hotelCheckOutMinutes,
+                guestHints: guestHints
+            )
         )
     }
 }
 
 private extension AirbnbTravelProvider {
-    func extractWebView(from session: any ProviderSession) throws -> WKWebView {
-        if let web = (session as? WebViewProviderSession)?.webView {
-            return web
-        }
-        throw RepositoryError.invalidState("Airbnb provider benötigt eine WKWebView-basierten Session.")
-    }
-
-    /// Same-origin fetch braucht eine Airbnb-Seite — nicht die aktuelle URL als Voraussetzung.
     func ensureOnAirbnbOrigin(using webView: WKWebView) async throws {
         let onAirbnb = Self.isAirbnbHost(webView.url?.host)
         if !onAirbnb {
@@ -145,8 +137,7 @@ private extension AirbnbTravelProvider {
         webView: WKWebView,
         schedulableType: String,
         confirmationCode: String,
-        tripDetails: AirbnbTripDetails,
-        resolvedStatus: BookingStatus?
+        tripDetails: AirbnbTripDetails
     ) async throws -> ProviderBookingEnrichment {
         onProgress?("Lade Experience-Details (Airbnb)…")
         let detailsURL = reservationOverviewURL(
@@ -167,27 +158,22 @@ private extension AirbnbTravelProvider {
             guard let count, count > 0 else { return nil }
             return count
         }).first
+        let rateDetails = BookingRateDetails.merging(
+            existing: parsed.rateDetails,
+            incoming: guestCount.map { BookingRateDetails(guestCount: $0) }
+        )
 
-        let rateDetails: BookingRateDetails? = {
-            guard let guestCount else { return parsed.rateDetails }
-            if var details = parsed.rateDetails {
-                details.guestCount = guestCount
-                return details
-            }
-            return BookingRateDetails(guestCount: guestCount)
-        }()
-
-        return ProviderBookingEnrichment(
-            deadlines: parsed.deadlines,
-            rateDetails: rateDetails,
-            passengers: nil,
-            hotelOffsetSeconds: nil,
-            hotelCheckInMinutes: nil,
-            hotelCheckOutMinutes: nil,
-            status: resolvedStatus,
-            title: parsed.title,
-            locationTo: parsed.locationTo,
-            locationToAddress: parsed.locationToAddress
+        return DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .airbnb,
+                bookingType: .activity,
+                title: parsed.title,
+                locationTo: parsed.locationTo,
+                locationToAddress: parsed.locationToAddress,
+                statusRaw: tripDetails.reservationStatus,
+                deadlines: parsed.deadlines,
+                rateDetails: rateDetails
+            )
         )
     }
 

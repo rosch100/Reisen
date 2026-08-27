@@ -63,6 +63,7 @@ private enum TravelokaFixtureLoader {
     let flight = try #require(catalog.bookings.first { $0.bookingType == .flight })
     #expect(flight.confirmationCode == "1000000001")
     #expect(flight.title?.contains("Jakarta") == true)
+    #expect(flight.hotelOffsetSeconds == nil)
 }
 
 @Test func travelokaCatalogUsesCanonicalRoutePrefixInDetailURL() throws {
@@ -70,6 +71,87 @@ private enum TravelokaFixtureLoader {
     let catalog = try TravelokaCatalogParser.parse(from: text)
     let activity = try #require(catalog.bookings.first { $0.bookingType == .activity })
     #expect(activity.externalUrl?.contains("/en-en/item/details/1387358428") == true)
+}
+
+@Test func travelokaCatalogSkipsEntryWithoutTimestampsAndKeepsOthers() throws {
+    let json = try travelokaCatalogJSON(entries: [
+        travelokaCatalogHotelEntry(bookingId: "keep", timestamps: true),
+        travelokaCatalogHotelEntry(bookingId: "skip", timestamps: false),
+    ])
+    let catalog = try TravelokaCatalogParser.parse(from: json)
+    #expect(catalog.bookings.map(\.confirmationCode) == ["keep"])
+}
+
+@Test func travelokaCatalogSkipsEntryWithoutEndTimestampAndKeepsOthers() throws {
+    let json = try travelokaCatalogJSON(entries: [
+        travelokaCatalogHotelEntry(bookingId: "keep", timestamps: true),
+        travelokaCatalogHotelEntry(bookingId: "skip-end", timestamps: true, includeEnd: false),
+    ])
+    let catalog = try TravelokaCatalogParser.parse(from: json)
+    #expect(catalog.bookings.map(\.confirmationCode) == ["keep"])
+}
+
+@Test func travelokaEnrichmentThrowsWhenEndTimestampMissing() throws {
+    let entry = travelokaCatalogHotelEntry(bookingId: "skip-end", timestamps: true, includeEnd: false)
+    do {
+        _ = try TravelokaItineraryEntryParser.enrichment(from: entry)
+        Issue.record("Enrichment hätte missingItineraryTimestamps werfen müssen")
+    } catch TravelokaProviderError.missingItineraryTimestamps {
+        // Einzelfehler: fehlendes Ende ist kein Start-Klon.
+    }
+}
+
+@Test func travelokaCatalogRethrowsMissingBookingIdentifiers() throws {
+    let json = try travelokaCatalogJSON(entries: [
+        travelokaCatalogHotelEntry(bookingId: "keep", timestamps: true),
+        [
+            "itineraryType": "HOTEL",
+            "cardSummaryInfo": [
+                "commonSummary": [
+                    "itineraryTimestampBegin": 1_700_000_000_000,
+                    "itineraryTimestampEnd": 1_700_086_400_000,
+                ],
+            ],
+        ],
+    ])
+    do {
+        _ = try TravelokaCatalogParser.parse(from: json)
+        Issue.record("Katalog hätte missingBookingIdentifiers werfen müssen")
+    } catch TravelokaProviderError.missingBookingIdentifiers {
+        // Extract-Fehler darf den Katalog nicht still erfolgreich machen.
+    }
+}
+
+private func travelokaCatalogJSON(entries: [[String: Any]]) throws -> String {
+    let payload: [String: Any] = [
+        "data": ["itineraryEntryList": entries],
+    ]
+    let data = try JSONSerialization.data(withJSONObject: payload)
+    return String(decoding: data, as: UTF8.self)
+}
+
+private func travelokaCatalogHotelEntry(
+    bookingId: String,
+    timestamps: Bool,
+    includeEnd: Bool = true
+) -> [String: Any] {
+    var common: [String: Any] = ["ianaTimezoneBegin": "Asia/Jakarta"]
+    if timestamps {
+        common["itineraryTimestampBegin"] = 1_700_000_000_000
+        if includeEnd {
+            common["itineraryTimestampEnd"] = 1_700_086_400_000
+        }
+    }
+    return [
+        "bookingId": bookingId,
+        "itineraryId": "it-\(bookingId)",
+        "itineraryType": "HOTEL",
+        "cardSummaryInfo": [
+            "commonSummary": common,
+            "hotelSummary": ["hotelName": "Policy Hotel"],
+        ],
+        "cardDetailInfo": [:] as [String: Any],
+    ]
 }
 
 @Test func travelokaHotelDeadlinesFromCancellationPoliciesArray() throws {
@@ -98,7 +180,7 @@ private enum TravelokaFixtureLoader {
             ],
         ],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.title == "Policy Hotel")
     #expect(draft.deadlines.count == 2)
     #expect(draft.deadlines.contains { $0.isFreeCancellation })
@@ -174,7 +256,7 @@ private enum TravelokaFixtureLoader {
             "hotelDetail": [:],
         ],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.deadlines.count == 2)
     #expect(draft.deadlines.contains { $0.isFreeCancellation })
     let fee = try #require(draft.deadlines.first { !$0.isFreeCancellation })
@@ -214,7 +296,7 @@ private enum TravelokaFixtureLoader {
             ],
         ],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.deadlines.count == 1)
     #expect(draft.deadlines.first?.isFreeCancellation == true)
     let tz = try #require(TimeZone(identifier: "Asia/Saigon"))
@@ -245,7 +327,7 @@ private enum TravelokaFixtureLoader {
     ]
 
     let missingBreakfast = baseEntry
-    let draftUnknown = try TravelokaItineraryEntryParser.draft(from: missingBreakfast)
+    let draftUnknown = try #require(try TravelokaItineraryEntryParser.draft(from: missingBreakfast))
     #expect(draftUnknown.rateDetails?.boardType == .unknown)
     #expect(draftUnknown.rateDetails?.includedBreakfast == nil)
 
@@ -255,7 +337,7 @@ private enum TravelokaFixtureLoader {
     hotelSummaryFalse["breakfastIncluded"] = false
     summaryFalse["hotelSummary"] = hotelSummaryFalse
     withFalse["cardSummaryInfo"] = summaryFalse
-    let draftRoomOnly = try TravelokaItineraryEntryParser.draft(from: withFalse)
+    let draftRoomOnly = try #require(try TravelokaItineraryEntryParser.draft(from: withFalse))
     #expect(draftRoomOnly.rateDetails?.boardType == .roomOnly)
     #expect(draftRoomOnly.rateDetails?.includedBreakfast == false)
 
@@ -265,7 +347,7 @@ private enum TravelokaFixtureLoader {
     hotelSummaryTrue["breakfastIncluded"] = true
     summaryTrue["hotelSummary"] = hotelSummaryTrue
     withTrue["cardSummaryInfo"] = summaryTrue
-    let draftBreakfast = try TravelokaItineraryEntryParser.draft(from: withTrue)
+    let draftBreakfast = try #require(try TravelokaItineraryEntryParser.draft(from: withTrue))
     #expect(draftBreakfast.rateDetails?.boardType == .breakfastIncluded)
     #expect(draftBreakfast.rateDetails?.includedBreakfast == true)
 }
@@ -397,7 +479,7 @@ private enum TravelokaFixtureLoader {
         ],
         "cardDetailInfo": [:],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.title == "Singapore → Bangkok")
     #expect(draft.rateDetails?.airline == "Scoot")
     #expect(draft.rateDetails?.passengerCount == 2)
@@ -477,14 +559,14 @@ private enum TravelokaFixtureLoader {
         ],
         "paymentInfo": ["userTripStatus": "ETICKET_PUBLISHED"],
     ]
-    #expect(TravelokaStatusMapper.status(from: refundableEntry) == .confirmed)
-    #expect(TravelokaStatusMapper.isCancelledStatusTag("Refundable") == false)
-    #expect(TravelokaStatusMapper.isCancelledStatusTag("Non-cancellable") == false)
-    #expect(TravelokaStatusMapper.isCancelledStatusTag("Booking cancelled") == true)
-    #expect(TravelokaStatusMapper.isCancelledTripStatus("REFUNDED") == true)
-    #expect(TravelokaStatusMapper.isCancelledTripStatus("CANCELLED") == true)
-    #expect(TravelokaStatusMapper.isCancelledTripStatus("ETICKET_PUBLISHED") == false)
-    #expect(TravelokaStatusMapper.isCancelledTripStatus("CANCELLATION_AVAILABLE") == false)
+    #expect(BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: refundableEntry)) == .confirmed)
+    #expect(BookingStatus.parse("Refundable") == .unknown)
+    #expect(BookingStatus.parse("Non-cancellable") == .unknown)
+    #expect(BookingStatus.parse("Booking cancelled") == .cancelled)
+    #expect(BookingStatus.parse("REFUNDED") == .cancelled)
+    #expect(BookingStatus.parse("CANCELLED") == .cancelled)
+    #expect(BookingStatus.parse("ETICKET_PUBLISHED") == .confirmed)
+    #expect(BookingStatus.parse("CANCELLATION_AVAILABLE") == .unknown)
 }
 
 @Test func travelokaEnrichmentTimeZoneIdentifierFromFixture() throws {
@@ -551,7 +633,7 @@ private enum TravelokaFixtureLoader {
     #expect(sentinel["token"] as? String == "sentinel-token-example")
 }
 
-@Test func travelokaEnrichmentNeedsSkipsCompleteCatalogDraft() {
+@Test func draftEnrichmentNeedsSkipsCompleteCatalogDraft() {
     let complete = ProviderBookingDraft(
         provider: .traveloka,
         bookingType: .hotel,
@@ -577,7 +659,7 @@ private enum TravelokaFixtureLoader {
         hotelCheckInMinutes: 14 * 60,
         hotelCheckOutMinutes: 12 * 60
     )
-    #expect(TravelokaEnrichmentNeeds.shouldEnrich(complete, requiresDeadlines: true) == false)
+    #expect(DraftEnrichmentNeeds.shouldEnrich(complete, requiresDeadlines: true) == false)
 
     let missingCheckIn = ProviderBookingDraft(
         provider: .traveloka,
@@ -588,7 +670,7 @@ private enum TravelokaFixtureLoader {
         deadlines: complete.deadlines,
         hotelCheckOutMinutes: 12 * 60
     )
-    #expect(TravelokaEnrichmentNeeds.shouldEnrich(missingCheckIn, requiresDeadlines: true) == true)
+    #expect(DraftEnrichmentNeeds.shouldEnrich(missingCheckIn, requiresDeadlines: true) == true)
 
     let missingAddress = ProviderBookingDraft(
         provider: .traveloka,
@@ -602,7 +684,7 @@ private enum TravelokaFixtureLoader {
         hotelCheckInMinutes: 14 * 60,
         hotelCheckOutMinutes: 12 * 60
     )
-    #expect(TravelokaEnrichmentNeeds.shouldEnrich(missingAddress, requiresDeadlines: true) == true)
+    #expect(DraftEnrichmentNeeds.shouldEnrich(missingAddress, requiresDeadlines: true) == true)
 
     let completeCarRental = ProviderBookingDraft(
         provider: .traveloka,
@@ -617,7 +699,7 @@ private enum TravelokaFixtureLoader {
         operatorName: "Jayamahe",
         status: .confirmed
     )
-    #expect(TravelokaEnrichmentNeeds.shouldEnrich(completeCarRental, requiresDeadlines: false) == false)
+    #expect(DraftEnrichmentNeeds.shouldEnrich(completeCarRental, requiresDeadlines: false) == false)
 
     let missingCarPickup = ProviderBookingDraft(
         provider: .traveloka,
@@ -631,7 +713,7 @@ private enum TravelokaFixtureLoader {
         operatorName: "Jayamahe",
         status: .confirmed
     )
-    #expect(TravelokaEnrichmentNeeds.shouldEnrich(missingCarPickup, requiresDeadlines: false) == true)
+    #expect(DraftEnrichmentNeeds.shouldEnrich(missingCarPickup, requiresDeadlines: false) == true)
 }
 
 @Test func travelokaSessionContextResolvesLocaleFromURLAndCookies() {
@@ -701,7 +783,7 @@ private enum TravelokaFixtureLoader {
             feeAmount: 12.5
         ),
     ]
-    let merged = TravelokaCancellationDeadlines.combining(existing: existing, refund: refund)
+    let merged = existing.combining(refund: refund)
     #expect(merged.count == 2)
     let free = merged.first { $0.isFreeCancellation }
     #expect(free?.deadlineAt == freeAt)
@@ -782,7 +864,7 @@ private enum TravelokaFixtureLoader {
         ],
         "cardDetailInfo": [:],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.title == "Singapore → Bangkok")
     #expect(draft.rateDetails?.airline == "Scoot")
     #expect(draft.locationFrom?.contains("SIN") == true)
@@ -827,7 +909,7 @@ private enum TravelokaFixtureLoader {
         ],
         "cardDetailInfo": [:],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.title == "Singapore → Bangkok")
     #expect(draft.rateDetails?.airline == "Scoot")
     #expect(draft.locationFrom?.contains("SIN") == true)
@@ -861,7 +943,7 @@ private enum TravelokaFixtureLoader {
             ],
         ],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.bookingType == .carRental)
     #expect(draft.deadlines.count == 1)
     #expect(draft.deadlines.first?.isFreeCancellation == true)

@@ -1,15 +1,17 @@
 import Foundation
+import ReisenDomain
 
 extension ActivityListParser {
     /// Vergangene (`ended`) und stornierte Buchungen aus; Start muss ab heute liegen.
-    func isFutureRelevantBooking(statusKey: String, startAt: Date, now: Date) -> Bool {
-        switch statusKey {
-        case "cancelled", "canceled", "terminated", "ended":
+    /// Hotel-Starts sind zuvor über `parseCatalogDate` bereits Kalendertage.
+    func isFutureRelevantBooking(
+        statusKey: String,
+        startAt: Date,
+        now: Date
+    ) -> Bool {
+        if CatalogListing.shouldDrop(statusKey) {
             return false
-        default:
-            break
         }
-        let startOfToday = Calendar.current.startOfDay(for: now)
-        return startAt >= startOfToday
+        return startAt >= Calendar.current.startOfDay(for: now)
     }
 }

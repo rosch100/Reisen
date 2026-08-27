@@ -3,7 +3,7 @@ import ReisenDomain
 
 extension BookingComActivityListParser {
     /// Embedded reservation-like JSON often present in SSR My Trips pages.
-    func parseJSONLDOrEmbeddedReservations(from html: String) -> [ProviderBookingDraft] {
+    func parseJSONLDOrEmbeddedReservations(from html: String) throws -> [ProviderBookingDraft] {
         let pattern = #""(?:booking_url|bookUrl|confirmation_url|url)"\s*:\s*"(https?://[^"]+booking\.com[^"]+)"[\s\S]{0,800}?"(?:checkin|check_in|startDate|arrival)"\s*:\s*"([^"]+)"[\s\S]{0,400}?"(?:checkout|check_out|endDate|departure)"\s*:\s*"([^"]+)""#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return [] }
         let matches = regex.matches(in: html, options: [], range: NSRange(html.startIndex..., in: html))
@@ -15,7 +15,9 @@ extension BookingComActivityListParser {
                   let endRaw = group(html, match, 3),
                   let startAt = parseDate(startRaw),
                   let endAt = parseDate(endRaw) else { continue }
-            bookings.append(draft(url: url, startAt: startAt, endAt: endAt))
+            if let draft = draft(url: url, startAt: startAt, endAt: endAt) {
+                bookings.append(draft)
+            }
         }
         return bookings
     }

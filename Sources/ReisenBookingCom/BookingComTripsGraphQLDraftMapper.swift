@@ -25,36 +25,40 @@ extension BookingComTripsGraphQLParser {
         ) else {
             return nil
         }
-
-        let bookingType = bookingType(of: reservation)
-        var fields = mappedFields(from: reservation, bookingType: bookingType, tripTitle: tripTitle)
-        guard let window = draftDateWindow(
-            reservation: reservation,
-            bookingType: bookingType,
-            fields: &fields
-        ) else {
+        guard let startISO = reservation.startDateTime, let endISO = reservation.endDateTime else {
             return nil
         }
 
-        return ProviderBookingDraft(
-            provider: .booking,
-            bookingType: bookingType,
-            title: fields.title,
-            confirmationCode: fields.confirmationCode,
-            externalUrl: externalUrl,
-            startAt: window.startAt,
-            endAt: window.endAt,
-            locationFrom: fields.locationFrom,
-            locationTo: fields.locationTo,
-            locationToAddress: fields.locationToAddress,
-            status: status(from: reservation.reservationStatus),
-            deadlines: fields.deadlines,
-            rateDetails: rateDetails(from: reservation, bookingType: bookingType, fields: fields),
-            hotelOffsetSeconds: fields.hotelOffsetSeconds,
-            hotelCheckInMinutes: fields.hotelCheckInMinutes,
-            hotelCheckOutMinutes: fields.hotelCheckOutMinutes,
-            flightDepartureOffsetSeconds: fields.flightDepartureOffsetSeconds,
-            flightArrivalOffsetSeconds: fields.flightArrivalOffsetSeconds
+        let bookingType = bookingType(of: reservation)
+        var fields = mappedFields(from: reservation, bookingType: bookingType, tripTitle: tripTitle)
+        if fields.deadlines.isEmpty {
+            let offset = fields.hotelOffsetSeconds ?? ISODateTime.offsetSeconds(from: startISO)
+            if let policyDeadline = deadline(from: reservation.policy, hotelOffsetSeconds: offset) {
+                fields.deadlines = [policyDeadline]
+            }
+        }
+
+        return DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .booking,
+                bookingType: bookingType,
+                start: .iso(startISO),
+                end: .iso(endISO),
+                title: fields.title,
+                confirmationCode: fields.confirmationCode,
+                externalUrl: externalUrl,
+                locationFrom: fields.locationFrom,
+                locationTo: fields.locationTo,
+                locationToAddress: fields.locationToAddress,
+                statusRaw: reservation.reservationStatus,
+                deadlines: fields.deadlines,
+                rateDetails: rateDetails(from: reservation, bookingType: bookingType, fields: fields),
+                hotelOffsetSeconds: fields.hotelOffsetSeconds,
+                hotelCheckInMinutes: fields.hotelCheckInMinutes,
+                hotelCheckOutMinutes: fields.hotelCheckOutMinutes,
+                flightDepartureOffsetSeconds: fields.flightDepartureOffsetSeconds,
+                flightArrivalOffsetSeconds: fields.flightArrivalOffsetSeconds
+            )
         )
     }
 }

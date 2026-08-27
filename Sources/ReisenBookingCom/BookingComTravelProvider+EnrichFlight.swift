@@ -9,13 +9,13 @@ extension BookingComTravelProvider {
         confirmationURL: URL
     ) async throws -> ProviderBookingEnrichment {
         guard let orderToken = Self.flightOrderToken(from: confirmationURL) else {
-            return ProviderBookingEnrichment()
+            return emptyFlightEnrichment
         }
 
         onProgress?("Lade Flug-Stornooptionen…")
 
         guard let orderURL = flightOrderURL(orderToken: orderToken) else {
-            return ProviderBookingEnrichment()
+            return emptyFlightEnrichment
         }
 
         guard let json = try await flightOrderJSON(
@@ -23,19 +23,29 @@ extension BookingComTravelProvider {
             orderURL: orderURL,
             confirmationURL: confirmationURL
         ) else {
-            return ProviderBookingEnrichment()
+            return emptyFlightEnrichment
         }
 
         guard let parsed = parseFlightOrder(json: json) else {
-            return ProviderBookingEnrichment()
+            return emptyFlightEnrichment
         }
 
-        return ProviderBookingEnrichment(
-            deadlines: parsed.deadlines,
-            rateDetails: parsed.rateDetails,
-            passengers: parsed.passengers.isEmpty ? nil : parsed.passengers,
-            flightDepartureOffsetSeconds: parsed.flightDepartureOffsetSeconds,
-            flightArrivalOffsetSeconds: parsed.flightArrivalOffsetSeconds
+        return DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .booking,
+                bookingType: .flight,
+                deadlines: parsed.deadlines,
+                rateDetails: parsed.rateDetails,
+                flightDepartureOffsetSeconds: parsed.flightDepartureOffsetSeconds,
+                flightArrivalOffsetSeconds: parsed.flightArrivalOffsetSeconds,
+                passengers: parsed.passengers
+            )
+        )
+    }
+
+    private var emptyFlightEnrichment: ProviderBookingEnrichment {
+        DraftAssembler.enrichment(
+            from: ProviderBookingFacts(provider: .booking, bookingType: .flight)
         )
     }
 

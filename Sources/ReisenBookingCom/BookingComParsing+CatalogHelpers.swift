@@ -3,12 +3,7 @@ import ReisenDomain
 
 extension BookingComParsing {
     static func dedupeByExternalURL(_ bookings: [ProviderBookingDraft]) -> [ProviderBookingDraft] {
-        var byURL: [String: ProviderBookingDraft] = [:]
-        for booking in bookings {
-            guard let url = booking.externalUrl else { continue }
-            byURL[url] = booking
-        }
-        return Array(byURL.values).sorted { $0.startAt < $1.startAt }
+        ProviderCatalog(bookings: bookings).dedupedByExternalURL().bookings
     }
 
     /// Trip-IDs from My Trips SSR/HTML (`trip_id=`). HAR: present even when empty-state marketing copy is in the DOM.
