@@ -108,8 +108,29 @@ public final class LocalReminderScheduler: ReminderScheduling {
     }
 
     func requestAuthorization(center: UNUserNotificationCenter) async throws {
-        let authorization = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+        let authorization: Bool
+        do {
+            authorization = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+        } catch {
+            throw UserNotificationAuthorization.mapped(error)
+        }
         guard authorization else { throw SchedulerError.authorizationDenied }
+
+        let status = await center.notificationSettings().authorizationStatus
+        guard UserNotificationAuthorization.isUsable(status) else {
+            throw SchedulerError.authorizationDenied
+        }
+    }
+
+    func addNotificationRequest(
+        _ request: UNNotificationRequest,
+        center: UNUserNotificationCenter
+    ) async throws {
+        do {
+            try await center.add(request)
+        } catch {
+            throw UserNotificationAuthorization.mapped(error)
+        }
     }
 
     private func desiredKeys(
@@ -214,7 +235,7 @@ public final class LocalReminderScheduler: ReminderScheduling {
                     content: content,
                     trigger: trigger
                 )
-                try await center.add(request)
+                try await addNotificationRequest(request, center: center)
 
                 let reminder = Reminder(
                     fireAt: fireAt,
