@@ -29,6 +29,10 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "Minderjährige",
         "automatisch",
         "Stack",
+        "IP-Adresse",
+        "Subprozessoren",
+        "Cookie-Banner",
+        "Standardvertragsklauseln",
     ] {
         #expect(html.localizedCaseInsensitiveContains(needle), "privacy.html missing \(needle)")
     }
@@ -48,6 +52,10 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "minors",
         "automatically",
         "stack",
+        "IP address",
+        "subprocessors",
+        "cookie banner",
+        "Standard Contractual Clauses",
     ] {
         #expect(html.localizedCaseInsensitiveContains(needle), "en/privacy.html missing \(needle)")
     }
@@ -60,6 +68,13 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
     #expect(html.contains("App Store"))
     #expect(html.contains("CC BY-NC"))
     #expect(html.contains("kostenlos"))
+    #expect(html.contains("§ 5 DDG"))
+    #expect(html.contains("nicht-kommerzielle"))
+    #expect(html.contains("geschäftsmäßig"))
+    let english = try legalFile("en/impressum.html")
+    #expect(english.contains("§ 5 DDG"))
+    #expect(english.localizedCaseInsensitiveContains("non-commercial"))
+    #expect(english.localizedCaseInsensitiveContains("business-like"))
 }
 
 @Test func legalPages_useGitHubRepositoryIssueURLs() throws {

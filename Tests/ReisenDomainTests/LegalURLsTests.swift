@@ -65,7 +65,16 @@ import ReisenDomain
         contentsOf: repoRoot.appendingPathComponent("docs/legal/404.html"),
         encoding: .utf8
     )
-    #expect(notFoundHTML.contains(GitHubRepository.pagesSiteRootURL.absoluteString))
+    let siteRoot = GitHubRepository.pagesSiteRootURL.absoluteString
+    #expect(!notFoundHTML.contains("<base"))
+    #expect(notFoundHTML.contains("href=\"#main\""))
+    #expect(notFoundHTML.contains("\(siteRoot)assets/site.css"))
+    #expect(notFoundHTML.contains("\(siteRoot)assets/app-icon.png"))
+    #expect(notFoundHTML.contains("href=\"\(siteRoot)\""))
+    #expect(notFoundHTML.contains("href=\"\(siteRoot)en/\""))
+    #expect(notFoundHTML.contains("href=\"\(siteRoot)privacy.html\""))
+    #expect(notFoundHTML.contains("href=\"\(siteRoot)support.html\""))
+    #expect(notFoundHTML.contains("href=\"\(siteRoot)impressum.html\""))
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/en/index.html").path))
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/en/impressum.html").path))
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/index.html").path))

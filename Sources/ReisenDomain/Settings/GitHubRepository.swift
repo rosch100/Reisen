@@ -70,7 +70,7 @@ public enum GitHubRepository {
         URL(string: "https://\(owner).github.io/\(name)")!
     }
 
-    /// Trailing slash für statisches HTML (`<base href>` auf der 404-Seite).
+    /// Trailing slash für Site-Root-URLs (404-Assets, Navigation).
     public static var pagesSiteRootURL: URL {
         URL(string: pagesBaseURL.absoluteString + "/")!
     }
