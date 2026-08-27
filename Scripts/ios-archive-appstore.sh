@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Erzeugt ein App-Store-Archive und exportiert ein IPA (mit eingebettetem Issues-Token).
+# Erzeugt ein App-Store-Archive und exportiert ein IPA (ohne eingebettetes GitHub-PAT).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,9 +11,8 @@ ARCHIVE_PATH="${ARCHIVE_PATH:-$ROOT/.build/ReiseniOS.xcarchive}"
 EXPORT_PATH="${EXPORT_PATH:-$ROOT/.build/ReiseniOS-ipa}"
 EXPORT_OPTIONS="${EXPORT_OPTIONS:-$ROOT/Scripts/ios-export-appstore.plist}"
 
-unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
-export REISEN_EMBED_GITHUB_ISSUE_TOKEN=true
-export REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true
+export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
+unset REISEN_EMBED_GITHUB_ISSUE_TOKEN
 
 bash "$ROOT/Scripts/generate-ios-project.sh"
 
@@ -56,6 +55,8 @@ if [[ -d "$APP_IN_ARCHIVE" ]]; then
   if [[ "$APS_ENV" != "production" ]]; then
     echo "Warnung: aps-environment im Archive ist nicht 'production' (ist: ${APS_ENV:-fehlt})." >&2
   fi
+
+  bash "$ROOT/Scripts/ios-verify-binary-isolation.sh" --mode store --app "$APP_IN_ARCHIVE"
 fi
 
 echo "OK: $IPA" >&2

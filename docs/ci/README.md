@@ -4,7 +4,7 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 
 ## Verfügbare Workflows
 
-- `ci.yml`: Build+Test (macOS + iOS-Simulator) auf PRs und Push auf `master`
+- `ci.yml`: Build+Test (macOS + iOS-Simulator Store **und** Private + Release-Binary-Check) auf PRs und Push auf `master`
 - `codeql.yml`: CodeQL auf Push nach `master` und wöchentlichem Schedule (nicht auf jedem PR — der instrumentierte Swift-Build kostet ~30 min macOS)
 - `gitleaks.yml`: Secret-Scan auf PR, Push und täglichem Schedule
 - `actionlint.yml`: Workflow-Lint bei Änderungen unter `.github/workflows/`
@@ -20,6 +20,16 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 | actionlint-Installer-URL, `xcode-version: latest`, `swift-tools-version`, `GITLEAKS_VERSION` | [`Scripts/update-versions.sh`](../../Scripts/update-versions.sh) via `versions-update.yml` |
 
 Dependabot-PRs laufen durch die echte CI. Der Versions-Workflow nutzt `--verify` nur, wenn Dateien geändert wurden.
+
+## Lokale CI-Parität
+
+| Schritt | Befehl |
+|---------|--------|
+| Swift-Tests (wie CI Job „Test“) | `bash ./Scripts/ci-test.sh` |
+| + iOS Release-Binary-Isolation | `bash ./Scripts/ci-test.sh --with-ios-release-check` |
+| iOS-Simulator (Store + Private) | `IOS_SCHEME=all bash ./Scripts/ios-test.sh` |
+
+Vollständige GitHub-CI: zusätzlich `ios-test.sh` und `ios-build-release-check.sh` als eigene Steps in [`ci.yml`](../../.github/workflows/ci.yml).
 
 ## SwiftPM-Cache (CI + CodeQL)
 
@@ -50,7 +60,13 @@ Für manuelle Freigabe von Tag-Releases kann in GitHub ein Environment `release`
 
 Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](apple-signing.md). Einmalig: `bash ./Scripts/setup-apple-developer.sh`.
 
-In-App öffentliche GitHub-Issues (ohne GitHub-Konto des Nutzers): [`github-issues-token.md`](github-issues-token.md). macOS-Tag-Releases und iOS-App-Store-Archive betten das Token ein.
+| Variante | Doku |
+|----------|------|
+| App Store (Store-iOS) | [`app-store-connect.md`](app-store-connect.md) |
+| Private-iOS (Ad Hoc / Internal TestFlight) | [`ios-private-distribution.md`](ios-private-distribution.md) |
+| macOS Developer ID | [`apple-signing.md`](apple-signing.md) (Release-Section) |
+
+In-App öffentliche GitHub-Issues: [`github-issues-token.md`](github-issues-token.md). App-Store-iOS bettet **kein** Token ein (Safari-Formular); macOS-Tag-Releases und lokale Debug-Läufe können es einbetten.
 
 ## AI-Assistenz & kostenlose PR-Reviewer (Open Source / public)
 

@@ -3,7 +3,7 @@ import ReisenDomain
 import ReisenProviders
 
 @MainActor
-public final class BookingComTravelProvider: TravelProvider, TravelProviderLoginConfiguration {
+public final class BookingComTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
     public init() {}
 
     public var id: ProviderID { .booking }

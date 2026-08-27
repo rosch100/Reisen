@@ -54,17 +54,21 @@ public struct TripEditorSheet: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            Text(mode == .create ? "Neue Reise" : "Reise bearbeiten")
+            Text(
+                mode == .create
+                    ? L10n.string(.actionNewTrip)
+                    : "\(L10n.string(.tripTripSection)) \(L10n.string(.commonEdit))"
+            )
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
 
             Form {
-                Section("Reise") {
-                    TextField("Name", text: $title)
-                    DatePicker("Start", selection: $startDate, displayedComponents: .date)
-                    DatePicker("Ende", selection: $endDate, displayedComponents: .date)
+                Section(L10n.string(.tripTripSection)) {
+                    TextField(L10n.string(.tripNameField), text: $title)
+                    DatePicker(L10n.string(.tripStartDate), selection: $startDate, displayedComponents: .date)
+                    DatePicker(L10n.string(.tripEndDate), selection: $endDate, displayedComponents: .date)
                 }
 
                 if let errorMessage {
@@ -81,10 +85,10 @@ public struct TripEditorSheet: View {
             Divider()
 
             HStack {
-                Button("Abbrechen") { dismiss() }
+                Button(L10n.string(.commonCancel)) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Sichern") { save() }
+                Button(L10n.string(.commonSave)) { save() }
                     .disabled(!isValid)
                     .keyboardShortcut(.defaultAction)
             }

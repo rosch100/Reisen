@@ -31,8 +31,8 @@
 - Keine sensiblen Daten (Tokens/Keys/Secrets) in Kommentaren offenlegen.
 
 ## Bewusste Produktentscheidungen (nicht als Finding melden)
-- Eingebettetes GitHub-Issues-Token in iOS-App-Store- und macOS-Produkt-Builds: siehe `docs/ci/github-issues-token.md` und `.cursor/rules/codereview-exclusions.mdc`.
-- Nicht als Blocking-Security- oder App-Store-Finding flaggen, wenn der Diff nur die dokumentierte Einbettung/Doku/Tests betrifft.
+- Eingebettetes GitHub-Issues-Token in **macOS**-Produkt-Builds (nicht im iOS-App-Store-Archive): siehe `docs/ci/github-issues-token.md` und `.cursor/rules/codereview-exclusions.mdc`.
+- Nicht als Blocking-Security-Finding flaggen, wenn der Diff nur die dokumentierte macOS-Einbettung bzw. das bewusste Weglassen im Store-Archive betrifft.
 
 ## Kontext: PR-Template
 - Orientiere dich am PR-Template in `.github/PULL_REQUEST_TEMPLATE.md`, aber ergänze keine Inhalte, die

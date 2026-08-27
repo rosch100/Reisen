@@ -1,0 +1,14 @@
+{
+  "common.cut": { "de": "Ausschneiden", "en": "Cut" },
+  "common.copy": { "de": "Kopieren", "en": "Copy" },
+  "common.paste": { "de": "Einfügen", "en": "Paste" },
+  "common.select_all": { "de": "Alles auswählen", "en": "Select All" },
+  "menu.new_trip": { "de": "Neue Reise…", "en": "New Trip…" },
+  "menu.add_booking": { "de": "Buchung hinzufügen…", "en": "Add Booking…" },
+  "menu.assign_bookings": { "de": "Buchungen zuordnen…", "en": "Assign Bookings…" },
+  "menu.provider_sync": { "de": "Provider Sync…", "en": "Provider Sync…" },
+  "menu.sync_all_providers": { "de": "Alle Provider synchronisieren", "en": "Sync All Providers" },
+  "menu.sync_current_provider": { "de": "Aktuellen Provider synchronisieren", "en": "Sync Current Provider" },
+  "menu.edit_trip": { "de": "Reise bearbeiten…", "en": "Edit Trip…" },
+  "settings.lead_times_section": { "de": "Vorlaufzeiten", "en": "Lead times" }
+}

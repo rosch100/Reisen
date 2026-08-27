@@ -1,0 +1,266 @@
+{
+  "privacy.continued_without": {
+    "de": "Ohne %1$@ fortgesetzt.",
+    "en": "Continued without %1$@."
+  },
+  "privacy.open_settings": {
+    "de": "Einstellungen öffnen",
+    "en": "Open Settings"
+  },
+  "privacy.denial.calendars": {
+    "de": "Kalenderzugriff wurde verweigert.\n\nBitte aktiviere unter „%1$@ → Kalender“ für „Reisen“ den Schalter.",
+    "en": "Calendar access was denied.\n\nPlease enable Reisen under “%1$@ → Calendars”."
+  },
+  "privacy.denial.reminders": {
+    "de": "Erinnerungen-Zugriff wurde verweigert.\n\nBitte aktiviere unter „%1$@ → Erinnerungen“ für „Reisen“ den Schalter.",
+    "en": "Reminders access was denied.\n\nPlease enable Reisen under “%1$@ → Reminders”."
+  },
+  "privacy.denial.notifications": {
+    "de": "Benachrichtigungen wurden nicht autorisiert.\n\nBitte aktiviere unter „%1$@“ die Mitteilungen für „Reisen“.",
+    "en": "Notifications were not authorized.\n\nPlease enable notifications for Reisen under “%1$@”."
+  },
+  "settings.app.ios": {
+    "de": "Einstellungen",
+    "en": "Settings"
+  },
+  "settings.app.macos": {
+    "de": "Systemeinstellungen",
+    "en": "System Settings"
+  },
+  "settings.path.privacy": {
+    "de": "%1$@ → Datenschutz & Sicherheit",
+    "en": "%1$@ → Privacy & Security"
+  },
+  "settings.path.notifications": {
+    "de": "%1$@ → Mitteilungen",
+    "en": "%1$@ → Notifications"
+  },
+  "settings.remember_password_toggle": {
+    "de": "Passwort nach Login speichern",
+    "en": "Save password after login"
+  },
+  "settings.remember_password_footer": {
+    "de": "Speichert E-Mail und Kennwort nach erfolgreichem Passwort-Login automatisch in Reisen. Apple-, Passkey- und OAuth-Anmeldungen werden nicht als Kennwort gespeichert.",
+    "en": "Automatically saves email and password in Reisen after a successful password login. Apple, passkey, and OAuth sign-ins are not stored as passwords."
+  },
+  "settings.local_notifications": {
+    "de": "Lokale Benachrichtigungen",
+    "en": "Local notifications"
+  },
+  "settings.apple_calendar": {
+    "de": "Apple Kalender",
+    "en": "Apple Calendar"
+  },
+  "settings.calendar_strategy": {
+    "de": "Kalender-Strategie",
+    "en": "Calendar strategy"
+  },
+  "settings.create_event_calendar_auto": {
+    "de": "Event-Kalender automatisch anlegen",
+    "en": "Create event calendar automatically"
+  },
+  "settings.create_reminder_list_auto": {
+    "de": "Reminder-Liste automatisch anlegen",
+    "en": "Create reminder list automatically"
+  },
+  "settings.calendars_loading": {
+    "de": "Kalender werden geladen…",
+    "en": "Loading calendars…"
+  },
+  "settings.create_new_calendar": {
+    "de": "Neuen Kalender anlegen…",
+    "en": "Create new calendar…"
+  },
+  "settings.create_new_reminder_list": {
+    "de": "Neue Reminder-Liste anlegen…",
+    "en": "Create new reminder list…"
+  },
+  "settings.trip_times_toggle": {
+    "de": "Reisebeginn/-ende eintragen",
+    "en": "Add trip start/end"
+  },
+  "settings.flight_times_toggle": {
+    "de": "Flugabflug/-ankunft eintragen",
+    "en": "Add flight departure/arrival"
+  },
+  "settings.hotel_stays_toggle": {
+    "de": "Hotelaufenthalte eintragen",
+    "en": "Add hotel stays"
+  },
+  "settings.trip_times_help": {
+    "de": "Schreibt Reisebeginn und -ende als Kalender-Einträge.",
+    "en": "Writes trip start and end as calendar entries."
+  },
+  "settings.flight_times_help": {
+    "de": "Schreibt Abflug und Ankunft der Flug-Buchungen als Kalender-Einträge.",
+    "en": "Writes flight departure and arrival as calendar entries."
+  },
+  "settings.hotel_stays_help": {
+    "de": "Schreibt jede Hotelbuchung als ganztägigen Eintrag in deinen Kalender.",
+    "en": "Writes each hotel booking as an all-day calendar entry."
+  },
+  "settings.enable_apple_calendar_first": {
+    "de": "Aktiviere zuerst „Apple Kalender“.",
+    "en": "Enable “Apple Calendar” first."
+  },
+  "settings.lead_times_display": {
+    "de": "Erinnerungen %1$@ Tage vor der Frist.",
+    "en": "Reminders %1$@ days before the deadline."
+  },
+  "settings.icloud_sync_label": {
+    "de": "Daten synchronisieren über iCloud",
+    "en": "Sync data via iCloud"
+  },
+  "settings.icloud_container_detail": {
+    "de": "Reisen, Buchungen und Lücken werden über den Container „%1$@“ zwischen iPhone, iPad und Mac geteilt. Kalender-Links und Erinnerungs-IDs bleiben gerätebezogen.",
+    "en": "Trips, bookings, and gaps are shared between iPhone, iPad, and Mac via container “%1$@”. Calendar links and reminder IDs remain device-specific."
+  },
+  "settings.feedback_auto_report": {
+    "de": "Fehler automatisch als öffentliches Issue senden",
+    "en": "Automatically send errors as public issues"
+  },
+  "settings.feedback_all_issues": {
+    "de": "Alle öffentlichen Issues",
+    "en": "All public issues"
+  },
+  "settings.feedback_footer_embedded": {
+    "de": "Feedback legt ein öffentliches GitHub-Issue an. Automatische Fehler-Issues nur mit dem Schalter oben; ohne Sync-Log, ohne Login-/Datenschutz-Meldungen. Repo: github.com/%1$@.",
+    "en": "Feedback creates a public GitHub issue. Automatic error issues only with the toggle above; no sync log or login/privacy messages. Repo: github.com/%1$@."
+  },
+  "settings.feedback_footer_manual": {
+    "de": "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text. Du sendest mit deinem GitHub-Konto. Repo: github.com/%1$@.",
+    "en": "“Publish on GitHub…” opens a new Safari issue with prefilled text. You submit with your GitHub account. Repo: github.com/%1$@."
+  },
+  "settings.reset_local_confirm_title": {
+    "de": "Lokale Stores zurücksetzen?",
+    "en": "Reset local stores?"
+  },
+  "settings.clear_icloud_confirm_title": {
+    "de": "iCloud-Daten wirklich leeren?",
+    "en": "Really clear iCloud data?"
+  },
+  "settings.legal.privacy": {
+    "de": "Datenschutzerklärung",
+    "en": "Privacy Policy"
+  },
+  "settings.legal.support": {
+    "de": "Support",
+    "en": "Support"
+  },
+  "settings.legal.section": {
+    "de": "Datenschutz & Support",
+    "en": "Privacy & Support"
+  },
+  "settings.legal.footer": {
+    "de": "Beschreibt Provider-Logins, iCloud, Kalender und lokale Speicherung.",
+    "en": "Describes provider logins, iCloud, calendar, and local storage."
+  },
+  "settings.icloud.status.checking": {
+    "de": "iCloud-Status wird geprüft…",
+    "en": "Checking iCloud status…"
+  },
+  "settings.icloud.status.available": {
+    "de": "iCloud-Account verfügbar — Sync aktiv, sofern nicht per Umgebung deaktiviert.",
+    "en": "iCloud account available — sync active unless disabled by environment."
+  },
+  "settings.icloud.status.no_account": {
+    "de": "Kein iCloud-Account angemeldet. Sync-Daten bleiben nur lokal auf diesem Gerät.",
+    "en": "No iCloud account signed in. Sync data stays local on this device only."
+  },
+  "settings.icloud.status.restricted": {
+    "de": "iCloud ist eingeschränkt (z. B. Screen Time / MDM). Sync ist nicht verfügbar.",
+    "en": "iCloud is restricted (e.g. Screen Time / MDM). Sync is unavailable."
+  },
+  "settings.icloud.status.unknown": {
+    "de": "iCloud-Status konnte nicht ermittelt werden.",
+    "en": "Could not determine iCloud status."
+  },
+  "settings.icloud.status.temporarily_unavailable": {
+    "de": "iCloud ist vorübergehend nicht erreichbar.",
+    "en": "iCloud is temporarily unavailable."
+  },
+  "settings.icloud.status.other": {
+    "de": "iCloud-Status: %1$@.",
+    "en": "iCloud status: %1$@."
+  },
+  "settings.icloud.footer.no_account": {
+    "de": "Melde dich in den Systemeinstellungen bei iCloud an, damit Reisen zwischen Geräten synchronisiert.",
+    "en": "Sign in to iCloud in System Settings to sync Reisen across devices."
+  },
+  "settings.icloud.footer.restricted": {
+    "de": "Behebe den iCloud-Zugang; bis dahin werden keine Cloud-Änderungen geladen oder geschrieben.",
+    "en": "Fix iCloud access; until then no cloud changes will be loaded or written."
+  },
+  "settings.icloud.footer.default": {
+    "de": "Ohne iCloud-Account erscheinen Sync-Daten nur lokal auf diesem Gerät.",
+    "en": "Without an iCloud account, sync data appears locally on this device only."
+  },
+  "app.settings_unavailable": {
+    "de": "Einstellungen sind erst nach erfolgreichem Store-Start verfügbar.",
+    "en": "Settings are available only after the store starts successfully."
+  },
+  "credential.password": {
+    "de": "Kennwort",
+    "en": "Password"
+  },
+  "credential.oauth_session_footer": {
+    "de": "Deine Anmeldung bei %1$@ (z. B. Sign in with Apple, Passkey, Google oder Facebook) wird über die Session in der App gespeichert — nicht als Kennwort.",
+    "en": "Your sign-in to %1$@ (e.g. Sign in with Apple, passkey, Google, or Facebook) is stored via the in-app session — not as a password."
+  },
+  "credential.session_persistence_footer": {
+    "de": "Beim nächsten Besuch bleibst du angemeldet, solange der Provider die Session akzeptiert. Ein erneuter Login kann trotzdem nötig sein (2FA, abgelaufene Session).",
+    "en": "You stay signed in on your next visit while the provider accepts the session. You may still need to sign in again (2FA, expired session)."
+  },
+  "credential.copy_from_passwords_footer": {
+    "de": "Kopiere Benutzername und Kennwort aus der Passwords-App (oder einem anderen Manager) für %1$@ und speichere sie hier für automatisches Ausfüllen.",
+    "en": "Copy username and password from Passwords (or another manager) for %1$@ and save them here for autofill."
+  },
+  "credential.saved_account_footer": {
+    "de": "Passwort-Konto für %1$@ — nach dem Speichern füllt Reisen die Felder beim nächsten Login automatisch aus.",
+    "en": "Password account for %1$@ — after saving, Reisen autofills the fields on the next login."
+  },
+  "deep_link.missing_destination": {
+    "de": "Zielhinweis fehlt (Destination/Ort konnte nicht aus Buchungen abgeleitet werden).",
+    "en": "Destination hint missing (could not derive destination/location from bookings)."
+  },
+  "deep_link.missing_destination_id": {
+    "de": "Aus dem Zielhinweis konnte keine Destination-ID für Hotel-Suche abgeleitet werden.",
+    "en": "Could not derive a destination ID for hotel search from the destination hint."
+  },
+  "deep_link.missing_departure_iata": {
+    "de": "Abflughafen (IATA-Code) fehlt bzw. konnte nicht extrahiert werden.",
+    "en": "Departure airport (IATA code) is missing or could not be extracted."
+  },
+  "deep_link.missing_arrival_iata": {
+    "de": "Ziel (IATA-Code) fehlt bzw. konnte nicht extrahiert werden.",
+    "en": "Destination (IATA code) is missing or could not be extracted."
+  },
+  "sync_result.no_bookings": {
+    "de": "Keine Buchungen gefunden.",
+    "en": "No bookings found."
+  },
+  "sync_result.no_deadlines": {
+    "de": "Keine Stornofristen gefunden (foundBookings=%1$d).",
+    "en": "No cancellation deadlines found (foundBookings=%1$d)."
+  },
+  "repository.not_found": {
+    "de": "Nicht gefunden: %1$@",
+    "en": "Not found: %1$@"
+  },
+  "repository.persistence_error": {
+    "de": "Persistenzfehler: %1$@",
+    "en": "Persistence error: %1$@"
+  },
+  "guest_hint.more_count": {
+    "de": "… +%1$d weitere",
+    "en": "… +%1$d more"
+  },
+  "calendar.check_in": {
+    "de": "Check-in: %1$@",
+    "en": "Check-in: %1$@"
+  },
+  "calendar.check_out": {
+    "de": "Check-out: %1$@",
+    "en": "Check-out: %1$@"
+  }
+}

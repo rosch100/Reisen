@@ -1,4 +1,5 @@
 import SwiftUI
+import ReisenDomain
 
 public struct PublicGitHubIssueLink: View {
     public let url: URL?
@@ -13,10 +14,13 @@ public struct PublicGitHubIssueLink: View {
 
     public var body: some View {
         if let url {
-            Link(didPostUpdate ? "Öffentliches Issue" : "Issue bereits offen", destination: url)
+            Link(
+                didPostUpdate ? L10n.string(.githubPublicIssue) : L10n.string(.githubIssueAlreadyOpen),
+                destination: url
+            )
                 .font(.footnote)
             if !didPostUpdate {
-                Text("Kein neues Kommentar in dieser Stunde.")
+                Text(L10n.string(.githubNoCommentThisHour))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

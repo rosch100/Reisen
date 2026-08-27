@@ -59,7 +59,8 @@ Aus laufender WebView-Session (keine Fixture-Hardcodings):
 | `FLIGHT` | `.flight` |
 | `HOTEL` (Villa/Apartment analog) | `.hotel` |
 | `EXPERIENCE` | `.activity` |
-| `VEHICLE_RENTAL`, Airport Transport, Train, Flight Facilities, Insurance, unbekannt | `.other` |
+| `VEHICLE_RENTAL` | `.carRental` |
+| Airport Transport, Train, Flight Facilities, Insurance, unbekannt | `.other` |
 
 Status-SSOT: Tag/Text `Voucher issued` / `E-ticket issued` / `userTripStatus: ETICKET_PUBLISHED` → `.confirmed`; cancelled/refunded → `.cancelled`; sonst `.unknown`.
 

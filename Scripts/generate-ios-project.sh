@@ -16,8 +16,8 @@ if [[ ! -f "$ROOT/project.yml" ]]; then
 fi
 
 # Tests setzen REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true (kein Live-Token).
-# Produkt-Builds (ios-run / ios-archive) betten das Token ein, sofern vorhanden.
-# App-Store-Archive setzt REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true.
+# Produkt-Läufe (ios-run) betten das Token ein, sofern vorhanden.
+# App-Store-Archive setzt REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true.
 bash "$ROOT/Scripts/embed-github-issue-token.sh"
 
 xcodegen generate --spec "$ROOT/project.yml" --project "$ROOT"
@@ -27,8 +27,8 @@ if [[ ! -d "$ROOT/Reisen.xcodeproj" ]]; then
   exit 1
 fi
 
-echo "Sync LSApplicationQueriesSchemes aus ProviderNativeApp-SSOT …"
-swift run --package-path "$ROOT" SyncIOSQuerySchemes "$ROOT/Apps/ReiseniOS/Info.plist"
+echo "Sync LSApplicationQueriesSchemes aus ProviderNativeApp-SSOT (nur Private-iOS) …"
+swift run --package-path "$ROOT" SyncIOSQuerySchemes "$ROOT/Apps/ReiseniOSPrivate/Info.plist"
 
 # shellcheck source=apple-developer.sh
 source "$ROOT/Scripts/apple-developer.sh"

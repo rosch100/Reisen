@@ -21,10 +21,18 @@ public enum TravelokaEnrichmentNeeds {
             return draft.title == nil
                 || draft.hotelCheckInMinutes == nil
                 || draft.hotelCheckOutMinutes == nil
+                || draft.locationToAddress == nil
+                || draft.rateDetails?.roomCategory == nil
         case .flight:
             return draft.passengers.isEmpty || draft.rateDetails?.airline == nil
         case .ferry:
             return false
+        case .carRental:
+            return draft.operatorName == nil
+                || draft.locationFrom == nil
+                || draft.locationTo == nil
+                || draft.locationFromAddress == nil
+                || draft.locationToAddress == nil
         case .other:
             return draft.operatorName == nil || draft.locationFrom == nil
         }

@@ -58,7 +58,7 @@ struct ProviderSidebarRow: View {
                 if isSyncingThisProvider {
                     ProgressView()
                         .controlSize(.small)
-                        .accessibilityLabel(Text("Synchronisiere \(providerDisplayName)"))
+                        .accessibilityLabel(Text(L10n.format(.actionSyncProvider, providerDisplayName)))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -75,19 +75,19 @@ struct ProviderSidebarRow: View {
             .disabled(isSyncingThisProvider)
             .accessibilityLabel(Text(
                 isEnabled
-                    ? "\(providerDisplayName) deaktivieren"
-                    : "\(providerDisplayName) aktivieren"
+                    ? L10n.format(.providerDeactivateNamed, providerDisplayName)
+                    : L10n.format(.providerActivateNamed, providerDisplayName)
             ))
             .accessibilityAddTraits(isEnabled ? .isSelected : [])
-            .help(isEnabled ? "Provider deaktivieren" : "Provider aktivieren")
+            .help(isEnabled ? L10n.string(.providerDeactivateHelp) : L10n.string(.providerActivateHelp))
         }
         .contextMenu {
-            Button(isEnabled ? "Deaktivieren" : "Aktivieren") {
+            Button(isEnabled ? L10n.string(.providerDeactivate) : L10n.string(.providerActivate)) {
                 isEnabled.toggle()
             }
             .disabled(isSyncingThisProvider)
 
-            Button("Sync öffnen") {
+            Button(L10n.string(.actionSyncOpen)) {
                 NotificationCenter.default.post(
                     name: .reisenShowProviderSync,
                     object: providerID

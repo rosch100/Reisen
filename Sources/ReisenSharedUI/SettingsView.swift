@@ -7,15 +7,18 @@ import ReisenData
 import ReisenAppCore
 
 public struct SettingsView: View {
+    private let showsProviderSyncSettings: Bool
     private let showsDataManagement: Bool
     private let onResetLocalStores: (() -> Void)?
     private let onWipeCloudAndReset: (() -> Void)?
 
     public init(
+        showsProviderSyncSettings: Bool = false,
         showsDataManagement: Bool = false,
         onResetLocalStores: (() -> Void)? = nil,
         onWipeCloudAndReset: (() -> Void)? = nil
     ) {
+        self.showsProviderSyncSettings = showsProviderSyncSettings
         self.showsDataManagement = showsDataManagement
         self.onResetLocalStores = onResetLocalStores
         self.onWipeCloudAndReset = onWipeCloudAndReset
@@ -69,73 +72,72 @@ public struct SettingsView: View {
 
     public var body: some View {
         Form {
-            ProviderEnabledSettingsSection()
+            if showsProviderSyncSettings {
+                ProviderEnabledSettingsSection()
 
-            Section {
-                Toggle("Passwort nach Login speichern", isOn: $rememberLoginAutomatically)
-            } header: {
-                Text("Provider-Anmeldung")
-            } footer: {
-                Text(
-                    "Speichert E-Mail und Kennwort nach erfolgreichem Passwort-Login automatisch in Reisen. "
-                        + "Apple-, Passkey- und OAuth-Anmeldungen werden nicht als Kennwort gespeichert."
-                )
+                Section {
+                    Toggle(L10n.string(.settingsRememberPasswordToggle), isOn: $rememberLoginAutomatically)
+                } header: {
+                    Text(L10n.string(.settingsProviderLogin))
+                } footer: {
+                    Text(L10n.string(.settingsRememberPasswordFooter))
+                }
             }
 
             Section {
-                Toggle("Lokale Benachrichtigungen", isOn: $notificationEnabled)
+                Toggle(L10n.string(.settingsLocalNotifications), isOn: $notificationEnabled)
             } header: {
-                Text("Erinnerungen")
+                Text(L10n.string(.settingsReminders))
             } footer: {
-                Text("Plant Erinnerungen vor Stornofristen über das Mitteilungszentrum.")
+                Text(L10n.string(.settingsRemindersFooter))
             }
 
             Section {
-                Toggle("Apple Kalender", isOn: $eventKitEnabled)
+                Toggle(L10n.string(.settingsAppleCalendar), isOn: $eventKitEnabled)
 
                 if eventKitEnabled {
                     Picker(
-                        "Kalender-Strategie",
+                        L10n.string(.settingsCalendarStrategy),
                         selection: $calendarTitleModeRaw
                     ) {
-                        Text("Pro Reise (Reisenname)").tag(CalendarTitleMode.tripTitle.rawValue)
-                        Text("Global („Reisen“)").tag(CalendarTitleMode.fixed.rawValue)
+                        Text(L10n.string(.settingsCalendarTitleTrip)).tag(CalendarTitleMode.tripTitle.rawValue)
+                        Text(L10n.string(.settingsCalendarTitleGlobal)).tag(CalendarTitleMode.fixed.rawValue)
                     }
                     .pickerStyle(.segmented)
 
                     if CalendarTitleMode(rawValue: calendarTitleModeRaw) == .tripTitle {
-                        Toggle("Event-Kalender automatisch anlegen", isOn: $eventCalendarCreateIfMissing)
-                        Toggle("Reminder-Liste automatisch anlegen", isOn: $reminderCalendarCreateIfMissing)
+                        Toggle(L10n.string(.settingsCreateEventCalendarAuto), isOn: $eventCalendarCreateIfMissing)
+                        Toggle(L10n.string(.settingsCreateReminderListAuto), isOn: $reminderCalendarCreateIfMissing)
                     }
 
                     if isLoadingCalendarNames {
-                        ProgressView("Kalender werden geladen…")
+                        ProgressView(L10n.string(.settingsCalendarsLoading))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         if CalendarTitleMode(rawValue: calendarTitleModeRaw) == .fixed {
-                            Picker("Kalender", selection: eventCalendarPickerSelection) {
+                            Picker(L10n.string(.settingsCalendarPicker), selection: eventCalendarPickerSelection) {
                                 ForEach(eventCalendarPickerOptions, id: \.self) { name in
-                                    Text(name == newCalendarTag ? "Neuen Kalender anlegen…" : name).tag(name)
+                                    Text(name == newCalendarTag ? L10n.string(.settingsCreateNewCalendar) : name).tag(name)
                                 }
                             }
                             .pickerStyle(.menu)
 
                             if eventCalendarCreateIfMissing {
-                                TextField("Neuer Kalendername", text: $calendarTitle)
+                                TextField(L10n.string(.settingsNewCalendarName), text: $calendarTitle)
                                     .textFieldStyle(.roundedBorder)
                             }
 
                             Divider()
 
-                            Picker("Reminder-Liste", selection: reminderCalendarPickerSelection) {
+                            Picker(L10n.string(.settingsReminderListPicker), selection: reminderCalendarPickerSelection) {
                                 ForEach(reminderCalendarPickerOptions, id: \.self) { name in
-                                    Text(name == newCalendarTag ? "Neue Reminder-Liste anlegen…" : name).tag(name)
+                                    Text(name == newCalendarTag ? L10n.string(.settingsCreateNewReminderList) : name).tag(name)
                                 }
                             }
                             .pickerStyle(.menu)
 
                             if reminderCalendarCreateIfMissing {
-                                TextField("Neue Reminder-Liste", text: $reminderCalendarTitle)
+                                TextField(L10n.string(.settingsNewReminderList), text: $reminderCalendarTitle)
                                     .textFieldStyle(.roundedBorder)
                             }
 
@@ -147,7 +149,7 @@ public struct SettingsView: View {
                                     OpenPrivacySettingsButton(pane: pane)
                                 }
 
-                                Button("Erneut laden") {
+                                Button(L10n.string(.actionReload)) {
                                     calendarNamesReloadToken = UUID()
                                 }
                             }
@@ -155,75 +157,75 @@ public struct SettingsView: View {
                     }
                 }
             } header: {
-                Text("Kalender")
+                Text(L10n.string(.settingsCalendar))
             } footer: {
-                Text("Legt Termine für Stornofristen im angegebenen Kalender an. Optional: Reise- und Flugzeiten.")
+                Text(L10n.string(.settingsCalendarFooter))
             }
 
             Section {
-                Toggle("Reisebeginn/-ende eintragen", isOn: $calendarTripTimesEnabled)
+                Toggle(L10n.string(.settingsTripTimesToggle), isOn: $calendarTripTimesEnabled)
                     .disabled(!eventKitEnabled)
-                    .help(eventKitEnabled ? "Schreibt Reisebeginn und -ende als Kalender-Einträge." : "Aktiviere zuerst „Apple Kalender“.")
+                    .help(eventKitEnabled ? L10n.string(.settingsTripTimesHelp) : L10n.string(.settingsEnableAppleCalendarFirst))
 
-                Toggle("Flugabflug/-ankunft eintragen", isOn: $calendarFlightTimesEnabled)
+                Toggle(L10n.string(.settingsFlightTimesToggle), isOn: $calendarFlightTimesEnabled)
                     .disabled(!eventKitEnabled)
-                    .help(eventKitEnabled ? "Schreibt Abflug und Ankunft der Flug-Buchungen als Kalender-Einträge." : "Aktiviere zuerst „Apple Kalender“.")
+                    .help(eventKitEnabled ? L10n.string(.settingsFlightTimesHelp) : L10n.string(.settingsEnableAppleCalendarFirst))
 
-                Toggle("Hotelaufenthalte eintragen", isOn: $calendarHotelStaysEnabled)
+                Toggle(L10n.string(.settingsHotelStaysToggle), isOn: $calendarHotelStaysEnabled)
                     .disabled(!eventKitEnabled)
-                    .help(eventKitEnabled ? "Schreibt jede Hotelbuchung als ganztägigen Eintrag in deinen Kalender." : "Aktiviere zuerst „Apple Kalender“.")
+                    .help(eventKitEnabled ? L10n.string(.settingsHotelStaysHelp) : L10n.string(.settingsEnableAppleCalendarFirst))
             } header: {
-                Text("Reisezeiten")
+                Text(L10n.string(.settingsTravelTimes))
             } footer: {
-                Text("Zeitzonen werden aus vorhandenen Zeit-/Offsets abgeleitet.")
+                Text(L10n.string(.settingsTravelTimesFooter))
             }
 
             Section {
-                TextField("Vorläufe in Tagen", text: $leadTimesDaysRaw)
+                TextField(L10n.string(.settingsLeadTimesDays), text: $leadTimesDaysRaw)
                     .textFieldStyle(.roundedBorder)
-                    .help("Kommagetrennte Tage vor der Stornofrist, z. B. 7,3,1")
+                    .help(L10n.string(.settingsLeadTimesHelp))
 
                 if leadTimesDays.isEmpty {
-                    Text("Keine gültigen Vorläufe. Beispiel: 7,3,1")
+                    Text(L10n.string(.settingsLeadTimesInvalid))
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Erinnerungen \(leadTimesDaysDisplayText) Tage vor der Frist.")
+                    Text(L10n.format(.settingsLeadTimesDisplay, leadTimesDaysDisplayText))
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("Vorlaufzeiten")
+                Text(L10n.string(.settingsLeadTimesSection))
             } footer: {
-                Text("Beispiel: 7,3,1 — Erinnerungen 7, 3 und 1 Tag vor der Frist.")
+                Text(L10n.string(.settingsLeadTimesFooter))
             }
 
             Section {
-                Link(Self.legalPrivacyTitle, destination: LegalURLs.privacyPolicy)
-                Link(Self.legalSupportTitle, destination: LegalURLs.support)
-                Link(Self.legalImpressumTitle, destination: LegalURLs.impressum)
+                Link(L10n.string(.settingsLegalPrivacy), destination: LegalURLs.privacyPolicy)
+                Link(L10n.string(.settingsLegalSupport), destination: LegalURLs.support)
+                Link(L10n.string(.settingsLegalImpressum), destination: LegalURLs.impressum)
             } header: {
-                Text(Self.legalSectionTitle)
+                Text(L10n.string(.settingsLegalSection))
             } footer: {
-                Text(Self.legalSectionFooter)
+                Text(L10n.string(.settingsLegalFooter))
             }
 
             Section {
-                Label("Daten synchronisieren über iCloud", systemImage: "icloud")
+                Label(L10n.string(.settingsIcloudSyncLabel), systemImage: "icloud")
                 Text(cloudAccountStatusText)
                     .font(.footnote)
                     .foregroundStyle(cloudAccountStatusIsError ? .red : .secondary)
-                Text("Reisen, Buchungen und Lücken werden über den Container „\(PersistenceBootstrap.cloudKitContainerID)“ zwischen iPhone, iPad und Mac geteilt. Kalender-Links und Erinnerungs-IDs bleiben gerätebezogen.")
+                Text(L10n.format(.settingsIcloudContainerDetail, PersistenceBootstrap.cloudKitContainerID))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             } header: {
-                Text("iCloud")
+                Text(L10n.string(.settingsIcloud))
             } footer: {
                 Text(cloudAccountFooterText)
             }
 
             Section {
                 if GitHubIssueToken.isEmbedded {
-                    Toggle("Fehler automatisch als öffentliches Issue senden", isOn: $reportErrorsToGitHub)
-                    TextField("GitHub-Benutzername (optional)", text: $feedbackGitHubUsername)
+                    Toggle(L10n.string(.settingsFeedbackAutoReport), isOn: $reportErrorsToGitHub)
+                    TextField(L10n.string(.settingsFeedbackGitHubUsername), text: $feedbackGitHubUsername)
                         #if os(iOS)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -236,34 +238,29 @@ public struct SettingsView: View {
                     feedbackMessage: feedbackText,
                     onReported: { feedbackText = "" }
                 )
-                Link("Alle öffentlichen Issues", destination: GitHubRepository.issuesListURL)
+                Link(L10n.string(.settingsFeedbackAllIssues), destination: GitHubRepository.issuesListURL)
             } header: {
-                Text("Feedback")
+                Text(L10n.string(.settingsFeedback))
             } footer: {
                 Text(
                     GitHubIssueToken.isEmbedded
-                        ? "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; "
-                            + "die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). "
-                            + "Automatische Fehler-Issues nur mit dem Schalter oben und sind öffentlich; "
-                            + "ohne Sync-Log, ohne Login- oder Datenschutz-Verweigerungen. "
-                            + "Repo: github.com/\(GitHubRepository.publicPath)."
-                        : "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text. "
-                            + "Du sendest mit deinem GitHub-Konto. Repo: github.com/\(GitHubRepository.publicPath)."
+                        ? L10n.format(.settingsFeedbackFooterEmbedded, GitHubRepository.publicPath)
+                        : L10n.format(.settingsFeedbackFooterManual, GitHubRepository.publicPath)
                 )
             }
 
             if showsDataManagement {
                 Section {
-                    Button("Lokale Stores zurücksetzen…", role: .destructive) {
+                    Button(L10n.string(.actionResetLocalStores), role: .destructive) {
                         showLocalResetConfirm = true
                     }
-                    Button("Auch iCloud-Daten leeren…", role: .destructive) {
+                    Button(L10n.string(.actionClearIcloud), role: .destructive) {
                         showCloudWipeConfirm = true
                     }
                 } header: {
-                    Text("Daten")
+                    Text(L10n.string(.settingsData))
                 } footer: {
-                    Text("Lokales Zurücksetzen entfernt nur Store-Dateien auf diesem Gerät. iCloud kann Daten danach erneut laden. „Auch iCloud-Daten leeren“ löscht synchronisierte Datensätze geräteübergreifend.")
+                    Text(L10n.string(.settingsDataFooter))
                 }
             }
         }
@@ -273,28 +270,28 @@ public struct SettingsView: View {
         .frame(width: 520, height: 620)
 #endif
         .confirmationDialog(
-            "Lokale Stores zurücksetzen?",
+            L10n.string(.settingsResetLocalConfirmTitle),
             isPresented: $showLocalResetConfirm,
             titleVisibility: .visible
         ) {
-            Button("Lokale Stores löschen", role: .destructive) {
+            Button(L10n.string(.actionDeleteLocalStores), role: .destructive) {
                 onResetLocalStores?()
             }
-            Button("Abbrechen", role: .cancel) {}
+            Button(L10n.string(.commonCancel), role: .cancel) {}
         } message: {
-            Text("Lokale Dateien werden gelöscht. Bei aktivem iCloud Sync können Daten erneut geladen werden.")
+            Text(L10n.string(.settingsResetLocalMessage))
         }
         .confirmationDialog(
-            "iCloud-Daten wirklich leeren?",
+            L10n.string(.settingsClearIcloudConfirmTitle),
             isPresented: $showCloudWipeConfirm,
             titleVisibility: .visible
         ) {
-            Button("iCloud und lokal leeren", role: .destructive) {
+            Button(L10n.string(.actionClearIcloudAndLocal), role: .destructive) {
                 onWipeCloudAndReset?()
             }
-            Button("Abbrechen", role: .cancel) {}
+            Button(L10n.string(.commonCancel), role: .cancel) {}
         } message: {
-            Text("Synchronisierte Reisen und Buchungen werden gelöscht und die Löschung über iCloud übertragen.")
+            Text(L10n.string(.settingsClearIcloudMessage))
         }
         .task(id: eventKitEnabled) {
             guard eventKitEnabled else { return }
@@ -317,19 +314,19 @@ public struct SettingsView: View {
         }
         switch cloudAccountStatus {
         case .none:
-            return "iCloud-Status wird geprüft…"
+            return L10n.string(.settingsIcloudStatusChecking)
         case .some(.available):
-            return "iCloud-Account verfügbar — Sync aktiv, sofern nicht per Umgebung deaktiviert."
+            return L10n.string(.settingsIcloudStatusAvailable)
         case .some(.noAccount):
-            return "Kein iCloud-Account angemeldet. Sync-Daten bleiben nur lokal auf diesem Gerät."
+            return L10n.string(.settingsIcloudStatusNoAccount)
         case .some(.restricted):
-            return "iCloud ist eingeschränkt (z. B. Screen Time / MDM). Sync ist nicht verfügbar."
+            return L10n.string(.settingsIcloudStatusRestricted)
         case .some(.couldNotDetermine):
-            return "iCloud-Status konnte nicht ermittelt werden."
+            return L10n.string(.settingsIcloudStatusUnknown)
         case .some(.temporarilyUnavailable):
-            return "iCloud ist vorübergehend nicht erreichbar."
+            return L10n.string(.settingsIcloudStatusTemporarilyUnavailable)
         case .some(let other):
-            return "iCloud-Status: \(String(describing: other))."
+            return L10n.format(.settingsIcloudStatusOther, String(describing: other))
         }
     }
 
@@ -345,11 +342,11 @@ public struct SettingsView: View {
     private var cloudAccountFooterText: String {
         switch cloudAccountStatus {
         case .some(.noAccount):
-            return "Melde dich in den Systemeinstellungen bei iCloud an, damit Reisen zwischen Geräten synchronisiert."
+            return L10n.string(.settingsIcloudFooterNoAccount)
         case .some(.restricted), .some(.temporarilyUnavailable):
-            return "Behebe den iCloud-Zugang; bis dahin werden keine Cloud-Änderungen geladen oder geschrieben."
+            return L10n.string(.settingsIcloudFooterRestricted)
         default:
-            return "Ohne iCloud-Account erscheinen Sync-Daten nur lokal auf diesem Gerät."
+            return L10n.string(.settingsIcloudFooterDefault)
         }
     }
 
@@ -459,31 +456,4 @@ public struct SettingsView: View {
             panes.append(pane)
         }
     }
-
-    private static var usesGermanLegalCopy: Bool {
-        Locale.current.reisenPrefersGerman
-    }
-
-    private static var legalPrivacyTitle: String {
-        usesGermanLegalCopy ? "Datenschutzerklärung" : "Privacy Policy"
-    }
-
-    private static var legalSupportTitle: String {
-        "Support"
-    }
-
-    private static var legalImpressumTitle: String {
-        usesGermanLegalCopy ? "Impressum" : "Legal notice"
-    }
-
-    private static var legalSectionTitle: String {
-        usesGermanLegalCopy ? "Datenschutz & Support" : "Privacy & Support"
-    }
-
-    private static var legalSectionFooter: String {
-        usesGermanLegalCopy
-            ? "Beschreibt Provider-Logins, iCloud, Kalender, Diagnosen und lokale Speicherung."
-            : "Describes provider logins, iCloud, calendar, diagnostics, and local storage."
-    }
 }
-

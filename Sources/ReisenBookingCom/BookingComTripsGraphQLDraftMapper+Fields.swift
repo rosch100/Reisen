@@ -13,7 +13,7 @@ extension BookingComTripsGraphQLParser {
             applyHotelMappedFields(reservation, into: &fields, tripTitle: tripTitle)
         case .flight:
             applyFlightMappedFields(reservation, into: &fields, tripTitle: tripTitle)
-        case .ferry, .activity, .other:
+        case .ferry, .activity, .carRental, .other:
             fields.title = tripTitle
             fields.confirmationCode = reservation.identifiers?.publicId
         }

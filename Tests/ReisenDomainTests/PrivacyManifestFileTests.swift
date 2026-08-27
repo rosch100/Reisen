@@ -52,3 +52,30 @@ private func collectedTypes(_ plist: [String: Any]) -> [String] {
     #expect(!types.contains("NSPrivacyCollectedDataTypeEmailAddress"))
     #expect(!types.contains("NSPrivacyCollectedDataTypeDeviceID"))
 }
+
+@Test func privacyManifest_storeOmitsProviderEmailAndKeepsIssueTypes() throws {
+    let url = repoRoot().appendingPathComponent("Apps/ReiseniOS/PrivacyInfo.xcprivacy")
+    let data = try Data(contentsOf: url)
+    let plist = try PropertyListSerialization.propertyList(from: data, format: nil)
+    guard let dict = plist as? [String: Any] else {
+        throw NSError(domain: "PrivacyManifestFileTests", code: 2)
+    }
+    let types = collectedTypes(dict)
+    #expect(!types.contains("NSPrivacyCollectedDataTypeEmailAddress"))
+    #expect(types.contains("NSPrivacyCollectedDataTypeCrashData"))
+    let apiTypes = dict["NSPrivacyAccessedAPITypes"] as? [[String: Any]] ?? []
+    let categories = apiTypes.compactMap { $0["NSPrivacyAccessedAPIType"] as? String }
+    #expect(categories.contains("NSPrivacyAccessedAPICategoryFileTimestamp"))
+}
+
+@Test func privacyManifest_privateDeclaresProviderEmail() throws {
+    let url = repoRoot().appendingPathComponent("Apps/ReiseniOSPrivate/PrivacyInfo.xcprivacy")
+    let data = try Data(contentsOf: url)
+    let plist = try PropertyListSerialization.propertyList(from: data, format: nil)
+    guard let dict = plist as? [String: Any] else {
+        throw NSError(domain: "PrivacyManifestFileTests", code: 3)
+    }
+    let types = collectedTypes(dict)
+    #expect(types.contains("NSPrivacyCollectedDataTypeEmailAddress"))
+    #expect(types.contains("NSPrivacyCollectedDataTypeCrashData"))
+}

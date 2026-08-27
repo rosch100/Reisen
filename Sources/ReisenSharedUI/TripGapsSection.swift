@@ -36,9 +36,9 @@ public struct TripTimelineSection<BookingRow: View>: View {
     }
 
     public var body: some View {
-        Section("Timeline") {
+        Section(L10n.string(.tripTimeline)) {
             if timelineItems.isEmpty {
-                Text("Noch keine Buchungen zugeordnet.")
+                Text(L10n.string(.tripNoBookingsAssigned))
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(timelineItems) { item in
@@ -72,7 +72,7 @@ public struct TripTimelineSection<BookingRow: View>: View {
                     Text("\(gap.gapStart.formatted(date: .abbreviated, time: .shortened)) – \(gap.gapEnd.formatted(date: .abbreviated, time: .shortened))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(presentation.effectiveKind.rawValue.capitalized)
+                    Text(L10n.gapKindDisplay(presentation.effectiveKind))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }

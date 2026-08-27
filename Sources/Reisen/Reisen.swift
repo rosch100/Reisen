@@ -5,17 +5,14 @@ import Observation
 import ReisenDomain
 import ReisenData
 import ReisenProviders
-import ReisenCheck24
-import ReisenOpodo
-import ReisenBookingCom
-import ReisenAirbnb
 import ReisenAppCore
+import ReisenProviderSync
 import ReisenSharedUI
 
 @main
 struct ReisenApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var bootstrap = AppBootstrap()
+    @State private var bootstrap = AppBootstrap(registry: ProviderSyncBootstrap.makeProviderRegistry())
 
     var body: some Scene {
         WindowGroup {
@@ -55,60 +52,60 @@ struct ReisenApp: App {
         .windowResizability(.automatic)
         .commands {
             CommandGroup(replacing: .pasteboard) {
-                Button("Ausschneiden") {
+                Button(L10n.string(.commonCut)) {
                     NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("x", modifiers: [.command])
 
-                Button("Kopieren") {
+                Button(L10n.string(.commonCopy)) {
                     NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("c", modifiers: [.command])
 
-                Button("Einfügen") {
+                Button(L10n.string(.commonPaste)) {
                     NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("v", modifiers: [.command])
 
-                Button("Alles auswählen") {
+                Button(L10n.string(.commonSelectAll)) {
                     NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("a", modifiers: [.command])
             }
 
             CommandGroup(replacing: .newItem) {
-                Button("Neue Reise…") {
+                Button(L10n.string(.menuNewTrip)) {
                     NotificationCenter.default.post(name: .reisenNewTrip, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: [.command])
 
-                Button("Buchung hinzufügen…") {
+                Button(L10n.string(.menuAddBooking)) {
                     NotificationCenter.default.post(name: .reisenAddBooking, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
 
-                Button("Buchungen zuordnen…") {
+                Button(L10n.string(.menuAssignBookings)) {
                     NotificationCenter.default.post(name: .reisenAssignBookings, object: nil)
                 }
             }
             CommandGroup(after: .appInfo) {
-                Button("Provider Sync…") {
+                Button(L10n.string(.menuProviderSync)) {
                     NotificationCenter.default.post(name: .reisenShowProviderSync, object: nil)
                 }
                 .keyboardShortcut("1", modifiers: [.command])
 
-                Button("Alle Provider synchronisieren") {
+                Button(L10n.string(.menuSyncAllProviders)) {
                     NotificationCenter.default.post(name: .reisenSyncAllProviders, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
 
-                Button("Aktuellen Provider synchronisieren") {
+                Button(L10n.string(.menuSyncCurrentProvider)) {
                     NotificationCenter.default.post(name: .reisenSyncCurrentProvider, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: [.command])
             }
             CommandGroup(after: .pasteboard) {
-                Button("Reise bearbeiten…") {
+                Button(L10n.string(.menuEditTrip)) {
                     NotificationCenter.default.post(name: .reisenEditSelectedTrip, object: nil)
                 }
             }
@@ -117,6 +114,7 @@ struct ReisenApp: App {
         Settings {
             if case .ready(let container, let registry, let syncStore, _) = bootstrap.state {
                 ReisenSharedUI.SettingsView(
+                    showsProviderSyncSettings: true,
                     showsDataManagement: true,
                     onResetLocalStores: {
                         bootstrap.resetStoreAndRetry(wipeCloudDataBeforeReset: false)
@@ -129,7 +127,7 @@ struct ReisenApp: App {
                 .environment(\.syncStore, syncStore)
                 .modelContainer(container)
             } else {
-                Text("Einstellungen sind erst nach erfolgreichem Store-Start verfügbar.")
+                Text(L10n.string(.appSettingsUnavailable))
                     .padding()
             }
         }

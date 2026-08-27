@@ -9,13 +9,13 @@ public enum DeepLinkIssue: LocalizedError, Equatable, Sendable {
     public var errorDescription: String? {
         switch self {
         case .missingDestinationHint:
-            return "Zielhinweis fehlt (Destination/Ort konnte nicht aus Buchungen abgeleitet werden)."
+            return L10n.string(.deep_linkMissingDestination)
         case .destinationIdNotDerivable:
-            return "Aus dem Zielhinweis konnte keine Destination-ID für Hotel-Suche abgeleitet werden."
+            return L10n.string(.deep_linkMissingDestinationId)
         case .missingFromIATA:
-            return "Abflughafen (IATA-Code) fehlt bzw. konnte nicht extrahiert werden."
+            return L10n.string(.deep_linkMissingDepartureIata)
         case .missingToIATA:
-            return "Ziel (IATA-Code) fehlt bzw. konnte nicht extrahiert werden."
+            return L10n.string(.deep_linkMissingArrivalIata)
         }
     }
 }

@@ -4,7 +4,7 @@ import ReisenDomain
 import ReisenProviders
 
 @MainActor
-public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginConfiguration {
+public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
     public init() {}
 
     public var id: ProviderID { .traveloka }

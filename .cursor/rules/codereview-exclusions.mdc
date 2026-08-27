@@ -9,10 +9,12 @@ Diese Punkte sind **bewusste Produktentscheidungen**. Sie in `/codereview`, PR-R
 
 ## Eingebettetes GitHub-Issues-Token in Produkt-Builds
 
-- **iOS App Store** (`Scripts/ios-archive-appstore.sh`) und **macOS-Release** (`Scripts/build-app.sh`, `release.yml`) betten ein fine-grained PAT (Issues read/write, nur Repo `rosch100/Reisen`) ein.
-- Nutzer können Feedback/Fehler **ohne eigenes GitHub-Konto** melden; XOR-Obfuskation ist dokumentiertes Restrisiko.
+- **macOS-Release** (`Scripts/build-app.sh`, `release.yml`) bettet ein fine-grained PAT (Issues read/write, nur Repo `rosch100/Reisen`) ein.
+- **iOS App Store** (`Scripts/ios-archive-appstore.sh`) bettet **kein** Token ein; Feedback geht über vorausgefülltes Safari-Issue.
+- XOR-Obfuskation in macOS-Releases ist dokumentiertes Restrisiko.
 - SSOT: `docs/ci/github-issues-token.md`, `Secrets/README.md`.
-- **Nicht** als „App-Store-unzulässig“, „PAT im Binary“ oder „Guideline 5.1.1-Verstoß“ flaggen, sofern der Diff nur die beabsichtigte Einbettung/Doku/Tests dafür ändert.
+- **Nicht** als „PAT im Binary“ flaggen, sofern der Diff nur die beabsichtigte macOS-Einbettung/Doku/Tests dafür ändert.
+- **Nicht** als Regression flaggen, dass das Store-Archive `REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true` setzt.
 
 ## Was weiterhin gemeldet werden soll
 

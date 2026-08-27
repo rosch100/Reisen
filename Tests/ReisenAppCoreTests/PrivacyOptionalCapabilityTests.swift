@@ -40,14 +40,20 @@ import ReisenDomain
 }
 
 @Test func privacyOptionalCapability_statusHintNamesSkippedCapabilities() {
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+
     #expect(PrivacyOptionalCapability.statusHint(skipped: []) == nil)
     #expect(
         PrivacyOptionalCapability.statusHint(skipped: [.notifications])
-            == "Ohne Mitteilungen fortgesetzt."
+            == L10n.format(.privacyContinuedWithout, L10n.string(.privacyNotifications))
     )
     #expect(
         PrivacyOptionalCapability.statusHint(skipped: [.calendars, .reminders])
-            == "Ohne Kalender, Erinnerungen fortgesetzt."
+            == L10n.format(
+                .privacyContinuedWithout,
+                [L10n.string(.privacyCalendars), L10n.string(.privacyReminders)].joined(separator: ", ")
+            )
     )
 }
 

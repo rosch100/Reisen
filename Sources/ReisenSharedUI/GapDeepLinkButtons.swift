@@ -1,6 +1,5 @@
 import SwiftUI
 import ReisenDomain
-import ReisenProviders
 
 public struct GapDeepLinkButtons: View {
     let links: [DeepLinkSuggestion]

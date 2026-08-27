@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 SKIP_BUILD="false"
+WITH_IOS_RELEASE_CHECK="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -16,8 +17,12 @@ while [[ $# -gt 0 ]]; do
       SKIP_BUILD="false"
       shift
       ;;
+    --with-ios-release-check)
+      WITH_IOS_RELEASE_CHECK="true"
+      shift
+      ;;
     -h|--help)
-      echo "Usage: $0 [--skip-build|--no-skip-build]" >&2
+      echo "Usage: $0 [--skip-build|--no-skip-build] [--with-ios-release-check]" >&2
       exit 0
       ;;
     *)
@@ -49,8 +54,8 @@ if grep -q '0x' "$STUB"; then
   echo "Fehler: GitHubIssueToken.generated.swift.stub darf keine XOR-Bytes enthalten." >&2
   exit 1
 fi
-if grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-appstore.sh"; then
-  echo "Fehler: App-Store-Archive muss das Issue-Token einbetten (kein EMPTY=true)." >&2
+if ! grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive darf das Issue-Token nicht einbetten (EMPTY=true Pflicht)." >&2
   exit 1
 fi
 REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash "$ROOT/Scripts/embed-github-issue-token.sh"
@@ -59,5 +64,9 @@ if [[ "$SKIP_BUILD" == "true" ]]; then
   swift test -v --skip-build
 else
   swift test -v
+fi
+
+if [[ "$WITH_IOS_RELEASE_CHECK" == "true" ]]; then
+  env CI=true REISEN_CLOUDKIT=0 bash "$ROOT/Scripts/ios-build-release-check.sh"
 fi
 

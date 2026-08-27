@@ -21,6 +21,15 @@ final class AppStoreComplianceInfoPlistTests: XCTestCase {
         XCTAssertEqual(backgroundModes, ["remote-notification"])
     }
 
+    func testInfoPlistHasNoProviderQuerySchemes() throws {
+        let plistURL = repoRoot.appendingPathComponent("Apps/ReiseniOS/Info.plist")
+        let data = try Data(contentsOf: plistURL)
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        )
+        XCTAssertNil(plist["LSApplicationQueriesSchemes"])
+    }
+
     func testPrivacyManifestExists() throws {
         let privacyURL = repoRoot.appendingPathComponent("Resources/PrivacyInfo.xcprivacy")
         XCTAssertTrue(FileManager.default.fileExists(atPath: privacyURL.path))
@@ -34,6 +43,17 @@ final class AppStoreComplianceInfoPlistTests: XCTestCase {
         let types = collected.compactMap { $0["NSPrivacyCollectedDataType"] as? String }
         XCTAssertTrue(types.contains("NSPrivacyCollectedDataTypeName"))
         XCTAssertTrue(types.contains("NSPrivacyCollectedDataTypeCrashData"))
+        XCTAssertFalse(types.contains("NSPrivacyCollectedDataTypeEmailAddress"))
+    }
+
+    func testStorePrivacyManifestOmitsProviderEmail() throws {
+        let privacyURL = repoRoot.appendingPathComponent("Apps/ReiseniOS/PrivacyInfo.xcprivacy")
+        let data = try Data(contentsOf: privacyURL)
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        )
+        let collected = plist["NSPrivacyCollectedDataTypes"] as? [[String: Any]] ?? []
+        let types = collected.compactMap { $0["NSPrivacyCollectedDataType"] as? String }
         XCTAssertFalse(types.contains("NSPrivacyCollectedDataTypeEmailAddress"))
     }
 

@@ -53,7 +53,7 @@ struct ProviderSyncContainer: View {
                 VStack(spacing: 12) {
                     ProgressView()
                         .controlSize(.regular)
-                    Text("Provider-Sitzungen prüfen…")
+                    Text(L10n.string(.syncProviderSessionsChecking))
                         .font(.headline)
                     if !probingProviderLabel.isEmpty {
                         Text(probingProviderLabel)
@@ -70,9 +70,9 @@ struct ProviderSyncContainer: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ContentUnavailableView(
-                        "Provider deaktiviert",
+                        L10n.string(.loginStatusGray),
                         systemImage: "nosign",
-                        description: Text("Aktiviere den Provider über die Checkbox in der Seitenleiste.")
+                        description: Text(L10n.string(.syncProviderDisabledHint))
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }

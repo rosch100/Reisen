@@ -6,6 +6,7 @@ import ReisenDomain
 import ReisenData
 import ReisenProviders
 import ReisenAppCore
+import ReisenProviderSync
 import ReisenSharedUI
 
 /// Provider-Login und Sync als primäre Inhaltsfläche (kein Sheet).
@@ -78,10 +79,10 @@ struct SyncView: View {
 
     private var compositionErrorMessage: String? {
         if providerRegistry == nil {
-            return "Provider-Registry fehlt in der App-Composition."
+            return L10n.string(.syncCompositionRegistryMissing)
         }
         if store == nil {
-            return "SyncStore fehlt in der App-Composition."
+            return L10n.string(.syncCompositionStoreMissing)
         }
         return nil
     }
@@ -143,9 +144,9 @@ struct SyncView: View {
         Group {
             if !isProviderEnabled {
                 ContentUnavailableView(
-                    "Provider deaktiviert",
+                    L10n.string(.loginStatusGray),
                     systemImage: "nosign",
-                    description: Text("Aktiviere den Provider über die Checkbox in der Seitenleiste.")
+                    description: Text(L10n.string(.syncProviderDisabledHint))
                 )
             } else {
                 VStack(spacing: 0) {
@@ -182,7 +183,7 @@ struct SyncView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .navigationTitle("Provider Sync")
+        .navigationTitle(L10n.string(.syncProviderSyncTitle))
         .sheet(isPresented: $isSaveCredentialSheetPresented) {
             if let keychainServerHost {
                 SaveProviderCredentialSheet(
@@ -192,7 +193,7 @@ struct SyncView: View {
                 ) { account in
                     preferredKeychainAccountID = account.id
                     reloadKeychainAccounts(selecting: account)
-                    rememberLoginMessage = "Passwort-Konto für \(keychainServerHost) gespeichert."
+                    rememberLoginMessage = L10n.format(.credentialSavedForHost, keychainServerHost)
                 }
             }
         }
@@ -261,12 +262,12 @@ struct SyncView: View {
                 Button {
                     Task { await runSync() }
                 } label: {
-                    Label("Buchungen synchronisieren", systemImage: "arrow.triangle.2.circlepath")
+                    Label(L10n.string(.syncSyncBookings), systemImage: "arrow.triangle.2.circlepath")
                 }
                 .disabled(!canSync)
                 .help(canSync
-                    ? "Buchungen dieses Providers jetzt synchronisieren"
-                    : "Sync nicht möglich — Anmeldung und aktiven Provider prüfen")
+                    ? L10n.string(.syncSyncBookingsHelp)
+                    : L10n.string(.syncUnavailableHelp))
             }
         }
         .providerLoginDisclosure(isActive: isProviderEnabled)
@@ -348,10 +349,10 @@ struct SyncView: View {
     private var credentialControls: some View {
         HStack(spacing: 8) {
             if keychainAccounts.count > 1 {
-                Picker("Konto", selection: selectedAccountBinding) {
-                    Text("Konto wählen…").tag(Optional<KeychainCredentialAccount>.none)
+                Picker(L10n.string(.syncAccountPicker), selection: selectedAccountBinding) {
+                    Text(L10n.string(.syncChooseAccount)).tag(Optional<KeychainCredentialAccount>.none)
                     ForEach(keychainAccounts) { account in
-                        Text("\(account.username) (\(account.serverHost))").tag(Optional(account))
+                        Text(L10n.format(.syncAccountLabel, account.username, account.serverHost)).tag(Optional(account))
                     }
                 }
                 .labelsHidden()
@@ -362,32 +363,32 @@ struct SyncView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .help("\(selectedKeychainAccount.username) @ \(selectedKeychainAccount.serverHost)")
+                    .help(L10n.format(.syncAccountLabel, selectedKeychainAccount.username, selectedKeychainAccount.serverHost))
             }
 
             Button {
                 insertKeychainCredentials()
             } label: {
-                Label("Ausfüllen", systemImage: "key.fill")
+                Label(L10n.string(.actionFillCredentials), systemImage: "key.fill")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
             .disabled(!canInsertKeychainCredentials)
             .help(
                 canInsertKeychainCredentials
-                    ? "E-Mail und Kennwort des gewählten Kontos in die Login-Felder einfügen."
-                    : (keychainMessage ?? "Kein Konto ausgewählt.")
+                    ? L10n.string(.syncFillCredentialsHelp)
+                    : (keychainMessage ?? L10n.string(.syncNoAccountSelected))
             )
 
             Button {
                 openRememberLoginSheet()
             } label: {
-                Label("Anmeldung merken…", systemImage: "plus")
+                Label(L10n.string(.actionRememberLogin), systemImage: "plus")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
             .disabled(keychainServerHost == nil)
-            .help("Passwort-Konto speichern oder Session-Hinweis (Apple/Passkey/OAuth).")
+            .help(L10n.string(.syncRememberLoginHelp))
         }
     }
 
@@ -462,7 +463,7 @@ struct SyncView: View {
                         Button {
                             openRememberLoginSheet()
                         } label: {
-                            Label("Anmeldung merken…", systemImage: "plus")
+                            Label(L10n.string(.actionRememberLogin), systemImage: "plus")
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -470,20 +471,20 @@ struct SyncView: View {
 
                         Button {
                             if !MacSystemApps.openPasswords() {
-                                appendKeychainMessage("Passwords-App wurde nicht gefunden.")
+                                appendKeychainMessage(L10n.string(.syncPasswordsAppNotFound))
                             }
                         } label: {
-                            Label("Passwords öffnen", systemImage: "key.horizontal")
+                            Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
 
                         Button {
                             if !MacSystemApps.openKeychainAccess() {
-                                appendKeychainMessage("Schlüsselbundverwaltung wurde nicht gefunden.")
+                                appendKeychainMessage(L10n.string(.syncKeychainAccessNotFound))
                             }
                         } label: {
-                            Label("Schlüsselbundverwaltung", systemImage: "arrow.up.forward.app")
+                            Label(L10n.string(.actionOpenKeychain), systemImage: "arrow.up.forward.app")
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -492,7 +493,7 @@ struct SyncView: View {
             }
 
             HStack {
-                Text("Nach dem Login synchronisiert die App Aktivitäten und Stornofristen lokal.")
+                Text(L10n.string(.syncAfterLoginHint))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -500,15 +501,15 @@ struct SyncView: View {
                     isBrowserExpanded.toggle()
                 } label: {
                     Label(
-                        isBrowserExpanded ? "Browser ausblenden" : "Browser anzeigen",
+                        isBrowserExpanded ? L10n.string(.syncBrowserHide) : L10n.string(.syncBrowserShow),
                         systemImage: isBrowserExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical"
                     )
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .help(isBrowserExpanded
-                    ? "Eingebetteten Browser ausblenden"
-                    : "Eingebetteten Browser anzeigen")
+                    ? L10n.string(.syncBrowserHideHelp)
+                    : L10n.string(.syncBrowserShowHelp))
 
                 Button {
                     Task { await runSync() }
@@ -518,15 +519,15 @@ struct SyncView: View {
                             .controlSize(.small)
                             .padding(.horizontal, 8)
                     } else {
-                        Text("Jetzt synchronisieren")
+                        Text(L10n.string(.actionSyncNow))
                     }
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(!canStartSync)
                 .help(canStartSync
-                    ? "Aktivitäten und Stornofristen dieses Providers lokal aktualisieren"
-                    : "Sync nicht möglich — Anmeldung und aktiven Provider prüfen")
+                    ? L10n.string(.syncSyncNowHelp)
+                    : L10n.string(.syncUnavailableHelp))
             }
         }
         .padding(16)
@@ -561,11 +562,11 @@ struct SyncView: View {
             return
         }
         guard providerRegistry.provider(id: providerID) != nil else {
-            missingProviderMessage = "Provider \(providerID.rawValue) ist nicht verfügbar."
+            missingProviderMessage = L10n.format(.syncProviderUnavailable, providerID.rawValue)
             return
         }
         guard providerLoginURL != nil else {
-            missingProviderMessage = "Login-Metadaten fehlen für Provider \(providerID.rawValue)."
+            missingProviderMessage = L10n.format(.syncProviderLoginMetadataMissing, providerID.rawValue)
             return
         }
     }
@@ -649,7 +650,7 @@ struct SyncView: View {
         selectedKeychainAccount = nil
 
         guard let host = keychainServerHost else {
-            keychainMessage = "Kein Keychain-Host für diesen Provider konfiguriert."
+            keychainMessage = L10n.string(.syncNoKeychainHost)
             return
         }
 
@@ -686,10 +687,11 @@ struct SyncView: View {
         preferredKeychainAccountID = ""
         selectedKeychainAccount = nil
         autofillCredentials = nil
-        keychainMessage = """
-        \(accounts.count) lesbare Konten für '\(keychainServerHost ?? "")' gefunden.
-        Bitte das gewünschte Konto wählen. Fehlt ein Passwords-Konto: „Konto speichern…“.
-        """
+        keychainMessage = L10n.format(
+            .syncKeychainAccountsFound,
+            accounts.count,
+            keychainServerHost ?? ""
+        )
     }
 
     private func selectAccount(_ account: KeychainCredentialAccount?, autoFill: Bool = false) {
@@ -697,10 +699,11 @@ struct SyncView: View {
         autofillCredentials = nil
         guard let account else {
             if keychainAccounts.count > 1 {
-                keychainMessage = """
-                \(keychainAccounts.count) lesbare Konten für '\(keychainServerHost ?? "")' gefunden.
-                Bitte das gewünschte Konto wählen. Fehlt ein Passwords-Konto: „Konto speichern…“.
-                """
+                keychainMessage = L10n.format(
+                    .syncKeychainAccountsFound,
+                    keychainAccounts.count,
+                    keychainServerHost ?? ""
+                )
             }
             return
         }
