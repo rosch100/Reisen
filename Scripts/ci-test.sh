@@ -113,6 +113,10 @@ if awk '
   echo "Fehler: AppCompliance-Secrets-Job darf fehlende Secrets nicht mit exit 1 abbrechen." >&2
   exit 1
 fi
+if ! grep -q 'REISEN_GITHUB_ISSUES_TOKEN_BASE64: ${{ secrets.REISEN_GITHUB_ISSUES_TOKEN_BASE64 }}' "$WF"; then
+  echo "Fehler: App Store Check muss REISEN_GITHUB_ISSUES_TOKEN_BASE64 an das Store-Archive durchreichen." >&2
+  exit 1
+fi
 if grep -q 'REISEN_FEEDBACK_GMAIL_APP_PASSWORD' "$ROOT/.github/workflows/gmail-feedback-ingress.yml"; then
   echo "Fehler: Gmail-Ingress darf kein App-Passwort mehr nutzen." >&2
   exit 1

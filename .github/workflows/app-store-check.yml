@@ -64,6 +64,8 @@ jobs:
 
       - name: Archive Store IPA
         id: archive
+        env:
+          REISEN_GITHUB_ISSUES_TOKEN_BASE64: ${{ secrets.REISEN_GITHUB_ISSUES_TOKEN_BASE64 }}
         run: |
           IPA="$(bash ./Scripts/ios-archive-appstore.sh)"
           if [[ ! -f "$IPA" ]]; then
