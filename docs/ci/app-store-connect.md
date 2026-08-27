@@ -13,7 +13,7 @@ Technische Voraussetzungen im Repo sind in [apple-signing.md](apple-signing.md) 
 | Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/en/privacy.html` (`LegalURLs.privacyPolicyEnglish`) |
 | Support URL (DE) | `https://rosch100.github.io/Reisen/support.html` (`LegalURLs.supportGerman`) |
 | Support URL (EN) | `https://rosch100.github.io/Reisen/en/support.html` (`LegalURLs.supportEnglish`) |
-| Übersicht / beide Sprachen | `https://rosch100.github.io/Reisen/` (`index.html`) |
+| Übersicht / beide Sprachen | `https://rosch100.github.io/Reisen/` — zweisprachige **Produktseite** (DE: `/`, EN: `/en/`); Legal: Datenschutz, Support, Impressum |
 | Copyright | wie in Info.plist (`NSHumanReadableCopyright`) |
 
 **Vor Einreichung (Pflicht):**

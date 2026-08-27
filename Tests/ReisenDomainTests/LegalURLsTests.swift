@@ -45,6 +45,12 @@ import ReisenDomain
         let file = repoRoot.appendingPathComponent("docs/legal/\(legacy)")
         #expect(FileManager.default.fileExists(atPath: file.path), "Missing redirect \(legacy)")
     }
+    for page in ["impressum.html", "404.html", "assets/site.css", "assets/app-icon.png"] {
+        let file = repoRoot.appendingPathComponent("docs/legal/\(page)")
+        #expect(FileManager.default.fileExists(atPath: file.path), "Missing \(page)")
+    }
+    #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/en/index.html").path))
+    #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/en/impressum.html").path))
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/index.html").path))
 }
 
