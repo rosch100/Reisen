@@ -101,6 +101,7 @@ struct TripDetailView: View {
     }
 
     @State private var showAssignBookings = false
+    @State private var assignPreselectedBookingIDs: Set<UUID> = []
     @State private var pendingManualDeleteBookingID: UUID?
     @State private var showManualDeleteConfirmation = false
     @State private var pendingRemoveFromTripBookingID: UUID?
@@ -208,7 +209,8 @@ struct TripDetailView: View {
             .sheet(isPresented: $showAssignBookings) {
                 AssignBookingsSheet(
                     trip: trip,
-                    candidates: openBookingsCandidates()
+                    candidates: openBookingsCandidates(),
+                    initiallySelectedBookingIDs: assignPreselectedBookingIDs
                 )
             }
             .onAppear {
@@ -220,9 +222,21 @@ struct TripDetailView: View {
                 guard selectedTimelineID == nil else { return }
                 selectedTimelineID = firstBookingTimelineID
             }
-            .onReceive(NotificationCenter.default.publisher(for: .reisenAssignBookings)) { _ in
-                guard !openBookingsCandidates().isEmpty else { return }
+            .onReceive(NotificationCenter.default.publisher(for: .reisenAssignBookings)) { note in
+                let candidates = openBookingsCandidates()
+                guard !candidates.isEmpty else { return }
+                if let bookingID = note.object as? UUID,
+                   candidates.contains(where: { $0.id == bookingID }) {
+                    assignPreselectedBookingIDs = [bookingID]
+                } else {
+                    assignPreselectedBookingIDs = []
+                }
                 showAssignBookings = true
+            }
+            .onChange(of: showAssignBookings) { _, isPresented in
+                if !isPresented {
+                    assignPreselectedBookingIDs = []
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenAddBooking)) { _ in
                 startCreateBooking(
@@ -527,7 +541,7 @@ private struct BookingDetailPanel: View {
 
     private var isEditing: Bool { bookingEditorSession != nil }
 
-    private var bookingStatusBarHeight: CGFloat { 32 }
+    private var bookingStatusBarHeight: CGFloat { BookingLastSyncedBar.barHeight }
 
     var body: some View {
         Group {
@@ -546,7 +560,7 @@ private struct BookingDetailPanel: View {
                         .padding(.bottom, bookingStatusBarHeight)
 
                     if let synced = selectedBooking?.lastSyncedAt {
-                        bookingStatusBar(synced: synced)
+                        BookingLastSyncedBar(synced: synced)
                             .frame(height: bookingStatusBarHeight)
                     }
                 }
@@ -696,157 +710,6 @@ private struct BookingDetailPanel: View {
         case nil:
             break
         }
-    }
-
-    private func bookingStatusBar(synced: Date) -> some View {
-        HStack(spacing: 8) {
-            Text(L10n.string(.tripLastSynced))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            Text(synced.formatted(date: .abbreviated, time: .shortened))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16)
-        .background(.bar)
-    }
-}
-
-/// Vollständige Buchungsdetails für das untere Panel (alle persistierten Felder).
-private struct BookingDetailContent: View {
-    let booking: SDBooking
-    let isOverlapping: Bool
-    let overlapCount: Int
-    let onEditBooking: (() -> Void)?
-    let onRequestManualDeleteBooking: (UUID) -> Void
-    let onRequestRemoveFromTrip: (UUID) -> Void
-
-    private var priceText: String {
-        let details = booking.rateDetails
-        guard let amount = details?.totalPriceAmount else { return BookingDetailLabels.notAvailable }
-        return Formatting.formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
-    }
-
-    private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(booking.title ?? booking.bookingType.displayLabel)
-                        .font(.headline)
-                        .textSelection(.enabled)
-                    if isOverlapping {
-                        Text(L10n.overlapLabel(extraCount: overlapCount))
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                }
-                Spacer(minLength: 0)
-                VStack(alignment: .trailing, spacing: 2) {
-                    ProviderLogo(providerID: booking.provider)
-                    Text(booking.bookingType.displayLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(priceText)
-                        .font(.subheadline.weight(.semibold))
-                }
-            }
-
-            LazyVGrid(columns: [
-                GridItem(.adaptive(minimum: 160), spacing: 8, alignment: .leading),
-            ], alignment: .leading, spacing: 6) {
-                ForEach(BookingScheduleFields.make(booking: booking)) { field in
-                    detailRow(field.label, field.value)
-                }
-            }
-
-            if let rate = booking.rateDetails {
-                Divider()
-                Text(BookingDetailLabels.rateSection)
-                    .font(.subheadline.weight(.semibold))
-                LazyVGrid(columns: [
-                    GridItem(.adaptive(minimum: 160), spacing: 8, alignment: .leading),
-                ], alignment: .leading, spacing: 6) {
-                    ForEach(BookingRateFields.make(rate: rate, booking: booking)) { field in
-                        detailRow(field.label, field.value)
-                    }
-                }
-
-                if !rate.resolvedRoomItems.isEmpty {
-                    Divider()
-                    Text(BookingDetailLabels.roomItemsSection)
-                        .font(.subheadline.weight(.semibold))
-                    BookingRoomItemsView(rate: rate)
-                }
-            }
-
-            if !booking.resolvedCancellationDeadlines.isEmpty {
-                Divider()
-                Text(BookingDetailLabels.cancellationSection)
-                    .font(.subheadline.weight(.semibold))
-                BookingCancellationDeadlinesView(booking: booking, hotelTimeZone: hotelTimeZone)
-            }
-
-            if !booking.resolvedGuestHints.isEmpty {
-                Divider()
-                Text(GuestHintCategory.preTravelImportant.displayTitle)
-                    .font(.subheadline.weight(.semibold))
-                BookingGuestHintsView(booking: booking)
-            }
-
-            if let url = booking.browserURL {
-                Divider()
-                Link(L10n.string(.actionOpenInBrowser), destination: url)
-                    .font(.caption)
-            }
-
-            if let onEditBooking {
-                Button(L10n.string(.commonEdit)) {
-                    onEditBooking()
-                }
-                .buttonStyle(.link)
-                .padding(.top, 4)
-                .help(L10n.string(.tripEditBookingHelp))
-            }
-
-            if ProviderID(rawValue: booking.providerRaw) == .manual {
-                Button(role: .destructive) {
-                    onRequestManualDeleteBooking(booking.id)
-                } label: {
-                    Text(L10n.string(.actionDeleteEllipsis))
-                }
-                .buttonStyle(.link)
-                .padding(.top, 4)
-                .help(L10n.string(.tripDeleteManualHelp))
-            }
-
-            Button(role: .destructive) {
-                onRequestRemoveFromTrip(booking.id)
-            } label: {
-                Text(L10n.string(.actionRemoveFromTrip))
-            }
-            .buttonStyle(.link)
-            .padding(.top, 4)
-            .help(L10n.string(.tripRemoveFromTripHelp))
-        }
-    }
-
-    private func detailRow(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.caption)
-                .foregroundStyle(.primary)
-                .textSelection(.enabled)
-                .lineLimit(3)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

@@ -19,6 +19,7 @@ struct RootTabView: View {
     @State private var sessionChromeEpoch = 0
     @State private var providerEnableEpoch = 0
     @State private var selectedTab: AppTab = .reisen
+    @State private var selectedTripID: UUID?
     #if REISEN_PROVIDER_SYNC
     @State private var installedProviderIDs: Set<ProviderID> = []
     #endif
@@ -80,17 +81,26 @@ struct RootTabView: View {
     }
     #endif
 
+    private func focusCreatedTrip(_ tripID: UUID) {
+        selectedTripID = tripID
+        selectedTab = .reisen
+    }
+
     private var tabs: some View {
         TabView(selection: $selectedTab) {
             #if REISEN_PROVIDER_SYNC
             ReisenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                selectedTripID: $selectedTripID,
                 onOpenSync: { selectedTab = .sync }
             )
             .tabItem { Label(L10n.string(.tabTrips), systemImage: "airplane") }
             .tag(AppTab.reisen)
             #else
-            ReisenTab(sessionChromeEpoch: $sessionChromeEpoch)
+            ReisenTab(
+                sessionChromeEpoch: $sessionChromeEpoch,
+                selectedTripID: $selectedTripID
+            )
             .tabItem { Label(L10n.string(.tabTrips), systemImage: "airplane") }
             .tag(AppTab.reisen)
             #endif
@@ -98,12 +108,16 @@ struct RootTabView: View {
             #if REISEN_PROVIDER_SYNC
             OffenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                onTripCreated: focusCreatedTrip,
                 onOpenSync: { selectedTab = .sync }
             )
             .tabItem { Label(L10n.string(.tabOpen), systemImage: "list.bullet.rectangle") }
             .tag(AppTab.offen)
             #else
-            OffenTab(sessionChromeEpoch: $sessionChromeEpoch)
+            OffenTab(
+                sessionChromeEpoch: $sessionChromeEpoch,
+                onTripCreated: focusCreatedTrip
+            )
             .tabItem { Label(L10n.string(.tabOpen), systemImage: "list.bullet.rectangle") }
             .tag(AppTab.offen)
             #endif

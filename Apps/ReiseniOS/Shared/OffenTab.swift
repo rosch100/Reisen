@@ -8,37 +8,25 @@ import ReisenData
 
 struct OffenTab: View {
     @Binding var sessionChromeEpoch: Int
+    var onTripCreated: (UUID) -> Void
     #if REISEN_PROVIDER_SYNC
     var onOpenSync: () -> Void
     #endif
 
     @State private var showCreateTrip = false
+    @State private var tripCreateSeed: TripCreateSeed?
+    @State private var showCreateTripFromBookingsFailed = false
     @State private var selectedBookingID: UUID?
+    @State private var multiSelection = Set<UUID>()
+    @State private var isSelectingForTripCreate = false
     @State private var searchText = ""
 
     var body: some View {
         AdaptiveListDetail(
             selection: $selectedBookingID,
-            list: {
-                openBookingsListChrome {
-                    #if REISEN_PROVIDER_SYNC
-                    OpenBookingsScreen(
-                        searchText: $searchText,
-                        selectedBookingID: $selectedBookingID,
-                        onOpenSync: onOpenSync,
-                        onCreateTrip: { showCreateTrip = true }
-                    )
-                    #else
-                    OpenBookingsScreen(
-                        searchText: $searchText,
-                        selectedBookingID: $selectedBookingID,
-                        onCreateTrip: { showCreateTrip = true }
-                    )
-                    #endif
-                }
-            },
+            list: { openBookingsScreen },
             detail: { bookingID in
-                BookingDetailIOS(bookingID: bookingID)
+                BookingDetailIOS(bookingID: bookingID, onTripCreated: onTripCreated)
             },
             emptyDetail: {
                 ContentUnavailableView(
@@ -49,49 +37,69 @@ struct OffenTab: View {
             }
         )
         .sheet(isPresented: $showCreateTrip) {
-            TripEditorSheet(mode: .create, onSaved: { _ in })
+            TripEditorSheet(mode: .create, onSaved: { trip in
+                onTripCreated(trip.id)
+            })
             .reisenSheetDetents()
         }
+        .createTripFromBookingsPresentation(
+            seed: $tripCreateSeed,
+            showFailed: $showCreateTripFromBookingsFailed,
+            onSaved: { trip in
+                onTripCreated(trip.id)
+            }
+        )
     }
 
     @ViewBuilder
-    private func openBookingsListChrome<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .navigationTitle(L10n.string(.tabOpen))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showCreateTrip = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .help(L10n.string(.actionCreateTrip))
-                }
-                #if REISEN_PROVIDER_SYNC
-                ToolbarItem(placement: .topBarTrailing) {
-                    GlobalChromeTrailingToolbar(
-                        sessionChromeEpoch: $sessionChromeEpoch
-                    )
-                }
-                #endif
-            }
+    private var openBookingsScreen: some View {
+        #if REISEN_PROVIDER_SYNC
+        OpenBookingsScreen(
+            searchText: $searchText,
+            selectedBookingID: $selectedBookingID,
+            multiSelection: $multiSelection,
+            isSelectingForTripCreate: $isSelectingForTripCreate,
+            tripCreateSeed: $tripCreateSeed,
+            showCreateTripFromBookingsFailed: $showCreateTripFromBookingsFailed,
+            sessionChromeEpoch: $sessionChromeEpoch,
+            onOpenSync: onOpenSync,
+            onCreateTrip: { showCreateTrip = true },
+            onTripCreated: onTripCreated
+        )
+        #else
+        OpenBookingsScreen(
+            searchText: $searchText,
+            selectedBookingID: $selectedBookingID,
+            multiSelection: $multiSelection,
+            isSelectingForTripCreate: $isSelectingForTripCreate,
+            tripCreateSeed: $tripCreateSeed,
+            showCreateTripFromBookingsFailed: $showCreateTripFromBookingsFailed,
+            onCreateTrip: { showCreateTrip = true },
+            onTripCreated: onTripCreated
+        )
+        #endif
     }
 }
 
 struct OpenBookingsScreen: View {
     @Binding var searchText: String
     @Binding var selectedBookingID: UUID?
+    @Binding var multiSelection: Set<UUID>
+    @Binding var isSelectingForTripCreate: Bool
+    @Binding var tripCreateSeed: TripCreateSeed?
+    @Binding var showCreateTripFromBookingsFailed: Bool
     #if REISEN_PROVIDER_SYNC
+    @Binding var sessionChromeEpoch: Int
     var onOpenSync: () -> Void
     #endif
     var onCreateTrip: () -> Void
+    var onTripCreated: (UUID) -> Void
 
     @Environment(\.adaptiveUsesSplitNavigation) private var usesSplit
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
 
     private var openBookings: [SDBooking] {
-        allBookings.filter { OpenBookingMatching.isOpenUnassigned($0) }
+        OpenBookingMatching.openUnassigned(in: allBookings)
     }
 
     private var filtered: [SDBooking] {
@@ -123,19 +131,124 @@ struct OpenBookingsScreen: View {
                         .buttonStyle(.borderedProminent)
                         #endif
                 }
+            } else if isSelectingForTripCreate {
+                List(selection: $multiSelection) {
+                    ForEach(filtered, id: \.id) { booking in
+                        OpenBookingRow(booking: booking)
+                            .tag(booking.id)
+                    }
+                }
+                .environment(\.editMode, .constant(.active))
+                .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             } else {
                 List(selection: $selectedBookingID) {
                     ForEach(filtered, id: \.id) { booking in
                         bookingRow(booking)
                             .tag(booking.id)
+                            .contextMenu {
+                                Button {
+                                    createTripFromBooking(booking.id)
+                                } label: {
+                                    CreateTripFromBookingsLabel()
+                                }
+                            }
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                if !usesSplit {
+                                    Button {
+                                        createTripFromBooking(booking.id)
+                                    } label: {
+                                        CreateTripFromBookingsLabel()
+                                    }
+                                    .tint(.accentColor)
+                                }
+                            }
                     }
                 }
                 .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             }
         }
-        .modifier(CompactUUIDDestination(enabled: !usesSplit) { bookingID in
-            BookingDetailIOS(bookingID: bookingID)
+        .navigationTitle(
+            isSelectingForTripCreate && !multiSelection.isEmpty
+                ? L10n.format(.tripSelectedOpenBookings, multiSelection.count)
+                : L10n.string(.tabOpen)
+        )
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarTitleMenu {
+            if !isSelectingForTripCreate, !openBookings.isEmpty {
+                Button {
+                    presentCreateTripFromAllOpen()
+                } label: {
+                    CreateTripFromAllOpenBookingsLabel(count: openBookings.count)
+                }
+            }
+        }
+        .toolbar {
+            if isSelectingForTripCreate {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string(.commonCancel)) {
+                        isSelectingForTripCreate = false
+                        multiSelection = []
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        presentCreateTripFromSelection(multiSelection)
+                    } label: {
+                        CreateTripFromBookingsLabel()
+                    }
+                    .disabled(multiSelection.isEmpty)
+                }
+            } else {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        onCreateTrip()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .help(L10n.string(.actionCreateTrip))
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(L10n.string(.commonSelect)) {
+                        isSelectingForTripCreate = true
+                    }
+                }
+                #if REISEN_PROVIDER_SYNC
+                ToolbarItem(placement: .topBarTrailing) {
+                    GlobalChromeTrailingToolbar(
+                        sessionChromeEpoch: $sessionChromeEpoch
+                    )
+                }
+                #endif
+            }
+        }
+        .modifier(CompactUUIDDestination(enabled: !usesSplit && !isSelectingForTripCreate) { bookingID in
+            BookingDetailIOS(bookingID: bookingID, onTripCreated: onTripCreated)
         })
+    }
+
+    private func createTripFromBooking(_ bookingID: UUID) {
+        presentCreateTripFromSelection(Set([bookingID]))
+    }
+
+    private func presentCreateTripFromSelection(_ bookingIDs: Set<UUID>) {
+        guard OpenBookingCreateTripAction.assignSeed(
+            fromIDs: bookingIDs,
+            in: openBookings,
+            seed: $tripCreateSeed,
+            showFailed: $showCreateTripFromBookingsFailed
+        ) else { return }
+        isSelectingForTripCreate = false
+        multiSelection = []
+    }
+
+    private func presentCreateTripFromAllOpen() {
+        guard OpenBookingCreateTripAction.assignSeedFromAll(
+            in: allBookings,
+            seed: $tripCreateSeed,
+            showFailed: $showCreateTripFromBookingsFailed
+        ) else { return }
+        isSelectingForTripCreate = false
+        multiSelection = []
     }
 
     @ViewBuilder

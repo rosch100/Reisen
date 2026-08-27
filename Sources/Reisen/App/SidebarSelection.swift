@@ -5,6 +5,7 @@ extension Notification.Name {
     static let reisenShowProviderSync = Notification.Name("reisenShowProviderSync")
     static let reisenSyncAllProviders = Notification.Name("reisenSyncAllProviders")
     static let reisenNewTrip = Notification.Name("reisenNewTrip")
+    static let reisenNewTripFromOpenBookings = Notification.Name("reisenNewTripFromOpenBookings")
     static let reisenAddBooking = Notification.Name("reisenAddBooking")
     static let reisenAssignBookings = Notification.Name("reisenAssignBookings")
     static let reisenEditSelectedTrip = Notification.Name("reisenEditSelectedTrip")

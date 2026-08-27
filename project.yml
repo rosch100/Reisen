@@ -16,6 +16,7 @@ settings:
     SWIFT_VERSION: "6.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 4N6AJL9EX5
 
 targets:
   ReiseniOS:

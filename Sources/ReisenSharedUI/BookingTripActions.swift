@@ -56,6 +56,21 @@ public struct BookingTripConfirmDialogs: ViewModifier {
 }
 
 public extension View {
+    func bookingDeleteConfirmDialog(
+        showDeleteConfirmation: Binding<Bool>,
+        onConfirmDelete: @escaping () -> Void,
+        onCancelDelete: @escaping () -> Void = {}
+    ) -> some View {
+        confirmationDialog(
+            BookingTripActions.deleteTitle,
+            isPresented: showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string(.commonDelete), role: .destructive, action: onConfirmDelete)
+            Button(L10n.string(.commonCancel), role: .cancel, action: onCancelDelete)
+        }
+    }
+
     func bookingTripConfirmDialogs(
         showDeleteConfirmation: Binding<Bool>,
         showRemoveFromTripConfirmation: Binding<Bool>,

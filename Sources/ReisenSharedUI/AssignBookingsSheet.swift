@@ -10,12 +10,18 @@ public struct AssignBookingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    @State private var selectedBookingIDs: Set<UUID> = []
+    @State private var selectedBookingIDs: Set<UUID>
     @State private var errorMessage: String?
 
-    public init(trip: SDTrip, candidates: [SDBooking]) {
+    public init(
+        trip: SDTrip,
+        candidates: [SDBooking],
+        initiallySelectedBookingIDs: Set<UUID> = []
+    ) {
         self.trip = trip
         self.candidates = candidates
+        let candidateIDs = Set(candidates.map(\.id))
+        _selectedBookingIDs = State(initialValue: initiallySelectedBookingIDs.intersection(candidateIDs))
     }
 
     public var body: some View {

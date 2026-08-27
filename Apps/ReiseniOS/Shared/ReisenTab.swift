@@ -8,6 +8,7 @@ import ReisenData
 
 struct ReisenTab: View {
     @Binding var sessionChromeEpoch: Int
+    @Binding var selectedTripID: UUID?
     #if REISEN_PROVIDER_SYNC
     var onOpenSync: () -> Void
     #endif
@@ -15,7 +16,6 @@ struct ReisenTab: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
     @State private var showCreateTrip = false
-    @State private var selectedTripID: UUID?
     @State private var searchText = ""
     @State private var pendingDeleteTrip: SDTrip?
     @State private var showDeleteConfirm = false

@@ -13,6 +13,14 @@ public enum OpenBookingMatching {
         return booking.startAt >= startOfToday
     }
 
+    public static func openUnassigned(
+        in bookings: [SDBooking],
+        calendar: Calendar = .current,
+        now: Date = Date()
+    ) -> [SDBooking] {
+        bookings.filter { isOpenUnassigned($0, calendar: calendar, now: now) }
+    }
+
     public static func isCandidate(
         _ booking: SDBooking,
         for trip: SDTrip,

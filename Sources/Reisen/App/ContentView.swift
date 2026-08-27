@@ -39,7 +39,9 @@ struct ContentView: View {
     @State private var activeTripID: UUID? = nil
 
     /// Auswahl der offenen Buchung (Content → Detail, analog zu Mail-UX).
-    @State private var selectedOpenBookingID: UUID?
+    @State private var selectedOpenBookingIDs: Set<UUID> = []
+    @State private var tripCreateSeed: TripCreateSeed?
+    @State private var showCreateTripFromBookingsFailed = false
 
     /// HIG: Spalten per dünnem Divider ziehbar (keine sichtbaren Slider-Knöpfe).
     private let sidebarMinWidth: CGFloat = 180
@@ -89,6 +91,15 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenNewTrip)) { _ in
             showCreateTrip = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .reisenNewTripFromOpenBookings)) { _ in
+            guard selection == .openBookings, !selectedOpenBookingIDs.isEmpty else { return }
+            OpenBookingCreateTripAction.assignSeed(
+                fromIDs: selectedOpenBookingIDs,
+                in: openBookings,
+                seed: $tripCreateSeed,
+                showFailed: $showCreateTripFromBookingsFailed
+            )
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenEditSelectedTrip)) { _ in
             guard case .trip(let id) = selection,
@@ -155,6 +166,14 @@ struct ContentView: View {
                 }
             )
         }
+        .createTripFromBookingsPresentation(
+            seed: $tripCreateSeed,
+            showFailed: $showCreateTripFromBookingsFailed,
+            onSaved: { newTrip in
+                selection = .trip(newTrip.id)
+                tripCreateSeed = nil
+            }
+        )
         .sheet(item: $tripToEdit) { trip in
             TripEditorSheet(
                 mode: .edit,
@@ -185,6 +204,12 @@ struct ContentView: View {
         } message: {
             Text(L10n.string(.tripDeleteConfirmMessage))
         }
+        .focusedSceneValue(
+            \.openBookingsCommandState,
+            selection == .openBookings && !selectedOpenBookingIDs.isEmpty
+                ? OpenBookingsCommandState(canCreateTripFromSelection: true)
+                : nil
+        )
     }
 
     @ViewBuilder
@@ -386,6 +411,19 @@ struct ContentView: View {
                     }
                     .tag(SidebarSelection.openBookings)
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            selection = .openBookings
+                            selectedOpenBookingIDs = Set(openBookings.map(\.id))
+                            OpenBookingCreateTripAction.assignSeedFromAll(
+                                in: allBookings,
+                                seed: $tripCreateSeed,
+                                showFailed: $showCreateTripFromBookingsFailed
+                            )
+                        } label: {
+                            CreateTripFromAllOpenBookingsLabel(count: openBookings.count)
+                        }
+                    }
                 }
             }
 
@@ -542,7 +580,11 @@ struct ContentView: View {
     }
 
     private var openBookings: [SDBooking] {
-        allBookings.filter { OpenBookingMatching.isOpenUnassigned($0) }
+        OpenBookingMatching.openUnassigned(in: allBookings)
+    }
+
+    private var selectedOpenBookings: [SDBooking] {
+        openBookings.filter { selectedOpenBookingIDs.contains($0.id) }
     }
 
     private func matchingTrip(for booking: SDBooking) -> SDTrip? {
@@ -584,69 +626,57 @@ struct ContentView: View {
                     }
                 }
             } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(L10n.string(.tripOpenBookings))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 6)
-                        .padding(.bottom, 4)
-
-                    Divider()
-
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(openBookings) { booking in
-                                Button {
-                                    selectedOpenBookingID = booking.id
-                                } label: {
-                                    OpenBookingRow(booking: booking)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(
-                                        selectedOpenBookingID == booking.id
-                                            ? Color.accentColor.opacity(0.12)
-                                            : Color.clear
+                List(openBookings, selection: $selectedOpenBookingIDs) { booking in
+                    OpenBookingRow(booking: booking)
+                        .tag(booking.id)
+                }
+                .listStyle(.inset(alternatesRowBackgrounds: true))
+                .navigationTitle(L10n.string(.tripOpenBookings))
+                .contextMenu(forSelectionType: UUID.self) { selectedIDs in
+                    if selectedIDs.count == 1,
+                       let bookingID = selectedIDs.first,
+                       let booking = openBookings.first(where: { $0.id == bookingID }) {
+                        if let url = booking.browserURL {
+                            Button(L10n.string(.actionOpenInBrowser)) {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        if let trip = matchingTrip(for: booking) {
+                            Button(L10n.string(.actionAssignToTrip)) {
+                                applyAfterTripFocus(trip: trip) {
+                                    NotificationCenter.default.post(
+                                        name: .reisenAssignBookings,
+                                        object: booking.id
                                     )
                                 }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    if let url = booking.browserURL {
-                                        Button(L10n.string(.actionOpenInBrowser)) {
-                                            NSWorkspace.shared.open(url)
-                                        }
-                                    }
-                                    if let trip = matchingTrip(for: booking) {
-                                        Button(L10n.string(.actionAssignToTrip)) {
-                                            applyAfterTripFocus(trip: trip) {
-                                                NotificationCenter.default.post(
-                                                    name: .reisenAssignBookings,
-                                                    object: nil
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Divider()
-                                    .padding(.leading, 12)
                             }
                         }
                     }
+                    if !selectedIDs.isEmpty {
+                        Button {
+                            OpenBookingCreateTripAction.assignSeed(
+                                fromIDs: selectedIDs,
+                                in: openBookings,
+                                seed: $tripCreateSeed,
+                                showFailed: $showCreateTripFromBookingsFailed
+                            )
+                        } label: {
+                            CreateTripFromBookingsLabel()
+                        }
+                    }
                 }
-                .navigationTitle(L10n.string(.tripOpenBookings))
                 .onAppear {
-                    if selectedOpenBookingID == nil, let first = openBookings.first?.id {
-                        selectedOpenBookingID = first
+                    if selectedOpenBookingIDs.isEmpty, let first = openBookings.first?.id {
+                        selectedOpenBookingIDs = [first]
                     }
                 }
                 .onChange(of: openBookings.count) { _, _ in
-                    if let selectedOpenBookingID,
-                       openBookings.contains(where: { $0.id == selectedOpenBookingID }) {
-                        return
+                    selectedOpenBookingIDs = selectedOpenBookingIDs.filter { id in
+                        openBookings.contains(where: { $0.id == id })
                     }
-                    selectedOpenBookingID = openBookings.first?.id
+                    if selectedOpenBookingIDs.isEmpty, let first = openBookings.first?.id {
+                        selectedOpenBookingIDs = [first]
+                    }
                 }
             }
         case .none, .trips:
@@ -675,12 +705,53 @@ struct ContentView: View {
                 description: Text(L10n.string(.tripSelectTripOrSync))
             )
         case .openBookings:
-            if let selectedOpenBookingID, let booking = openBookings.first(where: { $0.id == selectedOpenBookingID }) {
-                OpenBookingDetailView(booking: booking)
-                    .navigationTitle(booking.displayTitle)
+            if selectedOpenBookingIDs.count > 1 {
+                ScrollView {
+                    OpenBookingMultiSelectionSummary(
+                        selected: selectedOpenBookings,
+                        onCreateTrip: {
+                            OpenBookingCreateTripAction.assignSeed(
+                                fromIDs: selectedOpenBookingIDs,
+                                in: openBookings,
+                                seed: $tripCreateSeed,
+                                showFailed: $showCreateTripFromBookingsFailed
+                            )
+                        }
+                    )
+                    .padding(16)
+                }
+                .navigationTitle(L10n.string(.tripOpenBookings))
+            } else if let bookingID = selectedOpenBookingIDs.first,
+                      let booking = openBookings.first(where: { $0.id == bookingID }) {
+                OpenBookingDetailView(
+                    booking: booking,
+                    matchingTrip: matchingTrip(for: booking),
+                    onCreateTrip: {
+                        OpenBookingCreateTripAction.assignSeed(
+                            fromIDs: [booking.id],
+                            in: openBookings,
+                            seed: $tripCreateSeed,
+                            showFailed: $showCreateTripFromBookingsFailed
+                        )
+                    }
+                )
+                .id(booking.id)
+                .navigationTitle(booking.displayTitle)
             } else if let first = openBookings.first {
-                OpenBookingDetailView(booking: first)
-                    .navigationTitle(first.displayTitle)
+                OpenBookingDetailView(
+                    booking: first,
+                    matchingTrip: matchingTrip(for: first),
+                    onCreateTrip: {
+                        OpenBookingCreateTripAction.assignSeed(
+                            fromIDs: [first.id],
+                            in: openBookings,
+                            seed: $tripCreateSeed,
+                            showFailed: $showCreateTripFromBookingsFailed
+                        )
+                    }
+                )
+                .id(first.id)
+                .navigationTitle(first.displayTitle)
             } else {
                 ContentUnavailableView(
                     L10n.string(.tripNoOpenBookings),
@@ -710,50 +781,144 @@ struct ContentView: View {
 
     private struct OpenBookingDetailView: View {
         let booking: SDBooking
+        let matchingTrip: SDTrip?
+        var onCreateTrip: () -> Void
+
+        @Environment(\.modelContext) private var modelContext
+        @State private var assignErrorMessage: String?
+        @State private var showAssignError = false
+        @State private var isEditing = false
+        @State private var bookingEditorDraft: BookingEditorDraft?
+        @State private var pendingDeleteBookingID: UUID?
+        @State private var showDeleteConfirmation = false
+
+        private var draftBinding: Binding<BookingEditorDraft>? {
+            guard bookingEditorDraft != nil else { return nil }
+            return Binding(
+                get: { bookingEditorDraft! },
+                set: { bookingEditorDraft = $0 }
+            )
+        }
+
+        private var lastSyncedBarHeight: CGFloat { BookingLastSyncedBar.barHeight }
 
         var body: some View {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(booking.displayTitle)
-                                .font(.headline)
-                                .textSelection(.enabled)
-                            Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+            Group {
+                if isEditing, let draftBinding {
+                    BookingEditorForm(
+                        title: L10n.string(.editorEditTitle),
+                        showsSyncOverwriteHint: booking.provider != .manual,
+                        draft: draftBinding,
+                        providerReadOnly: booking.provider != .manual,
+                        onCancel: {
+                            isEditing = false
+                            bookingEditorDraft = nil
+                        },
+                        onSave: {
+                            guard let draft = bookingEditorDraft else { return }
+                            try draft.apply(to: booking, in: modelContext)
+                            isEditing = false
+                            bookingEditorDraft = nil
                         }
-
-                        if !booking.resolvedCancellationDeadlines.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(L10n.string(.tripStorno))
-                                    .font(.subheadline.weight(.semibold))
-                                BookingCancellationDeadlinesView(booking: booking)
-                            }
-                        } else {
-                            ContentUnavailableView(
-                                L10n.string(.tripNoCancellationInfo),
-                                systemImage: "info.circle",
-                                description: Text(L10n.string(.tripNoCancellationTerms))
-                            )
-                        }
-
-                        if !booking.resolvedGuestHints.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(GuestHintCategory.preTravelImportant.displayTitle)
-                                    .font(.subheadline.weight(.semibold))
-                                BookingGuestHintsView(booking: booking)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    )
+                } else {
+                    openBookingDetailScroll
                 }
             }
-            .scrollBounceBehavior(.basedOnSize)
+            .alert(L10n.string(.tripAssignFailed), isPresented: $showAssignError) {
+                Button(L10n.string(.commonOk), role: .cancel) {}
+            } message: {
+                if let assignErrorMessage, !assignErrorMessage.isEmpty {
+                    Text(assignErrorMessage)
+                }
+            }
+            .bookingDeleteConfirmDialog(
+                showDeleteConfirmation: $showDeleteConfirmation,
+                onConfirmDelete: deletePendingBooking,
+                onCancelDelete: { pendingDeleteBookingID = nil }
+            )
+            .onChange(of: booking.id) { _, _ in
+                isEditing = false
+                bookingEditorDraft = nil
+                pendingDeleteBookingID = nil
+            }
+        }
+
+        private var openBookingDetailScroll: some View {
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            BookingDetailContent(
+                                booking: booking,
+                                onEditBooking: {
+                                    isEditing = true
+                                    bookingEditorDraft = BookingEditorDraft.fromExisting(booking)
+                                },
+                                onRequestManualDeleteBooking: { bookingID in
+                                    pendingDeleteBookingID = bookingID
+                                    showDeleteConfirmation = true
+                                }
+                            )
+
+                            openBookingAssignmentSection
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .padding(.bottom, booking.lastSyncedAt == nil ? 0 : lastSyncedBarHeight)
+
+                if let synced = booking.lastSyncedAt {
+                    BookingLastSyncedBar(synced: synced)
+                        .frame(height: lastSyncedBarHeight)
+                }
+            }
+        }
+
+        private func deletePendingBooking() {
+            guard let bookingID = pendingDeleteBookingID else { return }
+            guard booking.id == bookingID else { return }
+            modelContext.delete(booking)
+            do {
+                try modelContext.save()
+            } catch {
+                assignErrorMessage = error.localizedDescription
+                showAssignError = true
+                modelContext.rollback()
+            }
+            pendingDeleteBookingID = nil
+        }
+
+        @ViewBuilder
+        private var openBookingAssignmentSection: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.string(.tripAssign))
+                    .font(.subheadline.weight(.semibold))
+
+                if let matchingTrip {
+                    Button(L10n.string(.actionAssignToTrip)) {
+                        do {
+                            booking.trip = matchingTrip
+                            try modelContext.save()
+                        } catch {
+                            assignErrorMessage = error.localizedDescription
+                            showAssignError = true
+                        }
+                    }
+                    .buttonStyle(.link)
+                    .help(L10n.string(.tripAssignOpenBookingHelp))
+                } else {
+                    Button(action: onCreateTrip) {
+                        CreateTripFromBookingsLabel()
+                    }
+                    .buttonStyle(.link)
+                }
+            }
         }
     }
 

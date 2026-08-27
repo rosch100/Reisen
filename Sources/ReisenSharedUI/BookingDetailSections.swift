@@ -113,6 +113,11 @@ public enum BookingScheduleFields {
         var fields: [BookingRateField] = [
             BookingRateField(label: BookingDetailLabels.status, value: booking.status.displayLabel)
         ]
+        if let code = booking.confirmationCode, !code.isEmpty {
+            fields.append(
+                BookingRateField(label: BookingDetailLabels.confirmationNumber, value: code)
+            )
+        }
         let bookingType = booking.bookingType
 
         if bookingType.showsLocationFrom,

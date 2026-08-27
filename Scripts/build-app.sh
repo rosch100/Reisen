@@ -60,27 +60,49 @@ if [[ -z "${BIN}" || ! -x "$BIN" ]]; then
   exit 1
 fi
 
-# SwiftPM Resource-Bundle (Bundle.module → Reisen_Reisen.bundle) muss neben den
-# App-Resources liegen, sonst crasht ProviderLogo beim Start mit fatalError.
-BUNDLE_NAME="Reisen_Reisen.bundle"
-RESOURCE_BUNDLE=""
-for candidate in \
-  "$(dirname "$BIN")/$BUNDLE_NAME" \
-  "$ROOT/.build/$CONFIG/$BUNDLE_NAME" \
-  "$ROOT/.build/out/Products/$OUT_CONFIG/$BUNDLE_NAME"
-do
-  if [[ -d "$candidate" ]]; then
-    RESOURCE_BUNDLE="$candidate"
-    break
-  fi
-done
-if [[ -z "$RESOURCE_BUNDLE" ]]; then
-  RESOURCE_BUNDLE="$(find "$ROOT/.build" -type d -name "$BUNDLE_NAME" | head -1 || true)"
-fi
-if [[ -z "$RESOURCE_BUNDLE" || ! -d "$RESOURCE_BUNDLE" ]]; then
-  echo "Fehler: $BUNDLE_NAME nicht gefunden (SwiftPM-Resources)." >&2
-  exit 1
-fi
+# SwiftPM Resource-Bundles (Bundle.module) müssen im .app liegen; sonst fatalError beim Start
+# (z. B. L10n → Reisen_ReisenDomain.bundle, ProviderLogo → Reisen_Reisen.bundle).
+RUNTIME_SPM_BUNDLES=(
+  Reisen_Reisen.bundle
+  Reisen_ReisenDomain.bundle
+)
+
+find_spm_resource_bundle() {
+  local bundle_name="$1"
+  local candidate
+  for candidate in \
+    "$(dirname "$BIN")/$bundle_name" \
+    "$ROOT/.build/$CONFIG/$bundle_name" \
+    "$ROOT/.build/out/Products/$OUT_CONFIG/$bundle_name"
+  do
+    if [[ -d "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  find "$ROOT/.build" -type d -name "$bundle_name" ! -path '*Tests*' 2>/dev/null | head -1
+}
+
+copy_spm_resource_bundles() {
+  local bundle_name source
+  for bundle_name in "${RUNTIME_SPM_BUNDLES[@]}"; do
+    source="$(find_spm_resource_bundle "$bundle_name")"
+    if [[ -z "$source" || ! -d "$source" ]]; then
+      echo "Fehler: $bundle_name nicht gefunden (SwiftPM-Resources)." >&2
+      exit 1
+    fi
+    cp -R "$source" "$RESOURCES/$bundle_name"
+    cp -R "$source" "$MACOS/$bundle_name"
+  done
+}
+
+sign_spm_resource_bundles() {
+  local bundle_name
+  for bundle_name in "${RUNTIME_SPM_BUNDLES[@]}"; do
+    codesign --force --sign "$SIGN_IDENTITY" "$RESOURCES/$bundle_name"
+    codesign --force --sign "$SIGN_IDENTITY" "$MACOS/$bundle_name"
+  done
+}
 
 APP="$ROOT/.build/Reisen.app"
 CONTENTS="$APP/Contents"
@@ -100,10 +122,7 @@ if [[ ! -f "$ENTITLEMENTS" ]]; then
   exit 1
 fi
 
-# SPM Bundle.module-Pfad: Contents/Resources/Reisen_Reisen.bundle
-cp -R "$RESOURCE_BUNDLE" "$RESOURCES/$BUNDLE_NAME"
-# Zusätzlich neben dem Binary (CLI-/Xcode-ähnliche Auflösung über bundleURL.deletingLastPathComponent).
-cp -R "$RESOURCE_BUNDLE" "$MACOS/$BUNDLE_NAME"
+copy_spm_resource_bundles
 
 # Flat-SVGs in App-Resources → Bundle.main.url(forResource:) als Fallback ohne Bundle.module.
 LOGO_DIR="$ROOT/Sources/Reisen/Resources/ProviderLogos"
@@ -162,8 +181,7 @@ else
 fi
 cp "$SIGN_ENTITLEMENTS" "$CONTENTS/Reisen.entitlements"
 
-codesign --force --sign "$SIGN_IDENTITY" "$RESOURCES/$BUNDLE_NAME"
-codesign --force --sign "$SIGN_IDENTITY" "$MACOS/$BUNDLE_NAME"
+sign_spm_resource_bundles
 codesign --force --deep --sign "$SIGN_IDENTITY" --entitlements "$SIGN_ENTITLEMENTS" "$APP"
 
 printf '%s\n' "$APP"
