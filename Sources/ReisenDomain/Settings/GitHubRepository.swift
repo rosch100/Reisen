@@ -14,9 +14,9 @@ public enum GitHubRepository {
 
     public enum LegalPage: String, Sendable {
         case privacyDE = "privacy.html"
-        case privacyEN = "privacy.en.html"
+        case privacyEN = "en/privacy.html"
         case supportDE = "support.html"
-        case supportEN = "support.en.html"
+        case supportEN = "en/support.html"
     }
 
     public static var webBaseURL: URL {

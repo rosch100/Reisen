@@ -10,9 +10,9 @@ Technische Voraussetzungen im Repo sind in [apple-signing.md](apple-signing.md) 
 | Bundle-ID | `de.reisen.Reisen.ios` (siehe `project.yml`) |
 | Kategorie | Reisen |
 | Privacy Policy URL (DE) | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicyGerman`) |
-| Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/privacy.en.html` (`LegalURLs.privacyPolicyEnglish`) |
+| Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/en/privacy.html` (`LegalURLs.privacyPolicyEnglish`) |
 | Support URL (DE) | `https://rosch100.github.io/Reisen/support.html` (`LegalURLs.supportGerman`) |
-| Support URL (EN) | `https://rosch100.github.io/Reisen/support.en.html` (`LegalURLs.supportEnglish`) |
+| Support URL (EN) | `https://rosch100.github.io/Reisen/en/support.html` (`LegalURLs.supportEnglish`) |
 | Übersicht / beide Sprachen | `https://rosch100.github.io/Reisen/` (`index.html`) |
 | Copyright | wie in Info.plist (`NSHumanReadableCopyright`) |
 

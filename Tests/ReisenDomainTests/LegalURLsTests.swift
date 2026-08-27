@@ -13,14 +13,14 @@ import ReisenDomain
     let locale = Locale(identifier: "en_US")
     #expect(GitHubRepository.legalPage(for: .privacy, locale: locale) == .privacyEN)
     #expect(GitHubRepository.legalPage(for: .support, locale: locale) == .supportEN)
-    #expect(GitHubRepository.pagesLegalURL(for: .support, locale: locale).lastPathComponent == "support.en.html")
+    #expect(GitHubRepository.pagesLegalURL(for: .support, locale: locale).path.hasSuffix("/en/support.html"))
 }
 
 @Test func legalURLs_explicitGermanAndEnglishURLs() {
     #expect(LegalURLs.privacyPolicyGerman.lastPathComponent == "privacy.html")
-    #expect(LegalURLs.privacyPolicyEnglish.lastPathComponent == "privacy.en.html")
+    #expect(LegalURLs.privacyPolicyEnglish.path.hasSuffix("/en/privacy.html"))
     #expect(LegalURLs.supportGerman.lastPathComponent == "support.html")
-    #expect(LegalURLs.supportEnglish.lastPathComponent == "support.en.html")
+    #expect(LegalURLs.supportEnglish.path.hasSuffix("/en/support.html"))
 }
 
 @Test func legalURLs_rawFallbackUsesMasterBranch() {
@@ -40,6 +40,10 @@ import ReisenDomain
     for page in [GitHubRepository.LegalPage.privacyDE, .privacyEN, .supportDE, .supportEN] {
         let file = repoRoot.appendingPathComponent("docs/legal/\(page.rawValue)")
         #expect(FileManager.default.fileExists(atPath: file.path), "Missing \(page.rawValue)")
+    }
+    for legacy in ["privacy.en.html", "support.en.html"] {
+        let file = repoRoot.appendingPathComponent("docs/legal/\(legacy)")
+        #expect(FileManager.default.fileExists(atPath: file.path), "Missing redirect \(legacy)")
     }
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/index.html").path))
 }
