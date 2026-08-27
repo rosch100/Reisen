@@ -38,6 +38,9 @@ public struct AppSettingsKeys {
     /// Fehler automatisch als öffentliches GitHub-Issue senden (Opt-in, Default aus).
     public static let reportErrorsToGitHub = "reisen_reportErrorsToGitHub"
 
+    /// Optionales GitHub-Konto für manuelles Feedback/Fehlermeldungen (leer → Token-API).
+    public static let feedbackGitHubUsername = "reisen_feedbackGitHubUsername"
+
     /// Sichtbarkeit des Buchungs-Detailpanels (SceneStorage / UserDefaults).
     public static let tripDetailPanelVisible = "reisen_tripDetailPanelVisible"
     /// Persistierte Höhe des Buchungs-Detailpanels in Punkten.

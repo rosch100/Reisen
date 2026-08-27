@@ -94,7 +94,7 @@ bash ./Scripts/ios-archive-appstore.sh
 
 Das Script:
 
-1. setzt `REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true` (kein PAT im Store-Binary)
+1. setzt `REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true` (Issues-Token Pflicht, damit Nutzer ohne GitHub-Konto melden können)
 2. ruft `Scripts/generate-ios-project.sh` auf
 3. erzeugt ein **Release**-Archive (`xcodebuild archive`, `generic/platform=iOS`)
 4. exportiert ein IPA (`Scripts/ios-export-appstore.plist`, `method: app-store`)

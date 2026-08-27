@@ -29,7 +29,7 @@ Ausführungsdetails nur im Plan — nicht hier wiederholen.
 | Partner/Metasearch-API | Amadeus, Skyscanner Travel API, GYG Partner API, Expedia Lodging Supply | **Nein** |
 | Gap-Deep-Links | Check24 Hotel/Flug-Suche | Teilweise (nur Suche, kein Sync) |
 
-Neue Provider = [`TravelProvider`](../Sources/ReisenProviders/TravelProvider.swift) + `WKWebView`-Session, wie die bestehenden vier.
+Neue Provider = [`TravelProvider`](../Sources/ReisenProviders/TravelProvider.swift) + `WKWebView`-Session, wie die **sechs** registrierten Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka).
 
 ```mermaid
 flowchart LR

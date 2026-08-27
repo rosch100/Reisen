@@ -1,7 +1,7 @@
 name: Fehler
 description: Öffentlicher Fehlerbericht für Reisen
 title: "[Fehler] "
-labels: ["kind/error"]
+labels: ["kind/error", "source/in-app"]
 body:
   - type: textarea
     id: what

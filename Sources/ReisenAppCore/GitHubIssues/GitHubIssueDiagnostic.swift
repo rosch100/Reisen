@@ -8,6 +8,7 @@ public enum GitHubIssueDiagnostic {
         title: String,
         message: String,
         providerID: ProviderID?,
+        origin: GitHubIssueReportOrigin,
         appVersion: String,
         build: String,
         os: String,
@@ -18,29 +19,51 @@ public enum GitHubIssueDiagnostic {
     ) -> String {
         let redactedMessage = SecretRedactor.redact(message)
         let redactedTitle = SecretRedactor.redact(title)
-        let provider = providerID.map(\.rawValue) ?? "—"
         return """
         ## Zusammenfassung
         \(redactedTitle)
 
-        ## Diagnose
-        | Feld | Wert |
-        | --- | --- |
-        | Art | \(kind.rawValue) |
-        | App | \(appVersion) (\(build)) |
-        | OS | \(os) |
-        | Gerät | \(device) |
-        | Locale | \(locale) |
-        | Zeitzone | \(timeZone) |
-        | Provider | \(provider) |
+        \(diagnosticTable(
+            kind: kind,
+            providerID: providerID,
+            origin: origin,
+            appVersion: appVersion,
+            build: build,
+            os: os,
+            device: device,
+            locale: locale,
+            timeZone: timeZone,
+            fingerprint: fingerprint
+        ))
 
-        ## Fehler
+        ## \(kind.messageSectionTitle)
         ```
         \(redactedMessage)
         ```
+        """
+    }
 
-        reisen-fingerprint: `\(fingerprint)`
-        <!-- reisen-fingerprint: \(fingerprint) -->
+    /// Inhalt für vorausgefüllte Issue-Formularfelder (`what` / `feedback`) ohne Titel-Dopplung.
+    public static func collectedFormFieldContent(
+        kind: GitHubIssueKind,
+        message: String,
+        providerID: ProviderID?,
+        origin: GitHubIssueReportOrigin
+    ) -> String {
+        let redactedMessage = SecretRedactor.redact(message)
+        let appendix = diagnosticAppendix(
+            kind: kind,
+            message: message,
+            providerID: providerID,
+            origin: origin
+        )
+        guard !appendix.isEmpty else { return redactedMessage }
+        return """
+        \(redactedMessage)
+
+        ---
+
+        \(appendix)
         """
     }
 
@@ -48,7 +71,8 @@ public enum GitHubIssueDiagnostic {
         kind: GitHubIssueKind,
         title: String,
         message: String,
-        providerID: ProviderID?
+        providerID: ProviderID?,
+        origin: GitHubIssueReportOrigin = .embeddedToken
     ) -> String {
         let fingerprint = GitHubIssueFingerprint.hex(kind: kind, message: SecretRedactor.redact(message))
         let bundle = Bundle.main
@@ -59,6 +83,7 @@ public enum GitHubIssueDiagnostic {
             title: title,
             message: message,
             providerID: providerID,
+            origin: origin,
             appVersion: appVersion,
             build: build,
             os: ProcessInfo.processInfo.operatingSystemVersionString,
@@ -67,6 +92,63 @@ public enum GitHubIssueDiagnostic {
             timeZone: TimeZone.current.identifier,
             fingerprint: fingerprint
         )
+    }
+
+    private static func diagnosticAppendix(
+        kind: GitHubIssueKind,
+        message: String,
+        providerID: ProviderID?,
+        origin: GitHubIssueReportOrigin
+    ) -> String {
+        let fingerprint = GitHubIssueFingerprint.hex(kind: kind, message: SecretRedactor.redact(message))
+        let bundle = Bundle.main
+        let appVersion = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+        return diagnosticTable(
+            kind: kind,
+            providerID: providerID,
+            origin: origin,
+            appVersion: appVersion,
+            build: build,
+            os: ProcessInfo.processInfo.operatingSystemVersionString,
+            device: deviceModel(),
+            locale: Locale.current.identifier,
+            timeZone: TimeZone.current.identifier,
+            fingerprint: fingerprint
+        )
+    }
+
+    private static func diagnosticTable(
+        kind: GitHubIssueKind,
+        providerID: ProviderID?,
+        origin: GitHubIssueReportOrigin,
+        appVersion: String,
+        build: String,
+        os: String,
+        device: String,
+        locale: String,
+        timeZone: String,
+        fingerprint: String
+    ) -> String {
+        let provider = providerID.map(\.displayName) ?? "—"
+        return """
+        ## Diagnose
+        | Feld | Wert |
+        | --- | --- |
+        | Art | \(kind.displayName) |
+        | Quelle | \(kind.sourceLabel) |
+        | Meldeweg | \(origin.meldewegLabel) |
+        | GitHub-Nutzer | \(origin.githubUserLabel) |
+        | App | \(appVersion) (\(build)) |
+        | Betriebssystem | \(os) |
+        | Gerät | \(device) |
+        | Sprache | \(locale) |
+        | Zeitzone | \(timeZone) |
+        | Provider | \(provider) |
+
+        reisen-fingerprint: `\(fingerprint)`
+        <!-- reisen-fingerprint: \(fingerprint) -->
+        """
     }
 
     private static func deviceModel() -> String {

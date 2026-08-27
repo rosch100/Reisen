@@ -55,9 +55,9 @@ enum GitHubIssueCrashCatcher {
         do {
             _ = try await GitHubIssueReporter.shared.report(
                 kind: .error,
-                title: GitHubIssueTitle.uncaughtException,
                 message: message,
-                providerID: nil
+                providerID: nil,
+                titleOverride: GitHubIssueTitle.uncaughtException
             )
             try FileManager.default.removeItem(at: url)
         } catch is GitHubIssueTokenError {

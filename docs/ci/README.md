@@ -50,7 +50,7 @@ Für manuelle Freigabe von Tag-Releases kann in GitHub ein Environment `release`
 
 Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](apple-signing.md). Einmalig: `bash ./Scripts/setup-apple-developer.sh`.
 
-In-App öffentliche GitHub-Issues: [`github-issues-token.md`](github-issues-token.md) (optional, nur Debug/lokale Builds). App-Store-iOS ohne eingebettetes Token: [`app-store-connect.md`](app-store-connect.md).
+In-App öffentliche GitHub-Issues (ohne GitHub-Konto des Nutzers): [`github-issues-token.md`](github-issues-token.md). macOS-Tag-Releases und iOS-App-Store-Archive betten das Token ein.
 
 ## AI-Assistenz & kostenlose PR-Reviewer (Open Source / public)
 

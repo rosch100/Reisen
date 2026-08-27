@@ -15,11 +15,9 @@ if [[ ! -f "$ROOT/project.yml" ]]; then
   exit 1
 fi
 
-if [[ "${REISEN_EMBED_GITHUB_ISSUE_TOKEN:-}" != "true" ]]; then
-  export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
-else
-  unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
-fi
+# Tests setzen REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true (kein Live-Token).
+# Produkt-Builds (ios-run / ios-archive) betten das Token ein, sofern vorhanden.
+# App-Store-Archive setzt REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true.
 bash "$ROOT/Scripts/embed-github-issue-token.sh"
 
 xcodegen generate --spec "$ROOT/project.yml" --project "$ROOT"

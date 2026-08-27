@@ -10,6 +10,9 @@ SCHEME="ReiseniOS"
 PROJECT="$ROOT/Reisen.xcodeproj"
 DERIVED="$ROOT/DerivedData/ReiseniOS"
 
+export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
+unset REISEN_EMBED_GITHUB_ISSUE_TOKEN
+unset REISEN_REQUIRE_GITHUB_ISSUE_TOKEN
 bash "$ROOT/Scripts/generate-ios-project.sh"
 
 # Portable UDID parse (BSD sed/grep on macOS; no GNU awk)

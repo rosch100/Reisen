@@ -675,7 +675,6 @@ public final class SyncStore {
             do {
                 let created = try await GitHubIssueReporter.shared.report(
                     kind: .error,
-                    title: GitHubIssueTitle.syncErrorReport(message: message),
                     message: message,
                     providerID: provider
                 )

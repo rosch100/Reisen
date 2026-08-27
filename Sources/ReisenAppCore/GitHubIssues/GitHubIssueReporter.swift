@@ -70,9 +70,10 @@ public final class GitHubIssueReporter {
     @discardableResult
     public func report(
         kind: GitHubIssueKind,
-        title: String,
         message: String,
-        providerID: ProviderID?
+        providerID: ProviderID?,
+        titleOverride: String? = nil,
+        reporterGitHubUsername: String? = nil
     ) async throws -> GitHubCreatedIssue {
         lastReportErrorMessage = nil
         if persistedStateCorrupt {
@@ -81,13 +82,16 @@ public final class GitHubIssueReporter {
         }
         _ = try tokenProvider()
 
-        let redactedMessage = SecretRedactor.redact(message)
+        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let redactedMessage = SecretRedactor.redact(trimmedMessage)
+        let title = titleOverride ?? GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage)
         let fingerprint = GitHubIssueFingerprint.hex(kind: kind, message: redactedMessage)
         let body = GitHubIssueDiagnostic.collectedBody(
             kind: kind,
             title: title,
-            message: message,
-            providerID: providerID
+            message: trimmedMessage,
+            providerID: providerID,
+            origin: GitHubIssueReportOrigin.from(githubUsername: reporterGitHubUsername)
         )
         let labels = kind.githubLabels
 
@@ -154,7 +158,7 @@ public final class GitHubIssueReporter {
 
     private func commentBody(kind: GitHubIssueKind, message: String) -> String {
         """
-        Erneutes \(kind == .feedback ? "Feedback" : "Auftreten") (\(ISO8601DateFormatter().string(from: now()))):
+        Erneuter \(kind.repeatReportLabel) (\(ISO8601DateFormatter().string(from: now()))):
 
         ```
         \(message)

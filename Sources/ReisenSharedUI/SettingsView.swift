@@ -34,6 +34,7 @@ public struct SettingsView: View {
     @AppStorage(AppSettingsKeys.calendarTitleMode) private var calendarTitleModeRaw: String = CalendarTitleMode.tripTitle.rawValue
     @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = false
     @AppStorage(AppSettingsKeys.reportErrorsToGitHub) private var reportErrorsToGitHub: Bool = false
+    @AppStorage(AppSettingsKeys.feedbackGitHubUsername) private var feedbackGitHubUsername = ""
 
     @State private var eventCalendarNames: [String] = []
     @State private var reminderCalendarNames: [String] = []
@@ -221,6 +222,12 @@ public struct SettingsView: View {
             Section {
                 if GitHubIssueToken.isEmbedded {
                     Toggle("Fehler automatisch als öffentliches Issue senden", isOn: $reportErrorsToGitHub)
+                    TextField("GitHub-Benutzername (optional)", text: $feedbackGitHubUsername)
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.asciiCapable)
+                        #endif
                 }
                 TextEditor(text: $feedbackText)
                     .frame(minHeight: 80)
@@ -234,9 +241,10 @@ public struct SettingsView: View {
             } footer: {
                 Text(
                     GitHubIssueToken.isEmbedded
-                        ? "Feedback legt ein öffentliches GitHub-Issue an. "
-                            + "Automatische Fehler-Issues nur mit dem Schalter oben; ohne Sync-Log, "
-                            + "ohne Login-/Datenschutz-Meldungen. Repo: github.com/\(GitHubRepository.publicPath)."
+                        ? "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; "
+                            + "die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). "
+                            + "Automatische Fehler-Issues nur mit dem Schalter oben. "
+                            + "Repo: github.com/\(GitHubRepository.publicPath)."
                         : "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text. "
                             + "Du sendest mit deinem GitHub-Konto. Repo: github.com/\(GitHubRepository.publicPath)."
                 )

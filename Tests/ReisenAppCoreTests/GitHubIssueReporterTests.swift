@@ -2,6 +2,20 @@ import Testing
 import Foundation
 @testable import ReisenAppCore
 
+@Test func githubIssueKind_labelsIncludeSourceInApp() {
+    #expect(GitHubIssueKind.error.githubLabels == ["kind/error", "source/in-app"])
+    #expect(GitHubIssueKind.feedback.githubLabels == ["kind/feedback", "source/in-app"])
+}
+
+@Test func githubIssueKind_usesGermanDisplayNamesAndTemplates() {
+    #expect(GitHubIssueKind.error.displayName == "Fehler")
+    #expect(GitHubIssueKind.feedback.displayName == "Feedback")
+    #expect(GitHubIssueKind.error.issueTemplateFileName == "bug.yml")
+    #expect(GitHubIssueKind.feedback.issueTemplateFileName == "feedback.yml")
+    #expect(GitHubIssueKind.error.issueFormFieldID == "what")
+    #expect(GitHubIssueKind.feedback.issueFormFieldID == "feedback")
+}
+
 @Test @MainActor func githubIssueReporter_emptyTokenMakesNoHTTP() async {
     let client = MockGitHubIssues()
     let reporter = GitHubIssueReporter(
@@ -14,7 +28,6 @@ import Foundation
     await #expect(throws: GitHubIssueTokenError.notEmbedded) {
         try await reporter.report(
             kind: .error,
-            title: "Sync fehlgeschlagen",
             message: "Provider timeout",
             providerID: nil
         )
@@ -38,7 +51,6 @@ import Foundation
 
     let created = try await reporter.report(
         kind: .error,
-        title: "Sync fehlgeschlagen",
         message: "Provider timeout",
         providerID: .check24
     )
@@ -46,9 +58,11 @@ import Foundation
     #expect(created.number == 12)
     #expect(created.htmlURL.absoluteString == "https://github.com/rosch100/Reisen/issues/12")
     #expect(client.createCount == 1)
-    #expect(client.lastCreate?.labels == ["kind/error"])
-    #expect(client.lastCreate?.labels.contains("source/in-app") != true)
+    #expect(client.lastCreate?.labels == ["kind/error", "source/in-app"])
+    #expect(client.lastCreate?.title == "[Fehler] Provider timeout")
     #expect(client.lastCreate?.body.contains("Provider timeout") == true)
+    #expect(client.lastCreate?.body.contains("| Provider | Check24 |") == true)
+    #expect(client.lastCreate?.body.contains("| Meldeweg | App-Token |") == true)
     #expect(client.lastCreate?.body.contains("reisen-fingerprint:") == true)
 }
 
@@ -69,7 +83,6 @@ import Foundation
 
     let result = try await reporter.report(
         kind: .error,
-        title: "Sync fehlgeschlagen",
         message: "gleiche meldung",
         providerID: nil
     )
@@ -96,7 +109,6 @@ import Foundation
 
     _ = try? await reporter.report(
         kind: .error,
-        title: "eins",
         message: "meldung-a",
         providerID: nil
     )
@@ -104,12 +116,53 @@ import Foundation
     await #expect(throws: GitHubIssueReporterError.rateLimited) {
         try await reporter.report(
             kind: .error,
-            title: "zwei",
             message: "meldung-b",
             providerID: nil
         )
     }
     #expect(client.createCount == 1)
+}
+
+@Test func githubIssueDiagnostic_includesGitHubUsernameWhenProvided() {
+    let body = GitHubIssueDiagnostic.body(
+        kind: .feedback,
+        title: "T",
+        message: "M",
+        providerID: nil,
+        origin: .userGitHub(username: "rosch100"),
+        appVersion: "1",
+        build: "2",
+        os: "macOS",
+        device: "Mac",
+        locale: "de_DE",
+        timeZone: "Europe/Berlin",
+        fingerprint: "abc"
+    )
+    #expect(body.contains("| GitHub-Nutzer | @rosch100 |"))
+    #expect(body.contains("| Meldeweg | GitHub-Konto |"))
+    #expect(body.contains("| Quelle | In-App |"))
+    #expect(body.contains("| Art | Feedback |"))
+    #expect(body.contains("## Feedback"))
+}
+
+@Test func githubIssueDiagnostic_usesGermanErrorSectionForErrors() {
+    let body = GitHubIssueDiagnostic.body(
+        kind: .error,
+        title: "T",
+        message: "M",
+        providerID: nil,
+        origin: .embeddedToken,
+        appVersion: "1",
+        build: "2",
+        os: "macOS",
+        device: "Mac",
+        locale: "de_DE",
+        timeZone: "Europe/Berlin",
+        fingerprint: "abc"
+    )
+    #expect(body.contains("| Art | Fehler |"))
+    #expect(body.contains("| Betriebssystem | macOS |"))
+    #expect(body.contains("## Fehler"))
 }
 
 @Test func githubIssueDiagnostic_includesUnredactedErrorMessage() {
@@ -118,6 +171,7 @@ import Foundation
         title: "Sync fehlgeschlagen",
         message: "Provider timeout konkret",
         providerID: .opodo,
+        origin: .embeddedToken,
         appVersion: "1.2.3",
         build: "45",
         os: "iOS 26.0",
@@ -127,6 +181,7 @@ import Foundation
         fingerprint: "abc"
     )
     #expect(body.contains("Provider timeout konkret"))
+    #expect(body.contains("| Provider | Opodo |"))
     #expect(body.contains("1.2.3"))
     #expect(body.contains("iOS 26.0"))
     #expect(body.contains("reisen-fingerprint: `abc`"))
@@ -140,6 +195,7 @@ import Foundation
         title: "Token ghp_abcdefghijklmnopqrstuvwxyz0123456789",
         message: "Login https://example.com/cb?token=abc&keep=1",
         providerID: nil,
+        origin: .embeddedToken,
         appVersion: "1",
         build: "1",
         os: "macOS",
@@ -180,7 +236,6 @@ import Foundation
     )
     _ = try await first.report(
         kind: .error,
-        title: "einmal",
         message: "persistente meldung",
         providerID: nil
     )
@@ -198,7 +253,6 @@ import Foundation
     )
     let again = try await second.report(
         kind: .error,
-        title: "nochmal",
         message: "persistente meldung",
         providerID: nil
     )
@@ -226,7 +280,6 @@ import Foundation
 
     let first = try await reporter.report(
         kind: .error,
-        title: "Sync fehlgeschlagen",
         message: "gleiche meldung",
         providerID: nil
     )
@@ -235,7 +288,6 @@ import Foundation
 
     let second = try await reporter.report(
         kind: .error,
-        title: "Sync fehlgeschlagen",
         message: "gleiche meldung",
         providerID: nil
     )
@@ -265,7 +317,6 @@ import Foundation
     )
     _ = try await first.report(
         kind: .error,
-        title: "eins",
         message: "meldung-persist-a",
         providerID: nil
     )
@@ -281,7 +332,6 @@ import Foundation
     await #expect(throws: GitHubIssueReporterError.rateLimited) {
         try await second.report(
             kind: .error,
-            title: "zwei",
             message: "meldung-persist-b",
             providerID: nil
         )
@@ -305,7 +355,6 @@ import Foundation
     await #expect(throws: GitHubIssueReporterError.persistedStateCorrupt) {
         try await reporter.report(
             kind: .error,
-            title: "eins",
             message: "meldung-corrupt",
             providerID: nil
         )

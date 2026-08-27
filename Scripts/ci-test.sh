@@ -49,6 +49,10 @@ if grep -q '0x' "$STUB"; then
   echo "Fehler: GitHubIssueToken.generated.swift.stub darf keine XOR-Bytes enthalten." >&2
   exit 1
 fi
+if grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive muss das Issue-Token einbetten (kein EMPTY=true)." >&2
+  exit 1
+fi
 REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash "$ROOT/Scripts/embed-github-issue-token.sh"
 
 if [[ "$SKIP_BUILD" == "true" ]]; then
