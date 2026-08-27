@@ -65,7 +65,7 @@ public final class SyncStore {
             let titles = Dictionary(
                 uniqueKeysWithValues: bookings.map { ($0.id, $0.title ?? $0.bookingType.rawValue.capitalized) }
             )
-            try await maybeScheduleAndSyncCalendars(
+            _ = try await maybeScheduleAndSyncCalendars(
                 settings: settings,
                 bookings: bookings,
                 deadlines: deadlines,
@@ -74,6 +74,10 @@ public final class SyncStore {
                 announceProgress: announceProgress
             )
         } catch {
+            if PrivacyOptionalCapability.deniedPane(from: error) != nil {
+                messageProviderID = nil
+                return
+            }
             assignError(error, clearStatus: !announceProgress)
             messageProviderID = nil
         }
@@ -200,7 +204,7 @@ public final class SyncStore {
             let bookings = try bookingRepo.fetchAll()
             let titles = Dictionary(uniqueKeysWithValues: bookings.map { ($0.id, $0.title ?? $0.bookingType.rawValue.capitalized) })
 
-            try await maybeScheduleAndSyncCalendars(
+            let skippedPrivacy = try await maybeScheduleAndSyncCalendars(
                 settings: settings,
                 bookings: bookings,
                 deadlines: deadlines,
@@ -216,11 +220,23 @@ public final class SyncStore {
                 statusMessage =
                     "Synchronisation abgeschlossen. (\(stats.bookingsPersisted) Buchungen, \(stats.deadlinesPersisted) Stornofristen)"
             }
+            if let hint = PrivacyOptionalCapability.statusHint(skipped: skippedPrivacy) {
+                statusMessage = "\(statusMessage ?? "") \(hint)"
+            }
             messageProviderID = providerID
             SyncLog.append(
                 "result=success provider=\(providerID.rawValue) bookings=\(stats.bookingsPersisted) deadlines=\(stats.deadlinesPersisted) cancelledDropped=\(cancelledCount) durationMs=\(Int(Date().timeIntervalSince(attemptStart) * 1000))"
             )
         } catch {
+            if let pane = PrivacyOptionalCapability.deniedPane(from: error) {
+                statusMessage = PrivacyOptionalCapability.statusHint(skipped: [pane])
+                    ?? "Synchronisation ohne optionale Freigaben abgeschlossen."
+                messageProviderID = providerID
+                SyncLog.append(
+                    "result=success_restricted provider=\(providerID.rawValue) durationMs=\(Int(Date().timeIntervalSince(attemptStart) * 1000)) skipped=\(pane.rawValue)"
+                )
+                return
+            }
             assignError(error, clearStatus: true)
             messageProviderID = providerID
             SyncLog.append(
@@ -384,19 +400,25 @@ public final class SyncStore {
         bookingTitles: [UUID: String],
         bookingRepo: SwiftDataBookingRepository,
         announceProgress: Bool
-    ) async throws {
+    ) async throws -> [PrivacySettingPane] {
+        var skipped: [PrivacySettingPane] = []
+
         if settings.notificationEnabled {
             if announceProgress { statusMessage = "Plane Erinnerungen…" }
-            _ = try await reminderScheduler.scheduleCancellationDeadlines(
-                deadlines: deadlines,
-                bookingTitles: bookingTitles,
-                leadTimesDays: settings.leadTimesDays
-            )
-            _ = try await reminderScheduler.schedulePreTravelHints(
-                bookings: bookings,
-                bookingTitles: bookingTitles,
-                leadTimesDays: settings.leadTimesDays
-            )
+            if let pane = try await PrivacyOptionalCapability.run({
+                _ = try await reminderScheduler.scheduleCancellationDeadlines(
+                    deadlines: deadlines,
+                    bookingTitles: bookingTitles,
+                    leadTimesDays: settings.leadTimesDays
+                )
+                _ = try await reminderScheduler.schedulePreTravelHints(
+                    bookings: bookings,
+                    bookingTitles: bookingTitles,
+                    leadTimesDays: settings.leadTimesDays
+                )
+            }) {
+                skipped.append(pane)
+            }
         }
 
         if settings.eventKitEnabled {
@@ -412,32 +434,38 @@ public final class SyncStore {
             let effectiveEventCreateIfMissing = settings.eventCalendarCreateIfMissing
             let effectiveReminderCreateIfMissing = settings.reminderCalendarCreateIfMissing
 
-            try await calendarSync.syncCancellationDeadlines(
-                trips: trips,
-                bookings: bookings,
-                deadlines: deadlines,
-                bookingTitles: bookingTitles,
-                eventCalendarTitle: settings.calendarTitle,
-                reminderCalendarTitle: settings.reminderCalendarTitle,
-                eventCreateIfMissing: effectiveEventCreateIfMissing,
-                reminderCreateIfMissing: effectiveReminderCreateIfMissing,
-                calendarTitleMode: settings.calendarTitleMode,
-                leadTimesDays: settings.leadTimesDays
-            )
-            try await calendarSync.syncPreTravelHints(
-                trips: trips,
-                bookings: bookings,
-                bookingTitles: bookingTitles,
-                eventCalendarTitle: settings.calendarTitle,
-                reminderCalendarTitle: settings.reminderCalendarTitle,
-                eventCreateIfMissing: effectiveEventCreateIfMissing,
-                reminderCreateIfMissing: effectiveReminderCreateIfMissing,
-                calendarTitleMode: settings.calendarTitleMode,
-                leadTimesDays: settings.leadTimesDays
-            )
+            if let pane = try await PrivacyOptionalCapability.run({
+                try await calendarSync.syncCancellationDeadlines(
+                    trips: trips,
+                    bookings: bookings,
+                    deadlines: deadlines,
+                    bookingTitles: bookingTitles,
+                    eventCalendarTitle: settings.calendarTitle,
+                    reminderCalendarTitle: settings.reminderCalendarTitle,
+                    eventCreateIfMissing: effectiveEventCreateIfMissing,
+                    reminderCreateIfMissing: effectiveReminderCreateIfMissing,
+                    calendarTitleMode: settings.calendarTitleMode,
+                    leadTimesDays: settings.leadTimesDays
+                )
+                try await calendarSync.syncPreTravelHints(
+                    trips: trips,
+                    bookings: bookings,
+                    bookingTitles: bookingTitles,
+                    eventCalendarTitle: settings.calendarTitle,
+                    reminderCalendarTitle: settings.reminderCalendarTitle,
+                    eventCreateIfMissing: effectiveEventCreateIfMissing,
+                    reminderCreateIfMissing: effectiveReminderCreateIfMissing,
+                    calendarTitleMode: settings.calendarTitleMode,
+                    leadTimesDays: settings.leadTimesDays
+                )
+            }) {
+                skipped.append(pane)
+            }
         }
 
+        let calendarDenied = skipped.contains(.calendars)
         if settings.eventKitEnabled,
+           !calendarDenied,
            settings.calendarTripTimesEnabled || settings.calendarFlightTimesEnabled || settings.calendarHotelStaysEnabled {
             if announceProgress { statusMessage = "Schreibe Reisezeiten…" }
 
@@ -461,18 +489,24 @@ public final class SyncStore {
             let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
             let trips = try tripRepo.fetchAll()
 
-            try await calendarSync.syncTripTimelineEntries(
-                trips: trips,
-                bookings: bookingsMutable,
-                bookingTitles: bookingTitles,
-                eventCalendarTitle: settings.calendarTitle,
-                eventCreateIfMissing:
-                    settings.eventCalendarCreateIfMissing,
-                includeTripStartEnd: settings.calendarTripTimesEnabled,
-                includeFlightTimes: settings.calendarFlightTimesEnabled,
-                includeHotelStays: settings.calendarHotelStaysEnabled
-            )
+            if let pane = try await PrivacyOptionalCapability.run({
+                try await calendarSync.syncTripTimelineEntries(
+                    trips: trips,
+                    bookings: bookingsMutable,
+                    bookingTitles: bookingTitles,
+                    eventCalendarTitle: settings.calendarTitle,
+                    eventCreateIfMissing:
+                        settings.eventCalendarCreateIfMissing,
+                    includeTripStartEnd: settings.calendarTripTimesEnabled,
+                    includeFlightTimes: settings.calendarFlightTimesEnabled,
+                    includeHotelStays: settings.calendarHotelStaysEnabled
+                )
+            }) {
+                skipped.append(pane)
+            }
         }
+
+        return skipped
     }
 
     private func resolveAndPersistBookingAddressesIfNeeded(
@@ -627,12 +661,13 @@ public final class SyncStore {
     }
 
     private func assignError(_ error: Error, clearStatus: Bool) {
-        errorMessage = error.localizedDescription
-        privacySettingPane = PrivacyAccessDenial.pane(from: error)
+        let mapped = UserNotificationAuthorization.mapped(error)
+        errorMessage = mapped.localizedDescription
+        privacySettingPane = PrivacyAccessDenial.pane(from: mapped)
         if clearStatus {
             statusMessage = nil
         }
-        maybeScheduleIssueReport(error: error)
+        maybeScheduleIssueReport(error: mapped)
     }
 
     private func assignErrorMessage(_ message: String) {

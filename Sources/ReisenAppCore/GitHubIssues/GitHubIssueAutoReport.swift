@@ -7,10 +7,11 @@ enum GitHubIssueAutoReport {
     }
 
     static func shouldReport(error: Error) -> Bool {
-        if PrivacyAccessDenial.pane(from: error) != nil {
+        let mapped = UserNotificationAuthorization.mapped(error)
+        if PrivacyAccessDenial.pane(from: mapped) != nil {
             return false
         }
-        return shouldReport(message: error.localizedDescription)
+        return shouldReport(message: mapped.localizedDescription)
     }
 
     static func shouldReport(message: String) -> Bool {
@@ -23,6 +24,7 @@ enum GitHubIssueAutoReport {
         ["bitte", "anmelden"],
         ["zugriff wurde verweigert"],
         ["benachrichtigungen wurden nicht autorisiert"],
+        ["notifications are not allowed"],
     ]
 
     private static func isExpectedUserState(_ message: String) -> Bool {

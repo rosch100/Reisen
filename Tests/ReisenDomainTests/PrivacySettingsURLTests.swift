@@ -57,3 +57,9 @@ import ReisenDomain
     #expect(PrivacySettingPane.reminders.openButtonTitle == "Einstellungen öffnen")
     #expect(PrivacySettingPane.notifications.openButtonTitle == "Einstellungen öffnen")
 }
+
+@Test func privacySettingPane_restrictedCapabilityLabels_areStable() {
+    #expect(PrivacySettingPane.calendars.restrictedCapabilityLabel == "Kalender")
+    #expect(PrivacySettingPane.reminders.restrictedCapabilityLabel == "Erinnerungen")
+    #expect(PrivacySettingPane.notifications.restrictedCapabilityLabel == "Mitteilungen")
+}
