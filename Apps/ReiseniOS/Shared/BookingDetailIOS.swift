@@ -12,6 +12,7 @@ import ReisenProviders
 
 struct BookingDetailIOS: View {
     let bookingID: UUID
+    var onTripCreated: ((UUID) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
     @Query private var bookings: [SDBooking]
@@ -19,6 +20,8 @@ struct BookingDetailIOS: View {
 
     @State private var assignErrorMessage: String?
     @State private var showAssignError = false
+    @State private var tripCreateSeed: TripCreateSeed?
+    @State private var showCreateTripFromBookingsFailed = false
 
     @State private var isEditing = false
     @State private var bookingEditorDraft: BookingEditorDraft?
@@ -152,8 +155,17 @@ struct BookingDetailIOS: View {
                 .buttonStyle(.borderedProminent)
                 .help(L10n.string(.tripAssignOpenBookingHelp))
             } else {
-                Text(L10n.string(.tripNoMatchingTrip))
-                    .foregroundStyle(.secondary)
+                Button {
+                    OpenBookingCreateTripAction.assignSeed(
+                        fromIDs: [booking.id],
+                        in: [booking],
+                        seed: $tripCreateSeed,
+                        showFailed: $showCreateTripFromBookingsFailed
+                    )
+                } label: {
+                    CreateTripFromBookingsLabel()
+                }
+                .buttonStyle(.borderedProminent)
             }
         }
     }
@@ -287,6 +299,13 @@ struct BookingDetailIOS: View {
             onConfirmRemove: removePendingBookingFromTrip,
             onCancelDelete: { pendingDeleteBookingID = nil },
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
+        )
+        .createTripFromBookingsPresentation(
+            seed: $tripCreateSeed,
+            showFailed: $showCreateTripFromBookingsFailed,
+            onSaved: { newTrip in
+                onTripCreated?(newTrip.id)
+            }
         )
         .sheet(isPresented: $isEditing) {
             if let draftBinding {

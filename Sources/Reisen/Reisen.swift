@@ -51,64 +51,7 @@ struct ReisenApp: App {
         .defaultSize(width: 1180, height: 780)
         .windowResizability(.automatic)
         .commands {
-            CommandGroup(replacing: .pasteboard) {
-                Button(L10n.string(.commonCut)) {
-                    NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("x", modifiers: [.command])
-
-                Button(L10n.string(.commonCopy)) {
-                    NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("c", modifiers: [.command])
-
-                Button(L10n.string(.commonPaste)) {
-                    NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("v", modifiers: [.command])
-
-                Button(L10n.string(.commonSelectAll)) {
-                    NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("a", modifiers: [.command])
-            }
-
-            CommandGroup(replacing: .newItem) {
-                Button(L10n.string(.menuNewTrip)) {
-                    NotificationCenter.default.post(name: .reisenNewTrip, object: nil)
-                }
-                .keyboardShortcut("n", modifiers: [.command])
-
-                Button(L10n.string(.menuAddBooking)) {
-                    NotificationCenter.default.post(name: .reisenAddBooking, object: nil)
-                }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
-
-                Button(L10n.string(.menuAssignBookings)) {
-                    NotificationCenter.default.post(name: .reisenAssignBookings, object: nil)
-                }
-            }
-            CommandGroup(after: .appInfo) {
-                Button(L10n.string(.menuProviderSync)) {
-                    NotificationCenter.default.post(name: .reisenShowProviderSync, object: nil)
-                }
-                .keyboardShortcut("1", modifiers: [.command])
-
-                Button(L10n.string(.menuSyncAllProviders)) {
-                    NotificationCenter.default.post(name: .reisenSyncAllProviders, object: nil)
-                }
-                .keyboardShortcut("r", modifiers: [.command, .shift])
-
-                Button(L10n.string(.menuSyncCurrentProvider)) {
-                    NotificationCenter.default.post(name: .reisenSyncCurrentProvider, object: nil)
-                }
-                .keyboardShortcut("r", modifiers: [.command])
-            }
-            CommandGroup(after: .pasteboard) {
-                Button(L10n.string(.menuEditTrip)) {
-                    NotificationCenter.default.post(name: .reisenEditSelectedTrip, object: nil)
-                }
-            }
+            ReisenCommands()
         }
 
         Settings {

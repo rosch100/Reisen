@@ -25,4 +25,21 @@ public struct TripBookingAssignment: Sendable {
             return booking.id
         }
     }
+
+    public func assignableCount(
+        bookings: [Booking],
+        startDate: Date,
+        endDate: Date,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Int {
+        guard endDate >= startDate else { return 0 }
+        let draftTrip = Trip(title: "", startDate: startDate, endDate: endDate)
+        return assignableBookingIDs(
+            bookings: bookings,
+            trip: draftTrip,
+            now: now,
+            calendar: calendar
+        ).count
+    }
 }
