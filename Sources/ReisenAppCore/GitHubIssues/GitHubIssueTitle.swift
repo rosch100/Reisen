@@ -1,20 +1,30 @@
 import Foundation
 
 public enum GitHubIssueTitle {
-    public static let storeLoadFailure = "Reisen-Fehler: Datenbank konnte nicht geladen werden"
-    public static let uncaughtException = "Reisen: uncaught exception"
+    public static let githubAPIMaxLength = 240
+    public static let maxSummaryLength = 80
 
-    public static func syncErrorReport(message: String) -> String {
-        "Reisen-Fehler: \(summary(from: message))"
+    public static var storeLoadFailure: String {
+        reportTitle(kind: .error, message: "Datenbank konnte nicht geladen werden")
     }
 
-    public static func feedbackReport(message: String) -> String {
-        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        return "Reisen-Feedback: \(String(trimmed.prefix(80)))"
+    public static var uncaughtException: String {
+        reportTitle(kind: .error, message: "Unbehandelte Ausnahme")
+    }
+
+    /// SSOT für Issue-Titel aus Art, Nutzertext und optionalem Override.
+    public static func reportTitle(kind: GitHubIssueKind, message: String, override: String? = nil) -> String {
+        override ?? "\(kind.titlePrefix) \(summary(from: message))"
+    }
+
+    /// Redigierter Titel für GitHub-API und New-Issue-URLs.
+    public static func githubAPITitle(_ title: String) -> String {
+        String(SecretRedactor.redact(title).prefix(githubAPIMaxLength))
     }
 
     public static func summary(from message: String) -> String {
-        let first = message.split(whereSeparator: \.isNewline).first.map(String.init) ?? message
-        return String(first.prefix(80))
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let first = trimmed.split(whereSeparator: \.isNewline).first.map(String.init) ?? trimmed
+        return String(first.prefix(maxSummaryLength))
     }
 }

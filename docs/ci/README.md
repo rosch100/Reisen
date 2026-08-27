@@ -66,7 +66,7 @@ Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](app
 | Private-iOS (Ad Hoc / Internal TestFlight) | [`ios-private-distribution.md`](ios-private-distribution.md) |
 | macOS Developer ID | [`apple-signing.md`](apple-signing.md) (Release-Section) |
 
-In-App öffentliche GitHub-Issues: [`github-issues-token.md`](github-issues-token.md) (optional, nur Debug/lokale Builds). App-Store-iOS ohne eingebettetes Token: [`app-store-connect.md`](app-store-connect.md).
+In-App öffentliche GitHub-Issues: [`github-issues-token.md`](github-issues-token.md). App-Store-iOS bettet **kein** Token ein (Safari-Formular); macOS-Tag-Releases und lokale Debug-Läufe können es einbetten.
 
 ## AI-Assistenz & kostenlose PR-Reviewer (Open Source / public)
 

@@ -31,7 +31,7 @@ final class AppStoreComplianceInfoPlistTests: XCTestCase {
     }
 
     func testPrivacyManifestExists() throws {
-        let privacyURL = repoRoot.appendingPathComponent("Apps/ReiseniOS/PrivacyInfo.xcprivacy")
+        let privacyURL = repoRoot.appendingPathComponent("Resources/PrivacyInfo.xcprivacy")
         XCTAssertTrue(FileManager.default.fileExists(atPath: privacyURL.path))
 
         let data = try Data(contentsOf: privacyURL)
@@ -39,6 +39,11 @@ final class AppStoreComplianceInfoPlistTests: XCTestCase {
             PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
         )
         XCTAssertEqual(plist["NSPrivacyTracking"] as? Bool, false)
+        let collected = plist["NSPrivacyCollectedDataTypes"] as? [[String: Any]] ?? []
+        let types = collected.compactMap { $0["NSPrivacyCollectedDataType"] as? String }
+        XCTAssertTrue(types.contains("NSPrivacyCollectedDataTypeName"))
+        XCTAssertTrue(types.contains("NSPrivacyCollectedDataTypeCrashData"))
+        XCTAssertFalse(types.contains("NSPrivacyCollectedDataTypeEmailAddress"))
     }
 
     func testStorePrivacyManifestOmitsProviderEmail() throws {

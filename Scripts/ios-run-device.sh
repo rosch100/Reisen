@@ -64,6 +64,7 @@ if [[ -z "$DEVICE_UDID" ]]; then
   exit 1
 fi
 
+unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
 export REISEN_EMBED_GITHUB_ISSUE_TOKEN=true
 bash "$ROOT/Scripts/generate-ios-project.sh"
 

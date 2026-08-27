@@ -118,6 +118,8 @@ targets:
       - path: Sources/Reisen
         excludes:
           - "**/*.plist"
+    resources:
+      - path: Resources/PrivacyInfo.xcprivacy
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen

@@ -14,14 +14,7 @@ public final class GitHubIssueAPIClient: GitHubIssueSubmitting, Sendable {
     }
 
     public func searchOpenFingerprint(_ fingerprint: String) async throws -> Int? {
-        var components = URLComponents(string: "https://api.github.com/search/issues")
-        components?.queryItems = [
-            URLQueryItem(
-                name: "q",
-                value: "repo:\(GitHubRepository.publicPath) is:issue state:open in:body \(fingerprint)"
-            ),
-        ]
-        guard let url = components?.url else {
+        guard let url = GitHubRepository.searchOpenIssuesURL(fingerprint: fingerprint) else {
             throw GitHubIssueAPIClientError.invalidURL
         }
         let data = try await request(url: url, method: "GET", body: Optional<NeverEncodable>.none)
@@ -30,16 +23,14 @@ public final class GitHubIssueAPIClient: GitHubIssueSubmitting, Sendable {
     }
 
     public func createIssue(title: String, body: String, labels: [String]) async throws -> GitHubCreatedIssue {
-        let url = GitHubRepository.apiRepoURL.appending(path: "issues")
         let payload = CreatePayload(title: title, body: body, labels: labels)
-        let data = try await request(url: url, method: "POST", body: payload)
+        let data = try await request(url: GitHubRepository.apiIssuesURL, method: "POST", body: payload)
         let decoded = try JSONDecoder().decode(IssueResponse.self, from: data)
-        return try decoded.createdIssue()
+        return GitHubCreatedIssue(number: decoded.number, htmlURL: decoded.htmlURL)
     }
 
     public func comment(issueNumber: Int, body: String) async throws -> GitHubCreatedIssue {
-        let url = GitHubRepository.apiRepoURL
-            .appending(path: "issues")
+        let url = GitHubRepository.apiIssuesURL
             .appending(path: String(issueNumber))
             .appending(path: "comments")
         let payload = CommentPayload(body: body)
@@ -82,10 +73,6 @@ public final class GitHubIssueAPIClient: GitHubIssueSubmitting, Sendable {
         enum CodingKeys: String, CodingKey {
             case number
             case htmlURL = "html_url"
-        }
-
-        func createdIssue() throws -> GitHubCreatedIssue {
-            GitHubCreatedIssue(number: number, htmlURL: htmlURL)
         }
     }
 

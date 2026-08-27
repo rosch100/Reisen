@@ -31,9 +31,9 @@ package final class SyncIssueReporter {
             do {
                 let created = try await GitHubIssueReporter.shared.report(
                     kind: .error,
-                    title: GitHubIssueTitle.syncErrorReport(message: message),
                     message: message,
-                    providerID: providerID
+                    providerID: providerID,
+                    reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
                 )
                 self.onUpdate(created.htmlURL, created.didPostUpdate, nil)
             } catch is GitHubIssueTokenError {

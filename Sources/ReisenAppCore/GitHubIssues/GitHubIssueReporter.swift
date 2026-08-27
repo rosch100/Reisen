@@ -43,6 +43,7 @@ public final class GitHubIssueReporter {
     private let persistenceURL: URL?
     private var state = GitHubIssueReporterState()
     private var persistedStateCorrupt = false
+    private static let hourlyWindow: TimeInterval = 3600
 
     public init(
         client: (any GitHubIssueSubmitting)? = nil,
@@ -70,9 +71,10 @@ public final class GitHubIssueReporter {
     @discardableResult
     public func report(
         kind: GitHubIssueKind,
-        title: String,
         message: String,
-        providerID: ProviderID?
+        providerID: ProviderID?,
+        titleOverride: String? = nil,
+        reporterGitHubUsername: String? = nil
     ) async throws -> GitHubCreatedIssue {
         lastReportErrorMessage = nil
         if persistedStateCorrupt {
@@ -81,40 +83,44 @@ public final class GitHubIssueReporter {
         }
         _ = try tokenProvider()
 
-        let redactedMessage = SecretRedactor.redact(message)
-        let fingerprint = GitHubIssueFingerprint.hex(kind: kind, message: redactedMessage)
-        let body = GitHubIssueDiagnostic.collectedBody(
+        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let redactedMessage = SecretRedactor.redact(trimmedMessage)
+        let title = GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage, override: titleOverride)
+        let diagnostics = GitHubIssueDiagnostic.deviceSnapshot(kind: kind, redactedMessage: redactedMessage)
+        let fingerprint = diagnostics.fingerprint
+        let body = GitHubIssueDiagnostic.body(
             kind: kind,
             title: title,
-            message: message,
-            providerID: providerID
+            message: trimmedMessage,
+            providerID: providerID,
+            origin: .embeddedToken(
+                attributedUsername: GitHubUsername.optionalValid(reporterGitHubUsername)
+            ),
+            diagnostics: diagnostics
         )
         let labels = kind.githubLabels
 
         do {
             if let existing = try await resolveExistingIssue(fingerprint: fingerprint) {
-                let created = try await commentIfAllowed(
-                    fingerprint: fingerprint,
-                    issueNumber: existing,
-                    body: commentBody(kind: kind, message: redactedMessage)
+                return rememberURL(
+                    try await commentIfAllowed(
+                        fingerprint: fingerprint,
+                        issueNumber: existing,
+                        body: commentBody(kind: kind, message: redactedMessage)
+                    )
                 )
-                lastPublicIssueURL = created.htmlURL
-                persist()
-                return created
             }
 
             try enforceCreateRateLimit()
-            let truncatedTitle = String(SecretRedactor.redact(title).prefix(240))
             let created = try await client.createIssue(
-                title: truncatedTitle,
+                title: GitHubIssueTitle.githubAPITitle(title),
                 body: body,
                 labels: labels
             )
             state.createTimestamps.append(now())
             state.openFingerprints[fingerprint] = created.number
-            lastPublicIssueURL = created.htmlURL
             persist()
-            return created
+            return rememberURL(created)
         } catch {
             lastReportErrorMessage = error.localizedDescription
             throw error
@@ -133,13 +139,18 @@ public final class GitHubIssueReporter {
         return remote
     }
 
+    private func rememberURL(_ created: GitHubCreatedIssue) -> GitHubCreatedIssue {
+        lastPublicIssueURL = created.htmlURL
+        return created
+    }
+
     private func commentIfAllowed(
         fingerprint: String,
         issueNumber: Int,
         body: String
     ) async throws -> GitHubCreatedIssue {
         let timestamp = now()
-        if let previous = state.lastCommentAt[fingerprint], timestamp.timeIntervalSince(previous) < 3600 {
+        if let previous = state.lastCommentAt[fingerprint], timestamp.timeIntervalSince(previous) < Self.hourlyWindow {
             return GitHubCreatedIssue(
                 number: issueNumber,
                 htmlURL: GitHubRepository.issueURL(number: issueNumber),
@@ -154,7 +165,7 @@ public final class GitHubIssueReporter {
 
     private func commentBody(kind: GitHubIssueKind, message: String) -> String {
         """
-        Erneutes \(kind == .feedback ? "Feedback" : "Auftreten") (\(ISO8601DateFormatter().string(from: now()))):
+        Erneuter \(kind.repeatReportLabel) (\(ISO8601DateFormatter().string(from: now()))):
 
         ```
         \(message)
@@ -164,7 +175,7 @@ public final class GitHubIssueReporter {
 
     private func enforceCreateRateLimit() throws {
         let timestamp = now()
-        let windowStart = timestamp.addingTimeInterval(-3600)
+        let windowStart = timestamp.addingTimeInterval(-Self.hourlyWindow)
         state.createTimestamps.removeAll { $0 < windowStart }
         guard state.createTimestamps.count < maxCreatesPerHour else {
             throw GitHubIssueReporterError.rateLimited

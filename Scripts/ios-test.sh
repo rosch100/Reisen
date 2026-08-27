@@ -25,6 +25,9 @@ SIMULATOR_NAME="${IOS_SIMULATOR:-iPad Pro 13-inch (M5)}"
 SCHEME="${IOS_SCHEME:-all}"
 PROJECT="$ROOT/Reisen.xcodeproj"
 
+export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
+unset REISEN_EMBED_GITHUB_ISSUE_TOKEN
+unset REISEN_REQUIRE_GITHUB_ISSUE_TOKEN
 bash "$ROOT/Scripts/generate-ios-project.sh"
 
 resolve_udid() {

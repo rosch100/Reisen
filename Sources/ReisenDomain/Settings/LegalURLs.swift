@@ -27,6 +27,18 @@ public enum LegalURLs {
         GitHubRepository.pagesLegalURL(.supportEN)
     }
 
+    public static var impressum: URL {
+        GitHubRepository.pagesLegalURL(for: .impressum)
+    }
+
+    public static var impressumGerman: URL {
+        GitHubRepository.pagesLegalURL(.impressumDE)
+    }
+
+    public static var impressumEnglish: URL {
+        GitHubRepository.pagesLegalURL(.impressumEN)
+    }
+
     /// Raw-Fallback für ASC, solange GitHub Pages noch nicht deployed ist.
     public static var privacyPolicyRaw: URL {
         GitHubRepository.rawLegalURL(for: .privacy)
