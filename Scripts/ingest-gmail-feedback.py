@@ -139,13 +139,17 @@ def issue_body(
     )
 
 
-def parsed_from_message(message: Message) -> dict[str, Any]:
+def parsed_from_message(
+    message: Message,
+    fallback_message_id: str | None = None,
+) -> dict[str, Any]:
     subject = decode_header_value(message.get("Subject"))
     from_addr = decode_header_value(message.get("From"))
     date = decode_header_value(message.get("Date"))
     message_id = (message.get("Message-ID") or message.get("Message-Id") or "").strip()
     if not message_id:
-        message_id = synthetic_message_id(from_addr, date, subject)
+        fallback = fallback_message_id.strip() if isinstance(fallback_message_id, str) else ""
+        message_id = fallback or synthetic_message_id(from_addr, date, subject)
     body, attachments = extract_body_and_attachments(message)
     email_hash = email_id_hash(message_id)
     return {
@@ -173,12 +177,24 @@ def b64url_decode(data: str) -> bytes:
     return base64.urlsafe_b64decode(padded.encode("ascii"))
 
 
-def parsed_from_gmail_resource(resource: dict[str, Any]) -> dict[str, Any]:
+def parsed_from_gmail_resource(
+    resource: dict[str, Any],
+    gmail_message_id: str | None = None,
+) -> dict[str, Any]:
     raw = resource.get("raw")
     if not isinstance(raw, str) or not raw:
         log("Gmail-API Message ohne raw")
         raise RuntimeError("gmail raw missing")
-    return parsed_from_message(email.message_from_bytes(b64url_decode(raw)))
+    resource_id = resource.get("id")
+    fallback = None
+    if isinstance(gmail_message_id, str) and gmail_message_id.strip():
+        fallback = gmail_message_id.strip()
+    elif isinstance(resource_id, str) and resource_id.strip():
+        fallback = resource_id.strip()
+    return parsed_from_message(
+        email.message_from_bytes(b64url_decode(raw)),
+        fallback_message_id=fallback,
+    )
 
 
 def oauth_credentials_from_env() -> dict[str, str] | None:
@@ -361,7 +377,7 @@ def ingest_unread(
         if not isinstance(resource, dict):
             log("Gmail-API Message ohne Payload")
             raise RuntimeError("gmail message payload missing")
-        parsed = parsed_from_gmail_resource(resource)
+        parsed = parsed_from_gmail_resource(resource, gmail_message_id=mail_id)
         existing = search_existing_issue(token, repo, parsed["email_hash"])
         if existing is not None:
             log(f"Duplikat übersprungen (Issue #{existing})")
@@ -395,10 +411,12 @@ def main(argv: list[str] | None = None) -> int:
 
     creds = oauth_credentials_from_env()
     if creds is None:
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            log("GITHUB_ACTIONS: OAuth-Secrets fehlen")
+            return 1
         log("ingest übersprungen, Secret fehlt")
         return 0
 
-    address = os.environ.get("REISEN_FEEDBACK_GMAIL_ADDRESS", DEFAULT_FEEDBACK_EMAIL).strip()
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     repo = os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO).strip()
     if not token:
@@ -407,13 +425,10 @@ def main(argv: list[str] | None = None) -> int:
     if not repo:
         log("GITHUB_REPOSITORY fehlt")
         return 1
-    if not address:
-        log("Feedback-Adresse fehlt")
-        return 1
 
     created = ingest_unread(
         creds=creds,
-        expected_address=address,
+        expected_address=DEFAULT_FEEDBACK_EMAIL,
         token=token,
         repo=repo,
     )

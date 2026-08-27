@@ -55,6 +55,21 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         self.assertNotIn("<p>", parsed["body"])
         self.assertEqual(parsed["title"], "[Feedback] HTML only")
 
+    def test_gmail_id_is_used_when_header_message_id_is_missing(self) -> None:
+        raw = (FIXTURES / "html.eml").read_bytes()
+        encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+        first = ingest.parsed_from_gmail_resource(
+            {"raw": encoded, "id": "gmail-id-a"},
+            gmail_message_id="gmail-id-a",
+        )
+        second = ingest.parsed_from_gmail_resource(
+            {"raw": encoded, "id": "gmail-id-b"},
+            gmail_message_id="gmail-id-b",
+        )
+        self.assertEqual(first["message_id"], "gmail-id-a")
+        self.assertNotEqual(first["email_hash"], second["email_hash"])
+        self.assertEqual(first["email_hash"], ingest.email_id_hash("gmail-id-a"))
+
     def test_duplicate_hash_is_stable(self) -> None:
         first = self.parse_fixture("plain.eml")
         second = self.parse_fixture("plain.eml")
@@ -105,6 +120,10 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=True):
             self.assertEqual(ingest.main([]), 0)
 
+    def test_main_fails_in_github_actions_without_oauth_secrets(self) -> None:
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True):
+            self.assertEqual(ingest.main([]), 1)
+
     def test_main_requires_github_token_when_oauth_present(self) -> None:
         env = {
             "REISEN_GMAIL_OAUTH_CLIENT_ID": "id",
@@ -125,6 +144,7 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertNotIn("imaplib", source)
         self.assertNotIn("REISEN_FEEDBACK_GMAIL_APP_PASSWORD", source)
+        self.assertNotIn("REISEN_FEEDBACK_GMAIL_ADDRESS", source)
         self.assertIn("REISEN_GMAIL_OAUTH_REFRESH_TOKEN", source)
 
 

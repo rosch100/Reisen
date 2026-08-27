@@ -32,7 +32,7 @@ printf '%s' "$PAT" | base64 | tr -d '\n'
 | `Scripts/ios-archive-adhoc.sh` | Ja (wie Store). |
 | `Scripts/ci-test.sh` / `ci-build.sh` / `ios-test.sh` | Nein (`REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true`). |
 
-Ohne Token bleibt die Payload leer; die App baut, API-Meldung schlägt explizit fehl. Die UI kann ein vorausgefülltes Issue in Safari öffnen (GitHub-Konto des Nutzers) oder `mailto:reisenapp100@gmail.com`.
+Bei Builds ohne Token-Pflicht (CI, Tests) bleibt die Payload leer; die App baut, die API-Meldung schlägt explizit fehl. Store- und Ad-hoc-Archive sowie macOS-Release-CI brechen ohne Token vor dem Compile ab. Die UI kann ein vorausgefülltes Issue in Safari öffnen (GitHub-Konto des Nutzers) oder `mailto:reisenapp100@gmail.com`.
 
 ## Lokaler App-Build
 
@@ -62,4 +62,4 @@ Harte Grenze ist GitHub-seitig: fine-grained PAT mit **Issues: Read and write**,
 
 ## Issue-Labels
 
-Die öffentlichen Issue-Formulare setzen nur `kind/error` bzw. `kind/feedback`. `source/in-app` setzt die App beim Anlegen bzw. in der vorausgefüllten URL — nicht das Web-Formular, damit Browser-Meldungen nicht fälschlich als In-App gelten. Mail-Ingress setzt `kind/feedback` und `source/email`. Die Labels müssen am Repo existieren — die Issues-API antwortet sonst mit 422.
+Die öffentlichen Issue-Formulare setzen nur `kind/error` bzw. `kind/feedback`. `source/in-app` setzt die App beim Anlegen bzw. in der vorausgefüllten URL — nicht das Web-Formular, damit Browser-Meldungen nicht fälschlich als In-App gelten. Mail-Ingress setzt `kind/feedback` und `source/email`. Die Labels müssen am Repo existieren. Fehlen sie oder darf der Aufrufer keine Labels setzen, kann GitHub das Issue trotzdem anlegen — dann ohne diese Labels. HTTP 422 ist eine allgemeine Validierungs- oder Spam-Antwort, kein fester Fehlcode für fehlende Labels.

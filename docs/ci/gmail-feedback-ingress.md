@@ -18,11 +18,11 @@ Kein App-Passwort, kein IMAP, kein Google-Konto-Passwort.
 | `REISEN_GMAIL_OAUTH_CLIENT_SECRET` | OAuth-Client-Secret |
 | `REISEN_GMAIL_OAUTH_REFRESH_TOKEN` | Refresh-Token für `reisenapp100@gmail.com` |
 
-Die Adresse ist öffentlich und **kein** Secret. Override nur für Tests: `REISEN_FEEDBACK_GMAIL_ADDRESS`.
+Die Adresse ist öffentlich und **kein** Secret. SSOT: `GitHubRepository.feedbackEmail` und `DEFAULT_FEEDBACK_EMAIL` in `Scripts/ingest-gmail-feedback.py`.
 
 GitHub-API: `GITHUB_TOKEN` des Workflows (`issues: write`).
 
-Fehlt eines der drei OAuth-Secrets, endet der Job mit Exit 0 und der Meldung `ingest übersprungen, Secret fehlt`.
+Lokal ohne OAuth-Secrets: Exit 0, `ingest übersprungen, Secret fehlt`. Unter `GITHUB_ACTIONS=true` ist fehlendes Secret Exit 1.
 
 Scope: `https://www.googleapis.com/auth/gmail.modify` (ungelesene Inbox lesen und nach Erfolg als gelesen markieren).
 
