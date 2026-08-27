@@ -67,4 +67,11 @@ jobs:
         env:
           CI: "true"
           REISEN_CLOUDKIT: "0"
+          IOS_SCHEME: all
         run: bash ./Scripts/ios-test.sh
+
+      - name: iOS Release binary isolation check
+        env:
+          CI: "true"
+          REISEN_CLOUDKIT: "0"
+        run: bash ./Scripts/ios-build-release-check.sh

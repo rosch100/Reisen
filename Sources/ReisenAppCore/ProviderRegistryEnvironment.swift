@@ -1,5 +1,5 @@
 import SwiftUI
-import ReisenProviders
+import ReisenDomain
 
 /// Optional environment value. Must not trap on read: SwiftUI resolves WritableKeyPaths
 /// during environment propagation and will call the getter before the App injects a value.

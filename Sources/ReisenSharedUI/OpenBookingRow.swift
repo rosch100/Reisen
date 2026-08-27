@@ -13,7 +13,7 @@ public struct OpenBookingRow: View {
         let stornoLines = BookingStornoSummary.lines(for: booking)
 
         VStack(alignment: .leading, spacing: 4) {
-            Text(booking.title ?? booking.bookingType.rawValue.capitalized)
+            Text(booking.displayTitle)
                 .lineLimit(1)
                 .font(.headline)
 

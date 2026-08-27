@@ -23,9 +23,9 @@ public struct AssignBookingsSheet: View {
             Group {
                 if candidates.isEmpty {
                     ContentUnavailableView(
-                        "Keine passenden Buchungen",
+                        L10n.string(.tripNoOpenInRange),
                         systemImage: "tray",
-                        description: Text("Es gibt keine offenen Buchungen im Reisezeitraum.")
+                        description: Text(L10n.string(.assignNoOpenInRange))
                     )
                 } else {
                     List(candidates, id: \.id) { booking in
@@ -34,7 +34,7 @@ public struct AssignBookingsSheet: View {
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(booking.title ?? booking.bookingType.rawValue.capitalized)
+                                    Text(booking.displayTitle)
                                         .font(.headline)
                                     Text("\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))")
                                         .font(.caption)
@@ -49,16 +49,16 @@ public struct AssignBookingsSheet: View {
                     }
                 }
             }
-            .navigationTitle("Buchungen zuordnen")
+            .navigationTitle(L10n.string(.assignTitle))
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button(L10n.string(.commonCancel)) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Zuordnen") { assignSelectedBookings() }
+                    Button(L10n.string(.commonAssign)) { assignSelectedBookings() }
                         .disabled(selectedBookingIDs.isEmpty)
                 }
             }

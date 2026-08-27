@@ -10,7 +10,7 @@ public enum BookingTimeNormalizeDispatch {
             guard booking.timesNormalized != true else { return booking }
             return BookingFlightTimeNormalizer.normalize(booking)
 
-        case .activity, .other:
+        case .activity, .carRental, .other:
             return booking
         }
     }

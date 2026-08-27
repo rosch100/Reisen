@@ -1,5 +1,6 @@
 import SwiftUI
 import ReisenAppCore
+import ReisenDomain
 
 /// Shared store-open failure UI (iOS + macOS) with local reset / optional Cloud wipe.
 public struct StoreFailureView: View {
@@ -25,7 +26,7 @@ public struct StoreFailureView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Datenbank konnte nicht geladen werden")
+            Text(L10n.string(.storeLoadFailed))
                 .font(.title2)
             Text(message)
                 .textSelection(.enabled)
@@ -33,38 +34,38 @@ public struct StoreFailureView: View {
 
             PublicGitHubIssueReportActions(storeLoadFailureMessage: message)
 
-            Button("Lokale Stores zurücksetzen…") {
+            Button(L10n.string(.actionResetLocalStores)) {
                 showResetConfirmation = true
             }
             .buttonStyle(.borderedProminent)
 
-            Button("Auch iCloud-Daten leeren…", role: .destructive) {
+            Button(L10n.string(.actionClearIcloud), role: .destructive) {
                 showCloudWipeConfirmation = true
             }
             .buttonStyle(.bordered)
             .confirmationDialog(
-                "Lokale Stores zurücksetzen?",
+                L10n.string(.actionResetLocalStores),
                 isPresented: $showResetConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Lokale Stores löschen", role: .destructive) {
+                Button(L10n.string(.actionDeleteLocalStores), role: .destructive) {
                     onReset(false)
                 }
-                Button("Abbrechen", role: .cancel) {}
+                Button(L10n.string(.commonCancel), role: .cancel) {}
             } message: {
-                Text("Lokale Store-Dateien werden gelöscht. Bei aktivem iCloud Sync können synchronisierte Daten erneut geladen werden.")
+                Text(L10n.string(.storeResetLocalMessage))
             }
             .confirmationDialog(
-                "iCloud-Daten wirklich leeren?",
+                L10n.string(.actionClearIcloud),
                 isPresented: $showCloudWipeConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("iCloud und lokal leeren", role: .destructive) {
+                Button(L10n.string(.actionClearIcloudAndLocal), role: .destructive) {
                     onReset(true)
                 }
-                Button("Abbrechen", role: .cancel) {}
+                Button(L10n.string(.commonCancel), role: .cancel) {}
             } message: {
-                Text("Lokale Stores werden neu angelegt, vorhandene iCloud-Daten importiert und anschließend geleert (inkl. Export der Löschungen).")
+                Text(L10n.string(.storeClearIcloudMessage))
             }
         }
         .padding(contentPadding)

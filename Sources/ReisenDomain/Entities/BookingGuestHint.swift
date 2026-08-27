@@ -8,7 +8,7 @@ public enum GuestHintCategory: String, Codable, CaseIterable, Identifiable, Send
     public var displayTitle: String {
         switch self {
         case .preTravelImportant:
-            return "Wichtige Hinweise vor Reiseantritt"
+            return L10n.string(.guestHintPreTravelImportant)
         }
     }
 }
@@ -84,7 +84,7 @@ public enum BookingGuestHintSummary {
         }
         let joined = lines.joined(separator: "\n")
         if hints.count > 3 {
-            return "\(bookingTitle)\n\(joined)\n… +\(hints.count - 3) weitere"
+            return "\(bookingTitle)\n\(joined)\n\(L10n.format(.guestHintMoreCount, hints.count - 3))"
         }
         return "\(bookingTitle)\n\(joined)"
     }
@@ -103,14 +103,14 @@ public enum BookingGuestHintSummary {
 
     public static func eventNotes(leadDays: Int, summary: String) -> String {
         """
-        Reisen: \(GuestHintCategory.preTravelImportant.displayTitle)
-        Vorlauf: \(leadDays) Tage
+        \(L10n.format(.guestHintEventNotesHeader, GuestHintCategory.preTravelImportant.displayTitle))
+        \(L10n.format(.guestHintLeadDays, leadDays))
         \(summary)
         """
     }
 
     public static func reminderNotes(summary: String) -> String {
-        "Reisen: \(GuestHintCategory.preTravelImportant.displayTitle)\n\(summary)"
+        "\(L10n.format(.guestHintReminderNotesHeader, GuestHintCategory.preTravelImportant.displayTitle))\n\(summary)"
     }
 }
 

@@ -3,6 +3,9 @@ import Foundation
 import ReisenDomain
 
 @Test func baggageInfoFormatterAggregatesWhenAllPassengersIdentical() {
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+
     let passengers = [
         BookingPassenger(
             passengerNumber: 1,
@@ -39,8 +42,8 @@ import ReisenDomain
     ]
 
     let baggage = BaggageInfoFormatter.baggageInfoRaw(passengers: passengers)
-    #expect(baggage.contains("Aufgabe") == true)
-    #expect(baggage.contains("Hand") == true)
+    #expect(baggage.contains(L10n.string(.baggageShortChecked)) == true)
+    #expect(baggage.contains(L10n.string(.baggageShortCabin)) == true)
     #expect(baggage.contains("10KG") == true)
     #expect(baggage.contains("5KG") == true)
     #expect(baggage.contains("Pax") == false)

@@ -6,4 +6,9 @@ public enum BookingStatus: String, Codable, CaseIterable, Identifiable, Sendable
     case unknown
 
     public var id: String { rawValue }
+
+    /// UI-Label (Details, Editor, Listen).
+    public var displayLabel: String {
+        L10n.bookingStatusDisplay(self)
+    }
 }

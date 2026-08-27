@@ -5,7 +5,7 @@ public enum CancellationDeadlineFixedLine {
         CancellationSummaryLine(
             id: CancellationSummaryLine.fixID,
             kind: .fix,
-            text: "Fix (nicht mehr kostenlos stornierbar)",
+            text: L10n.string(.bookingCancellationLocked),
             systemImageName: "lock.fill"
         )
     }

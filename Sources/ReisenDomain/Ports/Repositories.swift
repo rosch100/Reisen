@@ -8,9 +8,9 @@ public enum RepositoryError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notFound(let detail):
-            return "Nicht gefunden: \(detail)"
+            return L10n.format(.repositoryNotFound, detail)
         case .persistenceFailed(let detail):
-            return "Persistenzfehler: \(detail)"
+            return L10n.format(.repositoryPersistenceError, detail)
         case .invalidState(let detail):
             return detail
         }

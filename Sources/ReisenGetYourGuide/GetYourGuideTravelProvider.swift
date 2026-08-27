@@ -4,7 +4,7 @@ import ReisenDomain
 import ReisenProviders
 
 @MainActor
-public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLoginConfiguration {
+public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
     public init() {}
 
     public var id: ProviderID { .getYourGuide }

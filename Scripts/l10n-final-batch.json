@@ -1,0 +1,18 @@
+{
+  "guest_hint.event_notes_header": {
+    "de": "Reisen: %1$@",
+    "en": "Reisen: %1$@"
+  },
+  "guest_hint.lead_days": {
+    "de": "Vorlauf: %1$d Tage",
+    "en": "Lead time: %1$d days"
+  },
+  "guest_hint.reminder_notes_header": {
+    "de": "Reisen: %1$@",
+    "en": "Reisen: %1$@"
+  },
+  "baggage.passenger_line": {
+    "de": "Pax %1$d: %2$@",
+    "en": "Pax %1$d: %2$@"
+  }
+}

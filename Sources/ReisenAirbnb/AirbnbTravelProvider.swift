@@ -4,7 +4,7 @@ import ReisenDomain
 import ReisenProviders
 
 @MainActor
-public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConfiguration {
+public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
     public init() {}
 
     public var id: ProviderID { .airbnb }

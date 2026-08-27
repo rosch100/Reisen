@@ -23,7 +23,7 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
         case .airbnb: return "Airbnb"
         case .getYourGuide: return "GetYourGuide"
         case .traveloka: return "Traveloka"
-        case .manual: return "Manuell"
+        case .manual: return L10n.string(.providerManual)
         default: return rawValue
         }
     }
