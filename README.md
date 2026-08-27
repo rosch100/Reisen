@@ -23,7 +23,7 @@ Reisen ist **nicht** mit diesen Anbietern verbunden — Login erfolgt direkt bei
 
 ## Architektur
 
-```
+```text
 ReisenDomain         Entities, Ports, Use Cases, reine Services
 ReisenData           SwiftData (@Model), VersionedSchema, Repositories, Mapper
 ReisenProviders      TravelProvider, ProviderRegistry, Deep-Link-Ports

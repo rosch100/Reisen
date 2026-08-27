@@ -19,6 +19,14 @@ public enum GitHubUsername {
         return normalized
     }
 
+    /// Sichtbares Namensfeld: ungültige Eingabe ist ein Fehler. Sonst ungültige Werte ignorieren.
+    public static func attribution(from raw: String, requireValid: Bool) -> (username: String?, error: String?) {
+        if requireValid, let error = validationError(for: raw) {
+            return (nil, error)
+        }
+        return (optionalValid(raw), nil)
+    }
+
     /// GitHub-Login: 1–`maxLength` Zeichen, alphanumerisch und Bindestrich, kein führendes/abschließendes `-`.
     public static func isValid(_ normalized: String) -> Bool {
         let range = NSRange(normalized.startIndex..., in: normalized)

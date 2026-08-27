@@ -3,7 +3,7 @@ import Foundation
 import ReisenDomain
 @testable import ReisenAppCore
 
-@Test func githubIssueKind_issueTemplatesDeclareSameLabels() throws {
+@Test func githubIssueKind_issueTemplatesDeclareKindNotInAppSource() throws {
     let repoRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
@@ -13,9 +13,15 @@ import ReisenDomain
             ".github/ISSUE_TEMPLATE/\(kind.issueForm.templateFileName)"
         )
         let yaml = try String(contentsOf: template, encoding: .utf8)
-        for label in kind.githubLabels {
-            #expect(yaml.contains("\"\(label)\""), "\(kind.issueForm.templateFileName) missing \(label)")
-        }
+        #expect(
+            yaml.contains("\"kind/\(kind.rawValue)\""),
+            "\(kind.issueForm.templateFileName) missing kind/\(kind.rawValue)"
+        )
+        #expect(
+            !yaml.contains("source/in-app"),
+            "\(kind.issueForm.templateFileName) must not apply source/in-app to web form submissions"
+        )
+        #expect(kind.githubLabels.contains("source/in-app"))
     }
 }
 

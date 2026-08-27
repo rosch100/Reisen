@@ -1,7 +1,7 @@
 name: Feedback
 description: Öffentliches Nutzerfeedback und Feature-Wünsche für Reisen
 title: "[Feedback] "
-labels: ["kind/feedback", "source/in-app"]
+labels: ["kind/feedback"]
 body:
   - type: textarea
     id: feedback

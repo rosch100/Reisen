@@ -57,4 +57,4 @@ Harte Grenze ist GitHub-seitig: fine-grained PAT mit **Issues: Read and write**,
 
 ## Issue-Labels
 
-Die App setzt beim Anlegen `kind/error` bzw. `kind/feedback` und `source/in-app` (siehe `.github/ISSUE_TEMPLATE/*.yml`). Die Labels müssen am Repo existieren — die Issues-API antwortet sonst mit 422.
+Die öffentlichen Issue-Formulare setzen nur `kind/error` bzw. `kind/feedback`. `source/in-app` setzt die App beim Anlegen bzw. in der vorausgefüllten URL — nicht das Web-Formular, damit Browser-Meldungen nicht fälschlich als In-App gelten. Die Labels müssen am Repo existieren — die Issues-API antwortet sonst mit 422.

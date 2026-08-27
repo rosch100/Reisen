@@ -82,6 +82,53 @@ import ReisenDomain
     #expect(url.absoluteString.count <= GitHubIssueNewIssueURL.maxURLLength)
 }
 
+@Test func githubIssueNewIssueURL_keepsMinimumFormFieldWhenEncodedTitleIsLong() throws {
+    let message = String(repeating: "A", count: 3_000)
+    let title = try #require(titleWhereBodyFitsOnlyAtMinimum())
+    let value = GitHubIssueNewIssueURL.formFieldValueForQuery(
+        kind: .error,
+        title: title,
+        message: message,
+        providerID: nil,
+        origin: .embeddedToken(attributedUsername: nil)
+    )
+    #expect(value.contains("A"))
+    #expect(value.count >= GitHubIssueNewIssueURL.minTruncatedBodyCharacters)
+}
+
+@Test func githubIssueNewIssueURL_returnsNilWhenEvenMinimumExceedsURLLimit() {
+    let oversizedTitle = String(repeating: "😀", count: 2_000)
+    #expect(
+        GitHubIssueNewIssueURL.issueURLIfFits(
+            kind: .error,
+            title: oversizedTitle,
+            formFieldValue: String(repeating: "A", count: GitHubIssueNewIssueURL.minTruncatedBodyCharacters)
+        ) == nil
+    )
+}
+
+private func titleWhereBodyFitsOnlyAtMinimum() -> String? {
+    let minChars = GitHubIssueNewIssueURL.minTruncatedBodyCharacters
+    let aboveMin = minChars + GitHubIssueNewIssueURL.bodyTruncationStep
+    for count in stride(from: 200, through: 900, by: 10) {
+        let title = String(repeating: "😀", count: count)
+        let fitsAboveMin = GitHubIssueNewIssueURL.fitsInIssueURL(
+            kind: .error,
+            title: title,
+            formFieldValue: String(repeating: "A", count: aboveMin)
+        )
+        let fitsMin = GitHubIssueNewIssueURL.fitsInIssueURL(
+            kind: .error,
+            title: title,
+            formFieldValue: String(repeating: "A", count: minChars)
+        )
+        if !fitsAboveMin, fitsMin {
+            return title
+        }
+    }
+    return nil
+}
+
 @Test func githubIssueToken_isNotEmbeddedInStubBuild() {
     #expect(GitHubIssueToken.isEmbedded == false)
 }

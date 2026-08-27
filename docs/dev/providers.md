@@ -1,6 +1,6 @@
 # Unterstützte Anbieter (Sync)
 
-SSOT im Code: [`ProviderID.syncProviderIDs`](../Sources/ReisenDomain/Entities/ProviderID.swift) und [`AppBootstrap.makeProviderRegistry()`](../Sources/ReisenAppCore/AppBootstrap.swift).
+SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities/ProviderID.swift) und [`AppBootstrap.makeProviderRegistry()`](../../Sources/ReisenAppCore/AppBootstrap.swift).
 
 | Anbieter | Modul | Typische Buchungen | Impl-Spec / Notizen |
 |----------|-------|-------------------|---------------------|

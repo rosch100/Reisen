@@ -99,12 +99,15 @@ public struct PublicGitHubIssueReportActions: View {
         localError = nil
         localURL = nil
 
-        if let validationError = GitHubUsername.validationError(for: feedbackGitHubUsername) {
+        let attribution = GitHubUsername.attribution(
+            from: feedbackGitHubUsername,
+            requireValid: usesEmbeddedToken
+        )
+        if let validationError = attribution.error {
             localError = validationError
             return
         }
-
-        let githubForOrigin = GitHubUsername.optionalValid(feedbackGitHubUsername)
+        let githubForOrigin = attribution.username
 
         if usesEmbeddedToken {
             reportWithEmbeddedToken(githubUsername: githubForOrigin)

@@ -29,6 +29,26 @@ import ReisenDomain
     #expect(GitHubUsername.optionalValid(" @rosch100 ") == "rosch100")
 }
 
+@Test func githubUsername_attributionRequiresValidWhenFieldVisible() {
+    let invalid = GitHubUsername.attribution(from: "bad name", requireValid: true)
+    #expect(invalid.username == nil)
+    #expect(invalid.error == "Ungültiger GitHub-Benutzername.")
+
+    let valid = GitHubUsername.attribution(from: " @rosch100 ", requireValid: true)
+    #expect(valid.username == "rosch100")
+    #expect(valid.error == nil)
+}
+
+@Test func githubUsername_attributionIgnoresInvalidWhenFieldHidden() {
+    let ignored = GitHubUsername.attribution(from: "bad name", requireValid: false)
+    #expect(ignored.username == nil)
+    #expect(ignored.error == nil)
+
+    let valid = GitHubUsername.attribution(from: " @rosch100 ", requireValid: false)
+    #expect(valid.username == "rosch100")
+    #expect(valid.error == nil)
+}
+
 @Test func optionalFeedbackGitHubUsername_ignoresInvalidValues() {
     let suite = "ReisenTests.feedbackGitHubUsername.\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: suite)!

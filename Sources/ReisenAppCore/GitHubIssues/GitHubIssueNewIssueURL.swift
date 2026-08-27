@@ -7,8 +7,8 @@ public enum GitHubIssueNewIssueURL {
     /// Obergrenze für die encodierte Gesamt-URL inkl. Query.
     public static let maxURLLength = 8_000
     public static let composeFailureMessage = "Issue-URL konnte nicht erstellt werden."
-    private static let minTruncatedBodyCharacters = 200
-    private static let bodyTruncationStep = 500
+    static let minTruncatedBodyCharacters = 200
+    static let bodyTruncationStep = 500
 
     private static let truncationSuffix = """
 
@@ -37,7 +37,7 @@ public enum GitHubIssueNewIssueURL {
             providerID: providerID,
             origin: origin
         )
-        return issueURL(kind: kind, title: title, formFieldValue: formFieldValue)
+        return issueURLIfFits(kind: kind, title: title, formFieldValue: formFieldValue)
     }
 
     static func formFieldValueForQuery(
@@ -58,7 +58,7 @@ public enum GitHubIssueNewIssueURL {
         while !fitsInIssueURL(kind: kind, title: title, formFieldValue: value),
               maxChars > minTruncatedBodyCharacters
         {
-            maxChars -= bodyTruncationStep
+            maxChars = max(minTruncatedBodyCharacters, maxChars - bodyTruncationStep)
             value = truncated(fullValue, maxCharacters: maxChars)
         }
         return value
@@ -71,8 +71,16 @@ public enum GitHubIssueNewIssueURL {
     }
 
     static func fitsInIssueURL(kind: GitHubIssueKind, title: String, formFieldValue: String) -> Bool {
-        guard let url = issueURL(kind: kind, title: title, formFieldValue: formFieldValue) else { return false }
-        return url.absoluteString.count <= maxURLLength
+        issueURLIfFits(kind: kind, title: title, formFieldValue: formFieldValue) != nil
+    }
+
+    static func issueURLIfFits(kind: GitHubIssueKind, title: String, formFieldValue: String) -> URL? {
+        guard let url = issueURL(kind: kind, title: title, formFieldValue: formFieldValue),
+              url.absoluteString.count <= maxURLLength
+        else {
+            return nil
+        }
+        return url
     }
 
     private static func issueURL(kind: GitHubIssueKind, title: String, formFieldValue: String) -> URL? {
