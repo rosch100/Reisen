@@ -238,6 +238,7 @@ public struct SettingsView: View {
                     feedbackMessage: feedbackText,
                     onReported: { feedbackText = "" }
                 )
+                Link(L10n.string(.settingsFeedbackEmail), destination: GitHubRepository.feedbackMailtoURL)
                 Link(L10n.string(.settingsFeedbackAllIssues), destination: GitHubRepository.issuesListURL)
             } header: {
                 Text(L10n.string(.settingsFeedback))

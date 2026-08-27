@@ -4657,18 +4657,34 @@
         }
       }
     },
-    "settings.feedback_footer_embedded": {
+    "settings.feedback_email": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Automatische Fehler-Issues nur mit dem Schalter oben und sind öffentlich; ohne Sync-Log, ohne Login- oder Datenschutz-Verweigerungen. Repo: github.com/%1$@."
+            "value": "Per E-Mail senden"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optional GitHub username is used only for attribution in the issue text; submission uses the embedded token (no GitHub sign-in). Automatic error issues require the toggle above and are public; no sync log, login, or privacy denials. Repo: github.com/%1$@."
+            "value": "Send by email"
+          }
+        }
+      }
+    },
+    "settings.feedback_footer_embedded": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Per E-Mail an reisenapp100@gmail.com wird daraus ebenfalls ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Automatische Fehler-Issues nur mit dem Schalter oben und sind öffentlich. Repo: github.com/%1$@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional GitHub username is used only for attribution in the issue text; submission uses the embedded token (no GitHub sign-in). Email to reisenapp100@gmail.com also becomes a public issue. App Store ratings and TestFlight feedback are received but are not filed on GitHub automatically. Automatic error issues require the toggle above and are public. Repo: github.com/%1$@."
           }
         }
       }
@@ -4678,13 +4694,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text. Du sendest mit deinem GitHub-Konto. Repo: github.com/%1$@."
+            "value": "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text (GitHub-Konto nötig). Per E-Mail an reisenapp100@gmail.com entsteht ohne Konto ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Repo: github.com/%1$@."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "“Publish on GitHub…” opens a new Safari issue with prefilled text. You submit with your GitHub account. Repo: github.com/%1$@."
+            "value": "“Publish on GitHub…” opens a new Safari issue with prefilled text (GitHub account required). Email to reisenapp100@gmail.com creates a public issue without an account. App Store ratings and TestFlight feedback are received but are not filed on GitHub automatically. Repo: github.com/%1$@."
           }
         }
       }

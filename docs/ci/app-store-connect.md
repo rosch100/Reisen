@@ -13,6 +13,7 @@ Vollständiger Provider-Sync: separate Private-iOS-App, siehe [ios-private-distr
 | Kategorie | Reisen |
 | Privacy Policy URL (DE) | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicyGerman`) |
 | Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/privacy.en.html` (`LegalURLs.privacyPolicyEnglish`; Redirect auf `en/privacy.html`) |
+| Support Email | `reisenapp100@gmail.com` (`GitHubRepository.feedbackEmail`) |
 | Support URL (DE) | `https://rosch100.github.io/Reisen/support.html` (`LegalURLs.supportGerman`) |
 | Support URL (EN) | `https://rosch100.github.io/Reisen/support.en.html` (`LegalURLs.supportEnglish`; Redirect auf `en/support.html`) |
 | Übersicht / beide Sprachen | `https://rosch100.github.io/Reisen/` — zweisprachige **Produktseite** (DE: `/`, EN: `/en/`); Legal: Datenschutz, Support, Impressum |

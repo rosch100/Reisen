@@ -11,8 +11,9 @@ ARCHIVE_PATH="${ARCHIVE_PATH:-$ROOT/.build/ReiseniOSPrivate.xcarchive}"
 EXPORT_PATH="${EXPORT_PATH:-$ROOT/.build/ReiseniOSPrivate-ipa}"
 EXPORT_OPTIONS="${EXPORT_OPTIONS:-$ROOT/Scripts/ios-export-adhoc.plist}"
 
-export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
-unset REISEN_EMBED_GITHUB_ISSUE_TOKEN
+export REISEN_EMBED_GITHUB_ISSUE_TOKEN=true
+export REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true
+unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
 
 bash "$ROOT/Scripts/generate-ios-project.sh"
 

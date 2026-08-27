@@ -97,7 +97,7 @@ Der Sync ist für **lokale, persönliche Nutzung** gedacht; Session-Cookies blei
 
 ## Öffentliche Issues (Fehler und Feedback)
 
-Fehler in der App und Feedback in den Einstellungen können als **öffentliche** GitHub-Issues veröffentlicht werden: [github.com/rosch100/Reisen/issues](https://github.com/rosch100/Reisen/issues). Dafür ist **kein GitHub-Konto** nötig; ausgelieferte Apps (macOS-Release und iOS App Store) enthalten ein Issues-only-Token. Details: [docs/ci/github-issues-token.md](docs/ci/github-issues-token.md).
+Fehler in der App und Feedback in den Einstellungen können als **öffentliche** GitHub-Issues veröffentlicht werden: [github.com/rosch100/Reisen/issues](https://github.com/rosch100/Reisen/issues). Dafür ist **kein GitHub-Konto** nötig; ausgelieferte Apps (macOS-Release und iOS App Store) enthalten ein Issues-only-Token. Alternativ E-Mail an [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (wird zum Issue). Details: [docs/ci/github-issues-token.md](docs/ci/github-issues-token.md), [docs/ci/gmail-feedback-ingress.md](docs/ci/gmail-feedback-ingress.md).
 
 App-Store-Einreichung: [docs/ci/app-store-connect.md](docs/ci/app-store-connect.md) — Archive: `bash ./Scripts/ios-archive-appstore.sh`
 

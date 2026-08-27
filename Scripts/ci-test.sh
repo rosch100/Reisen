@@ -54,8 +54,28 @@ if grep -q '0x' "$STUB"; then
   echo "Fehler: GitHubIssueToken.generated.swift.stub darf keine XOR-Bytes enthalten." >&2
   exit 1
 fi
-if ! grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-appstore.sh"; then
-  echo "Fehler: App-Store-Archive darf das Issue-Token nicht einbetten (EMPTY=true Pflicht)." >&2
+if grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive darf REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true nicht setzen." >&2
+  exit 1
+fi
+if ! grep -q 'REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive muss REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true setzen." >&2
+  exit 1
+fi
+if ! grep -q 'REISEN_EMBED_GITHUB_ISSUE_TOKEN=true' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive muss REISEN_EMBED_GITHUB_ISSUE_TOKEN=true setzen." >&2
+  exit 1
+fi
+if grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-adhoc.sh"; then
+  echo "Fehler: Ad-hoc-Archive darf REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true nicht setzen." >&2
+  exit 1
+fi
+if ! grep -q 'REISEN_EMBED_GITHUB_ISSUE_TOKEN=true' "$ROOT/Scripts/ios-archive-adhoc.sh"; then
+  echo "Fehler: Ad-hoc-Archive muss REISEN_EMBED_GITHUB_ISSUE_TOKEN=true setzen." >&2
+  exit 1
+fi
+if ! grep -q 'REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true' "$ROOT/Scripts/ios-archive-adhoc.sh"; then
+  echo "Fehler: Ad-hoc-Archive muss REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true setzen." >&2
   exit 1
 fi
 if ! grep -q -- '--mode store --ipa' "$ROOT/Scripts/ios-archive-appstore.sh"; then
@@ -70,7 +90,17 @@ if grep -q 'ios-archive-adhoc.sh' "$ROOT/.github/workflows/app-store-check.yml";
   echo "Fehler: App Store Check darf das Private-Archive nicht bauen oder scannen." >&2
   exit 1
 fi
+if grep -q 'REISEN_FEEDBACK_GMAIL_APP_PASSWORD' "$ROOT/.github/workflows/gmail-feedback-ingress.yml"; then
+  echo "Fehler: Gmail-Ingress darf kein App-Passwort mehr nutzen." >&2
+  exit 1
+fi
+if ! grep -q 'REISEN_GMAIL_OAUTH_REFRESH_TOKEN' "$ROOT/.github/workflows/gmail-feedback-ingress.yml"; then
+  echo "Fehler: Gmail-Ingress muss REISEN_GMAIL_OAUTH_REFRESH_TOKEN setzen." >&2
+  exit 1
+fi
 REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash "$ROOT/Scripts/embed-github-issue-token.sh"
+
+python3 -m unittest discover -s "$ROOT/Scripts/tests/ingest-gmail-feedback" -v
 
 if [[ "$SKIP_BUILD" == "true" ]]; then
   swift test -v --skip-build

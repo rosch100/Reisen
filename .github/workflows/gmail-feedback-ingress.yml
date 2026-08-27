@@ -1,0 +1,36 @@
+name: Gmail Feedback Ingress
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: gmail-feedback-ingress
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ingest:
+    name: Unread mail to GitHub issues
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.repository == 'rosch100/Reisen'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Ingest Gmail feedback
+        env:
+          REISEN_GMAIL_OAUTH_CLIENT_ID: ${{ secrets.REISEN_GMAIL_OAUTH_CLIENT_ID }}
+          REISEN_GMAIL_OAUTH_CLIENT_SECRET: ${{ secrets.REISEN_GMAIL_OAUTH_CLIENT_SECRET }}
+          REISEN_GMAIL_OAUTH_REFRESH_TOKEN: ${{ secrets.REISEN_GMAIL_OAUTH_REFRESH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash ./Scripts/ingest-gmail-feedback.sh

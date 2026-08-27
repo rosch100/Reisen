@@ -42,6 +42,16 @@ public enum GitHubRepository {
     public static let privacyRequestPage = "privacy-request.html"
     public static let contactIssuePage = "contact-request.html"
 
+    /// Öffentliche Projekt-Mail (Impressum, Support, Gmail-Ingress). Kein Secret.
+    public static let feedbackEmail = "reisenapp100@gmail.com"
+
+    public static var feedbackMailtoURL: URL {
+        guard let url = URL(string: "mailto:\(feedbackEmail)") else {
+            preconditionFailure("feedbackEmail muss eine gültige mailto-URL ergeben.")
+        }
+        return url
+    }
+
     public static var publicPath: String {
         "\(owner)/\(name)"
     }
