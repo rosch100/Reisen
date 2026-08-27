@@ -24,22 +24,7 @@ struct OffenTab: View {
     var body: some View {
         AdaptiveListDetail(
             selection: $selectedBookingID,
-            list: {
-                OpenBookingsScreen(
-                    searchText: $searchText,
-                    selectedBookingID: $selectedBookingID,
-                    multiSelection: $multiSelection,
-                    isSelectingForTripCreate: $isSelectingForTripCreate,
-                    tripCreateSeed: $tripCreateSeed,
-                    showCreateTripFromBookingsFailed: $showCreateTripFromBookingsFailed,
-                    #if REISEN_PROVIDER_SYNC
-                    sessionChromeEpoch: $sessionChromeEpoch,
-                    onOpenSync: onOpenSync,
-                    #endif
-                    onCreateTrip: { showCreateTrip = true },
-                    onTripCreated: onTripCreated
-                )
-            },
+            list: { openBookingsScreen },
             detail: { bookingID in
                 BookingDetailIOS(bookingID: bookingID, onTripCreated: onTripCreated)
             },
@@ -64,6 +49,35 @@ struct OffenTab: View {
                 onTripCreated(trip.id)
             }
         )
+    }
+
+    @ViewBuilder
+    private var openBookingsScreen: some View {
+        #if REISEN_PROVIDER_SYNC
+        OpenBookingsScreen(
+            searchText: $searchText,
+            selectedBookingID: $selectedBookingID,
+            multiSelection: $multiSelection,
+            isSelectingForTripCreate: $isSelectingForTripCreate,
+            tripCreateSeed: $tripCreateSeed,
+            showCreateTripFromBookingsFailed: $showCreateTripFromBookingsFailed,
+            sessionChromeEpoch: $sessionChromeEpoch,
+            onOpenSync: onOpenSync,
+            onCreateTrip: { showCreateTrip = true },
+            onTripCreated: onTripCreated
+        )
+        #else
+        OpenBookingsScreen(
+            searchText: $searchText,
+            selectedBookingID: $selectedBookingID,
+            multiSelection: $multiSelection,
+            isSelectingForTripCreate: $isSelectingForTripCreate,
+            tripCreateSeed: $tripCreateSeed,
+            showCreateTripFromBookingsFailed: $showCreateTripFromBookingsFailed,
+            onCreateTrip: { showCreateTrip = true },
+            onTripCreated: onTripCreated
+        )
+        #endif
     }
 }
 
