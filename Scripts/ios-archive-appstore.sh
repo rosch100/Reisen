@@ -16,6 +16,32 @@ export REISEN_EMBED_GITHUB_ISSUE_TOKEN=true
 export REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true
 unset REISEN_GITHUB_ISSUE_TOKEN_EMPTY
 
+# shellcheck source=apple-developer.sh
+source "$ROOT/Scripts/apple-developer.sh"
+
+TEAM_ID="$(reisen_apple_team_id)"
+AUTH_ARGS=()
+AUTH_OUT="$(reisen_xcodebuild_asc_auth_args)"
+while IFS= read -r arg; do
+  [[ -n "$arg" ]] && AUTH_ARGS+=("$arg")
+done <<<"$AUTH_OUT"
+if [[ ${#AUTH_ARGS[@]} -eq 0 ]]; then
+  AUTH_ARGS+=(-allowProvisioningUpdates)
+fi
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  auth_ok=false
+  for arg in "${AUTH_ARGS[@]}"; do
+    if [[ "$arg" == "-authenticationKeyPath" ]]; then
+      auth_ok=true
+      break
+    fi
+  done
+  if [[ "$auth_ok" != "true" ]]; then
+    echo "Fehler: GitHub Actions Archive braucht APP_STORE_CONNECT_API_KEY_BASE64, KEY_ID und ISSUER." >&2
+    exit 1
+  fi
+fi
+
 bash "$ROOT/Scripts/generate-ios-project.sh" >&2
 
 if [[ ! -f "$EXPORT_OPTIONS" ]]; then
@@ -35,7 +61,9 @@ xcodebuild \
   -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE_PATH" \
   archive \
-  -allowProvisioningUpdates \
+  "${AUTH_ARGS[@]}" \
+  CODE_SIGN_STYLE=Automatic \
+  DEVELOPMENT_TEAM="$TEAM_ID" \
   >&2
 
 echo "Export IPA (app-store) …" >&2
@@ -44,7 +72,7 @@ xcodebuild \
   -archivePath "$ARCHIVE_PATH" \
   -exportPath "$EXPORT_PATH" \
   -exportOptionsPlist "$EXPORT_OPTIONS" \
-  -allowProvisioningUpdates \
+  "${AUTH_ARGS[@]}" \
   >&2
 
 IPA_FILES=()

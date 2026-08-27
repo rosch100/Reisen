@@ -117,6 +117,27 @@ if ! grep -q 'REISEN_GITHUB_ISSUES_TOKEN_BASE64: ${{ secrets.REISEN_GITHUB_ISSUE
   echo "Fehler: App Store Check muss REISEN_GITHUB_ISSUES_TOKEN_BASE64 an das Store-Archive durchreichen." >&2
   exit 1
 fi
+if ! grep -q 'APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}' "$WF"; then
+  echo "Fehler: App Store Check muss den App-Store-Connect-API-Key an das Store-Archive durchreichen." >&2
+  exit 1
+fi
+if ! grep -q 'reisen_xcodebuild_asc_auth_args' "$ROOT/Scripts/ios-archive-appstore.sh"; then
+  echo "Fehler: App-Store-Archive muss xcodebuild mit App-Store-Connect-API-Key authentifizieren." >&2
+  exit 1
+fi
+(
+  # shellcheck source=apple-developer.sh
+  source "$ROOT/Scripts/apple-developer.sh"
+  APP_STORE_CONNECT_API_KEY_KEY_ID="TESTKEYID"
+  APP_STORE_CONNECT_API_KEY_ISSUER="00000000-0000-0000-0000-000000000000"
+  APP_STORE_CONNECT_API_KEY_BASE64="$(printf 'reisen-asc-key-fixture' | base64)"
+  unset APP_STORE_CONNECT_API_KEY_PATH
+  auth_out="$(reisen_xcodebuild_asc_auth_args)"
+  if ! grep -q -- '-authenticationKeyPath' <<<"$auth_out"; then
+    echo "Fehler: reisen_xcodebuild_asc_auth_args muss BASE64 in einen Key-Pfad materialisieren." >&2
+    exit 1
+  fi
+)
 if grep -q 'REISEN_FEEDBACK_GMAIL_APP_PASSWORD' "$ROOT/.github/workflows/gmail-feedback-ingress.yml"; then
   echo "Fehler: Gmail-Ingress darf kein App-Passwort mehr nutzen." >&2
   exit 1

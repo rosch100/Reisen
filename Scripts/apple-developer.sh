@@ -116,7 +116,8 @@ reisen_macos_codesign_identity() {
 }
 
 # xcodebuild-Flags für App Store Connect API Key (nicht-interaktiv).
-# Schreibt nichts, wenn die Variablen fehlen (Aufrufer entscheidet).
+# Materialisiert .p8 aus APP_STORE_CONNECT_API_KEY_BASE64, wenn kein PATH gesetzt ist.
+# Gibt nichts aus, wenn KEY_ID/ISSUER fehlen (Aufrufer entscheidet: lokal Apple-ID).
 reisen_xcodebuild_asc_auth_args() {
   if [[ -z "${APP_STORE_CONNECT_API_KEY_KEY_ID:-}" ||
         -z "${APP_STORE_CONNECT_API_KEY_ISSUER:-}" ]]; then
@@ -125,7 +126,14 @@ reisen_xcodebuild_asc_auth_args() {
 
   local key_path="${APP_STORE_CONNECT_API_KEY_PATH:-}"
   if [[ -z "$key_path" && -n "${APP_STORE_CONNECT_API_KEY_BASE64:-}" ]]; then
-    return 0
+    local key_dir
+    key_dir="$(mktemp -d "${TMPDIR:-/tmp}/reisen-asc-key.XXXXXX")"
+    key_path="$key_dir/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
+    if ! printf '%s' "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode >"$key_path"; then
+      echo "Fehler: APP_STORE_CONNECT_API_KEY_BASE64 ist kein gültiges Base64." >&2
+      return 1
+    fi
+    chmod 600 "$key_path"
   fi
   if [[ -z "$key_path" ]]; then
     local candidate
@@ -141,6 +149,10 @@ reisen_xcodebuild_asc_auth_args() {
   fi
   if [[ -z "$key_path" || ! -f "$key_path" ]]; then
     return 0
+  fi
+  if [[ ! -s "$key_path" ]]; then
+    echo "Fehler: App Store Connect API Key-Datei ist leer: $key_path" >&2
+    return 1
   fi
 
   printf '%s\n' \

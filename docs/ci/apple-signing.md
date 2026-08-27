@@ -115,7 +115,8 @@ Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Con
 
 Voraussetzungen:
 
-- Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`
+- Lokal: Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`
+- In GitHub Actions (**App Store Check**): App-Store-Connect-API-Key (`APP_STORE_CONNECT_API_KEY_*`) statt Xcode-Account; `ios-archive-appstore.sh` materialisiert das `.p8` über `reisen_xcodebuild_asc_auth_args`
 - Push Notifications + iCloud (CloudKit) in den Capabilities; Release-Entitlements `ReiseniOS-Release.entitlements` mit `aps-environment` = `production`
 - CloudKit-Container im Developer Portal an die iOS App-ID gebunden (Production)
 
