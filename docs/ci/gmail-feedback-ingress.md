@@ -54,7 +54,7 @@ Die Entwickler-Console ist für ein **privates Gmail** gedacht, ohne Firma und o
 5. **Audience**: **External** (`Internal` erscheint nur bei Google Workspace und ist hier falsch).
 6. Contact email: `reisenapp100@gmail.com`.
 7. Google API Services User Data Policy akzeptieren → **Create**.
-8. **Audience** → **Test users** → **Add users** → `reisenapp100@gmail.com` → **Save**. Publishing bleibt **Testing**.
+8. **Audience** → **Test users** → **Add users** → `reisenapp100@gmail.com` → **Save**. Publishing darf zuerst **Testing** bleiben (sonst blockt Google den ersten Login). Nach dem Refresh-Token auf **In production** stellen — siehe unten.
 9. **Data Access** → **Add or remove scopes** → Filter `Gmail` → `https://www.googleapis.com/auth/gmail.modify` (Gmail API, `.../auth/gmail.modify`) auswählen → **Update** → **Save**.
 
 Ohne diesen Testnutzer blockt Google den Login mit „App is blocked“ / Zugriff verweigert.
@@ -80,7 +80,7 @@ bash ./Scripts/authorize-gmail-feedback-oauth.sh
 ```
 
 1. Der Browser öffnet Google. Konto **reisenapp100@gmail.com** wählen (nicht das Alltags-Gmail).
-2. Warnung **Google hat diese App nicht bestätigt**: **Erweitert** → **Zu Reisen Feedback Ingress (unsicher)**. Das ist bei Publishing **Testing** normal.
+2. Warnung **Google hat diese App nicht bestätigt**: **Erweitert** → **Zu Reisen Feedback Ingress (unsicher)**. Normal, solange die App nicht von Google verifiziert ist.
 3. Gmail-Zugriff erlauben.
 4. Seite „Autorisierung abgeschlossen“ — Fenster schließen.
 5. Das Terminal schreibt den Refresh-Token nach **stdout**. Das ist `REISEN_GMAIL_OAUTH_REFRESH_TOKEN`. Nicht committen, nicht in Issues/Chats legen.
@@ -107,9 +107,16 @@ Danach darf **Verknüpfte Apps** / [Drittanbieter-Zugriff](https://myaccount.goo
 
 ## Refresh-Token-Laufzeit
 
-Solange Publishing **Testing** ist, läuft der Refresh-Token nach **7 Tagen** ab. Dann Schritt 5 wiederholen und nur `REISEN_GMAIL_OAUTH_REFRESH_TOKEN` ersetzen.
+Der Ingress erneuert **Access-Tokens** bei jedem Lauf selbst. Das ist schon automatisiert. Ein abgelaufenes **Refresh-Token** kann Google nicht ohne Browser-Zustimmung ersetzen — das lässt sich nicht per Cron umgehen.
 
-Dauerhaft: Publishing **In Produktion**. Gmail-Scopes sind eingeschränkt; Google kann eine Verifizierung verlangen. Bis dahin Testing plus erneute Autorisierung ist der unterstützte Weg für dieses Ein-Konto-Setup.
+Die 7-Tage-Frist gilt nur bei Publishing **Testing**. Für dieses Ein-Personen-Setup:
+
+1. [Audience](https://console.cloud.google.com/auth/audience) → **Publish app** / **In production**.
+2. Keine Google-Verifizierung nötig (persönliche Nutzung, ein Konto). Die App bleibt „unverified“.
+3. `authorize-gmail-feedback-oauth.sh` **danach noch einmal** ausführen. Tokens aus der Testing-Phase behalten die 7-Tage-Frist.
+4. Nur Secret `REISEN_GMAIL_OAUTH_REFRESH_TOKEN` ersetzen.
+
+Danach bleibt das Refresh-Token gültig, bis Zugriff widerrufen wird, das Gmail-Passwort geändert wird oder es sechs Monate ungenutzt bleibt. Google-Verifizierung (CASA) ist für fremde Nutzer und öffentliche Gmail-Scopes gedacht, nicht für dieses Setup.
 
 ## Lokal ohne Netz
 
