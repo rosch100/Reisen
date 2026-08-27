@@ -128,5 +128,6 @@ Private-iOS (Ad Hoc): [`ios-private-distribution.md`](ios-private-distribution.m
 
 - Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)
 - Keychain Identity für Notary nicht gefunden: importiertes Zertifikat muss **Developer ID Application** sein; Keychain entsperrt/importiert
+- App Store Check `exportArchive` / **Cloud signing permission error**: der App-Store-Connect-API-Key braucht Zugriff auf **Cloud Managed Distribution Certificates** (Account Holder/Admin in [Users and Access](https://appstoreconnect.apple.com/access/users)). Ohne das findet Xcode kein iOS-App-Store-Profil für `de.reisen.Reisen.ios`. Developer-ID-`.p12` (macOS) ersetzt das nicht.
 - Notarization: `notarytool submit --wait` liefert die Apple-Antwort in den Workflow-Logs
 - CloudKit: Container laut `PersistenceBootstrap.cloudKitContainerID` muss im Portal an **drei** App-IDs gebunden sein (macOS, Store-iOS, Private-iOS)
