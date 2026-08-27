@@ -1,9 +1,10 @@
 # Datenschutzerklärung — Reisen
 
-Die **kanonische** Datenschutzerklärung liegt als HTML unter [`docs/legal/privacy.html`](privacy.html).
+Die **kanonische** Datenschutzerklärung liegt als HTML unter [`docs/legal/privacy.html`](privacy.html) (DE) bzw. [`en/privacy.html`](en/privacy.html) (EN).
 
-- **App / App Store Connect:** [rosch100.github.io/Reisen/privacy.html](https://rosch100.github.io/Reisen/privacy.html) (GitHub Pages, Workflow `pages.yml`)
-- **Vor Pages-Deploy (Raw):** [raw.githubusercontent.com/.../privacy.html](https://raw.githubusercontent.com/rosch100/Reisen/master/docs/legal/privacy.html)
-- **Support:** [support.html](support.html)
+- **Deutsch:** [rosch100.github.io/Reisen/privacy.html](https://rosch100.github.io/Reisen/privacy.html)
+- **English:** [rosch100.github.io/Reisen/en/privacy.html](https://rosch100.github.io/Reisen/en/privacy.html)
+- **Support:** [support.html](support.html) · [en/support.html](en/support.html)
+- **Übersicht:** [index.html](index.html)
 
-Änderungen nur in `privacy.html` vornehmen; diese Datei verweist nur darauf.
+Änderungen nur in den HTML-Dateien vornehmen; `privacy.en.html` leitet auf `en/privacy.html` weiter.

@@ -9,8 +9,11 @@ Technische Voraussetzungen im Repo sind in [apple-signing.md](apple-signing.md) 
 | Name | Reisen |
 | Bundle-ID | `de.reisen.Reisen.ios` (siehe `project.yml`) |
 | Kategorie | Reisen |
-| Privacy Policy URL | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicy`) |
-| Support URL | `https://rosch100.github.io/Reisen/support.html` (`LegalURLs.support`) |
+| Privacy Policy URL (DE) | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicyGerman`) |
+| Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/en/privacy.html` (`LegalURLs.privacyPolicyEnglish`) |
+| Support URL (DE) | `https://rosch100.github.io/Reisen/support.html` (`LegalURLs.supportGerman`) |
+| Support URL (EN) | `https://rosch100.github.io/Reisen/en/support.html` (`LegalURLs.supportEnglish`) |
+| Übersicht / beide Sprachen | `https://rosch100.github.io/Reisen/` (`index.html`) |
 | Copyright | wie in Info.plist (`NSHumanReadableCopyright`) |
 
 **Vor Einreichung (Pflicht):**
@@ -33,10 +36,13 @@ Abgleich mit `Apps/ReiseniOS/PrivacyInfo.xcprivacy`:
 | Datentyp | Verknüpft | Tracking | Zweck |
 |----------|-----------|----------|-------|
 | Nutzerinhalte (Buchungen, optionales Feedback) | Ja | Nein | App-Funktionalität |
+| E-Mail (Provider-Keychain, Opt-in) | Ja | Nein | App-Funktionalität |
+| Nutzer-ID (iCloud / CloudKit) | Ja | Nein | App-Funktionalität |
+| Kalender/Erinnerungen (EventKit, Opt-in) | Ja | Nein | App-Funktionalität (`OtherUserContent` im Manifest) |
 
 Zusätzlich in ASC angeben, falls gefragt (nicht im Privacy-Manifest `PrivacyInfo.xcprivacy`):
 
-- **Kalender/Erinnerungen** — nur bei Nutzerfreigabe (EventKit); Zweck Stornofristen
+- **Kalender/Erinnerungen** — im Manifest als `OtherUserContent` (Opt-in EventKit); Zweck Stornofristen
 - **Provider-Zugangsdaten** in der Keychain — nur Opt-in, lokal auf dem Gerät
 - **Uneingeschränkter Webzugriff** in Provider-WebViews (Altersfreigabe-Fragebogen)
 
