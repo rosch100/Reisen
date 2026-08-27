@@ -27,7 +27,9 @@ public enum GitHubIssueNewIssueURL {
                 titleOverride ?? GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage)
             ).prefix(240)
         )
-        let origin = GitHubIssueReportOrigin.from(githubUsername: githubUsername)
+        let origin: GitHubIssueReportOrigin = .userGitHub(
+            username: GitHubIssueReportOrigin.optionalNormalizedUsername(githubUsername)
+        )
         let formFieldValue = formFieldValueForQuery(
             kind: kind,
             title: title,

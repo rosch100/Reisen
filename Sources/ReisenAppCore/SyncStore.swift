@@ -676,7 +676,8 @@ public final class SyncStore {
                 let created = try await GitHubIssueReporter.shared.report(
                     kind: .error,
                     message: message,
-                    providerID: provider
+                    providerID: provider,
+                    reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
                 )
                 self.lastPublicIssueURL = created.htmlURL
                 self.lastPublicIssueDidPostUpdate = created.didPostUpdate

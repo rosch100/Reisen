@@ -38,7 +38,7 @@ public struct AppSettingsKeys {
     /// Fehler automatisch als öffentliches GitHub-Issue senden (Opt-in, Default aus).
     public static let reportErrorsToGitHub = "reisen_reportErrorsToGitHub"
 
-    /// Optionales GitHub-Konto für manuelles Feedback/Fehlermeldungen (leer → Token-API).
+    /// Optionales GitHub-Konto zur Zuordnung in Issue-Texten (Attribution, nicht Meldeweg).
     public static let feedbackGitHubUsername = "reisen_feedbackGitHubUsername"
 
     /// Sichtbarkeit des Buchungs-Detailpanels (SceneStorage / UserDefaults).
@@ -79,6 +79,13 @@ public struct AppSettingsKeys {
     /// Default: keine automatischen öffentlichen Fehler-Issues.
     public static func isReportErrorsToGitHub(defaults: UserDefaults = .standard) -> Bool {
         defaults.bool(forKey: reportErrorsToGitHub)
+    }
+
+    /// Normalisierter optionaler GitHub-Benutzername für Issue-Attribution.
+    public static func optionalFeedbackGitHubUsername(defaults: UserDefaults = .standard) -> String? {
+        guard let raw = defaults.string(forKey: feedbackGitHubUsername) else { return nil }
+        let normalized = GitHubUsername.normalized(raw)
+        return normalized.isEmpty ? nil : normalized
     }
 }
 

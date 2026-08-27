@@ -1,10 +1,10 @@
 import Foundation
 import ReisenDomain
 
-/// Wie das Issue erstellt wird (Token-API vs. GitHub-Konto des Nutzers).
+/// Meldeweg (Token-API vs. GitHub-Konto) und optionale GitHub-Zuordnung im Issue-Text.
 public enum GitHubIssueReportOrigin: Sendable, Equatable {
-    case embeddedToken
-    case userGitHub(username: String)
+    case embeddedToken(attributedUsername: String?)
+    case userGitHub(username: String?)
 
     public var meldewegLabel: String {
         switch self {
@@ -16,18 +16,20 @@ public enum GitHubIssueReportOrigin: Sendable, Equatable {
     }
 
     public var githubUserLabel: String {
+        let username: String?
         switch self {
-        case .embeddedToken:
-            "—"
-        case .userGitHub(let username):
-            "@\(username)"
+        case .embeddedToken(let attributedUsername):
+            username = attributedUsername
+        case .userGitHub(let name):
+            username = name
         }
+        guard let username else { return "—" }
+        return "@\(username)"
     }
 
-    public static func from(githubUsername: String?) -> GitHubIssueReportOrigin {
-        guard let username = githubUsername else { return .embeddedToken }
-        let normalized = GitHubUsername.normalized(username)
-        guard !normalized.isEmpty else { return .embeddedToken }
-        return .userGitHub(username: normalized)
+    public static func optionalNormalizedUsername(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let normalized = GitHubUsername.normalized(raw)
+        return normalized.isEmpty ? nil : normalized
     }
 }

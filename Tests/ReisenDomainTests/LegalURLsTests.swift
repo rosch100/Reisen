@@ -50,9 +50,25 @@ import ReisenDomain
         let file = repoRoot.appendingPathComponent("docs/legal/\(page)")
         #expect(FileManager.default.fileExists(atPath: file.path), "Missing \(page)")
     }
+    let notFoundHTML = try String(
+        contentsOf: repoRoot.appendingPathComponent("docs/legal/404.html"),
+        encoding: .utf8
+    )
+    #expect(notFoundHTML.contains(GitHubRepository.pagesSiteRootURL.absoluteString))
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/en/index.html").path))
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/en/impressum.html").path))
     #expect(FileManager.default.fileExists(atPath: repoRoot.appendingPathComponent("docs/legal/index.html").path))
+}
+
+@Test func githubRepository_pagesSiteRootURL() {
+    #expect(GitHubRepository.pagesSiteRootURL.absoluteString == "https://rosch100.github.io/Reisen/")
+}
+
+@Test func githubRepository_contactIssueURL() {
+    let url = GitHubRepository.contactIssueURL
+    #expect(url.host == "github.com")
+    #expect(url.path.contains("/issues/new"))
+    #expect(url.query?.contains("Kontakt") == true)
 }
 
 @Test func githubRepository_issuesListURL() {

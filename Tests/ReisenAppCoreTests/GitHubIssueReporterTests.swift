@@ -66,6 +66,30 @@ import Foundation
     #expect(client.lastCreate?.body.contains("reisen-fingerprint:") == true)
 }
 
+@Test @MainActor func githubIssueReporter_embeddedTokenWithAttributedUsername() async throws {
+    let client = MockGitHubIssues()
+    client.nextCreated = GitHubCreatedIssue(
+        number: 13,
+        htmlURL: URL(string: "https://github.com/rosch100/Reisen/issues/13")!
+    )
+    let reporter = GitHubIssueReporter(
+        client: client,
+        tokenProvider: { "test-token" },
+        now: { Date(timeIntervalSince1970: 1_700_000_000) },
+        persistenceURL: nil
+    )
+
+    _ = try await reporter.report(
+        kind: .feedback,
+        message: "Test-Feedback",
+        providerID: nil,
+        reporterGitHubUsername: "rosch100"
+    )
+
+    #expect(client.lastCreate?.body.contains("| Meldeweg | App-Token |") == true)
+    #expect(client.lastCreate?.body.contains("| GitHub-Nutzer | @rosch100 |") == true)
+}
+
 @Test @MainActor func githubIssueReporter_commentsOnDuplicateFingerprint() async throws {
     let fingerprint = GitHubIssueFingerprint.hex(kind: .error, message: "gleiche meldung")
     let client = MockGitHubIssues()
@@ -151,7 +175,7 @@ import Foundation
         title: "T",
         message: "M",
         providerID: nil,
-        origin: .embeddedToken,
+        origin: .embeddedToken(attributedUsername: nil),
         appVersion: "1",
         build: "2",
         os: "macOS",
@@ -171,7 +195,7 @@ import Foundation
         title: "Sync fehlgeschlagen",
         message: "Provider timeout konkret",
         providerID: .opodo,
-        origin: .embeddedToken,
+        origin: .embeddedToken(attributedUsername: nil),
         appVersion: "1.2.3",
         build: "45",
         os: "iOS 26.0",
@@ -195,7 +219,7 @@ import Foundation
         title: "Token ghp_abcdefghijklmnopqrstuvwxyz0123456789",
         message: "Login https://example.com/cb?token=abc&keep=1",
         providerID: nil,
-        origin: .embeddedToken,
+        origin: .embeddedToken(attributedUsername: nil),
         appVersion: "1",
         build: "1",
         os: "macOS",

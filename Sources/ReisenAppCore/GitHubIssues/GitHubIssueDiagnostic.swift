@@ -72,7 +72,7 @@ public enum GitHubIssueDiagnostic {
         title: String,
         message: String,
         providerID: ProviderID?,
-        origin: GitHubIssueReportOrigin = .embeddedToken
+        origin: GitHubIssueReportOrigin = .embeddedToken(attributedUsername: nil)
     ) -> String {
         let fingerprint = GitHubIssueFingerprint.hex(kind: kind, message: SecretRedactor.redact(message))
         let bundle = Bundle.main

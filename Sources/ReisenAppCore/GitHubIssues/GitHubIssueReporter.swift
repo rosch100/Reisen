@@ -91,7 +91,9 @@ public final class GitHubIssueReporter {
             title: title,
             message: trimmedMessage,
             providerID: providerID,
-            origin: GitHubIssueReportOrigin.from(githubUsername: reporterGitHubUsername)
+            origin: .embeddedToken(
+                attributedUsername: GitHubIssueReportOrigin.optionalNormalizedUsername(reporterGitHubUsername)
+            )
         )
         let labels = kind.githubLabels
 

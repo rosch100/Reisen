@@ -57,7 +57,7 @@ import ReisenDomain
         title: "[Fehler] lang",
         message: longMessage,
         providerID: nil,
-        origin: .embeddedToken
+        origin: .embeddedToken(attributedUsername: nil),
     )
     #expect(value.count <= GitHubIssueNewIssueURL.maxBodyCharacterCount)
     #expect(value.contains("gekürzt"))

@@ -35,6 +35,21 @@ public enum GitHubRepository {
         URL(string: "https://\(owner).github.io/\(name)")!
     }
 
+    /// Trailing slash für statisches HTML (`<base href>` auf der 404-Seite).
+    public static var pagesSiteRootURL: URL {
+        URL(string: pagesBaseURL.absoluteString + "/")!
+    }
+
+    /// Vorausgefülltes Issue für Impressum-/Kontaktanfragen (Website).
+    public static var contactIssueURL: URL {
+        var components = URLComponents(url: issuesListURL.appending(path: "new"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "title", value: "Kontakt Impressum / Legal contact"),
+            URLQueryItem(name: "body", value: "Bitte E-Mail- und Postanschrift für Impressum/Kontakt mitteilen.\n\nPlease provide email and postal address for legal contact.")
+        ]
+        return components.url!
+    }
+
     public static var apiRepoURL: URL {
         URL(string: "https://api.github.com/repos/\(owner)/\(name)")!
     }
