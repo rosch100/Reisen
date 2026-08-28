@@ -12,7 +12,8 @@ public struct GapEdgeBuilder: Sendable {
         start: Date,
         end: Date,
         from: Booking,
-        to: Booking
+        to: Booking,
+        isTripBoundary: Bool
     ) -> ComputedGap? {
         guard end.timeIntervalSince(start) >= minGap else { return nil }
         return ComputedGap(
@@ -20,7 +21,8 @@ public struct GapEdgeBuilder: Sendable {
             gapEnd: end,
             kind: GapKindClassifier.classify(from: from.bookingType, to: to.bookingType),
             fromBooking: from,
-            toBooking: to
+            toBooking: to,
+            isTripBoundary: isTripBoundary
         )
     }
 
@@ -29,7 +31,13 @@ public struct GapEdgeBuilder: Sendable {
         return (0..<(sorted.count - 1)).compactMap { index in
             let from = sorted[index]
             let to = sorted[index + 1]
-            return edgeGap(start: from.endAt, end: to.startAt, from: from, to: to)
+            return edgeGap(
+                start: from.endAt,
+                end: to.startAt,
+                from: from,
+                to: to,
+                isTripBoundary: false
+            )
         }
     }
 }

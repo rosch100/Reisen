@@ -5,6 +5,7 @@ import ReisenDomain
 ///
 /// Erkennung ist best-effort: `canOpenURL` liefert nur, ob *irgendeine* App das Schema
 /// registriert hat. Undokumentierte oder falsche Schemata → kein Treffer, kein Auto-Enable.
+/// Open-Titel: `BookingPortalOpenTitle` (L10n-SSOT), nicht hier.
 public enum ProviderNativeApp: Sendable {
     /// Custom-URL-Schemata pro Provider (best-effort; fehlende/ungültige Einträge = nicht erkannt).
     private static let urlSchemesByProvider: [ProviderID: [String]] = [
@@ -25,12 +26,5 @@ public enum ProviderNativeApp: Sendable {
     /// Custom-URL-Schemata pro Provider (best-effort; fehlende Treffer = nicht erkannt).
     public static func urlSchemes(for providerID: ProviderID) -> [String]? {
         urlSchemesByProvider[providerID]
-    }
-
-    public static func externalOpenTitle(for providerID: ProviderID, isNativeAppInstalled: Bool) -> String {
-        if isNativeAppInstalled {
-            return "In \(providerID.displayName)-App öffnen"
-        }
-        return "Buchung öffnen"
     }
 }

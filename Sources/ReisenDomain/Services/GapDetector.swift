@@ -1,9 +1,12 @@
 import Foundation
 
 public struct GapDetector: Sendable {
+    /// SSOT: Mindestlänge für zeitliche Lücken (Leading/Inter/Trailing).
+    public static let defaultMinGap: TimeInterval = 12 * 60 * 60
+
     public var minGap: TimeInterval
 
-    public init(minGap: TimeInterval = 12 * 60 * 60) {
+    public init(minGap: TimeInterval = GapDetector.defaultMinGap) {
         self.minGap = minGap
     }
 

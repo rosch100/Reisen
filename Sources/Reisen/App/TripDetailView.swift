@@ -353,9 +353,7 @@ struct TripDetailView: View {
                                     )
                                 }
                                 if let url = booking.browserURL {
-                                    Button(L10n.string(.actionOpenInBrowser)) {
-                                        NSWorkspace.shared.open(url)
-                                    }
+                                    BookingPortalOpenButton(browserURL: url)
                                 }
                                 Button(role: .destructive) {
                                     requestRemoveBookingFromTrip(booking)
@@ -423,6 +421,7 @@ struct TripDetailView: View {
     @ViewBuilder
     private var tripOverviewSection: some View {
         // Kompakte Einzeiler — kein LabeledContent/NSView (das blähte die Übersicht auf).
+        let completeness = trip.completeness()
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 16) {
                 overviewFact(label: L10n.string(.tripPeriod), value: dateRange)
@@ -430,7 +429,17 @@ struct TripDetailView: View {
                 if let destination = trip.destination, !destination.isEmpty {
                     overviewFact(label: L10n.string(.tripDestination), value: destination)
                 }
+                if completeness.hasBookings {
+                    overviewFact(
+                        label: L10n.string(.tripCompletenessLabel),
+                        value: L10n.tripCompletenessOverviewFactValue(completeness)
+                    )
+                    .help(L10n.string(.tripCompletenessHelp))
+                }
                 Spacer(minLength: 0)
+            }
+            if completeness.hasBookings {
+                TripCompletenessMacDetailCaption(completeness: completeness)
             }
             if let notes = trip.notes, !notes.isEmpty {
                 Text(notes)
@@ -661,6 +670,7 @@ private struct BookingDetailPanel: View {
                                     onEditGap(presentation.editorPayload(for: gap))
                                 }
                             )
+                            .id(gap.identityKey)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -1240,6 +1250,8 @@ private struct GapRow: View {
     var onSelect: (() -> Void)? = nil
 
     @Environment(\.providerRegistry) private var providerRegistry
+    @Environment(\.openURL) private var openURL
+    @State private var preferredSearchProvider: ProviderID?
 
     private var hotelTimeZone: TimeZone {
         HotelTimeZone.resolve(
@@ -1248,8 +1260,16 @@ private struct GapRow: View {
         )
     }
 
+    private var enabledGapSearchProviders: [ProviderID] {
+        providerRegistry?.enabledGapSearchProviderIDs() ?? []
+    }
+
     private var linkSuggestions: (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
-        providerRegistry?.gapDeepLinkSuggestions(for: gap, kind: effectiveKind) ?? ([], [])
+        providerRegistry?.gapDeepLinkSuggestions(
+            for: gap,
+            kind: effectiveKind,
+            preferredProvider: preferredSearchProvider
+        ) ?? ([], [])
     }
 
     var body: some View {
@@ -1311,22 +1331,15 @@ private struct GapRow: View {
                     .foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 12) {
-                GapDeepLinkButtons(
-                    links: linkSuggestions.links,
-                    gapKind: effectiveKind
-                ) { url in
-                    NSWorkspace.shared.open(url)
-                }
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-
-            if let issuesMessage = ProviderDeepLinks.issuesMessage(linkSuggestions.issues) {
-                Text(issuesMessage)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
+            GapSearchControls(
+                enabledProviderIDs: enabledGapSearchProviders,
+                preferredProviderID: $preferredSearchProvider,
+                links: linkSuggestions.links,
+                issues: linkSuggestions.issues,
+                gapKind: effectiveKind,
+                style: .compactTimeline,
+                openURL: { openURL($0) }
+            )
         }
     }
 }
