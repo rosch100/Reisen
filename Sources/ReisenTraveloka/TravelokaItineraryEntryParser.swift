@@ -93,7 +93,8 @@ enum TravelokaItineraryEntryParser {
             flightDepartureOffsetSeconds: fields.flightDepartureOffsetSeconds,
             flightArrivalOffsetSeconds: fields.flightArrivalOffsetSeconds,
             rawPayloadFingerprint: "\(bookingId):\(itineraryId)",
-            passengers: fields.passengers
+            passengers: fields.passengers,
+            guestHints: fields.guestHints
         )
     }
 
@@ -127,6 +128,7 @@ enum TravelokaItineraryEntryParser {
         var flightArrivalOffsetSeconds: Int?
         var passengers: [BookingPassenger] = []
         var deadlines: [CancellationDeadline] = []
+        var guestHints: [BookingGuestHint] = []
     }
 
     private static func productFields(from context: EntryContext) -> ProductFields {
@@ -285,6 +287,11 @@ enum TravelokaItineraryEntryParser {
         fields.passengers = namedPassengers(
             contact: context.common["bookingContact"] as? [String: Any],
             fallbackName: TravelokaJSON.string(voucher["guestName"])
+        )
+        fields.guestHints = TravelokaGuestHintMapper.hints(
+            localeInfo: localeInfo,
+            bookingHotel: bookingHotel,
+            voucher: voucher
         )
         return fields
     }
