@@ -11,15 +11,23 @@ public struct BookingLastSyncedBar: View {
         self.synced = synced
     }
 
+    private var syncedText: String {
+        synced.formatted(date: .abbreviated, time: .shortened)
+    }
+
     public var body: some View {
         HStack(spacing: 8) {
             Text(L10n.string(.tripLastSynced))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            Text(synced.formatted(date: .abbreviated, time: .shortened))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            CopyableFieldValue(
+                value: syncedText,
+                kind: .standard,
+                textStyle: .caption2,
+                foregroundStyle: .secondary,
+                lineLimit: 1
+            )
 
             Spacer(minLength: 0)
         }

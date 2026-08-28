@@ -146,6 +146,7 @@ struct OpenBookingsScreen: View {
                         bookingRow(booking)
                             .tag(booking.id)
                             .contextMenu {
+                                BookingCopyConfirmationMenuItems(booking: booking)
                                 Button {
                                     createTripFromBooking(booking.id)
                                 } label: {

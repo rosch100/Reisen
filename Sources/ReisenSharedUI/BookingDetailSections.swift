@@ -7,10 +7,12 @@ public struct BookingRateField: Identifiable, Equatable, Sendable {
     public var id: String { label }
     public let label: String
     public let value: String
+    public let copyKind: FieldCopyKind
 
-    public init(label: String, value: String) {
+    public init(label: String, value: String, copyKind: FieldCopyKind = .standard) {
         self.label = label
         self.value = value
+        self.copyKind = copyKind
     }
 }
 
@@ -84,29 +86,6 @@ public enum BookingRateFields {
     }
 }
 
-/// Inline-Darstellung „Label: Wert“ (iOS-Listen).
-public struct BookingRateFieldsView: View {
-    let fields: [BookingRateField]
-
-    public init(rate: SDBookingRateDetails, booking: SDBooking) {
-        self.fields = BookingRateFields.make(rate: rate, booking: booking)
-    }
-
-    public init(fields: [BookingRateField]) {
-        self.fields = fields
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(fields) { field in
-                Text("\(field.label): \(field.value)")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .textSelection(.enabled)
-    }
-}
-
 /// SSOT für Status, Orte und Start/Ende/Check-in/out.
 public enum BookingScheduleFields {
     public static func make(booking: SDBooking) -> [BookingRateField] {
@@ -115,7 +94,11 @@ public enum BookingScheduleFields {
         ]
         if let code = booking.confirmationCode, !code.isEmpty {
             fields.append(
-                BookingRateField(label: BookingDetailLabels.confirmationNumber, value: code)
+                BookingRateField(
+                    label: BookingDetailLabels.confirmationNumber,
+                    value: code,
+                    copyKind: .identifier
+                )
             )
         }
         let bookingType = booking.bookingType
@@ -233,59 +216,88 @@ public enum BookingScheduleFields {
     }
 }
 
-public struct BookingScheduleFieldsView: View {
-    let fields: [BookingRateField]
+/// Zimmer-/Positions-Liste einer Buchungsrate (iOS + macOS).
+public struct BookingRoomItemsView: View {
+    let rate: SDBookingRateDetails
+    let style: CopyableLabeledValueStyle
 
-    public init(booking: SDBooking) {
-        self.fields = BookingScheduleFields.make(booking: booking)
+    public init(rate: SDBookingRateDetails, style: CopyableLabeledValueStyle = .inspector) {
+        self.rate = rate
+        self.style = style
+    }
+
+    private var sortedItems: [SDBookingRoomItem] {
+        rate.resolvedRoomItems.sorted(by: { ($0.sortIndex ?? 0) < ($1.sortIndex ?? 0) })
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(fields) { field in
-                Text("\(field.label): \(field.value)")
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(sortedItems) { item in
+                BookingRoomItemRow(item: item, rateCurrency: rate.totalPriceCurrency, style: style)
             }
         }
     }
 }
 
-/// Zimmer-/Positions-Liste einer Buchungsrate (iOS + macOS).
-public struct BookingRoomItemsView: View {
-    let rate: SDBookingRateDetails
+/// Eine Zimmerposition — als eigene List-Zeile oder Inspector-Block.
+public struct BookingRoomItemRow: View {
+    let item: SDBookingRoomItem
+    let rateCurrency: String?
+    let style: CopyableLabeledValueStyle
 
-    public init(rate: SDBookingRateDetails) {
-        self.rate = rate
+    public init(item: SDBookingRoomItem, rateCurrency: String?, style: CopyableLabeledValueStyle) {
+        self.item = item
+        self.rateCurrency = rateCurrency
+        self.style = style
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(rate.resolvedRoomItems.sorted(by: { ($0.sortIndex ?? 0) < ($1.sortIndex ?? 0) })) { item in
-                VStack(alignment: .leading, spacing: 4) {
-                    if let category = item.category, !category.isEmpty {
-                        Text(category)
-                            .font(.caption.weight(.medium))
-                    }
-                    if let code = item.confirmationCode, !code.isEmpty {
-                        Text("\(BookingDetailLabels.confirmationNumber): \(code)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let guest = item.guestSummary, !guest.isEmpty {
-                        Text(guest)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let amount = item.priceAmount {
-                        let currency = item.priceCurrency ?? rate.totalPriceCurrency
-                        Text("\(BookingDetailLabels.unitPrice): \(Formatting.formatCurrencyAmount(amount, currencyCode: currency))")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+        VStack(alignment: .leading, spacing: 4) {
+            if let category = item.category, !category.isEmpty {
+                if style == .list {
+                    Text(category)
+                        .font(.body.weight(.medium))
+                        .copyableValue(category)
+                } else {
+                    CopyableFieldValue(
+                        value: category,
+                        kind: .standard,
+                        textStyle: .caption,
+                        lineLimit: 2
+                    )
                 }
-                .padding(.vertical, 4)
+            }
+            if let code = item.confirmationCode, !code.isEmpty {
+                CopyableLabeledValue(
+                    label: BookingDetailLabels.confirmationNumber,
+                    value: code,
+                    kind: .identifier,
+                    style: style,
+                    valueTextStyle: style.detailValueTextStyle
+                )
+            }
+            if let guest = item.guestSummary, !guest.isEmpty {
+                CopyableLabeledValue(
+                    label: BookingDetailLabels.guests,
+                    value: guest,
+                    kind: .standard,
+                    style: style,
+                    valueTextStyle: style.detailValueTextStyle
+                )
+            }
+            if let amount = item.priceAmount {
+                let currency = item.priceCurrency ?? rateCurrency
+                let price = Formatting.formatCurrencyAmount(amount, currencyCode: currency)
+                CopyableLabeledValue(
+                    label: BookingDetailLabels.unitPrice,
+                    value: price,
+                    kind: .standard,
+                    style: style,
+                    valueTextStyle: style.detailValueTextStyle
+                )
             }
         }
+        .bookingDetailRowPadding(style)
     }
 }
 
@@ -293,88 +305,228 @@ public struct BookingRoomItemsView: View {
 public struct BookingCancellationDeadlinesView: View {
     let booking: SDBooking
     let hotelTimeZone: TimeZone
+    let style: CopyableLabeledValueStyle
 
-    public init(booking: SDBooking, hotelTimeZone: TimeZone? = nil) {
+    public init(
+        booking: SDBooking,
+        hotelTimeZone: TimeZone? = nil,
+        style: CopyableLabeledValueStyle = .inspector
+    ) {
         self.booking = booking
         self.hotelTimeZone = hotelTimeZone ?? booking.resolvedHotelTimeZone
+        self.style = style
+    }
+
+    private var sortedDeadlines: [SDCancellationDeadline] {
+        booking.resolvedCancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt })
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(
-                booking.resolvedCancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt }),
-                id: \.id
-            ) { deadline in
-                let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
-                    ?? hotelTimeZone
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(
-                        Formatting.formatOrtszeit(
-                            deadline.deadlineAt,
-                            dateFormat: "d.M.yyyy HH:mm",
-                            timeZone: tz
-                        )
-                    )
-                    .font(.caption.weight(.medium))
-
-                    HStack(spacing: 8) {
-                        Text(deadline.isFreeCancellation ? BookingDetailLabels.cancellationFree : BookingDetailLabels.cancellationPaid)
-                            .font(.caption2)
-                            .foregroundStyle(deadline.isFreeCancellation ? .green : .secondary)
-
-                        if let fee = deadline.cancellationFeeAmount {
-                            Text(
-                                Formatting.formatCurrencyAmount(
-                                    fee,
-                                    currencyCode: booking.rateDetails?.totalPriceCurrency
-                                )
-                            )
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        }
-
-                        if deadline.isStrict {
-                            Text(BookingDetailLabels.strictDeadline)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    if let policy = deadline.policyText, !policy.isEmpty {
-                        Text(policy)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                }
-                .padding(.vertical, 4)
+            ForEach(sortedDeadlines, id: \.id) { deadline in
+                BookingCancellationDeadlineRow(
+                    deadline: deadline,
+                    feeCurrency: booking.rateDetails?.totalPriceCurrency,
+                    hotelTimeZone: hotelTimeZone,
+                    style: style
+                )
             }
+        }
+    }
+}
+
+/// Eine Stornofrist — als eigene List-Zeile oder Inspector-Block.
+public struct BookingCancellationDeadlineRow: View {
+    let deadline: SDCancellationDeadline
+    let feeCurrency: String?
+    let hotelTimeZone: TimeZone
+    let style: CopyableLabeledValueStyle
+
+    public init(
+        deadline: SDCancellationDeadline,
+        feeCurrency: String?,
+        hotelTimeZone: TimeZone,
+        style: CopyableLabeledValueStyle
+    ) {
+        self.deadline = deadline
+        self.feeCurrency = feeCurrency
+        self.hotelTimeZone = hotelTimeZone
+        self.style = style
+    }
+
+    private var deadlineText: String {
+        let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
+            ?? hotelTimeZone
+        return Formatting.formatOrtszeit(
+            deadline.deadlineAt,
+            dateFormat: "d.M.yyyy HH:mm",
+            timeZone: tz
+        )
+    }
+
+    private var freePaid: String {
+        deadline.isFreeCancellation
+            ? BookingDetailLabels.cancellationFree
+            : BookingDetailLabels.cancellationPaid
+    }
+
+    private var feeText: String? {
+        guard let fee = deadline.cancellationFeeAmount else { return nil }
+        return Formatting.formatCurrencyAmount(fee, currencyCode: feeCurrency)
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if style == .list {
+                listBody
+            } else {
+                inspectorBody
+            }
+        }
+        .bookingDetailRowPadding(style)
+    }
+
+    @ViewBuilder
+    private var listBody: some View {
+        CopyableLabeledValue(
+            label: L10n.string(.editorCancellationUntil),
+            value: deadlineText,
+            kind: .standard,
+            style: .list
+        )
+        CopyableLabeledValue(
+            label: BookingDetailLabels.cancellationCost,
+            value: freePaid,
+            kind: .standard,
+            style: .list
+        )
+        if let feeText {
+            CopyableLabeledValue(
+                label: L10n.string(.editorFee),
+                value: feeText,
+                kind: .standard,
+                style: .list
+            )
+        }
+        if deadline.isStrict {
+            Text(BookingDetailLabels.strictDeadline)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        if let policy = deadline.policyText, !policy.isEmpty {
+            CopyableLabeledValue(
+                label: L10n.string(.editorPolicyText),
+                value: policy,
+                kind: .standard,
+                style: .list,
+                valueLineLimit: 6
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var inspectorBody: some View {
+        CopyableFieldValue(
+            value: deadlineText,
+            kind: .standard,
+            textStyle: .caption,
+            lineLimit: 2
+        )
+
+        HStack(spacing: 8) {
+            CopyableFieldValue(
+                value: freePaid,
+                kind: .standard,
+                textStyle: .caption2,
+                foregroundStyle: deadline.isFreeCancellation ? Color.green : Color.secondary
+            )
+
+            if let feeText {
+                CopyableFieldValue(
+                    value: feeText,
+                    kind: .standard,
+                    textStyle: .caption2,
+                    foregroundStyle: .secondary
+                )
+            }
+
+            if deadline.isStrict {
+                Text(BookingDetailLabels.strictDeadline)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        if let policy = deadline.policyText, !policy.isEmpty {
+            CopyableFieldValue(
+                value: policy,
+                kind: .standard,
+                textStyle: .caption2,
+                foregroundStyle: .secondary,
+                lineLimit: 6
+            )
         }
     }
 }
 
 public struct BookingGuestHintsView: View {
     let booking: SDBooking
+    let style: CopyableLabeledValueStyle
 
-    public init(booking: SDBooking) {
+    public init(booking: SDBooking, style: CopyableLabeledValueStyle = .inspector) {
         self.booking = booking
+        self.style = style
+    }
+
+    private var sortedHints: [SDBookingGuestHint] {
+        booking.resolvedGuestHints.sorted(by: { $0.title < $1.title })
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(booking.resolvedGuestHints.sorted(by: { $0.title < $1.title }), id: \.id) { hint in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(hint.title)
-                        .font(.caption.weight(.medium))
-                    if !hint.detail.isEmpty {
-                        Text(hint.detail)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                }
-                .padding(.vertical, 4)
+            ForEach(sortedHints, id: \.id) { hint in
+                BookingGuestHintRow(hint: hint, style: style)
             }
         }
+    }
+}
+
+/// Ein Gast-Hinweis — als eigene List-Zeile oder Inspector-Block.
+public struct BookingGuestHintRow: View {
+    let hint: SDBookingGuestHint
+    let style: CopyableLabeledValueStyle
+
+    public init(hint: SDBookingGuestHint, style: CopyableLabeledValueStyle) {
+        self.hint = hint
+        self.style = style
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            CopyableLabeledValue(
+                label: L10n.string(.editorHintTitle),
+                value: hint.title,
+                kind: .standard,
+                style: style,
+                valueTextStyle: style.titleValueTextStyle
+            )
+            if !hint.detail.isEmpty {
+                CopyableLabeledValue(
+                    label: L10n.string(.editorHintDetail),
+                    value: hint.detail,
+                    kind: .standard,
+                    style: style,
+                    valueTextStyle: style.detailValueTextStyle,
+                    valueLineLimit: 8
+                )
+            }
+        }
+        .bookingDetailRowPadding(style)
+    }
+}
+
+private extension View {
+    func bookingDetailRowPadding(_ style: CopyableLabeledValueStyle) -> some View {
+        padding(.vertical, style == .inspector ? 4 : 0)
     }
 }

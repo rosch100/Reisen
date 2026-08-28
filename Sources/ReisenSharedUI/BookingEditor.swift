@@ -475,7 +475,9 @@ private struct BookingPassengerEditorRow: View {
                 )
 
                 TextField(L10n.string(.editorTitle), text: titleBinding)
+                    .textContentType(.namePrefix)
                 TextField(L10n.string(.editorGivenName), text: givenNameBinding)
+                    .textContentType(.givenName)
             }
 
             TextField(
@@ -488,6 +490,7 @@ private struct BookingPassengerEditorRow: View {
                     }
                 )
             )
+            .textContentType(.familyName)
 
             HStack {
                 DatePicker(
@@ -612,6 +615,7 @@ public struct BookingEditorForm: View {
                 Section(L10n.string(.editorGeneral)) {
                     if providerReadOnly {
                         LabeledContent(L10n.string(.editorProvider), value: draft.provider.rawValue.capitalized)
+                            .copyableValue(draft.provider.rawValue.capitalized)
                     }
                     TextField(L10n.string(.editorTitle), text: $draft.title)
                     Picker(L10n.string(.editorType), selection: $draft.bookingType) {
@@ -626,6 +630,12 @@ public struct BookingEditorForm: View {
                     }
                     TextField(L10n.string(.editorConfirmationCode), text: $draft.confirmationCode)
                     TextField(L10n.string(.editorUrlOptional), text: $draft.externalUrl)
+                        .textContentType(.URL)
+                        #if os(iOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        #endif
                     DatePicker(
                         L10n.string(.editorStart),
                         selection: $draft.startAt,
@@ -725,7 +735,9 @@ public struct BookingEditorForm: View {
                         TextField(BookingDetailLabels.airline, text: $draft.airline)
                         if !draft.passengers.isEmpty {
                             Text(L10n.format(.editorPassengerCount, draft.passengers.count))
+                                .copyableValue(L10n.format(.editorPassengerCount, draft.passengers.count))
                             Text(L10n.string(.editorStructuredBaggageDerived))
+                                .copyableValue(L10n.string(.editorStructuredBaggageDerived))
                         }
                     }
                 }
@@ -762,7 +774,7 @@ public struct BookingEditorForm: View {
                 Section(GuestHintCategory.preTravelImportant.displayTitle) {
                     ForEach($draft.guestHints) { $hint in
                         VStack(alignment: .leading, spacing: 8) {
-                            TextField(L10n.string(.editorTitle), text: $hint.title)
+                            TextField(L10n.string(.editorHintTitle), text: $hint.title)
                             TextField(L10n.string(.editorHintDetail), text: $hint.detail, axis: .vertical)
                                 .lineLimit(2...5)
                             Button(L10n.string(.editorRemoveEntry), role: .destructive) {

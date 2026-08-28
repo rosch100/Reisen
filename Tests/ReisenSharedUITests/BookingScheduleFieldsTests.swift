@@ -49,7 +49,9 @@ private let germanLocale = Locale(identifier: "de")
     #expect(openFields == assignedFields)
     #expect(
         openFields.contains(where: {
-            $0.label == BookingDetailLabels.confirmationNumber && $0.value == "ABC123"
+            $0.label == BookingDetailLabels.confirmationNumber
+                && $0.value == "ABC123"
+                && $0.copyKind == .identifier
         })
     )
 }
