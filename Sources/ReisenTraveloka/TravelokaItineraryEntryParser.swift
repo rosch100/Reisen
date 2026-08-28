@@ -367,10 +367,16 @@ enum TravelokaItineraryEntryParser {
     }
 
     /// Ohne TRAIN-Detail-HAR: nur bekannte Common-Felder; Bahnhöfe/Betreiber bleiben leer.
-    /// Keine Flight-Offsets: `itineraryTimestamp*` ist absolute Epoch, kein Wanduhr-Paar.
+    /// `itineraryTimestamp*` bleibt Instant; IANA-Offsets nur für Ortszeit-Anzeige.
     private static func trainFields(from context: EntryContext) -> ProductFields {
         var fields = baseFields(from: context)
         fields.title = TravelokaJSON.string(context.common["productName"]) ?? context.product.rawValue
+        if let beginTZ = context.tzBegin {
+            fields.flightDepartureOffsetSeconds = beginTZ.secondsFromGMT(for: fields.start)
+        }
+        if let endTZ = context.tzEnd {
+            fields.flightArrivalOffsetSeconds = endTZ.secondsFromGMT(for: fields.end)
+        }
         return fields
     }
 

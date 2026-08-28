@@ -950,8 +950,57 @@ private func travelokaCatalogHotelEntry(
     #expect(draft.locationTo == nil)
     #expect(draft.externalUrl?.contains("type=TRAIN") == true)
     #expect(draft.hotelOffsetSeconds == nil)
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    let end = Date(timeIntervalSince1970: 1_700_014_400)
+    let jakarta = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    #expect(draft.flightDepartureOffsetSeconds == jakarta.secondsFromGMT(for: start))
+    #expect(draft.flightArrivalOffsetSeconds == jakarta.secondsFromGMT(for: end))
+}
+
+@Test func travelokaTrainDraft_withoutIanaLeavesFlightOffsetsNil() throws {
+    let entry: [String: Any] = [
+        "bookingId": "train-1",
+        "itineraryId": "train-2",
+        "itineraryType": "TRAIN",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "productName": "Argo Bromo",
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_014_400_000,
+            ],
+        ],
+        "cardDetailInfo": [:],
+    ]
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    #expect(draft.bookingType == .train)
     #expect(draft.flightDepartureOffsetSeconds == nil)
     #expect(draft.flightArrivalOffsetSeconds == nil)
+}
+
+@Test func travelokaTrainDraft_mapsBeginAndEndTimeZonesSeparately() throws {
+    let entry: [String: Any] = [
+        "bookingId": "train-1",
+        "itineraryId": "train-2",
+        "itineraryType": "TRAIN_GLOBAL",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "productName": "Singapore → Bangkok",
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_014_400_000,
+                "ianaTimezoneBegin": "Asia/Singapore",
+                "ianaTimezoneEnd": "Asia/Bangkok",
+            ],
+        ],
+        "cardDetailInfo": [:],
+    ]
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    let end = Date(timeIntervalSince1970: 1_700_014_400)
+    let singapore = try #require(TimeZone(identifier: "Asia/Singapore"))
+    let bangkok = try #require(TimeZone(identifier: "Asia/Bangkok"))
+    #expect(draft.flightDepartureOffsetSeconds == singapore.secondsFromGMT(for: start))
+    #expect(draft.flightArrivalOffsetSeconds == bangkok.secondsFromGMT(for: end))
+    #expect(draft.flightDepartureOffsetSeconds != draft.flightArrivalOffsetSeconds)
 }
 
 @Test func travelokaVehicleParsesIndonesian24hFreeCancellation() throws {

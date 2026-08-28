@@ -105,6 +105,13 @@ def check_workflow_text(text: str) -> None:
     for secret in ARCHIVE_SECRETS:
         require_secret_env(archive_block, secret)
 
+    if "if: always()" not in archive_block:
+        fail("App Store Check muss IPA und Archive nach der Validierung immer löschen (if: always()).")
+    if "ReiseniOS.xcarchive" not in archive_block or "ReiseniOS-ipa" not in archive_block:
+        fail("App Store Check muss Store-Archive und IPA-Exportverzeichnis explizit löschen.")
+    if "rm -rf" not in archive_block:
+        fail("App Store Check muss IPA und Archive per rm -rf entfernen.")
+
 
 def expect_fail(text: str, label: str) -> None:
     try:
@@ -141,11 +148,19 @@ def self_check() -> None:
         "          bash ./Scripts/ios-validate-appstore.sh foo.ipa\n"
         "        env:\n"
         f"{secrets_env}\n"
+        "      - name: Remove Store IPA and archive\n"
+        "        if: always()\n"
+        "        run: rm -rf .build/ReiseniOS.xcarchive .build/ReiseniOS-ipa\n"
     )
     check_workflow_text(valid)
     expect_fail(valid + "      - uses: actions/upload-artifact@v4\n", "upload-artifact")
     expect_fail(valid.replace("  archive:", "  scan:"), "nur Job archive")
     expect_fail(valid + "          token: ${{ secrets.APPCOMPLIANCE_TOKEN }}\n", "appcompliance")
+    expect_fail(valid.replace("        if: always()\n", ""), "cleanup if always")
+    expect_fail(
+        valid.replace("rm -rf .build/ReiseniOS.xcarchive .build/ReiseniOS-ipa", "rm -rf .build/other"),
+        "cleanup archive paths",
+    )
 
 
 def check_workflow(path: Path) -> None:

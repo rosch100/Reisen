@@ -61,3 +61,8 @@ jobs:
           esac
           bash ./Scripts/ios-verify-binary-isolation.sh --mode store --ipa "$IPA"
           bash ./Scripts/ios-validate-appstore.sh "$IPA"
+
+      - name: Remove Store IPA and archive
+        if: always()
+        run: |
+          rm -rf .build/ReiseniOS.xcarchive .build/ReiseniOS-ipa

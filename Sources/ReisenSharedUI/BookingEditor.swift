@@ -333,8 +333,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
         booking.locationTo = Self.normalizeOptionalString(locationTo)
         booking.locationFromAddress = Self.normalizeOptionalString(locationFromAddress)
         booking.locationToAddress = Self.normalizeOptionalString(locationToAddress)
-        // Betreiber nur für Typen mit Editor-Feld; sonst leeren (kein Stale nach Typwechsel).
-        if bookingType.showsOperatorNameField {
+        // Sichtbarkeit (`showsOperatorNameField`) ist keine Persistenzregel.
+        if bookingType.persistsOperatorName {
             booking.operatorName = Self.normalizeOptionalString(operatorName)
         } else {
             booking.operatorName = nil

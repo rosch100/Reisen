@@ -40,6 +40,7 @@ Kein DB-Branding, kein Icon-only-Picker, kein paralleles Timeline-Layout nur fü
 - `BookingTimeNormalizeDispatch`: `.train` wie Flug/Fähre (`BookingFlightTimeNormalizer`)
 - Ohne Offsets: unverändert (manuelle DACH-Zeiten)
 - `FlightTimeZoneAssigner`: unverändert (IATA-only)
+- Traveloka `TRAIN`/`TRAIN_GLOBAL`: IANA `ianaTimezoneBegin`/`ianaTimezoneEnd` → Flight-Offsets für Ortszeit-Anzeige; Zeitstempel bleiben Instants
 
 ## Gaps
 
@@ -63,7 +64,8 @@ Manuell und F06 Paste-Import bleiben zusätzliche Quellen. Kein DB/ÖBB-Adapter.
 - SharedUI: `systemImageName`, `presentationTitle`
 - `GapKindClassifierTests`: hotel/flight/train-Kombinationen
 - `BookingTimeNormalizerDeadlinesTests`: train mit/ohne Offsets
-- `BookingScheduleFieldsTests`: Bahnhof-Labels, Abfahrt/Ankunft
+- `BookingScheduleFieldsTests`: Bahnhof-Labels, Abfahrt/Ankunft, Ortszeit-Offsets
+- `ParserTests`: Traveloka-Train-Offsets aus IANA
 - `L10nTests`: neue Keys de/en
 
 ## Nicht in Scope

@@ -9,7 +9,7 @@ Zur **Release-Vorbereitung** erzeugt der Workflow **App Store Check** (`app-stor
 
 Der Workflow prüft **technische** Apple-Annahme (ITMS): Signing, Entitlements, Icons, Privacy-Manifest-Pflicht u. a. `product-errors`. Das ist **kein** Check der App-Store-Review-Guidelines (Mindestfunktion, 4.3, Datenschutztexte, Design). Die gehen weiter manuell vor der Einreichung.
 
-`altool --validate-app` schickt das IPA an Apple zur Prüfung und lädt es **nicht** zur Review hoch. GitHub bekommt kein IPA-Artifact (öffentliches Repo, eingebettetes Issues-PAT, siehe [`github-issues-token.md`](github-issues-token.md)). Das Binary bleibt auf dem Runner und verschwindet mit dem Job.
+`altool --validate-app` schickt das IPA an Apple zur Prüfung und lädt es **nicht** zur Review hoch. GitHub bekommt kein IPA-Artifact (öffentliches Repo, eingebettetes Issues-PAT, siehe [`github-issues-token.md`](github-issues-token.md)). Auf dem selbstgehosteten Runner löscht der Workflow IPA und Archive nach der Validierung (`if: always()`), auch bei fehlgeschlagenem Check.
 
 ## Wann der Workflow läuft
 
@@ -55,7 +55,7 @@ Details: [`apple-signing.md`](apple-signing.md), [`app-store-connect.md`](app-st
 1. Store-IPA erzeugen (`Scripts/ios-archive-appstore.sh`).
 2. Isolation auf dem IPA prüfen.
 3. Apple ITMS-Validierung (`Scripts/ios-validate-appstore.sh` → `xcrun altool --validate-app`).
-4. Job endet; IPA wird nicht als GitHub-Artifact hochgeladen.
+4. IPA und Archive auf dem Runner löschen (kein GitHub-Artifact).
 
 Lokal: zuerst das Store-IPA erzeugen, dann denselben Pfad validieren (ASC-API-Key wie in CI). `.build/` von SwiftPM enthält kein IPA. In App Store Connect muss die iOS-App `de.reisen.Reisen.ios` existieren (Listename **Reisen Buchungen**), sonst bricht `altool` mit „Unable to find Apple ID for Bundle ID“ ab — siehe [`app-store-connect.md`](app-store-connect.md). ITMS 90534: Xcode 27 auf die **neueste** Beta/RC bringen, IPA neu bauen.
 

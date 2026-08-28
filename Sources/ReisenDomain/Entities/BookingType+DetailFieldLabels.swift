@@ -27,6 +27,17 @@ extension BookingType {
             return false
         }
     }
+
+    /// Persistierter Betreiber (Provider/Enrichment). Unabhängig von Editor-Sichtbarkeit:
+    /// Fähre/Andere können `operatorName` haben, ohne Editor-Feld.
+    public var persistsOperatorName: Bool {
+        switch self {
+        case .train, .activity, .carRental, .ferry, .other:
+            return true
+        case .flight, .hotel:
+            return false
+        }
+    }
     public var scheduleStartLabel: String { L10n.scheduleStartLabel(for: self) }
     public var scheduleEndLabel: String { L10n.scheduleEndLabel(for: self) }
 }

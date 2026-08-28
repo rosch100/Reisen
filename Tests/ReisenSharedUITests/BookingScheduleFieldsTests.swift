@@ -135,6 +135,48 @@ private let germanLocale = Locale(identifier: "de")
     #expect(BookingScheduleRangeText.make(for: booking) == "\(expectedStart) – \(expectedEnd)")
 }
 
+@Test func bookingScheduleRangeText_trainUsesStoredOffsetsNotDeviceTimeZone() throws {
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    let end = start.addingTimeInterval(14_400)
+    let jakarta = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    let departureOffset = jakarta.secondsFromGMT(for: start)
+    let arrivalOffset = jakarta.secondsFromGMT(for: end)
+    let booking = SDBooking(
+        providerRaw: ProviderID.traveloka.rawValue,
+        bookingTypeRaw: BookingType.train.rawValue,
+        title: "Argo Bromo",
+        startAt: start,
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue,
+        flightDepartureOffsetSeconds: departureOffset,
+        flightArrivalOffsetSeconds: arrivalOffset
+    )
+    let withoutOffsets = SDBooking(
+        providerRaw: ProviderID.traveloka.rawValue,
+        bookingTypeRaw: BookingType.train.rawValue,
+        title: "Argo Bromo",
+        startAt: start,
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    let departureTZ = try #require(TimeZone(secondsFromGMT: departureOffset))
+    let arrivalTZ = try #require(TimeZone(secondsFromGMT: arrivalOffset))
+    let expectedStart = Formatting.formatOrtszeit(
+        start,
+        dateFormat: "d.M. HH:mm",
+        timeZone: departureTZ
+    )
+    let expectedEnd = Formatting.formatOrtszeit(
+        end,
+        dateFormat: "d.M. HH:mm",
+        timeZone: arrivalTZ
+    )
+    #expect(BookingScheduleRangeText.make(for: booking) == "\(expectedStart) – \(expectedEnd)")
+    if TimeZone.current.secondsFromGMT(for: start) != departureOffset {
+        #expect(BookingScheduleRangeText.make(for: booking) != BookingScheduleRangeText.make(for: withoutOffsets))
+    }
+}
+
 @MainActor
 @Test func bookingScheduleFields_train_usesStationAndDepartureLabels() throws {
     L10n.locale = germanLocale
@@ -168,6 +210,56 @@ private let germanLocale = Locale(identifier: "de")
     #expect(labels.contains(L10n.string(.bookingFieldScheduleEndTrain)))
     #expect(labels.contains(L10n.string(.bookingFieldOperatorTrain)))
     #expect(!labels.contains(L10n.string(.bookingFieldScheduleStartHotel)))
+}
+
+@MainActor
+@Test func bookingEditor_keepsOperatorNameForFerryAndOther() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let context = container.mainContext
+    let start = Date(timeIntervalSince1970: 1_800_000_000)
+    let end = start.addingTimeInterval(7_200)
+
+    let ferry = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.ferry.rawValue,
+        title: "Fähre Kiel",
+        startAt: start,
+        endAt: end,
+        operatorName: "Stena Line",
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    context.insert(ferry)
+    let ferryDraft = BookingEditorDraft.fromExisting(ferry)
+    try ferryDraft.apply(to: ferry, in: context)
+    #expect(ferry.operatorName == "Stena Line")
+
+    let other = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.other.rawValue,
+        title: "Transfer",
+        startAt: start,
+        endAt: end,
+        operatorName: "Partner",
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    context.insert(other)
+    let otherDraft = BookingEditorDraft.fromExisting(other)
+    try otherDraft.apply(to: other, in: context)
+    #expect(other.operatorName == "Partner")
+
+    let flight = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.flight.rawValue,
+        title: "LH 400",
+        startAt: start,
+        endAt: end,
+        operatorName: "Stale",
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    context.insert(flight)
+    let flightDraft = BookingEditorDraft.fromExisting(flight)
+    try flightDraft.apply(to: flight, in: context)
+    #expect(flight.operatorName == nil)
 }
 
 @MainActor
