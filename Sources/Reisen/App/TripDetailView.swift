@@ -726,10 +726,6 @@ private struct BookingRow: View {
         return Formatting.formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
     }
 
-    private func bookingTypeTitle(_ booking: SDBooking) -> String {
-        booking.bookingType.displayLabel
-    }
-
     private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
 
     private func cancellationCopyText(
@@ -793,58 +789,8 @@ private struct BookingRow: View {
                 L10n.format(.bookingTimelineHotelCheckOut, checkOutDate, checkOutTime, hotelLocationLabel),
             ].joined(separator: "\n")
 
-        case .flight:
-            let departureOffsetSeconds = booking.flightDepartureOffsetSeconds
-            let arrivalOffsetSeconds = booking.flightArrivalOffsetSeconds
-
-            let departureTZ = (departureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }) ?? .current
-            let arrivalTZ = (arrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }) ?? .current
-
-            let tzHint: String = {
-                if departureOffsetSeconds == nil || arrivalOffsetSeconds == nil {
-                    return L10n.string(.bookingTimelineTimezonePending)
-                }
-                return ""
-            }()
-
-            let departure = Formatting.formatOrtszeit(
-                booking.startAt,
-                dateFormat: "d.M. HH:mm",
-                timeZone: departureTZ
-            )
-            let arrival = Formatting.formatOrtszeit(
-                booking.endAt,
-                dateFormat: "d.M. HH:mm",
-                timeZone: arrivalTZ
-            )
-
-            return [
-                L10n.format(.bookingTimelineFlightDeparture, departure, flightOriginLabel, tzHint),
-                L10n.format(.bookingTimelineFlightArrival, arrival, flightDestinationLabel),
-            ].joined(separator: "\n")
-
-        case .ferry:
-            let departureOffsetSeconds = booking.flightDepartureOffsetSeconds
-            let arrivalOffsetSeconds = booking.flightArrivalOffsetSeconds
-
-            let departureTZ = (departureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }) ?? .current
-            let arrivalTZ = (arrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }) ?? .current
-
-            let departure = Formatting.formatOrtszeit(
-                booking.startAt,
-                dateFormat: "d.M. HH:mm",
-                timeZone: departureTZ
-            )
-            let arrival = Formatting.formatOrtszeit(
-                booking.endAt,
-                dateFormat: "d.M. HH:mm",
-                timeZone: arrivalTZ
-            )
-
-            return [
-                L10n.format(.bookingTimelineFerryDeparture, departure, flightOriginLabel),
-                L10n.format(.bookingTimelineFerryArrival, arrival, flightDestinationLabel),
-            ].joined(separator: "\n")
+        case .flight, .ferry, .train:
+            return transportPointToPointCopy()
 
         case .carRental:
             let pickup = Formatting.formatOrtszeit(
@@ -867,10 +813,56 @@ private struct BookingRow: View {
         }
     }
 
+    /// Flug/Fähre/Bahn: Ortszeit-Paar; Timezone-Pending nur für Flug.
+    private func transportPointToPointCopy() -> String {
+        let departureKey: L10nKey
+        let arrivalKey: L10nKey
+        switch booking.bookingType {
+        case .flight:
+            departureKey = .bookingTimelineFlightDeparture
+            arrivalKey = .bookingTimelineFlightArrival
+        case .ferry:
+            departureKey = .bookingTimelineFerryDeparture
+            arrivalKey = .bookingTimelineFerryArrival
+        case .train:
+            departureKey = .bookingTimelineTrainDeparture
+            arrivalKey = .bookingTimelineTrainArrival
+        case .hotel, .activity, .carRental, .other:
+            preconditionFailure("transportPointToPointCopy nur für usesFlightLikeSchedule")
+        }
+
+        let departureOffset = booking.flightDepartureOffsetSeconds
+        let arrivalOffset = booking.flightArrivalOffsetSeconds
+        let departureTZ = departureOffset.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+        let arrivalTZ = arrivalOffset.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+        let departure = Formatting.formatOrtszeit(
+            booking.startAt,
+            dateFormat: "d.M. HH:mm",
+            timeZone: departureTZ
+        )
+        let arrival = Formatting.formatOrtszeit(
+            booking.endAt,
+            dateFormat: "d.M. HH:mm",
+            timeZone: arrivalTZ
+        )
+        let departureLine: String
+        if booking.bookingType == .flight {
+            let tzHint = (departureOffset == nil || arrivalOffset == nil)
+                ? L10n.string(.bookingTimelineTimezonePending)
+                : ""
+            departureLine = L10n.format(departureKey, departure, transportOriginLabel, tzHint)
+        } else {
+            departureLine = L10n.format(departureKey, departure, transportOriginLabel)
+        }
+        return [
+            departureLine,
+            L10n.format(arrivalKey, arrival, transportDestinationLabel),
+        ].joined(separator: "\n")
+    }
+
     /// Start-/Enddatum für die Listenzeile (ohne Check-in/Check-out-Uhrzeiten).
     private func bookingSummaryDateRangeText() -> String {
-        switch booking.bookingType {
-        case .hotel:
+        if booking.bookingType == .hotel {
             let start = HotelStayDate.format(
                 booking.startAt,
                 dateFormat: "d.M.",
@@ -882,20 +874,18 @@ private struct BookingRow: View {
                 legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
             )
             return "\(start) – \(end) (\(hotelLocationLabel))"
-        case .flight, .ferry:
-            return bookingTimeCopyText()
-        case .activity, .carRental:
-            return "\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))"
-        case .other:
-            return "\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))"
         }
+        if booking.bookingType.usesFlightLikeSchedule {
+            return bookingTimeCopyText()
+        }
+        return "\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))"
     }
 
     private func bookingFullCopyText(now: Date) -> String {
         var parts: [String] = []
 
-        parts.append(booking.title ?? bookingTypeTitle(booking))
-        parts.append(bookingTypeTitle(booking))
+        parts.append(booking.presentationTitle)
+        parts.append(booking.bookingType.displayLabel)
         parts.append(L10n.format(.bookingCopyPriceLine, bookingPriceText))
 
         if isOverlapping {
@@ -934,7 +924,7 @@ private struct BookingRow: View {
         let secondary = NSColor.secondaryLabelColor
         let orange = NSColor.systemOrange
 
-        let title = booking.title ?? booking.bookingType.displayLabel
+        let title = booking.presentationTitle
         ns.append(NSAttributedString(string: title, attributes: [
             .font: headlineFont,
             .foregroundColor: secondary
@@ -1141,14 +1131,14 @@ private struct BookingRow: View {
         return label.isEmpty ? L10n.string(.bookingFieldFallbackDestination) : label
     }
 
-    private var flightOriginLabel: String {
+    private var transportOriginLabel: String {
         let label = booking.locationFrom ?? ""
-        return label.isEmpty ? L10n.string(.bookingFieldLocationFromFlight) : label
+        return label.isEmpty ? booking.bookingType.locationFromLabel : label
     }
 
-    private var flightDestinationLabel: String {
+    private var transportDestinationLabel: String {
         let label = booking.locationTo ?? ""
-        return label.isEmpty ? L10n.string(.bookingFieldLocationToFlight) : label
+        return label.isEmpty ? booking.bookingType.locationToLabel : label
     }
 
     var body: some View {
@@ -1170,7 +1160,7 @@ private struct BookingRow: View {
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text(booking.title ?? bookingTypeTitle(booking))
+                    Text(booking.presentationTitle)
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .lineLimit(2)
@@ -1206,17 +1196,7 @@ private struct BookingRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            VStack(alignment: .trailing, spacing: 2) {
-                ProviderLogo(providerID: booking.provider)
-                Text(bookingTypeTitle(booking))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(bookingPriceText)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-            }
-            .fixedSize(horizontal: true, vertical: false)
+            bookingTrailingMeta
         }
     }
 
@@ -1230,20 +1210,23 @@ private struct BookingRow: View {
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .trailing, spacing: 2) {
-                    ProviderLogo(providerID: booking.provider)
-                    Text(bookingTypeTitle(booking))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(bookingPriceText)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.trailing)
-                }
-                .fixedSize(horizontal: true, vertical: false)
+                bookingTrailingMeta
             }
 
         }
+    }
+
+    private var bookingTrailingMeta: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            ProviderLogo(providerID: booking.provider)
+            BookingTypeLabel(booking.bookingType)
+                .foregroundStyle(.secondary)
+            Text(bookingPriceText)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+        }
+        .fixedSize(horizontal: true, vertical: false)
     }
 }
 

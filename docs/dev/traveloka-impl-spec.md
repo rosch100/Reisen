@@ -60,7 +60,8 @@ Aus laufender WebView-Session (keine Fixture-Hardcodings):
 | `HOTEL` (Villa/Apartment analog) | `.hotel` |
 | `EXPERIENCE` | `.activity` |
 | `VEHICLE_RENTAL` | `.carRental` |
-| Airport Transport, Train, Flight Facilities, Insurance, unbekannt | `.other` |
+| `TRAIN` / `TRAIN_GLOBAL` | `.train` |
+| Airport Transport, Flight Facilities, Insurance, unbekannt | `.other` |
 
 Status-SSOT: Tag/Text `Voucher issued` / `E-ticket issued` / `userTripStatus: ETICKET_PUBLISHED` → `.confirmed`; cancelled/refunded → `.cancelled`; sonst `.unknown`.
 
@@ -71,6 +72,7 @@ Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 - Experience: `operatorInfo.name` → `operatorName`; `timeSlotId == all_day_pass` / „All Day“ → `isAllDay`
 - Hotel: Live-API `hotelDetail.voucherInfo` + `localeAwareInfos` (kein `hotelSummary`); Ort `bookingInfo.hotelBookingInfo.hotelGeoDisplayName`; Free+Fee-Fristen primär aus `cancellationPolicyInfos` (`FREE_CANCELLATION` / `FULL_CHARGE`, Betrag = `amount` / `10^numOfDecimalPoint`); Fallback Policy-String; Check-in/out aus Voucher-Zeiten
 - Flight: Live-E-Ticket liest `bookingInfo.flightBookingInfo.bookingDetail` (Segmente `segments`, sonst `routes` / `flightRouteGroups`; Airports `sourceAirport`/`destinationAirport` oder Search-Shape `departureCity`/`arrivalCityCode`) plus `flightTicketInfo.eTicketDetailMap` / `eTicketButtonInfo`. Kein `flightSummary`. Keine Free-Deadline erfinden; Fee nur mit echter Deadline (`refundFeeAmount` + `refundDeadlineLocal` bzw. Refund-HTML)
+- Train: `TRAIN`/`TRAIN_GLOBAL` → `.train`; Titel `productName`; `ianaTimezoneBegin`/`ianaTimezoneEnd` → Flight-Offsets (Anzeige-Ortszeit). Stations-/Sitz-Parser folgt mit HAR
 - Vehicle: `supplierName`, `pickupLocation`/`pickupAddress` (nicht `providerName`/`pickUpAddress`); Titel `vehicleName` + `routeName`; Transmission `withoutDriverDetailInfo.product.transmissionTypeLabel`; Free-Frist 24h vor Pickup (EN „24 hours before“ / ID „24 jam sebelum“); Zeitzone oft Offset `+07:00` statt IANA
 
 ## Login
@@ -94,4 +96,5 @@ Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 
 ## Nicht in Scope
 
-- Partner-API, Payment Method, Redeem-Fließtext, Special Requests, Train-Desktop-Sync
+- Partner-API, Payment Method, Redeem-Fließtext, Special Requests
+- TRAIN-Stations-/Sitz-Parser (kein TRAIN-Detail-HAR im Repo; Typ-Mapping existiert)
