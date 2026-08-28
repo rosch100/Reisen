@@ -20,7 +20,7 @@ extension BookingComTravelProvider {
         onProgress?("Lade Buchungsdetails…")
         guard let confirmationURL = BookingComParsing.normalizedHotelConfirmationURL(ref.externalUrl)
             .flatMap(URL.init(string:)) else {
-            return ProviderBookingEnrichment()
+            return emptyHotelEnrichment
         }
         let html = try await loadHotelConfirmationHTML(using: webView, url: confirmationURL)
         let deadlines = BookingComCancellationDeadlineParser().parseDeadlines(
@@ -29,11 +29,21 @@ extension BookingComTravelProvider {
         )
         let rateDetails = BookingComHotelConfirmationParser().parseRateDetails(from: html)
         let guestHints = BookingComGuestHintParser().parse(from: html)
-        return ProviderBookingEnrichment(
-            deadlines: deadlines,
-            rateDetails: rateDetails,
-            guestHints: guestHints.isEmpty ? nil : guestHints,
-            hotelOffsetSeconds: ref.hotelOffsetSeconds
+        return DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .booking,
+                bookingType: .hotel,
+                deadlines: deadlines,
+                rateDetails: rateDetails,
+                hotelOffsetSeconds: ref.hotelOffsetSeconds,
+                guestHints: guestHints
+            )
+        )
+    }
+
+    private var emptyHotelEnrichment: ProviderBookingEnrichment {
+        DraftAssembler.enrichment(
+            from: ProviderBookingFacts(provider: .booking, bookingType: .hotel)
         )
     }
 }

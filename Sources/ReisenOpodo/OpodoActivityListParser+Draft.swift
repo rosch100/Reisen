@@ -13,19 +13,17 @@ extension OpodoActivityListParser {
             return nil
         }
 
-        return ProviderBookingDraft(
-            provider: .opodo,
-            bookingType: bookingType(from: url),
-            title: nil,
-            confirmationCode: nil,
-            externalUrl: url,
-            startAt: startAt,
-            endAt: endAt,
-            locationFrom: nil,
-            locationTo: nil,
-            status: .unknown,
-            deadlines: [],
-            rateDetails: nil
+        let bookingType = bookingType(from: url)
+        let times = TemporalFact.pair(bookingType: bookingType, start: startAt, end: endAt)
+        return DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .opodo,
+                bookingType: bookingType,
+                start: times.start,
+                end: times.end,
+                externalUrl: url,
+                statusRaw: nil
+            )
         )
     }
 }

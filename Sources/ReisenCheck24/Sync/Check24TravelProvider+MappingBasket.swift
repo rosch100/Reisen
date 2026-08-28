@@ -33,22 +33,14 @@ extension Check24TravelProvider {
         }()
 
         let roomCount = basket.items.count
-        let boardType = BookingBoardType(rawValue: details?.boardTypeRaw ?? "") ?? .unknown
-
-        return BookingRateDetails(
-            rawDetailsFingerprint: details?.rawDetailsFingerprint,
+        let basketRate = BookingRateDetails(
             totalPriceAmount: basket.basketPriceEffectiveAmount,
             totalPriceCurrency: basket.basketPriceCurrency,
             roomCategory: uniqueCategories.joined(separator: " + "),
-            boardType: boardType,
-            includedBreakfast: details?.includedBreakfast,
-            guestCount: details?.guestCount,
             roomCount: roomCount,
-            airline: details?.airline,
-            passengerCount: details?.passengerCount,
-            baggageInfoRaw: details?.baggageInfoRaw,
             roomItems: roomItems,
             lastParsedAt: Date()
         )
+        return BookingRateDetails.merging(existing: details?.asRateDetails(), incoming: basketRate)
     }
 }

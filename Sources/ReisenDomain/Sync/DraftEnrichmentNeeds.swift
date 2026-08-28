@@ -1,13 +1,15 @@
 import Foundation
-import ReisenDomain
 
-/// Wann Traveloka-Detail-Enrichment nach dem Katalog noch nötig ist.
-public enum TravelokaEnrichmentNeeds {
+/// Wann Detail-Enrichment nach dem Katalog noch nötig ist (SSOT, vormals Traveloka-lokal).
+public enum DraftEnrichmentNeeds {
     public static func shouldEnrich(
         _ draft: ProviderBookingDraft,
         requiresDeadlines: Bool
     ) -> Bool {
         if requiresDeadlines && !draft.deadlines.contains(where: { !$0.isFreeCancellation }) {
+            return true
+        }
+        if draft.bookingType == .hotel && draft.deadlines.isEmpty {
             return true
         }
         if draft.status == .unknown { return true }
@@ -26,7 +28,9 @@ public enum TravelokaEnrichmentNeeds {
         case .flight:
             return draft.passengers.isEmpty || draft.rateDetails?.airline == nil
         case .ferry:
-            return false
+            return draft.title == nil
+                || (draft.locationFrom == nil && draft.locationTo == nil)
+                || (draft.locationFrom != nil && draft.locationTo != nil && draft.operatorName == nil)
         case .carRental:
             return draft.operatorName == nil
                 || draft.locationFrom == nil

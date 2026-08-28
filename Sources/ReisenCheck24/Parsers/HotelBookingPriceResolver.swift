@@ -36,7 +36,7 @@ public enum HotelBookingPriceResolver: Sendable {
             totalPriceAmount: selection.amount,
             totalPriceCurrency: selection.currency,
             roomCategory: selection.roomCategory,
-            boardType: BookingBoardType(rawValue: boardRaw ?? "") ?? .unknown,
+            boardType: BookingBoardType.parse(boardRaw),
             includedBreakfast: detail?.includedBreakfast,
             guestCount: detail?.guestCount,
             roomCount: selection.roomCount,

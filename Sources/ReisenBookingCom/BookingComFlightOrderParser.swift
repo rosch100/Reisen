@@ -41,8 +41,8 @@ public struct BookingComFlightOrderParser: Sendable {
         return BookingComFlightOrderParseResult(
             deadlines: deadlines(from: order.cancellationOptions),
             rateDetails: rateDetails(from: order),
-            flightDepartureOffsetSeconds: BookingComParsing.offsetSeconds(from: firstSegment(order)?.departureTimeTz),
-            flightArrivalOffsetSeconds: BookingComParsing.offsetSeconds(from: lastSegment(order)?.arrivalTimeTz),
+            flightDepartureOffsetSeconds: ISODateTime.offsetSeconds(from: firstSegment(order)?.departureTimeTz),
+            flightArrivalOffsetSeconds: ISODateTime.offsetSeconds(from: lastSegment(order)?.arrivalTimeTz),
             passengers: passengers(from: order)
         )
     }

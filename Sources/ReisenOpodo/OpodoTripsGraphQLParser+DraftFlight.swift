@@ -22,43 +22,39 @@ extension OpodoTripsGraphQLParser {
 
         let fromIata = firstSection?.departure?.iata ?? itinerary.origin?.iata
         let toIata = firstSection?.arrival?.iata ?? itinerary.destination?.iata
-        let from = cityWithIata(city: fromCity, iata: fromIata)
-        let to = cityWithIata(city: toCity, iata: toIata)
-
-        let title: String? = {
-            if let fromCity, let toCity {
-                return "\(fromCity) → \(toCity)"
-            }
-            return toCity ?? fromCity
-        }()
+        let from = PlaceLabel.make(city: fromCity, iata: fromIata?.uppercased())
+        let to = PlaceLabel.make(city: toCity, iata: toIata?.uppercased())
+        let title = PlaceLabel.route(from: fromCity, to: toCity)
+            ?? NonEmpty.string(toCity)
+            ?? NonEmpty.string(fromCity)
 
         let pnr = sections.compactMap(\.pnr).first
         let airline = firstSection?.carrier?.name
         let passengerCount = trip.travellers.flatMap { $0.isEmpty ? nil : $0.count }
 
-        var details = rateDetails
-        if var existing = details {
-            existing.airline = airline
-            existing.passengerCount = passengerCount
-            details = existing
-        } else if airline != nil || passengerCount != nil {
-            details = BookingRateDetails(airline: airline, passengerCount: passengerCount)
-        }
+        let incomingRates: BookingRateDetails? = {
+            guard airline != nil || passengerCount != nil else { return nil }
+            return BookingRateDetails(airline: airline, passengerCount: passengerCount)
+        }()
+        let details = BookingRateDetails.merging(existing: rateDetails, incoming: incomingRates)
 
-        return ProviderBookingDraft(
-            provider: .opodo,
-            bookingType: .flight,
-            title: title,
-            confirmationCode: pnr ?? trip.id,
-            externalUrl: externalUrl,
-            startAt: startAt,
-            endAt: endAt,
-            locationFrom: from,
-            locationTo: to,
-            locationFromAddress: nonEmpty(firstSection?.departure?.name),
-            locationToAddress: nonEmpty(firstSection?.arrival?.name),
-            status: status(bookingStatus: trip.bookingStatus, productStatus: trip.bookingProductStatus),
-            rateDetails: details
+        let times = TemporalFact.pair(bookingType: .flight, start: startAt, end: endAt)
+        return DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .opodo,
+                bookingType: .flight,
+                start: times.start,
+                end: times.end,
+                title: title,
+                confirmationCode: pnr ?? trip.id,
+                externalUrl: externalUrl,
+                locationFrom: from,
+                locationTo: to,
+                locationFromAddress: NonEmpty.string(firstSection?.departure?.name),
+                locationToAddress: NonEmpty.string(firstSection?.arrival?.name),
+                statusRaw: BookingStatus.joinedRaw(trip.bookingStatus, trip.bookingProductStatus),
+                rateDetails: details
+            )
         )
     }
 }

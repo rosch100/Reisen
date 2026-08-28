@@ -11,7 +11,7 @@ extension BookingComFlightOrderParser {
             .compactMap(\.luggageAllowance)
             .map { allowance in
                 BaggageAllowance(
-                    type: baggageType(from: allowance.luggageType),
+                    type: BaggageType.parse(allowance.luggageType),
                     pieceCount: allowance.maxPiece,
                     weightKg: allowance.maxWeightPerPiece.map(Double.init),
                     sectionID: nil,

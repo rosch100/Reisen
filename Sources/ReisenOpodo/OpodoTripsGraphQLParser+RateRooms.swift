@@ -7,7 +7,7 @@ extension OpodoTripsGraphQLParser {
         var seen = Set<String>()
         var ordered: [String] = []
         for room in rooms {
-            guard let name = nonEmpty(room.roomDescription) else { continue }
+            guard let name = NonEmpty.string(room.roomDescription) else { continue }
             if seen.insert(name).inserted {
                 ordered.append(name)
             }
@@ -19,7 +19,7 @@ extension OpodoTripsGraphQLParser {
     func roomItems(from rooms: [OpodoGraphQLBookingRoom]?) -> [BookingRoomItem] {
         guard let rooms else { return [] }
         return rooms.enumerated().compactMap { idx, room in
-            guard let category = nonEmpty(room.roomDescription) else { return nil }
+            guard let category = NonEmpty.string(room.roomDescription) else { return nil }
             return BookingRoomItem(
                 category: category,
                 sortIndex: idx

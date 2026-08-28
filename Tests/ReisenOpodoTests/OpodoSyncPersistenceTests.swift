@@ -10,7 +10,8 @@ struct OpodoSyncPersistenceTests {
     func opodoHARBookingsPersistWithDeadlinesAndCatalogFields() throws {
         let catalogJSON = try fixtureJSON("getTrips_upcoming.json")
         var drafts = try OpodoTripsGraphQLParser().parseTrips(from: catalogJSON)
-        #expect(drafts.count == 3)
+        #expect(drafts.count == 2)
+        #expect(drafts.contains { $0.title?.contains("Plataran") == true } == false)
 
         // Wie SyncStore: Storno-Status aus Katalog, Stornofristen per getTripByToken (HAR Merlynn).
         let merlynnIndex = try #require(drafts.firstIndex { $0.title?.contains("Merlynn") == true })
@@ -46,20 +47,20 @@ struct OpodoSyncPersistenceTests {
           }
         }
         """
-        let enrichment = try OpodoTripCancellationGraphQLParser().parse(from: cancelJSON)
-        drafts[merlynnIndex].deadlines = enrichment.deadlines
-        drafts[merlynnIndex].hotelOffsetSeconds =
-            enrichment.deadlines.compactMap(\.hotelOffsetSeconds).first ?? 0
-        if let status = enrichment.status {
-            drafts[merlynnIndex].status = status
-        }
+        let parsed = try OpodoTripCancellationGraphQLParser().parse(from: cancelJSON)
+        let enrichment = DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .opodo,
+                bookingType: .hotel,
+                statusRaw: parsed.statusRaw,
+                deadlines: parsed.deadlines,
+                hotelOffsetSeconds: parsed.deadlines.firstHotelOffsetSeconds
+            )
+        )
+        drafts[merlynnIndex].apply(enrichment)
 
-        let cancelled = drafts.filter { $0.status == .cancelled }
-        #expect(cancelled.count == 1)
-        #expect(cancelled.first?.title?.contains("Plataran") == true)
-
-        // SyncStore übergibt nur aktive Drafts; Stornos werden lokal entfernt.
-        let activeDrafts = drafts.filter { $0.status != .cancelled }
+        #expect(drafts.allSatisfy { $0.status != .cancelled })
+        let activeDrafts = drafts
         #expect(activeDrafts.count == 2)
 
         let repo = OpodoInMemoryBookingRepository()

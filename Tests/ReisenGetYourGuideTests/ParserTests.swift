@@ -31,6 +31,61 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     #expect(deadline.policyText?.contains("vollständige Rückerstattung") == true)
 }
 
+@Test("GetYourGuideMyBookingsParser überspringt Einträge ohne bookingFinishDate")
+func gygMyBookingsSkipsEntryWithoutFinishDateAndKeepsOthers() throws {
+    let json = """
+    {
+      "myBookings": {
+        "upcomingBookings": [
+          {
+            "bookingHash": "keep",
+            "bookingReference": "keep-ref",
+            "status": "active",
+            "startingTime": { "startTime": "2026-08-08T19:00:00+07:00" },
+            "bookingFinishDate": "2026-08-08T21:00:00+07:00"
+          },
+          {
+            "bookingHash": "skip-end",
+            "bookingReference": "skip-ref",
+            "status": "active",
+            "startingTime": { "startTime": "2026-08-09T19:00:00+07:00" }
+          }
+        ]
+      }
+    }
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.map(\.confirmationCode) == ["keep-ref"])
+}
+
+@Test("GetYourGuideMyBookingsParser überspringt done-Status")
+func gygMyBookingsSkipsDoneStatusAndKeepsOthers() throws {
+    let json = """
+    {
+      "myBookings": {
+        "upcomingBookings": [
+          {
+            "bookingHash": "keep",
+            "bookingReference": "keep-ref",
+            "status": "active",
+            "startingTime": { "startTime": "2026-08-08T19:00:00+07:00" },
+            "bookingFinishDate": "2026-08-08T21:00:00+07:00"
+          },
+          {
+            "bookingHash": "skip-done",
+            "bookingReference": "skip-ref",
+            "status": "done",
+            "startingTime": { "startTime": "2026-08-09T19:00:00+07:00" },
+            "bookingFinishDate": "2026-08-09T21:00:00+07:00"
+          }
+        ]
+      }
+    }
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.map(\.confirmationCode) == ["keep-ref"])
+}
+
 @Test("GetYourGuideBookingSummaryParser mappt Treffpunkt, Fristen und Teilnehmer ohne PII-Namen")
 func gygBookingSummaryParsesEnrichment() throws {
     let json = try GetYourGuideResearchFixture.json(named: "gyg_bookingSummary_redacted.json")

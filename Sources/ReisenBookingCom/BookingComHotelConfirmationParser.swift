@@ -16,7 +16,7 @@ public struct BookingComHotelConfirmationParser: Sendable {
 
         return BookingRateDetails(
             roomCategory: roomCategory,
-            boardType: breakfast == true ? .breakfastIncluded : .unknown,
+            boardType: BookingBoardType.parse(breakfastIncluded: breakfast),
             includedBreakfast: breakfast,
             guestCount: guestCount
         )

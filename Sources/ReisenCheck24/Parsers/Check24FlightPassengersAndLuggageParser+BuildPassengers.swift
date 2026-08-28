@@ -6,7 +6,7 @@ extension Check24FlightPassengersAndLuggageParser {
     public func buildPassengers(
         guestNames: [String],
         baggageAllowances: [BaggageAllowance],
-        travellerType: TravellerType = .adult
+        travellerType: TravellerType = .unknown
     ) -> [BookingPassenger] {
         guard !guestNames.isEmpty else { return [] }
 

@@ -58,11 +58,6 @@ struct FlightPassenger: Decodable {
     let gender: String?
 
     var travellerType: TravellerType {
-        switch (type ?? "").uppercased() {
-        case "ADULT": return .adult
-        case "CHILD": return .child
-        case "INFANT": return .infant
-        default: return .unknown
-        }
+        TravellerType.parse(type)
     }
 }

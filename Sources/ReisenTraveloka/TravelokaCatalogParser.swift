@@ -8,8 +8,11 @@ public enum TravelokaCatalogParser {
         routePrefix: String = TravelokaWebConstants.routePrefix
     ) throws -> ProviderCatalog {
         let entries = try TravelokaJSON.itineraryEntries(from: responseText)
-        let drafts = try entries.map {
-            try TravelokaItineraryEntryParser.draft(from: $0, routePrefix: routePrefix)
+        var drafts: [ProviderBookingDraft] = []
+        for entry in entries {
+            if let draft = try TravelokaItineraryEntryParser.draft(from: entry, routePrefix: routePrefix) {
+                drafts.append(draft)
+            }
         }
         return ProviderCatalog(bookings: drafts)
     }

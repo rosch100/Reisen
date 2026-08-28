@@ -62,7 +62,7 @@ extension ActivityListParser {
             locationTo: nil,
             locationFromAddress: nil,
             locationToAddress: nil,
-            status: .unknown,
+            statusRaw: nil,
             details: nil
         )
     }
@@ -78,14 +78,10 @@ extension ActivityListParser {
             throw Check24ParseError.noCancellationDeadlineFound
         }
 
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE_POSIX")
-        formatter.dateFormat = "dd.MM.yyyy"
-
         return matches.compactMap { match in
             guard match.numberOfRanges >= 2 else { return nil }
             let dateString = ns.substring(with: match.range(at: 1))
-            guard let date = formatter.date(from: dateString) else { return nil }
+            guard let date = HotelStayDate.parseGerman(dateString) else { return nil }
             return ParsedCancellationDeadline(
                 deadlineAt: date,
                 policyText: nil,
@@ -116,13 +112,8 @@ extension ActivityListParser {
             throw Check24ParseError.noBookingDatesFound
         }
 
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE_POSIX")
-        formatter.dateFormat = "dd.MM.yyyy"
-
         return matches.compactMap { match in
-            let full = ns.substring(with: match.range(at: 0))
-            return formatter.date(from: full)
+            HotelStayDate.parseGerman(ns.substring(with: match.range(at: 0)))
         }
     }
 
@@ -136,7 +127,7 @@ extension ActivityListParser {
         guard match.numberOfRanges >= 2 else { return nil }
         let range = match.range(at: 1)
         guard range.location != NSNotFound else { return nil }
-        return ns.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
+        return NonEmpty.string(ns.substring(with: range))
     }
 
     private func normalizeExternalUrl(_ href: String) -> String? {

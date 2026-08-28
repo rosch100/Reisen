@@ -5,7 +5,24 @@ enum TravelokaItineraryEntryParser {
     static func draft(
         from entry: [String: Any],
         routePrefix: String = TravelokaAPI.routePrefix
-    ) throws -> ProviderBookingDraft {
+    ) throws -> ProviderBookingDraft? {
+        guard let facts = try facts(from: entry, routePrefix: routePrefix) else {
+            return nil
+        }
+        return DraftAssembler.draft(from: facts)
+    }
+
+    static func enrichment(from entry: [String: Any]) throws -> ProviderBookingEnrichment {
+        guard let facts = try facts(from: entry) else {
+            throw TravelokaProviderError.missingItineraryTimestamps
+        }
+        return DraftAssembler.enrichment(from: facts)
+    }
+
+    private static func facts(
+        from entry: [String: Any],
+        routePrefix: String = TravelokaAPI.routePrefix
+    ) throws -> ProviderBookingFacts? {
         let bookingId = TravelokaJSON.string(entry["bookingId"])
         let itineraryId = TravelokaJSON.string(entry["itineraryId"])
         guard let bookingId, let itineraryId else {
@@ -20,11 +37,10 @@ enum TravelokaItineraryEntryParser {
         let tzBegin = TravelokaJSON.timeZone(iana: TravelokaJSON.string(common["ianaTimezoneBegin"]))
         let tzEnd = TravelokaJSON.timeZone(iana: TravelokaJSON.string(common["ianaTimezoneEnd"]))
 
-        guard let startAt = TravelokaJSON.dateFromMillis(common["itineraryTimestampBegin"]) else {
-            throw TravelokaProviderError.missingItineraryTimestamps
+        guard let startAt = TravelokaJSON.dateFromMillis(common["itineraryTimestampBegin"]),
+              let endAt = TravelokaJSON.dateFromMillis(common["itineraryTimestampEnd"]) else {
+            return nil
         }
-        // Fehlendes Ende = gleicher Instant wie Start (explizit, kein Epoch-Dummy).
-        let endAt = TravelokaJSON.dateFromMillis(common["itineraryTimestampEnd"]) ?? startAt
         let fields = productFields(
             from: EntryContext(
                 entry: entry,
@@ -48,52 +64,36 @@ enum TravelokaItineraryEntryParser {
             routePrefix: routePrefix
         ).absoluteString
 
-        return ProviderBookingDraft(
+        let times = TemporalFact.pair(
+            bookingType: product.bookingType,
+            start: fields.start,
+            end: fields.end,
+            hotelOffsetSeconds: fields.hotelOffsetSeconds
+        )
+        return ProviderBookingFacts(
             provider: .traveloka,
             bookingType: product.bookingType,
+            start: times.start,
+            end: times.end,
             title: fields.title,
             confirmationCode: bookingId,
             externalUrl: externalUrl,
-            startAt: fields.start,
-            endAt: fields.end,
             locationFrom: TravelokaJSON.string(fields.locationFrom),
             locationTo: TravelokaJSON.string(fields.locationTo),
             locationFromAddress: TravelokaJSON.string(fields.locationFromAddress),
             locationToAddress: TravelokaJSON.string(fields.locationToAddress),
             operatorName: fields.operatorName,
             isAllDay: fields.isAllDay,
-            status: TravelokaStatusMapper.status(from: entry),
+            statusRaw: TravelokaStatusMapper.statusRaw(from: entry),
             deadlines: fields.deadlines,
             rateDetails: fields.rateDetails,
-            hotelOffsetSeconds: keepsStayOffset(product.bookingType) ? fields.hotelOffsetSeconds : nil,
+            hotelOffsetSeconds: fields.hotelOffsetSeconds,
             hotelCheckInMinutes: fields.hotelCheckInMinutes,
             hotelCheckOutMinutes: fields.hotelCheckOutMinutes,
             flightDepartureOffsetSeconds: fields.flightDepartureOffsetSeconds,
             flightArrivalOffsetSeconds: fields.flightArrivalOffsetSeconds,
             rawPayloadFingerprint: "\(bookingId):\(itineraryId)",
             passengers: fields.passengers
-        )
-    }
-
-    static func enrichment(from entry: [String: Any]) throws -> ProviderBookingEnrichment {
-        let draft = try draft(from: entry)
-        return ProviderBookingEnrichment(
-            deadlines: draft.deadlines,
-            rateDetails: draft.rateDetails,
-            passengers: draft.passengers.isEmpty ? nil : draft.passengers,
-            hotelOffsetSeconds: draft.hotelOffsetSeconds,
-            hotelCheckInMinutes: draft.hotelCheckInMinutes,
-            hotelCheckOutMinutes: draft.hotelCheckOutMinutes,
-            flightDepartureOffsetSeconds: draft.flightDepartureOffsetSeconds,
-            flightArrivalOffsetSeconds: draft.flightArrivalOffsetSeconds,
-            status: draft.status,
-            title: draft.title,
-            locationFrom: draft.locationFrom,
-            locationTo: draft.locationTo,
-            locationFromAddress: draft.locationFromAddress,
-            locationToAddress: draft.locationToAddress,
-            operatorName: draft.operatorName,
-            isAllDay: draft.isAllDay
         )
     }
 
@@ -127,10 +127,6 @@ enum TravelokaItineraryEntryParser {
         var flightArrivalOffsetSeconds: Int?
         var passengers: [BookingPassenger] = []
         var deadlines: [CancellationDeadline] = []
-    }
-
-    private static func keepsStayOffset(_ type: BookingType) -> Bool {
-        type == .hotel || type == .activity || type == .carRental || type == .other
     }
 
     private static func productFields(from context: EntryContext) -> ProductFields {
@@ -267,7 +263,7 @@ enum TravelokaItineraryEntryParser {
                 hotelDetail["roomName"],
                 hotelSummary["roomName"],
             ]),
-            boardType: hotelBoardType(breakfast),
+            boardType: BookingBoardType.parse(breakfastIncluded: breakfast),
             includedBreakfast: breakfast,
             guestCount: TravelokaJSON.int(
                 voucher["numGuests"] ?? hotelDetail["guestCount"] ?? hotelSummary["guestCount"]
@@ -289,11 +285,6 @@ enum TravelokaItineraryEntryParser {
             fallbackName: TravelokaJSON.string(voucher["guestName"])
         )
         return fields
-    }
-
-    private static func hotelBoardType(_ breakfast: Bool?) -> BookingBoardType {
-        guard let breakfast else { return .unknown }
-        return breakfast ? .breakfastIncluded : .roomOnly
     }
 
     private static func vehicleFields(from context: EntryContext) -> ProductFields {
@@ -402,8 +393,8 @@ enum TravelokaItineraryEntryParser {
             destAirport["airportCode"],
             flightDetail["destinationAirportCode"],
         ])
-        if let originCity, let destCity {
-            fields.title = "\(originCity) → \(destCity)"
+        if let title = PlaceLabel.route(from: originCity, to: destCity) {
+            fields.title = title
         }
         fields.locationFrom = [originCity, originCode].compactMap { $0 }.joined(separator: " ")
         fields.locationTo = [destCity, destCode].compactMap { $0 }.joined(separator: " ")
@@ -452,11 +443,17 @@ enum TravelokaItineraryEntryParser {
         contact: [String: Any]?,
         fallbackName: String?
     ) -> [BookingPassenger] {
-        if let contact, let passenger = passenger(from: contact, type: .adult) {
+        if let contact, let passenger = passenger(from: contact, type: contactTravellerType(contact)) {
             return [passenger]
         }
         guard let fallbackName else { return [] }
-        return [BookingPassenger(passengerNumber: 1, travellerType: .adult, givenName: fallbackName)]
+        return [BookingPassenger(passengerNumber: 1, travellerType: .unknown, givenName: fallbackName)]
+    }
+
+    private static func contactTravellerType(_ contact: [String: Any]) -> TravellerType {
+        TravellerType.parse(
+            TravelokaJSON.string(contact["type"] ?? contact["passengerType"] ?? contact["typeDescription"])
+        )
     }
 
     private static func passenger(from contact: [String: Any], type: TravellerType) -> BookingPassenger? {
@@ -476,7 +473,7 @@ enum TravelokaItineraryEntryParser {
         common: [String: Any],
         cardDetail: [String: Any]
     ) -> [BookingPassenger] {
-        let type = experienceTravellerType(from: experienceDetail) ?? .adult
+        let type = experienceTravellerType(from: experienceDetail)
         if let list = (experienceDetail["additionalBookingInformation"] as? [String: Any])?["travelerList"] as? [[String: Any]],
            !list.isEmpty
         {
@@ -499,25 +496,23 @@ enum TravelokaItineraryEntryParser {
         return []
     }
 
-    private static func experienceTravellerType(from detail: [String: Any]) -> TravellerType? {
+    private static func experienceTravellerType(from detail: [String: Any]) -> TravellerType {
         if let infos = detail["travelersInfo"] as? [[String: Any]] {
             for info in infos {
-                if let t = travellerType(
-                    fromToken: TravelokaJSON.string(info["entranceTypeId"])
+                let parsed = TravellerType.parse(
+                    TravelokaJSON.string(info["entranceTypeId"])
                         ?? TravelokaJSON.string(info["entranceTypeTitle"])
-                ) {
-                    return t
-                }
+                )
+                if parsed != .unknown { return parsed }
             }
         }
         if let barcodes = detail["barCodeInfos"] as? [[String: Any]] {
             for code in barcodes {
-                if let t = travellerType(fromToken: TravelokaJSON.string(code["experiencePaxType"])) {
-                    return t
-                }
+                let parsed = TravellerType.parse(TravelokaJSON.string(code["experiencePaxType"]))
+                if parsed != .unknown { return parsed }
             }
         }
-        return travellerType(fromDisplay: TravelokaJSON.string(detail["selectedTicketDisplay"]))
+        return TravellerType.parse(TravelokaJSON.string(detail["selectedTicketDisplay"]))
     }
 
     private static func nameFromInfoList(_ list: [[String: Any]]?) -> String? {
@@ -560,7 +555,7 @@ enum TravelokaItineraryEntryParser {
     private static func flightPassengers(fromList list: [[String: Any]]?) -> [BookingPassenger]? {
         guard let list, !list.isEmpty else { return nil }
         let mapped = list.enumerated().compactMap { index, item in
-            passenger(fromFlightItem: item, number: index + 1, defaultType: .adult)
+            passenger(fromFlightItem: item, number: index + 1, defaultType: .unknown)
         }
         return mapped.isEmpty ? nil : mapped
     }
@@ -574,11 +569,10 @@ enum TravelokaItineraryEntryParser {
         let family = TravelokaJSON.string(item["lastName"] ?? item["familyName"])
         let full = TravelokaJSON.string(item["name"] ?? item["passengerName"] ?? item["fullName"])
         if given == nil && family == nil && full == nil { return nil }
-        let type = travellerType(
-            fromToken: TravelokaJSON.string(
-                item["type"] ?? item["passengerType"] ?? item["typeDescription"]
-            )
-        ) ?? defaultType
+        let rawType = TravelokaJSON.string(
+            item["type"] ?? item["passengerType"] ?? item["typeDescription"]
+        )
+        let type = rawType != nil ? TravellerType.parse(rawType) : defaultType
         if given != nil || family != nil {
             return BookingPassenger(
                 passengerNumber: number,
@@ -632,23 +626,6 @@ enum TravelokaItineraryEntryParser {
                 .compactMap { $0 }
                 .joined(separator: ", ")
         )
-    }
-
-    private static func travellerType(fromToken token: String?) -> TravellerType? {
-        guard let token else { return nil }
-        let lower = token.lowercased()
-        if lower.contains("infant") || lower == "inf" { return .infant }
-        if lower.contains("child") || lower == "chd" { return .child }
-        if lower.contains("adult") || lower == "adt" { return .adult }
-        return nil
-    }
-
-    private static func travellerType(fromDisplay label: String?) -> TravellerType? {
-        guard let label else { return nil }
-        let lower = label.lowercased()
-        if lower.contains("child") { return .child }
-        if lower.contains("adult") { return .adult }
-        return nil
     }
 
     private static func guestCount(fromDisplay label: String?) -> Int? {

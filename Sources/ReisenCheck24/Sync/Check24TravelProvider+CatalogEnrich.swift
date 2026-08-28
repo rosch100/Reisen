@@ -34,7 +34,7 @@ extension Check24TravelProvider {
                 }
             }
 
-            if let key = identityKey(for: parsedBooking),
+            if let key = parsedBooking.identityKey,
                bookingDetailsByBookingKey[key] != nil {
                 continue
             }
@@ -69,7 +69,7 @@ extension Check24TravelProvider {
         for (index, item) in nonHotelBookingsWithURL.enumerated() {
             let (parsedBooking, bookingURL) = item
 
-            if let key = identityKey(for: parsedBooking),
+            if let key = parsedBooking.identityKey,
                bookingDetailsByBookingKey[key] != nil {
                 continue
             }

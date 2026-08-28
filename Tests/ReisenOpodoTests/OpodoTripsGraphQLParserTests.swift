@@ -3,17 +3,18 @@ import Foundation
 import ReisenOpodo
 import ReisenDomain
 
-@Test("OpodoTripsGraphQLParser parst Flug, aktives Hotel und RETAINED-Storno (HAR)")
+@Test("OpodoTripsGraphQLParser parst Flug und aktives Hotel; RETAINED-Storno nicht im Katalog")
 func opodoGraphQLParsesFlightAndHotel() throws {
     // HAR www.opodo.de 2026-07-20: getTrips UPCOMING — Flug, storniertes Hotel (RETAINED), aktives Hotel.
     let json = try fixtureJSON("getTrips_upcoming.json")
     let bookings = try OpodoTripsGraphQLParser().parseTrips(from: json)
 
-    #expect(bookings.count == 3)
+    #expect(bookings.count == 2)
 
     let byType = Dictionary(grouping: bookings, by: \.bookingType)
     #expect(byType[.flight]?.count == 1)
-    #expect(byType[.hotel]?.count == 2)
+    #expect(byType[.hotel]?.count == 1)
+    #expect(bookings.contains { $0.title?.contains("Plataran") == true } == false)
 
     let flight = try #require(byType[.flight]?.first)
     #expect(flight.externalUrl?.contains("#tripdetails/td=") == true)
@@ -27,20 +28,8 @@ func opodoGraphQLParsesFlightAndHotel() throws {
     #expect(flight.rateDetails?.passengerCount == 3)
     #expect(flight.rateDetails?.totalPriceAmount == 333.79)
 
-    let hotels = try #require(byType[.hotel])
-    let cancelled = try #require(hotels.first { $0.title?.contains("Plataran") == true })
-    #expect(cancelled.locationTo == "Borobudur")
-    #expect(cancelled.locationToAddress == "Dusun Kretek, 56553 Borobudur, ID")
-    #expect(cancelled.status == .cancelled)
-    #expect(cancelled.hotelCheckInMinutes == 14 * 60)
-    #expect(cancelled.hotelCheckOutMinutes == 12 * 60)
-    #expect(cancelled.rateDetails?.totalPriceAmount == 0.0)
-    #expect(cancelled.rateDetails?.roomCategory == "DELUXE ROOM")
-    #expect(cancelled.rateDetails?.roomCount == 2)
-    #expect(cancelled.rateDetails?.roomItems.count == 2)
-    #expect(cancelled.rateDetails?.guestCount == 3)
-
-    let active = try #require(hotels.first { $0.title?.contains("Merlynn") == true })
+    let active = try #require(byType[.hotel]?.first)
+    #expect(active.title?.contains("Merlynn") == true)
     #expect(active.locationTo == "Jakarta")
     #expect(active.locationToAddress == "Jl. KH. Hasyim Azhari 29 - 31, 10130 Jakarta, ID")
     #expect(active.status == .confirmed)
