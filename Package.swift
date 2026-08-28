@@ -59,10 +59,15 @@ let package = Package(
             ]
         ),
         .target(
+            name: "ReisenCrashSignal",
+            path: "Sources/ReisenCrashSignal"
+        ),
+        .target(
             name: "ReisenAppCore",
             dependencies: [
                 "ReisenDomain",
                 "ReisenData",
+                "ReisenCrashSignal",
             ],
             path: "Sources/ReisenAppCore",
             exclude: [
@@ -289,7 +294,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ReisenAppCoreTests",
-            dependencies: ["ReisenAppCore", "ReisenDomain"],
+            dependencies: ["ReisenAppCore", "ReisenDomain", "ReisenCrashSignal"],
             path: "Tests/ReisenAppCoreTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

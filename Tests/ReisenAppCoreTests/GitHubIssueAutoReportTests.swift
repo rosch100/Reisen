@@ -1,6 +1,8 @@
 import Testing
 import Foundation
+import Darwin
 import ReisenDomain
+import ReisenCrashSignal
 @testable import ReisenAppCore
 
 private struct LocalizedMessage: LocalizedError {
@@ -105,4 +107,85 @@ private struct PrivacyDenied: Error, PrivacyAccessDenying {
     #expect(stored.contains("NSRangeException"))
     #expect(!stored.contains("roschmac"))
     #expect(stored.contains("/Users/[redacted]/"))
+}
+
+@Suite(.serialized)
+struct GitHubIssueCrashSignalTests {
+    init() {
+        reisen_crash_signal_reset_for_tests()
+    }
+
+    @Test func writesNameAndHexAddressesToFd() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-fd-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let fd = open(url.path, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR)
+        #expect(fd >= 0)
+        defer { if fd >= 0 { close(fd) } }
+        let frames: [UInt] = [0xABC]
+        let ok = frames.withUnsafeBufferPointer { buffer in
+            reisen_crash_signal_write_to_fd(fd, SIGTRAP, buffer.baseAddress, Int32(buffer.count))
+        }
+        #expect(ok)
+        fsync(fd)
+        let text = try String(contentsOf: url, encoding: .utf8)
+        #expect(text.contains("SIGTRAP"))
+        #expect(text.lowercased().contains("abc"))
+    }
+
+    @Test func optedOutPrepareDoesNotCreateFile() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-optout-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(reisen_crash_signal_prepare(url.path, false))
+        #expect(!reisen_crash_signal_write_current(SIGTRAP))
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func setOptedInAfterPrepareAllowsWrite() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-refresh-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(reisen_crash_signal_prepare(url.path, false))
+        reisen_crash_signal_set_opted_in(true)
+        #expect(reisen_crash_signal_write_current(SIGTRAP))
+        let text = try String(contentsOf: url, encoding: .utf8)
+        #expect(text.contains("SIGTRAP"))
+    }
+
+    @Test func setOptedOutAfterPrepareDoesNotWrite() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-off-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(reisen_crash_signal_prepare(url.path, true))
+        reisen_crash_signal_set_opted_in(false)
+        #expect(!reisen_crash_signal_write_current(SIGTRAP))
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func existingFileIsNotOverwritten() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-keep-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data("NSException: kept\n".utf8).write(to: url)
+        #expect(reisen_crash_signal_prepare(url.path, true))
+        #expect(!reisen_crash_signal_write_current(SIGABRT))
+        let stored = try String(contentsOf: url, encoding: .utf8)
+        #expect(stored.contains("NSException: kept"))
+        #expect(!stored.contains("SIGABRT"))
+    }
+
+    @Test func markWrittenBlocksSubsequentWrite() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-mark-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(reisen_crash_signal_prepare(url.path, true))
+        reisen_crash_signal_mark_written()
+        #expect(!reisen_crash_signal_write_current(SIGABRT))
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func installIsNoOpWhenDebuggerAttached() {
+        #expect(!reisen_crash_signal_install(true))
+    }
 }
