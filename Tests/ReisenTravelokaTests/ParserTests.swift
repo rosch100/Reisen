@@ -943,7 +943,7 @@ private func travelokaCatalogHotelEntry(
             "trainDetail": nil,
         ],
     ]
-    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
     #expect(draft.bookingType == .train)
     #expect(draft.title == "Argo Bromo")
     #expect(draft.locationFrom == nil)
