@@ -255,6 +255,21 @@ public enum LoginAutofillScript {
             return true;
           }
 
+          function controlHay(el) {
+            return [
+              el.id,
+              el.name,
+              el.className,
+              el.getAttribute && el.getAttribute('data-tid'),
+              el.getAttribute && el.getAttribute('aria-label'),
+              el.innerText || el.textContent || el.value || '',
+            ].join(' ').toLowerCase();
+          }
+
+          function isSocialSubmit(el) {
+            return /(sign.?in.?with.?(apple|google|facebook)|continue.?with.?(apple|google|facebook)|login.?with.?(apple|google|facebook)|anmelden.?mit.?(apple|google|facebook)|passkey)/i.test(controlHay(el));
+          }
+
           function looksLikeSubmit(el) {
             if (!el) return false;
             try {
@@ -268,14 +283,8 @@ public enum LoginAutofillScript {
               (tag === 'input' && (type === 'submit' || type === 'button')) ||
               role === 'button';
             if (!isButton) return false;
-            const hay = [
-              el.id,
-              el.name,
-              el.className,
-              el.getAttribute && el.getAttribute('data-tid'),
-              el.getAttribute && el.getAttribute('aria-label'),
-              el.innerText || el.textContent || el.value || '',
-            ].join(' ').toLowerCase();
+            if (isSocialSubmit(el)) return false;
+            const hay = controlHay(el);
             if (/(c24-uli-pw-btn|c24-uli-login-btn|submit-button|anmelden|einloggen|log.?in|sign.?in)/i.test(hay)) {
               return true;
             }

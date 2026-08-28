@@ -49,19 +49,21 @@ extension WKWebView {
         return try AuthenticatedTextDecode.utf8Text(data: data, response: response)
     }
 
-    /// HTML-Abruf mit Session-Prüfung (HTTP 401/403, Login-Redirect, Login-HTML).
+    /// HTML-Abruf mit Session-Prüfung (HTTP 401/403, Login-Redirect, Login-HTML, optionale Challenge).
     public func fetchAuthenticatedHTML(
         url: URL,
         accept: String = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         referer: String? = nil,
-        isLoginHTML: (String) -> Bool
+        isLoginHTML: (String) -> Bool,
+        isChallengeHTML: ((String) -> Bool)? = nil
     ) async throws -> String {
         let request = await authenticatedRequest(url: url, accept: accept, referer: referer)
         let (data, response) = try await URLSession.shared.data(for: request)
         return try AuthenticatedHTMLSession.validatedUTF8HTML(
             data: data,
             response: response,
-            isLoginHTML: isLoginHTML
+            isLoginHTML: isLoginHTML,
+            isChallengeHTML: isChallengeHTML
         )
     }
 }

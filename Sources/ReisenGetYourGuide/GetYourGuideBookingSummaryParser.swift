@@ -10,17 +10,17 @@ public enum GetYourGuideBookingSummaryParser {
     }
 
     private static func decodeSummary(from data: Data) throws -> BookingSummaryDTO {
-        if let bookingEnvelope = try? GetYourGuideJSONDecoder.shared.decode(BookingEnvelope.self, from: data),
+        if let bookingEnvelope = GetYourGuideJSONDecoder.decode(BookingEnvelope.self, from: data),
            let summary = bookingEnvelope.booking?.bookingSummary ?? bookingEnvelope.bookingSummary
         {
             return summary
         }
-        if let wrapper = try? GetYourGuideJSONDecoder.shared.decode(SummaryWrapper.self, from: data),
+        if let wrapper = GetYourGuideJSONDecoder.decode(SummaryWrapper.self, from: data),
            let summary = wrapper.bookingSummary
         {
             return summary
         }
-        if let direct = try? GetYourGuideJSONDecoder.shared.decode(BookingSummaryDTO.self, from: data),
+        if let direct = GetYourGuideJSONDecoder.decode(BookingSummaryDTO.self, from: data),
            direct.activity != nil || direct.booking != nil
         {
             return direct
@@ -35,22 +35,14 @@ public enum GetYourGuideBookingSummaryParser {
             meeting?.description
         )
 
-        let deadlines = summary.booking?.bookingCancellationPolicy?.asDeadlines() ?? []
-        let participants = mapPassengers(summary.booking?.activityParticipants ?? [])
-        let passengerCount = participants.count
+        let deadlines = GYGCancellationPolicy.deadlines(summary.booking?.bookingCancellationPolicy)
+        let guests = GetYourGuideParsing.guests(from: summary.booking?.activityParticipants)
         let guestHints = mapGuestHints(summary.activity)
-
-        let rateDetails: BookingRateDetails? = {
-            let price = summary.booking?.price
-            guard price != nil || passengerCount > 0 else { return nil }
-            return BookingRateDetails(
-                totalPriceAmount: price?.amount,
-                totalPriceCurrency: price?.currencyIsoCode,
-                roomCategory: summary.activity?.activityOptionTitle,
-                guestCount: passengerCount > 0 ? passengerCount : nil,
-                passengerCount: passengerCount > 0 ? passengerCount : nil
-            )
-        }()
+        let rateDetails = GetYourGuideParsing.rateDetails(
+            price: summary.booking?.price,
+            occupancy: guests.occupancy,
+            roomCategory: summary.activity?.activityOptionTitle
+        )
 
         return DraftAssembler.enrichment(
             from: ProviderBookingFacts(
@@ -62,7 +54,7 @@ public enum GetYourGuideBookingSummaryParser {
                 statusRaw: summary.booking?.status,
                 deadlines: deadlines,
                 rateDetails: rateDetails,
-                passengers: participants,
+                passengers: guests.passengers,
                 guestHints: guestHints
             )
         )
@@ -84,27 +76,6 @@ public enum GetYourGuideBookingSummaryParser {
                 importantItineraryLines: itineraryLines
             )
         )
-    }
-
-    /// Teilnehmer ohne PII (keine Namen aus `traveler`).
-    private static func mapPassengers(_ participants: [GYGParticipant]) -> [BookingPassenger] {
-        var result: [BookingPassenger] = []
-        var number = 1
-        for participant in participants {
-            let count = max(0, participant.count ?? 0)
-            let type = TravellerType.parse(participant.priceCategoryLabel)
-            for _ in 0..<count {
-                result.append(
-                    BookingPassenger(
-                        passengerNumber: number,
-                        travellerType: type,
-                        title: participant.description
-                    )
-                )
-                number += 1
-            }
-        }
-        return result
     }
 }
 
@@ -150,23 +121,14 @@ private struct MeetingLocationDTO: Decodable {
 }
 
 private struct ActivityLocationsDTO: Decodable {
-    let city: GYGNamedCity?
-}
-
-private struct GYGNamedCity: Decodable {
-    let name: String?
+    let city: GYGNamedPlace?
 }
 
 private struct SummaryBookingDTO: Decodable {
     let status: String?
-    let price: GYGMoneyDTO?
+    let price: GYGMoney?
     let bookingCancellationPolicy: GYGCancellationPolicy?
     let activityParticipants: [GYGParticipant]?
-}
-
-private struct GYGMoneyDTO: Decodable {
-    let amount: Double?
-    let currencyIsoCode: String?
 }
 
 private struct GYGItinerary: Decodable {

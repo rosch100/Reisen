@@ -612,6 +612,10 @@ import ReisenDomain
 }
 
 @Test func catalogListing_dropsCancelledEndedAndDone() {
+    #expect(CatalogListing.isCompleted("done"))
+    #expect(CatalogListing.isCompleted("ENDED"))
+    #expect(!CatalogListing.isCompleted("cancelled"))
+    #expect(!CatalogListing.isCompleted("upcoming"))
     #expect(CatalogListing.shouldDrop("cancelled"))
     #expect(CatalogListing.shouldDrop("ENDED"))
     #expect(CatalogListing.shouldDrop("done"))
@@ -619,6 +623,17 @@ import ReisenDomain
     #expect(!CatalogListing.shouldDrop(nil))
     #expect(!CatalogListing.shouldFetchDetails("CANCELLED"))
     #expect(CatalogListing.shouldFetchDetails("CONTRACT"))
+    #expect(
+        DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .getYourGuide,
+                bookingType: .activity,
+                start: .instant(Date(timeIntervalSince1970: 10)),
+                end: .instant(Date(timeIntervalSince1970: 20)),
+                statusRaw: "cancelled"
+            )
+        ) == nil
+    )
     #expect(
         DraftAssembler.draft(
             from: ProviderBookingFacts(

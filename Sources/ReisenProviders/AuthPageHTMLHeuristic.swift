@@ -1,70 +1,41 @@
-import Foundation
-
-/// SSOT: Login-HTML erkennen, wenn URL-Heuristik und authentifizierter Seiteninhalt nicht ausreichen.
+/// Login-HTML erkennen, wenn authentifizierter Seiteninhalt nicht ausreicht.
 public enum AuthPageHTMLHeuristic {
-    private static let check24AuthenticatedMarkers = ["\"activities\"", "activities.html"]
-    private static let check24RequiredMarkers = ["user/login", "type=\"password\""]
-    private static let opodoAuthenticatedMarkers = ["travel/secure"]
-    private static let opodoRequiredMarkers = ["type=\"password\""]
+    private static let passwordFieldMarker = "type=\"password\""
+    private static let check24 = Profile(
+        authenticated: ["\"activities\"", "activities.html"],
+        required: ["user/login", passwordFieldMarker]
+    )
+    private static let opodo = Profile(
+        authenticated: ["travel/secure"],
+        required: [passwordFieldMarker]
+    )
 
-    public static func looksLikeLoginPage(
-        html: String,
-        responseURL: URL? = nil,
-        authenticatedContentMarkers: [String] = [],
-        requiredHTMLMarkers: [String] = ["type=\"password\""]
-    ) -> Bool {
-        if let responseURL {
-            let absolute = responseURL.absoluteString
-            if AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
-                return true
-            }
-            if AuthPageURLHeuristic.looksLikeAccountPage(absolute) {
-                return false
-            }
-        }
-        return htmlLooksLikeLoginPage(
-            html: html,
-            authenticatedContentMarkers: authenticatedContentMarkers,
-            requiredHTMLMarkers: requiredHTMLMarkers
-        )
+    public static func check24LooksLikeLoginHTML(_ html: String) -> Bool {
+        matches(html, profile: check24)
     }
 
-    /// Nur HTML-Marker — URL-Prüfung erfolgt in `AuthenticatedHTMLSession`.
-    public static func htmlLooksLikeLoginPage(
-        html: String,
-        authenticatedContentMarkers: [String],
-        requiredHTMLMarkers: [String]
-    ) -> Bool {
+    public static func opodoLooksLikeLoginHTML(_ html: String) -> Bool {
+        matches(html, profile: opodo)
+    }
+
+    private static func matches(_ html: String, profile: Profile) -> Bool {
         let lower = html.lowercased()
-        if authenticatedContentMarkers.contains(where: { lower.contains($0.lowercased()) }) {
+        if containsAny(lower, profile.authenticated) {
             return false
         }
-        return requiredHTMLMarkers.allSatisfy { lower.contains($0.lowercased()) }
+        return containsAll(lower, profile.required)
     }
 
-    public static func check24HTMLLooksLikeLogin(_ html: String) -> Bool {
-        check24LooksLikeLoginHTML(html)
+    private static func containsAny(_ haystack: String, _ markers: [String]) -> Bool {
+        markers.contains { haystack.contains($0.lowercased()) }
     }
 
-    public static func opodoHTMLLooksLikeLogin(_ html: String) -> Bool {
-        opodoLooksLikeLoginHTML(html)
+    private static func containsAll(_ haystack: String, _ markers: [String]) -> Bool {
+        markers.allSatisfy { haystack.contains($0.lowercased()) }
     }
 
-    public static func check24LooksLikeLoginHTML(_ html: String, responseURL: URL? = nil) -> Bool {
-        looksLikeLoginPage(
-            html: html,
-            responseURL: responseURL,
-            authenticatedContentMarkers: check24AuthenticatedMarkers,
-            requiredHTMLMarkers: check24RequiredMarkers
-        )
-    }
-
-    public static func opodoLooksLikeLoginHTML(_ html: String, responseURL: URL? = nil) -> Bool {
-        looksLikeLoginPage(
-            html: html,
-            responseURL: responseURL,
-            authenticatedContentMarkers: opodoAuthenticatedMarkers,
-            requiredHTMLMarkers: opodoRequiredMarkers
-        )
+    private struct Profile {
+        let authenticated: [String]
+        let required: [String]
     }
 }

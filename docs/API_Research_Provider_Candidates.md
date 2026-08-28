@@ -86,19 +86,25 @@ FlixBus/DB, Sixt — neuer Typ oder zuerst Check24-`productKey`-Whitelist (siehe
 **HAR-SSOT** (Surfaces, Feldinventar, offene Punkte).  
 **Mapping-SSOT:** [`getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md).
 
-**Quelle:** `HAR/www.getyourguide.com_Archive [26-08-03 17-26-52].har` (532 Entries).  
-**Fixtures:** `gyg_myBookings_redacted.json`, `gyg_bookingSummary_redacted.json`.
+**Quellen:**  
+- `HAR/www.getyourguide.com_Archive [26-08-03 17-26-52].har` (532 Entries) — Surfaces/Feldinventar.  
+- `HAR/www.getyourguide.com_Archive [26-08-28 10-02-09].har` (585 Entries, Firefox, eingeloggte Session) — Pagination + Cloudflare.  
+- `HAR/www.getyourguide.com_Archive [26-08-28 10-18-20].har` (54 Entries, Firefox) — E-Mail-Login (passwordless OTP, ohne Social).  
+**Fixtures:** `gyg_myBookings_redacted.json`, `gyg_myBookings_ssr_lists_redacted.json`, `gyg_bookingSummary_redacted.json`.
 
 ### Surfaces
 
 | Rolle | URL / Endpoint | Inhalt |
 |-------|----------------|--------|
-| Katalog (SSR) | `GET …/de-de/customer-bookings/` | HTML mit `window.__INITIAL_STATE__.myBookings` |
-| Detail (SSR) | `GET …/de-de/booking/{bookingHash}` | HTML mit `booking.bookingSummary` |
-| Auth Token | `POST /auth/social/exchange` | Bearer + claims — **nicht** persistieren |
-| Session Nachlauf | `POST travelers-api…/customer/management/v1/post-login` | nach Login |
+| Katalog (SSR) | `GET …/{locale}/customer-bookings/` — HAR `de-de`, Sync-Impl `en-us` | HTML mit `window.__INITIAL_STATE__.myBookings` |
+| Detail (SSR) | `GET …/{locale}/booking/{bookingHash}` — HAR `de-de`, Sync-Impl `en-us` | HTML mit `booking.bookingSummary` |
+| Auth Token (Social) | `POST /auth/social/exchange` | Bearer + claims — **nicht** persistieren |
+| Auth OTP senden | `POST /auth/passwordless/otp/send` | Body `{email}` → `200` Text `OK` |
+| Auth OTP tauschen | `POST /auth/passwordless/otp/exchange` | 6-stelliger OTP → `accessToken` + claims; setzt Cookies — **nicht** persistieren |
+| Letzte Login-Methode | `POST travelers-api…/customer/action/v1/last-login-method` | Body `{email}` → `{last_sign_in_method}` (hier leer) |
+| Session Nachlauf | `POST travelers-api…/customer/management/v1/post-login` | nach Login (Social und E-Mail) |
 | Profil | `GET travelers-api…/customers/{id}` | Stammdaten — Sync nicht nötig |
-| GraphQL | `POST travelers-api…/graphql` | in HAR nur Wishlists — **nicht** Buchungsliste |
+| GraphQL | `POST travelers-api…/graphql` | nur `GetWishlistsSummary` — **nicht** Buchungsliste |
 | QR/Voucher | `travelers-api…/barcode/qrcode?code=…` | in Detail referenziert |
 | Tracking | Observer PageRequests | irrelevant |
 
@@ -107,11 +113,14 @@ FlixBus/DB, Sixt — neuer Typ oder zuerst Check24-`productKey`-Whitelist (siehe
 ```mermaid
 flowchart TD
   Login[WKWebView Login GYG]
-  Login --> Token[Cookie Session]
-  Token --> Catalog["GET /de-de/customer-bookings/"]
+  Login --> EmailOTP["passwordless OTP in der Seite"]
+  Login --> Social[optional Social/OIDC]
+  EmailOTP --> Token[Cookie Session]
+  Social --> Token
+  Token --> Catalog["GET /en-us/customer-bookings/"]
   Catalog --> State["Parse __INITIAL_STATE__.myBookings"]
   State --> Drafts[ProviderBookingDraft activity]
-  Drafts --> Detail["GET /de-de/booking/hash"]
+  Drafts --> Detail["GET /en-us/booking/hash"]
   Detail --> Summary["Parse booking.bookingSummary"]
   Summary --> Enrich[ProviderBookingEnrichment]
 ```
@@ -130,12 +139,48 @@ flowchart TD
 Catalog allein reicht für sinnvolle Drafts; Enrichment für Treffpunkt, Itinerary, feinere Policy.  
 Feld→Domain-Mapping: [GYG Impl-Spec](dev/getyourguide-impl-spec.md).
 
+Live-Shape 2026-08-28: `myBookings`-Keys nur `upcomingBookings`, `pastBookings`, `customerEmail`, `isCustomerEmailValidated` — **keine** `page`/`offset`/`cursor`/`hasMore`. In dieser Session 0 upcoming, 4 past (GYG legt beendete Termine nach `pastBookings`, auch mit Status `active`). Catalog-Parser mappt **beide** Listen über `DraftAssembler.draft` (Dedup `dedupedByExternalURL`); `CatalogListing.shouldDrop` sowie Einträge ohne Hash/Ende werden übersprungen.
+
+### Pagination (2026-08-28, geschlossen)
+
+Auf `/customer-bookings/` feuern **keine** Listen-Pagination-Requests.
+
+- Zwei identische `GET /de-de/customer-bookings/` (Liste → Detail → Liste → Detail), gleicher SSR-Body.
+- Page-Chunk `my-bookings-*.js` rendert nur `state.upcomingBookings` / `state.pastBookings`; SSR-Prefetch `myBookings/loadDefaultState`; Mount holt höchstens `reviews/submission-details` und Profil. Kein `loadMore`, kein `pageSize`.
+- Kein `GET travelers-api…/customers/{id}/bookings`, kein `/upcoming-bookings.json` (Routen existieren im Frontend-Registry, werden auf dieser Seite nicht aufgerufen).
+- GraphQL unverändert nur Wishlists.
+
+**Sync:** ein authentifizierter HTML-GET, keine Page-Schleife.
+
+### Cloudflare (Cursor-Tab + HAR 2026-08-28, geschlossen)
+
+Kein Challenge/Turnstile in den beobachteten Sessions.
+
+- Cursor-Tab: Login-HTML ohne Interstitial; nur Cloudflare-Insights-Beacon (`static.cloudflareinsights.com`) plus Usercentrics-Cookie-Banner.
+- Firefox-HAR: `server: cloudflare`, `cf-ray`, `cf-cache-status: DYNAMIC` auf www/cdn/`travelers-api`; **`cf-mitigated` nie gesetzt**; 0 Challenge-Bodies. Katalog- und Detail-HTML 200.
+- Forter-Scripts sind Fraud/Device, kein CF-Interstitial.
+
+WebView-Pfad bleibt korrekt. Eine spätere Challenge (200 oder 403) mit Challenge-Body → `cloudflareChallenge`, kein stiller Fallback und kein „bitte anmelden“.
+
+### Login ohne Social (2026-08-28, geschlossen)
+
+Passwordless E-Mail-OTP, kein Passwort-Feld, kein `POST /auth/social/exchange`. Capture startet auf der Homepage; Login-UI ist SPA (`otp-centric-login-wrapper-*.js`), daher keine HTML-Navigation auf `/login` in dieser HAR.
+
+| Schritt | Request | Body-Shape (keine Werte) | Response |
+|--------|---------|--------------------------|----------|
+| 1 | `POST travelers-api.getyourguide.com/customer/action/v1/last-login-method` | `{email}` | `{last_sign_in_method: ""}` (leer in dieser Session) |
+| 2 | `POST www.getyourguide.com/auth/passwordless/otp/send` | `{email}` | `200` `text/plain` **`OK`** |
+| 3 | Nutzer: 6-stelliger OTP | | |
+| 4 | `POST www.getyourguide.com/auth/passwordless/otp/exchange` | `email`, `otp` (Länge 6), `firstName`, `lastName`, `signupMethod`: **`pre_payment_otp`**, Newsletter-Flags, `locale`: `de-DE`, `visitorId` | JSON `accessToken` + `claims` (`gyg/auth_provider`: **`email`**, `gyg/email_verified`, `expiresAt`, …) |
+| 5 | `POST travelers-api…/customer/management/v1/post-login` | Newsletter/Locale | `200` leer; `Authorization: Bearer` aus Exchange |
+
+Session-Cookies nach `otp/exchange` (HttpOnly + Secure + SameSite): `tfe_access_token`, `tfe_authenticated_session`. `post-login` setzt `__cf_bm`. Cloudflare nur CDN (`cf-mitigated` nie).
+
+**Sync bleibt Cookie-`WKWebView`.** Native Calls von `otp/send` / `otp/exchange` sind nicht vorgesehen. Access-Token, OTP und E-Mail weder persistieren noch loggen. App-Login-URL ist `/login?next=/de-de/customer-bookings/` (OTP-Autofill + E-Mail-Fill). Catalog `/customer-bookings/` ist Account, nicht Login. Autofill klickt nach E-Mail-Fill keinen Social-/IdP-Button (Apple/Google/Facebook). Catalog-200 ohne `myBookings`/`bookingSummary` in `__INITIAL_STATE__` gilt als fehlende Session; ein leeres `myBookings`-Objekt ist eingeloggt (leerer Katalog).
+
 ### Offene Punkte (HAR)
 
-- Dedizierte JSON-Bookings-API (Mobil) — für Web-SSR nicht nötig
-- Pagination
-- Login ohne Social
-- Cloudflare/Bot-Schutz → WebView-Pfad
+- Dedizierte JSON-Bookings-API (Mobil) — Web-SSR braucht sie nicht; Registry-Routen ohne Live-Call
 
 ---
 

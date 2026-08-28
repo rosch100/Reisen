@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "source": "GYG HAR 2026-08-28 customer-bookings SSR __INITIAL_STATE__.myBookings",
+    "note": "Live keys only; no pagination fields. upcoming empty; one past booking mapped by catalog parser. PII redacted."
+  },
+  "myBookings": {
+    "upcomingBookings": [],
+    "pastBookings": [
+      {
+        "bookingHash": "<REDACTED>",
+        "bookingReference": "<REDACTED>",
+        "status": "active",
+        "startingTime": {
+          "startTime": "2026-08-08T19:00:00+07:00",
+          "startTimeType": "datetime"
+        },
+        "bookingFinishDate": "2026-08-08T21:00:00+07:00",
+        "bookedOption": {
+          "activityTitle": "<REDACTED>",
+          "activityLocation": {
+            "city": {
+              "name": "<REDACTED>"
+            }
+          }
+        }
+      }
+    ],
+    "isCustomerEmailValidated": true
+  }
+}
