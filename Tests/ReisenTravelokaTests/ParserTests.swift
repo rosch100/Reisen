@@ -5,17 +5,26 @@ import ReisenProviders
 @testable import ReisenTraveloka
 
 private enum TravelokaFixtureLoader {
+    /// Placeholders shared with `docs/fixtures/provider-research/traveloka_*_redacted.json`.
+    static let redactedHotelBookingId = "REDACTED_HOTEL_BOOKING_ID"
+    static let redactedExperienceBookingId = "REDACTED_EXPERIENCE_BOOKING_ID"
+    static let redactedExperienceItineraryId = "REDACTED_EXPERIENCE_ITINERARY_ID"
+    static let redactedVehicleBookingId = "REDACTED_VEHICLE_BOOKING_ID"
+    static let redactedFlightBookingId = "REDACTED_FLIGHT_BOOKING_ID"
+
+    private static let fixturesRelativePath = "docs/fixtures/provider-research"
+
     static func load(_ name: String) throws -> String {
-        let candidates = [
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("docs/fixtures/provider-research/\(name)"),
-            URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()
-                .deletingLastPathComponent()
-                .deletingLastPathComponent()
-                .appendingPathComponent("docs/fixtures/provider-research/\(name)"),
-        ]
-        for url in candidates {
+        let fromCWD = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent(fixturesRelativePath)
+            .appendingPathComponent(name)
+        let fromSource = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(fixturesRelativePath)
+            .appendingPathComponent(name)
+        for url in [fromCWD, fromSource] {
             if let text = try? String(contentsOf: url, encoding: .utf8) {
                 return text
             }
@@ -33,7 +42,7 @@ private enum TravelokaFixtureLoader {
     let byType = Dictionary(uniqueKeysWithValues: catalog.bookings.map { ($0.bookingType, $0) })
     let activity = try #require(byType[.activity])
     #expect(activity.provider == .traveloka)
-    #expect(activity.confirmationCode == "1387358428")
+    #expect(activity.confirmationCode == TravelokaFixtureLoader.redactedExperienceBookingId)
     #expect(activity.title?.contains("Ha Noi") == true)
     #expect(activity.operatorName == "AXES")
     #expect(activity.isAllDay == true)
@@ -41,7 +50,7 @@ private enum TravelokaFixtureLoader {
     #expect(activity.externalUrl?.contains("type=EXPERIENCE") == true)
 
     let hotel = try #require(byType[.hotel])
-    #expect(hotel.confirmationCode == "1387353870")
+    #expect(hotel.confirmationCode == TravelokaFixtureLoader.redactedHotelBookingId)
     #expect(hotel.title?.contains("Example Hotel") == true)
     #expect(hotel.locationTo == "South Jakarta")
     #expect(hotel.locationToAddress?.contains("Cilandak") == true)
@@ -57,7 +66,7 @@ private enum TravelokaFixtureLoader {
     )
 
     let vehicle = try #require(byType[.carRental])
-    #expect(vehicle.confirmationCode == "1387355867")
+    #expect(vehicle.confirmationCode == TravelokaFixtureLoader.redactedVehicleBookingId)
     #expect(vehicle.title == "Daihatsu Sigra - Jakarta")
     #expect(vehicle.operatorName == "Jayamahe Easy Ride Jakarta")
     #expect(vehicle.locationFrom?.contains("Bandara") == true)
@@ -66,7 +75,7 @@ private enum TravelokaFixtureLoader {
     #expect(vehicle.deadlines.contains { $0.isFreeCancellation } == true)
 
     let flight = try #require(catalog.bookings.first { $0.bookingType == .flight })
-    #expect(flight.confirmationCode == "1000000001")
+    #expect(flight.confirmationCode == TravelokaFixtureLoader.redactedFlightBookingId)
     #expect(flight.title?.contains("Jakarta") == true)
     #expect(flight.hotelOffsetSeconds == nil)
 }
@@ -75,7 +84,11 @@ private enum TravelokaFixtureLoader {
     let text = try TravelokaFixtureLoader.load("traveloka_itineraries_fetch_redacted.json")
     let catalog = try TravelokaCatalogParser.parse(from: text)
     let activity = try #require(catalog.bookings.first { $0.bookingType == .activity })
-    #expect(activity.externalUrl?.contains("/en-en/item/details/1387358428") == true)
+    #expect(
+        activity.externalUrl?.contains(
+            "/en-en/item/details/\(TravelokaFixtureLoader.redactedExperienceBookingId)"
+        ) == true
+    )
 }
 
 @Test func travelokaCatalogSkipsEntryWithoutTimestampsAndKeepsOthers() throws {
@@ -541,10 +554,12 @@ private func travelokaCatalogHotelEntry(
 }
 
 @Test func travelokaDetailURLIds() throws {
-    let url = "https://www.traveloka.com/en-en/item/details/1387358428?type=EXPERIENCE&id=1874509835987345547"
+    let bookingId = TravelokaFixtureLoader.redactedExperienceBookingId
+    let itineraryId = TravelokaFixtureLoader.redactedExperienceItineraryId
+    let url = "https://www.traveloka.com/en-en/item/details/\(bookingId)?type=EXPERIENCE&id=\(itineraryId)"
     let ids = try TravelokaExternalURL.detailIds(from: url)
-    #expect(ids.bookingId == "1387358428")
-    #expect(ids.itineraryId == "1874509835987345547")
+    #expect(ids.bookingId == bookingId)
+    #expect(ids.itineraryId == itineraryId)
     #expect(ids.productType == "EXPERIENCE")
 }
 

@@ -3,8 +3,8 @@
     "status": "SUCCESS",
     "itineraryEntryList": [
       {
-        "bookingId": "1000000002",
-        "itineraryId": "2000000002",
+        "bookingId": "REDACTED_FLIGHT_FEE_BOOKING_ID",
+        "itineraryId": "REDACTED_FLIGHT_FEE_ITINERARY_ID",
         "itineraryType": "FLIGHT",
         "itineraryTags": [
           {
