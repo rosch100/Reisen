@@ -124,8 +124,8 @@
     "en": "All public issues"
   },
   "settings.feedback_footer_embedded": {
-    "de": "Feedback legt ein öffentliches GitHub-Issue an. Automatische Fehler-Issues nur mit dem Schalter oben; ohne Sync-Log, ohne Login-/Datenschutz-Meldungen. Repo: github.com/%1$@.",
-    "en": "Feedback creates a public GitHub issue. Automatic error issues only with the toggle above; no sync log or login/privacy messages. Repo: github.com/%1$@."
+    "de": "Feedback legt ein öffentliches GitHub-Issue an. Automatische Fehler-Issues (inkl. Abstürze) nur mit dem Schalter oben; ohne Sync-Log, ohne Login-/Datenschutz-Meldungen. Repo: github.com/%1$@.",
+    "en": "Feedback creates a public GitHub issue. Automatic error issues (including crashes) only with the toggle above; no sync log or login/privacy messages. Repo: github.com/%1$@."
   },
   "settings.feedback_footer_manual": {
     "de": "„In GitHub veröffentlichen…“ öffnet ein neues Issue in Safari mit vorausgefülltem Text. Du sendest mit deinem GitHub-Konto. Repo: github.com/%1$@.",
