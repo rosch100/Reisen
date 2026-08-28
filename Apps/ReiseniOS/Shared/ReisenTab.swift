@@ -66,7 +66,7 @@ struct ReisenTab: View {
                 pendingDeleteTrip = nil
             }
         } message: { _ in
-            Text(TripDeletion.confirmationMessage)
+            Text(L10n.string(.tripDeleteConfirmMessage))
         }
     }
 

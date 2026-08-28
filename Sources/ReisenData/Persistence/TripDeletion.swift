@@ -1,14 +1,36 @@
 import Foundation
 import SwiftData
 
-/// Einheitliche Reise-Löschung: Buchungen entkoppeln, Trip löschen, speichern.
-public enum TripDeletion {
-    public static let confirmationMessage =
-        "Die Reise wird gelöscht. Zugeordnete Buchungen bleiben als offene Buchungen erhalten."
+/// Ob zugeordnete Buchungen beim Reise-Löschen erhalten bleiben oder mitgelöscht werden.
+public enum TripDeletionBookingPolicy: Sendable {
+    /// Buchungen entkoppeln; sie bleiben als offene Buchungen.
+    case keepAsOpen
+    /// Enthaltene Buchungen mitlöschen (Cascade-Kinder der Buchung inklusive).
+    case deleteContained
+}
 
+/// Einheitliche Reise-Löschung: Buchungen gemäß Policy, Trip löschen, speichern.
+@MainActor
+public enum TripDeletion {
     public static func perform(trip: SDTrip, in context: ModelContext) throws {
-        for booking in trip.resolvedBookings {
-            booking.trip = nil
+        try perform(trip: trip, in: context, bookings: .keepAsOpen)
+    }
+
+    public static func perform(
+        trip: SDTrip,
+        in context: ModelContext,
+        bookings policy: TripDeletionBookingPolicy
+    ) throws {
+        let assigned = trip.resolvedBookings
+        switch policy {
+        case .keepAsOpen:
+            for booking in assigned {
+                booking.trip = nil
+            }
+        case .deleteContained:
+            for booking in assigned {
+                context.delete(booking)
+            }
         }
         context.delete(trip)
         try context.save()

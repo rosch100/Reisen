@@ -118,7 +118,7 @@ struct TripDetailIOS: View {
                     }
                     Button(L10n.string(.commonCancel), role: .cancel) {}
                 } message: {
-                    Text(TripDeletion.confirmationMessage)
+                    Text(L10n.string(.tripDeleteConfirmMessage))
                 }
             } else {
                 ContentUnavailableView(L10n.string(.tripTripMissing), systemImage: "magnifyingglass")
