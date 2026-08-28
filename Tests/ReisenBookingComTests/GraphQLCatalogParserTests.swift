@@ -300,7 +300,9 @@ func bookingComGraphQLParsesAttractionReservation() throws {
     #expect(activity.locationTo == "Sample City")
     #expect(activity.confirmationCode == "ATTR-FACE-001")
     #expect(activity.rateDetails?.guestCount == 2)
+    #expect(activity.rateDetails?.passengerCount == 2)
     #expect(activity.rateDetails?.totalPriceAmount == 42.0)
+    #expect(activity.isAllDay == false)
 }
 
 @Test("BookingComTripsGraphQLParser parst CarReservation (MFE-Shape, Konto ohne Live-Treffer)")

@@ -6,27 +6,27 @@ import ReisenDomain
 private final class UnusedProviderSession: ProviderSession {}
 
 @MainActor
-@Test("Booking.com Enrichment nur für Hotel und Flug")
-func bookingComNeedsDraftEnrichmentOnlyHotelAndFlight() {
+@Test("Booking.com needsDraftEnrichment folgt DraftEnrichmentNeeds")
+func bookingComNeedsDraftEnrichmentFollowsDomainGate() {
     let provider = BookingComTravelProvider()
-    let car = enrichmentDraft(
-        .carRental,
-        locationFrom: "A",
-        locationTo: "B",
-        operatorName: "Rent"
-    )
-    #expect(DraftEnrichmentNeeds.shouldEnrich(car, requiresDeadlines: false))
-    #expect(!provider.needsDraftEnrichment(draft: car, requiresDeadlines: false))
-
-    let activity = enrichmentDraft(.activity)
-    #expect(DraftEnrichmentNeeds.shouldEnrich(activity, requiresDeadlines: false))
-    #expect(!provider.needsDraftEnrichment(draft: activity, requiresDeadlines: false))
-
-    let taxi = enrichmentDraft(.other, locationFrom: "DPS", operatorName: "Transfer")
-    #expect(!provider.needsDraftEnrichment(draft: taxi, requiresDeadlines: false))
-
-    let hotel = enrichmentDraft(.hotel, status: .unknown)
-    #expect(provider.needsDraftEnrichment(draft: hotel, requiresDeadlines: false))
+    let drafts = [
+        enrichmentDraft(
+            .carRental,
+            locationFrom: "A",
+            locationTo: "B",
+            operatorName: "Rent"
+        ),
+        enrichmentDraft(.activity),
+        enrichmentDraft(.other, locationFrom: "DPS", operatorName: "Transfer"),
+        enrichmentDraft(.hotel, status: .unknown),
+        enrichmentDraft(.flight, status: .confirmed),
+    ]
+    for draft in drafts {
+        #expect(
+            provider.needsDraftEnrichment(draft: draft, requiresDeadlines: false)
+                == DraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: false)
+        )
+    }
 }
 
 @MainActor

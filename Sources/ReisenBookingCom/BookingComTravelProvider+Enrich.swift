@@ -4,18 +4,6 @@ import ReisenProviders
 
 @MainActor
 extension BookingComTravelProvider {
-    public func needsDraftEnrichment(
-        draft: ProviderBookingDraft,
-        requiresDeadlines: Bool
-    ) -> Bool {
-        switch draft.bookingType {
-        case .hotel, .flight:
-            return DraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: requiresDeadlines)
-        default:
-            return false
-        }
-    }
-
     public func enrichBooking(
         session: any ProviderSession,
         ref: ProviderBookingRef

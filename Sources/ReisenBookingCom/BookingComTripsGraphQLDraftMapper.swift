@@ -48,6 +48,7 @@ extension BookingComTripsGraphQLParser {
                 locationTo: fields.locationTo,
                 locationToAddress: fields.locationToAddress,
                 operatorName: fields.operatorName,
+                isAllDay: activityIsAllDay(bookingType, startISO: startISO, endISO: endISO),
                 statusRaw: reservation.reservationStatus,
                 deadlines: deadlines,
                 rateDetails: rateDetails(from: reservation, bookingType: bookingType, fields: fields),
@@ -58,5 +59,16 @@ extension BookingComTripsGraphQLParser {
                 flightArrivalOffsetSeconds: fields.flightArrivalOffsetSeconds
             )
         )
+    }
+
+    private func activityIsAllDay(
+        _ bookingType: BookingType,
+        startISO: String,
+        endISO: String
+    ) -> Bool? {
+        guard bookingType == .activity else { return nil }
+        let hasClock = BookingComParsing.clockMinutes(from: startISO) != nil
+            || BookingComParsing.clockMinutes(from: endISO) != nil
+        return hasClock ? false : nil
     }
 }

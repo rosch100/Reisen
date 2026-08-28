@@ -105,4 +105,4 @@ Sichtbar auf derselben Confirm-Seite (nicht im FAQ-Tab):
 
 Haustiere nur, wenn die **sichtbare** Confirm-HTML eine echte Regel enthält (`Haustiere sind nicht erlaubt` / `Haustiere willkommen`), nicht aus FAQ oder i18n. Listing-„Zu beachten“ bleibt Lücke.
 
-Enrich: nur `.hotel` und `.flight`. Car/Attraction/Taxi rufen keine Hotel-Confirm auf.
+Enrich-I/O: Confirm-HTML nur für `.hotel` und `.flight`. Car/Attraction/Taxi: `enrichBooking` ohne Confirm-Fetch. `needsDraftEnrichment` ist das Domain-Gate (`DraftEnrichmentNeeds`).

@@ -29,7 +29,7 @@ public enum StayHintHTMLExtractor {
         matching additional: [HintPattern],
         firstMatching exclusive: [HintPattern]
     ) -> [BookingGuestHint] {
-        let original = flattenHTML(html)
+        let original = HTMLPlainText.flatten(html)
         guard !original.isEmpty else { return [] }
         let text = VisibleText(original: original, lowercased: original.lowercased())
         return BookingGuestHint.dedupedBySourceKey(
@@ -163,48 +163,5 @@ public enum StayHintHTMLExtractor {
             sourceKey: "\(providerRaw):html:\(key)",
             providerRaw: providerRaw
         )
-    }
-
-    private static func flattenHTML(_ html: String) -> String {
-        var s = stripHiddenMarkup(html)
-        if let tagPattern {
-            s = replacingMatches(tagPattern, in: s)
-        }
-        s = s
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&#39;", with: "'")
-        while s.contains("  ") {
-            s = s.replacingOccurrences(of: "  ", with: " ")
-        }
-        return s.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// i18n-JSON in `<script>` darf nicht als Unterkunfts-Richtlinie gelesen werden.
-    private static func stripHiddenMarkup(_ html: String) -> String {
-        hiddenMarkupPatterns.reduce(html) { replacingMatches($1, in: $0) }
-    }
-
-    private static func replacingMatches(_ regex: NSRegularExpression, in text: String) -> String {
-        regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: " "
-        )
-    }
-
-    private static let tagPattern = regex("<[^>]+>")
-
-    private static let hiddenMarkupPatterns: [NSRegularExpression] = [
-        "<script\\b[^>]*>[\\s\\S]*?</script>",
-        "<style\\b[^>]*>[\\s\\S]*?</style>",
-    ].compactMap { regex($0, options: .caseInsensitive) }
-
-    private static func regex(
-        _ pattern: String,
-        options: NSRegularExpression.Options = []
-    ) -> NSRegularExpression? {
-        try? NSRegularExpression(pattern: pattern, options: options)
     }
 }

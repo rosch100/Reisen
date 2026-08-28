@@ -7,23 +7,28 @@ extension BookingComTripsGraphQLParser {
         bookingType: BookingType,
         fields: MappedFields
     ) -> BookingRateDetails? {
-        let guestCount = bookingType == .activity ? reservation.ticketCount : nil
+        let activityTickets = bookingType == .activity ? positiveCount(reservation.ticketCount) : nil
         let roomCount = bookingType == .hotel ? reservation.numOfRooms : nil
+        let passengerCount = fields.passengerCount ?? activityTickets
         let price = reservation.price
         let hasMeta = fields.airline != nil
-            || fields.passengerCount != nil
+            || passengerCount != nil
             || fields.roomCategory != nil
-            || guestCount != nil
             || roomCount != nil
         guard price != nil || hasMeta else { return nil }
         return BookingRateDetails(
             totalPriceAmount: price?.amount,
             totalPriceCurrency: price?.currency,
             roomCategory: fields.roomCategory,
-            guestCount: guestCount,
+            guestCount: activityTickets,
             roomCount: roomCount,
             airline: fields.airline,
-            passengerCount: fields.passengerCount
+            passengerCount: passengerCount
         )
+    }
+
+    private func positiveCount(_ value: Int?) -> Int? {
+        guard let value, value > 0 else { return nil }
+        return value
     }
 }
