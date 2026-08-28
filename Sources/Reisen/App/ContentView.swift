@@ -461,8 +461,11 @@ struct ContentView: View {
                                             Text(dateRange(trip))
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
-                                            if !tripBookings.isEmpty {
-                                                Text(L10n.format(.tripBookingCount, tripBookings.count))
+                                            if let meta = sidebarMetaLine(
+                                                for: trip,
+                                                futureBookingCount: tripBookings.count
+                                            ) {
+                                                Text(meta)
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
                                             }
@@ -626,9 +629,40 @@ struct ContentView: View {
                     }
                 }
             } else {
-                List(openBookings, selection: $selectedOpenBookingIDs) { booking in
-                    OpenBookingRow(booking: booking)
-                        .tag(booking.id)
+                let parts = OpenBookingMatching.partitionByFillOpportunity(
+                    bookings: openBookings,
+                    trips: trips
+                )
+                List(selection: $selectedOpenBookingIDs) {
+                    if parts.fillable.isEmpty {
+                        ForEach(parts.other, id: \.id) { booking in
+                            OpenBookingRow(booking: booking)
+                                .tag(booking.id)
+                        }
+                    } else {
+                        Section {
+                            ForEach(parts.fillable, id: \.booking.id) { item in
+                                OpenBookingRow(
+                                    booking: item.booking,
+                                    fillCaption: L10n.tripCompletenessFillCaption(tripTitle: item.trip.title)
+                                )
+                                .tag(item.booking.id)
+                            }
+                        } header: {
+                            Text(L10n.string(.tripCompletenessOpenSection))
+                        } footer: {
+                            Text(L10n.string(.tripCompletenessOpenSectionFooter))
+                        }
+
+                        if !parts.other.isEmpty {
+                            Section(L10n.string(.tripCompletenessOpenOtherSection)) {
+                                ForEach(parts.other, id: \.id) { booking in
+                                    OpenBookingRow(booking: booking)
+                                        .tag(booking.id)
+                                }
+                            }
+                        }
+                    }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
                 .navigationTitle(L10n.string(.tripOpenBookings))
@@ -926,6 +960,21 @@ struct ContentView: View {
         let start = trip.startDate.formatted(date: .abbreviated, time: .omitted)
         let end = trip.endDate.formatted(date: .abbreviated, time: .omitted)
         return "\(start) – \(end)"
+    }
+
+    /// Buchungszeile und/oder Lücken — Lücken nicht an Future-Bookings koppeln.
+    private func sidebarMetaLine(for trip: SDTrip, futureBookingCount: Int) -> String? {
+        if let gapCount = trip.listGapBadgeCount() {
+            if futureBookingCount > 0 {
+                return L10n.tripCompletenessSidebarLine(
+                    bookingCount: futureBookingCount,
+                    gapCount: gapCount
+                )
+            }
+            return L10n.tripCompletenessGapCount(gapCount)
+        }
+        guard futureBookingCount > 0 else { return nil }
+        return L10n.format(.tripBookingCount, futureBookingCount)
     }
 
     private func futureBookings(for trip: SDTrip) -> [SDBooking] {

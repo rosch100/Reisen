@@ -97,6 +97,7 @@ struct OpenBookingsScreen: View {
 
     @Environment(\.adaptiveUsesSplitNavigation) private var usesSplit
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
+    @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
 
     private var openBookings: [SDBooking] {
         OpenBookingMatching.openUnassigned(in: allBookings)
@@ -110,6 +111,10 @@ struct OpenBookingsScreen: View {
                 || ($0.confirmationCode ?? "").localizedCaseInsensitiveContains(q)
                 || $0.providerRaw.localizedCaseInsensitiveContains(q)
         }
+    }
+
+    private var partitioned: (fillable: [(booking: SDBooking, trip: SDTrip)], other: [SDBooking]) {
+        OpenBookingMatching.partitionByFillOpportunity(bookings: filtered, trips: trips)
     }
 
     var body: some View {
@@ -133,36 +138,13 @@ struct OpenBookingsScreen: View {
                 }
             } else if isSelectingForTripCreate {
                 List(selection: $multiSelection) {
-                    ForEach(filtered, id: \.id) { booking in
-                        OpenBookingRow(booking: booking)
-                            .tag(booking.id)
-                    }
+                    openBookingSections(interactive: false)
                 }
                 .environment(\.editMode, .constant(.active))
                 .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             } else {
                 List(selection: $selectedBookingID) {
-                    ForEach(filtered, id: \.id) { booking in
-                        bookingRow(booking)
-                            .tag(booking.id)
-                            .contextMenu {
-                                Button {
-                                    createTripFromBooking(booking.id)
-                                } label: {
-                                    CreateTripFromBookingsLabel()
-                                }
-                            }
-                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                if !usesSplit {
-                                    Button {
-                                        createTripFromBooking(booking.id)
-                                    } label: {
-                                        CreateTripFromBookingsLabel()
-                                    }
-                                    .tint(.accentColor)
-                                }
-                            }
-                    }
+                    openBookingSections(interactive: true)
                 }
                 .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             }
@@ -226,6 +208,69 @@ struct OpenBookingsScreen: View {
         })
     }
 
+    @ViewBuilder
+    private func openBookingSections(interactive: Bool) -> some View {
+        let parts = partitioned
+        if parts.fillable.isEmpty {
+            ForEach(parts.other, id: \.id) { booking in
+                openBookingListRow(booking, fillTrip: nil, interactive: interactive)
+            }
+        } else {
+            Section {
+                ForEach(parts.fillable, id: \.booking.id) { item in
+                    openBookingListRow(item.booking, fillTrip: item.trip, interactive: interactive)
+                }
+            } header: {
+                Text(L10n.string(.tripCompletenessOpenSection))
+            } footer: {
+                Text(L10n.string(.tripCompletenessOpenSectionFooter))
+            }
+
+            if !parts.other.isEmpty {
+                Section(L10n.string(.tripCompletenessOpenOtherSection)) {
+                    ForEach(parts.other, id: \.id) { booking in
+                        openBookingListRow(booking, fillTrip: nil, interactive: interactive)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func openBookingListRow(
+        _ booking: SDBooking,
+        fillTrip: SDTrip?,
+        interactive: Bool
+    ) -> some View {
+        let caption = fillTrip.map { L10n.tripCompletenessFillCaption(tripTitle: $0.title) }
+        Group {
+            if interactive {
+                bookingRow(booking, fillCaption: caption)
+                    .tag(booking.id)
+                    .contextMenu {
+                        Button {
+                            createTripFromBooking(booking.id)
+                        } label: {
+                            CreateTripFromBookingsLabel()
+                        }
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        if !usesSplit {
+                            Button {
+                                createTripFromBooking(booking.id)
+                            } label: {
+                                CreateTripFromBookingsLabel()
+                            }
+                            .tint(.accentColor)
+                        }
+                    }
+            } else {
+                OpenBookingRow(booking: booking, fillCaption: caption)
+                    .tag(booking.id)
+            }
+        }
+    }
+
     private func createTripFromBooking(_ bookingID: UUID) {
         presentCreateTripFromSelection(Set([bookingID]))
     }
@@ -252,9 +297,9 @@ struct OpenBookingsScreen: View {
     }
 
     @ViewBuilder
-    private func bookingRow(_ booking: SDBooking) -> some View {
+    private func bookingRow(_ booking: SDBooking, fillCaption: String? = nil) -> some View {
         AdaptiveUUIDSelectionRow(id: booking.id, selection: $selectedBookingID, usesSplit: usesSplit) {
-            OpenBookingRow(booking: booking)
+            OpenBookingRow(booking: booking, fillCaption: fillCaption)
         }
     }
 }

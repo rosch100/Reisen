@@ -423,6 +423,7 @@ struct TripDetailView: View {
     @ViewBuilder
     private var tripOverviewSection: some View {
         // Kompakte Einzeiler — kein LabeledContent/NSView (das blähte die Übersicht auf).
+        let completeness = trip.completeness()
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 16) {
                 overviewFact(label: L10n.string(.tripPeriod), value: dateRange)
@@ -430,7 +431,17 @@ struct TripDetailView: View {
                 if let destination = trip.destination, !destination.isEmpty {
                     overviewFact(label: L10n.string(.tripDestination), value: destination)
                 }
+                if completeness.hasBookings {
+                    overviewFact(
+                        label: L10n.string(.tripCompletenessLabel),
+                        value: L10n.tripCompletenessOverviewFactValue(completeness)
+                    )
+                    .help(L10n.string(.tripCompletenessHelp))
+                }
                 Spacer(minLength: 0)
+            }
+            if completeness.hasBookings {
+                TripCompletenessMacDetailCaption(completeness: completeness)
             }
             if let notes = trip.notes, !notes.isEmpty {
                 Text(notes)

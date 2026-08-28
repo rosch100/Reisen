@@ -1,7 +1,7 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
-Status: **Backlog** (Bewertung abgeschlossen, noch keine Implementierung)  
-Stand: 2026-08-27
+Status: **Backlog** (teilweise umgesetzt; weitere Features geplant)  
+Stand: 2026-08-28
 
 ## Zweck und Leitlinie
 
@@ -25,7 +25,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 | F06 | On-device Paste-Import | geplant | P2 | F01, F05 optional |
 | F07 | Next-up Widget / Live Activity | geplant | P3 | F02 |
 | F08 | macOS-Suche und Typfilter | geplant | P3 | — |
-| F09 | Vollständigkeitsanzeige (Gaps) | geplant | P3 | — |
+| F09 | Vollständigkeitsanzeige (Gaps) | umgesetzt | P3 | — |
 | F10 | Kartenansicht der Reise | bedingt | P3 | Geocoding zuverlässig |
 | F11 | Zeitzonenwechsel in Timeline | bedingt | P3 | — |
 | F12 | Wetter am Aufenthaltsort | bedingt | P3 | Koordinate |
@@ -217,11 +217,11 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ### F09 — Vollständigkeitsanzeige (Gaps)
 
+**Status:** umgesetzt.
+
 **Sinn:** Vorhandene Gap-Logik sichtbar machen (Vorbild: Voyager „planning percentage“).
 
-**Machbarkeit:** hoch.
-
-**Vorgehen:** Aus `ComputedGap` + Buchungsstatus ableiten; Trip-Header / Offen-Tab. Kein Dummy-Prozent ohne Daten.
+**Umsetzung:** Inter-Booking-Lücken (nicht Rand-Gaps) in Trip-Übersicht, Reisen-Liste/Sidebar und Offen-Gruppierung „Kann Lücken füllen“. Kein Dummy-Prozent; `unknown`-Status nur als ruhige Detail-Caption.
 
 ---
 

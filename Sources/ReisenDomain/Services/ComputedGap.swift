@@ -34,4 +34,9 @@ public struct ComputedGap: Identifiable, Equatable, Sendable {
     public var timelineItemID: String {
         "gap|\(identityKey)"
     }
+
+    /// Leading/Trailing aus `GapAssembly` (from == to). Inter-Booking sonst.
+    public var isTripBoundary: Bool {
+        fromBooking.id == toBooking.id
+    }
 }

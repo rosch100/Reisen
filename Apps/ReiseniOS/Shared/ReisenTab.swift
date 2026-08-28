@@ -189,12 +189,18 @@ private struct TripListPane: View {
     @ViewBuilder
     private func tripRow(_ trip: SDTrip) -> some View {
         AdaptiveUUIDSelectionRow(id: trip.id, selection: $selectedTripID, usesSplit: usesSplit) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(trip.title)
-                    .font(.headline)
-                Text("\(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(trip.title)
+                        .font(.headline)
+                    Text("\(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                if let gapCount = trip.listGapBadgeCount() {
+                    TripCompletenessListAccessory(gapCount: gapCount)
+                }
             }
         }
     }

@@ -36,6 +36,56 @@ extension L10n {
         }
     }
 
+    /// „1 Lücke“ / „n Lücken“ für Inter-Booking-Gaps.
+    public static func tripCompletenessGapCount(_ count: Int) -> String {
+        if count == 1 {
+            return string(.tripCompletenessGapOne)
+        }
+        return format(.tripCompletenessGapMany, count)
+    }
+
+    /// Caption mit Gap-Arten; `nil` wenn keine Inter-Lücken oder nur `.both`.
+    public static func tripCompletenessKindCaption(kinds: [GapKind]) -> String? {
+        guard !kinds.isEmpty else { return nil }
+        if kinds.allSatisfy({ $0 == .both }) { return nil }
+        return kinds.map(gapKindDisplay).joined(separator: " · ")
+    }
+
+    public static func tripCompletenessEdgeCaption(count: Int) -> String? {
+        guard count > 0 else { return nil }
+        if count == 1 {
+            return string(.tripCompletenessEdgeOne)
+        }
+        return format(.tripCompletenessEdgeMany, count)
+    }
+
+    public static func tripCompletenessUnknownCaption(count: Int) -> String? {
+        guard count > 0 else { return nil }
+        return format(.tripCompletenessUnknownMany, count)
+    }
+
+    public static func tripCompletenessAccessibility(_ completeness: TripCompleteness) -> String {
+        if completeness.hasTimeGaps {
+            return format(.tripCompletenessA11yIncomplete, completeness.interBookingGapCount)
+        }
+        return string(.tripCompletenessA11yComplete)
+    }
+
+    public static func tripCompletenessFillCaption(tripTitle: String) -> String {
+        format(.tripCompletenessFillCaption, tripTitle)
+    }
+
+    public static func tripCompletenessSidebarLine(bookingCount: Int, gapCount: Int) -> String {
+        format(.tripCompletenessSidebarWithGaps, bookingCount, gapCount)
+    }
+
+    public static func tripCompletenessOverviewFactValue(_ completeness: TripCompleteness) -> String {
+        if completeness.hasTimeGaps {
+            return "\(completeness.interBookingGapCount)"
+        }
+        return string(.tripCompletenessNoneShort)
+    }
+
     public static func providerLoginStatusDisplay(_ status: ProviderLoginTrafficLight) -> String {
         switch status {
         case .green: return string(.loginStatusGreen)
