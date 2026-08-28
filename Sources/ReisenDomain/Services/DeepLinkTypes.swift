@@ -18,15 +18,50 @@ public enum DeepLinkIssue: LocalizedError, Equatable, Sendable {
             return L10n.string(.deep_linkMissingArrivalIata)
         }
     }
+
+    /// Kategorien, für die dieses Issue fachlich relevant ist (für GapKind-Filter).
+    public var relevantCategories: Set<GapSearchCategory> {
+        switch self {
+        case .missingDestinationHint, .destinationIdNotDerivable:
+            return [.hotel, .activity]
+        case .missingFromIATA, .missingToIATA:
+            return [.flight]
+        }
+    }
+
+    public func isVisible(for gapKind: GapKind) -> Bool {
+        relevantCategories.contains { $0.isVisible(for: gapKind) }
+    }
 }
 
 public struct DeepLinkSuggestion: Equatable, Sendable {
     public var title: String
     public var url: URL?
+    public var category: GapSearchCategory
+    public var providerID: ProviderID
 
-    public init(title: String, url: URL?) {
+    public init(
+        title: String,
+        url: URL?,
+        category: GapSearchCategory,
+        providerID: ProviderID
+    ) {
         self.title = title
         self.url = url
+        self.category = category
+        self.providerID = providerID
+    }
+
+    /// Convenience: lokalisierten Titel aus Kategorie + Provider ableiten.
+    public init(
+        category: GapSearchCategory,
+        providerID: ProviderID,
+        url: URL?
+    ) {
+        self.title = category.localizedTitle(providerDisplayName: providerID.displayName)
+        self.url = url
+        self.category = category
+        self.providerID = providerID
     }
 }
 

@@ -3,7 +3,11 @@ import ReisenDomain
 
 extension OpodoFlightPassengersGraphQL {
     static func parseTravellers(from json: String) throws -> [BookingPassenger] {
-        let envelope = try decodeSupportAreaEnvelope(json: json)
+        let envelope = try OpodoGraphQLRequest.decode(
+            OpodoFlightSupportAreaEnvelope.self,
+            from: json,
+            invalid: OpodoFlightPassengersError.invalidJSON
+        )
         let dtos = envelope.data.getTripByToken.trip.travellers
         guard !dtos.isEmpty else {
             throw OpodoFlightPassengersError.noTravellers
@@ -21,15 +25,6 @@ extension OpodoFlightPassengersGraphQL {
                 birthDate: ISODateTime.parse(dto.birthDate),
                 baggageAllowances: []
             )
-        }
-    }
-
-    static func decodeSupportAreaEnvelope(json: String) throws -> OpodoFlightSupportAreaEnvelope {
-        guard let data = json.data(using: .utf8) else { throw OpodoFlightPassengersError.invalidJSON }
-        do {
-            return try JSONDecoder().decode(OpodoFlightSupportAreaEnvelope.self, from: data)
-        } catch {
-            throw OpodoFlightPassengersError.invalidJSON
         }
     }
 }

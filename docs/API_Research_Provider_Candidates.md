@@ -187,11 +187,11 @@ Row-`id`→Feld-Mapping: [Airbnb Impl-Spec § Neuer Parser](dev/airbnb-experienc
 | 1 | Flug | SIN→CGK, `transportTypes: [PLANE]`, Preis |
 | 2–4 | Hotel | Unterkünfte, Board, Check-in/out |
 
-`getTrips(PAST)`: leer. **Keine** gebuchten Mietwagen, Transfers, Bahn, Activities.
+`getTrips(PAST)` (Live 2026-08-28, Konto-Beleg): 5 Rows — 2× `PLANE`, 3× Hotel (davon RETAINED). **Keine** gebuchten Mietwagen, Transfers, Bahn, Activities. `vehicleBooking` ist kein Trip-Feld. `insuranceBookings` hängt als Ancillary am Trip, wird nicht abgefragt.
 
 ### Bereits im Code
 
-Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage — deckt den HAR-Inhalt ab.
+Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage. HTML-Fallback nur bei **leerer** GraphQL-Liste (nicht bei GraphQL-Fehler). Upsell-Rows und Nicht-`PLANE`-Itineraries werden verworfen.
 
 ### Nicht syncen
 
@@ -210,12 +210,11 @@ Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage
 
 ### Implement-Verdict
 
-**Kein Muss-Implement aus dieser Opodo-HAR.**
+**Katalog-Vertrag (Live 2026-08-28 + HAR):** nur Flug/Hotel; Upsell ignorieren; HTML nur wenn GraphQL leer.
 
 - Neue Buchungstypen: **nein**
-- Kritische Catalog/Enrichment-Lücken Hotel/Flug: **keine**
+- `getTrips(UPCOMING)` kann leer sein, während PAST Flug/Hotel enthält — Katalog bleibt UPCOMING
 - Optional später (separat spezifizieren): Departure-Offset aus ISO — nur mit Wall-Clock-Tests
-- **Opodo-Produktivcode in diesem Recherche-Schritt nicht anfassen**
 
 ---
 

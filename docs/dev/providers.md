@@ -5,8 +5,8 @@ SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities
 | Anbieter | Modul | Typische Buchungen | Impl-Spec / Notizen |
 |----------|-------|-------------------|---------------------|
 | Check24 | ReisenCheck24 | Flug, Hotel, Fähre, Mietwagen, … | productKey-basiert; [Audit](check24-productkey-audit.md) |
-| Opodo | ReisenOpodo | Flug, Hotel | [API-Recherche](../API_Research_Opodo_Booking.md) |
-| Booking.com | ReisenBookingCom | Flug, Hotel, Flughafentaxi; Attractions/Car schema-bekannt | GraphQL V1; [Audit](bookingcom-mytrips-audit.md) |
+| Opodo | ReisenOpodo | Flug, Hotel | GraphQL `getTrips`; HTML nur wenn GraphQL leer; Upsell ignoriert |
+| Booking.com | ReisenBookingCom | Flug, Hotel, Flughafentaxi; Attractions/Car schema-bekannt | GraphQL V1 + HTML-Fallback; [Audit](bookingcom-mytrips-audit.md) |
 | Airbnb | ReisenAirbnb | Unterkünfte, Erlebnisse | [Experiences](airbnb-experiences-impl-spec.md) |
 | GetYourGuide | ReisenGetYourGuide | Erlebnisse / Touren | [Impl-Spec](getyourguide-impl-spec.md) |
 | Traveloka | ReisenTraveloka | Hotel, Flug, Erlebnisse, Mietwagen, … | [Impl-Spec](traveloka-impl-spec.md) |

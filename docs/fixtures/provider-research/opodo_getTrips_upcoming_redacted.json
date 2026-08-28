@@ -4,6 +4,14 @@
     "note": "Research excerpt only (no PII). Full parser fixture: Tests/ReisenOpodoTests/Fixtures/getTrips_upcoming.json",
     "tripCountObserved": 4,
     "pastTripsObserved": 0,
+    "liveCheck2026-08-28": {
+      "loginSurface": "https://www.opodo.de/",
+      "upcomingCount": 0,
+      "pastKinds": ["PLANE", "hotel", "hotel", "hotel", "PLANE"],
+      "vehicleBookingOnTrip": false,
+      "insuranceBookings": "nested ancillary on every trip, not queried",
+      "htmlSecureDataStartHrefs": 0
+    },
     "bookedProductTypesObserved": ["flight", "hotel"],
     "notObservedAsBookings": ["carRental", "transfer", "activity", "rail"],
     "upsellOnlyInHar": [
@@ -38,5 +46,5 @@
       ]
     }
   ],
-  "implementVerdict": "no_must_implement"
+  "implementVerdict": "catalog_flight_hotel_only"
 }
