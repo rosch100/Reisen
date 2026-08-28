@@ -115,7 +115,7 @@ public enum DraftAssembler {
             // Pickup-/Storno-Ortszeit; Feld `hotelOffsetSeconds`. `BookingDateWindow` liefert hier keinen Offset.
             return facts.hotelOffsetSeconds
                 ?? facts.deadlines.firstStayOffsetSeconds
-        case .flight, .ferry, .activity, .other:
+        case .flight, .ferry, .train, .activity, .other:
             return nil
         }
     }
