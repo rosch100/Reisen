@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "ReisenAppCore", targets: ["ReisenAppCore"]),
         .library(name: "ReisenProviderSync", targets: ["ReisenProviderSync"]),
         .library(name: "ReisenSharedUI", targets: ["ReisenSharedUI"]),
+        .library(name: "ReisenPasteImport", targets: ["ReisenPasteImport"]),
         .library(name: "ReisenCheck24", targets: ["ReisenCheck24"]),
         .library(name: "ReisenOpodo", targets: ["ReisenOpodo"]),
         .library(name: "ReisenBookingCom", targets: ["ReisenBookingCom"]),
@@ -101,6 +102,14 @@ let package = Package(
                 "ReisenAppCore",
             ],
             path: "Sources/ReisenSharedUI",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .target(
+            name: "ReisenPasteImport",
+            dependencies: ["ReisenDomain"],
+            path: "Sources/ReisenPasteImport",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
@@ -200,6 +209,14 @@ let package = Package(
             name: "ReisenSharedUITests",
             dependencies: ["ReisenSharedUI", "ReisenData", "ReisenDomain"],
             path: "Tests/ReisenSharedUITests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenPasteImportTests",
+            dependencies: ["ReisenPasteImport", "ReisenDomain"],
+            path: "Tests/ReisenPasteImportTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
