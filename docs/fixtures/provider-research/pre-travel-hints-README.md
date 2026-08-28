@@ -10,5 +10,8 @@ output means no prep-relevant text was visible — not a dummy fallback.
 | `bookingcom_confirmation_hints_synthetic.html` | Booking.com | HotelChainBedLinen + towels/sheets fee |
 | `check24_hotel_detail_hints_synthetic.html` | Check24 | DE linen/towel phrases |
 | `opodo_trip_detail_hints_synthetic.html` | Opodo | EN bed linens not included |
+| `traveloka_itinerary_single_hotel_redacted.json` | Traveloka | Live 2026-08-28: `importantNoticePolicies` + `propertyPolicy` (Hausregeln/Dokumente); kein Pet-/Linen-Feld in diesem Konto |
 
-Replace with redacted live captures when available; keep parser contracts stable via `sourceKey`.
+Replace remaining synthetic fixtures with redacted live captures when available; keep parser contracts stable via `sourceKey`.
+
+**Traveloka:** `TravelokaGuestHintMapper` — structured notices like GYG; `propertyPolicy` as Hausregeln; `checkInInstruction` only if `BookingGuestHintPrepKeywords` match. Do not add bare `pet` tokens (ID „Petunjuk“ false-positive).
