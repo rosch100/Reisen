@@ -9,6 +9,7 @@ import ReisenData
 struct ReisenTab: View {
     @Binding var sessionChromeEpoch: Int
     @Binding var selectedTripID: UUID?
+    let pasteImport: PasteImportIOSSession
     #if REISEN_PROVIDER_SYNC
     var onOpenSync: () -> Void
     #endif
@@ -105,6 +106,7 @@ struct ReisenTab: View {
     @ViewBuilder
     private func tripListChrome<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
+            .pasteImportToolbar(session: pasteImport)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {

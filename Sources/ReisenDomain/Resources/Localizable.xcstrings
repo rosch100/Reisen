@@ -4161,6 +4161,22 @@
         }
       }
     },
+    "menu.paste_booking_from_photo": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung aus Foto einfügen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste Booking from Photo…"
+          }
+        }
+      }
+    },
     "menu.provider_sync": {
       "localizations": {
         "de": {

@@ -516,6 +516,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case menuAddBooking = "menu.add_booking"
     case menuPasteBooking = "menu.paste_booking"
     case menuPasteBookingFromFile = "menu.paste_booking_from_file"
+    case menuPasteBookingFromPhoto = "menu.paste_booking_from_photo"
     case menuAssignBookings = "menu.assign_bookings"
     case menuProviderSync = "menu.provider_sync"
     case menuSyncAllProviders = "menu.sync_all_providers"

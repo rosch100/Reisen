@@ -20,6 +20,7 @@ struct RootTabView: View {
     @State private var providerEnableEpoch = 0
     @State private var selectedTab: AppTab = .reisen
     @State private var selectedTripID: UUID?
+    @State private var pasteImport = PasteImportIOSSession()
     #if REISEN_PROVIDER_SYNC
     @State private var installedProviderIDs: Set<ProviderID> = []
     #endif
@@ -41,6 +42,13 @@ struct RootTabView: View {
 
     @ViewBuilder
     var body: some View {
+        PasteImportHost(session: pasteImport, tripID: selectedTripID) {
+            tabsWithSessionProbe
+        }
+    }
+
+    @ViewBuilder
+    private var tabsWithSessionProbe: some View {
         ZStack {
             tabs
                 .tabViewStyle(.sidebarAdaptable)
@@ -92,6 +100,7 @@ struct RootTabView: View {
             ReisenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
                 selectedTripID: $selectedTripID,
+                pasteImport: pasteImport,
                 onOpenSync: { selectedTab = .sync }
             )
             .tabItem { Label(L10n.string(.tabTrips), systemImage: "airplane") }
@@ -99,7 +108,8 @@ struct RootTabView: View {
             #else
             ReisenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
-                selectedTripID: $selectedTripID
+                selectedTripID: $selectedTripID,
+                pasteImport: pasteImport
             )
             .tabItem { Label(L10n.string(.tabTrips), systemImage: "airplane") }
             .tag(AppTab.reisen)
@@ -108,6 +118,7 @@ struct RootTabView: View {
             #if REISEN_PROVIDER_SYNC
             OffenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                pasteImport: pasteImport,
                 onTripCreated: focusCreatedTrip,
                 onOpenSync: { selectedTab = .sync }
             )
@@ -116,6 +127,7 @@ struct RootTabView: View {
             #else
             OffenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                pasteImport: pasteImport,
                 onTripCreated: focusCreatedTrip
             )
             .tabItem { Label(L10n.string(.tabOpen), systemImage: "list.bullet.rectangle") }
