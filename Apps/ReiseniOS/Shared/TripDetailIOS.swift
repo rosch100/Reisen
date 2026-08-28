@@ -32,11 +32,30 @@ struct TripDetailIOS: View {
             if let trip {
                 List {
                     Section(L10n.string(.tripOverview)) {
-                        Text(trip.title)
-                        Text("\(L10n.string(.tripPeriod)): \(L10n.format(.tripPeriodRange, trip.startDate.formatted(date: .abbreviated, time: .omitted), trip.endDate.formatted(date: .abbreviated, time: .omitted)))")
-                            .foregroundStyle(.secondary)
+                        CopyableLabeledValue(
+                            label: L10n.string(.editorTitle),
+                            value: trip.title,
+                            kind: .standard,
+                            style: .list,
+                            valueTextStyle: .headline
+                        )
+                        CopyableLabeledValue(
+                            label: L10n.string(.tripPeriod),
+                            value: L10n.format(
+                                .tripPeriodRange,
+                                trip.startDate.formatted(date: .abbreviated, time: .omitted),
+                                trip.endDate.formatted(date: .abbreviated, time: .omitted)
+                            ),
+                            kind: .standard,
+                            style: .list
+                        )
                         if let destination = trip.destination, !destination.isEmpty {
-                            Text(destination)
+                            CopyableLabeledValue(
+                                label: L10n.string(.tripDestination),
+                                value: destination,
+                                kind: .standard,
+                                style: .list
+                            )
                         }
                         TripCompletenessOverviewRow(completeness: trip.completeness())
                         if trip.resolvedBookings.isEmpty {
@@ -54,17 +73,20 @@ struct TripDetailIOS: View {
                             OpenBookingRow(booking: booking)
                         }
                         .contextMenu {
+                            BookingCopyConfirmationMenuItems(booking: booking)
                             if let url = booking.browserURL {
                                 BookingPortalOpenButton(
                                     bookingURL: url,
                                     providerID: booking.provider,
                                     isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
                                 )
+                                CopyLinkMenuItem(url: url)
                             }
                         }
                     }
                 }
                 .navigationTitle(trip.title)
+                .id(trip.id)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {

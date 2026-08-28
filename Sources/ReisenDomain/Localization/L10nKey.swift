@@ -35,6 +35,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case bookingDetailUnitPrice = "booking.detail.unit_price"
     case bookingDetailCancellationFree = "booking.detail.cancellation_free"
     case bookingDetailCancellationPaid = "booking.detail.cancellation_paid"
+    case bookingDetailCancellationCost = "booking.detail.cancellation_cost"
     case bookingDetailDateRange = "booking.detail.date_range"
     case bookingDetailConfirmation = "booking.detail.confirmation"
 
@@ -153,6 +154,8 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case actionCheckProviderSessions = "action.check_provider_sessions"
     case actionClearIcloud = "action.clear_icloud"
     case actionClearIcloudAndLocal = "action.clear_icloud_and_local"
+    case actionCopyConfirmation = "action.copy_confirmation"
+    case actionCopyLink = "action.copy_link"
     case actionCreateTrip = "action.create_trip"
     case actionCreateTripFromBookings = "action.create_trip_from_bookings"
     case actionCreateTripFromAllOpenBookings = "action.create_trip_from_all_open_bookings"
@@ -246,6 +249,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case editorGeneral = "editor.general"
     case editorGivenName = "editor.given_name"
     case editorHintDetail = "editor.hint_detail"
+    case editorHintTitle = "editor.hint_title"
     case editorHotel = "editor.hotel"
     case editorHotelOffset = "editor.hotel_offset"
     case editorOffsetSeconds = "editor.offset_seconds"
@@ -542,6 +546,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
 
     case commonCut = "common.cut"
     case commonCopy = "common.copy"
+    case commonCopied = "common.copied"
     case commonPaste = "common.paste"
     case commonSelectAll = "common.select_all"
     case menuNewTrip = "menu.new_trip"

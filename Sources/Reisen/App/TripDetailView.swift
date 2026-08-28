@@ -352,8 +352,10 @@ struct TripDetailView: View {
                                         selectID: booking.id.uuidString
                                     )
                                 }
+                                BookingCopyConfirmationMenuItems(booking: booking)
                                 if let url = booking.browserURL {
                                     BookingPortalOpenButton(browserURL: url)
+                                    CopyLinkMenuItem(url: url)
                                 }
                                 Button(role: .destructive) {
                                     requestRemoveBookingFromTrip(booking)
@@ -442,10 +444,13 @@ struct TripDetailView: View {
                 TripCompletenessMacDetailCaption(completeness: completeness)
             }
             if let notes = trip.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                CopyableFieldValue(
+                    value: notes,
+                    kind: .standard,
+                    textStyle: .caption,
+                    foregroundStyle: .secondary,
+                    lineLimit: 2
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -456,10 +461,12 @@ struct TripDetailView: View {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(value)
-                .font(.subheadline.weight(.medium))
-                .textSelection(.enabled)
-                .lineLimit(1)
+            CopyableFieldValue(
+                value: value,
+                kind: .standard,
+                textStyle: .subheadline,
+                lineLimit: 1
+            )
         }
     }
 
@@ -670,9 +677,9 @@ private struct BookingDetailPanel: View {
                                     onEditGap(presentation.editorPayload(for: gap))
                                 }
                             )
-                            .id(gap.identityKey)
                         }
                     }
+                    .id(selectedTimelineItem.id)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1305,13 +1312,20 @@ private struct GapRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(displayTitle)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                    Text("\(Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    CopyableFieldValue(
+                        value: displayTitle,
+                        kind: .standard,
+                        textStyle: .headline,
+                        lineLimit: 2
+                    )
+                    let rangeText = "\(Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))"
+                    CopyableFieldValue(
+                        value: rangeText,
+                        kind: .standard,
+                        textStyle: .subheadline,
+                        foregroundStyle: .secondary,
+                        lineLimit: 1
+                    )
                 }
                 Spacer(minLength: 0)
                 Button(L10n.string(.commonEdit)) {
@@ -1321,14 +1335,22 @@ private struct GapRow: View {
                 .controlSize(.small)
             }
 
-            Text(L10n.format(.tripGapType, L10n.gapKindDisplay(effectiveKind)))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            CopyableLabeledValue(
+                label: L10n.string(.editorType),
+                value: L10n.gapKindDisplay(effectiveKind),
+                kind: .standard,
+                style: .inspector,
+                valueTextStyle: .caption
+            )
 
             if let priceText {
-                Text(L10n.format(.bookingCopyPriceLine, priceText))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                CopyableLabeledValue(
+                    label: L10n.string(.bookingDetailPrice),
+                    value: priceText,
+                    kind: .standard,
+                    style: .inspector,
+                    valueTextStyle: .caption
+                )
             }
 
             GapSearchControls(
