@@ -67,6 +67,14 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
             bookingDetailsByBookingKey: &bookingDetailsByBookingKey
         )
 
+        var carRentalDetailByBookingKey: [String: ParsedCarRentalDetail] = [:]
+        let carRentalBookingsWithURL = bookingsWithURL(for: .carRental, in: activity)
+        try await enrichCarRentalBookings(
+            carRentalBookingsWithURL: carRentalBookingsWithURL,
+            webView: webView,
+            carRentalDetailByBookingKey: &carRentalDetailByBookingKey
+        )
+
         var draftByExternalUrl = makeBasketDrafts(
             basketsByBasketId: basketsByBasketId,
             canonicalBookingUuidByBasketId: canonicalBookingUuidByBasketId,
@@ -88,6 +96,7 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
             hotelStayByBookingURL: hotelStayByBookingURL,
             guestHintsByBookingURL: guestHintsByBookingURL,
             bookingDetailsByBookingKey: bookingDetailsByBookingKey,
+            carRentalDetailByBookingKey: carRentalDetailByBookingKey,
             draftByExternalUrl: &draftByExternalUrl
         )
 

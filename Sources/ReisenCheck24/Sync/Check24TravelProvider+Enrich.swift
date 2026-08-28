@@ -17,6 +17,13 @@ extension Check24TravelProvider {
             in: webView,
             needles: [ref.externalUrl, url.lastPathComponent]
         )
+        if ref.bookingType == .carRental {
+            guard await waitForCarRentalDetailReady(in: webView) else {
+                return Self.carRentalEnrichment(html: nil)
+            }
+            let snapshot = try await snapshotHTML(from: webView)
+            return Self.carRentalEnrichment(html: snapshot.html)
+        }
         let snapshot = try await snapshotHTML(from: webView)
         let policy = CancellationPolicyParser().parseCancellationPolicy(from: snapshot.html)
         let details = BookingDetailsParser().parse(from: snapshot.html, bookingType: ref.bookingType)

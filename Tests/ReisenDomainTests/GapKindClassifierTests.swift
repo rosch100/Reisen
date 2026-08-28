@@ -29,3 +29,13 @@ import ReisenDomain
     #expect(GapKindClassifier.classify(from: .flight, to: .other) == .both)
     #expect(GapKindClassifier.classify(from: .other, to: .other) == .both)
 }
+
+@Test func gapKindClassifier_carRentalNeighbors() {
+    // carRental ist kein isTransport und kein On-Site → wie .other.
+    #expect(GapKindClassifier.classify(from: .hotel, to: .carRental) == .transport)
+    #expect(GapKindClassifier.classify(from: .carRental, to: .hotel) == .transport)
+    #expect(GapKindClassifier.classify(from: .flight, to: .carRental) == .both)
+    #expect(GapKindClassifier.classify(from: .carRental, to: .flight) == .both)
+    #expect(GapKindClassifier.classify(from: .carRental, to: .carRental) == .both)
+    #expect(GapKindClassifier.classify(from: .carRental, to: .other) == .both)
+}

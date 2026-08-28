@@ -1,0 +1,48 @@
+{
+  "data": {
+    "singleTripTimelineQueries": {
+      "singleTripTimeline": {
+        "__typename": "TripTimeline",
+        "trip": { "title": "Sample City", "__typename": "Trip" },
+        "timelineGroups": [
+          {
+            "tripItems": [
+              {
+                "__typename": "ReservationTripItem",
+                "reservation": {
+                  "__typename": "CarReservation",
+                  "verticalType": "CAR",
+                  "bookingUrl": "https://cars.booking.com/confirmation/fixture_car_001",
+                  "startDateTime": "2026-08-12T10:00:00.000+02:00",
+                  "endDateTime": "2026-08-15T10:00:00.000+02:00",
+                  "reservationStatus": "CONFIRMED",
+                  "price": { "amount": 189.0, "currency": "EUR", "__typename": "Price" },
+                  "identifiers": {
+                    "publicId": "car-public-001",
+                    "publicFacingIdentifier": "CAR-FACE-001",
+                    "__typename": "CommonReservationIdentifiers"
+                  },
+                  "pickUpLocation": {
+                    "city": "Sample City",
+                    "__typename": "CarLocation"
+                  },
+                  "dropOffLocation": {
+                    "city": "Other City",
+                    "__typename": "CarLocation"
+                  },
+                  "product": {
+                    "carClass": "Compact",
+                    "name": "Fixture Compact Car",
+                    "supplier": "Fixture Rentals",
+                    "__typename": "CarProduct"
+                  }
+                }
+              }
+            ],
+            "__typename": "TimelineGroup"
+          }
+        ]
+      }
+    }
+  }
+}

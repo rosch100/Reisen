@@ -23,6 +23,9 @@ public struct Check24DeepLinkBuilder: GapDeepLinkBuilding {
                 date: gap.gapStart
             )
         }, fallback: .missingFromIATA)
+        bag.add(.carRental, make: {
+            try makeCarRentalSearchURL(for: gap)
+        }, fallback: .missingDestinationHint)
         return bag.result
     }
 }

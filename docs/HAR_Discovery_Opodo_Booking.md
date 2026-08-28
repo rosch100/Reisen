@@ -45,7 +45,7 @@ Gefundene Anker aus HAR (u. a. Capture 2026-07-20):
 
 - Trip-Timeline mit Reservierungen (GraphQL):
   - Operation `SingleTimelineQuery` → `singleTripTimelineQueries.singleTripTimeline`
-  - Enthält `FlightReservation` und `AccommodationReservation` (inkl. `policy` für Hotel-Storno-Text)
+  - Live 2026-08: V1 weiterhin gültig; MFE enthält zusätzlich `SingleTimelineQueryV2`. In einem Konto u. a. `FlightReservation`, `AccommodationReservation`, `PrebookTaxiReservation` — siehe [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md).
 
 - Flug-Confirmation / Storno (REST):
   - `GET https://flights.booking.com/api/order/{orderToken}?pb=1&cancellationOptionsType=1`

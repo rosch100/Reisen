@@ -16,6 +16,7 @@ Partner-/Demand-APIs (Amadeus, Sabre, GYG Partner, Expedia Lodging Supply) bleib
 | [`dev/airbnb-experiences-impl-spec.md`](dev/airbnb-experiences-impl-spec.md) | Airbnb Catalog + `activity_reservation_details` |
 | [`dev/getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md) | Neuer Provider GYG |
 | [`dev/check24-productkey-audit.md`](dev/check24-productkey-audit.md) | productKey-Inventory + Live-Audit-Checkliste |
+| [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md) | Booking.com `verticalType` / Reservation-`__typename` + Query-Shape 2026-08 |
 
 Ausführungsdetails nur im Plan — nicht hier wiederholen.
 
@@ -336,13 +337,14 @@ flowchart TD
 ### Check24 – productKey-Audit
 
 SSOT (Keys, Hypothesen, Live-Checkliste): [`check24-productkey-audit.md`](dev/check24-productkey-audit.md).  
-Kurz: Code-Whitelist bekannt; vollständige Live-API-Keys **fehlen** (keine Check24-HAR).
+Kurz: Live-GET `/kb/api/activities` 2026-08-28 — 11 Keys inkl. `rentalcar` → `.carRental`; HTML-Detail-Parser (`CpInitial`) angebunden.
 
 ### Booking.com
 
-**Heute:** GraphQL-Reservierungen `FLIGHT` + `ACCOMMODATION`.  
-**Offen:** Attractions/Taxi/Car in My Trips — nur mit eigener HAR prüfen.  
-`supportedExperiences` / Connectors sind **UI-Flags**, keine Activity-Buchungen.
+SSOT: [`bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md).  
+Live 2026-08-28 (`GetTripsQuery` + `SingleTimelineQuery` V1): in **diesem Konto** `ACCOMMODATION` (47), `FLIGHT` (2), `PREBOOK_TAXI` (2).  
+`AttractionReservation` / `CarReservation`: MFE-Schema vorhanden, **0 Timeline-Treffer in diesem Konto** (nicht „API existiert nicht“).  
+`supportedExperiences` der V1-Query unverändert (`TAXI_ARRIVAL` inkl.); Connectors auf Live-`R`-Liste. WAF = In-Page-fetch + Challenge-Cookie.
 
 ### Airbnb / Opodo (nach HAR)
 
@@ -383,8 +385,8 @@ Siehe A.2 bzw. A.3 — keine zusätzlichen Teil-B-Befunde.
 | Airbnb/GYG Impl-Specs + Activity-Basis + Ausführungsplan | erledigt | Phase 0–2 Produktivcode umgesetzt |
 | Opodo Verdict „kein Muss“ | erledigt | optional TZ später |
 | Expedia Bewertung | erledigt | Live-HAR fehlt |
-| Check24 „alle productKeys erfassen“ | **teilweise** | Live-HAR fehlt; Code-known Keys + Fixture dokumentiert |
-| Redigierte Fixtures GYG/Airbnb/(Opodo) | erledigt | Check24-Keys-Fixture (Code-SSOT); Live-Keys fehlen |
+| Check24 „alle productKeys erfassen“ | **Live-Keys** | Fixture + Audit 2026-08-28; `rentalcar` → `.carRental`; Detail-Parser angebunden |
+| Redigierte Fixtures GYG/Airbnb/(Opodo) | erledigt | Check24-Keys-Fixture auf Live-Keys gehoben |
 | Activity Produktivcode (Airbnb + GYG) | erledigt | Unit-Tests grün; Live-Sync manuell prüfen |
 
 ---

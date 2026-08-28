@@ -226,15 +226,125 @@ func bookingComGetTripsRejectsErrors() {
     }
 }
 
+@Test("BookingComTripsGraphQLParser setzt Taxi-Pickup nicht auf leeren city-String")
+func bookingComGraphQLTaxiPickupIgnoresEmptyCity() throws {
+    let json = """
+    {
+      "data": {
+        "singleTripTimelineQueries": {
+          "singleTripTimeline": {
+            "trip": { "title": "Beach City" },
+            "timelineGroups": [
+              {
+                "tripItems": [
+                  {
+                    "__typename": "ReservationTripItem",
+                    "reservation": {
+                      "__typename": "PrebookTaxiReservation",
+                      "verticalType": "PREBOOK_TAXI",
+                      "bookingUrl": "https://taxi.booking.com/confirmation/fixture_taxi_token_empty_city",
+                      "startDateTime": "2026-08-11T18:35:00.000+08:00",
+                      "endDateTime": "2026-08-11T19:20:00.000+08:00",
+                      "reservationStatus": "CONFIRMED",
+                      "pickUp": {
+                        "location": { "city": "   ", "__typename": "TaxiLocation" },
+                        "__typename": "TaxiStop"
+                      },
+                      "dropOff": {
+                        "location": { "city": "Ubud", "__typename": "TaxiLocation" },
+                        "__typename": "TaxiStop"
+                      },
+                      "identifiers": { "publicId": "taxi-empty-city" }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    let taxi = try #require(BookingComTripsGraphQLParser().parseTimeline(from: json).first)
+    #expect(taxi.locationFrom == nil)
+    #expect(taxi.locationTo == "Ubud")
+}
+
+@Test("BookingComTripsGraphQLParser parst Flughafentaxi aus SingleTimelineQuery")
+func bookingComGraphQLParsesPrebookTaxi() throws {
+    let json = try fixtureJSON("single_timeline_taxi_sample.json")
+    let bookings = try BookingComTripsGraphQLParser().parseTimeline(from: json)
+    let taxi = try #require(bookings.first)
+    #expect(bookings.count == 1)
+    #expect(taxi.bookingType == .other)
+    #expect(taxi.title == "Ngurah Rai Airport → Ubud")
+    #expect(taxi.locationFrom == "Ngurah Rai Airport")
+    #expect(taxi.locationTo == "Ubud")
+    #expect(taxi.locationFromAddress == nil)
+    #expect(taxi.locationToAddress == nil)
+    #expect(taxi.operatorName == "Fixture Transfer Co")
+    #expect(taxi.confirmationCode == "TX-FIXTURE-001")
+    #expect(taxi.status == .confirmed)
+    #expect(taxi.rateDetails?.totalPriceAmount == 18.5)
+    #expect(taxi.rateDetails?.totalPriceCurrency == "EUR")
+    #expect(taxi.externalUrl?.contains("taxi.booking.com") == true)
+}
+
+@Test("BookingComTripsGraphQLParser parst AttractionReservation (MFE-Shape, Konto ohne Live-Treffer)")
+func bookingComGraphQLParsesAttractionReservation() throws {
+    let json = try fixtureJSON("single_timeline_attraction_sample.json")
+    let bookings = try BookingComTripsGraphQLParser().parseTimeline(from: json)
+    let activity = try #require(bookings.first)
+    #expect(activity.bookingType == .activity)
+    #expect(activity.title == "Fixture City Walking Tour")
+    #expect(activity.locationTo == "Sample City")
+    #expect(activity.confirmationCode == "ATTR-FACE-001")
+    #expect(activity.rateDetails?.guestCount == 2)
+    #expect(activity.rateDetails?.passengerCount == 2)
+    #expect(activity.rateDetails?.totalPriceAmount == 42.0)
+    #expect(activity.isAllDay == false)
+}
+
+@Test("BookingComTripsGraphQLParser parst CarReservation (MFE-Shape, Konto ohne Live-Treffer)")
+func bookingComGraphQLParsesCarReservation() throws {
+    let json = try fixtureJSON("single_timeline_car_sample.json")
+    let bookings = try BookingComTripsGraphQLParser().parseTimeline(from: json)
+    let car = try #require(bookings.first)
+    #expect(car.bookingType == .carRental)
+    #expect(car.title == "Fixture Compact Car")
+    #expect(car.locationFrom == "Sample City")
+    #expect(car.locationTo == "Other City")
+    #expect(car.locationFromAddress == nil)
+    #expect(car.locationToAddress == nil)
+    #expect(car.operatorName == "Fixture Rentals")
+    #expect(car.rateDetails?.roomCategory == "Compact")
+    #expect(car.confirmationCode == "CAR-FACE-001")
+}
+
+@Test("Timeline-Query: Taxi/Attraction/Car-Fragmente und V1-Experiences (MFE 2026-08)")
+func bookingComTimelineQueryRequestsVerticalFragments() throws {
+    let source = try graphqlQueriesSource()
+    #expect(source.contains("... on PrebookTaxiReservation"))
+    #expect(source.contains("... on AttractionReservation"))
+    #expect(source.contains("... on CarReservation"))
+    #expect(source.contains("TAXI_ARRIVAL"))
+    #expect(!source.contains("bookerEmail"))
+    #expect(!source.contains("countryCode"))
+    #expect(!source.contains("authKey"))
+    #expect(BookingComGraphQLQueries.timelineSupportedExperiences == [
+        "ACCOMMODATION_ARRIVAL",
+        "ACCOMMODATION_INSTAY",
+        "ACCOMMODATION_PRETRIPS",
+        "BHOME_ARRIVAL",
+        "POST_TRIP",
+        "TAXI_ARRIVAL",
+    ])
+}
+
 @Test("Timeline-Query: address nur über AccommodationLocation-Fragment (HAR)")
 func bookingComTimelineQueryRequestsAddressViaFragment() throws {
     // Regression: `location { address }` ohne Inline-Fragment → GraphQL-Validierungsfehler für alle Trips.
-    let sourceURL = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-        .appendingPathComponent("Sources/ReisenBookingCom/BookingComGraphQLQueries.swift")
-    let source = try String(contentsOf: sourceURL, encoding: .utf8)
+    let source = try graphqlQueriesSource()
     #expect(source.contains("... on AccommodationLocation"))
     #expect(source.contains("... on ReservationPropertyData"))
     #expect(!source.contains("location { city address __typename }"))
@@ -406,4 +516,13 @@ private func fixtureJSON(_ name: String) throws -> String {
 
 private func fixtureText(_ name: String) throws -> String {
     try TestFixtures.text(name)
+}
+
+private func graphqlQueriesSource() throws -> String {
+    let url = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("Sources/ReisenBookingCom/BookingComGraphQLQueries.swift")
+    return try String(contentsOf: url, encoding: .utf8)
 }

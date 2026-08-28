@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8"><title>CHECK24 Mietwagen Buchung (redacted fixture)</title></head>
+<body>
+<!-- Live-Quelle 2026-08-28: mietwagen.check24.de/ul/booking/list/foreign/… → Redirect /kb/…
+     PII entfernt; CpInitial auf Sync-relevante Keys reduziert. -->
+<script>
+window.c24mw = window.c24mw || {};
+Object.assign(window.c24mw, {"globals":{"CpInitial":{"booking_number":"REDACTED_BOOKING_NUMBER","booking_idhash":"REDACTED_BOOKING_HASH","rentalcarStatus":"rented","rentalcarDetails":{"category_name":"Mini-Klasse","description":"Toyota Aygo","price":"202,59\u00a0€","pricePerDay":"25,32\u00a0€","status":"returned","statusTranslation":"Buchung abgeschlossen","timeFrom":"27.03.2026","timeTo":"04.04.2026","isGuaranteedCarModel":false,"similar_cars_text":", z.B. Fiat 500, Renault Twingo (ACRISS-Code MBMR)","features":[{"text":"2 Sitze"},{"text":"2 Türen"},{"text":"2 Koffer"},{"text":"Manuell"},{"text":"Klima"}],"imgSrc":"https://example.invalid/redacted"},"stations":[{"type":"airport","street":"Madeira Airport ","zip_city":"9100-105 Madeira","text":"customer_portal-station-type-pickup-dropoff-combined","openinghours_model":{"opening_hours":"07:00 Uhr - 19:00 Uhr"}}],"vehicleHandovers":{"isOneWay":false,"pickup":{"dateLocal":"27.03.2026","hour":"18","minute":"30","name":"","address":null,"isDelivery":false},"dropoff":{"dateLocal":"04.04.2026","hour":"05","minute":"00"}},"cancel":{"supplier":"Wisecars"},"actions":[{"title":"erneut buchen","href":"/jumpin?source=customer_area&dep_destination_title=Madeira%20Flughafen&dest_destination_title=Madeira%20Flughafen"}]}}});
+</script>
+<div class="c-cp-rentalcar c-cp-rentalcar--status-returned">
+  <div class="c-cp-rentalcar__renter l-flex l-flex--center">
+    <div data-qa-id="qa-renter-name">Car Alliance</div>
+  </div>
+  <small data-qa-id="qa-supplier-name">über Wisecars</small>
+  <div class="c-cp-rentalcar__title" data-qa-id="qa-rentalcar-name">Toyota Aygo<span class="c-cp-rentalcar__title--addition"> oder ähnlich</span></div>
+  <div class="c-cp-rentalcar__category-name">Mini-Klasse</div>
+  <div class="c-cp-rentalcar-price__total-price">202,59&nbsp;€</div>
+  <div class="c-cp-station">
+    <div>Abholung</div>
+    <div>Wo?</div>
+    <div>Madeira Flughafen</div>
+    <div>Madeira Airport</div>
+    <div>9100-105 Madeira</div>
+  </div>
+  <div class="c-cp-station">
+    <div>Rückgabe</div>
+    <div>Wo?</div>
+    <div>Madeira Flughafen</div>
+    <div>Madeira Airport</div>
+    <div>9100-105 Madeira</div>
+  </div>
+</div>
+</body>
+</html>

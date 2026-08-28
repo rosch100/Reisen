@@ -1,18 +1,12 @@
 import Foundation
 
-/// Strip tags / common entities and collapse whitespace to plain text (SSOT for stay-hint extractors).
+/// Visible plain text from HTML: drop script/style, tags, entities; collapse whitespace.
+/// SSOT for stay-hint extractors and Traveloka policy HTML.
 public enum HTMLPlainText {
-    private static let tagPattern = try? NSRegularExpression(pattern: "<[^>]+>", options: [])
-
     public static func flatten(_ html: String) -> String {
-        var s = html
-        if let regex = tagPattern {
-            s = regex.stringByReplacingMatches(
-                in: s,
-                options: [],
-                range: NSRange(s.startIndex..., in: s),
-                withTemplate: " "
-            )
+        var s = stripHiddenMarkup(html)
+        if let tagPattern {
+            s = replacingMatches(tagPattern, in: s)
         }
         return s
             .replacingOccurrences(of: "&nbsp;", with: " ")
@@ -20,5 +14,33 @@ public enum HTMLPlainText {
             .replacingOccurrences(of: "&#39;", with: "'")
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
+    }
+
+    /// i18n-JSON in `<script>` is not guest-visible policy text.
+    private static func stripHiddenMarkup(_ html: String) -> String {
+        hiddenMarkupPatterns.reduce(html) { replacingMatches($1, in: $0) }
+    }
+
+    private static func replacingMatches(_ regex: NSRegularExpression, in text: String) -> String {
+        regex.stringByReplacingMatches(
+            in: text,
+            options: [],
+            range: NSRange(text.startIndex..., in: text),
+            withTemplate: " "
+        )
+    }
+
+    private static let tagPattern = regex("<[^>]+>")
+
+    private static let hiddenMarkupPatterns: [NSRegularExpression] = [
+        "<script\\b[^>]*>[\\s\\S]*?</script>",
+        "<style\\b[^>]*>[\\s\\S]*?</style>",
+    ].compactMap { regex($0, options: .caseInsensitive) }
+
+    private static func regex(
+        _ pattern: String,
+        options: NSRegularExpression.Options = []
+    ) -> NSRegularExpression? {
+        try? NSRegularExpression(pattern: pattern, options: options)
     }
 }
