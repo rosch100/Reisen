@@ -677,9 +677,9 @@ private struct BookingDetailPanel: View {
                                     onEditGap(presentation.editorPayload(for: gap))
                                 }
                             )
-                            .id(gap.identityKey)
                         }
                     }
+                    .id(selectedTimelineItem.id)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)

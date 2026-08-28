@@ -94,34 +94,3 @@ public struct CopyableLabeledValue: View {
         )
     }
 }
-
-/// ViewModifier: bestehenden Inhalt als Standard-Wert kopierbar machen (Selektion + Kontextmenü).
-public struct CopyableValueModifier: ViewModifier {
-    let value: String
-
-    @Environment(\.stringPasteboard) private var pasteboard
-
-    public init(value: String) {
-        self.value = value
-    }
-
-    public func body(content: Content) -> some View {
-        content
-            .textSelection(.enabled)
-            .contextMenu {
-                Button(L10n.string(.commonCopy)) {
-                    CopyAccessibility.copy(value, using: pasteboard)
-                }
-                .disabled(value.isEmpty)
-            }
-            .accessibilityAction(named: Text(L10n.string(.commonCopy))) {
-                CopyAccessibility.copy(value, using: pasteboard)
-            }
-    }
-}
-
-public extension View {
-    func copyableValue(_ value: String) -> some View {
-        modifier(CopyableValueModifier(value: value))
-    }
-}
