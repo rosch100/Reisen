@@ -285,8 +285,14 @@ func bmWebConstantsAllowlistAndBookingID() {
     #expect(BilligerMietwagenAuthConstants.whitelabel == "DE_billiger-mietwagen")
     #expect(BilligerMietwagenAuthConstants.loginAPIURL.path == "/auth/v1/login")
     #expect(BilligerMietwagenAuthConstants.refreshTokenURL.path == "/auth/v1/refresh-token")
-    #expect(BilligerMietwagenWebConstants.bookingListURL().absoluteString.contains("activity_status=active"))
-    #expect(BilligerMietwagenWebConstants.inactiveBookingListURL().absoluteString.contains("activity_status=inactive"))
+    #expect(
+        BilligerMietwagenWebConstants.CatalogList.active.url(page: 0).absoluteString
+            .contains("activity_status=active")
+    )
+    #expect(
+        BilligerMietwagenWebConstants.CatalogList.inactive.url(page: 0).absoluteString
+            .contains("activity_status=inactive")
+    )
     let id = BilligerMietwagenWebConstants.bookingID(
         from: "https://www.billiger-mietwagen.de/reservation/account/bookings/abc-123"
     )

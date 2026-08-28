@@ -38,8 +38,8 @@ public enum BilligerMietwagenBookingsParser {
         guard let id = NonEmpty.string(item.id),
               let startRaw = NonEmpty.string(item.pickUp?.date),
               let endRaw = NonEmpty.string(item.dropOff?.date),
-              let startAt = BilligerMietwagenJSON.parseISODate(startRaw),
-              let endAt = BilligerMietwagenJSON.parseISODate(endRaw)
+              let startAt = ISODateTime.parseInstant(startRaw),
+              let endAt = ISODateTime.parseInstant(endRaw)
         else {
             return nil
         }

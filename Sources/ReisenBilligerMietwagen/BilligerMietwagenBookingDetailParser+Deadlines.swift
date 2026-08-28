@@ -86,7 +86,7 @@ extension BilligerMietwagenBookingDetailParser {
 
     /// Detail-Pickup mit Offset, sonst Katalog-`startAt`.
     private static func pickupStart(pickUpDateTime: String?, catalogStartAt: Date?) -> Date? {
-        BilligerMietwagenJSON.parseISODate(pickUpDateTime) ?? catalogStartAt
+        ISODateTime.parseInstant(pickUpDateTime) ?? catalogStartAt
     }
 
     private static func makeDeadline(

@@ -33,16 +33,6 @@ enum BilligerMietwagenWebConstants {
         catalogBookingsURL.absoluteString
     }
 
-    /// Upcoming/active — Primärkatalog (SPA „Meine Buchungen“).
-    static func bookingListURL(page: Int = 0) -> URL {
-        CatalogList.active.url(page: page)
-    }
-
-    /// Past/cancelled — SPA „Zurückliegend und storniert“ (DropOffDate desc).
-    static func inactiveBookingListURL(page: Int = 0) -> URL {
-        CatalogList.inactive.url(page: page)
-    }
-
     enum CatalogList: CaseIterable, Sendable {
         case active
         case inactive
