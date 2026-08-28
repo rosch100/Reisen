@@ -32,6 +32,11 @@ struct BookingTripDeleteCopyTests {
 
     @Test func tripDeleteTitle_namedAndFallback() {
         #expect(BookingTripActions.tripDeleteTitle(named: "Italien") == L10n.format(.tripDeleteConfirmTitleNamed, "Italien"))
+        #expect(BookingTripActions.tripDeleteTitle(named: "Italien").contains("Italien"))
+        #expect(
+            BookingTripActions.tripDeleteTitle(named: "Italien").contains("löschen?")
+                || BookingTripActions.tripDeleteTitle(named: "Italien").localizedCaseInsensitiveContains("delete")
+        )
         #expect(BookingTripActions.tripDeleteTitle(named: "") == L10n.string(.actionDeleteTripConfirm))
         #expect(BookingTripActions.tripDeleteTitle(named: nil) == L10n.string(.actionDeleteTripConfirm))
     }

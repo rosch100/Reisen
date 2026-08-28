@@ -192,16 +192,7 @@ struct ContentView: View {
             onDeleteBookings: { performPendingTripDeletion(.deleteContained) },
             onCancel: { tripPendingDelete = nil }
         )
-        .alert(L10n.string(.tripAssignFailed), isPresented: Binding(
-            get: { persistErrorMessage != nil },
-            set: { if !$0 { persistErrorMessage = nil } }
-        )) {
-            Button(L10n.string(.commonOk), role: .cancel) { persistErrorMessage = nil }
-        } message: {
-            if let persistErrorMessage {
-                Text(persistErrorMessage)
-            }
-        }
+        .persistFailureAlert(message: $persistErrorMessage)
         .focusedSceneValue(
             \.openBookingsCommandState,
             selection == .openBookings && !selectedOpenBookingIDs.isEmpty

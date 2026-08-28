@@ -108,6 +108,11 @@ struct TripDetailView: View {
     @State private var showRemoveFromTripConfirmation = false
     @State private var persistErrorMessage: String?
 
+    private var pendingDeleteBooking: SDBooking? {
+        guard let pendingDeleteBookingID else { return nil }
+        return trip.resolvedBookings.first(where: { $0.id == pendingDeleteBookingID })
+    }
+
     private func confirmDeleteBooking() {
         guard let bookingIDToDelete = pendingDeleteBookingID,
               let bookingToDelete = trip.resolvedBookings.first(where: { $0.id == bookingIDToDelete }) else {
@@ -305,30 +310,14 @@ struct TripDetailView: View {
         .bookingTripConfirmDialogs(
             showDeleteConfirmation: $showDeleteConfirmation,
             showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
-            bookingTitle: trip.resolvedBookings.first(where: { $0.id == pendingDeleteBookingID })?.presentationTitle
-                ?? L10n.string(.editorBooking),
-            showsSyncRestoreWarning: {
-                guard let pendingDeleteBookingID,
-                      let booking = trip.resolvedBookings.first(where: { $0.id == pendingDeleteBookingID }) else {
-                    return false
-                }
-                return booking.provider != .manual
-            }(),
+            bookingTitle: pendingDeleteBooking?.presentationTitle ?? L10n.string(.editorBooking),
+            showsSyncRestoreWarning: pendingDeleteBooking.map { $0.provider != .manual } ?? false,
             onConfirmDelete: confirmDeleteBooking,
             onConfirmRemove: confirmRemoveBookingFromTrip,
             onCancelDelete: { pendingDeleteBookingID = nil },
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
         )
-        .alert(L10n.string(.tripAssignFailed), isPresented: Binding(
-            get: { persistErrorMessage != nil },
-            set: { if !$0 { persistErrorMessage = nil } }
-        )) {
-            Button(L10n.string(.commonOk), role: .cancel) { persistErrorMessage = nil }
-        } message: {
-            if let persistErrorMessage {
-                Text(persistErrorMessage)
-            }
-        }
+        .persistFailureAlert(message: $persistErrorMessage)
     }
 
     @ViewBuilder
