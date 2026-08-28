@@ -820,6 +820,7 @@ struct ContentView: View {
         @Environment(\.modelContext) private var modelContext
         @State private var assignErrorMessage: String?
         @State private var showAssignError = false
+        @State private var persistErrorMessage: String?
         @State private var isEditing = false
         @State private var bookingEditorDraft: BookingEditorDraft?
         @State private var pendingDeleteBookingID: UUID?
@@ -865,6 +866,7 @@ struct ContentView: View {
                     Text(assignErrorMessage)
                 }
             }
+            .persistFailureAlert(message: $persistErrorMessage)
             .bookingDeleteConfirmAlert(
                 isPresented: $showDeleteConfirmation,
                 bookingTitle: booking.presentationTitle,
@@ -921,8 +923,7 @@ struct ContentView: View {
             do {
                 try BookingDeletion.perform(booking: booking, in: modelContext)
             } catch {
-                assignErrorMessage = error.localizedDescription
-                showAssignError = true
+                persistErrorMessage = error.localizedDescription
             }
             pendingDeleteBookingID = nil
         }

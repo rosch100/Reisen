@@ -18,6 +18,7 @@ struct BookingDetailIOS: View {
 
     @State private var assignErrorMessage: String?
     @State private var showAssignError = false
+    @State private var persistErrorMessage: String?
     @State private var tripCreateSeed: TripCreateSeed?
     @State private var showCreateTripFromBookingsFailed = false
 
@@ -76,8 +77,7 @@ struct BookingDetailIOS: View {
             pendingDeleteBookingID = nil
             dismiss()
         } catch {
-            assignErrorMessage = error.localizedDescription
-            showAssignError = true
+            persistErrorMessage = error.localizedDescription
             pendingDeleteBookingID = nil
         }
     }
@@ -323,6 +323,7 @@ struct BookingDetailIOS: View {
                 Text(message)
             }
         }
+        .persistFailureAlert(message: $persistErrorMessage)
         .bookingTripConfirmDialogs(
             showDeleteConfirmation: $showDeleteConfirmation,
             showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
