@@ -1,0 +1,40 @@
+{
+  "data": {
+    "singleTripTimelineQueries": {
+      "singleTripTimeline": {
+        "__typename": "TripTimeline",
+        "trip": { "title": "Sample City", "__typename": "Trip" },
+        "timelineGroups": [
+          {
+            "tripItems": [
+              {
+                "__typename": "ReservationTripItem",
+                "reservation": {
+                  "__typename": "AttractionReservation",
+                  "verticalType": "ATTRACTION",
+                  "bookingUrl": "https://attractions.booking.com/confirmation/fixture_attr_001",
+                  "startDateTime": "2026-08-12T09:00:00.000+02:00",
+                  "endDateTime": "2026-08-12T11:00:00.000+02:00",
+                  "reservationStatus": "CONFIRMED",
+                  "ticketCount": 2,
+                  "price": { "amount": 42.0, "currency": "EUR", "__typename": "Price" },
+                  "identifiers": {
+                    "publicId": "attr-public-001",
+                    "publicFacingIdentifier": "ATTR-FACE-001",
+                    "__typename": "CommonReservationIdentifiers"
+                  },
+                  "product": {
+                    "name": "Fixture City Walking Tour",
+                    "location": { "city": "Sample City", "__typename": "BasicReservationLocation" },
+                    "__typename": "AttractionProduct"
+                  }
+                }
+              }
+            ],
+            "__typename": "TimelineGroup"
+          }
+        ]
+      }
+    }
+  }
+}

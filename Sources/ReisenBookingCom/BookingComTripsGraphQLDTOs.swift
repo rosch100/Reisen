@@ -91,6 +91,13 @@ struct GraphQLReservation: Decodable {
     let checkIn: GraphQLCheckWindow?
     let checkOut: GraphQLCheckWindow?
     let policy: GraphQLPolicy?
+    let ticketCount: Int?
+    let bookingRef: String?
+    let product: GraphQLReservationProduct?
+    let pickUp: GraphQLTaxiStop?
+    let dropOff: GraphQLTaxiStop?
+    let pickUpLocation: GraphQLLocation?
+    let dropOffLocation: GraphQLLocation?
 
     enum CodingKeys: String, CodingKey {
         case typeName = "__typename"
@@ -109,7 +116,27 @@ struct GraphQLReservation: Decodable {
         case checkIn
         case checkOut
         case policy
+        case ticketCount
+        case bookingRef
+        case product
+        case pickUp
+        case dropOff
+        case pickUpLocation
+        case dropOffLocation
     }
+}
+
+struct GraphQLReservationProduct: Decodable {
+    let name: String?
+    let location: GraphQLLocation?
+    let carClass: String?
+    let supplier: String?
+    let providerName: String?
+    let vehicleTypeText: String?
+}
+
+struct GraphQLTaxiStop: Decodable {
+    let location: GraphQLLocation?
 }
 
 struct GraphQLPrice: Decodable {
@@ -125,6 +152,8 @@ struct GraphQLPropertyData: Decodable {
 struct GraphQLLocation: Decodable {
     let city: String?
     let address: String?
+    let airportCode: String?
+    let airportName: String?
 }
 
 struct GraphQLIdentifiers: Decodable {

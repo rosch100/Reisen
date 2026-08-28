@@ -1,0 +1,56 @@
+{
+  "data": {
+    "singleTripTimelineQueries": {
+      "singleTripTimeline": {
+        "__typename": "TripTimeline",
+        "trip": { "title": "Beach City", "__typename": "Trip" },
+        "timelineGroups": [
+          {
+            "tripItems": [
+              {
+                "__typename": "ReservationTripItem",
+                "reservation": {
+                  "__typename": "PrebookTaxiReservation",
+                  "verticalType": "PREBOOK_TAXI",
+                  "bookingUrl": "https://taxi.booking.com/confirmation/fixture_taxi_token_001",
+                  "startDateTime": "2026-08-11T18:35:00.000+08:00",
+                  "endDateTime": "2026-08-11T19:20:00.000+08:00",
+                  "reservationStatus": "CONFIRMED",
+                  "bookingRef": "TX-FIXTURE-001",
+                  "price": { "amount": 18.5, "currency": "EUR", "__typename": "Price" },
+                  "identifiers": {
+                    "publicId": "taxi-public-001",
+                    "publicFacingIdentifier": "TAXI-FACE-001",
+                    "__typename": "CommonReservationIdentifiers"
+                  },
+                  "pickUp": {
+                    "location": {
+                      "city": "Beach City",
+                      "airportCode": "DPS",
+                      "airportName": "Ngurah Rai Airport",
+                      "__typename": "TaxiLocation"
+                    },
+                    "__typename": "TaxiStop"
+                  },
+                  "dropOff": {
+                    "location": {
+                      "city": "Ubud",
+                      "__typename": "TaxiLocation"
+                    },
+                    "__typename": "TaxiStop"
+                  },
+                  "product": {
+                    "providerName": "Fixture Transfer Co",
+                    "vehicleTypeText": "Standard",
+                    "__typename": "TaxiProduct"
+                  }
+                }
+              }
+            ],
+            "__typename": "TimelineGroup"
+          }
+        ]
+      }
+    }
+  }
+}
