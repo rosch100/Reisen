@@ -28,11 +28,12 @@ func opodoRetainedIsCancelled() {
     #expect(BookingStatus.parse(parts: ["CONTRACT", "CANCELLED"]) == .cancelled)
 }
 
-@Test("OpodoGetTripByTokenQuery extrahiert tdToken aus Detail-URL")
+@Test("OpodoWeb extrahiert tdToken aus Detail-URL")
 func opodoTdTokenFromExternalURL() {
-    let url = "https://www.opodo.de/travel/secure/#tripdetails/td=ABC_TOKEN_123"
-    #expect(OpodoGetTripByTokenQuery.tdToken(fromExternalURL: url) == "ABC_TOKEN_123")
-    #expect(OpodoGetTripByTokenQuery.tdToken(fromExternalURL: "https://www.opodo.de/") == nil)
+    let url = OpodoWeb.tripDetailsURL(token: "ABC_TOKEN_123")
+    #expect(url.hasPrefix(OpodoWeb.secureAreaURLString))
+    #expect(OpodoWeb.tdToken(fromExternalURL: url) == "ABC_TOKEN_123")
+    #expect(OpodoWeb.tdToken(fromExternalURL: OpodoWeb.homepageURLString) == nil)
 }
 
 @Test("OpodoTripCancellationGraphQLParser liest Hotel- und Flug-Storno")
