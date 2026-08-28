@@ -424,7 +424,7 @@ func bmCookieSessionRefreshUsesCognitoUsernameNotSub() throws {
     let refreshed = try BilligerMietwagenTokenPair.parseRefresh(
         from: #"{"access_token":"<REDACTED_NEW_ACCESS>","refresh_token":"<REDACTED_NEW_REFRESH>"}"#
     )
-    let tokens = try refreshed.requiringRefreshedTokens()
+    let tokens = try refreshed.requiringRefreshedTokens(reusingRefresh: sessionTokens.refresh)
     #expect(tokens.access == "<REDACTED_NEW_ACCESS>")
     #expect(tokens.refresh == "<REDACTED_NEW_REFRESH>")
 
