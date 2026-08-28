@@ -15,6 +15,7 @@ Partner-/Demand-APIs (Amadeus, Sabre, GYG Partner, Expedia Lodging Supply) bleib
 | [`dev/booking-type-activity-impl-spec.md`](dev/booking-type-activity-impl-spec.md) | Gemeinsame Basis `BookingType.activity` |
 | [`dev/airbnb-experiences-impl-spec.md`](dev/airbnb-experiences-impl-spec.md) | Airbnb Catalog + `activity_reservation_details` |
 | [`dev/getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md) | Neuer Provider GYG |
+| [`dev/billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md) | Neuer Provider billiger-mietwagen.de (FLOYT) |
 | [`dev/check24-productkey-audit.md`](dev/check24-productkey-audit.md) | productKey-Inventory + Live-Audit-Checkliste |
 | [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md) | Booking.com `verticalType` / Reservation-`__typename` + Query-Shape 2026-08 |
 
@@ -30,7 +31,7 @@ Ausführungsdetails nur im Plan — nicht hier wiederholen.
 | Partner/Metasearch-API | Amadeus, Skyscanner Travel API, GYG Partner API, Expedia Lodging Supply | **Nein** |
 | Gap-Deep-Links | Check24 Hotel/Flug-Suche | Teilweise (nur Suche, kein Sync) |
 
-Neue Provider = [`TravelProvider`](../Sources/ReisenProviders/TravelProvider.swift) + `WKWebView`-Session, wie die **sechs** registrierten Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka).
+Neue Provider = [`TravelProvider`](../Sources/ReisenDomain/Ports/TravelProvider.swift) + `WKWebView`-Session, wie die registrierten Sync-Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen.de).
 
 ```mermaid
 flowchart LR
@@ -77,7 +78,51 @@ Domain-Basis: [`BookingType.activity`](dev/booking-type-activity-impl-spec.md). 
 
 ### Prio 3 – Transport (optional)
 
-FlixBus/DB, Sixt — neuer Typ oder zuerst Check24-`productKey`-Whitelist (siehe [Check24](#check24--productkey-audit)).
+| Provider | Sync-Pfad | Aufwand | Status Recherche |
+|----------|-----------|---------|------------------|
+| **billiger-mietwagen.de** (FLOYT) | Session.php + `consumer-api.floyt.com` bookings | Mittel | Live-Capture 2026-08-28; [Impl-Spec](dev/billiger-mietwagen-impl-spec.md) |
+| FlixBus/DB, Sixt | — | — | nachrangig; ggf. Check24-`productKey`-Whitelist |
+
+---
+
+## Teil A.4 – billiger-mietwagen.de / FLOYT
+
+**HAR-SSOT** (Surfaces). **Mapping-SSOT:** [`billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md).
+
+**Quelle:** Live authenticated fetch 2026-08-28 (FLOYT SPA unter `/reservation/`); Roh-HAR optional unter `HAR/billiger-mietwagen_*.har` (gitignored).  
+**Fixtures:** `bm_bookings_active_redacted.json`, `bm_bookings_inactive_redacted.json`, `bm_booking_detail_web_redacted.json`, `bm_session_*_redacted.json`.
+
+### Surfaces
+
+| Rolle | URL / Endpoint | Inhalt |
+|-------|----------------|--------|
+| Login-UI | `GET …/reservation/account/login` | E-Mail/Passwort + Social (Apple/Google) |
+| Buchungsliste-UI | `GET …/reservation/account/bookings` | SPA; braucht JS |
+| Login API | `POST https://consumer-api.floyt.com/auth/v1/login` | Body `username`/`password`; Header `X-Whitelabel: DE_billiger-mietwagen` → Tokens inkl. `id_token` |
+| Session schreiben | `POST …/user_account/session.php` | Body `access_token`+`refresh_token`; Cookies `__Secure-billigermietwagen`, `__Secure-user_account` |
+| Session lesen | `GET …/user_account/session.php` | Tokens für Sync/Probe |
+| Token-Refresh | `POST …/auth/v1/refresh-token` | Body `{refresh_token,user_id}` mit `user_id`=JWT-`username` (nicht `sub`); oft nötig vor Catalog (401 sonst) |
+| Catalog active | `GET …/useraccount/v1/bookings?activity_status=active&…` | Upcoming |
+| Catalog inactive | `GET …/bookings?activity_status=inactive&sort_by=DropOffDate&…` | Past/storniert (SPA-Parität) |
+| Detail | `GET …/useraccount/v1/web/bookings/{id}` | Web-Detail (länger als Non-Web) |
+| Settings | `GET https://api.billiger-mietwagen.de/v1/site/settings` | Locale, Social-Client-IDs |
+| Deep-Link UI | `GET …/reservation/account/bookings/{uuid}` | Buchungsdetails-SPA |
+
+**Hosts:** `e` = `www.billiger-mietwagen.de`, `t` = `api.billiger-mietwagen.de`, `n` = `consumer-api.floyt.com` (URL-Map in SPA `iframe-connector`).
+
+**Kernbefund:** Ein Primärpfad Cookie → session.php → **Refresh** → Bearer JSON (active+inactive). `/reservation/account/` ohne Suffix → SPA-404; Login und Bookings sind getrennte Pfade (Heuristik ok; Homepage → Session-Probe).
+
+**Auth-Header:** Live-HAR Login nutzt `X-Whitelabel: DE_billiger-mietwagen`; **kein** CSRF/XSRF-Header — Cookies + Bearer reichen. Session-`access_token` allein oft **401** an Consumer-API → Refresh Pflicht.
+
+**Cookie-Banner:** Consent-Banner muss im WKWebView vom Nutzer geschlossen werden; sonst Login/Sync blockiert. Kein Auto-Dismiss in der App.
+
+**Browser-Verifikation 2026-08-28:** Deep-Link + Web-Detail OK; Testkonto nur inactive/storniert → Domain droppt Drafts (0 syncbare Upcoming).
+
+### Offene Punkte
+
+- Safari-HAR-Datei optional nachziehen (WebKit-Parität; JSON-Shape und Login-HAR bereits belegt; Capture-SSOT ergänzen)
+- Pagination `pointers.next` für >10 Buchungen pro Status (Sync lädt alle Seiten)
+- Manueller Live-Sync in App-WebView (Cookie-Banner → Login → eine aktive Buchung) als Abnahme
 
 ---
 

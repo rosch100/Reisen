@@ -54,7 +54,7 @@ struct OpodoSyncPersistenceTests {
                 bookingType: .hotel,
                 statusRaw: parsed.statusRaw,
                 deadlines: parsed.deadlines,
-                hotelOffsetSeconds: parsed.deadlines.firstHotelOffsetSeconds
+                hotelOffsetSeconds: parsed.deadlines.firstStayOffsetSeconds
             )
         )
         drafts[merlynnIndex].apply(enrichment)

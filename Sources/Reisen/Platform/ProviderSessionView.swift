@@ -185,17 +185,6 @@ private struct ProviderWebView: NSViewRepresentable {
                 context.coordinator.loadedLoginURL = loginURL
                 // Hub-WebView kann noch eine alte URL haben (z. B. Opodo /travel/secure/).
                 if current != loginURL.absoluteString {
-                    // #region agent log
-                    AgentDebugLog.write(
-                        hypothesisId: "Z",
-                        location: "ProviderSessionView.swift:makeNSView",
-                        message: "load loginURL",
-                        data: [
-                            "loginURL": loginURL.absoluteString,
-                            "previousURL": current ?? "nil",
-                        ]
-                    )
-                    // #endregion
                     webView.load(URLRequest(url: loginURL))
                 }
             }
@@ -231,17 +220,6 @@ private struct ProviderWebView: NSViewRepresentable {
             context.coordinator.loadedLoginURL = loginURL
             webView.load(URLRequest(url: loginURL))
         } else if credentialsChanged {
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "B",
-                location: "ProviderSessionView.swift:updateNSView",
-                message: "credentialsChanged → scheduleLoginAssistance",
-                data: [
-                    "hasCredentials": autofillCredentials != nil,
-                    "url": webView.url?.absoluteString ?? "nil",
-                ]
-            )
-            // #endregion
             context.coordinator.scheduleLoginAssistance(in: webView)
         }
     }
@@ -252,7 +230,7 @@ private struct ProviderWebView: NSViewRepresentable {
         if let webView = nsView.webView, webView.superview === nsView {
             let ucc = webView.configuration.userContentController
             ucc.removeScriptMessageHandler(forName: LoginFieldHints.messageHandlerName)
-            ucc.removeScriptMessageHandler(forName: LoginSubmitDebugProbe.messageHandlerName)
+            LoginSubmitBusyProbe.removeMessageHandler(from: ucc)
             webView.navigationDelegate = nil
             _ = nsView.detachWebView()
         } else {
@@ -279,8 +257,8 @@ private struct ProviderWebView: NSViewRepresentable {
         config.preferences.isElementFullscreenEnabled = true
         config.userContentController.add(context.coordinator, name: LoginFieldHints.messageHandlerName)
         config.userContentController.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
-        LoginSubmitDebugProbe.addMessageHandler(to: config.userContentController, handler: context.coordinator)
-        LoginSubmitDebugProbe.addUserScript(to: config.userContentController)
+        LoginSubmitBusyProbe.addMessageHandler(to: config.userContentController, handler: context.coordinator)
+        LoginSubmitBusyProbe.addUserScript(to: config.userContentController)
 
         let webView = FocusableWKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
@@ -302,7 +280,7 @@ private struct ProviderWebView: NSViewRepresentable {
         ucc.add(context.coordinator, name: LoginFieldHints.messageHandlerName)
         ucc.removeScriptMessageHandler(forName: LoginFormCapture.messageHandlerName)
         ucc.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
-        LoginSubmitDebugProbe.addMessageHandler(to: ucc, handler: context.coordinator)
+        LoginSubmitBusyProbe.addMessageHandler(to: ucc, handler: context.coordinator)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         if webView.customUserAgent == nil || webView.customUserAgent?.isEmpty == true {
@@ -321,12 +299,6 @@ private struct ProviderWebView: NSViewRepresentable {
         private var loginAssistanceWorkItem: DispatchWorkItem?
         private var sessionProbeWorkItem: DispatchWorkItem?
         var loadedLoginURL: URL?
-        // #region agent log
-        private var assistanceScheduleCount = 0
-        private var assistanceApplyCount = 0
-        private var fieldsChangedNotifyCount = 0
-        private var autofillApplyCount = 0
-        // #endregion
         /// Während „Anmelden…“ (Post-Submit) keine DOM-Hilfe mehr.
         private var loginAssistanceSuspended = false
 
@@ -400,8 +372,8 @@ private struct ProviderWebView: NSViewRepresentable {
             _ userContentController: WKUserContentController,
             didReceive message: WKScriptMessage
         ) {
-            if message.name == LoginSubmitDebugProbe.messageHandlerName {
-                handleLoginDebugMessage(message)
+            if message.name == LoginSubmitBusyProbe.messageHandlerName {
+                handleLoginBusyMessage(message)
                 return
             }
             if message.name == LoginFormCapture.messageHandlerName {
@@ -416,26 +388,12 @@ private struct ProviderWebView: NSViewRepresentable {
             guard message.name == LoginFieldHints.messageHandlerName else { return }
             guard let webView = trackedWebView ?? message.webView else { return }
             Task { @MainActor in
-                // #region agent log
-                fieldsChangedNotifyCount += 1
-                AgentDebugLog.write(
-                    hypothesisId: "K",
-                    location: "ProviderSessionView.swift:userContentController",
-                    message: "LoginFieldHints fieldsChanged notify",
-                    data: [
-                        "notifyCount": fieldsChangedNotifyCount,
-                        "url": webView.url?.absoluteString ?? "nil",
-                        "suspended": loginAssistanceSuspended,
-                        "hasCredentials": autofillCredentials != nil,
-                    ]
-                )
-                // #endregion
                 guard !loginAssistanceSuspended else { return }
                 scheduleLoginAssistance(in: webView)
             }
         }
 
-        private func handleLoginDebugMessage(_ message: WKScriptMessage) {
+        private func handleLoginBusyMessage(_ message: WKScriptMessage) {
             let body = message.body as? [String: Any]
                 ?? (message.body as? NSDictionary).map { ns -> [String: Any] in
                     var mapped: [String: Any] = [:]
@@ -446,120 +404,24 @@ private struct ProviderWebView: NSViewRepresentable {
                 }
                 ?? [:]
             let type = body["type"] as? String ?? ""
-            var data: [String: Any] = [:]
-            for (key, value) in body {
-                if value is NSNull { continue }
-                if value is String || value is NSNumber || value is Bool {
-                    data[key] = value
-                } else {
-                    data[key] = String(describing: value)
-                }
-            }
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: type == "busy" ? "K,N" : "L,M",
-                location: "ProviderSessionView.swift:loginDebug",
-                message: "login submit probe",
-                data: data
-            )
-            // #endregion
             if type == "busy", body["busy"] as? Bool == true {
                 Task { @MainActor in
                     self.suspendLoginAssistance()
-                    if let webView = self.trackedWebView ?? message.webView {
-                        self.probeLoginFieldsAtBusy(in: webView)
-                    }
                 }
             } else if type == "busy", body["busy"] as? Bool == false {
                 Task { @MainActor in
                     if let webView = self.trackedWebView ?? message.webView {
-                        self.scheduleOpodoSessionProbe(in: webView)
+                        self.updateSession(from: webView)
                     }
                 }
-            }
-        }
-
-        @MainActor
-        private func probeLoginFieldsAtBusy(in webView: WKWebView) {
-            let script = """
-            (function() {
-              function meta(el) {
-                if (!el) return null;
-                return {
-                  type: (el.type || '').toLowerCase(),
-                  name: el.name || '',
-                  id: el.id || '',
-                  autocomplete: el.getAttribute('autocomplete') || '',
-                  len: (el.value || '').length,
-                  visible: !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length)
-                };
-              }
-              const all = Array.from(document.querySelectorAll('input'));
-              const emails = all.filter(function(el) {
-                const t = (el.type || '').toLowerCase();
-                const hay = [el.name, el.id, el.placeholder, el.getAttribute('autocomplete')].join(' ').toLowerCase();
-                return t === 'email' || /e-?mail|username|user/.test(hay);
-              }).map(meta);
-              const passes = all.filter(function(el) {
-                return (el.type || '').toLowerCase() === 'password';
-              }).map(meta);
-              return {
-                inputCount: all.length,
-                visibleCount: all.filter(function(el) {
-                  return el.offsetWidth || el.offsetHeight || el.getClientRects().length;
-                }).length,
-                emails: emails.slice(0, 5),
-                passwords: passes.slice(0, 5),
-                ua: navigator.userAgent.slice(0, 120)
-              };
-            })();
-            """
-            webView.evaluateJavaScript(script) { result, error in
-                // #region agent log
-                var data: [String: Any] = [:]
-                if let error {
-                    data["error"] = error.localizedDescription
-                }
-                if let dict = result as? [String: Any] {
-                    for (key, value) in dict {
-                        if value is String || value is NSNumber || value is Bool {
-                            data[key] = value
-                        } else {
-                            data[key] = String(describing: value)
-                        }
-                    }
-                }
-                AgentDebugLog.write(
-                    hypothesisId: "S,T",
-                    location: "ProviderSessionView.swift:probeLoginFieldsAtBusy",
-                    message: "field state at Anmelden busy",
-                    data: data
-                )
-                // #endregion
             }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "M",
-                location: "ProviderSessionView.swift:didFinish",
-                message: "navigation didFinish",
-                data: ["url": webView.url?.absoluteString ?? "nil"]
-            )
-            // #endregion
             updateSession(from: webView)
         }
 
         func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "M",
-                location: "ProviderSessionView.swift:didCommit",
-                message: "navigation didCommit",
-                data: ["url": webView.url?.absoluteString ?? "nil"]
-            )
-            // #endregion
             updateSession(from: webView)
         }
 
@@ -568,17 +430,6 @@ private struct ProviderWebView: NSViewRepresentable {
             didFail navigation: WKNavigation!,
             withError error: Error
         ) {
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "L,M",
-                location: "ProviderSessionView.swift:didFail",
-                message: "navigation didFail",
-                data: [
-                    "url": webView.url?.absoluteString ?? "nil",
-                    "error": error.localizedDescription,
-                ]
-            )
-            // #endregion
         }
 
         func webView(
@@ -586,17 +437,6 @@ private struct ProviderWebView: NSViewRepresentable {
             didFailProvisionalNavigation navigation: WKNavigation!,
             withError error: Error
         ) {
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "L,M",
-                location: "ProviderSessionView.swift:didFailProvisional",
-                message: "navigation didFailProvisional",
-                data: [
-                    "url": webView.url?.absoluteString ?? "nil",
-                    "error": error.localizedDescription,
-                ]
-            )
-            // #endregion
         }
 
         @MainActor
@@ -605,26 +445,7 @@ private struct ProviderWebView: NSViewRepresentable {
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
         ) {
-            let url = navigationAction.request.url?.absoluteString ?? "nil"
             let isMain = navigationAction.targetFrame?.isMainFrame ?? false
-            // #region agent log
-            if url.lowercased().contains("opodo")
-                || url.lowercased().contains("login")
-                || url.lowercased().contains("auth")
-                || url.lowercased().contains("google")
-                || url.lowercased().contains("account") {
-                AgentDebugLog.write(
-                    hypothesisId: "M",
-                    location: "ProviderSessionView.swift:decidePolicy",
-                    message: "navigation action",
-                    data: [
-                        "url": String(url.prefix(300)),
-                        "mainFrame": isMain,
-                        "type": "\(navigationAction.navigationType.rawValue)",
-                    ]
-                )
-            }
-            // #endregion
             if let requestURL = navigationAction.request.url,
                !ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: isMain) {
                 onNavigationBlocked?()
@@ -637,19 +458,6 @@ private struct ProviderWebView: NSViewRepresentable {
         @MainActor
         func scheduleLoginAssistance(in webView: WKWebView) {
             loginAssistanceWorkItem?.cancel()
-            // #region agent log
-            assistanceScheduleCount += 1
-            AgentDebugLog.write(
-                hypothesisId: "A,E",
-                location: "ProviderSessionView.swift:scheduleLoginAssistance",
-                message: "scheduleLoginAssistance",
-                data: [
-                    "scheduleCount": assistanceScheduleCount,
-                    "url": webView.url?.absoluteString ?? "nil",
-                    "hasCredentials": autofillCredentials != nil,
-                ]
-            )
-            // #endregion
             let work = DispatchWorkItem { [weak self, weak webView] in
                 guard let self, let webView else { return }
                 self.applyLoginAssistance(in: webView)
@@ -663,14 +471,6 @@ private struct ProviderWebView: NSViewRepresentable {
             loginAssistanceSuspended = true
             loginAssistanceWorkItem?.cancel()
             loginAssistanceWorkItem = nil
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "F,H",
-                location: "ProviderSessionView.swift:suspendLoginAssistance",
-                message: "login assistance suspended",
-                data: [:]
-            )
-            // #endregion
         }
 
         @MainActor
@@ -678,49 +478,16 @@ private struct ProviderWebView: NSViewRepresentable {
             guard let url = webView.url else { return }
             let absolute = url.absoluteString.lowercased()
             let isLogin = AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute)
-            // #region agent log
-            assistanceApplyCount += 1
-            AgentDebugLog.write(
-                hypothesisId: "B,D,E",
-                location: "ProviderSessionView.swift:applyLoginAssistance",
-                message: "applyLoginAssistance",
-                data: [
-                    "applyCount": assistanceApplyCount,
-                    "url": url.absoluteString,
-                    "isLogin": isLogin,
-                    "suspended": loginAssistanceSuspended,
-                    "hasCredentials": autofillCredentials != nil,
-                ]
-            )
-            // #endregion
             guard isLogin else {
                 loginAssistanceSuspended = false
                 return
             }
             guard !loginAssistanceSuspended else { return }
 
-            // Hypothese F/H: Während Opodo „Anmelden…“ keine weiteren DOM-Eingriffe.
-            let busyProbe = """
-            (function() {
-              const root = document.body || document.documentElement;
-              if (!root) return false;
-              const text = (root.innerText || root.textContent || '').slice(0, 8000);
-              return /Anmelden\\s*\\.\\.\\./i.test(text)
-                || /Signing\\s*in\\s*\\.\\.\\./i.test(text)
-                || /Logging\\s*in\\s*\\.\\.\\./i.test(text);
-            })();
-            """
-            webView.evaluateJavaScript(busyProbe) { [weak self] result, _ in
+            // Während „Anmelden…“ keine weiteren DOM-Eingriffe (Busy-SSOT: LoginSubmitBusyProbe).
+            webView.evaluateJavaScript(LoginSubmitBusyProbe.isBusyEvaluateScript) { [weak self] result, _ in
                 guard let self else { return }
                 let busy = (result as? Bool) ?? false
-                // #region agent log
-                AgentDebugLog.write(
-                    hypothesisId: "F,H",
-                    location: "ProviderSessionView.swift:applyLoginAssistance.busyProbe",
-                    message: "login busy probe",
-                    data: ["busy": busy, "url": url.absoluteString]
-                )
-                // #endregion
                 if busy {
                     Task { @MainActor in
                         self.suspendLoginAssistance()
@@ -737,27 +504,8 @@ private struct ProviderWebView: NSViewRepresentable {
         private func runLoginAssistanceScripts(in webView: WKWebView, url: URL) {
             guard !loginAssistanceSuspended else { return }
             guard let credentials = autofillCredentials else {
-                // #region agent log
-                AgentDebugLog.write(
-                    hypothesisId: "S",
-                    location: "ProviderSessionView.swift:applyLoginAssistance",
-                    message: "login assistance noop (no credentials)",
-                    data: ["url": url.absoluteString]
-                )
-                // #endregion
                 return
             }
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "S",
-                location: "ProviderSessionView.swift:applyLoginAssistance",
-                message: "login assistance autofill",
-                data: [
-                    "usernameLen": credentials.username.count,
-                    "url": url.absoluteString,
-                ]
-            )
-            // #endregion
             ProviderLoginAssistance.applyCredentials(in: webView, credentials: credentials)
         }
 
@@ -769,18 +517,6 @@ private struct ProviderWebView: NSViewRepresentable {
             for navigationAction: WKNavigationAction,
             windowFeatures: WKWindowFeatures
         ) -> WKWebView? {
-            let url = navigationAction.request.url?.absoluteString ?? "nil"
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "Q",
-                location: "ProviderSessionView.swift:createWebViewWith",
-                message: "popup/createWebView requested",
-                data: [
-                    "url": String(url.prefix(300)),
-                    "hasTargetFrame": navigationAction.targetFrame != nil,
-                ]
-            )
-            // #endregion
             // Ohne Handler gehen target=_blank/SSO-Fenster verloren → Login hängt.
             if navigationAction.targetFrame == nil {
                 if let requestURL = navigationAction.request.url {
@@ -800,22 +536,7 @@ private struct ProviderWebView: NSViewRepresentable {
 
             let absolute = url.absoluteString.lowercased()
             let looksLikeLogin = AuthPageURLHeuristic.looksLikeLoginPage(absolute)
-            let looksLikeAccount = AuthPageURLHeuristic.looksLikeAccountPage(absolute)
             let statusHeuristic = ProviderSessionStatusResolver.classify(url)
-
-            // #region agent log
-            AgentDebugLog.write(
-                hypothesisId: "E",
-                location: "ProviderSessionView.swift:updateSession",
-                message: "URL classification",
-                data: [
-                    "url": url.absoluteString,
-                    "looksLikeLogin": looksLikeLogin,
-                    "looksLikeAccount": looksLikeAccount,
-                    "statusBefore": "\(sessionStatus.wrappedValue)",
-                ]
-            )
-            // #endregion
 
             switch statusHeuristic {
             case .sessionReady:
@@ -824,9 +545,17 @@ private struct ProviderWebView: NSViewRepresentable {
                 sessionStatus.wrappedValue = .needsLogin
             case .shouldProbeOpodo:
                 // Homepage nach Login: weder Login- noch Account-URL → GraphQL-Probe.
-                scheduleOpodoSessionProbe(in: webView)
+                scheduleDelayedSessionProbe(in: webView) { [weak self] webView in
+                    self?.runOpodoSessionProbe(in: webView)
+                }
             case .shouldProbeTraveloka:
-                scheduleTravelokaSessionProbe(in: webView)
+                scheduleDelayedSessionProbe(in: webView) { [weak self] webView in
+                    self?.runTravelokaSessionProbe(in: webView)
+                }
+            case .shouldProbeBilligerMietwagen:
+                scheduleDelayedSessionProbe(in: webView) { [weak self] webView in
+                    self?.runBilligerMietwagenSessionProbe(in: webView)
+                }
             case .unknown:
                 break
             }
@@ -850,26 +579,9 @@ private struct ProviderWebView: NSViewRepresentable {
         }
 
         @MainActor
-        private func scheduleOpodoSessionProbe(in webView: WKWebView) {
-            sessionProbeWorkItem?.cancel()
-            let work = DispatchWorkItem { [weak self, weak webView] in
-                guard let self, let webView else { return }
-                self.runOpodoSessionProbe(in: webView)
-            }
-            sessionProbeWorkItem = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
-        }
-
-        @MainActor
         private func runOpodoSessionProbe(in webView: WKWebView) {
-            guard hasOpodoNavigationHint(in: webView) else { return }
-            if let url = webView.url {
-                let absolute = url.absoluteString.lowercased()
-                if AuthPageURLHeuristic.looksLikeAccountPage(absolute),
-                   !AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
-                    return
-                }
-            }
+            guard hasNavigationHint(in: webView, applies: OpodoSessionProbe.applies(to:)) else { return }
+            if shouldSkipAccountPageProbe(in: webView) { return }
 
             Task { @MainActor [weak self, weak webView] in
                 guard let self, let webView else { return }
@@ -883,57 +595,33 @@ private struct ProviderWebView: NSViewRepresentable {
                         body: OpodoSessionProbe.getUserAccountRequestBody()
                     )
                     let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text)
-                    // #region agent log
-                    AgentDebugLog.write(
-                        hypothesisId: "Z2",
-                        location: "ProviderSessionView.swift:runOpodoSessionProbe",
-                        message: "Opodo GetUserAccount probe",
-                        data: [
-                            "loggedIn": loggedIn as Any,
-                            "bodyPrefix": String(text.prefix(160)),
-                        ]
-                    )
-                    // #endregion
-                    if loggedIn == true {
-                        self.sessionStatus.wrappedValue = .sessionReady
-                        self.suspendLoginAssistance()
-                    } else if loggedIn == false {
-                        self.sessionStatus.wrappedValue = .needsLogin
-                    }
+                    self.applySessionProbeOutcome(loggedIn)
                 } catch {
-                    // #region agent log
-                    AgentDebugLog.write(
-                        hypothesisId: "Z2",
-                        location: "ProviderSessionView.swift:runOpodoSessionProbe",
-                        message: "Opodo GetUserAccount probe failed",
-                        data: ["error": error.localizedDescription]
-                    )
-                    // #endregion
+                    // Probe-Fehler: Status unverändert lassen (kein stiller Fallback).
                 }
             }
         }
 
         @MainActor
-        private func scheduleTravelokaSessionProbe(in webView: WKWebView) {
-            sessionProbeWorkItem?.cancel()
-            let work = DispatchWorkItem { [weak self, weak webView] in
+        private func runBilligerMietwagenSessionProbe(in webView: WKWebView) {
+            guard hasNavigationHint(in: webView, applies: BilligerMietwagenSessionProbe.applies(to:)) else { return }
+
+            Task { @MainActor [weak self, weak webView] in
                 guard let self, let webView else { return }
-                self.runTravelokaSessionProbe(in: webView)
+                do {
+                    self.applySessionProbeOutcome(
+                        try await BilligerMietwagenSessionProbe.fetchIsLoggedIn(using: webView)
+                    )
+                } catch {
+                    // Probe-Fehler: Status unverändert lassen (kein stiller Fallback).
+                }
             }
-            sessionProbeWorkItem = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
         }
 
         @MainActor
         private func runTravelokaSessionProbe(in webView: WKWebView) {
-            guard hasTravelokaNavigationHint(in: webView) else { return }
-            if let url = webView.url {
-                let absolute = url.absoluteString.lowercased()
-                if AuthPageURLHeuristic.looksLikeAccountPage(absolute),
-                   !AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
-                    return
-                }
-            }
+            guard hasNavigationHint(in: webView, applies: TravelokaSessionProbe.applies(to:)) else { return }
+            if shouldSkipAccountPageProbe(in: webView) { return }
 
             Task { @MainActor [weak self, weak webView] in
                 guard let self, let webView else { return }
@@ -949,75 +637,51 @@ private struct ProviderWebView: NSViewRepresentable {
                         body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
                         headers: TravelokaSessionProbe.whoamiHeaders(context: context)
                     )
-                    let loggedIn = TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text)
-                    if loggedIn == true {
-                        self.sessionStatus.wrappedValue = .sessionReady
-                        self.suspendLoginAssistance()
-                    } else if loggedIn == false {
-                        self.sessionStatus.wrappedValue = .needsLogin
-                    }
+                    self.applySessionProbeOutcome(
+                        TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text)
+                    )
                 } catch {
                     // Probe-Fehler: Status unverändert lassen (kein stiller Fallback).
                 }
             }
         }
 
-        private func hasOpodoNavigationHint(in webView: WKWebView) -> Bool {
-            if let url = webView.url, OpodoSessionProbe.applies(to: url) { return true }
-            if let hint = lastURLString.wrappedValue.flatMap(URL.init(string:)),
-               OpodoSessionProbe.applies(to: hint) {
+        @MainActor
+        private func scheduleDelayedSessionProbe(
+            in webView: WKWebView,
+            run: @escaping @MainActor (WKWebView) -> Void
+        ) {
+            sessionProbeWorkItem?.cancel()
+            let work = DispatchWorkItem { [weak webView] in
+                guard let webView else { return }
+                run(webView)
+            }
+            sessionProbeWorkItem = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
+        }
+
+        private func shouldSkipAccountPageProbe(in webView: WKWebView) -> Bool {
+            guard let url = webView.url else { return false }
+            let absolute = url.absoluteString.lowercased()
+            return AuthPageURLHeuristic.looksLikeAccountPage(absolute)
+                && !AuthPageURLHeuristic.looksLikeLoginPage(absolute)
+        }
+
+        private func hasNavigationHint(in webView: WKWebView, applies: (URL) -> Bool) -> Bool {
+            if let url = webView.url, applies(url) { return true }
+            if let hint = lastURLString.wrappedValue.flatMap(URL.init(string:)), applies(hint) {
                 return true
             }
             return false
         }
 
-        private func hasTravelokaNavigationHint(in webView: WKWebView) -> Bool {
-            if let url = webView.url, TravelokaSessionProbe.applies(to: url) { return true }
-            if let hint = lastURLString.wrappedValue.flatMap(URL.init(string:)),
-               TravelokaSessionProbe.applies(to: hint) {
-                return true
+        private func applySessionProbeOutcome(_ loggedIn: Bool?) {
+            guard let loggedIn else { return }
+            if loggedIn {
+                suspendLoginAssistance()
             }
-            return false
+            sessionStatus.wrappedValue = .fromProbe(loggedIn: loggedIn)
         }
     }
 }
 
-// #region agent log
-enum AgentDebugLog {
-    private static let path = FileManager.default.temporaryDirectory
-        .appendingPathComponent("reisen-agent-debug-33f094.log")
-        .path
-    private static let lock = NSLock()
-
-    static func write(
-        hypothesisId: String,
-        location: String,
-        message: String,
-        data: [String: Any] = [:]
-    ) {
-        lock.lock()
-        defer { lock.unlock() }
-        let payload: [String: Any] = [
-            "sessionId": "33f094",
-            "hypothesisId": hypothesisId,
-            "location": location,
-            "message": message,
-            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            "data": data,
-        ]
-        guard JSONSerialization.isValidJSONObject(payload),
-              let json = try? JSONSerialization.data(withJSONObject: payload),
-              var line = String(data: json, encoding: .utf8) else { return }
-        line.append("\n")
-        let url = URL(fileURLWithPath: path)
-        if !FileManager.default.fileExists(atPath: path) {
-            FileManager.default.createFile(atPath: path, contents: Data(line.utf8))
-            return
-        }
-        guard let handle = try? FileHandle(forWritingTo: url) else { return }
-        defer { try? handle.close() }
-        _ = try? handle.seekToEnd()
-        try? handle.write(contentsOf: Data(line.utf8))
-    }
-}
-// #endregion

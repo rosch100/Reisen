@@ -6,7 +6,8 @@ extension ProviderBookingDraft {
         return ProviderBookingRef(
             externalUrl: externalUrl,
             bookingType: bookingType,
-            hotelOffsetSeconds: hotelOffsetSeconds
+            hotelOffsetSeconds: hotelOffsetSeconds,
+            referenceStartAt: bookingType == .carRental ? startAt : nil
         )
     }
 

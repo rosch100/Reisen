@@ -156,7 +156,7 @@ import ReisenDomain
     #expect(BookingIdentityKey.make(externalUrl: nil, confirmationCode: nil, startAt: start) == nil)
 }
 
-@Test func cancellationDeadlines_firstHotelOffsetAndLatestFree() {
+@Test func cancellationDeadlines_firstStayOffsetAndLatestFree() {
     let earlier = CancellationDeadline(
         deadlineAt: Date(timeIntervalSince1970: 1),
         isFreeCancellation: true,
@@ -172,7 +172,7 @@ import ReisenDomain
         isFreeCancellation: false
     )
     let deadlines = [earlier, paid, laterFree]
-    #expect(deadlines.firstHotelOffsetSeconds == 3600)
+    #expect(deadlines.firstStayOffsetSeconds == 3600)
     #expect(deadlines.preferringLatestFree == [laterFree])
     let duplicatePaid = CancellationDeadline(
         deadlineAt: Date(timeIntervalSince1970: 3),
@@ -726,10 +726,31 @@ import ReisenDomain
 }
 
 @Test func draftEnrichmentNeeds_completeHotel_skipsForAllProviders() {
-    for provider in [ProviderID.booking, .airbnb, .opodo, .traveloka, .check24] {
+    for provider in ProviderID.syncProviderIDs {
         let draft = catalogHotelDraft(provider: provider, externalUrl: "https://example.com/booking")
         #expect(DraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: false) == false)
     }
+}
+
+@Test func draftEnrichmentNeeds_catalogCarRental_needsAddresses() {
+    let catalog = ProviderBookingDraft(
+        provider: .billigerMietwagen,
+        bookingType: .carRental,
+        title: "Berlin → München",
+        externalUrl: "https://www.billiger-mietwagen.de/reservation/account/bookings/<REDACTED-UUID>",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Berlin",
+        locationTo: "München",
+        operatorName: "Thrifty",
+        status: .confirmed
+    )
+    #expect(DraftEnrichmentNeeds.shouldEnrich(catalog, requiresDeadlines: false))
+
+    var enriched = catalog
+    enriched.locationFromAddress = "Street 1, Berlin"
+    enriched.locationToAddress = "Street 2, München"
+    #expect(DraftEnrichmentNeeds.shouldEnrich(enriched, requiresDeadlines: false) == false)
 }
 
 @Test func draftEnrichmentNeeds_completeActivity_skips() {

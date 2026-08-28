@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "ReisenAirbnb", targets: ["ReisenAirbnb"]),
         .library(name: "ReisenGetYourGuide", targets: ["ReisenGetYourGuide"]),
         .library(name: "ReisenTraveloka", targets: ["ReisenTraveloka"]),
+        .library(name: "ReisenBilligerMietwagen", targets: ["ReisenBilligerMietwagen"]),
         .executable(name: "Reisen", targets: ["Reisen"]),
         .executable(name: "SyncIOSQuerySchemes", targets: ["SyncIOSQuerySchemes"]),
     ],
@@ -84,6 +85,7 @@ let package = Package(
                 "ReisenAirbnb",
                 "ReisenGetYourGuide",
                 "ReisenTraveloka",
+                "ReisenBilligerMietwagen",
             ],
             path: "Sources/ReisenProviderSync",
             swiftSettings: [
@@ -149,6 +151,14 @@ let package = Package(
             name: "ReisenTraveloka",
             dependencies: ["ReisenDomain", "ReisenProviders"],
             path: "Sources/ReisenTraveloka",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .target(
+            name: "ReisenBilligerMietwagen",
+            dependencies: ["ReisenDomain", "ReisenProviders"],
+            path: "Sources/ReisenBilligerMietwagen",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
@@ -257,6 +267,14 @@ let package = Package(
             name: "ReisenTravelokaTests",
             dependencies: ["ReisenTraveloka", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenTravelokaTests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenBilligerMietwagenTests",
+            dependencies: ["ReisenBilligerMietwagen", "ReisenDomain", "ReisenProviders"],
+            path: "Tests/ReisenBilligerMietwagenTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

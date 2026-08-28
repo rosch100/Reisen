@@ -1,7 +1,8 @@
 import Foundation
 
 extension Array where Element == CancellationDeadline {
-    public var firstHotelOffsetSeconds: Int? {
+    /// Erster gesetzter Stay-/Lokal-Offset (`hotelOffsetSeconds`; historischer Property-Name).
+    public var firstStayOffsetSeconds: Int? {
         compactMap(\.hotelOffsetSeconds).first
     }
 

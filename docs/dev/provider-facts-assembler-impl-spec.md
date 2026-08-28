@@ -30,7 +30,7 @@ Kanonisches Zwischenmodell (`Sources/ReisenDomain/Sync/`):
 - `deadlines` (Provider parst Policy-Text; Domain mapped strukturierte Felder)
 - `rateDetails`, Passengers, GuestHints, Offsets, Check-in-Minuten, Fingerprint
 
-`bookingType(of:)` bleibt Provider: `"Flight"` / `"ACCOMMODATION"` / Traveloka-Product-Strings sind kein Domain-Vokabular. Katalog- und Detail-Mapper (Airbnb, GYG, Opodo, Booking.com, Traveloka, Check24) rufen nur `DraftAssembler` — kein paralleles `ProviderBookingDraft(`- oder `ProviderBookingEnrichment(`-Init.
+`bookingType(of:)` bleibt Provider: `"Flight"` / `"ACCOMMODATION"` / Traveloka-Product-Strings sind kein Domain-Vokabular. Katalog- und Detail-Mapper (Airbnb, GYG, Opodo, Booking.com, Traveloka, Check24, billiger-mietwagen.de) rufen nur `DraftAssembler` — kein paralleles `ProviderBookingDraft(`- oder `ProviderBookingEnrichment(`-Init.
 
 ## DateWindow (analog `BookingTimeNormalizeDispatch`)
 

@@ -378,12 +378,6 @@ struct ContentView: View {
     }
 
     private func handleSessionProbeFinished(needingLogin: [ProviderID]) {
-        AgentDebugLog.write(
-            hypothesisId: "BOOT",
-            location: "ContentView.swift:handleSessionProbeFinished",
-            message: "session probe finished",
-            data: ["needingLogin": needingLogin.map(\.rawValue).joined(separator: ",")]
-        )
         sessionProbeFinished = true
         guard !didApplyInitialSelection else { return }
         didApplyInitialSelection = true

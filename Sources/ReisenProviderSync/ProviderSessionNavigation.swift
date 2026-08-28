@@ -23,27 +23,28 @@ public enum ProviderSessionNavigation {
             ?? hub.lastURLString(for: providerID).flatMap(URL.init(string:))
         guard let url else { return }
 
-        let previousReady = hub.status(for: providerID) == .sessionReady
+        let currentStatus = hub.status(for: providerID) ?? .needsLogin
+        let previousReady = currentStatus == .sessionReady
         let heuristic = ProviderSessionStatusResolver.classify(url)
         if let webViewURL = webView.url {
             hub.updateLastURL(providerID, urlString: webViewURL.absoluteString)
         }
         hub.updateWebView(providerID, webView: webView)
 
-        switch heuristic {
-        case .sessionReady:
-            hub.updateStatus(providerID, status: .sessionReady)
-        case .needsLogin, .unknown:
-            if hub.status(for: providerID) != .sessionReady {
-                hub.updateStatus(providerID, status: .needsLogin)
-            }
-        case .shouldProbeOpodo:
-            Task {
-                let hintURLs = hub.lastURLString(for: providerID).flatMap(URL.init(string:)).map { [$0] } ?? []
-                let hasOpodoContext = [webView.url, url].compactMap { $0 }.contains(where: OpodoSessionProbe.applies(to:))
-                    || hintURLs.contains(where: OpodoSessionProbe.applies(to:))
-                guard hasOpodoContext else { return }
-                do {
+        if let status = immediateStatus(for: heuristic, current: currentStatus) {
+            hub.updateStatus(providerID, status: status)
+        } else {
+            switch heuristic {
+            case .shouldProbeOpodo:
+                startProbe(
+                    webView: webView,
+                    navigationURL: url,
+                    providerID: providerID,
+                    hub: hub,
+                    enabledProviderIDs: enabledProviderIDs,
+                    onChanged: onChanged,
+                    applies: OpodoSessionProbe.applies(to:)
+                ) { _ in
                     let text = try await webView.fetchAuthenticatedText(
                         url: OpodoSessionProbe.graphqlURL,
                         method: "POST",
@@ -52,30 +53,20 @@ public enum ProviderSessionNavigation {
                         contentType: "application/json",
                         body: OpodoSessionProbe.getUserAccountRequestBody()
                     )
-                    if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text) {
-                        await MainActor.run {
-                            applyProbeResult(
-                                loggedIn: loggedIn,
-                                providerID: providerID,
-                                hub: hub,
-                                enabledProviderIDs: enabledProviderIDs,
-                                onChanged: onChanged
-                            )
-                        }
-                    }
-                } catch {
-                    // Probe fehlgeschlagen: Status bleibt konservativ.
+                    return OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text)
                 }
-            }
-        case .shouldProbeTraveloka:
-            Task {
-                let hintURLs = hub.lastURLString(for: providerID).flatMap(URL.init(string:)).map { [$0] } ?? []
-                let hasTravelokaContext = [webView.url, url].compactMap { $0 }.contains(where: TravelokaSessionProbe.applies(to:))
-                    || hintURLs.contains(where: TravelokaSessionProbe.applies(to:))
-                guard hasTravelokaContext else { return }
-                do {
-                    let context = await webView.travelokaSessionContext(additionalHintURLs: hintURLs)
-                    guard context.hasSentinel else { return }
+            case .shouldProbeTraveloka:
+                startProbe(
+                    webView: webView,
+                    navigationURL: url,
+                    providerID: providerID,
+                    hub: hub,
+                    enabledProviderIDs: enabledProviderIDs,
+                    onChanged: onChanged,
+                    applies: TravelokaSessionProbe.applies(to:)
+                ) { hints in
+                    let context = await webView.travelokaSessionContext(additionalHintURLs: hints)
+                    guard context.hasSentinel else { return nil }
                     let text = try await webView.fetchAuthenticatedText(
                         url: TravelokaSessionProbe.whoamiURL,
                         method: "POST",
@@ -85,20 +76,22 @@ public enum ProviderSessionNavigation {
                         body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
                         headers: TravelokaSessionProbe.whoamiHeaders(context: context)
                     )
-                    if let loggedIn = TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text) {
-                        await MainActor.run {
-                            applyProbeResult(
-                                loggedIn: loggedIn,
-                                providerID: providerID,
-                                hub: hub,
-                                enabledProviderIDs: enabledProviderIDs,
-                                onChanged: onChanged
-                            )
-                        }
-                    }
-                } catch {
-                    // Probe fehlgeschlagen: Status bleibt konservativ.
+                    return TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text)
                 }
+            case .shouldProbeBilligerMietwagen:
+                startProbe(
+                    webView: webView,
+                    navigationURL: url,
+                    providerID: providerID,
+                    hub: hub,
+                    enabledProviderIDs: enabledProviderIDs,
+                    onChanged: onChanged,
+                    applies: BilligerMietwagenSessionProbe.applies(to:)
+                ) { _ in
+                    try await BilligerMietwagenSessionProbe.fetchIsLoggedIn(using: webView)
+                }
+            case .sessionReady, .needsLogin, .unknown:
+                break
             }
         }
 
@@ -106,6 +99,72 @@ public enum ProviderSessionNavigation {
         if notifyAlways || previousReady != nowReady || nowReady {
             onChanged()
         }
+    }
+
+    /// Sofortiger Hub-Status ohne Live-Probe. `nil` = Sticky belassen oder Probe starten.
+    private static func immediateStatus(
+        for heuristic: ProviderSessionStatusHeuristic,
+        current: ProviderSessionStatus
+    ) -> ProviderSessionStatus? {
+        switch heuristic {
+        case .sessionReady:
+            return .sessionReady
+        case .needsLogin:
+            return .needsLogin
+        case .unknown:
+            return current == .sessionReady ? nil : .needsLogin
+        case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen:
+            return nil
+        }
+    }
+
+    private static func startProbe(
+        webView: WKWebView,
+        navigationURL: URL,
+        providerID: ProviderID,
+        hub: ProviderSessionHub,
+        enabledProviderIDs: Set<ProviderID>?,
+        onChanged: @escaping () -> Void,
+        applies: @escaping (URL) -> Bool,
+        probe: @escaping ([URL]) async throws -> Bool?
+    ) {
+        Task {
+            let hints = hintURLs(hub: hub, providerID: providerID)
+            guard hasProbeContext(
+                webView: webView,
+                navigationURL: navigationURL,
+                hints: hints,
+                applies: applies
+            ) else {
+                return
+            }
+            do {
+                guard let loggedIn = try await probe(hints) else { return }
+                applyProbeResult(
+                    loggedIn: loggedIn,
+                    providerID: providerID,
+                    hub: hub,
+                    enabledProviderIDs: enabledProviderIDs,
+                    onChanged: onChanged
+                )
+            } catch {
+                // Probe fehlgeschlagen: Status bleibt konservativ.
+            }
+        }
+    }
+
+    private static func hintURLs(hub: ProviderSessionHub, providerID: ProviderID) -> [URL] {
+        hub.lastURLString(for: providerID).flatMap(URL.init(string:)).map { [$0] } ?? []
+    }
+
+    private static func hasProbeContext(
+        webView: WKWebView,
+        navigationURL: URL,
+        hints: [URL],
+        applies: (URL) -> Bool
+    ) -> Bool {
+        [webView.url, navigationURL].compactMap { $0 }.contains(where: applies)
+            || hints.contains(where: applies)
     }
 
     private static func applyProbeResult(
@@ -118,11 +177,7 @@ public enum ProviderSessionNavigation {
         if let enabledProviderIDs {
             hub.syncEnabledProviders(enabledProviderIDs)
         }
-        if loggedIn {
-            hub.updateStatus(providerID, status: .sessionReady)
-        } else if hub.status(for: providerID) != .sessionReady {
-            hub.updateStatus(providerID, status: .needsLogin)
-        }
+        hub.updateStatus(providerID, status: .fromProbe(loggedIn: loggedIn))
         onChanged()
     }
 }

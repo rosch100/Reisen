@@ -24,13 +24,13 @@ public enum ProviderLoginDisclosure {
     public static func localizedMessage(locale: Locale = .current) -> String {
         if locale.reisenPrefersGerman {
             return """
-            Reisen ist nicht mit Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka oder anderen Anbietern verbunden oder von diesen unterstützt.
+            Reisen ist nicht mit Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka, billiger-mietwagen.de oder anderen Anbietern verbunden oder von diesen unterstützt.
 
             Du meldest dich mit deinem eigenen Konto auf deren Website an. Die Sitzung bleibt auf diesem Gerät; Reisen synchronisiert nur deine Buchungen für die persönliche Übersicht.
             """
         }
         return """
-        Reisen is not affiliated with or endorsed by Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka, or other providers.
+        Reisen is not affiliated with or endorsed by Booking.com, Airbnb, Check24, Opodo, GetYourGuide, Traveloka, billiger-mietwagen.de, or other providers.
 
         You sign in with your own account on their website. The session stays on this device; Reisen only syncs your bookings for your personal overview.
         """

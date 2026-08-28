@@ -15,12 +15,16 @@ import ReisenDomain
     let locale = Locale(identifier: "en_US")
     #expect(ProviderLoginDisclosure.localizedTitle(locale: locale) == "Provider sign-in")
     #expect(ProviderLoginDisclosure.localizedAcceptButtonTitle(locale: locale) == "OK")
-    #expect(ProviderLoginDisclosure.localizedMessage(locale: locale).contains("not affiliated"))
+    let message = ProviderLoginDisclosure.localizedMessage(locale: locale)
+    #expect(message.contains("not affiliated"))
+    #expect(message.contains("billiger-mietwagen.de"))
 }
 
 @Test func providerLoginDisclosure_germanCopy() {
     let locale = Locale(identifier: "de_DE")
     #expect(ProviderLoginDisclosure.localizedTitle(locale: locale) == "Provider-Anmeldung")
     #expect(ProviderLoginDisclosure.localizedAcceptButtonTitle(locale: locale) == "Verstanden")
-    #expect(ProviderLoginDisclosure.localizedMessage(locale: locale).contains("nicht mit"))
+    let message = ProviderLoginDisclosure.localizedMessage(locale: locale)
+    #expect(message.contains("nicht mit"))
+    #expect(message.contains("billiger-mietwagen.de"))
 }

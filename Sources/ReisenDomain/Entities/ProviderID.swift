@@ -23,6 +23,7 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
         case .airbnb: return "Airbnb"
         case .getYourGuide: return "GetYourGuide"
         case .traveloka: return "Traveloka"
+        case .billigerMietwagen: return "billiger-mietwagen.de"
         case .manual: return L10n.string(.providerManual)
         default: return rawValue
         }
@@ -34,11 +35,12 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
     public static let airbnb = ProviderID(rawValue: "airbnb")
     public static let getYourGuide = ProviderID(rawValue: "getyourguide")
     public static let traveloka = ProviderID(rawValue: "traveloka")
+    public static let billigerMietwagen = ProviderID(rawValue: "billigermietwagen")
     /// Lokale / benutzerdefinierte Buchung (wird nicht über Provider-Sync ersetzt).
     public static let manual = ProviderID(rawValue: "manual")
 
     /// Registrierte Sync-Provider (SSOT; muss der App-Registry entsprechen).
     public static let syncProviderIDs: [ProviderID] = [
-        .check24, .opodo, .booking, .airbnb, .getYourGuide, .traveloka,
+        .check24, .opodo, .booking, .airbnb, .getYourGuide, .traveloka, .billigerMietwagen,
     ]
 }

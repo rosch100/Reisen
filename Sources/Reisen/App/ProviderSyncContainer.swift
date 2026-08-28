@@ -175,15 +175,6 @@ struct ProviderSyncContainer: View {
         isRunningLoginQueue = false
         didFinishBackgroundProbingRemaining = false
 
-        AgentDebugLog.write(
-            hypothesisId: "BOOT",
-            location: "ProviderSyncContainer.swift:runStartupBootstrapIncremental",
-            message: "start cookie/session probe incremental",
-            data: [
-                "enabledProviders": enabledProviderIDs.map(\.rawValue).joined(separator: ","),
-            ]
-        )
-
         var firstNeedingLoginIndex: Int?
         for (index, providerID) in enabledProviderIDs.enumerated() {
             probingProviderLabel = providerDisplayName(providerID)
@@ -275,32 +266,14 @@ struct ProviderSyncContainer: View {
     /// Lädt Provider in 1×1-Host und wartet auf Cookie-Heuristik / Session-Probe.
     private func probeProviderSession(_ providerID: ProviderID) async {
         guard providerLoginURL(for: providerID) != nil else {
-            AgentDebugLog.write(
-                hypothesisId: "BOOT",
-                location: "ProviderSyncContainer.swift:probeProviderSession",
-                message: "skip no loginURL",
-                data: ["provider": providerID.rawValue]
-            )
             return
         }
 
         if hub?.status(for: providerID) == .sessionReady {
-            AgentDebugLog.write(
-                hypothesisId: "BOOT",
-                location: "ProviderSyncContainer.swift:probeProviderSession",
-                message: "already sessionReady",
-                data: ["provider": providerID.rawValue]
-            )
             return
         }
 
         backgroundProviderID = providerID
-        AgentDebugLog.write(
-            hypothesisId: "BOOT",
-            location: "ProviderSyncContainer.swift:probeProviderSession",
-            message: "probe start",
-            data: ["provider": providerID.rawValue]
-        )
 
         let timeoutNanoseconds: UInt64 = 5_000_000_000
         let pollNanoseconds: UInt64 = 200_000_000
@@ -337,31 +310,11 @@ struct ProviderSyncContainer: View {
         // Kurz warten, damit dismantle den Host freigibt, bevor der nächste startet.
         try? await Task.sleep(nanoseconds: 50_000_000)
 
-        AgentDebugLog.write(
-            hypothesisId: "BOOT",
-            location: "ProviderSyncContainer.swift:probeProviderSession",
-            message: "probe done",
-            data: [
-                "provider": providerID.rawValue,
-                "status": String(describing: hub?.status(for: providerID)),
-                "url": hub?.lastURLString(for: providerID) ?? "nil",
-            ]
-        )
     }
 
     private func advanceLoginQueueIfNeeded(completed providerID: ProviderID) {
         guard isRunningLoginQueue else { return }
         loginQueue.removeAll { $0 == providerID }
-
-        AgentDebugLog.write(
-            hypothesisId: "BOOT",
-            location: "ProviderSyncContainer.swift:advanceLoginQueueIfNeeded",
-            message: "login queue advance",
-            data: [
-                "completed": providerID.rawValue,
-                "remaining": loginQueue.map(\.rawValue).joined(separator: ","),
-            ]
-        )
 
         if let next = loginQueue.first {
             if selectedProviderID != next {
