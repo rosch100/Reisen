@@ -39,10 +39,7 @@ enum GitHubIssueCrashCatcher {
     }
 
     static func prepareFatalSignalPending(at url: URL, optedIn: Bool) {
-        try? FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+        try? ensureParentDirectory(for: url)
         _ = reisen_crash_signal_prepare(url.path, optedIn)
     }
 
@@ -57,10 +54,7 @@ enum GitHubIssueCrashCatcher {
     static func writePending(_ message: String, to url: URL, optedIn: Bool) -> Bool {
         guard optedIn else { return false }
         do {
-            try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
+            try ensureParentDirectory(for: url)
             try Data(SecretRedactor.redact(message).utf8).write(to: url, options: [.atomic])
             return true
         } catch {
@@ -69,6 +63,13 @@ enum GitHubIssueCrashCatcher {
             #endif
             return false
         }
+    }
+
+    private static func ensureParentDirectory(for url: URL) throws {
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
     }
 
     static func pendingMessageForReport(at url: URL, optedIn: Bool) -> String? {
