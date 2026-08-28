@@ -8,63 +8,24 @@ public struct Check24DeepLinkBuilder: GapDeepLinkBuilding {
     public init() {}
 
     public func suggestions(for gap: GapContext) -> (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
-        var issues: [DeepLinkIssue] = []
-        var links: [DeepLinkSuggestion] = []
-
-        let destinationHint = gap.fromLocationTo ?? gap.toLocationFrom ?? gap.toLocationTo
-        appendSuggestion(
-            title: "Hotel suchen (Check24)",
-            into: &links,
-            issues: &issues,
-            fallbackIssue: .destinationIdNotDerivable
-        ) {
+        var bag = GapDeepLinkBag(providerID: providerID, kind: gap.kind)
+        bag.add(.hotel, make: {
             try makeHotelSearchURL(
-                destinationHint: destinationHint,
+                destinationHint: gap.destinationHint,
                 checkIn: gap.gapStart,
                 checkOut: gap.gapEnd
             )
-        }
-
-        appendSuggestion(
-            title: "Flug suchen (Check24)",
-            into: &links,
-            issues: &issues,
-            fallbackIssue: .missingFromIATA
-        ) {
-            // Zwischen-Transport: Abflug = letzter Ankunftsort, Ziel = Ort der nächsten Buchung.
+        }, fallback: .destinationIdNotDerivable)
+        bag.add(.flight, make: {
             try makeFlightSearchURL(
-                fromHint: gap.fromLocationTo ?? gap.fromLocationFrom,
-                toHint: gap.toLocationFrom ?? gap.toLocationTo,
+                fromHint: gap.flightFromHint,
+                toHint: gap.flightToHint,
                 date: gap.gapStart
             )
-        }
-
-        appendSuggestion(
-            title: "Mietwagen suchen (Check24)",
-            into: &links,
-            issues: &issues,
-            fallbackIssue: .missingDestinationHint
-        ) {
+        }, fallback: .missingFromIATA)
+        bag.add(.carRental, make: {
             try makeCarRentalSearchURL(for: gap)
-        }
-
-        return (links, issues)
-    }
-
-    private func appendSuggestion(
-        title: String,
-        into links: inout [DeepLinkSuggestion],
-        issues: inout [DeepLinkIssue],
-        fallbackIssue: DeepLinkIssue,
-        makeURL: () throws -> URL
-    ) {
-        do {
-            let url = try makeURL()
-            links.append(DeepLinkSuggestion(title: title, url: url))
-        } catch let issue as DeepLinkIssue {
-            issues.append(issue)
-        } catch {
-            issues.append(fallbackIssue)
-        }
+        }, fallback: .missingDestinationHint)
+        return bag.result
     }
 }
