@@ -19,6 +19,9 @@ func check24BookingDetailURLHotelStay() {
     #expect(!Check24BookingDetailURL.isHotelStayDetail(
         URL(string: "https://mietwagen.check24.de/ul/booking/list/foreign/testrental1")!
     ))
+    #expect(!Check24BookingDetailURL.isHotelStayDetail(
+        URL(string: "https://evil-hotel.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+    ))
 }
 
 @Test("Check24BookingDetailURL: Flug und Fähre")
@@ -50,6 +53,12 @@ func check24BookingDetailURLCarRental() {
     ))
     #expect(!Check24BookingDetailURL.isCarRentalDetail(
         URL(string: "https://hotel.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+    ))
+    #expect(!Check24BookingDetailURL.isCarRentalDetail(
+        URL(string: "https://not-mietwagen.check24.de/ul/booking/list/foreign/testrental1")!
+    ))
+    #expect(!Check24BookingDetailURL.isCarRentalDetail(
+        URL(string: "https://mietwagen.check24.de/evil/ul/booking/list/foreign/testrental1")!
     ))
 }
 

@@ -238,8 +238,7 @@ func deepLinkCarRentalJumpinUsesPlaceNames() {
         toLocationTo: nil
     )
     let result = Check24DeepLinkBuilder().suggestions(for: context)
-    let car = result.links.first { $0.title.contains("Mietwagen suchen") }
-    let url = car?.url?.absoluteString ?? ""
+    let url = result.links.first { $0.category == .carRental }?.url?.absoluteString ?? ""
     #expect(url.contains("mietwagen.check24.de/ul/jumpin"))
     #expect(url.contains("dep_destination_name=Berlin"))
     #expect(url.contains("dest_destination_name=Side"))
@@ -258,7 +257,7 @@ func deepLinkCarRentalSkipsBareIATA() {
         toLocationTo: "TXL"
     )
     let iataResult = Check24DeepLinkBuilder().suggestions(for: iataOnly)
-    #expect(!iataResult.links.contains { $0.title.contains("Mietwagen suchen") })
+    #expect(!iataResult.links.contains { $0.category == .carRental })
 
     let mixed = GapContext(
         gapStart: Date(timeIntervalSince1970: 1_800_000_000),
@@ -270,7 +269,7 @@ func deepLinkCarRentalSkipsBareIATA() {
         toLocationTo: "Yogyakarta"
     )
     let mixedResult = Check24DeepLinkBuilder().suggestions(for: mixed)
-    let url = mixedResult.links.first { $0.title.contains("Mietwagen suchen") }?.url?.absoluteString ?? ""
+    let url = mixedResult.links.first { $0.category == .carRental }?.url?.absoluteString ?? ""
     #expect(url.contains("dep_destination_name=Yogyakarta"))
     #expect(url.contains("dest_destination_name=Yogyakarta"))
     #expect(!url.contains("MUC"))
@@ -288,7 +287,7 @@ func deepLinkCarRentalStripsParentheticalIATA() {
         toLocationTo: nil
     )
     let url = Check24DeepLinkBuilder().suggestions(for: context)
-        .links.first { $0.title.contains("Mietwagen suchen") }?.url?.absoluteString ?? ""
+        .links.first { $0.category == .carRental }?.url?.absoluteString ?? ""
     #expect(url.contains("dep_destination_name=Frankfurt"))
     #expect(url.contains("dest_destination_name=") && url.contains("nchen"))
     #expect(!url.contains("FRA"))

@@ -3,8 +3,8 @@ import ReisenDomain
 
 /// SSOT: Check24-Buchungsdetail-Hosts und -Pfade (Live-Audit 2026-08-28).
 enum Check24BookingDetailURL {
-    private static let kundenbereichBuchungPath = "/kundenbereich/buchung/"
-    private static let carRentalBookingPath = "/ul/booking/"
+    private static let kundenbereichBuchungSegments = ["kundenbereich", "buchung"]
+    private static let carRentalBookingPathPrefix = "/ul/booking/"
     private static let carRentalShortPathPrefix = "kb"
 
     static func isHotelStayDetail(_ url: URL) -> Bool {
@@ -17,9 +17,9 @@ enum Check24BookingDetailURL {
 
     /// Mietwagen-Detail: Katalog `/ul/booking/…` oder Redirect `/kb/{id}`.
     static func isCarRentalDetail(_ url: URL) -> Bool {
-        guard host(url, containsAny: [Check24CarRentalJumpin.host]) else { return false }
+        guard isExactHost(url, Check24CarRentalJumpin.host) else { return false }
         let path = url.path.lowercased()
-        if path.contains(carRentalBookingPath) { return true }
+        if path.hasPrefix(carRentalBookingPathPrefix) { return true }
         let parts = path.split(separator: "/").map(String.init)
         return parts.count == 2
             && parts[0] == carRentalShortPathPrefix
@@ -35,12 +35,30 @@ enum Check24BookingDetailURL {
     }
 
     private static func isKundenbereichBuchung(_ url: URL, hosts: [String]) -> Bool {
-        host(url, containsAny: hosts) && url.path.lowercased().contains(kundenbereichBuchungPath)
+        guard isExactHost(url, anyOf: hosts) else { return false }
+        return hasConsecutivePathSegments(url, kundenbereichBuchungSegments)
     }
 
-    private static func host(_ url: URL, containsAny needles: [String]) -> Bool {
+    private static func isExactHost(_ url: URL, _ host: String) -> Bool {
+        isExactHost(url, anyOf: [host])
+    }
+
+    private static func isExactHost(_ url: URL, anyOf hosts: [String]) -> Bool {
         let host = (url.host ?? "").lowercased()
-        return needles.contains { host.contains($0) }
+        return hosts.contains { host == $0.lowercased() }
+    }
+
+    /// Path enthält die Segmente als zusammenhängende Folge (z. B. `/ul/kundenbereich/buchung/…`).
+    private static func hasConsecutivePathSegments(_ url: URL, _ segments: [String]) -> Bool {
+        let parts = url.path.lowercased().split(separator: "/").map(String.init)
+        let needle = segments.map { $0.lowercased() }
+        guard !needle.isEmpty, parts.count >= needle.count else { return false }
+        for start in 0...(parts.count - needle.count) {
+            if Array(parts[start..<(start + needle.count)]) == needle {
+                return true
+            }
+        }
+        return false
     }
 
     private static func bookingPathID(_ url: URL) -> String? {

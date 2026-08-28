@@ -9,7 +9,7 @@ func check24CarRentalDetailParserMapsCpInitialFixture() throws {
 
     #expect(parsed.title == "Toyota Aygo oder ähnlich")
     #expect(parsed.operatorName == "Car Alliance")
-    #expect(parsed.confirmationCode == "94008978")
+    #expect(parsed.confirmationCode == "REDACTED_BOOKING_NUMBER")
     #expect(parsed.locationFrom == "Madeira Flughafen")
     #expect(parsed.locationTo == "Madeira Flughafen")
     #expect(parsed.locationFromAddress == "Madeira Airport, 9100-105 Madeira")
