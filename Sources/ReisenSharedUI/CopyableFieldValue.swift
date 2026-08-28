@@ -25,10 +25,18 @@ public enum CopyableValueTextStyle: Sendable, Equatable {
     #if os(macOS)
     var nsFont: NSFont {
         switch self {
-        case .body: .preferredFont(forTextStyle: .body)
-        case .subheadline: .preferredFont(forTextStyle: .subheadline)
-        case .caption, .caption2: .preferredFont(forTextStyle: .caption1)
-        case .headline: .preferredFont(forTextStyle: .headline)
+        case .body:
+            return NSFont.preferredFont(forTextStyle: .body)
+        case .subheadline:
+            return NSFont.preferredFont(forTextStyle: .subheadline)
+        case .caption:
+            return NSFont.preferredFont(forTextStyle: .caption1)
+        case .caption2:
+            // AppKit hat kein `.caption2`; etwas kleiner als Caption1 (iOS-Parität Title vs. Detail).
+            let caption = NSFont.preferredFont(forTextStyle: .caption1)
+            return NSFont.systemFont(ofSize: max(9, floor(caption.pointSize - 1)), weight: .regular)
+        case .headline:
+            return NSFont.preferredFont(forTextStyle: .headline)
         }
     }
 
@@ -74,20 +82,19 @@ public struct CopyableFieldValue: View {
                 standardBody
             case .identifier:
                 identifierBody
+                    .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: copyPulse)
+                    .onChange(of: value) { _, _ in showCopiedCheck = false }
+                    .task(id: copyPulse) {
+                        guard copyPulse > 0, showCopiedCheck else { return }
+                        try? await Task.sleep(for: Self.copiedFeedbackDuration)
+                        guard !Task.isCancelled else { return }
+                        showCopiedCheck = false
+                    }
             }
         }
+        .contextMenu { copyMenuButton }
         .accessibilityAction(named: Text(L10n.string(.commonCopy))) {
             performCopy()
-        }
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: copyPulse)
-        .onChange(of: value) { _, _ in
-            showCopiedCheck = false
-        }
-        .task(id: copyPulse) {
-            guard copyPulse > 0, showCopiedCheck else { return }
-            try? await Task.sleep(for: Self.copiedFeedbackDuration)
-            guard !Task.isCancelled else { return }
-            showCopiedCheck = false
         }
     }
 
@@ -95,7 +102,6 @@ public struct CopyableFieldValue: View {
     private var standardBody: some View {
         #if os(macOS)
         macOSText(font: textStyle.nsFont, maximumNumberOfLines: lineLimit ?? 0)
-            .contextMenu { copyMenuButton }
         #else
         Text(value)
             .font(textStyle.swiftUIFont)
@@ -103,7 +109,6 @@ public struct CopyableFieldValue: View {
             .lineLimit(lineLimit)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contextMenu { copyMenuButton }
         #endif
     }
 
@@ -118,7 +123,6 @@ public struct CopyableFieldValue: View {
             copiedCheckmark
         }
         .help(L10n.string(.commonCopy))
-        .contextMenu { copyMenuButton }
         #else
         Button(action: performCopy) {
             HStack(spacing: 6) {
@@ -133,7 +137,6 @@ public struct CopyableFieldValue: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .contextMenu { copyMenuButton }
         #endif
     }
 
@@ -141,7 +144,6 @@ public struct CopyableFieldValue: View {
     private func macOSText(font: NSFont, maximumNumberOfLines: Int) -> some View {
         CopyableTextView(
             text: value,
-            copyText: value,
             font: font,
             textColor: NSColor(foregroundColor),
             maximumNumberOfLines: maximumNumberOfLines,
@@ -172,6 +174,7 @@ public struct CopyableFieldValue: View {
     private func performCopy() {
         guard !value.isEmpty else { return }
         CopyAccessibility.copy(value, using: pasteboard)
+        guard kind == .identifier else { return }
         copyPulse += 1
         showCopiedCheck = true
     }

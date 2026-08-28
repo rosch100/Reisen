@@ -6,17 +6,13 @@ import ReisenData
 public struct BookingCopyConfirmationMenuItems: View {
     let confirmationCode: String?
 
-    @Environment(\.stringPasteboard) private var pasteboard
-
     public init(booking: SDBooking) {
         self.confirmationCode = booking.confirmationCode
     }
 
     public var body: some View {
         if let code = confirmationCode, !code.isEmpty {
-            Button(L10n.string(.actionCopyConfirmation)) {
-                CopyAccessibility.copy(code, using: pasteboard)
-            }
+            PasteboardCopyMenuButton(title: L10n.string(.actionCopyConfirmation), text: code)
         }
     }
 }
@@ -25,16 +21,12 @@ public struct BookingCopyConfirmationMenuItems: View {
 public struct CopyLinkMenuItem: View {
     let url: URL
 
-    @Environment(\.stringPasteboard) private var pasteboard
-
     public init(url: URL) {
         self.url = url
     }
 
     public var body: some View {
-        Button(L10n.string(.actionCopyLink)) {
-            CopyAccessibility.copy(url.absoluteString, using: pasteboard)
-        }
+        PasteboardCopyMenuButton(title: L10n.string(.actionCopyLink), text: url.absoluteString)
     }
 }
 
@@ -45,19 +37,28 @@ struct GapCopyMenuItems: View {
     let kindLabel: String
     var priceText: String? = nil
 
-    @Environment(\.stringPasteboard) private var pasteboard
-
     private var copyText: String {
-        var lines = [title, rangeText, kindLabel]
-        if let priceText, !priceText.isEmpty {
-            lines.append(priceText)
-        }
-        return lines.joined(separator: "\n")
+        ([title, rangeText, kindLabel] + [priceText].compactMap { $0 })
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
     }
 
     var body: some View {
-        Button(L10n.string(.commonCopy)) {
-            CopyAccessibility.copy(copyText, using: pasteboard)
+        PasteboardCopyMenuButton(title: L10n.string(.commonCopy), text: copyText)
+    }
+}
+
+/// Ein Kontextmenü-Button, der Plain-Text über `CopyAccessibility` schreibt.
+private struct PasteboardCopyMenuButton: View {
+    let title: String
+    let text: String
+
+    @Environment(\.stringPasteboard) private var pasteboard
+
+    var body: some View {
+        Button(title) {
+            CopyAccessibility.copy(text, using: pasteboard)
         }
+        .disabled(text.isEmpty)
     }
 }

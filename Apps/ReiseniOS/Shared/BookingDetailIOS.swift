@@ -153,9 +153,7 @@ struct BookingDetailIOS: View {
                 CopyableLabeledValue(
                     label: L10n.string(.tripNameField),
                     value: trip.title,
-                    kind: .standard,
-                    style: .list,
-                    valueTextStyle: .body
+                    style: .list
                 )
             } else if let trip = matchingTrip {
                 Button(L10n.string(.actionAssignToTrip)) {

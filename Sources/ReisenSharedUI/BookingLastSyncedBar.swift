@@ -23,7 +23,6 @@ public struct BookingLastSyncedBar: View {
 
             CopyableFieldValue(
                 value: syncedText,
-                kind: .standard,
                 textStyle: .caption2,
                 foregroundStyle: .secondary,
                 lineLimit: 1

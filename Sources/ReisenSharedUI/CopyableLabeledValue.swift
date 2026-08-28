@@ -46,7 +46,7 @@ public struct CopyableLabeledValue: View {
         self.value = value
         self.kind = kind
         self.style = style
-        self.valueTextStyle = valueTextStyle ?? (style == .inspector ? .caption : .body)
+        self.valueTextStyle = valueTextStyle ?? style.titleValueTextStyle
         self.valueLineLimit = valueLineLimit ?? (style == .inspector ? 3 : nil)
     }
 
@@ -90,7 +90,6 @@ public struct CopyableLabeledValue: View {
             value: value,
             kind: kind,
             textStyle: valueTextStyle,
-            foregroundStyle: .primary,
             lineLimit: valueLineLimit
         )
     }

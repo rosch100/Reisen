@@ -9,6 +9,8 @@ struct SelectableBookingTextView: NSViewRepresentable {
     let attributedString: AttributedString
     let copyText: String
 
+    @Environment(\.stringPasteboard) private var pasteboard
+
     func makeNSView(context: Context) -> SelectableBookingNSTextView {
         let textView = SelectableBookingNSTextView()
         textView.configureAsReadOnlyCopyable()
@@ -18,6 +20,7 @@ struct SelectableBookingTextView: NSViewRepresentable {
 
     func updateNSView(_ nsView: SelectableBookingNSTextView, context: Context) {
         nsView.copyText = copyText
+        nsView.copyPasteboard = pasteboard
 
         nsView.textStorage?.setAttributedString(NSAttributedString(attributedString))
         // Nach jedem Content-Wechsel Tab-Stops neu setzen (nicht nur bei Breitenänderung).

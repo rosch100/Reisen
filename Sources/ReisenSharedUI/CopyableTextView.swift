@@ -6,6 +6,8 @@ import AppKit
 /// Markierung vorhanden → markierter Text; sonst → `copyText` (Plain-Text).
 open class CopyableNSTextView: NSTextView {
     public var copyText: String = ""
+    /// Pasteboard-Client aus SwiftUI-Environment (Cmd+C → gleiche SSOT wie Kontextmenü).
+    public var copyPasteboard: StringPasteboardClient = .system
 
     /// Markierter Plain-Text oder `copyText`; leer → `nil`.
     public func plainTextForClipboard() -> String? {
@@ -17,6 +19,7 @@ open class CopyableNSTextView: NSTextView {
         return copyText.isEmpty ? nil : copyText
     }
 
+    /// Drag & Drop / fremde Pasteboards: nur Plain-Text schreiben (ohne Ansage).
     override open func writeSelection(to pasteboard: NSPasteboard, types: [NSPasteboard.PasteboardType]) -> Bool {
         guard let text = plainTextForClipboard() else { return false }
         pasteboard.clearContents()
@@ -26,7 +29,7 @@ open class CopyableNSTextView: NSTextView {
 
     override open func copy(_ sender: Any?) {
         guard let text = plainTextForClipboard() else { return }
-        SystemStringPasteboard.shared.copy(text)
+        CopyAccessibility.copy(text, using: copyPasteboard)
     }
 }
 
@@ -77,6 +80,8 @@ public struct CopyableTextView: NSViewRepresentable {
     public var maximumNumberOfLines: Int = 0
     public var lineBreakMode: NSLineBreakMode = .byWordWrapping
 
+    @Environment(\.stringPasteboard) private var pasteboard
+
     public init(
         text: String,
         copyText: String? = nil,
@@ -103,6 +108,7 @@ public struct CopyableTextView: NSViewRepresentable {
 
     public func updateNSView(_ nsView: PlainCopyableNSTextView, context: Context) {
         nsView.copyText = copyText ?? text
+        nsView.copyPasteboard = pasteboard
 
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = lineBreakMode

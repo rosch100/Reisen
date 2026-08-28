@@ -24,12 +24,12 @@ Jeden fachlichen **Info-Wert** ohne Markier-Akrobatik kopieren; in **Editoren** 
 - `FieldCopyKind` am `BookingRateField` (Katalog in `BookingScheduleFields` / `BookingRateFields`)
 - `CopyableFieldValue` / `CopyableLabeledValue` (iOS `.list` = `LabeledContent`, macOS `.inspector` = Caption + `CopyableTextView`)
 - `BookingCopyConfirmationMenuItems` in allen Booking-Kontextmenüs
-- `CopyableTextView` / `CopyableNSTextView` in `ReisenSharedUI` (macOS); Sync-Fehler weiter über `CopyableLabel`
+- `CopyableTextView` / `CopyableNSTextView` in `ReisenSharedUI` (macOS); Cmd+C → `CopyAccessibility` + Environment-Pasteboard; Sync-Fehler weiter über `CopyableLabel`
 
 ## Editoren
 
 - Kein `contextMenu` / Trailing-Copy auf `TextField` (System-Edit-Menü bleibt)
-- Provider-`LabeledContent` und abgeleitete Read-only-Texte: `copyableValue`
+- Provider und abgeleitete Read-only-Texte: `CopyableLabeledValue` / `CopyableFieldValue`
 - `textContentType`: Namen (Passagier), URL-Feld (+ iOS `.keyboardType(.URL)`)
 
 ## Out of Scope

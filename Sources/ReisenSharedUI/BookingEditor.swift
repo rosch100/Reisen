@@ -614,11 +614,11 @@ public struct BookingEditorForm: View {
             Form {
                 Section(L10n.string(.editorGeneral)) {
                     if providerReadOnly {
-                        LabeledContent {
-                            CopyableFieldValue(value: draft.provider.rawValue.capitalized)
-                        } label: {
-                            Text(L10n.string(.editorProvider))
-                        }
+                        CopyableLabeledValue(
+                            label: L10n.string(.editorProvider),
+                            value: draft.provider.rawValue.capitalized,
+                            style: .list
+                        )
                     }
                     TextField(L10n.string(.editorTitle), text: $draft.title)
                     Picker(L10n.string(.editorType), selection: $draft.bookingType) {
@@ -737,10 +737,13 @@ public struct BookingEditorForm: View {
                         }
                         TextField(BookingDetailLabels.airline, text: $draft.airline)
                         if !draft.passengers.isEmpty {
-                            Text(L10n.format(.editorPassengerCount, draft.passengers.count))
-                                .copyableValue(L10n.format(.editorPassengerCount, draft.passengers.count))
-                            Text(L10n.string(.editorStructuredBaggageDerived))
-                                .copyableValue(L10n.string(.editorStructuredBaggageDerived))
+                            let passengerCountText = L10n.format(
+                                .editorPassengerCount,
+                                draft.passengers.count
+                            )
+                            let baggageDerivedText = L10n.string(.editorStructuredBaggageDerived)
+                            CopyableFieldValue(value: passengerCountText)
+                            CopyableFieldValue(value: baggageDerivedText)
                         }
                     }
                 }
