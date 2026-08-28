@@ -272,4 +272,4 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 1. [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md) — implementiert
 2. Check-in-Reminder-Spec — noch anzulegen
 3. Attachment-Spec (Schema + Privacy) — noch anzulegen
-4. [`../superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md) — Entwurf F06
+4. [`../superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md) — F06 Spec; Plan: [`../superpowers/plans/2026-08-28-paste-import.md`](../superpowers/plans/2026-08-28-paste-import.md)

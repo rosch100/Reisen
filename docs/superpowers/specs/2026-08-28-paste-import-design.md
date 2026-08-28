@@ -1,7 +1,7 @@
 # Paste-Import (F06) — Design
 
 Datum: 2026-08-28  
-Status: Entwurf (Brainstorming, User-Review ausstehend)  
+Status: freigegeben (Brainstorming)  
 Backlog: [feature-backlog.md](../../dev/feature-backlog.md) F06  
 Muster: manueller `BookingEditor` + `ProviderBookingDraft`; Match über `SyncBookingMatchLookup`
 
