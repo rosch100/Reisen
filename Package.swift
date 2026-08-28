@@ -112,6 +112,9 @@ let package = Package(
             path: "Sources/ReisenPasteImport",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("PDFKit"),
             ]
         ),
         .target(
@@ -217,6 +220,9 @@ let package = Package(
             name: "ReisenPasteImportTests",
             dependencies: ["ReisenPasteImport", "ReisenDomain"],
             path: "Tests/ReisenPasteImportTests",
+            resources: [
+                .copy("Fixtures"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

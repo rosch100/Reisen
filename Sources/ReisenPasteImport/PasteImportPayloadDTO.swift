@@ -1,6 +1,8 @@
 import Foundation
+import FoundationModels
 
 /// Modell-Antwort eines Paste-Import-Laufs: mehrere Buchungen aus einer Quelle.
+@Generable(description: "Alle Buchungen, die im eingefügten Material belegt sind.")
 public struct PasteImportPayloadDTO: Equatable, Sendable, Codable {
     public var bookings: [PasteImportBookingDTO]
 
@@ -11,10 +13,14 @@ public struct PasteImportPayloadDTO: Equatable, Sendable, Codable {
 
 /// Transportformat einer `PasteImportExtraction`: Daten als ISO8601-Strings, Enums als rawValue-Strings.
 ///
-/// Bewusst ohne Domain-Typen, damit Task 8 `@Generable` auf diesen Typen legen kann.
+/// Bewusst ohne Domain-Typen, damit `@Generable` hier im Adapter liegt.
+@Generable(description: "Eine Buchung aus dem eingefügten Material.")
 public struct PasteImportBookingDTO: Equatable, Sendable, Codable {
+    @Guide(description: "Art der Buchung, genau eines der erlaubten Labels.")
     public var bookingType: String?
+    @Guide(description: "Beginn als ISO8601 mit Zeitzone, z. B. 2026-08-28T10:00:00Z.")
     public var startAtISO8601: String?
+    @Guide(description: "Ende als ISO8601 mit Zeitzone.")
     public var endAtISO8601: String?
     public var title: String?
     public var confirmationCode: String?
@@ -24,6 +30,7 @@ public struct PasteImportBookingDTO: Equatable, Sendable, Codable {
     public var locationFromAddress: String?
     public var locationToAddress: String?
     public var operatorName: String?
+    @Guide(description: "Status, genau eines der erlaubten Labels.")
     public var status: String?
     public var hotelCheckInMinutes: Int?
     public var hotelCheckOutMinutes: Int?
@@ -83,13 +90,16 @@ public struct PasteImportBookingDTO: Equatable, Sendable, Codable {
 }
 
 /// Zwilling zu `BookingPassenger`; `passengerNumber` fehlend heißt „Reihenfolge im Array“.
+@Generable(description: "Eine reisende Person der Buchung.")
 public struct PasteImportPassengerDTO: Equatable, Sendable, Codable {
     public var passengerNumber: Int?
+    @Guide(description: "Reisendentyp, genau eines der erlaubten Labels.")
     public var travellerType: String?
     public var title: String?
     public var givenName: String?
     public var familyName: String?
     public var secondFamilyName: String?
+    @Guide(description: "Geburtsdatum als ISO8601, z. B. 1990-04-17T00:00:00Z.")
     public var birthDateISO8601: String?
 
     public init(
@@ -112,6 +122,7 @@ public struct PasteImportPassengerDTO: Equatable, Sendable, Codable {
 }
 
 /// Zwilling zu `BookingGuestHint`; `sourceKey` vergibt der Mapper inhaltsbasiert.
+@Generable(description: "Ein Hinweis für den Gast, Titel und Detail sind beide nötig.")
 public struct PasteImportGuestHintDTO: Equatable, Sendable, Codable {
     public var title: String?
     public var detail: String?
@@ -123,10 +134,13 @@ public struct PasteImportGuestHintDTO: Equatable, Sendable, Codable {
 }
 
 /// Zwilling zu `BookingRateDetails` ohne Raum-Positionen (aus Freitext nicht verlässlich).
+@Generable(description: "Preis- und Leistungsangaben der Buchung.")
 public struct PasteImportRateDetailsDTO: Equatable, Sendable, Codable {
     public var totalPriceAmount: Double?
+    @Guide(description: "Währung als ISO-4217-Code, z. B. EUR.")
     public var totalPriceCurrency: String?
     public var roomCategory: String?
+    @Guide(description: "Verpflegung, genau eines der erlaubten Labels.")
     public var boardType: String?
     public var includedBreakfast: Bool?
     public var guestCount: Int?
@@ -161,7 +175,9 @@ public struct PasteImportRateDetailsDTO: Equatable, Sendable, Codable {
 }
 
 /// Zwilling zu `CancellationDeadline`; ohne Datum ist die Frist unbrauchbar.
+@Generable(description: "Eine Storno-Frist; ohne Datum weglassen.")
 public struct PasteImportDeadlineDTO: Equatable, Sendable, Codable {
+    @Guide(description: "Frist als ISO8601 mit Zeitzone.")
     public var deadlineAtISO8601: String?
     public var policyText: String?
     public var isFreeCancellation: Bool?
