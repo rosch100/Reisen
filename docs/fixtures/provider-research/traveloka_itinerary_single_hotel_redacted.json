@@ -121,6 +121,27 @@
                   "roomCancelationPolicy": "Free Cancellation before 01-Sep-2026 12:59.\nReservation is non-refundable after 01-Sep-2026 13:00.\nTimes displayed are based on the accommodation's local time.",
                   "roomCancelationPolicyLabel": "Free Cancellation before 01-Sep-2026",
                   "displayNumOfBreakfast": "Breakfast not Included",
+                  "propertyPolicy": "<p>Unmarried Couples are not allowed. they need to provide a valid marriage certificate.</p>",
+                  "checkInInstruction": "<b>General Check-in Instructions (English Only)</b><br> Unmarried Couples are not allowed. they need to provide a valid marriage certificate. <br><br>",
+                  "importantNoticeDisplay": {
+                    "importantNoticePolicies": [
+                      {
+                        "policyTitle": "Required Documents",
+                        "policyDescription": "Upon check-in, you are required to bring Marriage Certificate. Please bring the required documents in hard copy.<br />",
+                        "policyType": "IMPORTANT_NOTICE"
+                      },
+                      {
+                        "policyTitle": "Additional Policy",
+                        "policyDescription": "Unmarried Couples are not allowed. they need to provide a valid marriage certificate.<br />",
+                        "policyType": "ACCOMMODATION_POLICY"
+                      },
+                      {
+                        "policyTitle": "General Check-in Instructions",
+                        "policyDescription": "Unmarried Couples are not allowed. they need to provide a valid marriage certificate. <br />",
+                        "policyType": "CHECK_IN_CHECK_OUT_INSTRUCTION"
+                      }
+                    ]
+                  },
                   "translatedData": {
                     "address": {
                       "city": "Jakarta Selatan",

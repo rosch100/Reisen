@@ -8,7 +8,7 @@ public enum StayHintHTMLExtractor {
         from html: String,
         providerRaw: String
     ) -> [BookingGuestHint] {
-        let text = flattenHTML(html)
+        let text = HTMLPlainText.flatten(html)
         guard !text.isEmpty else { return [] }
 
         var hints: [BookingGuestHint] = []
@@ -102,25 +102,5 @@ public enum StayHintHTMLExtractor {
             ]
         }
         return []
-    }
-
-    private static func flattenHTML(_ html: String) -> String {
-        var s = html
-        if let regex = try? NSRegularExpression(pattern: "<[^>]+>", options: []) {
-            s = regex.stringByReplacingMatches(
-                in: s,
-                options: [],
-                range: NSRange(s.startIndex..., in: s),
-                withTemplate: " "
-            )
-        }
-        s = s
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&#39;", with: "'")
-        while s.contains("  ") {
-            s = s.replacingOccurrences(of: "  ", with: " ")
-        }
-        return s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
