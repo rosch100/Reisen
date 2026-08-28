@@ -109,6 +109,17 @@ private struct PrivacyDenied: Error, PrivacyAccessDenying {
     #expect(stored.contains("/Users/[redacted]/"))
 }
 
+@Test func githubIssueCrashPending_redactsOnReadForFlush() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-crash-raw-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+    try Data("SIGTRAP\n/Users/roschmac/Library/Reisen\n".utf8).write(to: url)
+    let message = GitHubIssueCrashCatcher.pendingMessageForReport(at: url, optedIn: true)
+    let stored = try #require(message)
+    #expect(stored.contains("SIGTRAP"))
+    #expect(!stored.contains("roschmac"))
+}
+
 @Suite(.serialized)
 struct GitHubIssueCrashSignalTests {
     init() {

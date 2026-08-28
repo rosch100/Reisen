@@ -79,7 +79,7 @@ Kein neues Modul, kein dritter Reporter, keine parallele Fingerprint-Logik.
 
 Unverändert Default **aus**. Ohne Token kein automatischer Versand. Prepare/Write nutzen `GitHubIssueAutoReport.isAutomaticReportingEnabled()` (nicht implizit `true`).
 
-Same-Session-Refresh: `UserDefaults.didChangeNotification` in **AppBootstrap** (Composition Root) ruft `GitHubIssueCrashCatcher.refreshFatalSignalOptIn()`. `SettingsView` bleibt bei `@AppStorage` — keine Kenntnis des C-Signalzustands.
+Same-Session-Refresh: `GitHubIssueCrashCatcher.install()` (nur aus `AppBootstrap`) registriert `UserDefaults.didChangeNotification` und ruft `refreshFatalSignalOptIn()` auf. `SettingsView` bleibt bei `@AppStorage` — keine Kenntnis des C-Signalzustands.
 
 ### Issue
 
