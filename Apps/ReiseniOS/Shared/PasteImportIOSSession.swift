@@ -18,6 +18,10 @@ enum PasteImportIOSSourceError: Error, Equatable, Sendable {
     case unreadableFile
 }
 
+extension PasteImportIOSSourceError: PasteImportFailureClassifying {
+    var pasteImportFailure: PasteImportFailure { .source }
+}
+
 /// Ein Paste-Import-Durchlauf auf iOS: Bestätigung, Lauf, Kandidatenliste, Editor-Warteschlange.
 ///
 /// Der Lauf selbst liegt in `PasteImportRun`; diese Klasse hält nur den Zustand des Einstiegs.
@@ -36,6 +40,8 @@ final class PasteImportIOSSession {
     private(set) var phase: Phase = .idle
     /// Kandidaten, die der Nutzer noch im Editor prüft.
     private(set) var pending: [PasteImportCandidate] = []
+    /// Reise des laufenden Imports, aus dem Einstieg — nicht aus der Auswahl eines anderen Tabs.
+    private(set) var tripID: UUID?
 
     private var source: PasteImportSource?
     private var existing: [Booking] = []
@@ -64,9 +70,17 @@ final class PasteImportIOSSession {
 
     var hasPendingCandidates: Bool { !pending.isEmpty }
 
-    /// - Parameter source: `nil` heißt „keine verwertbare Quelle“ und endet als Fehler.
-    func start(source: PasteImportSource?, in modelContext: ModelContext) {
+    /// Bestätigung, Lauf, Kandidatenliste, Meldung oder Editor-Warteschlange ist offen.
+    ///
+    /// Ein zweiter Auslöser der Übergabe darf das nicht überschreiben.
+    var isActive: Bool { phase != .idle || hasPendingCandidates }
+
+    /// - Parameters:
+    ///   - source: `nil` heißt „keine verwertbare Quelle“ und endet als Fehler.
+    ///   - entry: bestimmt die Reise neuer Buchungen dieses Durchlaufs.
+    func start(source: PasteImportSource?, entry: PasteImportEntry, in modelContext: ModelContext) {
         reset()
+        tripID = entry.tripID
         guard let source else {
             phase = .failed(L10n.string(.pasteImportErrorSource))
             return
@@ -157,7 +171,7 @@ final class PasteImportIOSSession {
                 self?.phase = .choosing(candidates)
             } catch {
                 guard !Task.isCancelled else { return }
-                self?.phase = .failed(Self.message(for: error))
+                self?.phase = .failed(PasteImportFailureMessage.text(for: error))
             }
         }
     }
@@ -168,22 +182,7 @@ final class PasteImportIOSSession {
         source = nil
         existing = []
         pending = []
+        tripID = nil
         phase = .idle
-    }
-
-    private static func message(for error: Error) -> String {
-        switch error {
-        case PasteImportSourceError.empty,
-            PasteImportIOSSourceError.unreadableFile,
-            PasteImportAdapterError.unreadableSource,
-            PasteImportAdapterError.imageConversionFailed:
-            return L10n.string(.pasteImportErrorSource)
-        case PasteImportRunError.modelUnavailable, PasteImportAdapterError.unavailable:
-            return L10n.string(.pasteImportUnavailable)
-        case PasteImportAdapterError.imageInputUnsupported:
-            return L10n.string(.pasteImportErrorImageUnsupported)
-        default:
-            return L10n.string(.pasteImportErrorModel)
-        }
     }
 }

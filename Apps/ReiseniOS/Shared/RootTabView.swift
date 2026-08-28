@@ -42,7 +42,7 @@ struct RootTabView: View {
 
     @ViewBuilder
     var body: some View {
-        PasteImportHost(session: pasteImport, tripID: selectedTripID) {
+        PasteImportHost(session: pasteImport) {
             tabsWithSessionProbe
         }
     }

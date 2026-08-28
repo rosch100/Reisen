@@ -106,7 +106,7 @@ struct ReisenTab: View {
     @ViewBuilder
     private func tripListChrome<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
-            .pasteImportToolbar(session: pasteImport)
+            .pasteImportToolbar(session: pasteImport, entry: .trip(selectedTripID))
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {

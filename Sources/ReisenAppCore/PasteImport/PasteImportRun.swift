@@ -7,6 +7,10 @@ public enum PasteImportRunError: Error, Equatable, Sendable {
     case modelUnavailable
 }
 
+extension PasteImportRunError: PasteImportFailureClassifying {
+    public var pasteImportFailure: PasteImportFailure { .modelUnavailable }
+}
+
 /// Ein Paste-Import-Lauf: Quelle prüfen, **einmal** extrahieren, Kandidaten bauen.
 ///
 /// Die Modellstufe kommt aus `PasteImportModelResolver` vor dem Lauf. Schlägt die Extraktion fehl,

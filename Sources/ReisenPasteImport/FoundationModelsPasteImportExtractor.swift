@@ -14,6 +14,19 @@ public enum PasteImportAdapterError: Error, Equatable, Sendable {
     case imageInputUnsupported
 }
 
+extension PasteImportAdapterError: PasteImportFailureClassifying {
+    public var pasteImportFailure: PasteImportFailure {
+        switch self {
+        case .unavailable:
+            return .modelUnavailable
+        case .unreadableSource, .imageConversionFailed:
+            return .source
+        case .imageInputUnsupported:
+            return .imageUnsupported
+        }
+    }
+}
+
 /// Extraktion über die Foundation Models mit genau der übergebenen Modellstufe.
 ///
 /// Die Stufe wählt der `PasteImportModelResolver` vor dem Lauf. Ein Fehler des Modells wird

@@ -5,8 +5,6 @@ import ReisenDomain
 enum PasteImportHandoffError: Error, Equatable, Sendable {
     /// Die App Group fehlt in den Entitlements oder ist nicht eingerichtet.
     case appGroupUnavailable
-    /// Die App wurde über `reisen://paste-import` geöffnet, ohne dass eine Übergabe liegt.
-    case missingPayload
     /// Die Bytes passen nicht zur gemeldeten Art (z. B. Text ohne UTF-8).
     case unreadablePayload
 }
@@ -50,7 +48,11 @@ enum PasteImportHandoff {
         try payload.write(to: container.appendingPathComponent(payloadFileName), options: .atomic)
     }
 
-    /// `nil`, wenn nichts geteilt wurde — der Aufruf beim Aktivieren ist dann kein Fehler.
+    /// Konsumiert eine liegende Übergabe; `nil`, wenn keine liegt.
+    ///
+    /// Der einzige Konsum-Pfad und damit idempotent: URL-Öffnen und Aktivieren können beide
+    /// feuern, der zweite Aufruf findet nichts mehr und macht daraus keinen Fehler. Ob ein
+    /// fehlender Payload gemeldet wird, entscheidet der `PasteImportHandoffCoordinator`.
     static func consumePending() throws -> PasteImportSource? {
         let container = try containerURL()
         let payloadURL = container.appendingPathComponent(payloadFileName)
@@ -62,12 +64,6 @@ enum PasteImportHandoff {
         }
         let meta = try JSONDecoder().decode(Meta.self, from: try Data(contentsOf: metaURL))
         return try source(kind: meta.kind, payload: try Data(contentsOf: payloadURL))
-    }
-
-    /// Für `reisen://paste-import`: ohne Übergabe ist das ein Fehler, kein Leerlauf.
-    static func consume() throws -> PasteImportSource {
-        guard let source = try consumePending() else { throw PasteImportHandoffError.missingPayload }
-        return source
     }
 
     private static func containerURL() throws -> URL {

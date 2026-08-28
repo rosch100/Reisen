@@ -21,6 +21,10 @@ enum PasteImportMacSourceError: Error, Equatable, Sendable {
     case unreadableFile
 }
 
+extension PasteImportMacSourceError: PasteImportFailureClassifying {
+    var pasteImportFailure: PasteImportFailure { .source }
+}
+
 /// Quellen des macOS-Einstiegs: Zwischenablage und Dateiauswahl.
 enum PasteImportMacSource {
     /// `nil`, wenn die Zwischenablage nichts Verwertbares enthält — kein Ersatzinhalt.
@@ -188,7 +192,7 @@ final class PasteImportMacSession {
                 self?.phase = .choosing(candidates)
             } catch {
                 guard !Task.isCancelled else { return }
-                self?.phase = .failed(Self.message(for: error))
+                self?.phase = .failed(PasteImportFailureMessage.text(for: error))
             }
         }
     }
@@ -200,22 +204,6 @@ final class PasteImportMacSession {
         existing = []
         pending = []
         phase = .idle
-    }
-
-    private static func message(for error: Error) -> String {
-        switch error {
-        case PasteImportSourceError.empty,
-            PasteImportMacSourceError.unreadableFile,
-            PasteImportAdapterError.unreadableSource,
-            PasteImportAdapterError.imageConversionFailed:
-            return L10n.string(.pasteImportErrorSource)
-        case PasteImportRunError.modelUnavailable, PasteImportAdapterError.unavailable:
-            return L10n.string(.pasteImportUnavailable)
-        case PasteImportAdapterError.imageInputUnsupported:
-            return L10n.string(.pasteImportErrorImageUnsupported)
-        default:
-            return L10n.string(.pasteImportErrorModel)
-        }
     }
 }
 

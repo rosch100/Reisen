@@ -3,6 +3,7 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+import ReisenAppCore
 import ReisenDomain
 import ReisenSharedUI
 
@@ -34,13 +35,17 @@ enum PasteImportIOSSource {
 
 extension View {
     /// Toolbar-Einstieg „Buchung einfügen…“ mit Datei- und Fotoauswahl.
-    func pasteImportToolbar(session: PasteImportIOSSession) -> some View {
-        modifier(PasteImportToolbarModifier(session: session))
+    ///
+    /// - Parameter entry: Reise-Kontext dieses Einstiegs; er entscheidet über die Reise neuer
+    ///   Buchungen und wird beim Auslösen mitgegeben, nicht aus einem anderen Tab gelesen.
+    func pasteImportToolbar(session: PasteImportIOSSession, entry: PasteImportEntry) -> some View {
+        modifier(PasteImportToolbarModifier(session: session, entry: entry))
     }
 }
 
 private struct PasteImportToolbarModifier: ViewModifier {
     let session: PasteImportIOSSession
+    let entry: PasteImportEntry
 
     @Environment(\.modelContext) private var modelContext
     @State private var isChoosingSource = false
@@ -83,7 +88,11 @@ private struct PasteImportToolbarModifier: ViewModifier {
     private func startFromFile(_ result: Result<URL, Error>) {
         do {
             let url = try result.get()
-            session.start(source: try PasteImportIOSSource.fromFile(url), in: modelContext)
+            session.start(
+                source: try PasteImportIOSSource.fromFile(url),
+                entry: entry,
+                in: modelContext
+            )
         } catch {
             session.fail(L10n.string(.pasteImportErrorSource))
         }
@@ -92,7 +101,7 @@ private struct PasteImportToolbarModifier: ViewModifier {
     private func startFromPhoto(_ item: PhotosPickerItem) async {
         do {
             let source = try await PasteImportIOSSource.fromPhoto(item)
-            session.start(source: source, in: modelContext)
+            session.start(source: source, entry: entry, in: modelContext)
         } catch {
             session.fail(L10n.string(.pasteImportErrorSource))
         }

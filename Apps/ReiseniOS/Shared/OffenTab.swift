@@ -55,7 +55,7 @@ struct OffenTab: View {
     @ViewBuilder
     private var openBookingsScreen: some View {
         openBookingsList
-            .pasteImportToolbar(session: pasteImport)
+            .pasteImportToolbar(session: pasteImport, entry: .open)
     }
 
     @ViewBuilder

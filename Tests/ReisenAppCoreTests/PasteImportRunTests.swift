@@ -101,6 +101,14 @@ private func hotelBooking(code: String) -> Booking {
     #expect(extractCallCount == 0)
 }
 
+@Test func pasteImportRun_modelUnavailableIsReportedAsUnavailableModel() {
+    #expect(PasteImportRunError.modelUnavailable.pasteImportFailure == .modelUnavailable)
+    #expect(
+        PasteImportFailureMessage.text(for: PasteImportRunError.modelUnavailable)
+            == L10n.string(.pasteImportUnavailable)
+    )
+}
+
 @Test func pasteImportRun_emptySource_doesNotExtract() async throws {
     let extractor = CountingExtractor(extractions: [hotelExtraction(code: nil)])
 

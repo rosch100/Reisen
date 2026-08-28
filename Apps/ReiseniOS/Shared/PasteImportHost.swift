@@ -1,6 +1,7 @@
 import SwiftData
 import SwiftUI
 
+import ReisenAppCore
 import ReisenData
 import ReisenDomain
 import ReisenSharedUI
@@ -22,8 +23,6 @@ struct PasteImportReview: Identifiable {
 /// beim Aktivieren nachgeholt, falls iOS die App nicht direkt geöffnet hat.
 struct PasteImportHost<Content: View>: View {
     let session: PasteImportIOSSession
-    /// Reise, in der neue Buchungen landen; `nil` legt offene Buchungen an.
-    let tripID: UUID?
     @ViewBuilder let content: Content
 
     @Environment(\.modelContext) private var modelContext
@@ -94,29 +93,29 @@ struct PasteImportHost<Content: View>: View {
             }
             .onOpenURL { url in
                 guard PasteImportHandoff.isHandoff(url) else { return }
-                startSharedHandoff()
+                handleHandoff(trigger: .url)
             }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
-                startPendingHandoff()
+                handleHandoff(trigger: .activation)
             }
     }
 
-    /// Die App wurde für die Übergabe geöffnet: eine fehlende Datei ist hier ein Fehler.
-    private func startSharedHandoff() {
-        do {
-            session.start(source: try PasteImportHandoff.consume(), in: modelContext)
-        } catch {
-            session.fail(L10n.string(.pasteImportErrorHandoff))
-        }
-    }
-
-    /// iOS startet die App nach dem Teilen nicht garantiert; ohne liegende Übergabe passiert nichts.
-    private func startPendingHandoff() {
-        do {
-            guard let source = try PasteImportHandoff.consumePending() else { return }
-            session.start(source: source, in: modelContext)
-        } catch {
+    /// Beide Auslöser der Übergabe über einen Konsum: `consumePending` ist idempotent, und die
+    /// Entscheidung im `PasteImportHandoffCoordinator` verhindert, dass der zweite Auslöser den
+    /// vom ersten gestarteten Lauf mit einem Fehler überschreibt.
+    private func handleHandoff(trigger: PasteImportHandoffTrigger) {
+        let action = PasteImportHandoffCoordinator.action(
+            trigger: trigger,
+            consumed: Result { try PasteImportHandoff.consumePending() },
+            isSessionActive: session.isActive
+        )
+        switch action {
+        case .start(let source):
+            session.start(source: source, entry: .handoff, in: modelContext)
+        case .ignore:
+            break
+        case .reportFailure:
             session.fail(L10n.string(.pasteImportErrorHandoff))
         }
     }
@@ -187,8 +186,9 @@ struct PasteImportHost<Content: View>: View {
         try modelContext.fetch(FetchDescriptor<SDBooking>(predicate: #Predicate { $0.id == id })).first
     }
 
+    /// Reise des laufenden Imports; sie kommt aus dem Einstieg, nicht aus einer fremden Tab-Auswahl.
     private func selectedTrip() throws -> SDTrip? {
-        guard let tripID else { return nil }
+        guard let tripID = session.tripID else { return nil }
         return try modelContext.fetch(
             FetchDescriptor<SDTrip>(predicate: #Predicate { $0.id == tripID })
         ).first
