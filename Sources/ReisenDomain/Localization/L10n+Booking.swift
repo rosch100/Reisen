@@ -27,6 +27,7 @@ extension L10n {
         switch type {
         case .flight: return string(.bookingFieldLocationFromFlight)
         case .ferry: return string(.bookingFieldLocationFromFerry)
+        case .train: return string(.bookingFieldLocationFromTrain)
         case .carRental: return string(.bookingFieldLocationFromCarRental)
         case .other, .hotel, .activity: return string(.bookingFieldLocationFromOther)
         }
@@ -36,6 +37,7 @@ extension L10n {
         switch type {
         case .hotel, .activity: return string(.bookingFieldLocationToHotel)
         case .flight, .ferry: return string(.bookingFieldLocationToFlight)
+        case .train: return string(.bookingFieldLocationToTrain)
         case .carRental: return string(.bookingFieldLocationToCarRental)
         case .other: return string(.bookingFieldLocationToOther)
         }
@@ -46,6 +48,7 @@ extension L10n {
         case .hotel, .activity: return nil
         case .flight: return string(.bookingFieldLocationFromAddressFlight)
         case .ferry: return string(.bookingFieldLocationFromAddressFerry)
+        case .train: return string(.bookingFieldLocationFromAddressTrain)
         case .carRental: return string(.bookingFieldLocationFromAddressCarRental)
         case .other: return string(.bookingFieldLocationFromAddressOther)
         }
@@ -56,6 +59,7 @@ extension L10n {
         case .hotel: return string(.bookingFieldLocationToAddressHotel)
         case .activity: return string(.bookingFieldLocationToAddressActivity)
         case .flight, .ferry: return string(.bookingFieldLocationToAddressFlight)
+        case .train: return string(.bookingFieldLocationToAddressTrain)
         case .carRental: return string(.bookingFieldLocationToAddressCarRental)
         case .other: return string(.bookingFieldLocationToAddressOther)
         }
@@ -66,6 +70,7 @@ extension L10n {
         case .hotel: return string(.bookingFieldRoomCategoryHotel)
         case .activity: return string(.bookingFieldRoomCategoryActivity)
         case .carRental: return string(.bookingFieldRoomCategoryCarRental)
+        case .train: return string(.bookingFieldRoomCategoryTrain)
         case .other: return string(.bookingFieldRoomCategoryOther)
         case .flight, .ferry: return nil
         }
@@ -74,7 +79,7 @@ extension L10n {
     public static func roomCountLabel(for type: BookingType) -> String? {
         switch type {
         case .hotel: return string(.bookingFieldRoomCountHotel)
-        case .flight, .ferry, .activity, .carRental, .other: return nil
+        case .flight, .ferry, .train, .activity, .carRental, .other: return nil
         }
     }
 
@@ -82,6 +87,7 @@ extension L10n {
         switch type {
         case .activity: return string(.bookingFieldOperatorActivity)
         case .carRental: return string(.bookingFieldOperatorCarRental)
+        case .train: return string(.bookingFieldOperatorTrain)
         case .flight, .ferry, .hotel, .other: return string(.bookingFieldOperatorDefault)
         }
     }
@@ -91,6 +97,7 @@ extension L10n {
         case .hotel: return string(.bookingFieldScheduleStartHotel)
         case .flight: return string(.bookingFieldScheduleStartFlight)
         case .ferry: return string(.bookingFieldScheduleStartFerry)
+        case .train: return string(.bookingFieldScheduleStartTrain)
         case .carRental: return string(.bookingFieldScheduleStartCarRental)
         case .activity, .other: return string(.bookingFieldScheduleStartEvent)
         }
@@ -101,6 +108,7 @@ extension L10n {
         case .hotel: return string(.bookingFieldScheduleEndHotel)
         case .flight: return string(.bookingFieldScheduleEndFlight)
         case .ferry: return string(.bookingFieldScheduleEndFerry)
+        case .train: return string(.bookingFieldScheduleEndTrain)
         case .carRental: return string(.bookingFieldScheduleEndCarRental)
         case .activity, .other: return string(.bookingFieldScheduleEndEvent)
         }
@@ -126,6 +134,7 @@ extension L10n {
         case .flight: return .bookingTypeFlight
         case .hotel: return .bookingTypeHotel
         case .ferry: return .bookingTypeFerry
+        case .train: return .bookingTypeTrain
         case .activity: return .bookingTypeActivity
         case .carRental: return .bookingTypeCarRental
         case .other: return .bookingTypeOther

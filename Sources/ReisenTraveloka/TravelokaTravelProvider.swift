@@ -16,7 +16,10 @@ public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginC
     public var onProgress: (@MainActor (String) -> Void)?
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: TravelokaProviderError.missingWebViewSession
+        )
         let context = try await requireSessionContext(from: session)
         let referer = context.apiReferer()
 
@@ -43,7 +46,10 @@ public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginC
         session: any ProviderSession,
         ref: ProviderBookingRef
     ) async throws -> ProviderBookingEnrichment {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: TravelokaProviderError.missingWebViewSession
+        )
         let ids = try TravelokaExternalURL.detailIds(from: ref.externalUrl)
         let context = try await requireSessionContext(from: session)
 
@@ -83,15 +89,11 @@ public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginC
 }
 
 private extension TravelokaTravelProvider {
-    func extractWebView(from session: any ProviderSession) throws -> WKWebView {
-        guard let web = (session as? WebViewProviderSession)?.webView else {
-            throw TravelokaProviderError.missingWebViewSession
-        }
-        return web
-    }
-
     func requireSessionContext(from session: any ProviderSession) async throws -> TravelokaSessionContext {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: TravelokaProviderError.missingWebViewSession
+        )
         let hintURLs = (session as? WebViewProviderSession)?.navigationHintURLs ?? []
         let context = await webView.travelokaSessionContext(additionalHintURLs: hintURLs)
         guard context.hasSentinel else {
@@ -195,10 +197,7 @@ private extension TravelokaTravelProvider {
                 return enrichment
             }
             var merged = enrichment
-            merged.deadlines = TravelokaCancellationDeadlines.combining(
-                existing: enrichment.deadlines,
-                refund: deadlines
-            )
+            merged.deadlines = enrichment.deadlines.combining(refund: deadlines)
             return merged
         } catch {
             onProgress?("Traveloka Refund-Fristen nicht lesbar — Detail ohne Fristen belassen.")

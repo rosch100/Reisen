@@ -12,7 +12,7 @@ enum Check24KundenbereichHost {
             return flight
         case .ferry:
             return ferry
-        case .hotel, .activity, .carRental, .other:
+        case .hotel, .activity, .carRental, .train, .other:
             return hotel
         }
     }

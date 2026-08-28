@@ -174,6 +174,46 @@ func bookingComMultiRoomPriceIsReservationTotal() throws {
     #expect(hotel.rateDetails?.totalPriceCurrency == "EUR")
 }
 
+@Test("Booking.com GraphQL reservationStatus nutzt exakte Tokens, keine cancel-Substring-Heuristik")
+func bookingComGraphQLReservationStatusUsesExactTokens() throws {
+    let json = """
+    {
+      "data": {
+        "singleTripTimelineQueries": {
+          "singleTripTimeline": {
+            "trip": { "title": "Nairobi" },
+            "timelineGroups": [
+              {
+                "tripItems": [
+                  {
+                    "__typename": "ReservationTripItem",
+                    "reservation": {
+                      "__typename": "AccommodationReservation",
+                      "verticalType": "ACCOMMODATION",
+                      "bookingUrl": "/mybooking.de.html?auth_key=abc",
+                      "reservationDetailsURL": "/mybooking.de.html?auth_key=abc",
+                      "startDateTime": "2026-08-30T12:00:00.000+03:00",
+                      "endDateTime": "2026-08-31T11:00:00.000+03:00",
+                      "reservationStatus": "PENDING_CANCELLATION_HOLD",
+                      "propertyData": {
+                        "name": "Hemak Suites Hotel",
+                        "location": { "city": "Nairobi" }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    let bookings = try BookingComTripsGraphQLParser().parseTimeline(from: json)
+    let hotel = try #require(bookings.first)
+    #expect(hotel.status == .unknown)
+}
+
 @Test("BookingComTripsGraphQLParser erkennt TripsListError und GraphQL-Errors")
 func bookingComGetTripsRejectsErrors() {
     let listError = #"{"data":{"tripsQueries":{"getTrips":{"__typename":"TripsListError","statusCode":401,"response":"x"}}}}"#
@@ -236,6 +276,16 @@ func bookingComHotelConfirmationParsesRateDetails() throws {
     #expect(rate.guestCount == 2)
     #expect(rate.includedBreakfast == true)
     #expect(rate.boardType == .breakfastIncluded)
+}
+
+@Test("BookingComHotelConfirmationParser mappt ohne Frühstück auf roomOnly")
+func bookingComHotelConfirmationParsesRoomOnlyBoard() throws {
+    let html = """
+    <div>Ohne Frühstück</div>
+    """
+    let rate = try #require(BookingComHotelConfirmationParser().parseRateDetails(from: html))
+    #expect(rate.includedBreakfast == false)
+    #expect(rate.boardType == .roomOnly)
 }
 
 @Test("BookingComFlightOrderParser liefert Gepäck und TZ-Offsets")

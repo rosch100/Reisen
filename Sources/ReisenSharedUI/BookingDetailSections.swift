@@ -152,68 +152,52 @@ public enum BookingScheduleFields {
         let startLabel = bookingType.scheduleStartLabel
         let endLabel = bookingType.scheduleEndLabel
 
-        switch booking.bookingType {
-        case .hotel:
-            fields.append(
-                BookingRateField(
-                    label: startLabel,
-                    value: HotelStayDate.format(
-                        booking.startAt,
-                        dateFormat: "d.M.yyyy",
-                        legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
-                    )
+        if bookingType == .hotel {
+            appendSchedulePair(
+                to: &fields,
+                startLabel: startLabel,
+                endLabel: endLabel,
+                startValue: HotelStayDate.format(
+                    booking.startAt,
+                    dateFormat: "d.M.yyyy",
+                    legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
+                ),
+                endValue: HotelStayDate.format(
+                    booking.endAt,
+                    dateFormat: "d.M.yyyy",
+                    legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
                 )
             )
-            fields.append(
-                BookingRateField(
-                    label: endLabel,
-                    value: HotelStayDate.format(
-                        booking.endAt,
-                        dateFormat: "d.M.yyyy",
-                        legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
-                    )
+        } else if bookingType.usesFlightLikeSchedule {
+            appendSchedulePair(
+                to: &fields,
+                startLabel: startLabel,
+                endLabel: endLabel,
+                startValue: Formatting.formatOrtszeit(
+                    booking.startAt,
+                    dateFormat: "d.M.yyyy HH:mm",
+                    timeZone: booking.resolvedFlightDepartureTimeZone
+                ),
+                endValue: Formatting.formatOrtszeit(
+                    booking.endAt,
+                    dateFormat: "d.M.yyyy HH:mm",
+                    timeZone: booking.resolvedFlightArrivalTimeZone
                 )
             )
-        case .flight, .ferry:
-            fields.append(
-                BookingRateField(
-                    label: startLabel,
-                    value: Formatting.formatOrtszeit(
-                        booking.startAt,
-                        dateFormat: "d.M.yyyy HH:mm",
-                        timeZone: booking.resolvedFlightDepartureTimeZone
-                    )
-                )
-            )
-            fields.append(
-                BookingRateField(
-                    label: endLabel,
-                    value: Formatting.formatOrtszeit(
-                        booking.endAt,
-                        dateFormat: "d.M.yyyy HH:mm",
-                        timeZone: booking.resolvedFlightArrivalTimeZone
-                    )
-                )
-            )
-        case .activity, .carRental, .other:
-            fields.append(
-                BookingRateField(
-                    label: startLabel,
-                    value: Formatting.formatOrtszeit(
-                        booking.startAt,
-                        dateFormat: activityDateFormat,
-                        timeZone: booking.resolvedHotelTimeZone
-                    )
-                )
-            )
-            fields.append(
-                BookingRateField(
-                    label: endLabel,
-                    value: Formatting.formatOrtszeit(
-                        booking.endAt,
-                        dateFormat: activityDateFormat,
-                        timeZone: booking.resolvedHotelTimeZone
-                    )
+        } else {
+            appendSchedulePair(
+                to: &fields,
+                startLabel: startLabel,
+                endLabel: endLabel,
+                startValue: Formatting.formatOrtszeit(
+                    booking.startAt,
+                    dateFormat: activityDateFormat,
+                    timeZone: booking.resolvedHotelTimeZone
+                ),
+                endValue: Formatting.formatOrtszeit(
+                    booking.endAt,
+                    dateFormat: activityDateFormat,
+                    timeZone: booking.resolvedHotelTimeZone
                 )
             )
         }
@@ -230,6 +214,17 @@ public enum BookingScheduleFields {
         }
 
         return fields
+    }
+
+    private static func appendSchedulePair(
+        to fields: inout [BookingRateField],
+        startLabel: String,
+        endLabel: String,
+        startValue: String,
+        endValue: String
+    ) {
+        fields.append(BookingRateField(label: startLabel, value: startValue))
+        fields.append(BookingRateField(label: endLabel, value: endValue))
     }
 }
 

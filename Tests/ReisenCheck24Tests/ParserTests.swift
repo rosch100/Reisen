@@ -42,6 +42,54 @@ func activityListExcludesCancelledAndPast() throws {
     #expect(parsed.bookings[0].title == "Zukunft Hotel")
 }
 
+@Test("ActivityListParser parst Hotel-ISO mit Offset-Suffix über Datumspräfix")
+func activityListParsesHotelISODateWithOffsetSuffix() throws {
+    let json = """
+    {
+      "activities": [
+        {
+          "startDate": "2099-08-11T00:00:00+07:00",
+          "endDate": "2099-08-14T12:00:00+07:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "hotel" },
+          "detail": { "line1": "Offset Hotel" },
+          "link": { "link": "https://hotel.check24.de/kundenbereich/buchung/44444444-4444-4444-4444-444444444444" }
+        }
+      ]
+    }
+    """
+    let parsed = try ActivityListParser().parseActivityListHTML(json)
+    #expect(parsed.bookings.count == 1)
+    #expect(parsed.bookings[0].title == "Offset Hotel")
+    #expect(parsed.bookings[0].startAt == HotelStayDate.parse("2099-08-11T00:00:00+07:00"))
+}
+
+@Test("ActivityListParser: Hotel-HAR-Abend wird vor dem Today-Gate zum Kalendertag")
+func activityListParseCatalogDate_hotelHarEveningIsCalendarDay() throws {
+    let parser = ActivityListParser()
+    let raw = "Tue Aug 11 2026 23:59:00 GMT+0200"
+    let flexible = try #require(parser.parseFlexibleDate(raw))
+    let parsed = try #require(parser.parseCatalogDate(raw, bookingType: .hotel))
+    #expect(parsed == HotelStayDate.calendarDay(fromParsed: flexible))
+}
+
+@Test("ActivityListParser: Hotel-Kalendertag gestern bleibt draußen, auch bei T23:59")
+func activityListHotelYesterdayEveningDoesNotPassTodayGate() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .current
+    let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 27, hour: 12))!
+    let activity: [String: Any] = [
+        "startDate": "2026-08-26T23:59:00",
+        "endDate": "2026-08-28T12:00:00",
+        "status": ["key": "upcoming"],
+        "product": ["key": "hotel"],
+        "detail": ["line1": "Gestern Hotel"],
+        "link": ["link": "https://hotel.check24.de/kundenbereich/buchung/55555555-5555-5555-5555-555555555555"]
+    ]
+    let parsed = ActivityListParser().parseOneActivityIfRelevant(activity, now: now)
+    #expect(parsed == nil)
+}
+
 @Test("ActivityListParser: leeres activities-Array ist leerer Katalog")
 func activityListEmptyJSONIsEmptyCatalog() throws {
     let parsed = try ActivityListParser().parseActivityListHTML("""

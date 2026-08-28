@@ -6,12 +6,12 @@ public struct BookingComActivityListParser: Sendable {
 
     public func parseBookings(from html: String) throws -> [ProviderBookingDraft] {
         var bookings: [ProviderBookingDraft] = []
-        bookings.append(contentsOf: parseDataAttributeCards(from: html))
+        bookings.append(contentsOf: try parseDataAttributeCards(from: html))
         if bookings.isEmpty {
-            bookings.append(contentsOf: parseJSONLDOrEmbeddedReservations(from: html))
+            bookings.append(contentsOf: try parseJSONLDOrEmbeddedReservations(from: html))
         }
         if bookings.isEmpty {
-            bookings.append(contentsOf: parseMyTripsLinks(from: html))
+            bookings.append(contentsOf: try parseMyTripsLinks(from: html))
         }
 
         // Deduplicate by external URL.

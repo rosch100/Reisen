@@ -38,6 +38,7 @@ struct TripDetailIOS: View {
                         if let destination = trip.destination, !destination.isEmpty {
                             Text(destination)
                         }
+                        TripCompletenessOverviewRow(completeness: trip.completeness())
                         if trip.resolvedBookings.isEmpty {
                             Button(L10n.string(.actionAssignBookings)) {
                                 showAssignBookings = true

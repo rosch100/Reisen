@@ -34,14 +34,14 @@ enum AirbnbActivityReservationDetailsParser {
         let confirmation = byID["confirmation_code"]?.payload
         let pdp = byID["pdp"]?.payload
 
-        let locationTo = nonEmpty(eventLocation?.subtitle) ?? nonEmpty(map?.addressLine1)
+        let locationTo = NonEmpty.string(eventLocation?.subtitle) ?? NonEmpty.string(map?.addressLine1)
         let locationToAddress = Self.address(
             line1: map?.addressLine1,
             line2: map?.addressLine2
-        ) ?? nonEmpty(eventLocation?.subtitle)
+        ) ?? NonEmpty.string(eventLocation?.subtitle)
 
         return AirbnbActivityReservationDetailsParseResult(
-            title: nonEmpty(marquee?.title),
+            title: NonEmpty.string(marquee?.title),
             locationTo: locationTo,
             locationToAddress: locationToAddress,
             guestAdults: Self.parseGuestAdults(from: guestCount?.subtitle),
@@ -50,15 +50,15 @@ enum AirbnbActivityReservationDetailsParser {
                 referenceDate: referenceDate
             ),
             rateDetails: Self.parsePayment(subtitle: payment?.subtitle),
-            confirmationCode: nonEmpty(confirmation?.subtitle),
-            experienceWebPath: nonEmpty(pdp?.destination?.webUrl?.value)
+            confirmationCode: NonEmpty.string(confirmation?.subtitle),
+            experienceWebPath: NonEmpty.string(pdp?.destination?.webUrl?.value)
         )
     }
 }
 
 private extension AirbnbActivityReservationDetailsParser {
     static func address(line1: String?, line2: String?) -> String? {
-        let parts = [line1, line2].compactMap { nonEmpty($0) }
+        let parts = [line1, line2].compactMap(NonEmpty.string)
         guard !parts.isEmpty else { return nil }
         return parts.joined(separator: ", ")
     }
@@ -124,7 +124,7 @@ private extension AirbnbActivityReservationDetailsParser {
         subtitle: String?,
         referenceDate: Date?
     ) -> [CancellationDeadline] {
-        guard let subtitle, let policyText = nonEmpty(subtitle) else { return [] }
+        guard let policyText = NonEmpty.string(subtitle) else { return [] }
         let lower = policyText.lowercased()
         let isFree = lower.contains("full refund")
             || lower.contains("free cancellation")
@@ -245,12 +245,6 @@ private extension AirbnbActivityReservationDetailsParser {
             return TimeZone(abbreviation: token)
         }
     }
-}
-
-private func nonEmpty(_ value: String?) -> String? {
-    guard let value else { return nil }
-    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.isEmpty ? nil : trimmed
 }
 
 // MARK: - DTOs

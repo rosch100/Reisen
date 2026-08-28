@@ -28,7 +28,7 @@ extension Check24TravelProvider {
             from: detailSnapshot.html,
             bookingType: parsedBooking.type
         )
-        if let key = identityKey(for: parsedBooking) {
+        if let key = parsedBooking.identityKey {
             bookingDetailsByBookingKey[key] = parsedDetails
         }
     }

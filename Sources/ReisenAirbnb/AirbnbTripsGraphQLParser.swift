@@ -14,75 +14,78 @@ enum AirbnbTripsGraphQLParser {
 
         let bookings = decoded
             .data.viewer.trips.edges
-            .flatMap(\.node.scheduledItemsAsDrafts)
+            .flatMap { $0.node.scheduledItemsAsDrafts() }
 
         return ProviderCatalog(bookings: bookings)
     }
 }
 
 private extension AirbnbTripNode {
-    var scheduledItemsAsDrafts: [ProviderBookingDraft] {
-        scheduledItems.edges.compactMap { edge in
-            guard let details = edge.node.details else { return nil }
+    func scheduledItemsAsDrafts() -> [ProviderBookingDraft] {
+        var drafts: [ProviderBookingDraft] = []
+        for edge in scheduledItems.edges {
+            guard let details = edge.node.details else { continue }
 
             // Stay has `stayReservation` with a confirmation code used by scheduled_events.
             if let stay = details.stayReservation, let confirmationCode = stay.confirmationCode, !confirmationCode.isEmpty {
-                return ProviderBookingDraft(
-                    provider: .airbnb,
+                let hotelOffsetSeconds = TimeZone(identifier: startTime.listingTimeZone)?
+                    .secondsFromGMT(for: startTime.dateTime)
+                let times = TemporalFact.pair(
                     bookingType: .hotel,
-                    title: displayName,
-                    confirmationCode: confirmationCode,
-                    externalUrl: externalUrl(
-                        schedulableType: details.schedulableType,
-                        confirmationCode: confirmationCode
-                    ),
-                    startAt: startTime.dateTime,
-                    endAt: endTime.dateTime,
-                    locationTo: displayName,
-                    locationToAddress: nil,
-                    status: Self.mapStatus(tripStatus: status, reservationStatus: stay.status),
-                    deadlines: [],
-                    passengers: []
+                    start: startTime.dateTime,
+                    end: endTime.dateTime,
+                    hotelOffsetSeconds: hotelOffsetSeconds
                 )
+                if let draft = DraftAssembler.draft(
+                    from: ProviderBookingFacts(
+                        provider: .airbnb,
+                        bookingType: .hotel,
+                        start: times.start,
+                        end: times.end,
+                        title: displayName,
+                        confirmationCode: confirmationCode,
+                        externalUrl: externalUrl(schedulableType: details.schedulableType, confirmationCode: confirmationCode),
+                        locationTo: displayName,
+                        statusRaw: BookingStatus.joinedRaw(status, stay.status)
+                    )
+                ) {
+                    drafts.append(draft)
+                }
+                continue
             }
 
             if let activity = details.activityReservation, let confirmationCode = activity.confirmationCode, !confirmationCode.isEmpty {
+                // TripList `displayName` ist der Ort, nicht der Experience-Titel (siehe Enrichment).
                 let guestCount = travelerCapacity?.numberOfAdults
-                return ProviderBookingDraft(
-                    provider: .airbnb,
+                let times = TemporalFact.pair(
                     bookingType: .activity,
-                    // TripList `displayName` is the location, not the experience title (see enrichment).
-                    title: nil,
-                    confirmationCode: confirmationCode,
-                    externalUrl: externalUrl(
-                        schedulableType: details.schedulableType,
-                        confirmationCode: confirmationCode
-                    ),
-                    startAt: startTime.dateTime,
-                    endAt: endTime.dateTime,
-                    locationTo: displayName,
-                    locationToAddress: nil,
-                    status: Self.mapStatus(tripStatus: status, reservationStatus: activity.status),
-                    deadlines: [],
-                    rateDetails: Self.rateDetails(fromGuestCount: guestCount),
-                    passengers: []
+                    start: startTime.dateTime,
+                    end: endTime.dateTime
                 )
+                if let draft = DraftAssembler.draft(
+                    from: ProviderBookingFacts(
+                        provider: .airbnb,
+                        bookingType: .activity,
+                        start: times.start,
+                        end: times.end,
+                        confirmationCode: confirmationCode,
+                        externalUrl: externalUrl(schedulableType: details.schedulableType, confirmationCode: confirmationCode),
+                        locationTo: displayName,
+                        statusRaw: BookingStatus.joinedRaw(status, activity.status),
+                        rateDetails: Self.rateDetails(fromGuestCount: guestCount)
+                    )
+                ) {
+                    drafts.append(draft)
+                }
             }
-
-            return nil
         }
+        return drafts
     }
 
     private func externalUrl(schedulableType: String?, confirmationCode: String) -> String? {
         guard let schedulableType, !schedulableType.isEmpty else { return nil }
         guard let numericTripID = decodeTripNumericID(from: id) else { return nil }
         return "https://www.airbnb.de/trips/v1/\(numericTripID)/ro/\(schedulableType)/\(confirmationCode)"
-    }
-
-    private static func mapStatus(tripStatus: String?, reservationStatus: String?) -> BookingStatus {
-        let haystack = ([tripStatus, reservationStatus].compactMap { $0 }).joined(separator: " ").lowercased()
-        if haystack.contains("cancel") { return .cancelled }
-        return .confirmed
     }
 
     private static func rateDetails(fromGuestCount count: Int?) -> BookingRateDetails? {

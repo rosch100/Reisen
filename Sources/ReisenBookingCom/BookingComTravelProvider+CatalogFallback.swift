@@ -11,6 +11,6 @@ extension BookingComTravelProvider {
         if htmlTripIDs.isEmpty {
             return try fetchCatalogFallbackHTMLWhenTripIDsEmpty(myTripsHTML: myTripsHTML)
         }
-        return fetchCatalogFallbackHTMLWhenTripIDsNotEmpty(myTripsHTML: myTripsHTML)
+        return try fetchCatalogFallbackHTMLWhenTripIDsNotEmpty(myTripsHTML: myTripsHTML)
     }
 }

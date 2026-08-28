@@ -28,7 +28,7 @@ Ohne HAR/Live-Antwort von `…/kb/api/activities` können weitere Keys **nicht**
 | Mutmaßlicher Key | Möglicher `BookingType` | Hinweis |
 |------------------|-------------------------|---------|
 | `rentalcar` / `car` / `mobility` | neu oder `.other` | Mietwagen |
-| `train` / `bahn` / `rail` | neu oder `.other` | Bahn |
+| `train` / `bahn` / `rail` | `.train` (Domain existiert; Key **nicht** whitelisten ohne HAR) | Bahn |
 | `activity` / `ticket` / `event` | `.activity` | Erlebnisse |
 | `insurance` | skip | Ancillary |
 

@@ -36,6 +36,90 @@ extension L10n {
         }
     }
 
+    /// „1 Lücke“ / „n Lücken“ für Inter-Booking-Gaps.
+    public static func tripCompletenessGapCount(_ count: Int) -> String {
+        if count == 1 {
+            return string(.tripCompletenessGapOne)
+        }
+        return format(.tripCompletenessGapMany, count)
+    }
+
+    private static let tripCompletenessDetailSeparator = " · "
+
+    /// Caption mit Gap-Arten; `nil` wenn keine Inter-Lücken oder nur `.both`.
+    public static func tripCompletenessKindCaption(kinds: [GapKind]) -> String? {
+        guard !kinds.isEmpty else { return nil }
+        if kinds.allSatisfy({ $0 == .both }) { return nil }
+        return kinds.map(gapKindDisplay).joined(separator: tripCompletenessDetailSeparator)
+    }
+
+    public static func tripCompletenessEdgeCaption(count: Int) -> String? {
+        guard count > 0 else { return nil }
+        if count == 1 {
+            return string(.tripCompletenessEdgeOne)
+        }
+        return format(.tripCompletenessEdgeMany, count)
+    }
+
+    public static func tripCompletenessUnknownCaption(count: Int) -> String? {
+        guard count > 0 else { return nil }
+        return format(.tripCompletenessUnknownMany, count)
+    }
+
+    /// SSOT: optionale Detail-Captions (Kind / Rand / unknown) für Overview-Zeilen.
+    public static func tripCompletenessCaptionParts(
+        _ completeness: TripCompleteness
+    ) -> TripCompletenessCaptionParts {
+        TripCompletenessCaptionParts(
+            kind: tripCompletenessKindCaption(kinds: completeness.interBookingGapKinds),
+            edge: tripCompletenessEdgeCaption(count: completeness.edgeGapCount),
+            unknown: tripCompletenessUnknownCaption(count: completeness.unknownStatusCount)
+        )
+    }
+
+    /// Zusammengeführte Detail-Caption für kompakte macOS-Overview.
+    public static func tripCompletenessJoinedDetailCaption(
+        _ completeness: TripCompleteness
+    ) -> String? {
+        let captions = tripCompletenessCaptionParts(completeness)
+        let parts = [captions.kind, captions.edge, captions.unknown].compactMap { $0 }
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: tripCompletenessDetailSeparator)
+    }
+
+    /// Sidebar-/Listen-Meta: Buchungszahl und/oder Lücken (Lücken nicht an Future-Bookings koppeln).
+    public static func tripCompletenessListMeta(
+        futureBookingCount: Int,
+        gapCount: Int?
+    ) -> String? {
+        if let gapCount {
+            if futureBookingCount > 0 {
+                return format(.tripCompletenessSidebarWithGaps, futureBookingCount, gapCount)
+            }
+            return tripCompletenessGapCount(gapCount)
+        }
+        guard futureBookingCount > 0 else { return nil }
+        return format(.tripBookingCount, futureBookingCount)
+    }
+
+    public static func tripCompletenessAccessibility(_ completeness: TripCompleteness) -> String {
+        if completeness.hasTimeGaps {
+            return format(.tripCompletenessA11yIncomplete, completeness.interBookingGapCount)
+        }
+        return string(.tripCompletenessA11yComplete)
+    }
+
+    public static func tripCompletenessFillCaption(tripTitle: String) -> String {
+        format(.tripCompletenessFillCaption, tripTitle)
+    }
+
+    public static func tripCompletenessOverviewFactValue(_ completeness: TripCompleteness) -> String {
+        if completeness.hasTimeGaps {
+            return "\(completeness.interBookingGapCount)"
+        }
+        return string(.tripCompletenessNoneShort)
+    }
+
     public static func providerLoginStatusDisplay(_ status: ProviderLoginTrafficLight) -> String {
         switch status {
         case .green: return string(.loginStatusGreen)

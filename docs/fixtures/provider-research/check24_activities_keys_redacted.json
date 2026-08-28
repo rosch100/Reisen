@@ -14,7 +14,7 @@
   "rejectedOrUnknownKeys": [],
   "hypothesesUnverified": [
     { "key": "rentalcar", "possibleBookingType": "other_or_new" },
-    { "key": "train", "possibleBookingType": "other_or_new" },
+    { "key": "train", "possibleBookingType": "train", "note": "Domain BookingType.train existiert; Key unverified — nicht whitelisten ohne HAR" },
     { "key": "activity", "possibleBookingType": "activity" }
   ]
 }
