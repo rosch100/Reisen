@@ -5,8 +5,7 @@ import ReisenProviders
 enum BilligerMietwagenWebConstants {
     private static let origin = BilligerMietwagenAuthConstants.origin
     static let bookingsPathSegment = "bookings"
-    private static let accountBookingsPath =
-        "\(BilligerMietwagenAuthConstants.accountPathPrefix)/\(bookingsPathSegment)"
+    private static let accountBookingsPath = BilligerMietwagenAuthConstants.accountBookingsPath
 
     /// Catalog-List-Endpoint als ein Literal (SSOT + Private Binary-Isolation-Marker).
     static let bookingsAPIURL = URL(string: "https://consumer-api.floyt.com/useraccount/v1/bookings")!
@@ -29,9 +28,9 @@ enum BilligerMietwagenWebConstants {
         BilligerMietwagenAuthConstants.portalURL(accountBookingsPath)
     }
 
-    /// Referer für Catalog/Detail/Session-POST nach Login (SPA „Meine Buchungen“).
+    /// Referer für Catalog/Detail nach Login (SPA „Meine Buchungen“) — SSOT `sessionReferer`.
     static var catalogReferer: String {
-        catalogBookingsURL.absoluteString
+        BilligerMietwagenAuthConstants.sessionReferer
     }
 
     enum CatalogList: CaseIterable, Sendable {

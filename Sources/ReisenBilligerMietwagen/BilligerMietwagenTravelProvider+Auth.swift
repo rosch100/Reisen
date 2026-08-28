@@ -5,11 +5,12 @@ import ReisenProviders
 
 extension BilligerMietwagenTravelProvider {
     /// Session → Refresh (`user_id` = JWT-Claim `jwtUsernameClaim`) → Session-POST → Access-Token.
+    /// Refresh-Antwort ohne neuen `refresh_token`: den verwendeten Refresh weiterschreiben.
     func requireAccessToken(webView: WKWebView) async throws -> String {
         progress("Prüfe Session")
         let tokens = try await loadSessionTokens(webView: webView)
         guard let userID = BilligerMietwagenAccessToken.userID(fromAccessToken: tokens.access) else {
-            throw BilligerMietwagenProviderError.tokenRefreshFailed
+            throw BilligerMietwagenProviderError.accessTokenMissingUsernameClaim
         }
 
         progress("Erneuere Session")
@@ -32,7 +33,8 @@ extension BilligerMietwagenTravelProvider {
             from: try await fetchJSON(
                 webView: webView,
                 url: BilligerMietwagenAuthConstants.sessionURL,
-                referer: BilligerMietwagenWebConstants.catalogReferer
+                referer: BilligerMietwagenAuthConstants.sessionReferer,
+                headers: BilligerMietwagenAuthConstants.sessionBrowserHeaders
             )
         )
         return try session.requiringSessionTokens()
@@ -47,7 +49,7 @@ extension BilligerMietwagenTravelProvider {
             from: try await postJSON(
                 webView: webView,
                 url: BilligerMietwagenAuthConstants.refreshTokenURL,
-                referer: BilligerMietwagenWebConstants.catalogReferer,
+                referer: BilligerMietwagenAuthConstants.sessionReferer,
                 headers: BilligerMietwagenAuthConstants.whitelabelHeaders,
                 body: try jsonBody([
                     BilligerMietwagenAuthConstants.refreshTokenField: refreshToken,
@@ -55,7 +57,7 @@ extension BilligerMietwagenTravelProvider {
                 ])
             )
         )
-        return try refreshed.requiringRefreshedTokens()
+        return try refreshed.requiringRefreshedTokens(reusingRefresh: refreshToken)
     }
 
     private func persistSessionTokens(
@@ -66,7 +68,8 @@ extension BilligerMietwagenTravelProvider {
         _ = try await postJSON(
             webView: webView,
             url: BilligerMietwagenAuthConstants.sessionURL,
-            referer: BilligerMietwagenWebConstants.catalogReferer,
+            referer: BilligerMietwagenAuthConstants.sessionReferer,
+            headers: BilligerMietwagenAuthConstants.sessionBrowserHeaders,
             body: try jsonBody([
                 BilligerMietwagenAuthConstants.accessTokenField: accessToken,
                 BilligerMietwagenAuthConstants.refreshTokenField: refreshToken,

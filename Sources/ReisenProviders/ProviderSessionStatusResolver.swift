@@ -22,11 +22,9 @@ public enum ProviderSessionStatusResolver {
         let looksLikeLogin = AuthPageURLHeuristic.looksLikeLoginPage(absolute)
         let looksLikeAccount = AuthPageURLHeuristic.looksLikeAccountPage(absolute)
 
-        // billiger-mietwagen: Account-/Bookings-URLs ohne Live-session.php oft „ready“ trotz toter Cookies.
+        // billiger-mietwagen: SPA bleibt oft auf /login während Buchungen sichtbar sind.
+        // session.php ist die einzige verlässliche Session-Quelle (auch auf der Login-URL).
         if BilligerMietwagenSessionProbe.applies(to: url) {
-            if looksLikeLogin {
-                return .needsLogin
-            }
             return .shouldProbeBilligerMietwagen
         }
 

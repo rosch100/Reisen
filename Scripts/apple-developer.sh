@@ -8,6 +8,34 @@ reisen_apple_developer_root() {
   printf '%s\n' "$here"
 }
 
+# Gitignored `.signing/Reisen.provisionprofile` liegt im Primär-Checkout.
+# Worktrees haben die Datei nicht — Lookup über git-common-dir.
+reisen_provision_profile_path() {
+  local root="${1:-}"
+  if [[ -z "$root" ]]; then
+    root="$(reisen_apple_developer_root)"
+  fi
+  local candidate common_dir primary
+  candidate="$root/.signing/Reisen.provisionprofile"
+  if [[ -f "$candidate" ]]; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
+  common_dir="$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)" || return 1
+  if [[ "$common_dir" != /* ]]; then
+    common_dir="$(cd "$root/$common_dir" && pwd -P)"
+  else
+    common_dir="$(cd "$common_dir" && pwd -P)"
+  fi
+  primary="$(dirname "$common_dir")"
+  candidate="$primary/.signing/Reisen.provisionprofile"
+  if [[ -f "$candidate" ]]; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
+  return 1
+}
+
 # Team-ID aus APPLE_TEAM_ID oder project.yml (optional, für lokales Signing).
 reisen_apple_team_id() {
   if [[ -n "${APPLE_TEAM_ID:-}" && "${APPLE_TEAM_ID}" =~ ^[A-Z0-9]{10}$ ]]; then

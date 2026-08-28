@@ -17,7 +17,8 @@ public enum BilligerMietwagenSessionProbe {
         let text = try await webView.fetchAuthenticatedText(
             url: BilligerMietwagenAuthConstants.sessionURL,
             accept: "application/json",
-            referer: BilligerMietwagenAuthConstants.sessionProbeReferer
+            referer: BilligerMietwagenAuthConstants.sessionProbeReferer,
+            headers: BilligerMietwagenAuthConstants.sessionBrowserHeaders
         )
         return isLoggedIn(fromSessionJSON: text)
     }

@@ -17,18 +17,18 @@ Cookie-Session der WebView → `GET /user_account/session.php` → `access_token
 | Schritt | URL | Parse |
 |---------|-----|-------|
 | Login-Start | `https://www.billiger-mietwagen.de/reservation/account/login` | Interaktives WKWebView (E-Mail/Passwort; optional Apple/Google) |
-| Login API (nur SPA/WebView) | `POST https://consumer-api.floyt.com/auth/v1/login` | Body `{username,password}`; Header `X-Whitelabel: DE_billiger-mietwagen` → `{access_token,refresh_token,id_token}` |
+| Login API (nur SPA/WebView) | `POST https://consumer-api.floyt.com/auth/v1/login` | Body `{username,password}`; Header `X-Whitelabel: DE_billiger-mietwagen`, `client-id: web`, `Origin: https://www.billiger-mietwagen.de` → `{access_token,refresh_token,id_token}` |
 | Session schreiben (SPA nach Login) | `POST https://www.billiger-mietwagen.de/user_account/session.php` | Body `{access_token,refresh_token}` → `[]` + `Set-Cookie` (`__Secure-billigermietwagen`, `__Secure-user_account`) |
 | Session lesen (Sync/Probe) | `GET …/user_account/session.php` | `access_token` / `refresh_token` — **nicht** persistieren/loggen |
 | Catalog (active) | `GET …/useraccount/v1/bookings?activity_status=active&sort_by=PickupDate&sort_order=asc&page=N&limit=10` | `items[]` + `_pointers` (alle Seiten bis `next`/`last`) |
 | Catalog (inactive) | `GET …/bookings?activity_status=inactive&sort_by=DropOffDate&sort_order=desc&page=N&limit=10` | wie active (SPA-Parität; stornierte Drafts droppt Domain) |
-| Token-Refresh | `POST …/auth/v1/refresh-token` | Antwort braucht non-empty `access_token` **und** `refresh_token` (sonst Sync-Fehler); einmal pro Lauf, dann Cache für Enrich |
+| Token-Refresh | `POST …/auth/v1/refresh-token` | 201 mit `access_token` (und `id_token`); `refresh_token` in der Antwort oft **fehlt** — dann den verwendeten Refresh weiterverwenden |
 | Enrich | `GET https://consumer-api.floyt.com/useraccount/v1/web/bookings/{id}` | Web-Detail JSON |
 | Site settings (SPA) | `GET https://api.billiger-mietwagen.de/v1/site/settings` | Sync nicht nötig |
 
-Header für Consumer-API (Catalog/Enrich): `Authorization: Bearer {access_token}`, `X-Whitelabel: DE_billiger-mietwagen`, `Accept: application/json`.
+Header für Consumer-API (Catalog/Enrich): `Authorization: Bearer {access_token}`, `X-Whitelabel: DE_billiger-mietwagen`, `client-id: web`, `Origin: https://www.billiger-mietwagen.de`, `Accept: application/json`.
 
-**Token-Refresh (Live 2026-08-28):** `session.php`-`access_token` allein liefert an der Consumer-API oft **401**. Sync macht daher einmal pro Lauf `POST …/auth/v1/refresh-token` mit `{ refresh_token, user_id }` wobei `user_id` = JWT-Claim **`username`** (nicht `sub`), cached den Access-Token für Catalog+Enrich, und schreibt die neuen Tokens per `POST session.php` (Pflicht — fehlender neuer `refresh_token` in der Antwort ist Fehler, kein Fallback auf den alten). Anschließend Catalog **active** + **inactive** inkl. Pagination über `_pointers`.
+**Token-Refresh (Live 2026-08-28):** `session.php`-`access_token` allein liefert an der Consumer-API oft **401**. Sync macht daher einmal pro Lauf `POST …/auth/v1/refresh-token` mit `{ refresh_token, user_id }` wobei `user_id` = JWT-Claim **`username`** (nicht `sub`). Die API antwortet **201** mit `access_token` + `id_token` und **ohne** neuen `refresh_token` (Cognito rotiert hier nicht; die SPA liest nur `access_token`). Sync cached den neuen Access-Token und schreibt per `POST session.php` den neuen Access plus den weiterhin gültigen Refresh (neuen Refresh nur wenn die Antwort einen liefert). Anschließend Catalog **active** + **inactive** inkl. Pagination über `_pointers`.
 
 Passwort-Login wird **nicht** außerhalb der WebView nachgebaut; die SPA führt Login-API + Session-POST aus (HAR 2026-08-28).
 
@@ -71,12 +71,12 @@ Detail-`datetime` ohne Offset: Zeiten aus dem Katalog behalten; keine UTC-Annahm
 
 ## Auth / Session
 
-- Primär: Cookies der WebView für `session.php`; Bearer nur transient für API-GETs.
-- **Kein CSRF/XSRF-Header** in der Login-/API-HAR: Auth läuft über Session-Cookies + Bearer + `X-Whitelabel`. Keine Token-Werte aus HAR hardcoden.
+- Cookie-Session der WebView für `session.php`; Bearer nur transient für API-GETs. Consumer-API und Session-Calls senden HAR-SPA-Header `Origin` + `client-id: web` (Refresh zusätzlich `X-Whitelabel`).
+- **Kein CSRF/XSRF-Header** in der Login-/API-HAR: Auth läuft über Session-Cookies + Bearer + `X-Whitelabel` + SPA-`client-id`/`Origin`. Keine Token-Werte aus HAR hardcoden.
 - Tokens nicht in Keychain (nur optionales Remember-Login der App für Portal-Passwort).
 - IdP-Hosts (Apple/Google) nicht `sessionReady` (`AuthIdentityProviderHost`).
-- URL-Heuristik: Login `/reservation/account/login` → `needsLogin`; Portal-Hosts inkl. Bookings/Homepage → `shouldProbeBilligerMietwagen` (`session.php`), kein blindes `sessionReady` nur wegen Account-Pfad.
-- Unklare Portal-URLs und Account-Seiten: `BilligerMietwagenSessionProbe` via `GET session.php` (Access- **und** Refresh-Token non-empty, gleicher Vertrag wie Sync).
+- URL-Heuristik: Portal-Hosts inkl. Login `/reservation/account/login`, Bookings und Homepage → `shouldProbeBilligerMietwagen` (`session.php`). Die SPA zeigt Buchungen oft weiter unter der Login-URL; kein `needsLogin` nur wegen des Pfads, kein blindes `sessionReady` nur wegen Account-Pfad.
+- Unklare Portal-URLs, Login- und Account-Seiten: `BilligerMietwagenSessionProbe` via `GET session.php` mit demselben Referer wie Sync (`/reservation/account/bookings`) plus SPA-Header. Access- **und** Refresh-Token non-empty, gleicher Vertrag wie Sync.
 
 ### Cookie-Banner / Consent
 
