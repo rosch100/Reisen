@@ -275,6 +275,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case editorValidationInvalidNumber = "editor.validation.invalid_number"
     case editorValidationInvalidUrl = "editor.validation.invalid_url"
     case editorWeightKg = "editor.weight_kg"
+    case errorPersistFailed = "error.persist_failed"
     case gapAmountEur = "gap.amount_eur"
     case gapDisplay = "gap.display"
     case gapFill = "gap.fill"

@@ -9,7 +9,7 @@ public struct PersistFailureAlert: ViewModifier {
     }
 
     public func body(content: Content) -> some View {
-        content.alert(L10n.string(.tripAssignFailed), isPresented: Binding(
+        content.alert(L10n.string(.errorPersistFailed), isPresented: Binding(
             get: { message != nil },
             set: { if !$0 { message = nil } }
         )) {

@@ -3841,6 +3841,22 @@
         }
       }
     },
+    "error.persist_failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save failed"
+          }
+        }
+      }
+    },
     "gap.amount_eur": {
       "localizations": {
         "de": {

@@ -24,3 +24,16 @@ reviews:
     opengrep:
       enabled: true
 
+  path_instructions:
+    - path: "Sources/ReisenSharedUI/BookingTripDeleteModifiers.swift"
+      instructions: |
+        Trip-delete confirmationDialog (Apple HIG): when bookings exist, only
+        tripDeleteWithBookings ("Reise und Buchungen löschen") uses role: .destructive.
+        tripDeleteKeepBookings ("Nur Reise löschen") must not use .destructive — only
+        the strongest destructive action gets that role. Spec:
+        docs/superpowers/specs/2026-08-28-booking-trip-delete-design.md
+    - path: "Sources/ReisenSharedUI/PersistFailureAlert.swift"
+      instructions: |
+        PersistFailureAlert title must be L10n.string(.errorPersistFailed)
+        ("Speichern fehlgeschlagen" / "Save failed"), not .tripAssignFailed.
+

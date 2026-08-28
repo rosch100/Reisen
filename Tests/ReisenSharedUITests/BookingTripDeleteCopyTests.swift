@@ -48,4 +48,11 @@ struct BookingTripDeleteCopyTests {
         #expect(keep == "Nur Reise löschen" || keep == "Delete trip only")
         #expect(withBookings != keep)
     }
+
+    @Test func persistFailureTitle_isDedicatedWithoutPlaceholder() {
+        let title = L10n.string(.errorPersistFailed)
+        #expect(title == "Speichern fehlgeschlagen" || title == "Save failed")
+        #expect(!title.contains("%"))
+        #expect(title != L10n.string(.tripAssignFailed))
+    }
 }
