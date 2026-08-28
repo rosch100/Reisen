@@ -614,8 +614,11 @@ public struct BookingEditorForm: View {
             Form {
                 Section(L10n.string(.editorGeneral)) {
                     if providerReadOnly {
-                        LabeledContent(L10n.string(.editorProvider), value: draft.provider.rawValue.capitalized)
-                            .copyableValue(draft.provider.rawValue.capitalized)
+                        LabeledContent {
+                            CopyableFieldValue(value: draft.provider.rawValue.capitalized)
+                        } label: {
+                            Text(L10n.string(.editorProvider))
+                        }
                     }
                     TextField(L10n.string(.editorTitle), text: $draft.title)
                     Picker(L10n.string(.editorType), selection: $draft.bookingType) {
