@@ -4,7 +4,7 @@
 
 **Goal:** Nutzer fügt Text/Bild/PDF ein, die App extrahiert Buchungskandidaten (PCC wenn möglich, sonst On-Device), der Nutzer wählt und prüft im bestehenden `BookingEditor`, erst dann wird gespeichert (Neu als `manual` oder Ergänzen einer bestehenden Buchung).
 
-**Architecture:** Domain besitzt Quelle, Filter, Match (über `SyncBookingMatchIndex`) und Merge. Neues Target `ReisenPasteImport` spricht Foundation Models und mappt `@Generable` → Domain. SharedUI/Apps orchestrieren Review; ReisenData bleibt auf `BookingEditorDraft.createBooking` / `apply`.
+**Architecture:** Domain besitzt Quelle, Filter, Match (`PasteImportMatching` + Sync-Indexe, URL über `existing`) und Merge. `ReisenPasteImport` spricht Foundation Models → `[PasteImportExtraction]`. `ReisenAppCore` orchestriert einen Lauf. SharedUI nur Review-Chrome (kein Adapter). Speichern: `createBooking(trip:)` / `apply`.
 
 **Tech Stack:** Swift 6.3, Swift Testing, Foundation Models (`LanguageModelSession`, `PrivateCloudComputeLanguageModel`, `SystemLanguageModel`), PDFKit, SwiftUI, XcodeGen (`project.yml`), App Group für iOS-Share.
 
@@ -21,6 +21,18 @@
 - iOS-Projekt nur über `bash ./Scripts/generate-ios-project.sh`. Default-Simulator: `iPad Pro 13-inch (M5)`.
 - L10n: jeder neue `L10nKey` in `Localizable.xcstrings` de+en; `L10nTests` müssen grün bleiben.
 - ⌘V bleibt System-Paste.
+- **P1-Judge (bindend, überschreibt widersprüchliche Task-Sätze darunter):**
+  - SharedUI hängt **nicht** an `ReisenPasteImport`. Extract/Availability/Clipboard in AppCore + Apps.
+  - Merge-SSOT nur `PasteImportMerger.fillingGaps` auf Domain-`Booking`; Prefill Ergänzen = `fromExisting` aus gemergter Entity (via Mapper). Keine zweite String-Schleife.
+  - `createBooking(from:trip:in:)` mit `trip: SDTrip?` — `nil` = Offen. Test dafür.
+  - URL-Match zählt Duplikate in `existing`, kein last-write-`byURL`.
+  - Gescannte PDF-Seiten als Bilder an das Modell; leerer Text allein ist kein Fehler, wenn Seiten existieren.
+  - TDD: zuerst kompilierende Stubs, dann Test, RED = Assert-Fail.
+  - Ein Payload-Typ (`PasteImportPayloadDTO`), Felder = `PasteImportExtraction`; Session nutzt `@Generable` auf **diesem** Typ oder einem 1:1-Zwilling gleichen Namenspräfixes, Mapper eine Quelle.
+  - Bool: `isErgaenzen` / `showsAmbiguousHint`. EN-Badge: Enrich.
+  - Share: Scheme `reisen://paste-import`; eine Extension in Store- und Private-App; App Group `group.de.reisen.Reisen.pasteimport`.
+  - Extract-Fehler: ein Lauf, kein Retry. Test mit Fake-Extractor.
+  - `validated()` ohne `now:`. Fehlendes status = `.unknown` mit Test.
 
 ---
 
@@ -39,7 +51,8 @@
 | `Sources/ReisenDomain/PasteImport/PasteImportExtracting.swift` | Port |
 | `Sources/ReisenDomain/PasteImport/PasteImportPipeline.swift` | Filter + Match → `PasteImportCandidate` |
 | `Sources/ReisenPasteImport/*` | Availability, Session, `@Generable`, PDF/Bild, Mapping |
-| `Sources/ReisenSharedUI/PasteImport/*` | Aktion, Liste, Editor-Prefill |
+| `Sources/ReisenAppCore/PasteImport/PasteImportRun.swift` | Ein Extract-Lauf; kein Stufen-Retry |
+| `Sources/ReisenSharedUI/PasteImport/*` | Aktion, Liste, Prefill (nur Domain/Data) |
 | `Sources/Reisen/App/ReisenCommands.swift` | Menü ⌘⇧V |
 | `Apps/ReiseniOS/**` + `project.yml` | iOS-Einstieg + Share-Extension |
 | `docs/legal/privacy.html`, `docs/legal/en/privacy.html` | PCC + ephemerer Paste-Import |
@@ -54,7 +67,9 @@
 
 **Interfaces:**
 - Consumes: nichts
-- Produces: `PasteImportSource` mit `validate() throws`
+- Produces: `PasteImportSource` mit `validated() throws`
+
+TDD: Datei zuerst mit `public enum PasteImportSource { case text(String); public func validated() throws -> PasteImportSource { self } }` anlegen, **dann** Tests. RED = `#expect(throws:)` schlägt fehl weil empty akzeptiert wird, nicht weil der Typ fehlt.
 
 - [ ] **Step 1: Failing test**
 
@@ -141,7 +156,7 @@ git commit -m "feat: validate paste-import source payload"
 
 **Interfaces:**
 - Consumes: `BookingType`, `ProviderBookingDraft`-Felder als Optionals
-- Produces: `PasteImportFilter.apply(_:now:) -> [PasteImportDraft]`
+- Produces: `PasteImportFilter.apply(_:) -> [PasteImportDraft]`
 
 `PasteImportExtraction` (alle Felder optional außer dass mindestens etwas kommen kann):
 
@@ -262,7 +277,9 @@ public struct PasteImportDraft: Equatable, Sendable {
 `PasteImportExtraction` braucht einen Memberwise-Init mit Defaults `nil` / `[]`.
 
 - [ ] **Step 2: Run RED** — `swift test --filter PasteImportFilter` → FAIL
-- [ ] **Step 3: Implement** `PasteImportFilter.apply`: skip wenn `bookingType` oder `startAt` nil; `endAtIsPlaceholder = (endAt == nil)`; `endAt = extraction.endAt ?? startAt`; `status = extraction.status ?? .unknown`; Strings die nach Trim leer sind → `nil`.
+- [ ] **Step 3: Implement** `PasteImportFilter.apply`: skip wenn `bookingType` oder `startAt` nil; `endAtIsPlaceholder = (endAt == nil)`; `endAt = extraction.endAt ?? startAt`; `status = extraction.status ?? .unknown` (fehlend = unknown, **nicht** confirmed — Test: Extraction ohne status → `.unknown`); Strings die nach Trim leer sind → `nil`.
+
+Stubs für Extraction/Draft/Filter zuerst kompilieren, dann Tests → RED = leere `apply`-Rückgabe obwohl Typ+start gesetzt.
 - [ ] **Step 4: GREEN** — `swift test --filter PasteImportFilter`
 - [ ] **Step 5: Commit** `feat: filter paste-import extractions to typed drafts`
 
@@ -278,7 +295,7 @@ public struct PasteImportDraft: Equatable, Sendable {
 - Consumes: `PasteImportDraft`, `[Booking]`, `SyncBookingMatchIndex`, `BookingTimeNormalizer`
 - Produces: `PasteImportMatch: Equatable` = `unique(Booking)` | `none` | `ambiguous`
 
-Nicht `SyncBookingMatchLookup.match` allein nutzen: die Funktion macht unique und none ununterscheidbar. Dieselben Indexe (`byURL`, `byConfirmationCode`, `byDateFingerprint`) lesen. Reihenfolge: URL (wenn `externalUrl` nicht leer), dann Code, dann Fingerprint nur wenn `!endAtIsPlaceholder`.
+Nicht `SyncBookingMatchLookup.match` nutzen (Spec: explizit verworfen). Code/Fingerprint über `SyncBookingMatchIndex`-Maps (count 1 / >1 / 0). **URL:** nicht `index.byURL` (last-write). Stattdessen `existing.filter { $0.externalUrl == url }`. Reihenfolge: URL, Code, Fingerprint nur wenn `!endAtIsPlaceholder`.
 
 ```swift
 public enum PasteImportMatch: Equatable, Sendable {
@@ -290,6 +307,7 @@ public enum PasteImportMatch: Equatable, Sendable {
 public enum PasteImportMatching {
     public static func match(
         draft: PasteImportDraft,
+        existing: [Booking],
         index: SyncBookingMatchIndex,
         calendar: Calendar,
         normalizer: BookingTimeNormalizer
@@ -297,7 +315,9 @@ public enum PasteImportMatching {
 }
 ```
 
-Helper: `uniqueOrAmbiguous(_ dict: [UUID: Booking]) -> PasteImportMatch?` — count 1 → unique, count > 1 → ambiguous, 0 → nil (weiter).
+Helper für Code/Fingerprint-Maps: count 1 → unique, >1 → ambiguous, 0 → nil (weiter).
+
+Zusätzliche Tests (nach den bestehenden): zwei Hotels mit derselben `externalUrl` → `.ambiguous`; eine URL → `.unique`. Signatur der bestehenden Tests um `existing:` ergänzen.
 
 - [ ] **Step 1: Tests**
 
@@ -383,7 +403,7 @@ private func hotel(id: UUID = UUID(), code: String?, provider: ProviderID = .che
 Fix `var draft` in first test (unused mutability) — `let draft`.
 
 - [ ] **Step 2: RED** — `swift test --filter PasteImportMatching`
-- [ ] **Step 3: Implement** `PasteImportMatching` wie oben. URL-Zweig: wenn `draft.externalUrl` nicht nil/leer und `index.byURL[url]` gesetzt → `.unique`. `byURL` ist 1:1; Kollisionen gibt der Index nicht als Array — dann unique. Code-Zweig über `index.byConfirmationCode`. Fingerprint: `SyncBookingDateFingerprint.key(for: draft.asProviderDraft(), calendar:calendar, normalizer:normalizer)` dann `index.byDateFingerprint[key]`.
+- [ ] **Step 3: Implement** `PasteImportMatching` wie oben. URL über `existing`. Code über `index.byConfirmationCode`. Fingerprint: `SyncBookingDateFingerprint.key(for: draft.asProviderDraft(), ...)` dann `index.byDateFingerprint[key]` nur wenn `!draft.endAtIsPlaceholder`. **Nicht** `index.byURL[url]` als Unique-Beweis.
 - [ ] **Step 4: GREEN**
 - [ ] **Step 5: Commit** `feat: match paste-import drafts to existing bookings`
 
@@ -506,7 +526,7 @@ public protocol PasteImportExtracting: Sendable {
 public struct PasteImportCandidate: Equatable, Sendable {
     public var draft: PasteImportDraft
     public var match: PasteImportMatch
-    public var isEnrichment: Bool { if case .unique = match { return true }; return false }
+    public var isErgaenzen: Bool { if case .unique = match { return true }; return false }
     public var showsAmbiguousHint: Bool { match == .ambiguous }
 }
 
@@ -582,7 +602,7 @@ Kein Test, der bei PCC-false automatisch On-Device „als Fallback nach Fehler�
 | `paste_import.progress` | Buchungen erkennen… | Detecting bookings… |
 | `paste_import.empty` | Keine Buchung erkannt. Typ und Beginn müssen sicher sein. | No booking detected. Type and start must be certain. |
 | `paste_import.badge_new` | Neu | New |
-| `paste_import.badge_enrich` | Ergänzen | Update |
+| `paste_import.badge_enrich` | Ergänzen | Enrich |
 | `paste_import.ambiguous_hint` | Keine eindeutige Zuordnung | No unique match |
 | `paste_import.error_title` | Einfügen fehlgeschlagen | Paste failed |
 | `paste_import.error_model` | Das Modell hat nicht geantwortet. | The model did not respond. |
@@ -602,8 +622,8 @@ xcstrings-Eintrag analog `menu.add_booking` (state `translated`, de+en).
 ### Task 7: Target `ReisenPasteImport` + Mapper (ohne Live-Modell)
 
 **Files:**
-- Modify: `Package.swift` — library product + target + `ReisenPasteImportTests`; `ReisenSharedUI` hängt später dran (Task 9). In diesem Task nur Domain-abhängiges Target.
-- Create: `Sources/ReisenPasteImport/PasteImportGenerableDTO.swift`
+- Modify: `Package.swift` — library product + target + `ReisenPasteImportTests`. SharedUI hängt **nicht** an diesem Target.
+- Create: `Sources/ReisenPasteImport/PasteImportPayloadDTO.swift`
 - Create: `Sources/ReisenPasteImport/PasteImportGenerableMapper.swift`
 - Test: `Tests/ReisenPasteImportTests/PasteImportGenerableMapperTests.swift`
 
@@ -611,26 +631,7 @@ xcstrings-Eintrag analog `menu.add_booking` (state `translated`, de+en).
 - Consumes: `PasteImportExtraction`
 - Produces: Mapper von DTO → `[PasteImportExtraction]`; Neu-Anlagen später `provider == .manual` über `asProviderDraft()`
 
-`@Generable` darf FoundationModels brauchen. Damit CI ohne Modell kompiliert: DTO ist ein **reines** `Codable`-Struct im Adapter, das dieselbe Form hat wie das Generable-Schema. Die Session-Schicht (Task 8) annotiert dasselbe Struct mit `@Generable` **oder** ein Wrapper-Struct `PasteImportGenerablePayload: Generable` mit identischen Feldern, Mapper liest das Codable-Double.
-
-Konkretes DTO (ohne FoundationModels-Import in dieser Datei):
-
-```swift
-public struct PasteImportPayloadDTO: Codable, Equatable, Sendable {
-    public var bookings: [PasteImportBookingDTO]
-}
-
-public struct PasteImportBookingDTO: Codable, Equatable, Sendable {
-    public var bookingType: String?
-    public var startAtISO8601: String?
-    public var endAtISO8601: String?
-    public var title: String?
-    public var confirmationCode: String?
-    public var externalUrl: String?
-    public var locationFrom: String?
-    public var locationTo: String?
-}
-```
+Ein Typ `PasteImportPayloadDTO` / `PasteImportBookingDTO` (eine Datei). Felder von `PasteImportBookingDTO` = optionale Felder von `PasteImportExtraction` (ISO8601-Strings für Daten; `bookingType` als String-rawValue; Ints/Strings optional; Arrays default leer). `@Generable` in Task 8 auf **diesen** Typen (FoundationModels-Import nur in der Extractor-Datei via Extension oder gleiche Types dort mit `@Generable`). Mapper: eine Funktion `extraction(from: PasteImportBookingDTO)`. Unbekannter Typ-String → `bookingType == nil`.
 
 Mapper: unbekannter `bookingType`-String → Extraction mit `bookingType == nil` (Filter droppt). Kein Map auf `.other` bei unbekanntem String. ISO8601 über `ISO8601DateFormatter`. Leere Strings → nil.
 
@@ -708,11 +709,17 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
 
 `availability()`: PCC `true` nur wenn `PrivateCloudComputeLanguageModel()` (bzw. aktuelle SDK-API) available; On-Device nur wenn `SystemLanguageModel.default` available. Exakte API aus dem lokalen SDK übernehmen (WWDC26: `model.availability == .available`). Kein `true` raten.
 
-`extract`: wenn `kind == .unavailable` → throw `PasteImportAdapterError.unavailable` (UI darf extract dann nicht aufrufen). Sonst `LanguageModelSession` mit genau dem Modell zu `kind` (PCC-Instanz oder `SystemLanguageModel.default`). Structured Output: `@Generable`-Zwilling `PasteImportGenerablePayload` mit denselben Feldern wie `PasteImportPayloadDTO`, danach `PasteImportGenerableMapper`. Prompt: nur sichere Felder; unsichere weglassen.
+`extract`: wenn `kind == .unavailable` → throw `PasteImportAdapterError.unavailable`. Sonst Session mit genau dem Modell zu `kind`. Structured Output auf `PasteImportPayloadDTO` (`@Generable` in dieser Datei/Extension). Prompt: nur sichere Felder.
 
-Bild: `Attachment` in den Prompt (SDK WWDC26). Fehlt die API im lokalen SDK: Task **BLOCKED** melden — kein OCR-Workaround.
+Bild: `Attachment` in den Prompt. Fehlt die API im lokalen SDK: Task **BLOCKED**.
 
-PDF: `PasteImportPDFText.string(from: Data) throws` — 0 Seiten oder leerer Text → `PasteImportAdapterError.unreadableSource`; sonst Text in den Prompt.
+PDF: `PasteImportPDFPreparation.prepare(Data) throws -> PasteImportPDFContent` mit `.text(String)` und/oder `.pageImages([Data])`. 0 Seiten → `unreadableSource`. Text vorhanden → Text in den Prompt. Text leer aber Seiten > 0 → Seiten als Bilder (wie Foto), **kein** OCR. Beides darf kombiniert werden.
+
+`PasteImportPDFText`/`Preparation` mit Fixture `hello.pdf` (Text „ICE 123“) testen.
+
+Extractor-Fehler nicht fangen und On-Device retryen.
+
+Zusätzlich in **ReisenAppCore** `PasteImportRun`: nimmt `PasteImportExtracting` + kind; bei throw **kein** zweiter Aufruf. Test mit Fake, der throwed: `extractCallCount == 1`.
 
 `PasteImportPDFText` mit einem minimalen PDF-Fixture in `Tests/ReisenPasteImportTests/Fixtures/hello.pdf` (ein Seite, Text „ICE 123“) testen.
 
@@ -727,12 +734,13 @@ Extractor-Fehler nicht fangen und On-Device retryen.
 ### Task 9: SharedUI Prefill + Kandidatenliste
 
 **Files:**
-- Modify: `Package.swift` `ReisenSharedUI` dependencies: `"ReisenPasteImport"`
 - Create: `Sources/ReisenSharedUI/PasteImport/PasteImportEditorPrefill.swift`
 - Create: `Sources/ReisenSharedUI/PasteImport/PasteImportCandidateList.swift`
 - Create: `Sources/ReisenSharedUI/PasteImport/PasteImportActionControl.swift`
 - Test: `Tests/ReisenSharedUITests/PasteImportEditorPrefillTests.swift`
 - Test: `Tests/ReisenSharedUITests/PasteImportCandidatePresentationTests.swift`
+
+**Keine** Package.swift-Abhängigkeit `ReisenSharedUI` → `ReisenPasteImport`.
 
 **Interfaces:**
 
@@ -746,103 +754,59 @@ public enum PasteImportEditorPrefill {
 }
 ```
 
-- Neu: `BookingEditorDraft` aus `PasteImportDraft` **ohne** `createDefault`. `title` darf leer sein (Editor-Validierung blockt Speichern). `hotelCheckInMinutesText` leer wenn Draft nil. `provider = .manual`. `startAt`/`endAt` aus Draft.
-- Ergänzen: `fromExisting(existing)` danach Domain-Merge: `PasteImportMerger.fillingGaps` auf `DomainMapper.booking(from: existing)` nicht zwingend — Prefill arbeitet auf `BookingEditorDraft`: für jedes String-Feld, wenn existing-Text leer und Draft gesetzt → setzen. `bookingID` bleibt. `provider` bleibt der der SDBooking.
-
-Presentation: `PasteImportCandidate.isEnrichment: Bool { if case .unique = match { true } else { false } }`, `showsAmbiguousHint: Bool { match == .ambiguous }`.
+- Neu (`match` none/ambiguous, `existing == nil`): Draft → Editor **ohne** `createDefault`. Leere Hotel-Minuten. `provider = .manual`.
+- Ergänzen (`isErgaenzen`, `existing != nil`): `let merged = PasteImportMerger.fillingGaps(on: DomainMapper.booking(from: existing), from: candidate.draft)` dann Editor-Draft aus der gemergten Domain-Entity + `bookingID = existing.id` (kein zweiter String-Gap-Fill). `provider` der SDBooking.
 
 `PasteImportActionControl`: `kind: PasteImportModelKind`, disabled wenn `.unavailable`, Accessibility-Label = Menüstring + Begründung.
 
-- [ ] **Step 1: Tests**
+Liste: Badge **Text** aus L10n (Neu / Ergänzen), `accessibilityLabel` gleich; nicht nur Farbe.
 
-```swift
-@Test func prefill_newDoesNotUseHotelMinuteDefaults() {
-    let start = Date(timeIntervalSince1970: 1_800_000_000)
-    let draft = PasteImportFilter.apply([
-        PasteImportExtraction(bookingType: .hotel, startAt: start, title: "Hotel")
-    ])[0]
-    let candidate = PasteImportCandidate(draft: draft, match: .none)
-    let editor = PasteImportEditorPrefill.draft(
-        for: candidate,
-        existing: nil,
-        tripStartDate: start
-    )
-    #expect(editor.hotelCheckInMinutesText.isEmpty)
-    #expect(editor.hotelCheckOutMinutesText.isEmpty)
-    #expect(editor.provider == .manual)
-    #expect(editor.bookingType == .hotel)
-}
-
-@Test func candidate_ambiguousShowsHintNotEnrichment() {
-    let start = Date(timeIntervalSince1970: 1_800_000_000)
-    let draft = PasteImportFilter.apply([
-        PasteImportExtraction(bookingType: .hotel, startAt: start, endAt: start)
-    ])[0]
-    let candidate = PasteImportCandidate(draft: draft, match: .ambiguous)
-    #expect(candidate.isEnrichment == false)
-    #expect(candidate.showsAmbiguousHint)
-}
-```
-
-`isEnrichment` / `showsAmbiguousHint` kommen aus Task 5 (`PasteImportCandidate`).
-
-- [ ] **Step 2–4:** RED/GREEN `swift test --filter PasteImportEditorPrefill`; `swift test --filter candidate_ambiguous`
+- [ ] **Step 1: Tests** wie bisher, aber `#expect(candidate.isErgaenzen == false)` und ein Ergänzen-Test: bestehende SDBooking mit leerem Code, Draft mit Code → Prefill `confirmationCode == "XYZ"`, `provider == .check24`.
+- [ ] **Step 2–4:** RED/GREEN
 - [ ] **Step 5: Commit** `feat: prefill booking editor from paste candidates`
-
-Liste-UI (`PasteImportCandidateList`): SwiftUI `List` mit Toggle, Symbol `booking.bookingType.systemImageName` (bestehendes SharedUI), Badges über L10n, Standard alle `true`. Kein Snapshot-Test nötig; Presentation-Tests reichen.
 
 ---
 
-### Task 10: macOS-Einstieg und Flow
+### Task 10: Persistenz Offen + macOS-Flow
 
 **Files:**
-- Modify: `Sources/Reisen/App/ReisenCommands.swift` — Button nach `menuAddBooking`, Shortcut `v` + `[.command, .shift]`
-- Modify: `Sources/Reisen/App/ContentView.swift` / `TripDetailView.swift` / Offen-Zweig — Notification `.reisenPasteBooking`
-- Create: `Sources/Reisen/App/PasteImportFlow.swift` (Sheet: PCC-Confirm, Progress, CandidateList, dann bestehende `bookingEditorSession`)
+- Modify: `Sources/ReisenSharedUI/BookingEditor.swift` — `createBooking(from:trip:in:)` mit `trip: SDTrip?`
+- Test: `Tests/ReisenSharedUITests/PasteImportCreateBookingTests.swift`
+- Create: `Sources/ReisenAppCore/PasteImport/PasteImportRun.swift`
+- Test: `Tests/ReisenAppCoreTests/PasteImportRunTests.swift`
+- Modify: `Sources/Reisen/App/ReisenCommands.swift` — nach `menuAddBooking`, Shortcut ⌘⇧V
+- Modify: `Sources/Reisen/App/ContentView.swift` / `TripDetailView.swift` / Offen — `.reisenPasteBooking`
+- Create: `Sources/Reisen/App/PasteImportMacSession.swift` — Clipboard/OpenPanel → `PasteImportRun` → SharedUI-Sheets
 
-**Interfaces:**
-- Consumes: `PasteImportModelResolver`, `FoundationModelsPasteImportAvailability`, `FoundationModelsPasteImportExtractor`, `PasteImportPipeline`
-- Produces: Queue `[PasteImportCandidate]`; Create vs `bookingEditorSession = .edit`
+`createBooking`: `trip == nil` → `booking.trip` nicht setzen. `trip != nil` wie heute. Test: Offen-Create, `SDBooking.trip == nil`, `providerRaw == manual`.
 
-Flow:
-1. Clipboard: `NSPasteboard` String, sonst TIFF/PDF Data → `PasteImportSource.validated()`.
-2. `kind = Resolver.resolve(availability.availability())`. Unavailable → Control disabled, kein Sheet.
-3. PCC → Bestätigungs-Alert (L10n pcc_confirm_*). Abbrechen = kein Lauf.
-4. `extract` in Task; Abbrechen setzt `CancellationError` → Alert `paste_import.error_model`, keine Teil-Liste.
-5. Pipeline mit allen `Booking` aus dem Store (gleiche Quelle wie Sync-Index: Domain-Mapper über vorhandene SDBookings).
-6. 0 Kandidaten → Leerzustand-L10n, kein Dummy.
-7. Nutzer Continue → nächster selektierter Candidate: Neu → `bookingEditorSession = .create` + Prefill-Draft ersetzen; Unique → `selectedTimelineID` / Open-Booking selektieren + `bookingEditorSession = .edit`. Queue rest.
+`PasteImportRun.run(source:kind:extractor:existing:)`: ein `extract`; bei Fehler throw, `extractCount == 1` im Fake-Test. Apps wählen kind **vorher** via Resolver; Run retryt nicht.
 
-Datei-Import: `NSOpenPanel` pdf/png/jpeg zusätzlich zum Clipboard, gleicher Flow.
+Flow macOS: PCC-Alert nur bei kind PCC; Progress; 0 Kandidaten Leerzustand; Queue Create (`trip` aus Kontext oder nil) vs Edit.
 
-⌘V nicht ersetzen.
-
-- [ ] **Step 1:** Notification-Name neben `reisenAddBooking` in `SidebarSelection.swift` (dort liegen die anderen `.reisen*`).
-- [ ] **Step 2:** Commands + Flow verdrahten.
-- [ ] **Step 3:** `swift build --target Reisen`
-- [ ] **Step 4: Commit** `feat: add macOS paste-booking command and review flow`
-
-Manueller Smoke (nicht CI): Reise offen, ⌘⇧V mit Text „Hotel Berlin Check-in 2026-09-01“, Editor erscheint.
+- [ ] **Step 1:** `createBooking`-Test RED (nach Stub `trip: SDTrip?` der noch immer trip verlangt) → Assert `booking.trip == nil`.
+- [ ] **Step 2:** Implement optional trip.
+- [ ] **Step 3:** `PasteImportRun`-Test Fake-Extractor throw.
+- [ ] **Step 4:** Commands + Mac-Session.
+- [ ] **Step 5:** `swift test --filter PasteImportCreateBooking`; `swift test --filter PasteImportRun`
+- [ ] **Step 6: Commit** `feat: paste-import open-trip create and macOS flow`
 
 ---
 
 ### Task 11: iOS-Einstieg + Share-Extension
 
 **Files:**
-- Modify: `project.yml` — Target `ReisenPasteImportShare` (`type: app-extension`), bundle `de.reisen.Reisen.ios.share` / Private-Variante oder **eine** Extension nur in `ReiseniOSPrivate` **und** `ReiseniOS` embedden (zwei `embed`/`dependencies`). App Group `group.de.reisen.Reisen.pasteimport`.
-- Create: `Apps/ReisenPasteImportShare/ShareViewController.swift` (oder `ShareExtension.swift`) — liest `NSExtensionItem`, schreibt Datei `payload.bin` + `meta.json` (`kind: text|image|pdf`) in `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)`, öffnet Host via `https://reisen.app/paste-import` **oder** vorhandenes URL-Scheme aus Info.plist. Kein SwiftData.
-- Modify: Host `ReiseniOSApp.swift` / `OffenTab` / Trip — `onOpenURL` consume + delete file; Fehler `paste_import.error_handoff`.
-- Modify: Entitlements beider iOS-Apps + Extension: App Group.
-- iOS UI: Toolbar-Menü gleicher L10n-Key, `PhotosPicker`/`fileImporter` analog macOS-Flow (`PasteImportFlow` nach SharedUI ziehen, wenn Task 10 ihn app-spezifisch gelassen hat — dann in diesem Task nach `Sources/ReisenSharedUI/PasteImport/PasteImportFlow.swift` verschieben, macOS nur Clipboard/OpenPanel-Adapter).
+- Modify: `project.yml` — **ein** Target `ReisenPasteImportShare` (`type: app-extension`), bundle `de.reisen.Reisen.ios.share`, eingebettet in `ReiseniOS` **und** `ReiseniOSPrivate`.
+- Create: `Apps/ReisenPasteImportShare/ShareViewController.swift` — `NSExtensionItem` → App Group `group.de.reisen.Reisen.pasteimport` Dateien `payload.bin` + `meta.json`; öffnet `reisen://paste-import`. Kein SwiftData.
+- Modify: `Apps/ReiseniOS/Info.plist` und `Apps/ReiseniOSPrivate/Info.plist` — URL-Scheme `reisen`.
+- Modify: `ReiseniOSApp.swift` — `onOpenURL`: wenn `reisen://paste-import`, Consume + Delete; Fehler `paste_import.error_handoff`.
+- Entitlements beider Apps + Extension: App Group.
+- iOS Toolbar: gleicher L10n-Key; `fileImporter`/`PhotosPicker` → `PasteImportRun` (kein Flow-Duplikat in SharedUI, das den Adapter importiert).
 
-**SSOT-Flow:** `PasteImportFlow` muss in SharedUI liegen, bevor iOS ihn nutzt. Wenn Task 10 ihn unter `Sources/Reisen/` angelegt hat, hier verschieben (ein Commit, keine parallele Kopie).
+- [ ] **Step 1:** Scheme + Extension + App Group, eine Implementierung.
+- [ ] **Step 2:** `bash ./Scripts/generate-ios-project.sh` Exit 0 (`.xcodeproj` nicht committen).
+- [ ] **Step 3: Commit** `feat: add iOS paste-import entry and share extension`
 
-- [ ] **Step 1:** `PasteImportFlow` in SharedUI, Plattform-Hooks (`PasteImportSourceReading`) als Protocol.
-- [ ] **Step 2:** Share-Extension + App Group + `generate-ios-project.sh` (Projekt wird nicht committed).
-- [ ] **Step 3:** `bash ./Scripts/generate-ios-project.sh` muss Exit 0 sein.
-- [ ] **Step 4: Commit** (ohne `Reisen.xcodeproj`) `feat: add iOS paste-import entry and share extension`
-
----
 
 ### Task 12: Privacy-HTML
 

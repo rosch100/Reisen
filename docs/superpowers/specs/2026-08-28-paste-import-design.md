@@ -1,9 +1,9 @@
 # Paste-Import (F06) — Design
 
 Datum: 2026-08-28  
-Status: freigegeben (Brainstorming)  
+Status: freigegeben (Brainstorming; P1-Judge-Korrekturen)  
 Backlog: [feature-backlog.md](../../dev/feature-backlog.md) F06  
-Muster: manueller `BookingEditor` + `ProviderBookingDraft`; Match über `SyncBookingMatchLookup`
+Muster: manueller `BookingEditor`; Match über dieselben **Indexe** wie Sync (`SyncBookingMatchIndex`), nicht über `SyncBookingMatchLookup.match`
 
 ## Ziel
 
@@ -14,148 +14,125 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 | Begriff | Bedeutung |
 |---|---|
 | **Quelle** (`PasteImportSource`) | Ephemeres Material: Text, Bild-Bytes oder PDF-Bytes. Wird nicht als Anhang persistiert (F05 bleibt getrennt). |
-| **Resolver** (`PasteImportModelResolver`) | Wählt genau eine Modellstufe und meldet sie der UI *vor* dem Lauf. |
+| **Rohextrakt** (`PasteImportExtraction`) | Adapter-Ausgabe: optionale Felder. Unbekanntes Typ-Label → `bookingType == nil` (kein `.other`). |
+| **Draft** (`PasteImportDraft`) | Nach Filter: `bookingType` + `startAt` Pflicht; `endAtIsPlaceholder` wenn `endAt` fehlte. |
+| **Resolver** (`PasteImportModelResolver`) | Wählt genau eine Modellstufe aus Availability *vor* dem Lauf. Sieht keine Lauf-Fehler. |
 | **Modellstufe** | `privateCloudCompute` \| `onDevice` \| `unavailable`. Kein Drittanbieter in v1. |
-| **Kandidat** (`PasteImportCandidate`) | Gefilterter Domain-Draft plus Match-Ergebnis (Neu vs. Ergänzen). |
-| **Neu** | Kein eindeutiger Sync-Treffer → `ProviderID.manual`, Editor Create. |
-| **Ergänzen** | Eindeutiger Treffer via `SyncBookingMatchLookup` → bestehender Provider bleibt, Editor Edit, nur Lücken füllen. |
-| **Lücke** | Optionales Buchungsfeld, das in der bestehenden Entity leer/`nil` ist. |
+| **Match** (`PasteImportMatch`) | `unique(Booking)` \| `none` \| `ambiguous`. Dieselben Indexe wie Sync. |
+| **Kandidat** (`PasteImportCandidate`) | Draft + Match. `isErgaenzen` = unique; `showsAmbiguousHint` = ambiguous. |
+| **Neu** | `none` oder `ambiguous` → `ProviderID.manual`, Editor Create. |
+| **Ergänzen** | `unique` → bestehender Provider bleibt, Editor Edit, nur Lücken. |
+| **Lücke** | Optionales Feld der bestehenden Entity ist `nil` / leer. |
+| **Merge** | Nur `PasteImportMerger.fillingGaps(on:from:)` auf Domain-`Booking`. |
+
+**Explizit verworfen:** `SyncBookingMatchLookup.match` (unique und none ununterscheidbar; URL last-write). `SyncBookingDraftApplier`. Zweiter Gap-Fill auf `BookingEditorDraft`-Strings.
 
 ## Anforderungen
 
 ### In Scope (v1)
 
-- Eingabe: Zwischenablage-Text, Bilder, PDF (ephemer).
+- Eingabe: Zwischenablage-Text, Bilder, PDF (ephemer). Text-PDF über PDFKit-Text; **gescannte Seiten als Bilder** an das Modell (wie Foto), kein OCR-Workaround.
 - Mehrere Kandidaten: Auswahlliste, Nutzer wählt 0..n, danach Editor nacheinander.
-- Einstieg: geöffnete Reise oder Offen-Tab (unzugeordnet); iOS zusätzlich Share-Sheet.
-- Alle `BookingType`-Fälle (`flight`, `hotel`, `ferry`, `train`, `activity`, `carRental`, `other`).
+- Einstieg: geöffnete Reise oder Offen-Tab; iOS zusätzlich Share-Sheet.
+- Alle `BookingType`-Fälle.
 - Kandidat nur mit sicherem `bookingType` und `startAt`.
-- Unsichere Felder: weglassen, nicht raten.
-- Fehlendes `endAt`: `endAt = startAt` und Flag `endAtIsPlaceholder = true`.
-- Match gegen bestehende Buchungen mit bestehendem `SyncBookingMatchLookup`.
-- Review Pflicht im bestehenden `BookingEditor`.
-- Modell: PCC wenn verfügbar, sonst On-Device, sonst disabled mit Begründung.
-- Datenschutzerklärung: PCC und Paste-Import beschreiben.
+- Unsichere Felder weglassen. Fehlendes `status` → `.unknown` (kein `.confirmed`).
+- Fehlendes `endAt`: `endAt = startAt`, `endAtIsPlaceholder = true`.
+- Match store-weit; URL/Code/Fingerprint jeweils 0 → none, 1 → unique, >1 → ambiguous. Fingerprint nur wenn `endAtIsPlaceholder == false`.
+- Review Pflicht im `BookingEditor`.
+- Create ohne Reise: `BookingEditorDraft.createBooking(..., trip: SDTrip?)` mit `trip == nil` für Offen (kein Dummy-Trip).
+- Modell: PCC wenn verfügbar, sonst On-Device, sonst disabled. Lauf-Fehler: Dialog, **kein** zweiten Extract mit der anderen Stufe.
+- Privacy-HTML: PCC und Paste-Import.
 
 ### Nicht in Scope
 
-- ChatGPT, Perplexity oder andere Drittanbieter-LLMs (Port/`LanguageModel` so belassen, dass v2 andocken kann).
-- Stiller oder automatischer Stufenwechsel (PCC-Fehler → nicht On-Device).
-- F05: PDF/Bild an der Buchung speichern.
+- ChatGPT, Perplexity, andere Drittanbieter-LLMs (v2 hinter demselben Resolver).
+- Stiller/automatischer Stufenwechsel nach PCC-Fehler.
+- F05 Datei an der Buchung.
 - Postfach-Scan, Mail-Forward, Inbox-OAuth.
-- Automatisches Speichern ohne Editor.
-- Fingerprint-Match, wenn `endAt` nur Platzhalter ist.
-- Mehrdeutigen Match still auf eine Buchung legen.
-- `SyncBookingDraftApplier` / Upsert-Schleife für Paste (die verlangt `externalUrl` und überschreibt Provider-Felder).
-- Private Cloud Compute ohne vorherige Bestätigung.
+- Speichern ohne Editor.
+- Fingerprint bei Platzhalter-`endAt`.
+- Mehrdeutigen Match still auf eine Buchung legen (auch nicht über `byURL` last-write).
+- `SyncBookingDraftApplier` / Upsert-Loop.
+- PCC ohne Bestätigungs-Sheet.
 
 ## Architektur
 
-Port in Domain, Adapter mit Foundation Models, UI nur Review und Einstieg.
-
 | Schicht | Verantwortung |
 |---|---|
-| **ReisenDomain** | `PasteImportSource`, `PasteImportExtracting` (Port), `PasteImportModelKind`, Resolver-Ergebnis, Filter Typ+`startAt`, `endAt`-Platzhalter, Match-Aufruf auf `SyncBookingMatchLookup`, Merge „nur Lücken“. Kein FoundationModels, kein PDFKit, kein UIKit. |
-| **ReisenPasteImport** (neues Target) | `SystemLanguageModel` / `PrivateCloudComputeLanguageModel`, `@Generable`-DTO, Mapping → `ProviderBookingDraft`, PDFKit (Text; gescannte Seiten als Bilder), Bild-Attachments soweit das SDK das hergibt. Verfügbarkeit explizit. |
-| **ReisenSharedUI** | Disabled-Aktion + Begründung, Modell-Caption/PCC-Bestätigung, Auswahlliste, Prefill `BookingEditorDraft`. |
-| **Reisen / ReiseniOS** | Menü/Toolbar, Datei/Foto, Clipboard. iOS Share-Extension reicht Payload ephemer an die App. |
-| **ReisenData** | Unverändert: Speichern nur über `BookingEditorDraft.createBooking` / `apply`. |
+| **ReisenDomain** | Quelle, Port `PasteImportExtracting`, Modellstufe, Resolver, Filter, Draft, Match-Tri-State, Merger, Pipeline → Kandidaten. Kein FoundationModels, kein PDFKit, kein UIKit. |
+| **ReisenPasteImport** | Availability, Session, ein `@Generable`/`Codable`-Payload (Felder = Extraction), PDFKit-Text + Seiten-Render, Bild-`Attachment`. Output: `[PasteImportExtraction]`. |
+| **ReisenAppCore** | Orchestrierung eines Laufs: Availability → Resolver → Extract (ein kind) → Pipeline. Bei Extract-Fehler **kein** Retry mit anderem kind. |
+| **ReisenSharedUI** | Aktion (disabled+Begründung), PCC-Sheet-Chrome, Liste, Prefill. Abhängigkeit **nur Domain (+ Data für `SDBooking`)**. Kein `ReisenPasteImport`. Prefill: Neu aus Draft ohne `createDefault`; Ergänzen = `fromExisting` nach Mapping aus `fillingGaps(DomainMapper.booking(from:), draft)`. |
+| **Reisen / ReiseniOS** | Clipboard, Datei, Share-Consume, verdrahten Extractor. |
+| **ReisenData** | `createBooking(trip: SDTrip?)` (`nil` = Offen); Edit weiter `apply`. |
 
-Domain-Tests mocken den Port. CI ruft kein Apple-Modell.
+CI mockt `PasteImportExtracting`. SharedUI mockt keine Modelle.
 
 ## Modellwahl
 
-Eine Stufe pro Lauf, in der UI sichtbar bevor Material gesendet wird:
+Vor dem Senden sichtbar:
 
-1. `PrivateCloudComputeLanguageModel`, wenn verfügbar.
-2. Sonst `SystemLanguageModel` (On-Device), wenn verfügbar.
-3. Sonst `unavailable`: Aktion sichtbar, disabled, Begründung (Gerät / Apple Intelligence).
+1. PCC, wenn Availability PCC.
+2. Sonst On-Device, wenn Availability On-Device.
+3. Sonst `unavailable`.
 
-Schlägt die gewählte Stufe fehl (Netz, Quota, Session): Fehlerdialog, **kein** Wechsel auf die andere Stufe. Timeout und Abbruch: Fehler, keine Teil-Kandidaten aus abgeschnittenem JSON.
-
-v2-Erweiterung: dritter `LanguageModel`-Provider (ChatGPT/Perplexity o. ä.) nur hinter demselben Resolver, mit eigener Kind-Variante — nicht in v1.
+Availability ≠ Lauf-Fehler. Ein fehlgeschlagener PCC-Extract startet **nicht** On-Device, auch nicht nach Rückfrage (v1).
 
 ## Datenfluss
 
 ```
-Quelle (Clipboard | Datei | iOS-Share)
-  → PasteImportSource (ephemer)
-  → Resolver (PCC | onDevice | unavailable)
-  → Adapter: PDF/Bild aufbereiten, @Generable-Liste
-  → Domain-Filter (Typ + startAt; unsichere Felder leer)
-  → Match (SyncBookingMatchLookup)
-  → Auswahlliste (Neu / Ergänzen)
-  → nacheinander BookingEditor
-  → createBooking (.manual) oder apply (bestehende Entity)
+Quelle → PasteImportSource
+  → Resolver(availability) → kind
+  → Extractor(kind) → [PasteImportExtraction]
+  → Filter → [PasteImportDraft]
+  → PasteImportMatching (Indexe) → [PasteImportCandidate]
+  → Auswahlliste
+  → BookingEditor (Prefill über Merger-SSOT)
+  → createBooking(trip:) oder apply
 ```
-
-Keine Anreicherung aus dem Sync-Store außer dem Match. Share-Extension schreibt nichts in SwiftData.
 
 ## Zuordnung
 
-Nach dem Filter, für jeden Kandidaten, Index **aller** Buchungen im Store (wie Sync, nicht nur die aktuelle Reise):
+Index aller Store-Buchungen. Pro Draft:
 
-1. `externalUrl`, wenn der Draft eine hat.
-2. Eindeutiger `confirmationCode`.
-3. Eindeutiger Datums-Fingerprint **nur wenn** `endAtIsPlaceholder == false`.
+1. `externalUrl` (nicht leer): Anzahl Buchungen mit derselben URL in `existing` (nicht last-write Map).
+2. `confirmationCode`.
+3. Datums-Fingerprint nur wenn `!endAtIsPlaceholder`.
 
-| Match | Liste | Speichern |
+Je Schritt: 1 Treffer → unique (fertig); >1 → ambiguous (fertig); 0 → nächster Schritt; nichts → none.
+
+| Match | Badge | Speichern |
 |---|---|---|
-| genau einer | Badge **Ergänzen** | Editor Edit; Merge nur Lücken; **Trip der bestehenden Buchung bleibt** (Paste verschiebt nicht) |
-| keiner | Badge **Neu** | Create, `ProviderID.manual`; Trip = aktuelle Reise oder `trip == nil` (Offen) |
-| mehrere | Badge **Neu** plus Hinweis „keine eindeutige Zuordnung“ | wie Neu |
-
-**Merge (nicht `SyncBookingDraftApplier`):** nur leere Felder der bestehenden Buchung aus dem Paste füllen. `provider`, `externalUrl`, `lastSyncedAt`, `trip` unverändert. Belegte Felder ändert nur der Nutzer im Editor. Sync-Overwrite-Hinweis bleibt für Nicht-`.manual`.
-
-Create-from-Paste **nicht** über `BookingEditorDraft.createDefault` (dort stehen Hotel-Minuten-Defaults). Mapper: unsichere/fehlende optionale Felder leer lassen.
+| unique | **Ergänzen** | Edit; Merger; Trip unverändert |
+| none | **Neu** | Create `.manual`; `trip` = aktuelle Reise oder `nil` (Offen) |
+| ambiguous | **Neu** + „keine eindeutige Zuordnung“ | wie Neu |
 
 ## Fehler
 
-| Situation | Verhalten |
-|---|---|
-| `unavailable` | Disabled + Begründung |
-| Modellfehler | Dialog; kein Stufenwechsel |
-| Leere/unlesbare Quelle | Fehler, kein leerer Extraktionslauf |
-| 0 gültige Kandidaten | Leerzustand mit Erklärung, kein Dummy |
-| Unsicheres Feld | Feld weglassen, Rest behalten |
-| Mehrdeutiger Match | Neu + Hinweis |
-| Editor Abbrechen | nur dieser Kandidat weg; Queue bleibt |
-| Share-Handoff fehlgeschlagen | Fehler; keine Datei im Store |
-| PCC | Bestätigungs-Sheet bevor Material die App verlässt |
+Wie zuvor: unavailable disabled; Modellfehler Dialog ohne Stufenwechsel; leere Quelle Fehler; 0 Kandidaten Leerzustand; Share-Handoff Fehler. Gescannte PDF ohne Text: Seiten als Bilder, nicht `unreadableSource`, sofern Seiten existieren. PDF ohne Seiten: `unreadableSource`.
 
 ## UI / HIG
 
-- ⌘V bleibt System-Paste in Textfeldern.
-- macOS: Menü neben „Buchung hinzufügen“: „Buchung einfügen…“ (⌘⇧V), aktiv in Reise oder Offen.
-- iOS: gleicher Eintrag in Toolbar/Menü, Datei/Foto; Share-Extension für Text, Bild, PDF. Die Extension schreibt den Payload in den App-Group-Temp und löscht ihn nach dem Consume; kein SwiftData in der Extension.
-- Vor dem Lauf: Caption On-Device vs. PCC. PCC: Bestätigungs-Sheet. On-Device: nur Caption.
-- Lauf: `ProgressView`, Abbrechen → Fehlerzustand.
-- Liste: `BookingType`-Symbol, Titel oder Code, Datum, Badge Neu/Ergänzen; Mehrfachauswahl, Standard alle an.
-- Editor-Queue: bestehender `BookingEditor` (Create vs. Edit).
-- a11y: VoiceOver für Aktion, Modell, Badge; Dynamic Type; Badge nicht nur Farbe.
+- ⌘V System-Paste. macOS „Buchung einfügen…“ ⌘⇧V in Reise **und** Offen.
+- iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. App Group `group.de.reisen.Reisen.pasteimport`. Handoff-URL-Scheme **`reisen://paste-import`** (Info.plist beider iOS-Apps). Consume löscht die Temp-Datei.
+- Badge = L10n-Text (Neu / Ergänzen), nicht nur Farbe; VoiceOver-Label gleich.
+- EN-Badge: **Enrich**, nicht Update.
+- PCC-Sheet vor dem Senden. Progress + Abbrechen.
 
 ## Tests
 
-Verhalten, nicht Live-Modell.
-
-- Filter: Typ+`startAt` Pflicht; Platzhalter-`endAt`; unsichere Felder leer.
-- Match: eindeutiger Code trifft; Fingerprint nur ohne Platzhalter-`endAt`; Mehrdeutigkeit → kein Match.
-- Merge: nur Lücken; Provider/URL/`lastSyncedAt`/`trip` unverändert.
-- Resolver: PCC → PCC; sonst On-Device; sonst unavailable; kein stiller Wechsel.
-- Mapper: `@Generable`-Fixture → Domain-Draft; Neu-Anlagen `provider == .manual`.
-- SharedUI: Disabled+Begründung; Liste Neu vs. Ergänzen; Editor-Prefill.
-- L10n de/en.
-- Legal: Privacy-HTML erwähnt Paste-Import und PCC (bestehende Legal-Content-Tests erweitern).
-
-CI: Port mocken. Keine abgeschwächten Assertions. Kein Dummy-Kandidat gegen leere Liste.
+- Filter, Match (Code unique/ambiguous, URL unique/ambiguous, Fingerprint-Skip bei Platzhalter), Merge, Resolver-Availability, Extract-Fehler ohne Zweitlauf, Mapper (unbekannter Typ nicht `.other`), Prefill ohne Hotel-Defaults, `createBooking(trip: nil)`, L10n, Privacy-Needles.
+- RED = fachlicher Assert-Fail auf existierender API (Stubs zuerst), nicht fehlende Typen.
+- Kein Live-Modell in CI.
 
 ## Privacy
 
-`docs/legal/privacy.html` und `en/privacy.html`: Paste-Import (Text/Bild/PDF nur ephemer zur Extraktion) und Private Cloud Compute (Buchungsinhalt verlässt das Gerät, Apples PCC-Garantie, Opt-in per Bestätigungs-Sheet). Kein Widerspruch zwischen Text und Verhalten.
+`privacy.html` / `en/privacy.html`: ephemerer Paste-Import; PCC nach Bestätigung; kein Drittanbieter-LLM in v1.
 
-## Offene Punkte (explizit verworfen, nicht TBD)
+## Offene Punkte (explizit verworfen)
 
-- Drittanbieter-LLM: v2, nicht v1.
-- Datei an der Buchung: F05.
-- Automatischer Stufenwechsel nach PCC-Fehler: nein.
-- Belegte Felder im Editor mit Paste überschreiben: nein (nur Lücken).
+- Drittanbieter-LLM: v2.
+- F05.
+- Stufenwechsel nach Fehler: nein.
+- Belegte Felder überschreiben: nein.
