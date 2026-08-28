@@ -3,15 +3,15 @@
     "status": "SUCCESS",
     "message": null,
     "itineraryDisplayId": {
-      "bookingId": "1387353870",
-      "itineraryId": "20261123186899",
+      "bookingId": "REDACTED_HOTEL_BOOKING_ID",
+      "itineraryId": "REDACTED_HOTEL_ITINERARY_ID",
       "itineraryType": "HOTEL"
     },
     "itineraryEntryList": [
       {
-        "bookingId": "1387353870",
-        "itineraryId": "20261123186899",
-        "tripId": "1387353870",
+        "bookingId": "REDACTED_HOTEL_BOOKING_ID",
+        "itineraryId": "REDACTED_HOTEL_ITINERARY_ID",
+        "tripId": "REDACTED_HOTEL_BOOKING_ID",
         "itineraryType": "HOTEL",
         "itineraryTags": [
           {
