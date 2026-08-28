@@ -24,6 +24,15 @@ public protocol TravelProvider {
     ) -> Bool
 }
 
+extension TravelProvider {
+    public func needsDraftEnrichment(
+        draft: ProviderBookingDraft,
+        requiresDeadlines: Bool
+    ) -> Bool {
+        DraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: requiresDeadlines)
+    }
+}
+
 /// Optional login metadata for provider web-based account syncing.
 @MainActor
 public protocol TravelProviderLoginConfiguration {

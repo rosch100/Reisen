@@ -18,20 +18,10 @@ public struct OpodoTripsGraphQLParser: Sendable {
         }
 
         let wrappers = envelope.data?.getTrips?.trips ?? []
-        var bookings: [ProviderBookingDraft] = []
-        for wrapper in wrappers {
-            guard let trip = wrapper.trip else { continue }
-            if let draft = draft(from: trip) {
-                bookings.append(draft)
-            }
+        let bookings = wrappers.compactMap { wrapper in
+            wrapper.trip.flatMap(draft(from:))
         }
-
-        var byURL: [String: ProviderBookingDraft] = [:]
-        for booking in bookings {
-            guard let url = booking.externalUrl else { continue }
-            byURL[url] = booking
-        }
-        return Array(byURL.values).sorted { $0.startAt < $1.startAt }
+        return ProviderCatalog(bookings: bookings).dedupedByExternalURL().bookings
     }
 }
 

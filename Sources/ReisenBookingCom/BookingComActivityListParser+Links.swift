@@ -3,7 +3,7 @@ import ReisenDomain
 
 extension BookingComActivityListParser {
     /// Fallback: reservation/confirmation links with nearby ISO dates.
-    func parseMyTripsLinks(from html: String) -> [ProviderBookingDraft] {
+    func parseMyTripsLinks(from html: String) throws -> [ProviderBookingDraft] {
         let linkPattern = #"href="(https?://(?:secure\.)?booking\.com/[^"]*(?:confirmation|mytrips|reservation|hotel)[^"]*)""#
         guard let linkRegex = try? NSRegularExpression(pattern: linkPattern, options: [.caseInsensitive]) else {
             return []
@@ -22,10 +22,12 @@ extension BookingComActivityListParser {
             let dateMatches = dateRegex.matches(in: window, options: [], range: NSRange(window.startIndex..., in: window))
             let dates = dateMatches.compactMap { m -> Date? in
                 guard let raw = group(window, m, 1) else { return nil }
-                return BookingComParsing.parseISODateTime(raw)
+                return ISODateTime.parse(raw)
             }
             guard dates.count >= 2 else { continue }
-            bookings.append(draft(url: url, startAt: dates[0], endAt: dates[1]))
+            if let draft = draft(url: url, startAt: dates[0], endAt: dates[1]) {
+                bookings.append(draft)
+            }
         }
         return bookings
     }

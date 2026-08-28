@@ -2,6 +2,19 @@ import Testing
 import Foundation
 import ReisenDomain
 
+@Test("HotelStayDate calendarDay nutzt Hotel-TZ, sonst GMT-Anker")
+func hotelStayDateCalendarDayFromParsedUsesOffset() {
+    let utcEvening = Date(timeIntervalSince1970: 1_775_340_000) // 2026-04-04T22:00:00Z
+    #expect(
+        HotelStayDate.calendarDay(fromParsed: utcEvening, offsetSeconds: 2 * 3600)
+            == HotelStayDate.dateOnly(year: 2026, month: 4, day: 5)
+    )
+    #expect(
+        HotelStayDate.calendarDay(fromParsed: utcEvening)
+            == HotelStayDate.dateOnly(year: 2026, month: 4, day: 4)
+    )
+}
+
 @Test("HotelStayDate verwirft Uhrzeit und speichert GMT-Datumsanker")
 func hotelStayDateStripsTimeToGMTAnchor() {
     let withTime = HotelStayDate.parse("2026-08-11T14:30:00+07:00")
@@ -14,6 +27,13 @@ func hotelStayDateStripsTimeToGMTAnchor() {
     #expect(comps.day == 11)
     #expect(comps.hour == 0)
     #expect(comps.minute == 0)
+}
+
+@Test("HotelStayDate.parseGerman liest dd.MM.yyyy als GMT-Anker")
+func hotelStayDateParseGermanIsGMTAnchor() {
+    #expect(HotelStayDate.parseGerman("11.08.2026") == HotelStayDate.dateOnly(year: 2026, month: 8, day: 11))
+    #expect(HotelStayDate.parseGerman(" 11.08.2026 ") == HotelStayDate.dateOnly(year: 2026, month: 8, day: 11))
+    #expect(HotelStayDate.parseGerman("2026-08-11") == nil)
 }
 
 @Test("HotelStayDate stellt Legacy-Hotel-Mitternacht wieder her, ohne TZ in der Semantik zu behalten")

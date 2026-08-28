@@ -16,13 +16,12 @@ extension BookingComTravelProvider {
 
     func fetchCatalogFallbackHTMLWhenTripIDsNotEmpty(
         myTripsHTML: String
-    ) -> CatalogFallbackResult {
+    ) throws -> CatalogFallbackResult {
         do {
             let bookings = try BookingComActivityListParser().parseBookings(from: myTripsHTML)
             guard !bookings.isEmpty else { return .none }
             return .bookings(bookings)
-        } catch {
-            // trip_id vorhanden, Card-HTML nicht parsebar
+        } catch is BookingComActivityListParserError {
             return .none
         }
     }

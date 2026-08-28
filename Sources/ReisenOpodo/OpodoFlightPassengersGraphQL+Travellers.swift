@@ -13,25 +13,15 @@ extension OpodoFlightPassengersGraphQL {
         return dtos.enumerated().map { idx, dto in
             BookingPassenger(
                 passengerNumber: idx + 1,
-                travellerType: TravellerType(rawValue: (dto.travellerType ?? "").uppercased().lowercased())
-                    ?? .unknown,
+                travellerType: TravellerType.parse(dto.travellerType),
                 title: dto.title,
                 givenName: dto.name,
                 familyName: dto.firstLastName,
                 secondFamilyName: dto.secondLastName,
-                birthDate: parseISODateTime(dto.birthDate),
+                birthDate: ISODateTime.parse(dto.birthDate),
                 baggageAllowances: []
             )
         }
-    }
-
-    static func parseISODateTime(_ raw: String?) -> Date? {
-        guard let raw, !raw.isEmpty else { return nil }
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let d = f.date(from: raw) { return d }
-        f.formatOptions = [.withInternetDateTime]
-        return f.date(from: raw)
     }
 
     static func decodeSupportAreaEnvelope(json: String) throws -> OpodoFlightSupportAreaEnvelope {

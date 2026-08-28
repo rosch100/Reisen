@@ -169,20 +169,26 @@ private func withGermanL10n(_ body: () throws -> Void) rethrows {
     }
 }
 
-@Test func providerBookingDraft_needsDeadlineEnrichment_onlyWhenRequiredAndMissing() {
+@Test func draftEnrichmentNeeds_requiresPaidDeadlineWhenRequested() {
     let now = Date(timeIntervalSince1970: 1_700_000_000)
-    let draft = ProviderBookingDraft(
+    let completeHotel = ProviderBookingDraft(
         provider: .booking,
         bookingType: .hotel,
         title: "Hotel",
         startAt: now,
         endAt: now.addingTimeInterval(86_400),
+        locationToAddress: "Street 1",
         status: .confirmed,
-        deadlines: []
+        deadlines: [
+            CancellationDeadline(deadlineAt: now, policyText: "Free", isFreeCancellation: true),
+        ],
+        rateDetails: BookingRateDetails(roomCategory: "Double"),
+        hotelCheckInMinutes: 15 * 60,
+        hotelCheckOutMinutes: 11 * 60
     )
 
-    #expect(draft.needsDeadlineEnrichment(requiresDeadlines: true))
-    #expect(!draft.needsDeadlineEnrichment(requiresDeadlines: false))
+    #expect(DraftEnrichmentNeeds.shouldEnrich(completeHotel, requiresDeadlines: true))
+    #expect(!DraftEnrichmentNeeds.shouldEnrich(completeHotel, requiresDeadlines: false))
 }
 
 @Test func syncAllSummary_errorDetails_listsEveryProviderReason() {

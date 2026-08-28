@@ -13,7 +13,7 @@ extension BookingComTripsGraphQLParser {
         fields.confirmationCode = reservation.identifiers?.hotelReservationId
             ?? reservation.identifiers?.publicId
         if let checkInStart = reservation.checkIn?.start {
-            fields.hotelOffsetSeconds = BookingComParsing.offsetSeconds(from: checkInStart)
+            fields.hotelOffsetSeconds = ISODateTime.offsetSeconds(from: checkInStart)
             fields.hotelCheckInMinutes = BookingComParsing.clockMinutes(from: checkInStart)
         }
         if let checkOutEnd = reservation.checkOut?.end {

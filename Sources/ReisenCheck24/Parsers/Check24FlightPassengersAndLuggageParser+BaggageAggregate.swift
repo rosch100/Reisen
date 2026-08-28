@@ -9,7 +9,7 @@ extension Check24FlightPassengersAndLuggageParser {
         var weightKgByType: [BaggageType: Double] = [:]
 
         for item in included {
-            let mappedType = baggageType(from: item.type)
+            let mappedType = BaggageType.parse(item.type)
             piecesByType[mappedType, default: 0] += item.pieces
 
             if let weight = item.weightKg, weight > 0 {

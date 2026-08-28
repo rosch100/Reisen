@@ -2,7 +2,7 @@ import Foundation
 import ReisenDomain
 
 extension BookingComActivityListParser {
-    func draft(url: String, startAt: Date, endAt: Date) -> ProviderBookingDraft {
+    func draft(url: String, startAt: Date, endAt: Date) -> ProviderBookingDraft? {
         let lower = url.lowercased()
         let bookingType: BookingType
         if lower.contains("hotel") || lower.contains("accommodation") || lower.contains("stays") {
@@ -12,12 +12,15 @@ extension BookingComActivityListParser {
         } else {
             bookingType = .hotel
         }
-        return ProviderBookingDraft(
-            provider: .booking,
-            bookingType: bookingType,
-            externalUrl: url,
-            startAt: startAt,
-            endAt: endAt
+        let times = TemporalFact.pair(bookingType: bookingType, start: startAt, end: endAt)
+        return DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .booking,
+                bookingType: bookingType,
+                start: times.start,
+                end: times.end,
+                externalUrl: url
+            )
         )
     }
 
@@ -28,6 +31,6 @@ extension BookingComActivityListParser {
 
     func parseDate(_ raw: String) -> Date? {
         let day = raw.replacingOccurrences(of: #"T.*$"#, with: "", options: .regularExpression)
-        return BookingComParsing.parseISODateTime(day) ?? BookingComParsing.parseGermanDate(day)
+        return ISODateTime.parse(day) ?? HotelStayDate.parseGerman(day)
     }
 }
