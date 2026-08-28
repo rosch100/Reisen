@@ -23,6 +23,7 @@ public enum BookingDetailLabels {
     public static var unitPrice: String { L10n.string(.bookingDetailUnitPrice) }
     public static var cancellationFree: String { L10n.string(.bookingDetailCancellationFree) }
     public static var cancellationPaid: String { L10n.string(.bookingDetailCancellationPaid) }
+    public static var cancellationCost: String { L10n.string(.bookingDetailCancellationCost) }
     public static var notAvailable: String { L10n.string(.commonNotAvailable) }
     public static var dateRange: String { L10n.string(.bookingDetailDateRange) }
 
