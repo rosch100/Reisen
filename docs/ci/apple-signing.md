@@ -43,7 +43,7 @@ Wenn Xcode nicht mit der Apple-ID angemeldet ist, schlägt Schritt 3 fehl. Dann:
 4. Capabilities: **iCloud** (CloudKit, Container laut `project.yml`) und **Push Notifications** (iOS)
 5. Script erneut ausführen
 
-`Scripts/build-app.sh` / `Scripts/run-app.sh` signieren lokal mit **Apple Development**, sobald das Profil in `.signing/` liegt. Fehlt es, bleibt der Pfad explizit ad-hoc (CloudKit inaktiv, Hinweis auf das Setup-Script). In CI (`CI=true` / GitHub Actions) ist ad-hoc fest verdrahtet.
+`Scripts/build-app.sh` / `Scripts/run-app.sh` signieren lokal mit **Apple Development**, sobald `reisen_provision_profile_path` ein Profil findet: zuerst `$ROOT/.signing/Reisen.provisionprofile`, in Git-Worktrees das Profil des Primär-Checkouts (`git-common-dir`). Fehlt beides, bleibt der Pfad explizit ad-hoc (CloudKit inaktiv, Data-Protection-Keychain ohne `application-identifier` → SecItemAdd -34018). In CI (`CI=true` / GitHub Actions) ist ad-hoc fest verdrahtet.
 
 iOS-Simulator-Tests in CI setzen `CODE_SIGNING_ALLOWED=NO` — die Runner haben keine Team-Zertifikate.
 

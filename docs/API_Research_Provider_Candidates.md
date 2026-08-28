@@ -101,7 +101,7 @@ Domain-Basis: [`BookingType.activity`](dev/booking-type-activity-impl-spec.md). 
 | Login API | `POST https://consumer-api.floyt.com/auth/v1/login` | Body `username`/`password`; Header `X-Whitelabel: DE_billiger-mietwagen` → Tokens inkl. `id_token` |
 | Session schreiben | `POST …/user_account/session.php` | Body `access_token`+`refresh_token`; Cookies `__Secure-billigermietwagen`, `__Secure-user_account` |
 | Session lesen | `GET …/user_account/session.php` | Tokens für Sync/Probe |
-| Token-Refresh | `POST …/auth/v1/refresh-token` | Body `{refresh_token,user_id}` mit `user_id`=JWT-`username` (nicht `sub`); oft nötig vor Catalog (401 sonst) |
+| Token-Refresh | `POST …/auth/v1/refresh-token` | Body `{refresh_token,user_id}` mit `user_id`=JWT-`username` (nicht `sub`); 201 oft nur `access_token`+`id_token` (Refresh nicht rotiert) |
 | Catalog active | `GET …/useraccount/v1/bookings?activity_status=active&…` | Upcoming |
 | Catalog inactive | `GET …/bookings?activity_status=inactive&sort_by=DropOffDate&…` | Past/storniert (SPA-Parität) |
 | Detail | `GET …/useraccount/v1/web/bookings/{id}` | Web-Detail (länger als Non-Web) |
@@ -112,7 +112,7 @@ Domain-Basis: [`BookingType.activity`](dev/booking-type-activity-impl-spec.md). 
 
 **Kernbefund:** Ein Primärpfad Cookie → session.php → **Refresh** → Bearer JSON (active+inactive). `/reservation/account/` ohne Suffix → SPA-404; Login und Bookings sind getrennte Pfade (Heuristik ok; Homepage → Session-Probe).
 
-**Auth-Header:** Live-HAR Login nutzt `X-Whitelabel: DE_billiger-mietwagen`; **kein** CSRF/XSRF-Header — Cookies + Bearer reichen. Session-`access_token` allein oft **401** an Consumer-API → Refresh Pflicht.
+**Auth-Header:** Live-HAR Login nutzt `X-Whitelabel: DE_billiger-mietwagen`, `client-id: web`, `Origin: https://www.billiger-mietwagen.de`. Session-POST sendet `client-id` + `Origin`. **Kein** CSRF/XSRF-Header — Cookies + Bearer + diese SPA-Header. Session-`access_token` allein oft **401** an Consumer-API → Refresh Pflicht (gleiche Header wie Login-API).
 
 **Cookie-Banner:** Consent-Banner muss im WKWebView vom Nutzer geschlossen werden; sonst Login/Sync blockiert. Kein Auto-Dismiss in der App.
 

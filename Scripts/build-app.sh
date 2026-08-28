@@ -130,7 +130,7 @@ if [[ -d "$LOGO_DIR" ]]; then
   cp "$LOGO_DIR"/*.svg "$RESOURCES/" 2>/dev/null || true
 fi
 
-PROFILE="$ROOT/.signing/Reisen.provisionprofile"
+PROFILE="$(reisen_provision_profile_path "$ROOT" || true)"
 MERGED_ENTITLEMENTS=""
 cleanup_merged_entitlements() {
   if [[ -n "${MERGED_ENTITLEMENTS:-}" ]]; then
@@ -176,7 +176,7 @@ else
   MERGED_ENTITLEMENTS="$(mktemp)"
   strip_icloud_entitlements "$ENTITLEMENTS" "$MERGED_ENTITLEMENTS"
   SIGN_ENTITLEMENTS="$MERGED_ENTITLEMENTS"
-  echo "Hinweis: Kein .signing/Reisen.provisionprofile — ad-hoc ohne iCloud-Entitlements." >&2
+  echo "Hinweis: Kein Reisen.provisionprofile (lokal oder Primär-Checkout) — ad-hoc ohne iCloud-Entitlements." >&2
   echo "  Team-Signing: bash ./Scripts/setup-apple-developer.sh" >&2
 fi
 cp "$SIGN_ENTITLEMENTS" "$CONTENTS/Reisen.entitlements"
