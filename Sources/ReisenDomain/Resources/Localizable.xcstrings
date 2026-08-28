@@ -4145,6 +4145,22 @@
         }
       }
     },
+    "menu.paste_booking_from_file": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung aus Datei einfügen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste Booking from File…"
+          }
+        }
+      }
+    },
     "menu.provider_sync": {
       "localizations": {
         "de": {
@@ -4305,6 +4321,38 @@
         }
       }
     },
+    "paste_import.error_image_unsupported": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilder und gescannte PDFs brauchen ein neueres Betriebssystem."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images and scanned PDFs require a newer operating system."
+          }
+        }
+      }
+    },
+    "paste_import.error_match_missing": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die zugeordnete Buchung gibt es nicht mehr."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The matched booking no longer exists."
+          }
+        }
+      }
+    },
     "paste_import.error_model": {
       "localizations": {
         "de": {
@@ -4317,6 +4365,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "The model did not respond."
+          }
+        }
+      }
+    },
+    "paste_import.error_source": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Quelle enthält keinen lesbaren Inhalt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The source contains no readable content."
           }
         }
       }

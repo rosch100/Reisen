@@ -6,9 +6,12 @@ import ReisenData
 // MARK: - Session
 
 /// Anlegen/Bearbeiten läuft in der Detailspalte (Inspector), nicht als Modal-Sheet.
+///
+/// `prefilledDraft` bringt einen fertigen Entwurf mit (Paste-Import). Ist er gesetzt, baut der
+/// Inspector den Entwurf **nicht** aus `createDefault`/`fromExisting` neu.
 public enum BookingEditorSession: Equatable, Sendable {
-    case create(prefillStart: Date?, prefillEnd: Date?)
-    case edit(bookingID: UUID)
+    case create(prefillStart: Date?, prefillEnd: Date?, prefilledDraft: BookingEditorDraft? = nil)
+    case edit(bookingID: UUID, prefilledDraft: BookingEditorDraft? = nil)
 }
 
 // MARK: - Draft Models
@@ -292,10 +295,12 @@ public struct BookingEditorDraft: Equatable, Sendable {
     }
 
     /// Neue manuelle Buchung anlegen und persistieren.
+    ///
+    /// - Parameter trip: `nil` legt die Buchung ohne Reise an (Offen); es wird keine Ersatzreise gesucht.
     @discardableResult
     public static func createBooking(
         from draft: BookingEditorDraft,
-        trip: SDTrip,
+        trip: SDTrip?,
         in modelContext: ModelContext
     ) throws -> UUID {
         var working = draft
@@ -322,7 +327,9 @@ public struct BookingEditorDraft: Equatable, Sendable {
             hotelCheckInMinutes: parseIntOrNil(working.hotelCheckInMinutesText),
             hotelCheckOutMinutes: parseIntOrNil(working.hotelCheckOutMinutesText)
         )
-        booking.trip = trip
+        if let trip {
+            booking.trip = trip
+        }
         modelContext.insert(booking)
         try working.apply(to: booking, in: modelContext)
         return booking.id

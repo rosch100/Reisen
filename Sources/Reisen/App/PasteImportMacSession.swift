@@ -1,0 +1,378 @@
+import AppKit
+import Foundation
+import SwiftData
+import SwiftUI
+import UniformTypeIdentifiers
+import ReisenAppCore
+import ReisenData
+import ReisenDomain
+import ReisenPasteImport
+import ReisenSharedUI
+
+/// Modellstufe für Menü und Lauf — eine Auflösung, kein zweiter Pfad.
+enum PasteImportModel {
+    static func kind() -> PasteImportModelKind {
+        PasteImportModelResolver.resolve(FoundationModelsPasteImportAvailability().availability())
+    }
+}
+
+/// Die Datei liegt vor, ist aber nicht als Text, Bild oder PDF lesbar.
+enum PasteImportMacSourceError: Error, Equatable, Sendable {
+    case unreadableFile
+}
+
+/// Quellen des macOS-Einstiegs: Zwischenablage und Dateiauswahl.
+enum PasteImportMacSource {
+    /// `nil`, wenn die Zwischenablage nichts Verwertbares enthält — kein Ersatzinhalt.
+    static func fromPasteboard(_ pasteboard: NSPasteboard = .general) -> PasteImportSource? {
+        if let pdf = pasteboard.data(forType: .pdf) { return .pdf(pdf) }
+        if let png = pasteboard.data(forType: .png) { return .image(png) }
+        if let tiff = pasteboard.data(forType: .tiff) { return .image(tiff) }
+        if let text = pasteboard.string(forType: .string) { return .text(text) }
+        return nil
+    }
+
+    /// `nil`, wenn der Nutzer die Auswahl abbricht.
+    @MainActor
+    static func fromOpenPanel() throws -> PasteImportSource? {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.pdf, .image, .plainText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return try source(ofFile: url)
+    }
+
+    private static func source(ofFile url: URL) throws -> PasteImportSource {
+        let data = try Data(contentsOf: url)
+        let type = UTType(filenameExtension: url.pathExtension)
+        if type?.conforms(to: .pdf) == true { return .pdf(data) }
+        if type?.conforms(to: .image) == true { return .image(data) }
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw PasteImportMacSourceError.unreadableFile
+        }
+        return .text(text)
+    }
+}
+
+/// Ein Paste-Import-Durchlauf auf macOS: Bestätigung, Lauf, Kandidatenliste, Editor-Warteschlange.
+///
+/// Der Lauf selbst liegt in `PasteImportRun`; diese Klasse hält nur den Zustand des Einstiegs.
+/// Nach einem Fehler wird nicht mit einer anderen Modellstufe wiederholt.
+@MainActor
+@Observable
+final class PasteImportMacSession {
+    enum Phase: Equatable {
+        case idle
+        case confirmingPrivateCloudCompute
+        case running
+        case choosing([PasteImportCandidate])
+        case failed(String)
+    }
+
+    private(set) var phase: Phase = .idle
+    /// Kandidaten, die der Nutzer noch im Editor prüft.
+    private(set) var pending: [PasteImportCandidate] = []
+
+    private var source: PasteImportSource?
+    private var existing: [Booking] = []
+    private var task: Task<Void, Never>?
+
+    var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
+    var isRunning: Bool { phase == .running }
+
+    var isChoosing: Bool {
+        if case .choosing = phase { return true }
+        return false
+    }
+
+    /// Fortschritt und Kandidatenliste teilen sich ein Sheet: SwiftUI zeigt pro View nur eines.
+    var isPresentingSheet: Bool { isRunning || isChoosing }
+
+    var candidates: [PasteImportCandidate] {
+        if case .choosing(let candidates) = phase { return candidates }
+        return []
+    }
+
+    var errorMessage: String? {
+        if case .failed(let message) = phase { return message }
+        return nil
+    }
+
+    /// - Parameter source: `nil` heißt „keine verwertbare Quelle“ und endet als Fehler.
+    func start(source: PasteImportSource?, existing: [Booking]) {
+        reset()
+        guard let source else {
+            phase = .failed(L10n.string(.pasteImportErrorSource))
+            return
+        }
+        let kind = PasteImportModel.kind()
+        guard kind != .unavailable else {
+            phase = .failed(L10n.string(.pasteImportUnavailable))
+            return
+        }
+        self.source = source
+        self.existing = existing
+        if kind == .privateCloudCompute {
+            phase = .confirmingPrivateCloudCompute
+        } else {
+            run(kind: kind)
+        }
+    }
+
+    func confirmPrivateCloudCompute() {
+        guard case .confirmingPrivateCloudCompute = phase else { return }
+        run(kind: .privateCloudCompute)
+    }
+
+    func cancelConfirmation() {
+        guard case .confirmingPrivateCloudCompute = phase else { return }
+        reset()
+    }
+
+    func cancelRun() {
+        guard case .running = phase else { return }
+        reset()
+    }
+
+    /// Übernimmt die Kandidaten in die Editor-Warteschlange.
+    func review() {
+        guard case .choosing(let candidates) = phase else { return }
+        phase = .idle
+        pending = candidates
+    }
+
+    /// Schließt das Lauf-Sheet. Nach `review()` ist die Phase bereits gewechselt und nichts zu tun.
+    func dismissSheet() {
+        switch phase {
+        case .running, .choosing:
+            reset()
+        case .idle, .confirmingPrivateCloudCompute, .failed:
+            break
+        }
+    }
+
+    /// Behält die Warteschlange: ein Fehler bei einem Kandidaten beendet nicht die übrigen.
+    func dismissError() {
+        guard case .failed = phase else { return }
+        phase = .idle
+    }
+
+    func fail(_ message: String) {
+        phase = .failed(message)
+    }
+
+    var hasPendingCandidates: Bool { !pending.isEmpty }
+
+    func nextCandidate() -> PasteImportCandidate? {
+        guard !pending.isEmpty else { return nil }
+        return pending.removeFirst()
+    }
+
+    private func run(kind: PasteImportModelKind) {
+        guard let source else {
+            phase = .failed(L10n.string(.pasteImportErrorSource))
+            return
+        }
+        let existing = existing
+        phase = .running
+        task = Task { [weak self] in
+            do {
+                let candidates = try await PasteImportRun.run(
+                    source: source,
+                    kind: kind,
+                    extractor: FoundationModelsPasteImportExtractor(kind: kind),
+                    existing: existing
+                )
+                guard !Task.isCancelled else { return }
+                self?.phase = .choosing(candidates)
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.phase = .failed(Self.message(for: error))
+            }
+        }
+    }
+
+    private func reset() {
+        task?.cancel()
+        task = nil
+        source = nil
+        existing = []
+        pending = []
+        phase = .idle
+    }
+
+    private static func message(for error: Error) -> String {
+        switch error {
+        case PasteImportSourceError.empty, PasteImportMacSourceError.unreadableFile:
+            return L10n.string(.pasteImportErrorSource)
+        case PasteImportRunError.modelUnavailable, PasteImportAdapterError.unavailable:
+            return L10n.string(.pasteImportUnavailable)
+        case PasteImportAdapterError.imageInputUnsupported:
+            return L10n.string(.pasteImportErrorImageUnsupported)
+        default:
+            return L10n.string(.pasteImportErrorModel)
+        }
+    }
+}
+
+extension View {
+    /// Bestätigung, Fortschritt, Kandidatenliste und Fehlermeldung eines Paste-Import-Laufs.
+    ///
+    /// - Parameter onReviewQueue: läuft, sobald der nächste Kandidat in den Editor darf.
+    func pasteImportFlow(
+        session: PasteImportMacSession,
+        onReviewQueue: @escaping () -> Void
+    ) -> some View {
+        modifier(PasteImportFlowModifier(session: session, onReviewQueue: onReviewQueue))
+    }
+}
+
+private struct PasteImportFlowModifier: ViewModifier {
+    let session: PasteImportMacSession
+    let onReviewQueue: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .alert(
+                L10n.string(.pasteImportPccConfirmTitle),
+                isPresented: Binding(
+                    get: { session.isConfirmingPrivateCloudCompute },
+                    set: { if !$0 { session.cancelConfirmation() } }
+                )
+            ) {
+                Button(L10n.string(.pasteImportPccConfirmOk)) {
+                    session.confirmPrivateCloudCompute()
+                }
+                Button(L10n.string(.commonCancel), role: .cancel) {
+                    session.cancelConfirmation()
+                }
+            } message: {
+                Text(L10n.string(.pasteImportPccConfirmMessage))
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { session.isPresentingSheet },
+                    set: { if !$0 { session.dismissSheet() } }
+                )
+            ) {
+                if session.isRunning {
+                    PasteImportProgressSheet { session.cancelRun() }
+                } else {
+                    PasteImportCandidateSheet(
+                        candidates: session.candidates,
+                        onCancel: { session.dismissSheet() },
+                        onContinue: {
+                            session.review()
+                            onReviewQueue()
+                        }
+                    )
+                }
+            }
+            .alert(
+                L10n.string(.pasteImportErrorTitle),
+                isPresented: Binding(
+                    get: { session.errorMessage != nil },
+                    set: { if !$0 { session.dismissError() } }
+                )
+            ) {
+                Button(L10n.string(.commonOk), role: .cancel) {
+                    session.dismissError()
+                    onReviewQueue()
+                }
+            } message: {
+                if let errorMessage = session.errorMessage {
+                    Text(errorMessage)
+                }
+            }
+    }
+}
+
+private struct PasteImportProgressSheet: View {
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text(L10n.string(.pasteImportProgress))
+            Button(L10n.string(.commonCancel), action: onCancel)
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding(24)
+        .frame(minWidth: 280)
+    }
+}
+
+private struct PasteImportCandidateSheet: View {
+    let candidates: [PasteImportCandidate]
+    let onCancel: () -> Void
+    let onContinue: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ScrollView {
+                PasteImportCandidateList(candidates: candidates)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            HStack {
+                Button(L10n.string(.commonCancel), action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button(L10n.string(.pasteImportContinue), action: onContinue)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(candidates.isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 420, minHeight: 320)
+    }
+}
+
+/// Editor für einen Kandidaten außerhalb des Reise-Inspectors (Offen oder Buchung ohne Reise-Kontext).
+struct PasteImportReview: Identifiable {
+    let id = UUID()
+    let draft: BookingEditorDraft
+    /// `nil` legt eine neue Buchung ohne Reise an (Offen).
+    let booking: SDBooking?
+}
+
+struct PasteImportReviewSheet: View {
+    let review: PasteImportReview
+    let onFinished: () -> Void
+
+    @Environment(\.modelContext) private var modelContext
+    @State private var draft: BookingEditorDraft
+
+    init(review: PasteImportReview, onFinished: @escaping () -> Void) {
+        self.review = review
+        self.onFinished = onFinished
+        _draft = State(initialValue: review.draft)
+    }
+
+    private var showsSyncOverwriteHint: Bool {
+        guard let booking = review.booking else { return false }
+        return booking.provider != .manual
+    }
+
+    var body: some View {
+        BookingEditorForm(
+            title: review.booking == nil
+                ? L10n.string(.editorCreateTitle)
+                : L10n.string(.editorEditTitle),
+            showsSyncOverwriteHint: showsSyncOverwriteHint,
+            draft: $draft,
+            providerReadOnly: review.booking != nil,
+            onCancel: onFinished,
+            onSave: {
+                if let booking = review.booking {
+                    try draft.apply(to: booking, in: modelContext)
+                } else {
+                    try BookingEditorDraft.createBooking(from: draft, trip: nil, in: modelContext)
+                }
+                onFinished()
+            }
+        )
+        .frame(minWidth: 520, minHeight: 620)
+    }
+}

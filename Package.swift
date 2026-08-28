@@ -174,6 +174,7 @@ let package = Package(
                 "ReisenAppCore",
                 "ReisenProviderSync",
                 "ReisenSharedUI",
+                "ReisenPasteImport",
             ],
             path: "Sources/Reisen",
             resources: [

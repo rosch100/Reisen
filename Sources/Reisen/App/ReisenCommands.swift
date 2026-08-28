@@ -6,6 +6,9 @@ import ReisenSharedUI
 struct ReisenCommands: Commands {
     @FocusedValue(\.openBookingsCommandState) private var openBookingsCommandState
 
+    /// Verfügbarkeit entscheidet über beide Einfüge-Einträge; aufgelöst wird sie nur hier.
+    private var pasteImportKind: PasteImportModelKind { PasteImportModel.kind() }
+
     var body: some Commands {
         CommandGroup(replacing: .pasteboard) {
             Button(L10n.string(.commonCut)) {
@@ -45,6 +48,17 @@ struct ReisenCommands: Commands {
                 NotificationCenter.default.post(name: .reisenAddBooking, object: nil)
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
+
+            // ⌘V bleibt System-Paste; der Paste-Import liegt auf ⌘⇧V.
+            PasteImportActionControl(kind: pasteImportKind) {
+                NotificationCenter.default.post(name: .reisenPasteBooking, object: nil)
+            }
+            .keyboardShortcut("v", modifiers: [.command, .shift])
+
+            Button(L10n.string(.menuPasteBookingFromFile)) {
+                NotificationCenter.default.post(name: .reisenPasteBookingFromFile, object: nil)
+            }
+            .disabled(pasteImportKind == .unavailable)
 
             Button(L10n.string(.menuAssignBookings)) {
                 NotificationCenter.default.post(name: .reisenAssignBookings, object: nil)
