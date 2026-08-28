@@ -514,12 +514,33 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case menuNewTrip = "menu.new_trip"
     case menuNewTripFromSelection = "menu.new_trip_from_selection"
     case menuAddBooking = "menu.add_booking"
+    case menuPasteBooking = "menu.paste_booking"
     case menuAssignBookings = "menu.assign_bookings"
     case menuProviderSync = "menu.provider_sync"
     case menuSyncAllProviders = "menu.sync_all_providers"
     case menuSyncCurrentProvider = "menu.sync_current_provider"
     case menuEditTrip = "menu.edit_trip"
     case settingsLeadTimesSection = "settings.lead_times_section"
+
+    // MARK: - Paste import
+
+    case pasteImportUnavailable = "paste_import.unavailable"
+    case pasteImportModelOnDevice = "paste_import.model_on_device"
+    case pasteImportModelPcc = "paste_import.model_pcc"
+    case pasteImportPccConfirmTitle = "paste_import.pcc_confirm_title"
+    case pasteImportPccConfirmMessage = "paste_import.pcc_confirm_message"
+    case pasteImportPccConfirmOk = "paste_import.pcc_confirm_ok"
+    case pasteImportProgress = "paste_import.progress"
+    case pasteImportEmpty = "paste_import.empty"
+    case pasteImportBadgeNew = "paste_import.badge_new"
+    case pasteImportBadgeEnrich = "paste_import.badge_enrich"
+    case pasteImportAmbiguousHint = "paste_import.ambiguous_hint"
+    case pasteImportErrorTitle = "paste_import.error_title"
+    case pasteImportErrorModel = "paste_import.error_model"
+    case pasteImportErrorHandoff = "paste_import.error_handoff"
+    case pasteImportCandidatesTitle = "paste_import.candidates_title"
+    case pasteImportContinue = "paste_import.continue"
+    case pasteImportShareDisplayName = "paste_import.share_display_name"
 
     // MARK: - Guest hints
 
