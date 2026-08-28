@@ -834,18 +834,15 @@ Text: Nutzer kann Text/Bild/PDF einfügen; Verarbeitung on-device oder nach Best
 | Spec | Task |
 |---|---|
 | Quelle Text/Bild/PDF ephemer, leer = Fehler | 1, 8, 11 |
-| Filter Typ+startAt, endAt-Platzhalter | 2 |
-| Match Index + kein Fingerprint bei Platzhalter + ambiguous Hinweis | 3, 5, 9 |
-| Merge nur Lücken, Trip/Provider/URL/lastSyncedAt | 4, 9 |
-| Resolver PCC > On-Device > unavailable, kein Stufenwechsel nach Fehler | 5, 8, 10 |
-| Port mockbar, CI ohne Live-Modell | 5, 7 |
-| `@Generable`/DTO Mapper, unknown type nicht `.other` | 7 |
-| PDFKit, Bilder über SDK-Attachment | 8 |
-| Editor ohne `createDefault`-Minuten | 9 |
-| macOS Menü ⌘⇧V, ⌘V unangetastet, PCC-Sheet, Progress, Queue | 10 |
-| iOS + Share App Group, kein SwiftData in Extension | 11 |
+| Filter Typ+startAt, endAt-Platzhalter; status `.unknown` | 2 |
+| Match tri-state; URL-Duplikate ambiguous; Fingerprint-Skip | 3, 5 |
+| Merge-SSOT `fillingGaps`; Trip/Provider/URL/lastSyncedAt | 4, 9 |
+| Resolver Availability; Extract-Fehler ohne Zweitlauf | 5, 8, 10 |
+| SharedUI ohne Adapter; Prefill über Merger | 9 |
+| `createBooking(trip: nil)` Offen | 10 |
+| PDF-Seiten als Bilder; Attachment für Fotos | 8 |
+| macOS ⌘⇧V; iOS Scheme `reisen://paste-import` | 10, 11 |
 | Privacy PCC + ephemer | 12 |
-| Alle BookingTypes | Filter nutzt `BookingType(rawValue:)` für alle Cases (Task 7 Mapper) |
-| Drittanbieter-LLM / F05 / Auto-Upsert | bewusst keine Tasks |
+| Unknown type nicht `.other` | 7 |
 
-**Verworfene Parallel-Wege:** `SyncBookingDraftApplier`, Upsert-Loop, ChatGPT/Perplexity, Silent OCR wenn Attachments fehlen.
+**Verworfene Parallel-Wege:** `SyncBookingMatchLookup.match`, `SyncBookingDraftApplier`, Upsert-Loop, ChatGPT/Perplexity, OCR-Fallback, SharedUI→FoundationModels.
