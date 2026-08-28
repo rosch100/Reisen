@@ -1,8 +1,5 @@
 # Pre-travel stay hints — research fixtures
 
-Live HAR capture was not available in the agent worktree. Synthetic fixtures encode the
-prep-relevant phrases documented in the implementation plan so parsers can be tested without PII.
-
 | File | Provider | Notes |
 |------|----------|-------|
 | `gyg_bookingSummary_redacted.json` | GetYourGuide | Real redacted fixture (existing) |
@@ -11,5 +8,8 @@ prep-relevant phrases documented in the implementation plan so parsers can be te
 | `bookingcom_confirmation_policies_de_synthetic.html` | Booking.com | DE Confirm: Ankunft/Ausweis; FAQ+i18n dürfen keine Haustier-Hints erzeugen |
 | `check24_hotel_detail_hints_synthetic.html` | Check24 | DE linen/towel phrases |
 | `opodo_trip_detail_hints_synthetic.html` | Opodo | EN bed linens not included |
+| `traveloka_itinerary_single_hotel_redacted.json` | Traveloka | Live 2026-08-28: `importantNoticePolicies` + `propertyPolicy` (Hausregeln/Dokumente); kein Pet-/Linen-Feld in diesem Konto |
 
-Replace with redacted live captures when available; keep parser contracts stable via `sourceKey`.
+Replace remaining synthetic fixtures with redacted live captures when available; keep parser contracts stable via `sourceKey`.
+
+**Traveloka:** `TravelokaGuestHintMapper` — structured notices like GYG; `propertyPolicy` as Hausregeln; `checkInInstruction` only if `BookingGuestHintPrepKeywords` match. Do not add bare `pet` tokens (ID „Petunjuk“ false-positive).
