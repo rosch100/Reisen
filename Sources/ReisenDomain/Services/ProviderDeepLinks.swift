@@ -4,12 +4,14 @@ public enum ProviderDeepLinks {
     public static func suggestions(
         for gap: ComputedGap,
         preferredProvider: ProviderID?,
+        enabledProviderIDs: Set<ProviderID>,
         deepLinkBuilder: (ProviderID) -> (any GapDeepLinkBuilding)?,
         allBuilders: [any GapDeepLinkBuilding]
     ) -> [DeepLinkSuggestion] {
         let context = GapContext(gap: gap)
         let builders = selectedBuilders(
             preferredProvider: preferredProvider,
+            enabledProviderIDs: enabledProviderIDs,
             deepLinkBuilder: deepLinkBuilder,
             allBuilders: allBuilders
         )
@@ -24,16 +26,17 @@ public enum ProviderDeepLinks {
         var issues: [DeepLinkIssue] = []
         for builder in allBuilders {
             let result = builder.suggestions(for: context)
-            links.append(contentsOf: result.links.filter { $0.url != nil })
-            issues.append(contentsOf: result.issues)
+            // Builder sollen nur passende Kategorien liefern; hier zusätzlich absichern.
+            links.append(contentsOf: result.links.filter {
+                $0.url != nil && shouldShow($0, gapKind: context.kind)
+            })
+            issues.append(contentsOf: result.issues.filter { $0.isVisible(for: context.kind) })
         }
-        return (links, issues)
+        return (links, uniqueIssues(issues))
     }
 
     public static func shouldShow(_ suggestion: DeepLinkSuggestion, gapKind: GapKind) -> Bool {
-        let isHotel = suggestion.title.localizedCaseInsensitiveContains("hotel")
-        if !isHotel { return true }
-        return gapKind == .lodging || gapKind == .both
+        suggestion.category.isVisible(for: gapKind)
     }
 
     public static func openableLinks(
@@ -52,15 +55,25 @@ public enum ProviderDeepLinks {
         return message.isEmpty ? nil : message
     }
 
-    private static func selectedBuilders(
+    public static func selectedBuilders(
         preferredProvider: ProviderID?,
+        enabledProviderIDs: Set<ProviderID>,
         deepLinkBuilder: (ProviderID) -> (any GapDeepLinkBuilding)?,
         allBuilders: [any GapDeepLinkBuilding]
     ) -> [any GapDeepLinkBuilding] {
+        let enabledBuilders = allBuilders.filter { enabledProviderIDs.contains($0.providerID) }
+        // Ungültiges Preferred (deaktiviert / kein Builder) wie „Alle Aktiven“ —
+        // sonst UI-Picker „Alle“ bei stale State und leere Such-Links.
         if let preferredProvider,
+           enabledProviderIDs.contains(preferredProvider),
            let builder = deepLinkBuilder(preferredProvider) {
             return [builder]
         }
-        return allBuilders
+        return enabledBuilders
+    }
+
+    private static func uniqueIssues(_ issues: [DeepLinkIssue]) -> [DeepLinkIssue] {
+        var seen = Set<DeepLinkIssue>()
+        return issues.filter { seen.insert($0).inserted }
     }
 }

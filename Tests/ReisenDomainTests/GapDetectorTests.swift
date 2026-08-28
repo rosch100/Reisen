@@ -17,6 +17,6 @@ import ReisenDomain
         endAt: Date(timeIntervalSince1970: 1_300_000),
         status: .confirmed
     )
-    let gaps = GapDetector(minGap: 12 * 60 * 60).computeGaps(bookings: [early, late])
+    let gaps = GapDetector(minGap: GapDetector.defaultMinGap).computeGaps(bookings: [early, late])
     #expect(gaps.count == 1)
 }

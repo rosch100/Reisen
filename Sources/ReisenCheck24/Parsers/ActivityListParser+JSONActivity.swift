@@ -25,7 +25,7 @@ extension ActivityListParser {
             return nil
         }
 
-        let externalUrl = activityDetailURL(from: activity)
+        let externalUrl = activityDetailURL(from: activity, bookingType: bookingType)
         let confirmationCode = jsonString(activity, "foreignId", "foreign_id")
             ?? jsonString(psd, "booking_number")
 

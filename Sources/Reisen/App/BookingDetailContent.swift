@@ -88,8 +88,8 @@ struct BookingDetailContent: View {
 
             if let url = booking.browserURL {
                 Divider()
-                Link(L10n.string(.actionOpenInBrowser), destination: url)
-                    .font(.caption)
+                BookingPortalOpenLink(browserURL: url)
+                .font(.caption)
             }
 
             if let onEditBooking {
