@@ -3,8 +3,8 @@
     "status": "SUCCESS",
     "itineraryEntryList": [
       {
-        "bookingId": "1387355867",
-        "itineraryId": "1387355867",
+        "bookingId": "REDACTED_VEHICLE_BOOKING_ID",
+        "itineraryId": "REDACTED_VEHICLE_BOOKING_ID",
         "itineraryType": "VEHICLE_RENTAL",
         "itineraryTags": [
           {
