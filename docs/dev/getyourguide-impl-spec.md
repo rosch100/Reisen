@@ -15,24 +15,25 @@ HAR-Inventar inkl. Auth/GraphQL/QR: Research A.1. Primärpfad:
 
 | Schritt | URL | Parse |
 |---------|-----|-------|
-| Login-Start / Catalog | `https://www.getyourguide.com/de-de/customer-bookings/` | `window.__INITIAL_STATE__.myBookings` |
-| Enrich | `https://www.getyourguide.com/de-de/booking/{bookingHash}` | `booking.bookingSummary` |
+| Login-Start | `https://www.getyourguide.com/login?next=/de-de/customer-bookings/` | passwordless E-Mail-OTP in der WebView |
+| Catalog | `https://www.getyourguide.com/en-us/customer-bookings/` | `window.__INITIAL_STATE__.myBookings` |
+| Enrich | `https://www.getyourguide.com/en-us/booking/{bookingHash}` | `booking.bookingSummary` |
 
 ## Target / Package
 
 1. SPM-Target `ReisenGetYourGuide` (Dependencies: Domain, Providers)
 2. `ProviderID.getYourGuide` + Logo/Registry/iOS-Sync-Liste
-3. Login-URL = Catalog-URL; Keychain-Host `getyourguide.com`
+3. Login-URL = `/login?next=/de-de/customer-bookings/` (passwordless OTP); Sync-Catalog EN; Keychain-Host `getyourguide.com`
 
 ## Catalog-Mapping (`myBookings`)
 
-Listen: `upcomingBookings` (Primärfilter, analog „ab heute“), optional `pastBookings` später.
+Listen: `upcomingBookings` **und** `pastBookings` (gleiche Mapper, Dedup per `bookingHash`). GYG schiebt beendete Termine nach `past` (auch Status `active`). `done` skip; ohne `bookingHash` oder `bookingFinishDate` skip. Keine Pagination-Felder (HAR 2026-08-28).
 
 | GYG | Reisen |
 |-----|--------|
 | Activity-Buchung | `BookingType.activity` ([Basis-Spec](booking-type-activity-impl-spec.md)) |
 | `bookingReference` oder `bookingHash` | `confirmationCode` |
-| `/de-de/booking/{bookingHash}` | `externalUrl` |
+| `/en-us/booking/{bookingHash}` | `externalUrl` |
 | `bookedOption.activityTitle` | `title` |
 | `startingTime.startTime` | `startAt` |
 | `bookingFinishDate` | `endAt` |
@@ -56,20 +57,23 @@ Parser: robuster Extract von `__INITIAL_STATE__` (Brace-Scan, kein naives Regex 
 
 ## Auth-Hinweise
 
-- Social/OIDC (`POST /auth/social/exchange` → Bearer) — **nicht** persistieren/loggen.
-- Primärpfad: Cookie-Session der WebView für die beiden HTML-GETs (`fetchAuthenticatedText` / Cookie-`URLSession` wie Airbnb/Booking).
-- Login-Start-URL = Catalog-URL (erzwingt Auth-Redirect).
+- E-Mail-Login ist **passwordless OTP** in der WebView (`POST /auth/passwordless/otp/send` → Nutzer-Code → `POST /auth/passwordless/otp/exchange`). `signupMethod`: `pre_payment_otp`; Claim `gyg/auth_provider`: `email`. Kein natives OTP-API.
+- Social/OIDC (`POST /auth/social/exchange` → Bearer) bleibt optional — in der E-Mail-HAR nicht gefeuert.
+- Access-Token, OTP, E-Mail und Claims **nicht** persistieren/loggen. Session über Cookies `tfe_access_token` / `tfe_authenticated_session` (HttpOnly).
+- Primärpfad: Cookie-Session der WebView für die beiden HTML-GETs (`fetchAuthenticatedHTML` / Cookie-`URLSession` wie Check24/Opodo). Login-HTML (Redirect auf `/login`, passwordless-Marker, oder `__INITIAL_STATE__` ohne Keys `myBookings`/`bookingSummary`) → `sessionNotEstablished`. Asset-Substrings zählen nicht; Session-Keys nur im JSON-Objekt. Leeres `myBookings`-Objekt zählt als Session (leerer Katalog), nicht als Login. HTTP 401/403 oder 200 mit Cloudflare-Challenge-Body (auch unter `/login`) → `cloudflareChallenge` (nicht „bitte anmelden“).
+- Login-Start-URL = `/login?next=/de-de/customer-bookings/` (OTP-Autofill + E-Mail-Fill ab erster Navigation; nach Login `next=` → Kundenbuchungen).
 - API-Header aus HAR (nur falls SSR ohne Cookies scheitert): `Authorization: Bearer …`, `x-gyg-app-type: Web`, `x-gyg-partner-hash`, `apollographql-client-name` — Werte nicht hardcoden aus HAR.
 
 ## Tests
 
 - `gyg_myBookings_redacted.json` → Drafts
+- `gyg_myBookings_ssr_lists_redacted.json` → leeres Upcoming, Past gemappt, keine Pagination-Keys
 - `gyg_bookingSummary_redacted.json` → Enrichment
 - Keine echten Tokens/Hashes in Assertions (Fixtures sind redigiert)
 
 ## Offene Punkte (HAR)
 
-Siehe Research A.1 (Pagination, Login ohne Social, Cloudflare).
+Siehe Research A.1. Login ohne Social, Pagination und Cloudflare sind geschlossen: passwordless OTP in der WebView, ein HTML-GET für den Katalog, Cloudflare nur CDN ohne Challenge.
 
 ## Nicht in Scope
 

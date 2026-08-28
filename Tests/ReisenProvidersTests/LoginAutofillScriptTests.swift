@@ -50,3 +50,12 @@ func loginAutofillScriptFillsAllVisibleDuplicatesInDialog() {
     #expect(script.contains("c24-uli-pw-btn"))
     #expect(script.contains("submitClicked"))
 }
+
+@Test
+func loginAutofillScriptDoesNotClickSocialIdPSubmit() {
+    let script = LoginAutofillScript.build(username: "u", password: "p")
+    #expect(script.contains("isSocialSubmit"))
+    #expect(script.contains("sign.?in.?with.?(apple|google|facebook)"))
+    #expect(script.contains("anmelden.?mit.?(apple|google|facebook)"))
+    #expect(script.contains("if (isSocialSubmit(el)) return false"))
+}

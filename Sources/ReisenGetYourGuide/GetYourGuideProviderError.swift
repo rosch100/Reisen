@@ -1,24 +1,41 @@
 import Foundation
+import ReisenProviders
 
 enum GetYourGuideProviderError: Error, LocalizedError, Equatable {
     case missingWebViewSession
+    case sessionNotEstablished
     case initialStateNotFound
+    case cloudflareChallenge
     case myBookingsNotFound
     case bookingSummaryNotFound
     case invalidBookingURL
 
     var errorDescription: String? {
+        let name = GetYourGuideWebConstants.displayName
         switch self {
         case .missingWebViewSession:
-            return "GetYourGuide benötigt eine WKWebView-basierte Session."
+            return "\(name) benötigt eine WKWebView-basierte Session."
+        case .sessionNotEstablished:
+            return "Es besteht noch keine \(name) Session. Bitte zunächst anmelden."
         case .initialStateNotFound:
-            return "GetYourGuide: window.__INITIAL_STATE__ nicht gefunden."
+            return "\(name): window.\(GetYourGuideInitialState.marker) nicht gefunden."
+        case .cloudflareChallenge:
+            return "\(name): Cloudflare-Challenge statt Buchungsseite."
         case .myBookingsNotFound:
-            return "GetYourGuide: myBookings nicht gefunden."
+            return "\(name): myBookings nicht gefunden."
         case .bookingSummaryNotFound:
-            return "GetYourGuide: bookingSummary nicht gefunden."
+            return "\(name): bookingSummary nicht gefunden."
         case .invalidBookingURL:
-            return "GetYourGuide: Ungültige Buchungs-URL."
+            return "\(name): Ungültige Buchungs-URL."
+        }
+    }
+
+    static func from(_ error: AuthenticatedSessionError) -> GetYourGuideProviderError {
+        switch error {
+        case .challenge:
+            return .cloudflareChallenge
+        case .notEstablished:
+            return .sessionNotEstablished
         }
     }
 }

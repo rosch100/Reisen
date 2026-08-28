@@ -93,3 +93,19 @@ import ReisenProviders
     #expect(AuthPageURLHeuristic.looksLikeAccountPage("https://www.traveloka.com/en-en/user/mybooking"))
     #expect(AuthPageURLHeuristic.looksLikeLoginPage("https://www.traveloka.com/en-en/user/signin"))
 }
+
+@Test func getYourGuideLoginIsOTPAutofillNotAccount() {
+    let login = "https://www.getyourguide.com/login?next=/de-de/customer-bookings/"
+    #expect(AuthPageURLHeuristic.looksLikeLoginPage(login))
+    #expect(AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(login))
+    #expect(!AuthPageURLHeuristic.looksLikeAccountPage(login))
+}
+
+@Test func getYourGuideCustomerBookingsIsAccountNotLogin() {
+    let de = "https://www.getyourguide.com/de-de/customer-bookings/"
+    let en = "https://www.getyourguide.com/en-us/customer-bookings/"
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage(de))
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage(en))
+    #expect(!AuthPageURLHeuristic.looksLikeLoginPage(de))
+    #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(de))
+}

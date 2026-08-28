@@ -45,7 +45,7 @@ extension Check24TravelProvider {
             return try await webView.fetchAuthenticatedHTML(
                 url: Check24TravelProvider.activitiesPageURL,
                 referer: Check24TravelProvider.activitiesPageURL.absoluteString,
-                isLoginHTML: AuthPageHTMLHeuristic.check24HTMLLooksLikeLogin
+                isLoginHTML: { AuthPageHTMLHeuristic.check24LooksLikeLoginHTML($0) }
             )
         } catch AuthenticatedSessionError.notEstablished {
             throw Check24ProviderError.sessionNotEstablished

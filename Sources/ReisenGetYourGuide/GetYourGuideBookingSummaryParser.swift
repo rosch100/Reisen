@@ -30,34 +30,26 @@ public enum GetYourGuideBookingSummaryParser {
 
     private static func map(_ summary: BookingSummaryDTO) -> ProviderBookingEnrichment {
         let meeting = summary.activity?.meetingPoint
-        let locationToAddress = firstNonEmpty(
+        let locationToAddress = GetYourGuideParsing.firstNonEmpty(
             meeting?.location?.address,
             meeting?.description
         )
 
-        let deadlines = mapDeadlines(summary.booking?.bookingCancellationPolicy)
+        let deadlines = GetYourGuideParsing.deadlines(from: summary.booking?.bookingCancellationPolicy)
         let participants = mapPassengers(summary.booking?.activityParticipants ?? [])
-        let passengerCount = participants.count
+        let occupancy = GetYourGuideParsing.occupancy(participants.count)
         let guestHints = mapGuestHints(summary.activity)
-
-        let status: BookingStatus? = {
-            guard let raw = summary.booking?.status?.lowercased() else { return nil }
-            switch raw {
-            case "active": return .confirmed
-            case "cancelled", "canceled": return .cancelled
-            default: return nil
-            }
-        }()
+        let status = GetYourGuideParsing.detailStatus(summary.booking?.status)
 
         let rateDetails: BookingRateDetails? = {
             let price = summary.booking?.price
-            guard price != nil || passengerCount > 0 else { return nil }
+            guard price != nil || occupancy != nil else { return nil }
             return BookingRateDetails(
                 totalPriceAmount: price?.amount,
                 totalPriceCurrency: price?.currencyIsoCode,
                 roomCategory: summary.activity?.activityOptionTitle,
-                guestCount: passengerCount > 0 ? passengerCount : nil,
-                passengerCount: passengerCount > 0 ? passengerCount : nil
+                guestCount: occupancy,
+                passengerCount: occupancy
             )
         }()
 
@@ -77,7 +69,7 @@ public enum GetYourGuideBookingSummaryParser {
         guard let activity else { return [] }
         let itineraryLines: [String] = (activity.itinerary?.items ?? []).compactMap { item in
             guard item.isImportant == true || item.type == "meeting_point" else { return nil }
-            return firstNonEmpty(item.activityLabel, item.title, item.locationName)
+            return GetYourGuideParsing.firstNonEmpty(item.activityLabel, item.title, item.locationName)
         }
         return GetYourGuideGuestHintMapper.hints(
             from: GetYourGuideGuestHintActivity(
@@ -91,29 +83,12 @@ public enum GetYourGuideBookingSummaryParser {
         )
     }
 
-    private static func mapDeadlines(_ policy: GYGCancellationPolicy?) -> [CancellationDeadline] {
-        guard let policy else { return [] }
-        guard let deadlineAt = policy.expirationDate ?? policy.policyExpirationDate else { return [] }
-        let typeHaystack = [policy.type, policy.policyType]
-            .compactMap { $0?.lowercased() }
-            .joined(separator: " ")
-        let isFree = typeHaystack.contains("freecancellation")
-            || (policy.feeValue.map { $0 == 0 } ?? false)
-        return [
-            CancellationDeadline(
-                deadlineAt: deadlineAt,
-                policyText: policy.message,
-                isFreeCancellation: isFree
-            ),
-        ]
-    }
-
     /// Teilnehmer ohne PII (keine Namen aus `traveler`).
     private static func mapPassengers(_ participants: [GYGParticipant]) -> [BookingPassenger] {
         var result: [BookingPassenger] = []
         var number = 1
         for participant in participants {
-            let count = max(0, participant.count ?? 0)
+            let count = GetYourGuideParsing.participantCount(participant)
             let type = travellerType(from: participant.priceCategoryLabel)
             for _ in 0..<count {
                 result.append(
@@ -136,16 +111,6 @@ public enum GetYourGuideBookingSummaryParser {
         case "infant", "baby": return .infant
         default: return .unknown
         }
-    }
-
-    private static func firstNonEmpty(_ values: String?...) -> String? {
-        for value in values {
-            guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
-                continue
-            }
-            return trimmed
-        }
-        return nil
     }
 }
 
@@ -191,23 +156,14 @@ private struct MeetingLocationDTO: Decodable {
 }
 
 private struct ActivityLocationsDTO: Decodable {
-    let city: GYGNamedCity?
-}
-
-private struct GYGNamedCity: Decodable {
-    let name: String?
+    let city: GYGNamedPlace?
 }
 
 private struct SummaryBookingDTO: Decodable {
     let status: String?
-    let price: GYGMoneyDTO?
+    let price: GYGMoney?
     let bookingCancellationPolicy: GYGCancellationPolicy?
     let activityParticipants: [GYGParticipant]?
-}
-
-private struct GYGMoneyDTO: Decodable {
-    let amount: Double?
-    let currencyIsoCode: String?
 }
 
 private struct GYGItinerary: Decodable {

@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import ReisenDomain
+import ReisenProviders
 @testable import ReisenGetYourGuide
 
 @Test("GetYourGuideMyBookingsParser mappt upcomingBookings zu .activity Drafts")
@@ -8,7 +9,7 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     let json = try GetYourGuideResearchFixture.json(named: "gyg_myBookings_redacted.json")
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
 
-    #expect(catalog.bookings.count == 1)
+    #expect(catalog.bookings.count == 3)
     let draft = try #require(catalog.bookings.first)
 
     #expect(draft.provider == .getYourGuide)
@@ -16,7 +17,8 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     #expect(draft.status == .confirmed)
     #expect(draft.title == "Yogyakarta: Ramayana Ballett Prambanan")
     #expect(draft.confirmationCode == "<REDACTED>")
-    #expect(draft.externalUrl == "https://www.getyourguide.com/en-us/booking/<REDACTED>")
+    #expect(draft.externalUrl == "https://www.getyourguide.com/en-us/booking/<REDACTED-1>")
+    #expect(catalog.bookings.map(\.status) == [.confirmed, .cancelled, .confirmed])
     #expect(draft.startAt == iso8601("2026-08-08T19:00:00+07:00"))
     #expect(draft.endAt == iso8601("2026-08-08T21:00:00+07:00"))
     #expect(draft.locationTo == "<REDACTED>")
@@ -29,6 +31,92 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     #expect(deadline.deadlineAt == iso8601("2026-08-07T19:00:00+07:00"))
     #expect(deadline.isFreeCancellation == true)
     #expect(deadline.policyText?.contains("vollständige Rückerstattung") == true)
+}
+
+@Test("GetYourGuideMyBookingsParser mappt pastBookings ohne Pagination-Keys")
+func gygMyBookingsParsesPastWhenUpcomingEmpty() throws {
+    let json = try GetYourGuideResearchFixture.json(named: "gyg_myBookings_ssr_lists_redacted.json")
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.count == 1)
+    let draft = try #require(catalog.bookings.first)
+    #expect(draft.status == .confirmed)
+    #expect(draft.externalUrl == "https://www.getyourguide.com/en-us/booking/<REDACTED>")
+    #expect(draft.startAt == iso8601("2026-08-08T19:00:00+07:00"))
+    #expect(draft.endAt == iso8601("2026-08-08T21:00:00+07:00"))
+}
+
+@Test("Live myBookings-Shape hat keine Pagination-Keys")
+func gygLiveMyBookingsShapeHasNoPaginationKeys() throws {
+    let json = try GetYourGuideResearchFixture.json(named: "gyg_myBookings_ssr_lists_redacted.json")
+    let root = try #require(try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+    let myBookings = try #require(root["myBookings"] as? [String: Any])
+    for key in ["page", "offset", "cursor", "hasMore", "pageSize", "loadMore"] {
+        #expect(myBookings[key] == nil, "unerwarteter Pagination-Key \(key)")
+    }
+    #expect(myBookings["upcomingBookings"] != nil)
+    #expect(myBookings["pastBookings"] != nil)
+}
+
+@Test("GetYourGuideMyBookingsParser dedupliziert dieselbe Buchung in upcoming und past")
+func gygMyBookingsDedupesUpcomingAndPastByHash() throws {
+    let json = """
+    {"myBookings":{"upcomingBookings":[\(gygListBookingJSON(hash: "abc", status: "active"))],\
+    "pastBookings":[\(gygListBookingJSON(hash: "abc", status: "active"))]}}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.count == 1)
+}
+
+@Test("GetYourGuideMyBookingsParser mappt cancelled in pastBookings")
+func gygMyBookingsMapsCancelledPast() throws {
+    let json = """
+    {"myBookings":{"upcomingBookings":[],"pastBookings":[\(gygListBookingJSON(hash: "cx", status: "cancelled"))]}}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.count == 1)
+    #expect(catalog.bookings.first?.status == .cancelled)
+}
+
+@Test("GetYourGuideMyBookingsParser überspringt done-Status")
+func gygMyBookingsSkipsDoneStatus() throws {
+    let json = """
+    {"myBookings":{"upcomingBookings":[],"pastBookings":[\(gygListBookingJSON(hash: "done1", status: "done"))]}}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.isEmpty)
+}
+
+@Test("GetYourGuideMyBookingsParser überspringt Einträge ohne bookingFinishDate")
+func gygMyBookingsSkipsMissingFinishDate() throws {
+    let json = """
+    {"myBookings":{"upcomingBookings":[\(gygListBookingJSON(hash: "nofin", status: "active", finish: nil))]}}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.isEmpty)
+}
+
+@Test("GetYourGuideMyBookingsParser überspringt Einträge ohne bookingHash")
+func gygMyBookingsSkipsMissingHash() throws {
+    let json = """
+    {"myBookings":{"upcomingBookings":[\(gygListBookingJSON(hash: nil, status: "active"))]}}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.isEmpty)
+}
+
+@Test("GetYourGuideInitialState erkennt Cloudflare-Challenge-HTML")
+func gygInitialStateDetectsCloudflareChallenge() {
+    let challenge = GetYourGuideResearchFixture.cloudflareChallengeHTML
+    #expect(GetYourGuideInitialState.looksLikeCloudflareChallenge(challenge))
+    #expect(!GetYourGuideInitialState.looksLikeCloudflareChallenge(GetYourGuideResearchFixture.initialStateHTML("{}")))
+}
+
+@Test("GetYourGuideProviderError: fehlende Session nach Login-HTML")
+func gygProviderErrorSessionNotEstablished() {
+    let error = GetYourGuideProviderError.sessionNotEstablished
+    #expect(error.errorDescription?.contains("Session") == true)
+    #expect(GetYourGuideProviderError.from(.notEstablished) == .sessionNotEstablished)
+    #expect(GetYourGuideProviderError.from(.challenge) == .cloudflareChallenge)
 }
 
 @Test("GetYourGuideBookingSummaryParser mappt Treffpunkt, Fristen und Teilnehmer ohne PII-Namen")
@@ -68,14 +156,12 @@ func gygBookingSummaryParsesEnrichment() throws {
 @Test("GetYourGuideInitialState extrahiert JSON-Objekt per Brace-Scan")
 func gygInitialStateExtractsBalancedJSON() throws {
     let payload = #"{"myBookings":{"upcomingBookings":[]}}"#
-    let html = """
-    <html><script>window.__INITIAL_STATE__ = \(payload);</script></html>
-    """
+    let html = GetYourGuideResearchFixture.initialStateHTML(payload)
     let extracted = try #require(GetYourGuideInitialState.extractJSONObject(fromHTML: html))
     #expect(extracted == payload)
 
     let nested = #"{"a":{"b":"}"},"c":1}"#
-    let nestedHTML = "prefix __INITIAL_STATE__ = \(nested) // trailing"
+    let nestedHTML = "prefix \(GetYourGuideInitialState.marker) = \(nested) // trailing"
     #expect(GetYourGuideInitialState.extractJSONObject(fromHTML: nestedHTML) == nested)
 }
 
@@ -83,4 +169,15 @@ private func iso8601(_ value: String) -> Date {
     let fmt = ISO8601DateFormatter()
     fmt.formatOptions = [.withInternetDateTime]
     return fmt.date(from: value)!
+}
+
+private func gygListBookingJSON(hash: String?, status: String, finish: String? = "2026-08-08T21:00:00+07:00") -> String {
+    let hashJSON = hash.map { "\"\($0)\"" } ?? "null"
+    let finishJSON = finish.map { "\"\($0)\"" } ?? "null"
+    return """
+    {"bookingHash":\(hashJSON),"bookingReference":"REF1","status":"\(status)",\
+    "startingTime":{"startTime":"2026-08-08T19:00:00+07:00","startTimeType":"datetime"},\
+    "bookingFinishDate":\(finishJSON),\
+    "bookedOption":{"activityTitle":"T","activityLocation":{"city":{"name":"C"}}}}
+    """
 }

@@ -5,83 +5,57 @@ import ReisenDomain
 public enum GetYourGuideGuestHintMapper {
     public static func hints(from activity: GetYourGuideGuestHintActivity) -> [BookingGuestHint] {
         var hints: [BookingGuestHint] = []
-        let provider = ProviderID.getYourGuide.rawValue
 
-        if let description = nonEmpty(activity.meetingPointDescription) {
+        if let description = GetYourGuideParsing.trimmedNonEmpty(activity.meetingPointDescription) {
             var detail = description
             if let minutes = activity.meetingPointMinutesBefore, minutes > 0 {
                 detail += " (bitte \(minutes) Min. früher da sein)"
             }
-            hints.append(
-                BookingGuestHint(
-                    category: .preTravelImportant,
-                    title: "Treffpunkt",
-                    detail: detail,
-                    sourceKey: "gyg:meetingPoint",
-                    providerRaw: provider
-                )
-            )
+            hints.append(hint(title: "Treffpunkt", detail: detail, sourceKey: "gyg:meetingPoint"))
         }
 
         for restriction in activity.restrictions {
-            guard let text = nonEmpty(restriction) else { continue }
-            hints.append(
-                BookingGuestHint(
-                    category: .preTravelImportant,
-                    title: "Einschränkungen",
-                    detail: text,
-                    sourceKey: "gyg:restriction:\(text)",
-                    providerRaw: provider
-                )
-            )
+            guard let text = GetYourGuideParsing.trimmedNonEmpty(restriction) else { continue }
+            hints.append(hint(title: "Einschränkungen", detail: text, sourceKey: "gyg:restriction:\(text)"))
         }
 
-        let inclusions = activity.inclusions.compactMap(nonEmpty)
+        let inclusions = activity.inclusions.compactMap(GetYourGuideParsing.trimmedNonEmpty)
         if !inclusions.isEmpty {
             hints.append(
-                BookingGuestHint(
-                    category: .preTravelImportant,
+                hint(
                     title: "Inklusivleistungen",
                     detail: inclusions.joined(separator: ", "),
-                    sourceKey: "gyg:inclusions",
-                    providerRaw: provider
+                    sourceKey: "gyg:inclusions"
                 )
             )
         }
 
         if activity.isMobileVoucherAccepted == true {
             hints.append(
-                BookingGuestHint(
-                    category: .preTravelImportant,
+                hint(
                     title: "Mobiler Voucher",
                     detail: "Mobiler Voucher wird akzeptiert — Ticket in der App bereithalten.",
-                    sourceKey: "gyg:mobileVoucher",
-                    providerRaw: provider
+                    sourceKey: "gyg:mobileVoucher"
                 )
             )
         }
 
         for item in activity.importantItineraryLines {
-            guard let text = nonEmpty(item) else { continue }
-            hints.append(
-                BookingGuestHint(
-                    category: .preTravelImportant,
-                    title: "Ablauf",
-                    detail: text,
-                    sourceKey: "gyg:itinerary:\(text)",
-                    providerRaw: provider
-                )
-            )
+            guard let text = GetYourGuideParsing.trimmedNonEmpty(item) else { continue }
+            hints.append(hint(title: "Ablauf", detail: text, sourceKey: "gyg:itinerary:\(text)"))
         }
 
         return hints
     }
 
-    private static func nonEmpty(_ value: String?) -> String? {
-        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
-            return nil
-        }
-        return trimmed
+    private static func hint(title: String, detail: String, sourceKey: String) -> BookingGuestHint {
+        BookingGuestHint(
+            category: .preTravelImportant,
+            title: title,
+            detail: detail,
+            sourceKey: sourceKey,
+            providerRaw: ProviderID.getYourGuide.rawValue
+        )
     }
 }
 

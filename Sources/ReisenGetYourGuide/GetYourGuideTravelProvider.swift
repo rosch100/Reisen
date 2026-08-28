@@ -8,62 +8,74 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
     public init() {}
 
     public var id: ProviderID { .getYourGuide }
-    public var displayName: String { "GetYourGuide" }
+    public var displayName: String { GetYourGuideWebConstants.displayName }
 
     public var loginURL: URL {
         GetYourGuideWebConstants.loginURL
     }
 
-    public var keychainServerHost: String { "getyourguide.com" }
+    public var keychainServerHost: String { GetYourGuideWebConstants.cookieHost }
 
     public var onProgress: (@MainActor (String) -> Void)?
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
-        let webView = try extractWebView(from: session)
-
-        onProgress?("Lade Buchungen (GetYourGuide)…")
-        let html = try await webView.fetchAuthenticatedText(
+        // Ein HTML-GET: HAR 2026-08-28 ohne Listen-Pagination; Cloudflare-Challenge wirft statt leerem Parse.
+        return try await fetchParsed(
+            from: session,
             url: GetYourGuideWebConstants.catalogSyncURL,
-            accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            referer: GetYourGuideWebConstants.catalogSyncURL.absoluteString
+            subject: "Buchungen",
+            parse: GetYourGuideMyBookingsParser.parse
         )
-
-        guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {
-            throw GetYourGuideProviderError.initialStateNotFound
-        }
-
-        onProgress?("Parser Buchungen (GetYourGuide)…")
-        return try GetYourGuideMyBookingsParser.parse(from: stateJSON)
     }
 
     public func enrichBooking(
         session: any ProviderSession,
         ref: ProviderBookingRef
     ) async throws -> ProviderBookingEnrichment {
-        let webView = try extractWebView(from: session)
         guard !ref.externalUrl.isEmpty,
               let url = GetYourGuideWebConstants.syncBookingURL(from: ref.externalUrl)
         else {
             throw GetYourGuideProviderError.invalidBookingURL
         }
-
-        onProgress?("Lade Buchungsdetails (GetYourGuide)…")
-        let html = try await webView.fetchAuthenticatedText(
+        return try await fetchParsed(
+            from: session,
             url: url,
-            accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            referer: url.absoluteString
+            subject: "Buchungsdetails",
+            parse: GetYourGuideBookingSummaryParser.parse
         )
-
-        guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {
-            throw GetYourGuideProviderError.initialStateNotFound
-        }
-
-        onProgress?("Parser Buchungsdetails (GetYourGuide)…")
-        return try GetYourGuideBookingSummaryParser.parse(from: stateJSON)
     }
 }
 
 private extension GetYourGuideTravelProvider {
+    func fetchParsed<T>(
+        from session: any ProviderSession,
+        url: URL,
+        subject: String,
+        parse: (String) throws -> T
+    ) async throws -> T {
+        let webView = try extractWebView(from: session)
+        onProgress?("Lade \(subject) (\(displayName))…")
+        let html = try await fetchBookingHTML(using: webView, url: url)
+        guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {
+            throw GetYourGuideProviderError.initialStateNotFound
+        }
+        onProgress?("Parser \(subject) (\(displayName))…")
+        return try parse(stateJSON)
+    }
+
+    func fetchBookingHTML(using webView: WKWebView, url: URL) async throws -> String {
+        do {
+            return try await webView.fetchAuthenticatedHTML(
+                url: url,
+                referer: url.absoluteString,
+                isLoginHTML: GetYourGuideInitialState.looksLikeLoginHTML,
+                isChallengeHTML: GetYourGuideInitialState.looksLikeCloudflareChallenge
+            )
+        } catch let error as AuthenticatedSessionError {
+            throw GetYourGuideProviderError.from(error)
+        }
+    }
+
     func extractWebView(from session: any ProviderSession) throws -> WKWebView {
         if let web = (session as? WebViewProviderSession)?.webView {
             return web
