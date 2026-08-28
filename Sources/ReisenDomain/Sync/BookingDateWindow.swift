@@ -21,7 +21,7 @@ public enum TemporalFact: Equatable, Sendable {
                 .hotelDay(start, offsetSeconds: hotelOffsetSeconds),
                 .hotelDay(end, offsetSeconds: hotelOffsetSeconds)
             )
-        case .flight, .ferry, .activity, .carRental, .other:
+        case .flight, .ferry, .train, .activity, .carRental, .other:
             return (.instant(start), .instant(end))
         }
     }
@@ -113,7 +113,7 @@ public struct BookingDateWindow: Equatable, Sendable {
                 startOffset: startOffset,
                 endOffset: endOffset
             )
-        case .activity, .carRental, .other:
+        case .train, .activity, .carRental, .other:
             return BookingDateWindow(startAt: startAt, endAt: endAt)
         }
     }
@@ -146,7 +146,7 @@ public struct BookingDateWindow: Equatable, Sendable {
                 endOffset: clocks.end.offsetSeconds
             )
 
-        case .activity, .carRental, .other:
+        case .train, .activity, .carRental, .other:
             guard let clocks = wallClocks(startISO: startISO, endISO: endISO) else {
                 return nil
             }

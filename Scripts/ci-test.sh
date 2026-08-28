@@ -83,6 +83,51 @@ if ! grep -q -- '--mode store --ipa' "$ROOT/Scripts/ios-archive-appstore.sh"; th
   exit 1
 fi
 python3 "$ROOT/Scripts/tests/check-app-store-check-workflow.py" "$ROOT/.github/workflows/app-store-check.yml"
+if ! grep -q 'altool --validate-app' "$ROOT/Scripts/ios-validate-appstore.sh"; then
+  echo "Fehler: ios-validate-appstore.sh muss xcrun altool --validate-app aufrufen." >&2
+  exit 1
+fi
+if ! grep -q 'API_PRIVATE_KEYS_DIR' "$ROOT/Scripts/ios-validate-appstore.sh"; then
+  echo "Fehler: ios-validate-appstore.sh muss API_PRIVATE_KEYS_DIR für altool setzen." >&2
+  exit 1
+fi
+if ! grep -q 'APP_STORE_CONNECT_APPLE_ID' "$ROOT/Scripts/ios-validate-appstore.sh"; then
+  echo "Fehler: ios-validate-appstore.sh muss optionales --apple-id über APP_STORE_CONNECT_APPLE_ID unterstützen." >&2
+  exit 1
+fi
+if ! grep -q 'Unable to find Apple ID for Bundle ID' "$ROOT/Scripts/ios-validate-appstore.sh"; then
+  echo "Fehler: ios-validate-appstore.sh muss fehlenden ASC-App-Eintrag erklären." >&2
+  exit 1
+fi
+if ! grep -q '90534' "$ROOT/Scripts/ios-validate-appstore.sh"; then
+  echo "Fehler: ios-validate-appstore.sh muss ITMS 90534 (Beta-Xcode) erklären." >&2
+  exit 1
+fi
+if grep -q 'AUTH_OUT="$(reisen_xcodebuild_asc_auth_args)"' "$ROOT/Scripts/ios-validate-appstore.sh"; then
+  echo "Fehler: reisen_xcodebuild_asc_auth_args darf nicht in Command-Substitution laufen (Subshell löscht den Temp-Key)." >&2
+  exit 1
+fi
+if bash "$ROOT/Scripts/ios-validate-appstore.sh" >/dev/null 2>&1; then
+  echo "Fehler: ios-validate-appstore.sh muss ohne IPA-Pfad abbrechen." >&2
+  exit 1
+fi
+_reisen_missing_ipa="$(mktemp "${TMPDIR:-/tmp}/ReiseniOSMissing.XXXXXX.ipa")"
+rm -f "$_reisen_missing_ipa"
+_reisen_missing_ipa_err="$(
+  bash "$ROOT/Scripts/ios-validate-appstore.sh" "$_reisen_missing_ipa" 2>&1 || true
+)"
+if [[ "$_reisen_missing_ipa_err" != *"ios-archive-appstore.sh"* ]]; then
+  echo "Fehler: fehlendes Store-IPA muss auf ios-archive-appstore.sh hinweisen." >&2
+  exit 1
+fi
+_reisen_private_ipa="$(mktemp "${TMPDIR:-/tmp}/ReiseniOSPrivate.XXXXXX.ipa")"
+if bash "$ROOT/Scripts/ios-validate-appstore.sh" "$_reisen_private_ipa" >/dev/null 2>&1; then
+  rm -f "$_reisen_private_ipa"
+  echo "Fehler: ios-validate-appstore.sh darf kein Private-IPA validieren." >&2
+  exit 1
+fi
+rm -f "$_reisen_private_ipa"
+python3 -m unittest "$ROOT/Scripts/tests/test_ios_validate_appstore_report.py" -v
 if ! grep -q 'reisen_xcodebuild_asc_auth_args' "$ROOT/Scripts/ios-archive-appstore.sh"; then
   echo "Fehler: App-Store-Archive muss xcodebuild mit App-Store-Connect-API-Key authentifizieren." >&2
   exit 1

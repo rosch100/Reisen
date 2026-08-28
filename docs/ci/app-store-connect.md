@@ -8,7 +8,7 @@ Vollständiger Provider-Sync: separate Private-iOS-App, siehe [ios-private-distr
 
 | Feld | Wert / Hinweis |
 |------|----------------|
-| Name | Reisen |
+| Name (App Store Connect) | **Reisen Buchungen** (Listung, max. 30 Zeichen). Home-Screen bleibt `CFBundleDisplayName` = `Reisen` (`Apps/ReiseniOS/Info.plist`). Bundle-ID unverändert. |
 | Bundle-ID | `de.reisen.Reisen.ios` (siehe `project.yml` → `ReiseniOS`) |
 | Kategorie | Reisen |
 | Privacy Policy URL (DE) | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicyGerman`) |
@@ -94,6 +94,16 @@ No in-app purchases. No Reisen user account. CloudKit uses the reviewer's iCloud
 - Container `iCloud.de.reisen.Reisen` an **drei** App-IDs binden: macOS, Store-iOS (`de.reisen.Reisen.ios`), Private-iOS (`de.reisen.Reisen.ios.private`).
 - Distribution-Builds: **Production**-Umgebung (Release-Entitlements `aps-environment` = `production`).
 
+## App-Eintrag in App Store Connect
+
+Signing und IPA brauchen nur die **App-ID** im Developer Portal. `altool --validate-app` und der Upload brauchen zusätzlich den **App-Eintrag** unter [My Apps](https://appstoreconnect.apple.com/apps):
+
+1. Zuerst unter [My Apps](https://appstoreconnect.apple.com/apps) prüfen, ob **dieses** Team schon einen iOS-Eintrag für `de.reisen.Reisen.ios` hat — dann diesen nutzen, keine zweite App anlegen.
+2. Sonst **+** → New App → Plattform **iOS**, Name **Reisen Buchungen**, Bundle-ID **`de.reisen.Reisen.ios`**, SKU z. B. `reisen-ios`, Sprache Deutsch.
+3. Icon-Name auf dem Gerät bleibt `Reisen` (`CFBundleDisplayName`). Der App-Store-Name „Reisen“ ist vergeben; Trademark-Claim nur mit eingetragener Marke.
+
+Ohne diesen Eintrag: `Unable to find Apple ID for Bundle ID 'de.reisen.Reisen.ios'`. Die numerische Apple-ID steht danach unter App Information; lokal optional `APP_STORE_CONNECT_APPLE_ID`, falls der API-Key die App nicht per Bundle-ID sieht.
+
 ## Build hochladen
 
 ```bash
@@ -102,7 +112,7 @@ bash ./Scripts/ios-archive-appstore.sh
 
 Erzeugt Archive + exportiertes IPA unter `.build/ReiseniOS-ipa/`. Das Script prüft via `Scripts/ios-verify-binary-isolation.sh`, dass das Store-Binary **weder** Provider-Adapter **noch** Session-Probe-Infrastruktur (`ReisenProviders`) enthält. Upload via Transporter oder App Store Connect.
 
-Vor dem Upload: manueller Workflow **App Store Check** (Store-IPA + AppCompliance, [`appcompliance.md`](appcompliance.md)).
+Vor dem Upload: manueller Workflow **App Store Check** (Store-IPA-Archive, Isolation, Apple ITMS-Validierung, [`app-store-check.md`](app-store-check.md)). Der Workflow prüft nicht die App-Store-Review-Guidelines.
 
 ## Architektur (Zwei-App-Strategie)
 

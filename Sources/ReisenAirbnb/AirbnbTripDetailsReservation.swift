@@ -33,7 +33,7 @@ struct AirbnbTripDetailsReservation {
                 roomCount: nil,
                 status: activity.status
             )
-        case .flight, .ferry, .carRental, .other:
+        case .flight, .ferry, .carRental, .train, .other:
             guard let activity = details.activityReservation else {
                 throw AirbnbParsingError.confirmationCodeNotFound
             }

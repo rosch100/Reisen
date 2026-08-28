@@ -77,6 +77,14 @@ enum TravelokaJSON {
         return nil
     }
 
+    static func firstDictionary(_ values: [Any?]) -> [String: Any] {
+        for value in values {
+            let dict = dictionary(value)
+            if !dict.isEmpty { return dict }
+        }
+        return [:]
+    }
+
     static func strings(_ value: Any?) -> [String] {
         value as? [String] ?? []
     }

@@ -3,7 +3,11 @@ import ReisenDomain
 
 extension OpodoFlightPassengersGraphQL {
     static func joinBaggage(from passengers: [BookingPassenger], baggageJSON: String) throws -> [BookingPassenger] {
-        let envelope = try decodeBaggageEnvelope(json: baggageJSON)
+        let envelope = try OpodoGraphQLRequest.decode(
+            OpodoFlightBaggageEnvelope.self,
+            from: baggageJSON,
+            invalid: OpodoFlightPassengersError.invalidJSON
+        )
         var mutable = passengers
 
         for t in envelope.data.baggageInfo.travellers ?? [] {

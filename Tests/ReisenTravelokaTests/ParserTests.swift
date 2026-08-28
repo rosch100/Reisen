@@ -50,6 +50,11 @@ private enum TravelokaFixtureLoader {
     #expect(hotel.hotelCheckInMinutes == 14 * 60)
     #expect(hotel.deadlines.contains { $0.isFreeCancellation } == true)
     #expect(hotel.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 } == true)
+    // Catalog card often omits stay policies; Traveloka still enriches hotels with empty hints.
+    #expect(hotel.guestHints.isEmpty)
+    #expect(
+        TravelokaDraftEnrichmentNeeds.shouldEnrich(hotel, requiresDeadlines: false) == true
+    )
 
     let vehicle = try #require(byType[.carRental])
     #expect(vehicle.confirmationCode == "1387355867")
@@ -385,6 +390,21 @@ private func travelokaCatalogHotelEntry(
     let expected = try #require(TravelokaJSON.localDateTime("2026-09-01T12:59:00", timeZone: tz))
     #expect(abs((enrichment.deadlines.first { $0.isFreeCancellation }?.deadlineAt.timeIntervalSince(expected) ?? 99)) < 0.01)
     #expect(abs(fee.deadlineAt.timeIntervalSince(expected)) < 0.01)
+    let hints = try #require(enrichment.guestHints)
+    // Notices + propertyPolicy share near-identical copy; detail-dedup keeps distinct texts only.
+    #expect(hints.count == 2)
+    #expect(hints.contains { $0.sourceKey.contains("IMPORTANT_NOTICE") } == true)
+    #expect(hints.contains { $0.detail.localizedCaseInsensitiveContains("marriage certificate") } == true)
+    #expect(hints.contains { $0.detail.localizedCaseInsensitiveContains("unmarried couples") } == true)
+    #expect(hints.contains { $0.sourceKey == "traveloka:property_policy" } == false)
+    #expect(hints.contains { $0.sourceKey.contains("specialRequest") } == false)
+}
+
+@Test func travelokaProductType_heuristics_villaApartmentCar() {
+    #expect(TravelokaProductType(raw: "VILLA").bookingType == .hotel)
+    #expect(TravelokaProductType(raw: "APARTMENT").bookingType == .hotel)
+    #expect(TravelokaProductType(raw: "CAR_RENTAL").bookingType == .carRental)
+    #expect(TravelokaProductType(raw: "TRAINING").bookingType == .other)
 }
 
 @Test func travelokaEnrichmentVehicle() throws {
@@ -657,9 +677,23 @@ private func travelokaCatalogHotelEntry(
         ],
         rateDetails: BookingRateDetails(roomCategory: "Standard Double"),
         hotelCheckInMinutes: 14 * 60,
-        hotelCheckOutMinutes: 12 * 60
+        hotelCheckOutMinutes: 12 * 60,
+        guestHints: [
+            BookingGuestHint(
+                title: "Hausregeln",
+                detail: "Unmarried couples are not allowed.",
+                sourceKey: "traveloka:property_policy",
+                providerRaw: ProviderID.traveloka.rawValue
+            ),
+        ]
     )
     #expect(DraftEnrichmentNeeds.shouldEnrich(complete, requiresDeadlines: true) == false)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(complete, requiresDeadlines: true) == false)
+
+    var completeWithoutHints = complete
+    completeWithoutHints.guestHints = []
+    #expect(DraftEnrichmentNeeds.shouldEnrich(completeWithoutHints, requiresDeadlines: true) == false)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(completeWithoutHints, requiresDeadlines: true) == true)
 
     let missingCheckIn = ProviderBookingDraft(
         provider: .traveloka,
@@ -671,6 +705,7 @@ private func travelokaCatalogHotelEntry(
         hotelCheckOutMinutes: 12 * 60
     )
     #expect(DraftEnrichmentNeeds.shouldEnrich(missingCheckIn, requiresDeadlines: true) == true)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(missingCheckIn, requiresDeadlines: true) == true)
 
     let missingAddress = ProviderBookingDraft(
         provider: .traveloka,
@@ -700,6 +735,7 @@ private func travelokaCatalogHotelEntry(
         status: .confirmed
     )
     #expect(DraftEnrichmentNeeds.shouldEnrich(completeCarRental, requiresDeadlines: false) == false)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(completeCarRental, requiresDeadlines: false) == false)
 
     let missingCarPickup = ProviderBookingDraft(
         provider: .traveloka,
@@ -914,6 +950,93 @@ private func travelokaCatalogHotelEntry(
     #expect(draft.rateDetails?.airline == "Scoot")
     #expect(draft.locationFrom?.contains("SIN") == true)
     #expect(draft.locationTo?.contains("BKK") == true)
+}
+
+@Test func travelokaProductType_train_mapsToTrain() {
+    #expect(TravelokaProductType(raw: "TRAIN").bookingType == .train)
+    #expect(TravelokaProductType(raw: "TRAIN_GLOBAL").bookingType == .train)
+    #expect(TravelokaProductType.train.rawValue == "TRAIN")
+    #expect(TravelokaProductType.trainGlobal.rawValue == "TRAIN_GLOBAL")
+    #expect(TravelokaProductType(raw: "TRAINING").bookingType == .other)
+}
+
+@Test func travelokaTrainDraft_mapsBookingTypeAndProductName() throws {
+    let entry: [String: Any] = [
+        "bookingId": "train-1",
+        "itineraryId": "train-2",
+        "itineraryType": "TRAIN",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "productName": "Argo Bromo",
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_014_400_000,
+                "ianaTimezoneBegin": "Asia/Jakarta",
+                "ianaTimezoneEnd": "Asia/Jakarta",
+            ],
+            "trainSummary": nil,
+        ],
+        "cardDetailInfo": [
+            "trainDetail": nil,
+        ],
+    ]
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    #expect(draft.bookingType == .train)
+    #expect(draft.title == "Argo Bromo")
+    #expect(draft.locationFrom == nil)
+    #expect(draft.locationTo == nil)
+    #expect(draft.externalUrl?.contains("type=TRAIN") == true)
+    #expect(draft.hotelOffsetSeconds == nil)
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    let end = Date(timeIntervalSince1970: 1_700_014_400)
+    let jakarta = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    #expect(draft.flightDepartureOffsetSeconds == jakarta.secondsFromGMT(for: start))
+    #expect(draft.flightArrivalOffsetSeconds == jakarta.secondsFromGMT(for: end))
+}
+
+@Test func travelokaTrainDraft_withoutIanaLeavesFlightOffsetsNil() throws {
+    let entry: [String: Any] = [
+        "bookingId": "train-1",
+        "itineraryId": "train-2",
+        "itineraryType": "TRAIN",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "productName": "Argo Bromo",
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_014_400_000,
+            ],
+        ],
+        "cardDetailInfo": [:],
+    ]
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    #expect(draft.bookingType == .train)
+    #expect(draft.flightDepartureOffsetSeconds == nil)
+    #expect(draft.flightArrivalOffsetSeconds == nil)
+}
+
+@Test func travelokaTrainDraft_mapsBeginAndEndTimeZonesSeparately() throws {
+    let entry: [String: Any] = [
+        "bookingId": "train-1",
+        "itineraryId": "train-2",
+        "itineraryType": "TRAIN_GLOBAL",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "productName": "Singapore → Bangkok",
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_014_400_000,
+                "ianaTimezoneBegin": "Asia/Singapore",
+                "ianaTimezoneEnd": "Asia/Bangkok",
+            ],
+        ],
+        "cardDetailInfo": [:],
+    ]
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    let end = Date(timeIntervalSince1970: 1_700_014_400)
+    let singapore = try #require(TimeZone(identifier: "Asia/Singapore"))
+    let bangkok = try #require(TimeZone(identifier: "Asia/Bangkok"))
+    #expect(draft.flightDepartureOffsetSeconds == singapore.secondsFromGMT(for: start))
+    #expect(draft.flightArrivalOffsetSeconds == bangkok.secondsFromGMT(for: end))
+    #expect(draft.flightDepartureOffsetSeconds != draft.flightArrivalOffsetSeconds)
 }
 
 @Test func travelokaVehicleParsesIndonesian24hFreeCancellation() throws {

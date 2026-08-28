@@ -231,11 +231,11 @@ Row-`id`→Feld-Mapping: [Airbnb Impl-Spec § Neuer Parser](dev/airbnb-experienc
 | 1 | Flug | SIN→CGK, `transportTypes: [PLANE]`, Preis |
 | 2–4 | Hotel | Unterkünfte, Board, Check-in/out |
 
-`getTrips(PAST)`: leer. **Keine** gebuchten Mietwagen, Transfers, Bahn, Activities.
+`getTrips(PAST)` (Live 2026-08-28, Konto-Beleg): 5 Rows — 2× `PLANE`, 3× Hotel (davon RETAINED). **Keine** gebuchten Mietwagen, Transfers, Bahn, Activities. `vehicleBooking` ist kein Trip-Feld. `insuranceBookings` hängt als Ancillary am Trip, wird nicht abgefragt.
 
 ### Bereits im Code
 
-Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage — deckt den HAR-Inhalt ab.
+Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage. HTML-Fallback nur bei **leerer** GraphQL-Liste (nicht bei GraphQL-Fehler). Upsell-Rows und Nicht-`PLANE`-Itineraries werden verworfen.
 
 ### Nicht syncen
 
@@ -254,12 +254,11 @@ Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage
 
 ### Implement-Verdict
 
-**Kein Muss-Implement aus dieser Opodo-HAR.**
+**Katalog-Vertrag (Live 2026-08-28 + HAR):** nur Flug/Hotel; Upsell ignorieren; HTML nur wenn GraphQL leer.
 
 - Neue Buchungstypen: **nein**
-- Kritische Catalog/Enrichment-Lücken Hotel/Flug: **keine**
+- `getTrips(UPCOMING)` kann leer sein, während PAST Flug/Hotel enthält — Katalog bleibt UPCOMING
 - Optional später (separat spezifizieren): Departure-Offset aus ISO — nur mit Wall-Clock-Tests
-- **Opodo-Produktivcode in diesem Recherche-Schritt nicht anfassen**
 
 ---
 
@@ -300,16 +299,19 @@ flowchart TD
 | Traveloka | Domain |
 |-----------|--------|
 | `FLIGHT` | `.flight` |
-| `HOTEL` (Villa/Apartment analog) | `.hotel` |
+| `HOTEL` (Villa/Apartment-Heuristik) | `.hotel` |
 | `EXPERIENCE` | `.activity` |
-| `VEHICLE_RENTAL`, Airport Transport, Train, Ancillary, Insurance, unbekannt | `.other` |
+| `VEHICLE_RENTAL` | `.carRental` |
+| `TRAIN` / `TRAIN_GLOBAL` | `.train` (Typ-Mapping; **nicht** in Catalog-`itineraryTypes` — Live 2026-08-28 leere Liste) |
+| Airport Transport, Ancillary, Insurance, unbekannt | `.other` |
 
 ### Feldinventar (Kurz)
 
-- **Hotel:** dual Free+Fee-`cancellationPolicies`; Check-in/out Minuten; `hotelOffsetSeconds` aus `ianaTimezoneBegin`
+- **Hotel:** dual Free+Fee-`cancellationPolicies`; Check-in/out Minuten; `hotelOffsetSeconds` aus `ianaTimezoneBegin`; Stay-Hints aus `importantNoticePolicies` / `propertyPolicy` (Live 2026-08-28); keine Pet-/Linen-Felder in diesem Konto
 - **Experience:** `operatorInfo.name` → `operatorName`; All-Day → `isAllDay`; `travelersInfo` / `experiencePaxType` → `travellerType`; Policy-Strings für Free-Deadline
 - **Vehicle:** `providerName` → `operatorName`; Pick-up/Drop-off Adressen; Free-Cancel-Local
 - **Flight:** Live-E-Ticket `flightBookingInfo.bookingDetail` + `flightTicketInfo`; Non-Refundable ohne Deadline; Fee-Refund nur mit `refundFeeAmount` + `refundDeadlineLocal` (keine Free-Deadline erfinden)
+- **Train:** Stub (`productName` + IANA-Offsets); Stations-Keys ohne Live-`single` nicht geraten
 
 ### Login (TV + AP)
 
@@ -317,11 +319,15 @@ flowchart TD
 2. Apple-Button im WKWebView → `appleid.apple.com` → `signinexternalaccount` (`AP`) — **kein** natives `ASAuthorization`
 3. Autofill nur auf `*.traveloka.com`; IdP-Hosts nicht `sessionReady`
 
-### Offene Punkte
+### Offene Punkte / Gap-Status (Stand Live 2026-08-28)
 
-- Live-HAR für Fee-Refund-Flug (Fixture synthetisch, Schema-aligned)
-- `sentinel` / `x-did` / `tv-clientsessionid` aus WebView-Session (`sen_t`, `clientSessionId`, Device-ID Storage) — implementiert in `TravelokaSessionContext`
-- Train Desktop nicht sync-/deep-link-fähig
+| Gap | Status |
+|-----|--------|
+| Fee-Refund-Flug Live-Shape | **Rest** — Konto ohne Fee-Flug; Fixture weiter synthetisch/schema-aligned |
+| TRAIN Catalog+Stations | **Konto hat Vertical nicht** (UPCOMING 200 leer); Catalog-Types unverändert; Stations-Parser Rest |
+| Product-Type-Heuristik Villa/Car | Unverändert; Unit-Tests für `VILLA`/`APARTMENT`/`CAR_RENTAL`; Live-Enums nicht gesehen |
+| Pre-Travel Stay-Hints | **gefüllt** via Mapper + Traveloka-Enrichment bei leeren Hotel-`guestHints` (Catalog oft ohne Policies); Pets/Linen Rest („Petunjuk“ ≠ pet) |
+| `PAST` Catalog-Status | API 400 — Code nutzt nur `UPCOMING` |
 
 ---
 

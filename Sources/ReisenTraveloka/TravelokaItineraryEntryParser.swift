@@ -93,7 +93,8 @@ enum TravelokaItineraryEntryParser {
             flightDepartureOffsetSeconds: fields.flightDepartureOffsetSeconds,
             flightArrivalOffsetSeconds: fields.flightArrivalOffsetSeconds,
             rawPayloadFingerprint: "\(bookingId):\(itineraryId)",
-            passengers: fields.passengers
+            passengers: fields.passengers,
+            guestHints: fields.guestHints
         )
     }
 
@@ -127,6 +128,7 @@ enum TravelokaItineraryEntryParser {
         var flightArrivalOffsetSeconds: Int?
         var passengers: [BookingPassenger] = []
         var deadlines: [CancellationDeadline] = []
+        var guestHints: [BookingGuestHint] = []
     }
 
     private static func productFields(from context: EntryContext) -> ProductFields {
@@ -139,7 +141,9 @@ enum TravelokaItineraryEntryParser {
             return vehicleFields(from: context)
         case .flight:
             return flightFields(from: context)
-        case .airportTransport, .flightAncillary, .insurance, .train, .other:
+        case .train, .trainGlobal:
+            return trainFields(from: context)
+        case .airportTransport, .flightAncillary, .insurance, .other:
             var fields = baseFields(from: context)
             fields.title = TravelokaJSON.string(context.common["productName"]) ?? context.product.rawValue
             return fields
@@ -284,6 +288,11 @@ enum TravelokaItineraryEntryParser {
             contact: context.common["bookingContact"] as? [String: Any],
             fallbackName: TravelokaJSON.string(voucher["guestName"])
         )
+        fields.guestHints = TravelokaGuestHintMapper.hints(
+            localeInfo: localeInfo,
+            bookingHotel: bookingHotel,
+            voucher: voucher
+        )
         return fields
     }
 
@@ -361,6 +370,20 @@ enum TravelokaItineraryEntryParser {
                 ?? (withoutDriver["passengerContact"] as? [String: Any]),
             fallbackName: TravelokaJSON.string(vDetail["travelerName"])
         )
+        return fields
+    }
+
+    /// Ohne TRAIN-Detail-HAR: nur bekannte Common-Felder; Bahnhöfe/Betreiber bleiben leer.
+    /// `itineraryTimestamp*` bleibt Instant; IANA-Offsets nur für Ortszeit-Anzeige.
+    private static func trainFields(from context: EntryContext) -> ProductFields {
+        var fields = baseFields(from: context)
+        fields.title = TravelokaJSON.string(context.common["productName"]) ?? context.product.rawValue
+        if let beginTZ = context.tzBegin {
+            fields.flightDepartureOffsetSeconds = beginTZ.secondsFromGMT(for: fields.start)
+        }
+        if let endTZ = context.tzEnd {
+            fields.flightArrivalOffsetSeconds = endTZ.secondsFromGMT(for: fields.end)
+        }
         return fields
     }
 

@@ -2,7 +2,7 @@ import Foundation
 
 /// SSOT for Opodo `getTrips` request body (session-bound catalog).
 public enum OpodoGetTripsQuery {
-    /// Katalogfelder aus HAR `getTrips` UPCOMING (inkl. Adresse, Zimmer, Carrier, IATA).
+    /// Katalogfelder aus HAR/Live `getTrips` (nur Flug/Hotel). Kein `insuranceBookings`, keine Vehicle-/Transfer-Offers.
     public static let query = """
     query getTrips($filter: TripListFilter!, $maxNumBookingsByPage: Int!, $offsetPage: Int!) {
       getTrips(
@@ -21,6 +21,7 @@ public enum OpodoGetTripsQuery {
             price { amount currency }
             travellers { travellerType }
             itinerary {
+              transportTypes
               departureDate
               arrivalDate
               origin { cityName iata }
@@ -64,15 +65,14 @@ public enum OpodoGetTripsQuery {
         maxNumBookingsByPage: Int,
         offsetPage: Int
     ) throws -> Data {
-        let payload: [String: Any] = [
-            "query": query,
-            "operationName": "getTrips",
-            "variables": [
+        try OpodoGraphQLRequest.body(
+            query: query,
+            operationName: "getTrips",
+            variables: [
                 "filter": filter,
                 "maxNumBookingsByPage": maxNumBookingsByPage,
                 "offsetPage": offsetPage,
-            ],
-        ]
-        return try JSONSerialization.data(withJSONObject: payload, options: [])
+            ]
+        )
     }
 }

@@ -11,17 +11,19 @@ public struct TripBookingAssignment: Sendable {
         calendar: Calendar = .current
     ) -> [UUID] {
         let startOfToday = calendar.startOfDay(for: now)
-        let tripStartDay = calendar.startOfDay(for: trip.startDate)
-        let tripEndDay = calendar.startOfDay(for: trip.endDate)
 
         return bookings.compactMap { booking in
             guard booking.tripID == nil else { return nil }
             guard booking.status != .cancelled else { return nil }
             let bookingStartDay = calendar.startOfDay(for: booking.startAt)
-            let bookingEndDay = calendar.startOfDay(for: booking.endAt)
-            guard bookingStartDay >= startOfToday,
-                  bookingStartDay >= tripStartDay,
-                  bookingEndDay <= tripEndDay else { return nil }
+            guard bookingStartDay >= startOfToday else { return nil }
+            guard TripBookingDateWindow.contains(
+                bookingStart: booking.startAt,
+                bookingEnd: booking.endAt,
+                tripStart: trip.startDate,
+                tripEnd: trip.endDate,
+                calendar: calendar
+            ) else { return nil }
             return booking.id
         }
     }

@@ -31,7 +31,8 @@ import ReisenDomain
         hotelCheckOutMinutes: 11 * 60
     )
 
-    for id in ProviderID.syncProviderIDs {
+    // Traveloka braucht zusätzlich GuestHints — separat unten.
+    for id in [ProviderID.airbnb, .booking, .getYourGuide, .opodo, .check24, .billigerMietwagen] {
         #expect(
             try provider(id).needsDraftEnrichment(
                 draft: completeHotel,
@@ -39,6 +40,29 @@ import ReisenDomain
             ) == false
         )
     }
+
+    var travelokaHotel = completeHotel
+    travelokaHotel.provider = .traveloka
+    #expect(
+        try provider(.traveloka).needsDraftEnrichment(
+            draft: travelokaHotel,
+            requiresDeadlines: false
+        ) == true
+    )
+    travelokaHotel.guestHints = [
+        BookingGuestHint(
+            title: "Hausregeln",
+            detail: "Example policy",
+            sourceKey: "traveloka:property_policy",
+            providerRaw: ProviderID.traveloka.rawValue
+        ),
+    ]
+    #expect(
+        try provider(.traveloka).needsDraftEnrichment(
+            draft: travelokaHotel,
+            requiresDeadlines: false
+        ) == false
+    )
 
     let catalogCarRental = ProviderBookingDraft(
         provider: .billigerMietwagen,
