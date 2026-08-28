@@ -60,12 +60,7 @@ extension BookingGuestHint {
     }
 
     public static func merged(existing: [BookingGuestHint], with new: [BookingGuestHint]) -> [BookingGuestHint] {
-        var seen = Set(existing.map(\.sourceKey))
-        var merged = existing
-        for hint in new where seen.insert(hint.sourceKey).inserted {
-            merged.append(hint)
-        }
-        return merged
+        uniqueKeepingFirst(existing + new) { $0.sourceKey }
     }
 
     private static func uniqueKeepingFirst(
@@ -137,10 +132,10 @@ public enum BookingGuestHintSummary {
 
 public enum BookingGuestHintPrepKeywords {
     public static let all: [String] = [
-        "linen", "linens", "towel", "towels", "bettwäsche", "handtuch", "handtücher",
-        "mitbringen", "nicht enthalten", "not included", "not provided", "extra fee",
+        "linen", "towel", "bettwäsche", "handtuch", "handtücher",
+        "nicht enthalten", "not included", "not provided",
         "bring your own", "selbst mitbringen", "wird nicht gestellt",
-        "eigene bettwäsche", "keine wäsche",
+        "keine wäsche",
     ]
 
     public static func matches(_ text: String) -> Bool {

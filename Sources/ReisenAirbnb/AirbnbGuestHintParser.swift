@@ -14,26 +14,14 @@ public struct AirbnbGuestHintParser: Sendable {
     }
 
     private func hints(from row: AirbnbStayHintRow, providerRaw: String) -> [BookingGuestHint] {
-        switch StayHintKind(rawValue: row.id) {
-        case .houseRules:
-            return houseRuleHints(from: row, providerRaw: providerRaw)
-        case .houseManual:
-            return asHints(fragmentHint(from: row, kind: .houseManual, providerRaw: providerRaw))
-        case nil:
-            return []
+        guard let kind = StayHintKind(rawValue: row.id) else { return [] }
+        if kind == .houseRules {
+            let itemHints = row.houseRuleItems.compactMap {
+                houseRuleHint(from: $0, row: row, providerRaw: providerRaw)
+            }
+            if !itemHints.isEmpty { return itemHints }
         }
-    }
-
-    /// One hint per matching house-rule item so each shows in the booking UI.
-    private func houseRuleHints(
-        from row: AirbnbStayHintRow,
-        providerRaw: String
-    ) -> [BookingGuestHint] {
-        let itemHints = row.houseRuleItems.compactMap {
-            houseRuleHint(from: $0, row: row, providerRaw: providerRaw)
-        }
-        if !itemHints.isEmpty { return itemHints }
-        return asHints(fragmentHint(from: row, kind: .houseRules, providerRaw: providerRaw))
+        return asHints(fragmentHint(from: row, kind: kind, providerRaw: providerRaw))
     }
 
     private func houseRuleHint(
@@ -63,10 +51,9 @@ public struct AirbnbGuestHintParser: Sendable {
         let fragments = row.visibleFragments
         let joined = fragments.joined(separator: " ")
         guard BookingGuestHintPrepKeywords.matches(joined) else { return nil }
-        let matching = fragments.filter { BookingGuestHintPrepKeywords.matches($0) }
         return makeHint(
             title: NonEmpty.string(row.title) ?? kind.fallbackTitle,
-            rawDetail: matching.last ?? joined,
+            rawDetail: fragments.last(where: BookingGuestHintPrepKeywords.matches) ?? joined,
             sourceKey: kind.sourceKey,
             providerRaw: providerRaw
         )
@@ -105,12 +92,7 @@ private enum StayHintKind: String {
     case houseRules = "house_rules"
     case houseManual = "house_manual"
 
-    var sourceKey: String {
-        switch self {
-        case .houseRules: "airbnb:house_rules:prep"
-        case .houseManual: "airbnb:house_manual:prep"
-        }
-    }
+    var sourceKey: String { "airbnb:\(rawValue):prep" }
 
     var fallbackTitle: String {
         switch self {

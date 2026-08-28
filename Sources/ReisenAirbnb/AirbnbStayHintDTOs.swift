@@ -78,6 +78,12 @@ struct AirbnbStayHintDestination: Decodable {
         case houseManualSection = "house_manual_section"
     }
 
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        houseRulesSection = container.decodeLossy(AirbnbStayHintHouseRulesSection.self, forKey: .houseRulesSection)
+        houseManualSection = container.decodeLossy(AirbnbStayHintHouseManualSection.self, forKey: .houseManualSection)
+    }
+
     var visibleStrings: [String] {
         (houseRulesSection?.visibleStrings ?? []) + (houseManualSection?.visibleStrings ?? [])
     }

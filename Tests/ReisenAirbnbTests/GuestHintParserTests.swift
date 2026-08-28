@@ -161,6 +161,27 @@ func airbnbGuestHintParserExcerptsHouseManualAroundPrepPhrase() {
     #expect(hints[0].detail.count <= 280)
 }
 
+@Test("AirbnbGuestHintParser behält Gäste-Handbuch wenn house_rules_section in derselben destination nicht zum Schema passt")
+func airbnbGuestHintParserKeepsHouseManualWhenHouseRulesSectionPayloadIsMalformed() throws {
+    let hints = parseStayHints(
+        """
+        {
+          "id": "house_manual",
+          "title": "Gäste-Handbuch",
+          "destination": {
+            "house_rules_section": "not-an-object",
+            "house_manual_section": {
+              "house_manual": "Please bring your own towels."
+            }
+          }
+        }
+        """
+    )
+    #expect(hints.map(\.sourceKey) == ["airbnb:house_manual:prep"])
+    let hint = try #require(hints.first)
+    #expect(hint.detail.localizedCaseInsensitiveContains("bring your own towels"))
+}
+
 @Test("AirbnbGuestHintParser behält gültige Rows wenn eine destination nicht zum Schema passt")
 func airbnbGuestHintParserSkipsMalformedDestinationWithoutDroppingSiblings() throws {
     let hints = parseStayHints(
