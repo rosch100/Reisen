@@ -119,11 +119,16 @@ public enum BookingGuestHintPrepKeywords {
         "linen", "linens", "towel", "towels", "bettwäsche", "handtuch", "handtücher",
         "mitbringen", "nicht enthalten", "not included", "not provided", "extra fee",
         "bring your own", "selbst mitbringen", "wird nicht gestellt",
+        "eigene bettwäsche", "keine wäsche",
     ]
 
     public static func matches(_ text: String) -> Bool {
-        let lower = text.lowercased()
-        return all.contains { lower.contains($0) }
+        firstRange(in: text) != nil
+    }
+
+    public static func firstRange(in text: String) -> Range<String.Index>? {
+        all.compactMap { text.range(of: $0, options: .caseInsensitive) }
+            .min { $0.lowerBound < $1.lowerBound }
     }
 }
 

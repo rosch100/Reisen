@@ -7,7 +7,7 @@ SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities
 | Check24 | ReisenCheck24 | Flug, Hotel, Fähre, Mietwagen, … | productKey-basiert; [Audit](check24-productkey-audit.md) |
 | Opodo | ReisenOpodo | Flug, Hotel | [API-Recherche](../API_Research_Opodo_Booking.md) |
 | Booking.com | ReisenBookingCom | Flug, Hotel, Erlebnisse | GraphQL + HTML-Fallback |
-| Airbnb | ReisenAirbnb | Unterkünfte, Erlebnisse | [Experiences](airbnb-experiences-impl-spec.md) |
+| Airbnb | ReisenAirbnb | Unterkünfte, Erlebnisse | [Experiences](airbnb-experiences-impl-spec.md); Stay-Hints aus `house_rules` / `house_manual` |
 | GetYourGuide | ReisenGetYourGuide | Erlebnisse / Touren | [Impl-Spec](getyourguide-impl-spec.md) |
 | Traveloka | ReisenTraveloka | Hotel, Flug, Erlebnisse, Mietwagen, … | [Impl-Spec](traveloka-impl-spec.md) |
 
