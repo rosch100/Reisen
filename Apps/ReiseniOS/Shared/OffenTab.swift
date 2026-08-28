@@ -232,6 +232,7 @@ struct OpenBookingsScreen: View {
                 bookingRow(booking, fillCaption: fillCaption)
                     .tag(booking.id)
                     .contextMenu {
+                        BookingCopyConfirmationMenuItems(booking: booking)
                         Button {
                             createTripFromBooking(booking.id)
                         } label: {
@@ -243,6 +244,7 @@ struct OpenBookingsScreen: View {
                                 providerID: booking.provider,
                                 isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
                             )
+                            CopyLinkMenuItem(url: url)
                         }
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {

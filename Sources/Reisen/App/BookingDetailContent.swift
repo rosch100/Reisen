@@ -18,15 +18,22 @@ struct BookingDetailContent: View {
         return Formatting.formatCurrencyAmount(amount, currencyCode: details?.totalPriceCurrency)
     }
 
+    private var titleText: String {
+        booking.presentationTitle
+    }
+
     private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(booking.title ?? booking.bookingType.displayLabel)
-                        .font(.headline)
-                        .textSelection(.enabled)
+                    CopyableFieldValue(
+                        value: titleText,
+                        kind: .standard,
+                        textStyle: .headline,
+                        lineLimit: 3
+                    )
                     if isOverlapping {
                         Text(L10n.overlapLabel(extraCount: overlapCount))
                             .font(.caption)
@@ -39,8 +46,12 @@ struct BookingDetailContent: View {
                     Text(booking.bookingType.displayLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(priceText)
-                        .font(.subheadline.weight(.semibold))
+                    CopyableFieldValue(
+                        value: priceText,
+                        kind: .standard,
+                        textStyle: .subheadline,
+                        lineLimit: 1
+                    )
                 }
             }
 
@@ -48,7 +59,7 @@ struct BookingDetailContent: View {
                 GridItem(.adaptive(minimum: 160), spacing: 8, alignment: .leading),
             ], alignment: .leading, spacing: 6) {
                 ForEach(BookingScheduleFields.make(booking: booking)) { field in
-                    detailRow(field.label, field.value)
+                    CopyableLabeledValue(field: field, style: .inspector)
                 }
             }
 
@@ -60,7 +71,7 @@ struct BookingDetailContent: View {
                     GridItem(.adaptive(minimum: 160), spacing: 8, alignment: .leading),
                 ], alignment: .leading, spacing: 6) {
                     ForEach(BookingRateFields.make(rate: rate, booking: booking)) { field in
-                        detailRow(field.label, field.value)
+                        CopyableLabeledValue(field: field, style: .inspector)
                     }
                 }
 
@@ -68,7 +79,7 @@ struct BookingDetailContent: View {
                     Divider()
                     Text(BookingDetailLabels.roomItemsSection)
                         .font(.subheadline.weight(.semibold))
-                    BookingRoomItemsView(rate: rate)
+                    BookingRoomItemsView(rate: rate, style: .inspector)
                 }
             }
 
@@ -76,20 +87,27 @@ struct BookingDetailContent: View {
                 Divider()
                 Text(BookingDetailLabels.cancellationSection)
                     .font(.subheadline.weight(.semibold))
-                BookingCancellationDeadlinesView(booking: booking, hotelTimeZone: hotelTimeZone)
+                BookingCancellationDeadlinesView(
+                    booking: booking,
+                    hotelTimeZone: hotelTimeZone,
+                    style: .inspector
+                )
             }
 
             if !booking.resolvedGuestHints.isEmpty {
                 Divider()
                 Text(GuestHintCategory.preTravelImportant.displayTitle)
                     .font(.subheadline.weight(.semibold))
-                BookingGuestHintsView(booking: booking)
+                BookingGuestHintsView(booking: booking, style: .inspector)
             }
 
             if let url = booking.browserURL {
                 Divider()
                 BookingPortalOpenLink(browserURL: url)
-                .font(.caption)
+                    .font(.caption)
+                    .contextMenu {
+                        CopyLinkMenuItem(url: url)
+                    }
             }
 
             if let onEditBooking {
@@ -123,19 +141,5 @@ struct BookingDetailContent: View {
                 .help(L10n.string(.tripRemoveFromTripHelp))
             }
         }
-    }
-
-    private func detailRow(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.caption)
-                .foregroundStyle(.primary)
-                .textSelection(.enabled)
-                .lineLimit(3)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
