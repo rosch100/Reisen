@@ -51,7 +51,7 @@ Kein DB-Branding, kein Icon-only-Picker, kein paralleles Timeline-Layout nur fü
 
 | Provider | Status |
 |----------|--------|
-| Traveloka | `TRAIN` / `TRAIN_GLOBAL` → `.train` (Titel aus `productName`; Stations-Parser folgt mit HAR) |
+| Traveloka | `TRAIN` / `TRAIN_GLOBAL` → `.train` (Titel/`productName` + IANA-Offsets; Catalog fragt TRAIN **nicht** an — Live 2026-08-28 leere Liste; Stations-Parser Rest) |
 | Check24 | **kein** Mapping — Live 2026-08-28: `train`/`bahn`/`rail` in 64 Activities nicht gesehen ([check24-productkey-audit.md](check24-productkey-audit.md)) |
 | Opodo | **kein** Mapping — `rail` in HAR nicht als Booking beobachtet |
 | Booking.com / Airbnb | kein Bahn-Vertical in den belegten Typ-Mappern |

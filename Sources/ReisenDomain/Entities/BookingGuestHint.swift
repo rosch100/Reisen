@@ -45,8 +45,18 @@ public struct BookingGuestHint: Identifiable, Equatable, Sendable, Codable {
 
 extension BookingGuestHint {
     public static func dedupedBySourceKey(_ hints: [BookingGuestHint]) -> [BookingGuestHint] {
-        var seen = Set<String>()
-        return hints.filter { seen.insert($0.sourceKey).inserted }
+        uniqueKeepingFirst(hints) { $0.sourceKey }
+    }
+
+    /// Keeps first hint per normalized detail text (whitespace/case-insensitive).
+    public static func dedupedByNormalizedDetail(_ hints: [BookingGuestHint]) -> [BookingGuestHint] {
+        uniqueKeepingFirst(hints) { hint in
+            let key = hint.detail
+                .lowercased()
+                .split(whereSeparator: \.isWhitespace)
+                .joined(separator: " ")
+            return key.isEmpty ? nil : key
+        }
     }
 
     public static func merged(existing: [BookingGuestHint], with new: [BookingGuestHint]) -> [BookingGuestHint] {
@@ -56,6 +66,17 @@ extension BookingGuestHint {
             merged.append(hint)
         }
         return merged
+    }
+
+    private static func uniqueKeepingFirst(
+        _ hints: [BookingGuestHint],
+        key: (BookingGuestHint) -> String?
+    ) -> [BookingGuestHint] {
+        var seen = Set<String>()
+        return hints.filter { hint in
+            guard let key = key(hint) else { return false }
+            return seen.insert(key).inserted
+        }
     }
 
     public static func manualPersistable(from draft: BookingGuestHint, bookingID: UUID) -> BookingGuestHint? {
