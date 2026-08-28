@@ -19,7 +19,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 |----|---------|--------|------|--------------|
 | F01 | `BookingType.train` (Bahn) | implementiert | P1 | — |
 | F02 | Check-in-Erinnerungen (Hotel + Flug) | geplant | P1 | — |
-| F03 | Explizites Kopieren von Bestätigungscodes | geplant | P2 | — |
+| F03 | Copy/Paste für Info- und Editor-Felder | umgesetzt | P2 | — |
 | F04 | ICS/Text-Export einer Reise | geplant | P2 | — |
 | F05 | Dokumente an der Buchung | geplant | P2 | eigene Spec |
 | F06 | On-device Paste-Import | geplant | P2 | F01, F05 optional |
@@ -121,19 +121,21 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ---
 
-### F03 — Explizites Kopieren von Bestätigungscodes
+### F03 — Copy/Paste für Info- und Editor-Felder
 
-**Sinn:** Am Counter ein Tap statt Textselektion. Felder (`confirmationCode`, PNR) existieren.
+**Sinn:** Am Counter ein Tap auf die Buchungsnr./PNR statt Textselektion; alle Info-Feldwerte ohne Markier-Akrobatik kopierbar; Editoren mit systemischem Cut/Copy/Paste.
 
-**Machbarkeit:** hoch.
+**Machbarkeit:** hoch. Spec: [`f03-copy-paste-fields.md`](f03-copy-paste-fields.md).
 
 | Aspekt | Vorgehen |
 |--------|----------|
-| iOS | Copy-Action an Detailfeldern; optional Share-Snapshot |
-| macOS | Ergänzung zu `CopyableText` / dedizierte Copy-Buttons |
-| SSOT | Keine parallelen Formatierungen |
+| Stufen | `standard` (Selektion + Kontextmenü) vs. `identifier` (Tap-to-Copy nur Buchungsnr./Zimmer-Code) |
+| iOS | Eine List-Zeile pro Feld; URL: Tap öffnet, Kontextmenü kopiert |
+| macOS | Inspector-Werte über `CopyableTextView` (Ablage → Kopieren ohne Markierung) |
+| Editor | Natives TextField-Pasteboard; `textContentType` für Namen/URL; kein Trailing-Copy |
+| SSOT | `StringPasteboard` + `FieldCopyKind` im Feldkatalog; kein `"Label: Wert"` in der Zwischenablage |
 
-**Out of Scope:** Automatisches Clipboard-Monitoring.
+**Out of Scope:** Clipboard-Monitoring (→ F06); Share-Snapshot (→ F04); Copy-Buttons an jeder Standardzeile.
 
 ---
 
