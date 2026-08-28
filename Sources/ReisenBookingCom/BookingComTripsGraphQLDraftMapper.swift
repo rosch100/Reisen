@@ -8,13 +8,14 @@ extension BookingComTripsGraphQLParser {
         var locationFrom: String?
         var locationTo: String?
         var locationToAddress: String?
+        var operatorName: String?
         var confirmationCode: String?
+        var roomCategory: String?
         var hotelOffsetSeconds: Int?
         var hotelCheckInMinutes: Int?
         var hotelCheckOutMinutes: Int?
         var flightDepartureOffsetSeconds: Int?
         var flightArrivalOffsetSeconds: Int?
-        var deadlines: [CancellationDeadline] = []
         var airline: String?
         var passengerCount: Int?
     }
@@ -30,13 +31,9 @@ extension BookingComTripsGraphQLParser {
         }
 
         let bookingType = bookingType(of: reservation)
-        var fields = mappedFields(from: reservation, bookingType: bookingType, tripTitle: tripTitle)
-        if fields.deadlines.isEmpty {
-            let offset = fields.hotelOffsetSeconds ?? ISODateTime.offsetSeconds(from: startISO)
-            if let policyDeadline = deadline(from: reservation.policy, hotelOffsetSeconds: offset) {
-                fields.deadlines = [policyDeadline]
-            }
-        }
+        let fields = mappedFields(from: reservation, bookingType: bookingType, tripTitle: tripTitle)
+        let offset = fields.hotelOffsetSeconds ?? ISODateTime.offsetSeconds(from: startISO)
+        let deadlines = deadline(from: reservation.policy, hotelOffsetSeconds: offset).map { [$0] } ?? []
 
         return DraftAssembler.draft(
             from: ProviderBookingFacts(
@@ -50,8 +47,9 @@ extension BookingComTripsGraphQLParser {
                 locationFrom: fields.locationFrom,
                 locationTo: fields.locationTo,
                 locationToAddress: fields.locationToAddress,
+                operatorName: fields.operatorName,
                 statusRaw: reservation.reservationStatus,
-                deadlines: fields.deadlines,
+                deadlines: deadlines,
                 rateDetails: rateDetails(from: reservation, bookingType: bookingType, fields: fields),
                 hotelOffsetSeconds: fields.hotelOffsetSeconds,
                 hotelCheckInMinutes: fields.hotelCheckInMinutes,

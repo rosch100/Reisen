@@ -37,21 +37,14 @@ extension BookingComTravelProvider {
         tokens: BookingComSessionTokens,
         tripID: String
     ) async throws -> String {
-        // HAR 2026-07-20: volle Connector-/Experience-Listen + Thumbnail-Größe.
+        // MFE 2026-08: Live-Connector-/Experience-Listen + Thumbnail-Größe.
         let variables: [String: Any] = [
             "input": [
                 "tripId": tripID,
                 "thumbnailSize": ["width": 2192, "height": 548],
                 "selectConnectorChannels": ["MY_TRIPS_TIMELINE"],
                 "supportedConnectors": BookingComGraphQLQueries.timelineSupportedConnectors,
-                "supportedExperiences": [
-                    "ACCOMMODATION_ARRIVAL",
-                    "ACCOMMODATION_INSTAY",
-                    "ACCOMMODATION_PRETRIPS",
-                    "BHOME_ARRIVAL",
-                    "POST_TRIP",
-                    "TAXI_ARRIVAL",
-                ],
+                "supportedExperiences": BookingComGraphQLQueries.timelineSupportedExperiences,
             ],
         ]
         return try await postGraphQL(

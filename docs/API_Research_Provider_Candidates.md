@@ -16,6 +16,7 @@ Partner-/Demand-APIs (Amadeus, Sabre, GYG Partner, Expedia Lodging Supply) bleib
 | [`dev/airbnb-experiences-impl-spec.md`](dev/airbnb-experiences-impl-spec.md) | Airbnb Catalog + `activity_reservation_details` |
 | [`dev/getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md) | Neuer Provider GYG |
 | [`dev/check24-productkey-audit.md`](dev/check24-productkey-audit.md) | productKey-Inventory + Live-Audit-Checkliste |
+| [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md) | Booking.com `verticalType` / Reservation-`__typename` + Query-Shape 2026-08 |
 
 Ausführungsdetails nur im Plan — nicht hier wiederholen.
 
@@ -289,9 +290,10 @@ Kurz: Code-Whitelist bekannt; vollständige Live-API-Keys **fehlen** (keine Chec
 
 ### Booking.com
 
-**Heute:** GraphQL-Reservierungen `FLIGHT` + `ACCOMMODATION`.  
-**Offen:** Attractions/Taxi/Car in My Trips — nur mit eigener HAR prüfen.  
-`supportedExperiences` / Connectors sind **UI-Flags**, keine Activity-Buchungen.
+SSOT: [`bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md).  
+Live 2026-08-28 (`GetTripsQuery` + `SingleTimelineQuery` V1): in **diesem Konto** `ACCOMMODATION` (47), `FLIGHT` (2), `PREBOOK_TAXI` (2).  
+`AttractionReservation` / `CarReservation`: MFE-Schema vorhanden, **0 Timeline-Treffer in diesem Konto** (nicht „API existiert nicht“).  
+`supportedExperiences` der V1-Query unverändert (`TAXI_ARRIVAL` inkl.); Connectors auf Live-`R`-Liste. WAF = In-Page-fetch + Challenge-Cookie.
 
 ### Airbnb / Opodo (nach HAR)
 

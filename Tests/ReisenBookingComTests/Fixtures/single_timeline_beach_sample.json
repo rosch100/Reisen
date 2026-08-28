@@ -91,7 +91,6 @@
               {
                 "__typename": "ReservationTripItem",
                 "reservation": {
-                  "authKey": "fixtureAuthKey0001",
                   "reservationStatus": "CONFIRMED",
                   "checkIn": {
                     "end": "2026-08-12T23:30:00.000+02:00",
