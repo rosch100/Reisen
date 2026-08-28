@@ -1,6 +1,28 @@
 import Foundation
 import ReisenDomain
 
+/// Offene Buchung + Reise, die sie als Lückenfüller adressieren kann.
+public struct OpenBookingFillCandidate {
+    public let booking: SDBooking
+    public let trip: SDTrip
+
+    public init(booking: SDBooking, trip: SDTrip) {
+        self.booking = booking
+        self.trip = trip
+    }
+}
+
+/// Ergebnis der Offen-Partition: Fill-Kandidaten vs. Rest.
+public struct OpenBookingFillPartition {
+    public let fillable: [OpenBookingFillCandidate]
+    public let other: [SDBooking]
+
+    public init(fillable: [OpenBookingFillCandidate], other: [SDBooking]) {
+        self.fillable = fillable
+        self.other = other
+    }
+}
+
 /// Zuordnung unzugeordneter Buchungen zu Reisen (Trip-Fenster + ab heute).
 public enum OpenBookingMatching {
     /// Offene Liste: keine Reise, ab heute, nicht storniert.
@@ -29,12 +51,13 @@ public enum OpenBookingMatching {
         now: Date = Date()
     ) -> Bool {
         guard isOpenUnassigned(booking, calendar: calendar, now: now) else { return false }
-        let tripStartDay = calendar.startOfDay(for: trip.startDate)
-        let tripEndDay = calendar.startOfDay(for: trip.endDate)
-        let bookingStartDay = calendar.startOfDay(for: booking.startAt)
-        let bookingEndDay = calendar.startOfDay(for: booking.endAt)
-        return bookingStartDay >= tripStartDay
-            && bookingEndDay <= tripEndDay
+        return TripBookingDateWindow.contains(
+            bookingStart: booking.startAt,
+            bookingEnd: booking.endAt,
+            tripStart: trip.startDate,
+            tripEnd: trip.endDate,
+            calendar: calendar
+        )
     }
 
     /// Erste Candidate-Reise mit Inter-Booking-Lücken (frühste `startDate`, dann `id`).
@@ -61,9 +84,9 @@ public enum OpenBookingMatching {
         trips: [SDTrip],
         calendar: Calendar = .current,
         now: Date = Date()
-    ) -> (fillable: [(booking: SDBooking, trip: SDTrip)], other: [SDBooking]) {
+    ) -> OpenBookingFillPartition {
         var hasTimeGapsByTripID: [UUID: Bool] = [:]
-        var fillable: [(booking: SDBooking, trip: SDTrip)] = []
+        var fillable: [OpenBookingFillCandidate] = []
         var other: [SDBooking] = []
         for booking in bookings {
             if let trip = fillOpportunity(
@@ -73,12 +96,12 @@ public enum OpenBookingMatching {
                 now: now,
                 hasTimeGapsByTripID: &hasTimeGapsByTripID
             ) {
-                fillable.append((booking, trip))
+                fillable.append(OpenBookingFillCandidate(booking: booking, trip: trip))
             } else {
                 other.append(booking)
             }
         }
-        return (fillable, other)
+        return OpenBookingFillPartition(fillable: fillable, other: other)
     }
 
     private static func fillOpportunity(
@@ -88,22 +111,23 @@ public enum OpenBookingMatching {
         now: Date,
         hasTimeGapsByTripID: inout [UUID: Bool]
     ) -> SDTrip? {
-        let matches = trips
+        trips
             .filter { isCandidate(booking, for: $0, calendar: calendar, now: now) }
-            .filter { trip in
-                if let cached = hasTimeGapsByTripID[trip.id] {
-                    return cached
-                }
-                let hasGaps = trip.completeness().hasTimeGaps
-                hasTimeGapsByTripID[trip.id] = hasGaps
-                return hasGaps
-            }
-            .sorted { lhs, rhs in
-                if lhs.startDate != rhs.startDate {
-                    return lhs.startDate < rhs.startDate
-                }
-                return lhs.id.uuidString < rhs.id.uuidString
-            }
-        return matches.first
+            .filter { hasTimeGaps($0, cache: &hasTimeGapsByTripID) }
+            .min(by: earlierTrip)
+    }
+
+    private static func hasTimeGaps(_ trip: SDTrip, cache: inout [UUID: Bool]) -> Bool {
+        if let cached = cache[trip.id] { return cached }
+        let value = trip.completeness().hasTimeGaps
+        cache[trip.id] = value
+        return value
+    }
+
+    private static func earlierTrip(_ lhs: SDTrip, _ rhs: SDTrip) -> Bool {
+        if lhs.startDate != rhs.startDate {
+            return lhs.startDate < rhs.startDate
+        }
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 }

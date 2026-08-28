@@ -29,12 +29,25 @@ public struct TripCompleteness: Equatable, Sendable {
     }
 }
 
+/// Optionale Detail-Captions zur Completeness-Anzeige (Kind / Rand / unknown).
+public struct TripCompletenessCaptionParts: Equatable, Sendable {
+    public let kind: String?
+    public let edge: String?
+    public let unknown: String?
+
+    public init(kind: String?, edge: String?, unknown: String?) {
+        self.kind = kind
+        self.edge = edge
+        self.unknown = unknown
+    }
+}
+
 public enum TripCompletenessCalculator {
     public static func evaluate(
         tripStart: Date,
         tripEnd: Date,
         bookings: [Booking],
-        minGap: TimeInterval = 12 * 60 * 60
+        minGap: TimeInterval = GapDetector.defaultMinGap
     ) -> TripCompleteness {
         let active = bookings.filter { $0.status != .cancelled }
         let gaps = GapDetector(minGap: minGap).computeGaps(

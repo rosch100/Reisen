@@ -157,7 +157,7 @@ private func makeBooking(
 }
 
 @MainActor
-@Test func showsListGapBadge_hidesPastTrips() throws {
+@Test func listGapBadgeCount_hidesPastTrips() throws {
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
 
@@ -172,11 +172,9 @@ private func makeBooking(
 
     let now = Date(timeIntervalSince1970: 10 * day)
     #expect(trip.completeness().hasTimeGaps)
-    #expect(trip.showsListGapBadge(now: now) == false)
     #expect(trip.listGapBadgeCount(now: now) == nil)
 
     let current = Date(timeIntervalSince1970: 2 * day)
-    #expect(trip.showsListGapBadge(now: current))
     #expect(trip.listGapBadgeCount(now: current) == 1)
 }
 

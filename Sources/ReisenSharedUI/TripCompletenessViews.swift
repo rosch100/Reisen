@@ -12,6 +12,7 @@ public struct TripCompletenessOverviewRow: View {
 
     public var body: some View {
         if completeness.hasBookings {
+            let captions = L10n.tripCompletenessCaptionParts(completeness)
             VStack(alignment: .leading, spacing: 2) {
                 Label {
                     Text(title)
@@ -21,18 +22,18 @@ public struct TripCompletenessOverviewRow: View {
                 }
                 .foregroundStyle(.primary)
 
-                if let kindCaption = L10n.tripCompletenessKindCaption(kinds: completeness.interBookingGapKinds) {
+                if let kindCaption = captions.kind {
                     Text(kindCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                if let edge = L10n.tripCompletenessEdgeCaption(count: completeness.edgeGapCount) {
-                    Text(edge)
+                if let edgeCaption = captions.edge {
+                    Text(edgeCaption)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
-                if let unknown = L10n.tripCompletenessUnknownCaption(count: completeness.unknownStatusCount) {
-                    Text(unknown)
+                if let unknownCaption = captions.unknown {
+                    Text(unknownCaption)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -79,26 +80,11 @@ public struct TripCompletenessMacDetailCaption: View {
     }
 
     public var body: some View {
-        let parts = tertiaryParts
-        if !parts.isEmpty {
-            Text(parts.joined(separator: " · "))
+        if let text = L10n.tripCompletenessJoinedDetailCaption(completeness) {
+            Text(text)
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .lineLimit(2)
         }
-    }
-
-    private var tertiaryParts: [String] {
-        var parts: [String] = []
-        if let kind = L10n.tripCompletenessKindCaption(kinds: completeness.interBookingGapKinds) {
-            parts.append(kind)
-        }
-        if let edge = L10n.tripCompletenessEdgeCaption(count: completeness.edgeGapCount) {
-            parts.append(edge)
-        }
-        if let unknown = L10n.tripCompletenessUnknownCaption(count: completeness.unknownStatusCount) {
-            parts.append(unknown)
-        }
-        return parts
     }
 }

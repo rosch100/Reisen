@@ -113,10 +113,6 @@ struct OpenBookingsScreen: View {
         }
     }
 
-    private var partitioned: (fillable: [(booking: SDBooking, trip: SDTrip)], other: [SDBooking]) {
-        OpenBookingMatching.partitionByFillOpportunity(bookings: filtered, trips: trips)
-    }
-
     var body: some View {
         Group {
             if openBookings.isEmpty {
@@ -136,17 +132,23 @@ struct OpenBookingsScreen: View {
                         .buttonStyle(.borderedProminent)
                         #endif
                 }
-            } else if isSelectingForTripCreate {
-                List(selection: $multiSelection) {
-                    openBookingSections(interactive: false)
-                }
-                .environment(\.editMode, .constant(.active))
-                .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             } else {
-                List(selection: $selectedBookingID) {
-                    openBookingSections(interactive: true)
+                let partition = OpenBookingMatching.partitionByFillOpportunity(
+                    bookings: filtered,
+                    trips: trips
+                )
+                if isSelectingForTripCreate {
+                    List(selection: $multiSelection) {
+                        openBookingSections(partition: partition, interactive: false)
+                    }
+                    .environment(\.editMode, .constant(.active))
+                    .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
+                } else {
+                    List(selection: $selectedBookingID) {
+                        openBookingSections(partition: partition, interactive: true)
+                    }
+                    .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
                 }
-                .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             }
         }
         .navigationTitle(
@@ -209,43 +211,24 @@ struct OpenBookingsScreen: View {
     }
 
     @ViewBuilder
-    private func openBookingSections(interactive: Bool) -> some View {
-        let parts = partitioned
-        if parts.fillable.isEmpty {
-            ForEach(parts.other, id: \.id) { booking in
-                openBookingListRow(booking, fillTrip: nil, interactive: interactive)
-            }
-        } else {
-            Section {
-                ForEach(parts.fillable, id: \.booking.id) { item in
-                    openBookingListRow(item.booking, fillTrip: item.trip, interactive: interactive)
-                }
-            } header: {
-                Text(L10n.string(.tripCompletenessOpenSection))
-            } footer: {
-                Text(L10n.string(.tripCompletenessOpenSectionFooter))
-            }
-
-            if !parts.other.isEmpty {
-                Section(L10n.string(.tripCompletenessOpenOtherSection)) {
-                    ForEach(parts.other, id: \.id) { booking in
-                        openBookingListRow(booking, fillTrip: nil, interactive: interactive)
-                    }
-                }
-            }
+    private func openBookingSections(
+        partition: OpenBookingFillPartition,
+        interactive: Bool
+    ) -> some View {
+        OpenBookingsFillSections(partition: partition) { booking, fillCaption in
+            openBookingListRow(booking, fillCaption: fillCaption, interactive: interactive)
         }
     }
 
     @ViewBuilder
     private func openBookingListRow(
         _ booking: SDBooking,
-        fillTrip: SDTrip?,
+        fillCaption: String?,
         interactive: Bool
     ) -> some View {
-        let caption = fillTrip.map { L10n.tripCompletenessFillCaption(tripTitle: $0.title) }
         Group {
             if interactive {
-                bookingRow(booking, fillCaption: caption)
+                bookingRow(booking, fillCaption: fillCaption)
                     .tag(booking.id)
                     .contextMenu {
                         Button {
@@ -265,7 +248,7 @@ struct OpenBookingsScreen: View {
                         }
                     }
             } else {
-                OpenBookingRow(booking: booking, fillCaption: caption)
+                OpenBookingRow(booking: booking, fillCaption: fillCaption)
                     .tag(booking.id)
             }
         }

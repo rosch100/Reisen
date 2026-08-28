@@ -130,4 +130,7 @@ private func booking(
     #expect(leading?.isTripBoundary == true)
     #expect(inter != nil)
     #expect(inter?.isTripBoundary == false)
+    // Explizites Merkmal aus GapAssembly — nicht aus from/to-IDs ableiten.
+    #expect(gaps.filter(\.isTripBoundary).count == 2)
+    #expect(gaps.filter { !$0.isTripBoundary }.count == 1)
 }

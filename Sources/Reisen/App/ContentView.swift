@@ -432,6 +432,7 @@ struct ContentView: View {
                     Text(L10n.string(.tripNoTripsYet))
                         .foregroundStyle(.secondary)
                 } else {
+                    let gapBadges = SDTrip.listGapBadgeCounts(for: trips)
                     ForEach(trips) { trip in
                         let tripBookings = futureBookings(for: trip)
                         let isExpanded = expandedTripIDs.contains(trip.id)
@@ -461,9 +462,9 @@ struct ContentView: View {
                                             Text(dateRange(trip))
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
-                                            if let meta = sidebarMetaLine(
-                                                for: trip,
-                                                futureBookingCount: tripBookings.count
+                                            if let meta = L10n.tripCompletenessListMeta(
+                                                futureBookingCount: tripBookings.count,
+                                                gapCount: gapBadges[trip.id]
                                             ) {
                                                 Text(meta)
                                                     .font(.caption2)
@@ -629,39 +630,14 @@ struct ContentView: View {
                     }
                 }
             } else {
-                let parts = OpenBookingMatching.partitionByFillOpportunity(
+                let partition = OpenBookingMatching.partitionByFillOpportunity(
                     bookings: openBookings,
                     trips: trips
                 )
                 List(selection: $selectedOpenBookingIDs) {
-                    if parts.fillable.isEmpty {
-                        ForEach(parts.other, id: \.id) { booking in
-                            OpenBookingRow(booking: booking)
-                                .tag(booking.id)
-                        }
-                    } else {
-                        Section {
-                            ForEach(parts.fillable, id: \.booking.id) { item in
-                                OpenBookingRow(
-                                    booking: item.booking,
-                                    fillCaption: L10n.tripCompletenessFillCaption(tripTitle: item.trip.title)
-                                )
-                                .tag(item.booking.id)
-                            }
-                        } header: {
-                            Text(L10n.string(.tripCompletenessOpenSection))
-                        } footer: {
-                            Text(L10n.string(.tripCompletenessOpenSectionFooter))
-                        }
-
-                        if !parts.other.isEmpty {
-                            Section(L10n.string(.tripCompletenessOpenOtherSection)) {
-                                ForEach(parts.other, id: \.id) { booking in
-                                    OpenBookingRow(booking: booking)
-                                        .tag(booking.id)
-                                }
-                            }
-                        }
+                    OpenBookingsFillSections(partition: partition) { booking, fillCaption in
+                        OpenBookingRow(booking: booking, fillCaption: fillCaption)
+                            .tag(booking.id)
                     }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
@@ -960,21 +936,6 @@ struct ContentView: View {
         let start = trip.startDate.formatted(date: .abbreviated, time: .omitted)
         let end = trip.endDate.formatted(date: .abbreviated, time: .omitted)
         return "\(start) – \(end)"
-    }
-
-    /// Buchungszeile und/oder Lücken — Lücken nicht an Future-Bookings koppeln.
-    private func sidebarMetaLine(for trip: SDTrip, futureBookingCount: Int) -> String? {
-        if let gapCount = trip.listGapBadgeCount() {
-            if futureBookingCount > 0 {
-                return L10n.tripCompletenessSidebarLine(
-                    bookingCount: futureBookingCount,
-                    gapCount: gapCount
-                )
-            }
-            return L10n.tripCompletenessGapCount(gapCount)
-        }
-        guard futureBookingCount > 0 else { return nil }
-        return L10n.format(.tripBookingCount, futureBookingCount)
     }
 
     private func futureBookings(for trip: SDTrip) -> [SDBooking] {
