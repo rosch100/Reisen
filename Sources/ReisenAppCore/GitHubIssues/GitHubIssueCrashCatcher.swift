@@ -1,4 +1,6 @@
+import Darwin
 import Foundation
+import ReisenCrashSignal
 import ReisenData
 import ReisenDomain
 
@@ -11,26 +13,63 @@ enum GitHubIssueCrashCatcher {
     static func install() {
         previousUncaughtExceptionHandler = NSGetUncaughtExceptionHandler()
         NSSetUncaughtExceptionHandler(reisenUncaughtExceptionHandler)
+        if let url = pendingURL {
+            prepareFatalSignalPending(
+                at: url,
+                optedIn: GitHubIssueAutoReport.isAutomaticReportingEnabled()
+            )
+        }
+        _ = reisen_crash_signal_install(isDebuggerAttached())
+        startObservingAutomaticReportingOptIn()
+    }
+
+    static func refreshFatalSignalOptIn() {
+        reisen_crash_signal_set_opted_in(GitHubIssueAutoReport.isAutomaticReportingEnabled())
+    }
+
+    private static func startObservingAutomaticReportingOptIn() {
+        guard fatalSignalOptInObserver == nil else { return }
+        fatalSignalOptInObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: UserDefaults.standard,
+            queue: .main
+        ) { _ in
+            GitHubIssueCrashCatcher.refreshFatalSignalOptIn()
+        }
+    }
+
+    static func prepareFatalSignalPending(at url: URL, optedIn: Bool) {
+        try? ensureParentDirectory(for: url)
+        _ = reisen_crash_signal_prepare(url.path, optedIn)
     }
 
     static func appendPending(_ message: String) {
         guard let url = pendingURL else { return }
-        writePending(message, to: url, optedIn: GitHubIssueAutoReport.isAutomaticReportingEnabled())
+        if writePending(message, to: url, optedIn: GitHubIssueAutoReport.isAutomaticReportingEnabled()) {
+            reisen_crash_signal_mark_written()
+        }
     }
 
-    static func writePending(_ message: String, to url: URL, optedIn: Bool) {
-        guard optedIn else { return }
+    @discardableResult
+    static func writePending(_ message: String, to url: URL, optedIn: Bool) -> Bool {
+        guard optedIn else { return false }
         do {
-            try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
+            try ensureParentDirectory(for: url)
             try Data(SecretRedactor.redact(message).utf8).write(to: url, options: [.atomic])
+            return true
         } catch {
             #if DEBUG
             print("[Reisen] Pending-Crash-Report fehlgeschlagen: \(error)")
             #endif
+            return false
         }
+    }
+
+    private static func ensureParentDirectory(for url: URL) throws {
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
     }
 
     static func pendingMessageForReport(at url: URL, optedIn: Bool) -> String? {
@@ -39,7 +78,8 @@ enum GitHubIssueCrashCatcher {
             try? FileManager.default.removeItem(at: url)
             return nil
         }
-        return try? String(contentsOf: url, encoding: .utf8)
+        guard let raw = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        return SecretRedactor.redact(raw)
     }
 
     @MainActor
@@ -69,10 +109,19 @@ enum GitHubIssueCrashCatcher {
             #endif
         }
     }
+
+    static func isDebuggerAttached() -> Bool {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        let sysctlResult = sysctl(&mib, u_int(mib.count), &info, &size, nil, 0)
+        return sysctlResult == 0 && (info.kp_proc.p_flag & P_TRACED) != 0
+    }
 }
 
 /// Darwin-Uncaught-Handler ist prozessweit und nicht Swift-isolated; C-ABI braucht Speicher ohne Capture.
 nonisolated(unsafe) private var previousUncaughtExceptionHandler: NSUncaughtExceptionHandler?
+nonisolated(unsafe) private var fatalSignalOptInObserver: (any NSObjectProtocol)?
 
 /// C-ABI: `NSSetUncaughtExceptionHandler` akzeptiert keine Closure mit Capture.
 private func reisenUncaughtExceptionHandler(_ exception: NSException) {

@@ -4934,13 +4934,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Per E-Mail an reisenapp100@gmail.com wird daraus ebenfalls ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Automatische Fehler-Issues nur mit dem Schalter oben und sind öffentlich. Repo: github.com/%1$@."
+            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Per E-Mail an reisenapp100@gmail.com wird daraus ebenfalls ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Automatische Fehler-Issues (inkl. Abstürze) nur mit dem Schalter oben und sind öffentlich. Repo: github.com/%1$@."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optional GitHub username is used only for attribution in the issue text; submission uses the embedded token (no GitHub sign-in). Email to reisenapp100@gmail.com also becomes a public issue. App Store ratings and TestFlight feedback are received but are not filed on GitHub automatically. Automatic error issues require the toggle above and are public. Repo: github.com/%1$@."
+            "value": "Optional GitHub username is used only for attribution in the issue text; submission uses the embedded token (no GitHub sign-in). Email to reisenapp100@gmail.com also becomes a public issue. App Store ratings and TestFlight feedback are received but are not filed on GitHub automatically. Automatic error issues (including crashes) require the toggle above and are public. Repo: github.com/%1$@."
           }
         }
       }
