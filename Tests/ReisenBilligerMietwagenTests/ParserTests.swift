@@ -397,6 +397,51 @@ func bmBookingsSkipsNonCarRentalType() throws {
     #expect(catalog.bookings.map(\.confirmationCode) == ["keep-ref"])
 }
 
+@Test("#59 Cookie-Session: user_id aus Cognito-username, beide Refresh-Tokens, kein sub")
+func bmCookieSessionRefreshUsesCognitoUsernameNotSub() throws {
+    // session.php-access_token ohne Claim `username` (heute Throw A).
+    // user_id liegt in `cognito:username`; `sub` ist eine andere ID.
+    let userID = "a18c0e2f-4b6d-4e1a-9c3f-7d2a1b0e5f44"
+    let sub = "other-sub"
+    let accessJWT = bmJWT(
+        payloadJSON: #"{"cognito:username":"\#(userID)","sub":"\#(sub)","token_use":"access"}"#
+    )
+
+    let session = try BilligerMietwagenTokenPair.parseSession(
+        from: """
+        {"access_token":"\(accessJWT)","refresh_token":"<REDACTED_REFRESH>"}
+        """
+    )
+    let sessionTokens = try session.requiringSessionTokens()
+
+    let parsedUserID = try #require(
+        BilligerMietwagenAccessToken.userID(fromAccessToken: sessionTokens.access)
+    )
+    #expect(parsedUserID == userID)
+    #expect(parsedUserID != sub)
+
+    // Refresh-2xx mit beiden Tokens: persistierbares Paar (Catalog als Nächstes).
+    let refreshed = try BilligerMietwagenTokenPair.parseRefresh(
+        from: #"{"access_token":"<REDACTED_NEW_ACCESS>","refresh_token":"<REDACTED_NEW_REFRESH>"}"#
+    )
+    let tokens = try refreshed.requiringRefreshedTokens()
+    #expect(tokens.access == "<REDACTED_NEW_ACCESS>")
+    #expect(tokens.refresh == "<REDACTED_NEW_REFRESH>")
+
+    // Nur-sub: kein stiller Fallback.
+    let onlySub = bmJWT(payloadJSON: #"{"sub":"\#(sub)"}"#)
+    #expect(BilligerMietwagenAccessToken.userID(fromAccessToken: onlySub) == nil)
+}
+
+/// Test-JWT `header.payload.sig`; Payload ist JSON, Signatur egal.
+private func bmJWT(payloadJSON: String) -> String {
+    let payload = Data(payloadJSON.utf8).base64EncodedString()
+        .replacingOccurrences(of: "+", with: "-")
+        .replacingOccurrences(of: "/", with: "_")
+        .replacingOccurrences(of: "=", with: "")
+    return "hdr.\(payload).sig"
+}
+
 private func iso8601(_ raw: String) -> Date {
     let formatter = ISO8601DateFormatter()
     formatter.formatOptions = [.withInternetDateTime]
