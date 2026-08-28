@@ -19,6 +19,8 @@ struct TripDetailIOS: View {
     @State private var showAssignBookings = false
     @State private var showDeleteConfirm = false
     @State private var persistErrorMessage: String?
+    @State private var pendingDeleteBooking: SDBooking?
+    @State private var showBookingDeleteConfirm = false
 
     var trip: SDTrip? {
         trips.first(where: { $0.id == tripID })
@@ -83,6 +85,10 @@ struct TripDetailIOS: View {
                                 )
                                 CopyLinkMenuItem(url: url)
                             }
+                            Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
+                                pendingDeleteBooking = booking
+                                showBookingDeleteConfirm = true
+                            }
                         }
                     }
                 }
@@ -116,6 +122,13 @@ struct TripDetailIOS: View {
                     onKeepBookings: { deleteTrip(trip, bookings: .keepAsOpen) },
                     onDeleteBookings: { deleteTrip(trip, bookings: .deleteContained) }
                 )
+                .bookingDeleteConfirmAlert(
+                    isPresented: $showBookingDeleteConfirm,
+                    bookingTitle: pendingDeleteBooking?.presentationTitle ?? L10n.string(.editorBooking),
+                    showsSyncRestoreWarning: pendingDeleteBooking.map { $0.provider != .manual } ?? false,
+                    onConfirm: deletePendingBooking,
+                    onCancel: { pendingDeleteBooking = nil }
+                )
                 .alert(L10n.string(.tripAssignFailed), isPresented: Binding(
                     get: { persistErrorMessage != nil },
                     set: { if !$0 { persistErrorMessage = nil } }
@@ -129,6 +142,16 @@ struct TripDetailIOS: View {
             } else {
                 ContentUnavailableView(L10n.string(.tripTripMissing), systemImage: "magnifyingglass")
             }
+        }
+    }
+
+    private func deletePendingBooking() {
+        guard let booking = pendingDeleteBooking else { return }
+        do {
+            try BookingDeletion.perform(booking: booking, in: modelContext)
+            pendingDeleteBooking = nil
+        } catch {
+            persistErrorMessage = error.localizedDescription
         }
     }
 
