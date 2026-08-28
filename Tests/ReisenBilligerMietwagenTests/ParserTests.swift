@@ -286,6 +286,10 @@ func bmWebConstantsAllowlistAndBookingID() {
     #expect(BilligerMietwagenAuthConstants.loginAPIURL.path == "/auth/v1/login")
     #expect(BilligerMietwagenAuthConstants.refreshTokenURL.path == "/auth/v1/refresh-token")
     #expect(
+        BilligerMietwagenWebConstants.bookingsAPIURL.absoluteString
+            .contains("consumer-api.floyt.com/useraccount/v1/bookings")
+    )
+    #expect(
         BilligerMietwagenWebConstants.CatalogList.active.url(page: 0).absoluteString
             .contains("activity_status=active")
     )

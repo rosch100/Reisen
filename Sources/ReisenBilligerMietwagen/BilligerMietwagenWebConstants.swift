@@ -8,7 +8,8 @@ enum BilligerMietwagenWebConstants {
     private static let accountBookingsPath =
         "\(BilligerMietwagenAuthConstants.accountPathPrefix)/\(bookingsPathSegment)"
 
-    private static let bookingsAPIPath = "/useraccount/v1/bookings"
+    /// Catalog-List-Endpoint als ein Literal (SSOT + Private Binary-Isolation-Marker).
+    static let bookingsAPIURL = URL(string: "https://consumer-api.floyt.com/useraccount/v1/bookings")!
     private static let webBookingAPIPathPrefix = "/useraccount/v1/web/bookings"
 
     private static let activityStatusActive = "active"
@@ -64,7 +65,7 @@ enum BilligerMietwagenWebConstants {
         page: Int
     ) -> URL {
         guard var components = URLComponents(
-            url: BilligerMietwagenAuthConstants.consumerURL(bookingsAPIPath),
+            url: bookingsAPIURL,
             resolvingAgainstBaseURL: false
         ) else {
             preconditionFailure("Ungültige billiger-mietwagen Bookings-API-URL")
