@@ -12,13 +12,13 @@ Anmeldung mit deinem bestehenden Konto beim jeweiligen Portal; Reisen importiert
 |----------|-------------------|
 | **Check24** | Flug, Hotel, Fähre, Mietwagen, … |
 | **Opodo** | Flug, Hotel |
-| **Booking.com** | Flug, Hotel, Erlebnisse |
+| **Booking.com** | Flug, Hotel, Erlebnisse, Flughafentaxi; Attractions/Car schema-bekannt |
 | **Airbnb** | Unterkünfte, Erlebnisse |
 | **GetYourGuide** | Erlebnisse / Touren |
 | **Traveloka** | Hotel, Flug, Erlebnisse, Mietwagen, … |
 | **billiger-mietwagen.de** | Mietwagen |
 
-Zusätzlich: **manuelle Buchungen** (Flug, Hotel, Fähre, Erlebnis, Sonstiges) ohne Portal-Sync.
+Zusätzlich: **manuelle Buchungen** (Flug, Hotel, Fähre, Bahn, Mietwagen, Erlebnis, Sonstiges) ohne Portal-Sync.
 
 Reisen ist **nicht** mit diesen Anbietern verbunden — Login erfolgt direkt beim Portal in einer eingebetteten Web-Ansicht.
 
@@ -95,6 +95,12 @@ Beim Sync:
 1. Lädt der ausgewählte Anbieter Buchungen über die eingeloggte Web-Session.
 2. Geparste Daten werden in die kanonische Domain-Struktur (`Booking`, `Trip`, `CancellationDeadline`, optional `BookingRateDetails`) überführt und persistent gespeichert.
 3. Wenn vom Nutzer aktiviert: **Stornofristen** als lokale **Benachrichtigungen/Erinnerungen** sowie optional **Kalenderereignisse**.
+
+Darüber hinaus:
+- Buchungstypen inkl. **Bahn** und **Mietwagen** (manuell und je nach Portal)
+- **Copy/Paste** für Info- und Editor-Felder (Bestätigungscodes per Tap)
+- **Trip-Vollständigkeit** aus Inter-Booking-Lücken
+- **Portal öffnen** und Gap-Suche Deep-Links zur Anbieter-Website
 
 Der Sync ist für **lokale, persönliche Nutzung** gedacht; Session-Cookies bleiben im WebView-Cookie-Store. Optional (Opt-in): Zugangsdaten in der Geräte-Keychain.
 
