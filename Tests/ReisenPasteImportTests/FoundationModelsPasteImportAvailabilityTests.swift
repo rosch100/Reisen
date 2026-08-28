@@ -1,7 +1,39 @@
 import Foundation
 import Testing
 import ReisenDomain
-import ReisenPasteImport
+@testable import ReisenPasteImport
+
+@Test func pasteImportAvailability_unsignedProcessHasNoPCCEntitlement() {
+    #expect(ProcessEntitlements.contains(ProcessEntitlements.privateCloudCompute) == false)
+}
+
+@Test func pasteImportAvailability_pccRequiresEntitlementEvenWhenDeviceReportsAvailable() {
+    let reader = FoundationModelsPasteImportAvailability(
+        pccEntitlementPresent: false,
+        privateCloudComputeDeviceAvailable: true,
+        onDeviceAvailable: true
+    )
+    let availability = reader.availability()
+    #expect(availability.privateCloudCompute == false)
+    #expect(availability.onDevice == true)
+}
+
+@Test func pasteImportAvailability_pccWithEntitlementFollowsDevice() {
+    let entitled = FoundationModelsPasteImportAvailability(
+        pccEntitlementPresent: true,
+        privateCloudComputeDeviceAvailable: true,
+        onDeviceAvailable: false
+    )
+    #expect(entitled.availability().privateCloudCompute == true)
+
+    let deviceDenied = FoundationModelsPasteImportAvailability(
+        pccEntitlementPresent: true,
+        privateCloudComputeDeviceAvailable: false,
+        onDeviceAvailable: true
+    )
+    #expect(deviceDenied.availability().privateCloudCompute == false)
+    #expect(deviceDenied.availability().onDevice == true)
+}
 
 @Test func pasteImportAvailability_privateCloudComputeWinsOverOnDevice() {
     let reader = FakeAvailabilityReader(privateCloudCompute: true, onDevice: true)

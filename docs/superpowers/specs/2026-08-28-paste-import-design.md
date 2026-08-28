@@ -73,7 +73,7 @@ CI mockt `PasteImportExtracting`. SharedUI mockt keine Modelle.
 
 Vor dem Senden sichtbar:
 
-1. PCC, wenn Availability PCC.
+1. PCC, wenn Availability PCC (Gerät **und** managed Entitlement `com.apple.developer.private-cloud-compute`; ohne Entitlement ist PCC nicht verfügbar — kein Lauf gegen Apples Cloud).
 2. Sonst On-Device, wenn Availability On-Device.
 3. Sonst `unavailable`.
 
