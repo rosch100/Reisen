@@ -65,6 +65,37 @@ func gygBookingSummaryParsesEnrichment() throws {
     #expect(hints.contains { $0.sourceKey.hasPrefix("gyg:itinerary:") })
 }
 
+@Test("GetYourGuideMyBookingsParser behält Draft ohne bookingHash (ohne Portal-URL)")
+func gygMyBookingsKeepsDraftWithoutHash() throws {
+    let json = """
+    {
+      "upcomingBookings": [
+        {
+          "status": "active",
+          "bookingReference": "REF-ONLY",
+          "startingTime": { "startTime": "2099-08-08T19:00:00+07:00" },
+          "bookingFinishDate": "2099-08-08T21:00:00+07:00",
+          "bookedOption": { "activityTitle": "Ohne Hash" }
+        }
+      ]
+    }
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    let draft = try #require(catalog.bookings.first)
+    #expect(draft.confirmationCode == "REF-ONLY")
+    #expect(draft.externalUrl == nil)
+    #expect(BookingExternalURL.browserURL(from: draft.externalUrl) == nil)
+}
+
+@Test("GetYourGuide Catalog-Drafts haben browserURL")
+func gygCatalogDraftsHaveBrowserURL() throws {
+    let json = try GetYourGuideResearchFixture.json(named: "gyg_myBookings_redacted.json")
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    for draft in catalog.bookings {
+        #expect(BookingExternalURL.browserURL(from: draft.externalUrl) != nil)
+    }
+}
+
 @Test("GetYourGuideInitialState extrahiert JSON-Objekt per Brace-Scan")
 func gygInitialStateExtractsBalancedJSON() throws {
     let payload = #"{"myBookings":{"upcomingBookings":[]}}"#

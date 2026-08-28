@@ -32,7 +32,10 @@ private extension AirbnbTripNode {
                     bookingType: .hotel,
                     title: displayName,
                     confirmationCode: confirmationCode,
-                    externalUrl: externalUrl(schedulableType: details.schedulableType, confirmationCode: confirmationCode),
+                    externalUrl: externalUrl(
+                        schedulableType: details.schedulableType,
+                        confirmationCode: confirmationCode
+                    ),
                     startAt: startTime.dateTime,
                     endAt: endTime.dateTime,
                     locationTo: displayName,
@@ -51,7 +54,10 @@ private extension AirbnbTripNode {
                     // TripList `displayName` is the location, not the experience title (see enrichment).
                     title: nil,
                     confirmationCode: confirmationCode,
-                    externalUrl: externalUrl(schedulableType: details.schedulableType, confirmationCode: confirmationCode),
+                    externalUrl: externalUrl(
+                        schedulableType: details.schedulableType,
+                        confirmationCode: confirmationCode
+                    ),
                     startAt: startTime.dateTime,
                     endAt: endTime.dateTime,
                     locationTo: displayName,

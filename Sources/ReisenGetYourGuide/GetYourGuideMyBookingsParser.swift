@@ -29,12 +29,12 @@ public enum GetYourGuideMyBookingsParser {
         guard let startAt = booking.startingTime?.startTime else { return nil }
         guard let endAt = booking.bookingFinishDate ?? booking.startingTime?.startTime else { return nil }
 
-        let confirmationCode = firstNonEmpty(booking.bookingReference, booking.bookingHash)
         let bookingHash = booking.bookingHash?.trimmingCharacters(in: .whitespacesAndNewlines)
         let externalUrl: String? = {
             guard let hash = bookingHash, !hash.isEmpty else { return nil }
             return GetYourGuideWebConstants.bookingURL(hash: hash)
         }()
+        let confirmationCode = firstNonEmpty(booking.bookingReference, bookingHash)
 
         let title = booking.bookedOption?.activityTitle
         let locationTo = booking.bookedOption?.activityLocation?.city?.name

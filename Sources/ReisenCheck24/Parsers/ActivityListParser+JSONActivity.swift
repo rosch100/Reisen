@@ -34,7 +34,7 @@ extension ActivityListParser {
             return nil
         }
 
-        let externalUrl = activityDetailURL(from: activity)
+        let externalUrl = activityDetailURL(from: activity, bookingType: bookingType)
         let confirmationCode =
             (activity["foreignId"] as? String)
             ?? (activity["foreign_id"] as? String)

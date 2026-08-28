@@ -210,6 +210,33 @@ struct ContentView: View {
                 ? OpenBookingsCommandState(canCreateTripFromSelection: true)
                 : nil
         )
+        .focusedSceneValue(
+            \.bookingPortalOpenCommandState,
+            BookingPortalOpenCommandState(url: selectedBookingPortalURL)
+        )
+    }
+
+    /// Aktuell selektierte Buchung mit öffentlicher Portal-URL (Menü/Command).
+    private var selectedBookingPortalURL: URL? {
+        switch selection {
+        case .openBookings:
+            guard selectedOpenBookingIDs.count == 1,
+                  let id = selectedOpenBookingIDs.first,
+                  let booking = openBookings.first(where: { $0.id == id }) else {
+                return nil
+            }
+            return booking.browserURL
+        case .trip(let tripID):
+            guard let trip = trips.first(where: { $0.id == tripID }),
+                  let timelineID = selectedTimelineID,
+                  let bookingUUID = UUID(uuidString: timelineID),
+                  let booking = trip.resolvedBookings.first(where: { $0.id == bookingUUID }) else {
+                return nil
+            }
+            return booking.browserURL
+        default:
+            return nil
+        }
     }
 
     @ViewBuilder
@@ -528,9 +555,7 @@ struct ContentView: View {
                                             startCreateBooking(in: trip, selectBookingID: booking.id)
                                         }
                                         if let url = booking.browserURL {
-                                            Button(L10n.string(.actionOpenInBrowser)) {
-                                                NSWorkspace.shared.open(url)
-                                            }
+                                            BookingPortalOpenButton(browserURL: url)
                                         }
                                         Button(role: .destructive) {
                                             applyAfterTripFocus(trip: trip) {
@@ -637,9 +662,7 @@ struct ContentView: View {
                        let bookingID = selectedIDs.first,
                        let booking = openBookings.first(where: { $0.id == bookingID }) {
                         if let url = booking.browserURL {
-                            Button(L10n.string(.actionOpenInBrowser)) {
-                                NSWorkspace.shared.open(url)
-                            }
+                            BookingPortalOpenButton(browserURL: url)
                         }
                         if let trip = matchingTrip(for: booking) {
                             Button(L10n.string(.actionAssignToTrip)) {
