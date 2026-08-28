@@ -138,7 +138,7 @@ flowchart TD
 Catalog allein reicht für sinnvolle Drafts; Enrichment für Treffpunkt, Itinerary, feinere Policy.  
 Feld→Domain-Mapping: [GYG Impl-Spec](dev/getyourguide-impl-spec.md).
 
-Live-Shape 2026-08-28: `myBookings`-Keys nur `upcomingBookings`, `pastBookings`, `customerEmail`, `isCustomerEmailValidated` — **keine** `page`/`offset`/`cursor`/`hasMore`. In dieser Session 0 upcoming, 4 past (GYG legt beendete Termine nach `pastBookings`, auch mit Status `active`). Catalog-Parser mappt **beide** Listen (Dedup per Hash); `done` und Einträge ohne Hash/Ende werden übersprungen.
+Live-Shape 2026-08-28: `myBookings`-Keys nur `upcomingBookings`, `pastBookings`, `customerEmail`, `isCustomerEmailValidated` — **keine** `page`/`offset`/`cursor`/`hasMore`. In dieser Session 0 upcoming, 4 past (GYG legt beendete Termine nach `pastBookings`, auch mit Status `active`). Catalog-Parser mappt **beide** Listen über `DraftAssembler.draft` (Dedup `dedupedByExternalURL`); `CatalogListing.shouldDrop` sowie Einträge ohne Hash/Ende werden übersprungen.
 
 ### Pagination (2026-08-28, geschlossen)
 

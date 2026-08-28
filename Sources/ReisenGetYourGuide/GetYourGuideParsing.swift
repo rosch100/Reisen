@@ -2,22 +2,65 @@ import Foundation
 import ReisenDomain
 
 enum GetYourGuideParsing {
-    static func occupancy(_ count: Int) -> Int? {
+    static func occupancy(of participants: [GYGParticipant]?) -> Int? {
+        guard let participants, !participants.isEmpty else { return nil }
+        var total = 0
+        for participant in participants {
+            guard let count = participantCount(participant) else { return nil }
+            total += count
+        }
+        return occupancy(total)
+    }
+
+    /// Occupancy und Zeilen nur zusammen: unvollständige Counts → beides leer.
+    static func guests(from participants: [GYGParticipant]?) -> (occupancy: Int?, passengers: [BookingPassenger]) {
+        guard let participants, let occupancy = occupancy(of: participants) else {
+            return (nil, [])
+        }
+        return (occupancy, passengers(from: participants))
+    }
+
+    static func rateDetails(
+        price: GYGMoney?,
+        occupancy: Int?,
+        roomCategory: String? = nil
+    ) -> BookingRateDetails? {
+        guard price != nil || occupancy != nil else { return nil }
+        return BookingRateDetails(
+            totalPriceAmount: price?.amount,
+            totalPriceCurrency: price?.currencyIsoCode,
+            roomCategory: roomCategory,
+            guestCount: occupancy
+        )
+    }
+
+    private static func occupancy(_ count: Int) -> Int? {
         count > 0 ? count : nil
     }
 
-    static func occupancy(of participants: [GYGParticipant]?) -> Int? {
-        occupancy((participants ?? []).reduce(0) { $0 + participantCount($1) })
+    private static func participantCount(_ participant: GYGParticipant) -> Int? {
+        guard let count = participant.count, count >= 0 else { return nil }
+        return count
     }
 
-    static func participantCount(_ participant: GYGParticipant) -> Int {
-        max(0, participant.count ?? 0)
-    }
-
-    /// Katalog: abgeschlossen überspringen; Storno bleibt (anders als `CatalogListing.shouldDrop`).
-    static func catalogStatus(_ raw: String?) -> BookingStatus? {
-        guard !CatalogListing.isCompleted(raw) else { return nil }
-        return BookingStatus.parse(raw)
+    private static func passengers(from participants: [GYGParticipant]) -> [BookingPassenger] {
+        var result: [BookingPassenger] = []
+        var number = 1
+        for participant in participants {
+            guard let count = participantCount(participant) else { return [] }
+            let type = TravellerType.parse(participant.priceCategoryLabel)
+            for _ in 0..<count {
+                result.append(
+                    BookingPassenger(
+                        passengerNumber: number,
+                        travellerType: type,
+                        title: participant.description
+                    )
+                )
+                number += 1
+            }
+        }
+        return result
     }
 }
 

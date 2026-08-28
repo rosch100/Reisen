@@ -27,7 +27,7 @@ HAR-Inventar inkl. Auth/GraphQL/QR: Research A.1. Primärpfad:
 
 ## Catalog-Mapping (`myBookings`)
 
-Listen: `upcomingBookings` **und** `pastBookings` (gleiche Mapper, Dedup per `bookingHash` erst nach erfolgreichem Mapping). GYG schiebt beendete Termine nach `past` (auch Status `active`). `done`/`ended` skip; ohne `bookingHash` oder `bookingFinishDate` skip. Keine Pagination-Felder (HAR 2026-08-28).
+Listen: `upcomingBookings` **und** `pastBookings` (gleiche Mapper → `ProviderBookingFacts` → `DraftAssembler.draft`). Dedup nach erfolgreichem Mapping über `ProviderCatalog.dedupedByExternalURL`. GYG schiebt beendete Termine nach `past` (auch Status `active`). `CatalogListing.shouldDrop` (`cancelled` / `done` / `ended`); ohne `bookingHash` oder `bookingFinishDate` skip. Occupancy nur als `guestCount`, und nur wenn alle Teilnehmer-`count` gesetzt sind. Keine Pagination-Felder (HAR 2026-08-28).
 
 | GYG | Reisen |
 |-----|--------|
@@ -39,7 +39,7 @@ Listen: `upcomingBookings` **und** `pastBookings` (gleiche Mapper, Dedup per `bo
 | `bookingFinishDate` | `endAt` |
 | `bookedOption.activityLocation.city.name` | `locationTo` |
 | `price.amount` / `currencyIsoCode` | Rate/Preis |
-| `status` `active`/`cancelled`/`done` | `confirmed` / `cancelled` / ggf. skip past |
+| `status` `active` / `cancelled` / `done` / `ended` | `confirmed` / Katalog-Drop (`shouldDrop`) |
 | `bookingCancellationPolicy.expirationDate` | `cancellationDeadline` (freeCancellation → isFree) |
 
 Parser: robuster Extract von `__INITIAL_STATE__` (Brace-Scan, kein naives Regex bis Dateiende).
@@ -52,7 +52,7 @@ Parser: robuster Extract von `__INITIAL_STATE__` (Brace-Scan, kein naives Regex 
 | `activity.restrictions` / `inclusions` / `isMobileVoucherAccepted` | `BookingGuestHint` (Kategorie preTravelImportant) |
 | `activity.itinerary` (wichtige Items) | GuestHints „Ablauf“ |
 | `booking.bookingCancellationPolicy` | Deadlines verfeinern |
-| `activityParticipants` | Travellers (ohne PII in Logs) |
+| `activityParticipants` | Travellers nur bei vollständiger Occupancy (sonst keine Zeilen, `guestCount` nil) |
 | QR `travelers-api…/barcode/qrcode` | optional `externalUrl`/Voucher — nicht Pflicht |
 
 ## Auth-Hinweise

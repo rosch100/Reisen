@@ -9,22 +9,24 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     let json = try GetYourGuideResearchFixture.json(named: "gyg_myBookings_redacted.json")
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
 
-    #expect(catalog.bookings.count == 3)
-    let draft = try #require(catalog.bookings.first)
+    #expect(catalog.bookings.count == 2)
+    #expect(Set(catalog.bookings.map(\.status)) == [.confirmed])
+    let draft = try #require(catalog.bookings.first {
+        $0.externalUrl == GetYourGuideWebConstants.bookingURL(hash: "<REDACTED-1>")
+    })
 
     #expect(draft.provider == .getYourGuide)
     #expect(draft.bookingType == .activity)
     #expect(draft.status == .confirmed)
     #expect(draft.title == "Yogyakarta: Ramayana Ballett Prambanan")
     #expect(draft.confirmationCode == "<REDACTED>")
-    #expect(draft.externalUrl == GetYourGuideWebConstants.bookingURL(hash: "<REDACTED-1>"))
-    #expect(catalog.bookings.map(\.status) == [.confirmed, .cancelled, .confirmed])
     #expect(draft.startAt == iso8601("2026-08-08T19:00:00+07:00"))
     #expect(draft.endAt == iso8601("2026-08-08T21:00:00+07:00"))
     #expect(draft.locationTo == "<REDACTED>")
     #expect(draft.rateDetails?.totalPriceAmount == 53.94)
     #expect(draft.rateDetails?.totalPriceCurrency == "EUR")
-    #expect(draft.rateDetails?.passengerCount == 3)
+    #expect(draft.rateDetails?.guestCount == 3)
+    #expect(draft.rateDetails?.passengerCount == nil)
 
     #expect(draft.deadlines.count == 1)
     let deadline = try #require(draft.deadlines.first)
@@ -79,21 +81,19 @@ func gygMyBookingsKeepsPastWhenUpcomingSameHashDoesNotMap() throws {
     ]}}
     """
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
-    #expect(catalog.bookings.map(\.status) == [.confirmed, .cancelled])
+    #expect(catalog.bookings.map(\.status) == [.confirmed])
     #expect(catalog.bookings.map(\.externalUrl) == [
         GetYourGuideWebConstants.bookingURL(hash: "same"),
-        GetYourGuideWebConstants.bookingURL(hash: "nofin"),
     ])
 }
 
-@Test("GetYourGuideMyBookingsParser mappt cancelled in pastBookings")
-func gygMyBookingsMapsCancelledPast() throws {
+@Test("GetYourGuideMyBookingsParser droppt cancelled über CatalogListing.shouldDrop")
+func gygMyBookingsDropsCancelledPast() throws {
     let json = """
     {"myBookings":{"upcomingBookings":[],"pastBookings":[\(gygListBookingJSON(hash: "cx", status: "cancelled"))]}}
     """
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
-    #expect(catalog.bookings.count == 1)
-    #expect(catalog.bookings.first?.status == .cancelled)
+    #expect(catalog.bookings.isEmpty)
 }
 
 @Test("GetYourGuideMyBookingsParser überspringt Einträge ohne bookingFinishDate")
@@ -191,7 +191,8 @@ func gygBookingSummaryParsesEnrichment() throws {
     #expect(enrichment.rateDetails?.totalPriceAmount == 53.94)
     #expect(enrichment.rateDetails?.totalPriceCurrency == "EUR")
     #expect(enrichment.rateDetails?.roomCategory == "Tickets der 2. Klasse")
-    #expect(enrichment.rateDetails?.passengerCount == 3)
+    #expect(enrichment.rateDetails?.guestCount == 3)
+    #expect(enrichment.rateDetails?.passengerCount == nil)
 
     let passengers = try #require(enrichment.passengers)
     #expect(passengers.count == 3)
@@ -205,6 +206,59 @@ func gygBookingSummaryParsesEnrichment() throws {
     #expect(hints.contains { $0.sourceKey == "gyg:inclusions" })
     #expect(hints.contains { $0.sourceKey == "gyg:mobileVoucher" })
     #expect(hints.contains { $0.sourceKey.hasPrefix("gyg:itinerary:") })
+}
+
+@Test("GetYourGuideBookingSummaryParser setzt keine Teilnehmerzeilen bei unvollständiger Occupancy")
+func gygBookingSummaryOmitsPassengersWhenAnyParticipantCountMissing() throws {
+    let json = """
+    {"bookingSummary":{"booking":{"status":"active",\
+    "price":{"amount":10,"currencyIsoCode":"EUR"},\
+    "activityParticipants":[\
+    {"count":2,"priceCategoryLabel":"adult","description":"Erwachsene"},\
+    {"priceCategoryLabel":"child"}\
+    ]}}}
+    """
+    let enrichment = try GetYourGuideBookingSummaryParser.parse(from: json)
+    #expect(enrichment.rateDetails?.guestCount == nil)
+    #expect(enrichment.rateDetails?.passengerCount == nil)
+    #expect(enrichment.passengers == nil)
+}
+
+@Test("GetYourGuideMyBookingsParser setzt Occupancy nicht bei unvollständiger Teilnehmerzahl")
+func gygMyBookingsOmitsOccupancyWhenAnyParticipantCountMissing() throws {
+    let json = """
+    {"upcomingBookings":[\
+    {"bookingHash":"no-count","bookingReference":"REF1","status":"active",\
+    "startingTime":{"startTime":"2026-08-08T19:00:00+07:00"},\
+    "bookingFinishDate":"2026-08-08T21:00:00+07:00",\
+    "price":{"amount":10,"currencyIsoCode":"EUR"},\
+    "activityParticipants":[\
+    {"count":2,"priceCategoryLabel":"adult"},\
+    {"priceCategoryLabel":"child"}\
+    ],\
+    "bookedOption":{"activityTitle":"T"}}]}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    let draft = try #require(catalog.bookings.first)
+    #expect(draft.rateDetails?.totalPriceAmount == 10)
+    #expect(draft.rateDetails?.guestCount == nil)
+    #expect(draft.rateDetails?.passengerCount == nil)
+}
+
+@Test("GetYourGuideMyBookingsParser setzt Occupancy auch ohne Preis")
+func gygMyBookingsKeepsOccupancyWithoutPrice() throws {
+    let json = """
+    {"upcomingBookings":[\
+    {"bookingHash":"occ","bookingReference":"REF1","status":"active",\
+    "startingTime":{"startTime":"2026-08-08T19:00:00+07:00"},\
+    "bookingFinishDate":"2026-08-08T21:00:00+07:00",\
+    "activityParticipants":[{"count":2,"priceCategoryLabel":"adult"}],\
+    "bookedOption":{"activityTitle":"T"}}]}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    let draft = try #require(catalog.bookings.first)
+    #expect(draft.rateDetails?.totalPriceAmount == nil)
+    #expect(draft.rateDetails?.guestCount == 2)
 }
 
 @Test("GetYourGuideMyBookingsParser überspringt Draft ohne bookingHash")

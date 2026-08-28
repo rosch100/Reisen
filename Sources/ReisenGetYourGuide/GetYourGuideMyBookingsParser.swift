@@ -5,7 +5,8 @@ import ReisenDomain
 public enum GetYourGuideMyBookingsParser {
     public static func parse(from jsonText: String) throws -> ProviderCatalog {
         let payload = try decodePayload(from: Data(jsonText.utf8))
-        return ProviderCatalog(bookings: uniqueDrafts(from: listedBookings(from: payload)))
+        let drafts = listedBookings(from: payload).compactMap(mapBooking)
+        return ProviderCatalog(bookings: drafts).dedupedByExternalURL()
     }
 
     private static func decodePayload(from data: Data) throws -> MyBookingsPayload {
@@ -26,60 +27,33 @@ public enum GetYourGuideMyBookingsParser {
         (payload.upcomingBookings ?? []) + (payload.pastBookings ?? [])
     }
 
-    private static func uniqueDrafts(from bookings: [GYGListBooking]) -> [ProviderBookingDraft] {
-        var seenHashes = Set<String>()
-        var drafts: [ProviderBookingDraft] = []
-        drafts.reserveCapacity(bookings.count)
-        for booking in bookings {
-            guard let mapped = mapBooking(booking), seenHashes.insert(mapped.hash).inserted else {
-                continue
-            }
-            drafts.append(mapped.draft)
-        }
-        return drafts
-    }
-
-    private static func mapBooking(_ booking: GYGListBooking) -> MappedListBooking? {
-        guard let status = GetYourGuideParsing.catalogStatus(booking.status) else { return nil }
-        guard let hash = NonEmpty.string(booking.bookingHash) else { return nil }
-        guard let startAt = booking.startingTime?.startTime else { return nil }
-        guard let endAt = booking.bookingFinishDate else { return nil }
-        let times = TemporalFact.pair(bookingType: .activity, start: startAt, end: endAt)
-        guard let window = BookingDateWindow.resolve(type: .activity, start: times.start, end: times.end) else {
+    private static func mapBooking(_ booking: GYGListBooking) -> ProviderBookingDraft? {
+        guard let hash = NonEmpty.string(booking.bookingHash),
+              let startAt = booking.startingTime?.startTime,
+              let endAt = booking.bookingFinishDate
+        else {
             return nil
         }
-
-        let draft = ProviderBookingDraft(
-            provider: .getYourGuide,
-            bookingType: .activity,
-            title: booking.bookedOption?.activityTitle,
-            confirmationCode: NonEmpty.first(booking.bookingReference, hash),
-            externalUrl: GetYourGuideWebConstants.bookingURL(hash: hash),
-            startAt: window.startAt,
-            endAt: window.endAt,
-            locationTo: booking.bookedOption?.activityLocation?.city?.name,
-            status: status,
-            deadlines: booking.bookingCancellationPolicy?.asDeadlines() ?? [],
-            rateDetails: rateDetails(from: booking)
-        )
-        return MappedListBooking(hash: hash, draft: draft)
-    }
-
-    private static func rateDetails(from booking: GYGListBooking) -> BookingRateDetails? {
-        guard let price = booking.price else { return nil }
-        let occupancy = GetYourGuideParsing.occupancy(of: booking.activityParticipants)
-        return BookingRateDetails(
-            totalPriceAmount: price.amount,
-            totalPriceCurrency: price.currencyIsoCode,
-            guestCount: occupancy,
-            passengerCount: occupancy
+        let times = TemporalFact.pair(bookingType: .activity, start: startAt, end: endAt)
+        return DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .getYourGuide,
+                bookingType: .activity,
+                start: times.start,
+                end: times.end,
+                title: booking.bookedOption?.activityTitle,
+                confirmationCode: NonEmpty.first(booking.bookingReference, hash),
+                externalUrl: GetYourGuideWebConstants.bookingURL(hash: hash),
+                locationTo: booking.bookedOption?.activityLocation?.city?.name,
+                statusRaw: booking.status,
+                deadlines: GYGCancellationPolicy.deadlines(booking.bookingCancellationPolicy),
+                rateDetails: GetYourGuideParsing.rateDetails(
+                    price: booking.price,
+                    occupancy: GetYourGuideParsing.occupancy(of: booking.activityParticipants)
+                )
+            )
         )
     }
-}
-
-private struct MappedListBooking {
-    let hash: String
-    let draft: ProviderBookingDraft
 }
 
 private struct MyBookingsEnvelope: Decodable {

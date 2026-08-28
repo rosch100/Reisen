@@ -35,22 +35,14 @@ public enum GetYourGuideBookingSummaryParser {
             meeting?.description
         )
 
-        let deadlines = summary.booking?.bookingCancellationPolicy?.asDeadlines() ?? []
-        let participants = mapPassengers(summary.booking?.activityParticipants ?? [])
-        let occupancy = GetYourGuideParsing.occupancy(participants.count)
+        let deadlines = GYGCancellationPolicy.deadlines(summary.booking?.bookingCancellationPolicy)
+        let guests = GetYourGuideParsing.guests(from: summary.booking?.activityParticipants)
         let guestHints = mapGuestHints(summary.activity)
-
-        let rateDetails: BookingRateDetails? = {
-            let price = summary.booking?.price
-            guard price != nil || occupancy != nil else { return nil }
-            return BookingRateDetails(
-                totalPriceAmount: price?.amount,
-                totalPriceCurrency: price?.currencyIsoCode,
-                roomCategory: summary.activity?.activityOptionTitle,
-                guestCount: occupancy,
-                passengerCount: occupancy
-            )
-        }()
+        let rateDetails = GetYourGuideParsing.rateDetails(
+            price: summary.booking?.price,
+            occupancy: guests.occupancy,
+            roomCategory: summary.activity?.activityOptionTitle
+        )
 
         return DraftAssembler.enrichment(
             from: ProviderBookingFacts(
@@ -62,7 +54,7 @@ public enum GetYourGuideBookingSummaryParser {
                 statusRaw: summary.booking?.status,
                 deadlines: deadlines,
                 rateDetails: rateDetails,
-                passengers: participants,
+                passengers: guests.passengers,
                 guestHints: guestHints
             )
         )
@@ -84,27 +76,6 @@ public enum GetYourGuideBookingSummaryParser {
                 importantItineraryLines: itineraryLines
             )
         )
-    }
-
-    /// Teilnehmer ohne PII (keine Namen aus `traveler`).
-    private static func mapPassengers(_ participants: [GYGParticipant]) -> [BookingPassenger] {
-        var result: [BookingPassenger] = []
-        var number = 1
-        for participant in participants {
-            let count = GetYourGuideParsing.participantCount(participant)
-            let type = TravellerType.parse(participant.priceCategoryLabel)
-            for _ in 0..<count {
-                result.append(
-                    BookingPassenger(
-                        passengerNumber: number,
-                        travellerType: type,
-                        title: participant.description
-                    )
-                )
-                number += 1
-            }
-        }
-        return result
     }
 }
 

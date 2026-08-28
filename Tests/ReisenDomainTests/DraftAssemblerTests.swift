@@ -630,6 +630,17 @@ import ReisenDomain
                 bookingType: .activity,
                 start: .instant(Date(timeIntervalSince1970: 10)),
                 end: .instant(Date(timeIntervalSince1970: 20)),
+                statusRaw: "cancelled"
+            )
+        ) == nil
+    )
+    #expect(
+        DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .getYourGuide,
+                bookingType: .activity,
+                start: .instant(Date(timeIntervalSince1970: 10)),
+                end: .instant(Date(timeIntervalSince1970: 20)),
                 statusRaw: "done"
             )
         ) == nil
