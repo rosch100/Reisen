@@ -88,10 +88,10 @@ struct TripDetailView: View {
         }
     }
 
-    private func requestDeleteManualBooking(_ booking: SDBooking) {
+    private func requestDeleteBooking(_ booking: SDBooking) {
         selectTimelineID(booking.id.uuidString)
-        pendingManualDeleteBookingID = booking.id
-        showManualDeleteConfirmation = true
+        pendingDeleteBookingID = booking.id
+        showDeleteConfirmation = true
     }
 
     private func requestRemoveBookingFromTrip(_ booking: SDBooking) {
@@ -102,18 +102,24 @@ struct TripDetailView: View {
 
     @State private var showAssignBookings = false
     @State private var assignPreselectedBookingIDs: Set<UUID> = []
-    @State private var pendingManualDeleteBookingID: UUID?
-    @State private var showManualDeleteConfirmation = false
+    @State private var pendingDeleteBookingID: UUID?
+    @State private var showDeleteConfirmation = false
     @State private var pendingRemoveFromTripBookingID: UUID?
     @State private var showRemoveFromTripConfirmation = false
+    @State private var persistErrorMessage: String?
 
-
-    private func confirmDeleteManualBooking() {
-        guard let bookingIDToDelete = pendingManualDeleteBookingID else { return }
-
-        if let bookingToDelete = trip.resolvedBookings.first(where: { $0.id == bookingIDToDelete }) {
-            modelContext.delete(bookingToDelete)
-            try? modelContext.save()
+    private func confirmDeleteBooking() {
+        guard let bookingIDToDelete = pendingDeleteBookingID,
+              let bookingToDelete = trip.resolvedBookings.first(where: { $0.id == bookingIDToDelete }) else {
+            pendingDeleteBookingID = nil
+            return
+        }
+        do {
+            try BookingDeletion.perform(booking: bookingToDelete, in: modelContext)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+            pendingDeleteBookingID = nil
+            return
         }
 
         let newSelection = trip.timelineBookings().first?.id.uuidString
@@ -127,7 +133,7 @@ struct TripDetailView: View {
             bookingEditorSession = nil
         }
 
-        pendingManualDeleteBookingID = nil
+        pendingDeleteBookingID = nil
     }
 
     private func confirmRemoveBookingFromTrip() {
@@ -250,11 +256,10 @@ struct TripDetailView: View {
                       let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
                 requestRemoveBookingFromTrip(booking)
             }
-            .onReceive(NotificationCenter.default.publisher(for: .reisenRequestDeleteManualBooking)) { note in
+            .onReceive(NotificationCenter.default.publisher(for: .reisenRequestDeleteBooking)) { note in
                 guard let bookingID = note.object as? UUID,
-                      let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }),
-                      booking.provider == .manual else { return }
-                requestDeleteManualBooking(booking)
+                      let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
+                requestDeleteBooking(booking)
             }
         } else {
             BookingDetailPanel(
@@ -265,9 +270,9 @@ struct TripDetailView: View {
                 selectedTimelineID: $selectedTimelineID,
                 onEditGap: { payload in gapEditorPayload = payload },
                     gapPresentation: gapPresentation(for:),
-                    onRequestManualDeleteBooking: { bookingID in
-                        pendingManualDeleteBookingID = bookingID
-                        showManualDeleteConfirmation = true
+                    onRequestDeleteBooking: { bookingID in
+                        pendingDeleteBookingID = bookingID
+                        showDeleteConfirmation = true
                     },
                     onRequestRemoveFromTrip: { bookingID in
                         guard let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
@@ -298,13 +303,32 @@ struct TripDetailView: View {
         }
         }
         .bookingTripConfirmDialogs(
-            showDeleteConfirmation: $showManualDeleteConfirmation,
+            showDeleteConfirmation: $showDeleteConfirmation,
             showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
-            onConfirmDelete: confirmDeleteManualBooking,
+            bookingTitle: trip.resolvedBookings.first(where: { $0.id == pendingDeleteBookingID })?.presentationTitle
+                ?? L10n.string(.editorBooking),
+            showsSyncRestoreWarning: {
+                guard let pendingDeleteBookingID,
+                      let booking = trip.resolvedBookings.first(where: { $0.id == pendingDeleteBookingID }) else {
+                    return false
+                }
+                return booking.provider != .manual
+            }(),
+            onConfirmDelete: confirmDeleteBooking,
             onConfirmRemove: confirmRemoveBookingFromTrip,
-            onCancelDelete: { pendingManualDeleteBookingID = nil },
+            onCancelDelete: { pendingDeleteBookingID = nil },
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
         )
+        .alert(L10n.string(.tripAssignFailed), isPresented: Binding(
+            get: { persistErrorMessage != nil },
+            set: { if !$0 { persistErrorMessage = nil } }
+        )) {
+            Button(L10n.string(.commonOk), role: .cancel) { persistErrorMessage = nil }
+        } message: {
+            if let persistErrorMessage {
+                Text(persistErrorMessage)
+            }
+        }
     }
 
     @ViewBuilder
@@ -363,10 +387,8 @@ struct TripDetailView: View {
                                     Text(L10n.string(.actionRemoveFromTrip))
                                 }
 
-                                if ProviderID(rawValue: booking.providerRaw) == .manual {
-                                    Button(role: .destructive) { requestDeleteManualBooking(booking) } label: {
-                                        Text(L10n.string(.actionDeleteEllipsis))
-                                    }
+                                Button(role: .destructive) { requestDeleteBooking(booking) } label: {
+                                    Text(L10n.string(.actionDeleteEllipsis))
                                 }
 
                             case .gap(let gap):
@@ -541,7 +563,7 @@ private struct BookingDetailPanel: View {
     @Binding var selectedTimelineID: String?
     let onEditGap: (GapEditorPayload) -> Void
     let gapPresentation: (ComputedGap) -> GapPresentation
-    let onRequestManualDeleteBooking: (UUID) -> Void
+    let onRequestDeleteBooking: (UUID) -> Void
     let onRequestRemoveFromTrip: (UUID) -> Void
     var onContentHeightChange: ((CGFloat) -> Void)? = nil
 
@@ -661,7 +683,7 @@ private struct BookingDetailPanel: View {
                                 isOverlapping: (overlapCountsByBookingID[booking.id] ?? 0) > 0,
                                 overlapCount: overlapCountsByBookingID[booking.id] ?? 0,
                                 onEditBooking: { bookingEditorSession = .edit(bookingID: booking.id) },
-                                onRequestManualDeleteBooking: onRequestManualDeleteBooking,
+                                onRequestDeleteBooking: onRequestDeleteBooking,
                                 onRequestRemoveFromTrip: onRequestRemoveFromTrip
                             )
                         case .gap(let gap):

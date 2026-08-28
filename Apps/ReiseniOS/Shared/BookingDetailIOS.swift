@@ -12,6 +12,7 @@ struct BookingDetailIOS: View {
     var onTripCreated: ((UUID) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query private var bookings: [SDBooking]
     @Query private var trips: [SDTrip]
 
@@ -70,9 +71,15 @@ struct BookingDetailIOS: View {
     private func deletePendingBooking() {
         guard let bookingID = pendingDeleteBookingID,
               let bookingToDelete = bookings.first(where: { $0.id == bookingID }) else { return }
-        modelContext.delete(bookingToDelete)
-        try? modelContext.save()
-        pendingDeleteBookingID = nil
+        do {
+            try BookingDeletion.perform(booking: bookingToDelete, in: modelContext)
+            pendingDeleteBookingID = nil
+            dismiss()
+        } catch {
+            assignErrorMessage = error.localizedDescription
+            showAssignError = true
+            pendingDeleteBookingID = nil
+        }
     }
 
     private func removePendingBookingFromTrip() {
@@ -94,15 +101,13 @@ struct BookingDetailIOS: View {
             }
             .help(L10n.string(.tripEditBookingHelp))
 
-            if booking.provider == .manual {
-                Button(role: .destructive) {
-                    pendingDeleteBookingID = booking.id
-                    showDeleteConfirmation = true
-                } label: {
-                    Text(L10n.string(.actionDeleteEllipsis))
-                }
-                .help(L10n.string(.tripDeleteManualHelp))
+            Button(role: .destructive) {
+                pendingDeleteBookingID = booking.id
+                showDeleteConfirmation = true
+            } label: {
+                Text(L10n.string(.actionDeleteEllipsis))
             }
+            .help(L10n.string(.bookingDeleteHelp))
 
             if booking.trip != nil {
                 Button(role: .destructive) {
@@ -321,6 +326,8 @@ struct BookingDetailIOS: View {
         .bookingTripConfirmDialogs(
             showDeleteConfirmation: $showDeleteConfirmation,
             showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
+            bookingTitle: booking?.presentationTitle ?? L10n.string(.editorBooking),
+            showsSyncRestoreWarning: booking.map { $0.provider != .manual } ?? false,
             onConfirmDelete: deletePendingBooking,
             onConfirmRemove: removePendingBookingFromTrip,
             onCancelDelete: { pendingDeleteBookingID = nil },

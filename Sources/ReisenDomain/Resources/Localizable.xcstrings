@@ -7138,18 +7138,98 @@
       }
     },
 
-    "trip.delete_confirm_message": {
+    "booking.delete_confirm_message": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Reise wird gelöscht. Zugeordnete Buchungen bleiben als offene Buchungen erhalten."
+            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The trip will be deleted. Assigned bookings remain as open bookings."
+            "value": "The booking will be permanently removed from Reisen."
+          }
+        }
+      }
+    },
+    "booking.delete_confirm_message_synced": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt. Nach dem nächsten Provider-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The booking will be permanently removed from Reisen. After the next provider sync it may reappear if it still exists at the provider."
+          }
+        }
+      }
+    },
+    "booking.delete_confirm_title_named": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung „%1$@“ löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete booking “%1$@”?"
+          }
+        }
+      }
+    },
+    "booking.delete_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Buchung unwiderruflich löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete this booking"
+          }
+        }
+      }
+    },
+    "trip.delete_confirm_message_empty": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Reise und zugeordnete Lücken werden gelöscht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The trip and its gaps will be deleted."
+          }
+        }
+      }
+    },
+    "trip.delete_confirm_message_with_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Nur Reise löschen“ belässt die Buchungen unter Offene Buchungen. „Reise und Buchungen löschen“ entfernt die enthaltenen Buchungen dauerhaft. Anbieter-Buchungen können beim nächsten Sync wieder erscheinen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Delete trip only” keeps the bookings as open bookings. “Delete trip and bookings” permanently removes the contained bookings. Provider bookings may reappear after the next sync."
           }
         }
       }
@@ -7170,18 +7250,34 @@
         }
       }
     },
-    "trip.delete_manual_help": {
+    "trip.delete_keep_bookings": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese manuelle Buchung unwiderruflich löschen"
+            "value": "Nur Reise löschen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Permanently delete this manual booking"
+            "value": "Delete trip only"
+          }
+        }
+      }
+    },
+    "trip.delete_with_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reise und Buchungen löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete trip and bookings"
           }
         }
       }

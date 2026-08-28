@@ -9,7 +9,7 @@ struct BookingDetailContent: View {
     var isOverlapping: Bool = false
     var overlapCount: Int = 0
     var onEditBooking: (() -> Void)?
-    var onRequestManualDeleteBooking: ((UUID) -> Void)?
+    var onRequestDeleteBooking: ((UUID) -> Void)?
     var onRequestRemoveFromTrip: ((UUID) -> Void)?
 
     private var priceText: String {
@@ -119,15 +119,15 @@ struct BookingDetailContent: View {
                 .help(L10n.string(.tripEditBookingHelp))
             }
 
-            if booking.provider == .manual, let onRequestManualDeleteBooking {
+            if let onRequestDeleteBooking {
                 Button(role: .destructive) {
-                    onRequestManualDeleteBooking(booking.id)
+                    onRequestDeleteBooking(booking.id)
                 } label: {
                     Text(L10n.string(.actionDeleteEllipsis))
                 }
                 .buttonStyle(.link)
                 .padding(.top, 4)
-                .help(L10n.string(.tripDeleteManualHelp))
+                .help(L10n.string(.bookingDeleteHelp))
             }
 
             if let onRequestRemoveFromTrip {

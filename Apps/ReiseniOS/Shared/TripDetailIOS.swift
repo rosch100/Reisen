@@ -18,6 +18,7 @@ struct TripDetailIOS: View {
     @State private var tripToEdit: SDTrip?
     @State private var showAssignBookings = false
     @State private var showDeleteConfirm = false
+    @State private var persistErrorMessage: String?
 
     var trip: SDTrip? {
         trips.first(where: { $0.id == tripID })
@@ -108,17 +109,22 @@ struct TripDetailIOS: View {
                 .sheet(isPresented: $showAssignBookings) {
                     AssignBookingsSheet(trip: trip, candidates: assignCandidates(for: trip))
                 }
-                .confirmationDialog(
-                    L10n.string(.actionDeleteTripConfirm),
+                .tripDeleteConfirmDialog(
                     isPresented: $showDeleteConfirm,
-                    titleVisibility: .visible
-                ) {
-                    Button(L10n.string(.commonDelete), role: .destructive) {
-                        deleteTrip(trip)
-                    }
-                    Button(L10n.string(.commonCancel), role: .cancel) {}
+                    tripTitle: trip.title,
+                    bookingCount: trip.resolvedBookings.count,
+                    onKeepBookings: { deleteTrip(trip, bookings: .keepAsOpen) },
+                    onDeleteBookings: { deleteTrip(trip, bookings: .deleteContained) }
+                )
+                .alert(L10n.string(.tripAssignFailed), isPresented: Binding(
+                    get: { persistErrorMessage != nil },
+                    set: { if !$0 { persistErrorMessage = nil } }
+                )) {
+                    Button(L10n.string(.commonOk), role: .cancel) { persistErrorMessage = nil }
                 } message: {
-                    Text(L10n.string(.tripDeleteConfirmMessage))
+                    if let persistErrorMessage {
+                        Text(persistErrorMessage)
+                    }
                 }
             } else {
                 ContentUnavailableView(L10n.string(.tripTripMissing), systemImage: "magnifyingglass")
@@ -126,8 +132,12 @@ struct TripDetailIOS: View {
         }
     }
 
-    private func deleteTrip(_ trip: SDTrip) {
-        try? TripDeletion.perform(trip: trip, in: modelContext)
-        dismiss()
+    private func deleteTrip(_ trip: SDTrip, bookings policy: TripDeletionBookingPolicy) {
+        do {
+            try TripDeletion.perform(trip: trip, in: modelContext, bookings: policy)
+            dismiss()
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
     }
 }

@@ -12,10 +12,6 @@ public enum TripDeletionBookingPolicy: Sendable {
 /// Einheitliche Reise-Löschung: Buchungen gemäß Policy, Trip löschen, speichern.
 @MainActor
 public enum TripDeletion {
-    public static func perform(trip: SDTrip, in context: ModelContext) throws {
-        try perform(trip: trip, in: context, bookings: .keepAsOpen)
-    }
-
     public static func perform(
         trip: SDTrip,
         in context: ModelContext,

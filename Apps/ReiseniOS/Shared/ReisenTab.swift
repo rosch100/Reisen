@@ -19,6 +19,7 @@ struct ReisenTab: View {
     @State private var searchText = ""
     @State private var pendingDeleteTrip: SDTrip?
     @State private var showDeleteConfirm = false
+    @State private var persistErrorMessage: String?
 
     private var filteredTrips: [SDTrip] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -53,20 +54,27 @@ struct ReisenTab: View {
             )
             .reisenSheetDetents()
         }
-        .confirmationDialog(
-            L10n.string(.actionDeleteTripConfirm),
+        .tripDeleteConfirmDialog(
             isPresented: $showDeleteConfirm,
-            titleVisibility: .visible,
-            presenting: pendingDeleteTrip
-        ) { trip in
-            Button(L10n.string(.commonDelete), role: .destructive) {
-                deleteTrip(trip)
+            tripTitle: pendingDeleteTrip?.title ?? "",
+            bookingCount: pendingDeleteTrip?.resolvedBookings.count ?? 0,
+            onKeepBookings: {
+                if let trip = pendingDeleteTrip { deleteTrip(trip, bookings: .keepAsOpen) }
+            },
+            onDeleteBookings: {
+                if let trip = pendingDeleteTrip { deleteTrip(trip, bookings: .deleteContained) }
+            },
+            onCancel: { pendingDeleteTrip = nil }
+        )
+        .alert(L10n.string(.tripAssignFailed), isPresented: Binding(
+            get: { persistErrorMessage != nil },
+            set: { if !$0 { persistErrorMessage = nil } }
+        )) {
+            Button(L10n.string(.commonOk), role: .cancel) { persistErrorMessage = nil }
+        } message: {
+            if let persistErrorMessage {
+                Text(persistErrorMessage)
             }
-            Button(L10n.string(.commonCancel), role: .cancel) {
-                pendingDeleteTrip = nil
-            }
-        } message: { _ in
-            Text(L10n.string(.tripDeleteConfirmMessage))
         }
     }
 
@@ -124,14 +132,15 @@ struct ReisenTab: View {
             }
     }
 
-    private func deleteTrip(_ trip: SDTrip) {
+    private func deleteTrip(_ trip: SDTrip, bookings policy: TripDeletionBookingPolicy) {
         do {
-            try TripDeletion.perform(trip: trip, in: modelContext)
+            try TripDeletion.perform(trip: trip, in: modelContext, bookings: policy)
             if selectedTripID == trip.id {
                 selectedTripID = nil
             }
         } catch {
-            // Keep selection; error surfaces on next interaction if save failed.
+            persistErrorMessage = error.localizedDescription
+            return
         }
         pendingDeleteTrip = nil
     }
