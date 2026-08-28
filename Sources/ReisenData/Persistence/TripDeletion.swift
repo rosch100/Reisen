@@ -29,6 +29,11 @@ public enum TripDeletion {
             }
         }
         context.delete(trip)
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
     }
 }

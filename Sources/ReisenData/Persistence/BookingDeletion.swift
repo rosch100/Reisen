@@ -6,6 +6,11 @@ import SwiftData
 public enum BookingDeletion {
     public static func perform(booking: SDBooking, in context: ModelContext) throws {
         context.delete(booking)
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
     }
 }
