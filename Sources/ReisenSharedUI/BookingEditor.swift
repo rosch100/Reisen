@@ -94,6 +94,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
     public var totalPriceAmountText: String
     public var totalPriceCurrency: String
     public var roomCategory: String
+    public var operatorName: String
     public var boardType: BookingBoardType
     public var includedBreakfastState: BookingIncludedBreakfastState
     public var guestCountText: String
@@ -137,6 +138,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             totalPriceAmountText: "",
             totalPriceCurrency: "EUR",
             roomCategory: "",
+            operatorName: "",
             boardType: .unknown,
             includedBreakfastState: .unknown,
             guestCountText: "",
@@ -174,6 +176,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             totalPriceAmountText: booking.rateDetails?.totalPriceAmount.map { String($0) } ?? "",
             totalPriceCurrency: booking.rateDetails?.totalPriceCurrency ?? "EUR",
             roomCategory: booking.rateDetails?.roomCategory ?? "",
+            operatorName: booking.operatorName ?? "",
             boardType: BookingBoardType(rawValue: booking.rateDetails?.boardTypeRaw ?? "") ?? .unknown,
             includedBreakfastState: BookingIncludedBreakfastState.fromBool(booking.rateDetails?.includedBreakfast),
             guestCountText: booking.rateDetails?.guestCount.map { String($0) } ?? "",
@@ -330,6 +333,12 @@ public struct BookingEditorDraft: Equatable, Sendable {
         booking.locationTo = Self.normalizeOptionalString(locationTo)
         booking.locationFromAddress = Self.normalizeOptionalString(locationFromAddress)
         booking.locationToAddress = Self.normalizeOptionalString(locationToAddress)
+        // Sichtbarkeit (`showsOperatorNameField`) ist keine Persistenzregel.
+        if bookingType.persistsOperatorName {
+            booking.operatorName = Self.normalizeOptionalString(operatorName)
+        } else {
+            booking.operatorName = nil
+        }
         if bookingType == .hotel {
             booking.startAt = HotelStayDate.dateOnly(fromLocalPickerDate: startAt)
             booking.endAt = HotelStayDate.dateOnly(fromLocalPickerDate: endAt)
@@ -577,6 +586,10 @@ public struct BookingEditorForm: View {
 
     private var computedEndAtMin: Date { draft.startAt }
 
+    private var scheduleDateComponents: DatePicker.Components {
+        draft.bookingType == .hotel ? [.date] : [.date, .hourAndMinute]
+    }
+
     public init(
         title: String,
         showsSyncOverwriteHint: Bool,
@@ -623,7 +636,7 @@ public struct BookingEditorForm: View {
                     TextField(L10n.string(.editorTitle), text: $draft.title)
                     Picker(L10n.string(.editorType), selection: $draft.bookingType) {
                         ForEach(BookingType.allCases) { type in
-                            Text(localizedBookingType(type)).tag(type)
+                            BookingTypeLabel(type).tag(type)
                         }
                     }
                     Picker(L10n.string(.bookingDetailStatus), selection: $draft.status) {
@@ -640,15 +653,15 @@ public struct BookingEditorForm: View {
                         .autocorrectionDisabled()
                         #endif
                     DatePicker(
-                        L10n.string(.editorStart),
+                        draft.bookingType.scheduleStartLabel,
                         selection: $draft.startAt,
-                        displayedComponents: draft.bookingType == .hotel ? [.date] : [.date, .hourAndMinute]
+                        displayedComponents: scheduleDateComponents
                     )
                     DatePicker(
-                        L10n.string(.editorEnd),
+                        draft.bookingType.scheduleEndLabel,
                         selection: $draft.endAt,
                         in: computedEndAtMin...,
-                        displayedComponents: draft.bookingType == .hotel ? [.date] : [.date, .hourAndMinute]
+                        displayedComponents: scheduleDateComponents
                     )
                     if draft.bookingType.showsLocationFrom {
                         TextField(draft.bookingType.locationFromLabel, text: $draft.locationFrom)
@@ -659,6 +672,9 @@ public struct BookingEditorForm: View {
                     }
                     if let toAddressLabel = draft.bookingType.locationToAddressLabel {
                         TextField(L10n.optionalFieldLabel(toAddressLabel), text: $draft.locationToAddress)
+                    }
+                    if draft.bookingType.showsOperatorNameField {
+                        TextField(draft.bookingType.operatorNameLabel, text: $draft.operatorName)
                     }
                 }
 
@@ -838,10 +854,6 @@ public struct BookingEditorForm: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.background)
-    }
-
-    private func localizedBookingType(_ type: BookingType) -> String {
-        type.displayLabel
     }
 
     private func localizedBookingStatus(_ status: BookingStatus) -> String {

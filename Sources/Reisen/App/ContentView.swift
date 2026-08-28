@@ -210,6 +210,33 @@ struct ContentView: View {
                 ? OpenBookingsCommandState(canCreateTripFromSelection: true)
                 : nil
         )
+        .focusedSceneValue(
+            \.bookingPortalOpenCommandState,
+            BookingPortalOpenCommandState(url: selectedBookingPortalURL)
+        )
+    }
+
+    /// Aktuell selektierte Buchung mit öffentlicher Portal-URL (Menü/Command).
+    private var selectedBookingPortalURL: URL? {
+        switch selection {
+        case .openBookings:
+            guard selectedOpenBookingIDs.count == 1,
+                  let id = selectedOpenBookingIDs.first,
+                  let booking = openBookings.first(where: { $0.id == id }) else {
+                return nil
+            }
+            return booking.browserURL
+        case .trip(let tripID):
+            guard let trip = trips.first(where: { $0.id == tripID }),
+                  let timelineID = selectedTimelineID,
+                  let bookingUUID = UUID(uuidString: timelineID),
+                  let booking = trip.resolvedBookings.first(where: { $0.id == bookingUUID }) else {
+                return nil
+            }
+            return booking.browserURL
+        default:
+            return nil
+        }
     }
 
     @ViewBuilder
@@ -432,6 +459,7 @@ struct ContentView: View {
                     Text(L10n.string(.tripNoTripsYet))
                         .foregroundStyle(.secondary)
                 } else {
+                    let gapBadges = SDTrip.listGapBadgeCounts(for: trips)
                     ForEach(trips) { trip in
                         let tripBookings = futureBookings(for: trip)
                         let isExpanded = expandedTripIDs.contains(trip.id)
@@ -461,8 +489,11 @@ struct ContentView: View {
                                             Text(dateRange(trip))
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
-                                            if !tripBookings.isEmpty {
-                                                Text(L10n.format(.tripBookingCount, tripBookings.count))
+                                            if let meta = L10n.tripCompletenessListMeta(
+                                                futureBookingCount: tripBookings.count,
+                                                gapCount: gapBadges[trip.id]
+                                            ) {
+                                                Text(meta)
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
                                             }
@@ -502,9 +533,9 @@ struct ContentView: View {
                                         }
                                     } label: {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(booking.displayTitle)
+                                            Text(booking.presentationTitle)
                                                 .lineLimit(1)
-                                            Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
+                                            Text(BookingScheduleRangeText.make(for: booking))
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
                                         }
@@ -529,9 +560,7 @@ struct ContentView: View {
                                         }
                                         BookingCopyConfirmationMenuItems(booking: booking)
                                         if let url = booking.browserURL {
-                                            Button(L10n.string(.actionOpenInBrowser)) {
-                                                NSWorkspace.shared.open(url)
-                                            }
+                                            BookingPortalOpenButton(browserURL: url)
                                             CopyLinkMenuItem(url: url)
                                         }
                                         Button(role: .destructive) {
@@ -628,9 +657,15 @@ struct ContentView: View {
                     }
                 }
             } else {
-                List(openBookings, selection: $selectedOpenBookingIDs) { booking in
-                    OpenBookingRow(booking: booking)
-                        .tag(booking.id)
+                let partition = OpenBookingMatching.partitionByFillOpportunity(
+                    bookings: openBookings,
+                    trips: trips
+                )
+                List(selection: $selectedOpenBookingIDs) {
+                    OpenBookingsFillSections(partition: partition) { booking, fillCaption in
+                        OpenBookingRow(booking: booking, fillCaption: fillCaption)
+                            .tag(booking.id)
+                    }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
                 .navigationTitle(L10n.string(.tripOpenBookings))
@@ -640,9 +675,7 @@ struct ContentView: View {
                        let booking = openBookings.first(where: { $0.id == bookingID }) {
                         BookingCopyConfirmationMenuItems(booking: booking)
                         if let url = booking.browserURL {
-                            Button(L10n.string(.actionOpenInBrowser)) {
-                                NSWorkspace.shared.open(url)
-                            }
+                            BookingPortalOpenButton(browserURL: url)
                             CopyLinkMenuItem(url: url)
                         }
                         if let trip = matchingTrip(for: booking) {
@@ -740,7 +773,7 @@ struct ContentView: View {
                     }
                 )
                 .id(booking.id)
-                .navigationTitle(booking.displayTitle)
+                .navigationTitle(booking.presentationTitle)
             } else if let first = openBookings.first {
                 OpenBookingDetailView(
                     booking: first,
@@ -755,7 +788,7 @@ struct ContentView: View {
                     }
                 )
                 .id(first.id)
-                .navigationTitle(first.displayTitle)
+                .navigationTitle(first.presentationTitle)
             } else {
                 ContentUnavailableView(
                     L10n.string(.tripNoOpenBookings),

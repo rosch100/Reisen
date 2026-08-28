@@ -27,8 +27,7 @@ public struct HotelCheckInOutParser {
         let hoursStr = ns.substring(with: match.range(at: 1))
         let minsStr = ns.substring(with: match.range(at: 2))
         guard let hours = Int(hoursStr), let mins = Int(minsStr) else { return nil }
-        guard (0...23).contains(hours), (0...59).contains(mins) else { return nil }
-        return hours * 60 + mins
+        return ClockTime.minutes(hours: hours, minute: mins)
     }
 }
 

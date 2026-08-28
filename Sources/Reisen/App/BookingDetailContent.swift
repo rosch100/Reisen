@@ -19,7 +19,7 @@ struct BookingDetailContent: View {
     }
 
     private var titleText: String {
-        booking.title ?? booking.bookingType.displayLabel
+        booking.presentationTitle
     }
 
     private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
@@ -103,7 +103,7 @@ struct BookingDetailContent: View {
 
             if let url = booking.browserURL {
                 Divider()
-                Link(L10n.string(.actionOpenInBrowser), destination: url)
+                BookingPortalOpenLink(browserURL: url)
                     .font(.caption)
                     .contextMenu {
                         CopyLinkMenuItem(url: url)

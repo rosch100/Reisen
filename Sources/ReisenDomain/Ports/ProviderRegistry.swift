@@ -29,6 +29,15 @@ public struct ProviderRegistry {
         syncProviderIDs.filter { AppSettingsKeys.isProviderEnabled($0, defaults: defaults) }
     }
 
+    public var gapSearchProviderIDs: [ProviderID] {
+        deepLinkBuilders.map(\.providerID)
+    }
+
+    public func enabledGapSearchProviderIDs(defaults: UserDefaults = .standard) -> [ProviderID] {
+        let enabled = Set(enabledSyncProviderIDs(defaults: defaults))
+        return gapSearchProviderIDs.filter { enabled.contains($0) }
+    }
+
     public func provider(id: ProviderID) -> (any TravelProvider)? {
         providers.first { $0.id == id }
     }
@@ -37,23 +46,53 @@ public struct ProviderRegistry {
         deepLinkBuilders.first { $0.providerID == id }
     }
 
-    public func deepLinks(for gap: ComputedGap, preferredProvider: ProviderID? = nil) -> [DeepLinkSuggestion] {
+    public func deepLinks(
+        for gap: ComputedGap,
+        preferredProvider: ProviderID? = nil,
+        defaults: UserDefaults = .standard
+    ) -> [DeepLinkSuggestion] {
         ProviderDeepLinks.suggestions(
             for: gap,
             preferredProvider: preferredProvider,
+            enabledProviderIDs: Set(enabledSyncProviderIDs(defaults: defaults)),
             deepLinkBuilder: { deepLinkBuilder(id: $0) },
             allBuilders: deepLinkBuilders
         )
     }
 
-    public func gapDeepLinkSuggestions(for context: GapContext) -> (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
-        ProviderDeepLinks.suggestions(for: context, allBuilders: deepLinkBuilders)
+    public func gapDeepLinkSuggestions(
+        for context: GapContext,
+        preferredProvider: ProviderID? = nil,
+        defaults: UserDefaults = .standard
+    ) -> (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
+        ProviderDeepLinks.suggestions(
+            for: context,
+            allBuilders: selectedGapBuilders(preferredProvider: preferredProvider, defaults: defaults)
+        )
     }
 
     public func gapDeepLinkSuggestions(
         for gap: ComputedGap,
-        kind: GapKind
+        kind: GapKind,
+        preferredProvider: ProviderID? = nil,
+        defaults: UserDefaults = .standard
     ) -> (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
-        gapDeepLinkSuggestions(for: GapContext(gap: gap, kind: kind))
+        gapDeepLinkSuggestions(
+            for: GapContext(gap: gap, kind: kind),
+            preferredProvider: preferredProvider,
+            defaults: defaults
+        )
+    }
+
+    private func selectedGapBuilders(
+        preferredProvider: ProviderID?,
+        defaults: UserDefaults
+    ) -> [any GapDeepLinkBuilding] {
+        ProviderDeepLinks.selectedBuilders(
+            preferredProvider: preferredProvider,
+            enabledProviderIDs: Set(enabledSyncProviderIDs(defaults: defaults)),
+            deepLinkBuilder: { deepLinkBuilder(id: $0) },
+            allBuilders: deepLinkBuilders
+        )
     }
 }

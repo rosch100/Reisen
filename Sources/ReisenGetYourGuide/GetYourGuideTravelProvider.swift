@@ -19,7 +19,10 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
     public var onProgress: (@MainActor (String) -> Void)?
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: GetYourGuideProviderError.missingWebViewSession
+        )
 
         onProgress?("Lade Buchungen (GetYourGuide)…")
         let html = try await webView.fetchAuthenticatedText(
@@ -40,7 +43,10 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
         session: any ProviderSession,
         ref: ProviderBookingRef
     ) async throws -> ProviderBookingEnrichment {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: GetYourGuideProviderError.missingWebViewSession
+        )
         guard !ref.externalUrl.isEmpty,
               let url = GetYourGuideWebConstants.syncBookingURL(from: ref.externalUrl)
         else {
@@ -60,14 +66,5 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
 
         onProgress?("Parser Buchungsdetails (GetYourGuide)…")
         return try GetYourGuideBookingSummaryParser.parse(from: stateJSON)
-    }
-}
-
-private extension GetYourGuideTravelProvider {
-    func extractWebView(from session: any ProviderSession) throws -> WKWebView {
-        if let web = (session as? WebViewProviderSession)?.webView {
-            return web
-        }
-        throw GetYourGuideProviderError.missingWebViewSession
     }
 }

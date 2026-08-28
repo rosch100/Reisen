@@ -11,11 +11,24 @@ public enum GapAssembly {
 
         let edges = GapEdgeBuilder(minGap: minGap)
         var results: [ComputedGap] = []
-        if let leading = edges.edgeGap(start: tripStart, end: first.startAt, from: first, to: first) {
+        // Vertrag: Trip-Rand-Gaps explizit `isTripBoundary: true` (Leading/Trailing).
+        if let leading = edges.edgeGap(
+            start: tripStart,
+            end: first.startAt,
+            from: first,
+            to: first,
+            isTripBoundary: true
+        ) {
             results.append(leading)
         }
         results.append(contentsOf: edges.interBookingGaps(in: sorted))
-        if let trailing = edges.edgeGap(start: last.endAt, end: tripEnd, from: last, to: last) {
+        if let trailing = edges.edgeGap(
+            start: last.endAt,
+            end: tripEnd,
+            from: last,
+            to: last,
+            isTripBoundary: true
+        ) {
             results.append(trailing)
         }
         return results

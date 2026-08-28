@@ -203,3 +203,48 @@ private func dateInTimeZone(
     components.second = 0
     return components.date
 }
+
+@Test("AirbnbTripsGraphQLParser behält Draft ohne Portal-URL")
+func airbnbTripListKeepsDraftWithoutPortalURL() throws {
+    // id ist kein gültiges Relay "Trip:<n>" → keine Portal-URL, Draft bleibt (Open-UI ausgeblendet).
+    let json = """
+    {
+      "data": {
+        "viewer": {
+          "trips": {
+            "edges": [
+              {
+                "node": {
+                  "id": "not-a-relay-trip-id",
+                  "displayName": "Testort",
+                  "status": "UPCOMING",
+                  "startTime": { "listingTimeZone": "UTC", "dateTime": "2099-08-01T12:00:00.000Z" },
+                  "endTime": { "listingTimeZone": "UTC", "dateTime": "2099-08-02T12:00:00.000Z" },
+                  "scheduledItems": {
+                    "edges": [
+                      {
+                        "node": {
+                          "details": {
+                            "schedulableType": "RESERVATION",
+                            "stayReservation": {
+                              "confirmationCode": "ABC123",
+                              "status": "ACCEPT"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    let catalog = try AirbnbTripsGraphQLParser.parseTripList(from: json)
+    let draft = try #require(catalog.bookings.first)
+    #expect(draft.confirmationCode == "ABC123")
+    #expect(draft.externalUrl == nil)
+}

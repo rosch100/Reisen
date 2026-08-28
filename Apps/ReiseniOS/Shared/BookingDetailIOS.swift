@@ -6,9 +6,6 @@ import ReisenAppCore
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
-#if REISEN_PROVIDER_SYNC
-import ReisenProviders
-#endif
 
 struct BookingDetailIOS: View {
     let bookingID: UUID
@@ -67,9 +64,7 @@ struct BookingDetailIOS: View {
     }
 
     private var bookingNavigationTitle: String {
-        booking?.title
-            ?? booking?.bookingType.displayLabel
-            ?? L10n.string(.editorBooking)
+        booking?.presentationTitle ?? L10n.string(.editorBooking)
     }
 
     private func deletePendingBooking() {
@@ -187,18 +182,16 @@ struct BookingDetailIOS: View {
     private func bookingLinksSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.bookingDetailLinksSection)) {
             if let externalURL {
-                Button {
-                    SystemURLOpener.open(externalURL)
-                } label: {
-                    #if REISEN_PROVIDER_SYNC
-                    Text(ProviderNativeApp.externalOpenTitle(
-                        for: booking.provider,
-                        isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
-                    ))
-                    #else
-                    Text(L10n.string(.actionOpenInBrowser))
-                    #endif
-                }
+                #if REISEN_PROVIDER_SYNC
+                let installed = nativeAppPresence.isInstalled(booking.provider)
+                #else
+                let installed = false
+                #endif
+                BookingPortalOpenLink(
+                    bookingURL: externalURL,
+                    providerID: booking.provider,
+                    isNativeAppInstalled: installed
+                )
                 .contextMenu {
                     CopyLinkMenuItem(url: externalURL)
                 }
@@ -214,29 +207,23 @@ struct BookingDetailIOS: View {
         Section(L10n.string(.tripOverview)) {
             CopyableLabeledValue(
                 label: L10n.string(.editorTitle),
-                value: booking.title ?? booking.bookingType.displayLabel,
-                kind: .standard,
+                value: booking.presentationTitle,
                 style: .list,
                 valueTextStyle: .headline
             )
             CopyableLabeledValue(
                 label: L10n.string(.editorType),
                 value: booking.bookingType.displayLabel,
-                kind: .standard,
                 style: .list
             )
             CopyableLabeledValue(
                 label: L10n.string(.editorProvider),
                 value: booking.provider.rawValue.capitalized,
-                kind: .standard,
                 style: .list
             )
-            let startText = booking.startAt.formatted(date: .abbreviated, time: .omitted)
-            let endText = booking.endAt.formatted(date: .abbreviated, time: .omitted)
             CopyableLabeledValue(
                 label: BookingDetailLabels.dateRange,
-                value: "\(startText) – \(endText)",
-                kind: .standard,
+                value: BookingScheduleRangeText.make(for: booking),
                 style: .list
             )
         }

@@ -108,10 +108,13 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         // Kompatibilität: bestehende UI/Editor erwartet aktuell `rateDetails.baggageInfoRaw`.
         let baggageInfoRaw = BaggageInfoFormatter.baggageInfoRaw(passengers: passengers)
 
-        return ProviderBookingEnrichment(
-            rateDetails: BookingRateDetails(baggageInfoRaw: baggageInfoRaw),
-            passengers: passengers,
-            status: nil
+        return DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .opodo,
+                bookingType: .flight,
+                rateDetails: BookingRateDetails(baggageInfoRaw: baggageInfoRaw),
+                passengers: passengers
+            )
         )
     }
 
@@ -120,39 +123,39 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         externalUrl: String
     ) async throws -> ProviderBookingEnrichment {
         onProgress?("Lade Trip-Storno (GraphQL)…")
-        let (graphqlDeadlines, resolvedStatus) = try await fetchGraphQLHotelDeadlinesAndStatus(
+        let (graphqlDeadlines, statusRaw) = try await fetchGraphQLHotelDeadlinesAndStatus(
             webView: webView,
             externalUrl: externalUrl
         )
 
-        if resolvedStatus == .cancelled {
-            return ProviderBookingEnrichment(deadlines: [], status: .cancelled)
+        if !CatalogListing.shouldFetchDetails(statusRaw) {
+            return OpodoHotelGraphQLEnrichment.make(
+                statusRaw: statusRaw,
+                deadlines: graphqlDeadlines,
+                guestHints: []
+            )
         }
 
         let deadlines = selectGraphQLHotelDeadlines(graphqlDeadlines)
-
-        let hotelOffsetSeconds: Int? = deadlines.compactMap(\.hotelOffsetSeconds).first ?? 0
         let pageText = try await loadTripDetailsPageText(in: webView, externalURL: externalUrl)
         let guestHints = StayHintHTMLExtractor.extract(
             from: pageText,
             providerRaw: ProviderID.opodo.rawValue
         )
 
-        return ProviderBookingEnrichment(
+        return OpodoHotelGraphQLEnrichment.make(
+            statusRaw: statusRaw,
             deadlines: deadlines,
-            rateDetails: nil,
-            guestHints: guestHints.isEmpty ? nil : guestHints,
-            hotelOffsetSeconds: hotelOffsetSeconds,
-            status: resolvedStatus
+            guestHints: guestHints
         )
     }
 
     private func fetchGraphQLHotelDeadlinesAndStatus(
         webView: WKWebView,
         externalUrl: String
-    ) async throws -> ([CancellationDeadline], BookingStatus?) {
+    ) async throws -> ([CancellationDeadline], String?) {
         var graphqlDeadlines: [CancellationDeadline] = []
-        var resolvedStatus: BookingStatus?
+        var statusRaw: String?
 
         if let token = OpodoGetTripByTokenQuery.tdToken(fromExternalURL: externalUrl) {
             do {
@@ -168,7 +171,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
                 )
                 let parsed = try OpodoTripCancellationGraphQLParser().parse(from: json)
                 graphqlDeadlines = parsed.deadlines
-                resolvedStatus = parsed.status
+                statusRaw = parsed.statusRaw
             } catch let error as OpodoProviderError {
                 throw error
             } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
@@ -179,15 +182,11 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             }
         }
 
-        return (graphqlDeadlines, resolvedStatus)
+        return (graphqlDeadlines, statusRaw)
     }
 
     private func selectGraphQLHotelDeadlines(_ graphqlDeadlines: [CancellationDeadline]) -> [CancellationDeadline] {
-        let latestFree = graphqlDeadlines
-            .filter(\.isFreeCancellation)
-            .max(by: { $0.deadlineAt < $1.deadlineAt })
-        if let latestFree { return [latestFree] }
-        return graphqlDeadlines
+        graphqlDeadlines.preferringLatestFree
     }
 
     /// Opodo My-Trips ist eine Hash-SPA unter `/travel/secure/`.
@@ -265,10 +264,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
     private static let maxPages = 20
 
     private func webView(from session: any ProviderSession) throws -> WKWebView {
-        guard let webSession = session as? WebViewProviderSession else {
-            throw OpodoProviderError.sessionNotEstablished
-        }
-        return webSession.webView
+        try ProviderWebView.webView(from: session, orThrow: OpodoProviderError.sessionNotEstablished)
     }
 
     private func fetchUpcomingTrips(using webView: WKWebView) async throws -> [ProviderBookingDraft] {
@@ -297,12 +293,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             }
         }
 
-        var byURL: [String: ProviderBookingDraft] = [:]
-        for booking in all {
-            guard let url = booking.externalUrl else { continue }
-            byURL[url] = booking
-        }
-        return Array(byURL.values).sorted { $0.startAt < $1.startAt }
+        return ProviderCatalog(bookings: all).dedupedByExternalURL().bookings
     }
 
     /// Session GraphQL from HAR discovery (GetUserAccount). Not a booking catalog.
@@ -314,6 +305,24 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             referer: "https://www.opodo.de/",
             contentType: "application/json",
             body: OpodoSessionProbe.getUserAccountRequestBody()
+        )
+    }
+}
+
+enum OpodoHotelGraphQLEnrichment {
+    static func make(
+        statusRaw: String?,
+        deadlines: [CancellationDeadline],
+        guestHints: [BookingGuestHint]
+    ) -> ProviderBookingEnrichment {
+        DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .opodo,
+                bookingType: .hotel,
+                statusRaw: statusRaw,
+                deadlines: deadlines,
+                guestHints: guestHints
+            )
         )
     }
 }

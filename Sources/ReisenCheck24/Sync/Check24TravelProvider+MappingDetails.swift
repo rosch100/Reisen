@@ -1,60 +1,55 @@
 import Foundation
 import ReisenDomain
 
-extension Check24TravelProvider {
-    func mergeBookingDetails(
-        primary: ParsedBookingDetails?,
-        secondary: ParsedBookingDetails?
+extension ParsedBookingDetails {
+    static func merging(
+        _ primary: ParsedBookingDetails?,
+        with secondary: ParsedBookingDetails?
     ) -> ParsedBookingDetails? {
-        switch (primary, secondary) {
-        case let (p?, s?):
-            return ParsedBookingDetails(
-                rawDetailsFingerprint: p.rawDetailsFingerprint,
-                totalPriceAmount: p.totalPriceAmount ?? s.totalPriceAmount,
-                totalPriceCurrency: p.totalPriceCurrency ?? s.totalPriceCurrency,
-                roomCategory: p.roomCategory ?? s.roomCategory,
-                boardTypeRaw: p.boardTypeRaw ?? s.boardTypeRaw,
-                includedBreakfast: p.includedBreakfast ?? s.includedBreakfast,
-                guestCount: p.guestCount ?? s.guestCount,
-                roomCount: p.roomCount ?? s.roomCount,
-                airline: p.airline ?? s.airline,
-                passengerCount: p.passengerCount ?? s.passengerCount,
-                baggageInfoRaw: p.baggageInfoRaw ?? s.baggageInfoRaw
-            )
-        case let (p?, nil):
-            return p
-        case let (nil, s?):
-            return s
-        case (nil, nil):
-            return nil
-        }
+        BookingRateDetails.merging(
+            existing: secondary?.asRateDetails(),
+            incoming: primary?.asRateDetails()
+        ).map(ParsedBookingDetails.init(rateDetails:))
     }
 
-    func mapDeadline(_ parsed: ParsedCancellationDeadline) -> CancellationDeadline {
+    func asRateDetails(lastParsedAt: Date = Date()) -> BookingRateDetails {
+        BookingRateDetails(
+            rawDetailsFingerprint: rawDetailsFingerprint.flatMap { $0.isEmpty ? nil : $0 },
+            totalPriceAmount: totalPriceAmount,
+            totalPriceCurrency: totalPriceCurrency,
+            roomCategory: roomCategory,
+            boardType: BookingBoardType.parse(boardTypeRaw),
+            includedBreakfast: includedBreakfast,
+            guestCount: guestCount,
+            roomCount: roomCount,
+            airline: airline,
+            passengerCount: passengerCount,
+            baggageInfoRaw: baggageInfoRaw,
+            lastParsedAt: lastParsedAt
+        )
+    }
+}
+
+extension ParsedCancellationDeadline {
+    var asDomain: CancellationDeadline {
         CancellationDeadline(
-            deadlineAt: parsed.deadlineAt,
-            policyText: parsed.policyText,
-            isStrict: parsed.isStrict,
-            isFreeCancellation: parsed.isFreeCancellation,
-            hotelOffsetSeconds: parsed.hotelOffsetSeconds,
-            cancellationFeeAmount: parsed.cancellationFeeAmount
+            deadlineAt: deadlineAt,
+            policyText: policyText,
+            isStrict: isStrict,
+            isFreeCancellation: isFreeCancellation,
+            hotelOffsetSeconds: hotelOffsetSeconds,
+            cancellationFeeAmount: cancellationFeeAmount
         )
     }
 
-    func mapRateDetails(_ parsed: ParsedBookingDetails) -> BookingRateDetails {
-        BookingRateDetails(
-            rawDetailsFingerprint: parsed.rawDetailsFingerprint,
-            totalPriceAmount: parsed.totalPriceAmount,
-            totalPriceCurrency: parsed.totalPriceCurrency,
-            roomCategory: parsed.roomCategory,
-            boardType: BookingBoardType(rawValue: parsed.boardTypeRaw ?? "") ?? .unknown,
-            includedBreakfast: parsed.includedBreakfast,
-            guestCount: parsed.guestCount,
-            roomCount: parsed.roomCount,
-            airline: parsed.airline,
-            passengerCount: parsed.passengerCount,
-            baggageInfoRaw: parsed.baggageInfoRaw,
-            lastParsedAt: Date()
+    init(_ deadline: CancellationDeadline) {
+        self.init(
+            deadlineAt: deadline.deadlineAt,
+            policyText: deadline.policyText,
+            isStrict: deadline.isStrict,
+            isFreeCancellation: deadline.isFreeCancellation,
+            hotelOffsetSeconds: deadline.hotelOffsetSeconds,
+            cancellationFeeAmount: deadline.cancellationFeeAmount
         )
     }
 }

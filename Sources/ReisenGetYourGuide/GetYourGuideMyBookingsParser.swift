@@ -6,7 +6,7 @@ public enum GetYourGuideMyBookingsParser {
     public static func parse(from jsonText: String) throws -> ProviderCatalog {
         let data = Data(jsonText.utf8)
         let payload = try decodePayload(from: data)
-        let drafts = (payload.upcomingBookings ?? []).compactMap(mapBooking)
+        let drafts = (payload.upcomingBookings ?? []).compactMap { mapBooking($0) }
         return ProviderCatalog(bookings: drafts)
     }
 
@@ -25,20 +25,19 @@ public enum GetYourGuideMyBookingsParser {
     }
 
     private static func mapBooking(_ booking: GYGListBooking) -> ProviderBookingDraft? {
-        guard let status = mapStatus(booking.status) else { return nil }
-        guard let startAt = booking.startingTime?.startTime else { return nil }
-        guard let endAt = booking.bookingFinishDate ?? booking.startingTime?.startTime else { return nil }
+        let statusRaw = NonEmpty.string(booking.status)
+        guard let startAt = booking.startingTime?.startTime,
+              let endAt = booking.bookingFinishDate else {
+            return nil
+        }
 
-        let confirmationCode = firstNonEmpty(booking.bookingReference, booking.bookingHash)
-        let bookingHash = booking.bookingHash?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let externalUrl: String? = {
-            guard let hash = bookingHash, !hash.isEmpty else { return nil }
-            return GetYourGuideWebConstants.bookingURL(hash: hash)
-        }()
+        let confirmationCode = NonEmpty.first(booking.bookingReference, booking.bookingHash)
+        let bookingHash = NonEmpty.string(booking.bookingHash)
+        let externalUrl: String? = bookingHash.map(GetYourGuideWebConstants.bookingURL(hash:))
 
         let title = booking.bookedOption?.activityTitle
         let locationTo = booking.bookedOption?.activityLocation?.city?.name
-        let deadlines = mapDeadlines(booking.bookingCancellationPolicy)
+        let deadlines = booking.bookingCancellationPolicy?.asDeadlines() ?? []
         let participantCount = (booking.activityParticipants ?? []).reduce(0) { $0 + max(0, $1.count ?? 0) }
         let rateDetails: BookingRateDetails? = {
             guard let price = booking.price else { return nil }
@@ -50,61 +49,22 @@ public enum GetYourGuideMyBookingsParser {
             )
         }()
 
-        return ProviderBookingDraft(
-            provider: .getYourGuide,
-            bookingType: .activity,
-            title: title,
-            confirmationCode: confirmationCode,
-            externalUrl: externalUrl,
-            startAt: startAt,
-            endAt: endAt,
-            locationTo: locationTo,
-            status: status,
-            deadlines: deadlines,
-            rateDetails: rateDetails
+        let times = TemporalFact.pair(bookingType: .activity, start: startAt, end: endAt)
+        return DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .getYourGuide,
+                bookingType: .activity,
+                start: times.start,
+                end: times.end,
+                title: title,
+                confirmationCode: confirmationCode,
+                externalUrl: externalUrl,
+                locationTo: locationTo,
+                statusRaw: statusRaw,
+                deadlines: deadlines,
+                rateDetails: rateDetails
+            )
         )
-    }
-
-    /// `active` → confirmed, `cancelled` → cancelled, `done` → skip (past).
-    private static func mapStatus(_ raw: String?) -> BookingStatus? {
-        guard let raw else { return .unknown }
-        switch raw.lowercased() {
-        case "active":
-            return .confirmed
-        case "cancelled", "canceled":
-            return .cancelled
-        case "done":
-            return nil
-        default:
-            return .unknown
-        }
-    }
-
-    private static func mapDeadlines(_ policy: GYGCancellationPolicy?) -> [CancellationDeadline] {
-        guard let policy else { return [] }
-        guard let deadlineAt = policy.expirationDate ?? policy.policyExpirationDate else { return [] }
-        let typeHaystack = [policy.type, policy.policyType]
-            .compactMap { $0?.lowercased() }
-            .joined(separator: " ")
-        let isFree = typeHaystack.contains("freecancellation")
-            || (policy.feeValue.map { $0 == 0 } ?? false)
-        return [
-            CancellationDeadline(
-                deadlineAt: deadlineAt,
-                policyText: policy.message,
-                isFreeCancellation: isFree
-            ),
-        ]
-    }
-
-    private static func firstNonEmpty(_ values: String?...) -> String? {
-        for value in values {
-            guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
-                continue
-            }
-            return trimmed
-        }
-        return nil
     }
 }
 

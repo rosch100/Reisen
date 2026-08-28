@@ -11,6 +11,7 @@ struct TripDetailIOS: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.providerNativeAppPresence) private var nativeAppPresence
     @Query private var trips: [SDTrip]
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
 
@@ -56,6 +57,7 @@ struct TripDetailIOS: View {
                                 style: .list
                             )
                         }
+                        TripCompletenessOverviewRow(completeness: trip.completeness())
                         if trip.resolvedBookings.isEmpty {
                             Button(L10n.string(.actionAssignBookings)) {
                                 showAssignBookings = true
@@ -72,6 +74,14 @@ struct TripDetailIOS: View {
                         }
                         .contextMenu {
                             BookingCopyConfirmationMenuItems(booking: booking)
+                            if let url = booking.browserURL {
+                                BookingPortalOpenButton(
+                                    bookingURL: url,
+                                    providerID: booking.provider,
+                                    isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
+                                )
+                                CopyLinkMenuItem(url: url)
+                            }
                         }
                     }
                 }

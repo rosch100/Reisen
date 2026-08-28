@@ -15,7 +15,7 @@ extension BookingComFlightOrderParser {
         options: FlightCancellationOptions
     ) -> CancellationDeadline? {
         guard let raw = refund.deadlineAt ?? refund.expiresAt,
-              let date = BookingComParsing.parseISODateTime(raw) else { return nil }
+              let date = ISODateTime.parse(raw) else { return nil }
         return CancellationDeadline(
             deadlineAt: date,
             policyText: refund.description,

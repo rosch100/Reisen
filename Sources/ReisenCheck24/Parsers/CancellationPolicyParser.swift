@@ -45,7 +45,7 @@ public struct CancellationPolicyParser {
         guard let match = regex.firstMatch(in: html, range: fullRange) else { return nil }
         let range = match.range(at: 1)
         guard range.location != NSNotFound else { return nil }
-        return ns.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
+        return NonEmpty.string(ns.substring(with: range))
     }
 
     private func parseDeadlines(from html: String) -> [ParsedCancellationDeadline] {
@@ -76,8 +76,6 @@ public struct CancellationPolicyParser {
         guard !matches.isEmpty else { return [] }
 
         var deadlines: [ParsedCancellationDeadline] = []
-        let dtFormatterHotel = CancellationPolicyDateFormats.hotelDateTimeFormatter
-        let dtFormatterUtc = CancellationPolicyDateFormats.utcDateTimeFormatter
         let clauseFormatter = CancellationPolicyClauseFormatter()
 
         for m in matches {
@@ -99,14 +97,13 @@ public struct CancellationPolicyParser {
                 extractCancellationFeeAmount(from: window)
                 ?? extractCancellationFeeAmount(fromFeeLabel: feeLabel)
 
-            let deadlineAt: Date? =
-                parseDeadlineFromLabelTime(labelTime, window: window)?.deadlineAt ??
-                (hotelUntil.flatMap { dtFormatterHotel.date(from: $0) }) ??
-                (utcUntil.flatMap { dtFormatterUtc.date(from: $0) })
+            let fromLabel = parseDeadlineFromLabelTime(labelTime, window: window)
+            let deadlineAt =
+                fromLabel?.deadlineAt
+                ?? hotelUntil.flatMap(ISODateTime.parseInstant)
+                ?? utcUntil.flatMap(ISODateTime.parseInstant)
 
-            let parsedHotelOffsetSeconds =
-                parseDeadlineFromLabelTime(labelTime, window: window)?.offsetSeconds ??
-                hotelOffsetSeconds
+            let parsedHotelOffsetSeconds = fromLabel?.offsetSeconds ?? hotelOffsetSeconds
 
             guard let deadlineAt else { continue }
 
@@ -125,26 +122,7 @@ public struct CancellationPolicyParser {
             )
         }
 
-        // Deduping:
-        // Check24 kann mehrere Policy-Stufen mit identischem `deadlineAt` liefern
-        // (z.B. "from/after/bis" Varianten). Daher dedupen wir nicht nur nach Zeitpunkt,
-        // sondern nach einem Composite-Key inkl. Fee-Information.
-        var byKey: [String: ParsedCancellationDeadline] = [:]
-        for d in deadlines {
-            let feeKey: String = {
-                if let amount = d.cancellationFeeAmount {
-                    // stabiler Schlüssel in Cent statt Double
-                    return "\(Int((amount * 100.0).rounded()))"
-                }
-                // falls keine Fee bekannt: policyText als Schlüsselbasis nutzen
-                return d.policyText?.lowercased() ?? ""
-            }()
-
-            let key = "\(Int(d.deadlineAt.timeIntervalSince1970))|\(d.isFreeCancellation)|\(d.isStrict)|\(feeKey)"
-            byKey[key] = d
-        }
-
-        return byKey.values.sorted { $0.deadlineAt < $1.deadlineAt }
+        return deadlines.map(\.asDomain).deduped.map { ParsedCancellationDeadline($0) }
     }
 
     private func extractValue(from window: String, key: String) -> String? {
@@ -197,13 +175,7 @@ public struct CancellationPolicyParser {
         guard let match = regex.firstMatch(in: window, range: fullRange) else { return nil }
         guard match.numberOfRanges >= 2 else { return nil }
         let offset = ns.substring(with: match.range(at: 1)) // +0800
-        guard offset.count == 5 else { return nil }
-        let signChar = offset.first
-        let hoursStr = String(offset.dropFirst(1).prefix(2))
-        let minsStr = String(offset.dropFirst(3).prefix(2))
-        guard let hours = Int(hoursStr), let mins = Int(minsStr) else { return nil }
-        let seconds = hours * 3600 + mins * 60
-        return signChar == "-" ? -seconds : seconds
+        return ISODateTime.offsetSeconds(from: offset)
     }
 
     private func extractCancellationFeeAmount(from window: String) -> Double? {
@@ -276,53 +248,9 @@ public struct CancellationPolicyParser {
         guard match.numberOfRanges >= 3 else { return nil }
         let startRaw = ns.substring(with: match.range(at: 1))
         let endRaw = ns.substring(with: match.range(at: 2))
-
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "en_US_POSIX")
-        df.timeZone = .current
-        df.dateFormat = "yyyy-MM-dd"
-        guard let startDate = df.date(from: startRaw), let endDate = df.date(from: endRaw) else { return nil }
+        guard let startDate = HotelStayDate.parse(startRaw),
+              let endDate = HotelStayDate.parse(endRaw) else { return nil }
         return (startDate: startDate, endDate: endDate)
-    }
-
-    private func decodeDeadlineAt(
-        hotelUntil: String?,
-        utcUntil: String?,
-        labelTime: String,
-        dtFormatterHotel: DateFormatter,
-        dtFormatterUtc: DateFormatter
-    ) -> Date? {
-        if let hotelUntil, let d = dtFormatterHotel.date(from: hotelUntil) {
-            return d
-        }
-        if let utcUntil, let d = dtFormatterUtc.date(from: utcUntil) {
-            return d
-        }
-
-        // Fallback ohne UTC/Hotel-Feld ist riskant (Hotel-Ortszeit). Daher nur wenn labelTime eindeutig ist:
-        // "bis zum 13.07.2026 21:59 Uhr ..." -> Date nur als "local" ohne garantierte TZ ist fehleranfällig.
-        // Um keine falsche Semantik einzubauen: hier skippen statt Dummy.
-        return nil
-    }
-}
-
-private enum CancellationPolicyDateFormats {
-    // cancelableUntilHotel: "2026-08-12T21:59:59+0800"
-    static var hotelDateTimeFormatter: DateFormatter {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)
-        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        return f
-    }
-
-    // cancelableUntilUtc: "2026-08-12T13:59:59+0000"
-    static var utcDateTimeFormatter: DateFormatter {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)
-        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        return f
     }
 }
 
@@ -368,6 +296,4 @@ private struct CancellationPolicyClauseFormatter {
             .replacingOccurrences(of: "stornierbar fü", with: "stornierbar für")
     }
 }
-
-// (kein Dedup-Helper notwendig)
 

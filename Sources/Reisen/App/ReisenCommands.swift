@@ -5,6 +5,8 @@ import ReisenSharedUI
 
 struct ReisenCommands: Commands {
     @FocusedValue(\.openBookingsCommandState) private var openBookingsCommandState
+    @FocusedValue(\.bookingPortalOpenCommandState) private var bookingPortalOpenCommandState
+    @Environment(\.openURL) private var openURL
 
     var body: some Commands {
         CommandGroup(replacing: .pasteboard) {
@@ -72,6 +74,18 @@ struct ReisenCommands: Commands {
             Button(L10n.string(.menuEditTrip)) {
                 NotificationCenter.default.post(name: .reisenEditSelectedTrip, object: nil)
             }
+
+            Button(BookingPortalOpenTitle.openInBrowser) {
+                if let url = bookingPortalOpenCommandState?.url {
+                    openURL(url)
+                }
+            }
+            .disabled(bookingPortalOpenCommandState?.canOpen != true)
+            .help(
+                bookingPortalOpenCommandState?.canOpen == true
+                    ? BookingPortalOpenTitle.openInBrowserHelp
+                    : L10n.string(.bookingDetailNoBrowserLink)
+            )
         }
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 import ReisenDomain
 
 public struct ParsedBookingDetails {
-    public let rawDetailsFingerprint: String
+    public let rawDetailsFingerprint: String?
 
     // Common (hotel + flights)
     public let totalPriceAmount: Double?
@@ -21,7 +21,7 @@ public struct ParsedBookingDetails {
     public let baggageInfoRaw: String?
 
     public init(
-        rawDetailsFingerprint: String,
+        rawDetailsFingerprint: String? = nil,
         totalPriceAmount: Double? = nil,
         totalPriceCurrency: String? = nil,
         roomCategory: String? = nil,
@@ -44,5 +44,21 @@ public struct ParsedBookingDetails {
         self.airline = airline
         self.passengerCount = passengerCount
         self.baggageInfoRaw = baggageInfoRaw
+    }
+
+    init(rateDetails: BookingRateDetails) {
+        self.init(
+            rawDetailsFingerprint: rateDetails.rawDetailsFingerprint,
+            totalPriceAmount: rateDetails.totalPriceAmount,
+            totalPriceCurrency: rateDetails.totalPriceCurrency,
+            roomCategory: rateDetails.roomCategory,
+            boardTypeRaw: rateDetails.boardType == .unknown ? nil : rateDetails.boardType.rawValue,
+            includedBreakfast: rateDetails.includedBreakfast,
+            guestCount: rateDetails.guestCount,
+            roomCount: rateDetails.roomCount,
+            airline: rateDetails.airline,
+            passengerCount: rateDetails.passengerCount,
+            baggageInfoRaw: rateDetails.baggageInfoRaw
+        )
     }
 }

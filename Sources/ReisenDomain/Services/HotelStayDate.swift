@@ -28,6 +28,10 @@ public enum HotelStayDate: Sendable {
         HotelStayDateParse.parse(raw)
     }
 
+    public static func parseGerman(_ raw: String) -> Date? {
+        HotelStayDateParse.parseGerman(raw)
+    }
+
     public static func dateOnly(
         fromStoredOrParsed date: Date,
         legacyHotelOffsetSeconds: Int? = nil
@@ -36,6 +40,22 @@ public enum HotelStayDate: Sendable {
             fromStoredOrParsed: date,
             legacyHotelOffsetSeconds: legacyHotelOffsetSeconds
         )
+    }
+
+    /// Kalendertag eines API-Instants: mit Offset in Hotel-TZ, sonst GMT-Anker.
+    /// Nicht für bereits gespeicherte Date-only-Anker (dafür `dateOnly(fromStoredOrParsed:)`).
+    public static func calendarDay(fromParsed date: Date, offsetSeconds: Int? = nil) -> Date {
+        guard let offsetSeconds,
+              let hotelTZ = TimeZone(secondsFromGMT: offsetSeconds) else {
+            return dateOnly(fromStoredOrParsed: date)
+        }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = hotelTZ
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        guard let year = parts.year, let month = parts.month, let day = parts.day else {
+            preconditionFailure("HotelStayDate: Datum ohne Y/M/D")
+        }
+        return dateOnly(year: year, month: month, day: day)
     }
 
     public static func dateOnly(fromLocalPickerDate date: Date, calendar: Calendar = .current) -> Date {

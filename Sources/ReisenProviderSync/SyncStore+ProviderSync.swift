@@ -346,12 +346,11 @@ private extension SyncStore {
         activeDrafts: [ProviderBookingDraft],
         missingDeadlinesHint: Bool
     ) {
-        guard providerID == .booking else { return }
         let hotels = activeDrafts.filter { $0.bookingType == .hotel }
         let withDeadlines = activeDrafts.filter { !$0.deadlines.isEmpty }.count
         let hotelURLSample = hotels.first?.externalUrl.map { String($0.prefix(120)) } ?? "-"
         SyncLog.append(
-            "enrich_deadlines provider=booking active=\(activeDrafts.count) hotels=\(hotels.count) withDeadlines=\(withDeadlines) missingHint=\(missingDeadlinesHint) hotelUrl=\(hotelURLSample)"
+            "enrich_deadlines provider=\(providerID.rawValue) active=\(activeDrafts.count) hotels=\(hotels.count) withDeadlines=\(withDeadlines) missingHint=\(missingDeadlinesHint) hotelUrl=\(hotelURLSample)"
         )
     }
 

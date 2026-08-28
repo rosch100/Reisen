@@ -17,7 +17,7 @@ extension BookingComCancellationDeadlineParser {
         if let match = BookingComParsing.capture(
             #"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2}))"#,
             in: snippet
-        ), let date = BookingComParsing.parseISODateTime(match) {
+        ), let date = ISODateTime.parse(match) {
             return date
         }
         if let match = BookingComParsing.capture(

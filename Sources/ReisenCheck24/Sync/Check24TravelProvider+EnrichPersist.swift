@@ -78,7 +78,7 @@ extension Check24TravelProvider {
         guestHintsByBookingURL: inout [String: [BookingGuestHint]],
         guestHints: [BookingGuestHint]
     ) {
-        if let key = identityKey(for: parsedBooking) {
+        if let key = parsedBooking.identityKey {
             bookingDetailsByBookingKey[key] = parsedDetails
         }
 

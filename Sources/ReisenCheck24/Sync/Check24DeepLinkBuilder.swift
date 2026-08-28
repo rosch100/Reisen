@@ -8,37 +8,21 @@ public struct Check24DeepLinkBuilder: GapDeepLinkBuilding {
     public init() {}
 
     public func suggestions(for gap: GapContext) -> (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) {
-        var issues: [DeepLinkIssue] = []
-        var links: [DeepLinkSuggestion] = []
-
-        let destinationHint = gap.fromLocationTo ?? gap.toLocationFrom ?? gap.toLocationTo
-        do {
-            let hotelURL = try makeHotelSearchURL(
-                destinationHint: destinationHint,
+        var bag = GapDeepLinkBag(providerID: providerID, kind: gap.kind)
+        bag.add(.hotel, make: {
+            try makeHotelSearchURL(
+                destinationHint: gap.destinationHint,
                 checkIn: gap.gapStart,
                 checkOut: gap.gapEnd
             )
-            links.append(DeepLinkSuggestion(title: "Hotel suchen (Check24)", url: hotelURL))
-        } catch let issue as DeepLinkIssue {
-            issues.append(issue)
-        } catch {
-            issues.append(.destinationIdNotDerivable)
-        }
-
-        do {
-            // Zwischen-Transport: Abflug = letzter Ankunftsort, Ziel = Ort der nächsten Buchung.
-            let flightURL = try makeFlightSearchURL(
-                fromHint: gap.fromLocationTo ?? gap.fromLocationFrom,
-                toHint: gap.toLocationFrom ?? gap.toLocationTo,
+        }, fallback: .destinationIdNotDerivable)
+        bag.add(.flight, make: {
+            try makeFlightSearchURL(
+                fromHint: gap.flightFromHint,
+                toHint: gap.flightToHint,
                 date: gap.gapStart
             )
-            links.append(DeepLinkSuggestion(title: "Flug suchen (Check24)", url: flightURL))
-        } catch let issue as DeepLinkIssue {
-            issues.append(issue)
-        } catch {
-            issues.append(.missingFromIATA)
-        }
-
-        return (links, issues)
+        }, fallback: .missingFromIATA)
+        return bag.result
     }
 }

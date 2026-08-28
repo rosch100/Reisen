@@ -37,39 +37,49 @@ extension Check24TravelProvider {
                 ?? []
 
             let enrichedDetails = bookingDetailsByBasketId[basketId]
-                ?? identityKey(for: canonicalBooking)
+                ?? canonicalBooking.identityKey
                     .flatMap { bookingDetailsByBookingKey[$0] }
-            let mergedDetails = mergeBookingDetails(primary: enrichedDetails, secondary: canonicalBooking.details)
+            let mergedDetails = ParsedBookingDetails.merging(enrichedDetails, with: canonicalBooking.details)
             let rateDetails = mapBasketRateDetails(basket: basket, details: mergedDetails)
 
-            let deadlines = deadlinesParsed.map(mapDeadline)
+            let deadlines = deadlinesParsed.map(\.asDomain)
             let basketConfirmation = basket.items
                 .compactMap(\.bookingNumber)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
                 .joined(separator: ", ")
-
-            let draft = ProviderBookingDraft(
-                provider: .check24,
+            let times = TemporalFact.pair(
                 bookingType: canonicalBooking.type,
-                title: canonicalBooking.title,
-                confirmationCode: basketConfirmation.isEmpty ? canonicalBooking.confirmationCode : basketConfirmation,
-                externalUrl: canonicalExternalUrl,
-                startAt: canonicalBooking.startAt,
-                endAt: canonicalBooking.endAt,
-                locationFrom: canonicalBooking.locationFrom,
-                locationTo: canonicalBooking.locationTo,
-                locationFromAddress: canonicalBooking.locationFromAddress,
-                locationToAddress: canonicalBooking.locationToAddress,
-                status: canonicalBooking.status,
-                deadlines: deadlines,
-                rateDetails: rateDetails,
-                hotelOffsetSeconds: deadlines.compactMap(\.hotelOffsetSeconds).first,
-                hotelCheckInMinutes: stay?.checkInMinutes,
-                hotelCheckOutMinutes: stay?.checkOutMinutes,
-                rawPayloadFingerprint: mergedDetails?.rawDetailsFingerprint,
-                guestHints: guestHints
+                start: canonicalBooking.startAt,
+                end: canonicalBooking.endAt
             )
+
+            guard let draft = DraftAssembler.draft(
+                from: ProviderBookingFacts(
+                    provider: .check24,
+                    bookingType: canonicalBooking.type,
+                    start: times.start,
+                    end: times.end,
+                    title: canonicalBooking.title,
+                    confirmationCode: basketConfirmation.isEmpty
+                        ? canonicalBooking.confirmationCode
+                        : basketConfirmation,
+                    externalUrl: canonicalExternalUrl,
+                    locationFrom: canonicalBooking.locationFrom,
+                    locationTo: canonicalBooking.locationTo,
+                    locationFromAddress: canonicalBooking.locationFromAddress,
+                    locationToAddress: canonicalBooking.locationToAddress,
+                    statusRaw: canonicalBooking.statusRaw,
+                    deadlines: deadlines,
+                    rateDetails: rateDetails,
+                    hotelCheckInMinutes: stay?.checkInMinutes,
+                    hotelCheckOutMinutes: stay?.checkOutMinutes,
+                    rawPayloadFingerprint: mergedDetails?.rawDetailsFingerprint,
+                    guestHints: guestHints
+                )
+            ) else {
+                continue
+            }
 
             draftByExternalUrl[canonicalExternalUrl] = draft
         }
@@ -94,16 +104,16 @@ extension Check24TravelProvider {
                 }
             }
 
-            guard parsed.type == .flight || parsed.type == .ferry || parsed.type == .hotel else { continue }
+            guard parsed.type.supportsFlightOffsetAutofill || parsed.type == .hotel else { continue }
 
-            let draft = mapDraft(
+            guard let draft = mapDraft(
                 parsed,
                 allBookings: activity.bookings,
                 deadlinesByBookingURL: deadlinesByBookingURL,
                 hotelStayByBookingURL: hotelStayByBookingURL,
                 guestHintsByBookingURL: guestHintsByBookingURL,
                 bookingDetailsByBookingKey: bookingDetailsByBookingKey
-            )
+            ) else { continue }
             guard let key = draft.externalUrl else { continue }
             draftByExternalUrl[key] = draft
         }
