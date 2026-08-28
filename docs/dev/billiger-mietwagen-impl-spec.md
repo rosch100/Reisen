@@ -22,13 +22,13 @@ Cookie-Session der WebView → `GET /user_account/session.php` → `access_token
 | Session lesen (Sync/Probe) | `GET …/user_account/session.php` | `access_token` / `refresh_token` — **nicht** persistieren/loggen |
 | Catalog (active) | `GET …/useraccount/v1/bookings?activity_status=active&sort_by=PickupDate&sort_order=asc&page=N&limit=10` | `items[]` + `_pointers` (alle Seiten bis `next`/`last`) |
 | Catalog (inactive) | `GET …/bookings?activity_status=inactive&sort_by=DropOffDate&sort_order=desc&page=N&limit=10` | wie active (SPA-Parität; stornierte Drafts droppt Domain) |
-| Token-Refresh | `POST …/auth/v1/refresh-token` | `{access_token,…}` — einmal pro Sync-Lauf, dann Cache für Enrich |
+| Token-Refresh | `POST …/auth/v1/refresh-token` | Antwort braucht non-empty `access_token` **und** `refresh_token` (sonst Sync-Fehler); einmal pro Lauf, dann Cache für Enrich |
 | Enrich | `GET https://consumer-api.floyt.com/useraccount/v1/web/bookings/{id}` | Web-Detail JSON |
 | Site settings (SPA) | `GET https://api.billiger-mietwagen.de/v1/site/settings` | Sync nicht nötig |
 
 Header für Consumer-API (Catalog/Enrich): `Authorization: Bearer {access_token}`, `X-Whitelabel: DE_billiger-mietwagen`, `Accept: application/json`.
 
-**Token-Refresh (Live 2026-08-28):** `session.php`-`access_token` allein liefert an der Consumer-API oft **401**. Sync macht daher einmal pro Lauf `POST …/auth/v1/refresh-token` mit `{ refresh_token, user_id }` wobei `user_id` = JWT-Claim **`username`** (nicht `sub`), cached den Access-Token für Catalog+Enrich, und schreibt die neuen Tokens per `POST session.php` (Pflicht — sonst bleibt ein rotierter Refresh nur im Speicher). Anschließend Catalog **active** + **inactive** inkl. Pagination über `_pointers`.
+**Token-Refresh (Live 2026-08-28):** `session.php`-`access_token` allein liefert an der Consumer-API oft **401**. Sync macht daher einmal pro Lauf `POST …/auth/v1/refresh-token` mit `{ refresh_token, user_id }` wobei `user_id` = JWT-Claim **`username`** (nicht `sub`), cached den Access-Token für Catalog+Enrich, und schreibt die neuen Tokens per `POST session.php` (Pflicht — fehlender neuer `refresh_token` in der Antwort ist Fehler, kein Fallback auf den alten). Anschließend Catalog **active** + **inactive** inkl. Pagination über `_pointers`.
 
 Passwort-Login wird **nicht** außerhalb der WebView nachgebaut; die SPA führt Login-API + Session-POST aus (HAR 2026-08-28).
 
@@ -40,7 +40,7 @@ Passwort-Login wird **nicht** außerhalb der WebView nachgebaut; die SPA führt 
 
 ## Catalog-Mapping (`items[]`)
 
-`activity_status=active` und `inactive` (Merge per Fingerprint). Einträge mit `status` `error` überspringen. `canceled`/`cancelled` werden von `CatalogListing` sowieso gedroppt.
+`activity_status=active` und `inactive`, danach `ProviderCatalog.dedupedByExternalURL()` (bei BM ist `externalUrl` = `/reservation/account/bookings/{id}`, also id-gleich). Einträge mit `status` `error` überspringen; fehlendes/anderes `type` als `car_rental` ebenfalls. `canceled`/`cancelled` werden von `CatalogListing` sowieso gedroppt.
 
 | API | Reisen |
 |-----|--------|
@@ -58,7 +58,7 @@ Passwort-Login wird **nicht** außerhalb der WebView nachgebaut; die SPA führt 
 
 | Quelle | Mapping |
 |--------|---------|
-| `offer.model` (+ optional Route) | `title` |
+| `offer.model` | `title` (Katalog-Route `Berlin → München` bleibt, Enrich überschreibt nur bei non-empty model) |
 | `offer.supplier` / `offer.provider` | `operatorName` |
 | `offer.transmission` | `rateDetails.roomCategory` (überschreibt Klasse wenn gesetzt) |
 | `rental.pickUp` / `dropOff` address | `locationFrom`/`To` + Adressen |
