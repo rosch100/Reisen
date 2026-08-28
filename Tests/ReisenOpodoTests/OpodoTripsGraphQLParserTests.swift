@@ -66,6 +66,98 @@ func opodoGetTripsQueryRequestBody() throws {
     #expect(text.contains("roomDescription"))
     #expect(text.contains("carrier"))
     #expect(text.contains("travellers"))
+    #expect(text.contains("transportTypes"))
+    #expect(!text.contains("insuranceBookings"))
+    #expect(!text.contains("GetVehicleRentalOffers"))
+    #expect(!text.contains("VR_getTransferOffers"))
+}
+
+@Test("OpodoTripsGraphQLParser ignoriert Upsell ohne Flug/Hotel")
+func opodoGraphQLSkipsInsuranceOnlyTrip() throws {
+    let json = """
+    {"data":{"getTrips":{"trips":[
+      {"trip":{"id":"ins-1","tdToken":"FAKE_TOKEN_INSURANCE","itinerary":null,"accommodationBooking":null}}
+    ]}}}
+    """
+    let page = try OpodoTripsGraphQLParser().parseTripPage(from: json)
+    #expect(page.rawTripCount == 1)
+    #expect(page.bookings.isEmpty)
+}
+
+@Test("OpodoTripsGraphQLParser ignoriert Nicht-Flug-Itinerary")
+func opodoGraphQLSkipsNonPlaneItinerary() throws {
+    let json = """
+    {"data":{"getTrips":{"trips":[
+      {"trip":{"id":"rail-1","tdToken":"FAKE_TOKEN_TRAIN","itinerary":{
+        "transportTypes":["TRAIN"],
+        "departureDate":1785843900000,
+        "arrivalDate":1785846600000,
+        "origin":{"cityName":"Berlin","iata":"BER"},
+        "destination":{"cityName":"München","iata":"MUC"}
+      },"accommodationBooking":null}}
+    ]}}}
+    """
+    let bookings = try OpodoTripsGraphQLParser().parseTrips(from: json)
+    #expect(bookings.isEmpty)
+}
+
+@Test("OpodoTripsGraphQLParser ignoriert Itinerary ohne transportTypes")
+func opodoGraphQLSkipsItineraryWithoutTransportTypes() throws {
+    let json = """
+    {"data":{"getTrips":{"trips":[
+      {"trip":{"id":"unk-1","tdToken":"FAKE_TOKEN_NO_TYPES","itinerary":{
+        "departureDate":1785843900000,
+        "arrivalDate":1785846600000,
+        "origin":{"cityName":"Berlin","iata":"BER"},
+        "destination":{"cityName":"München","iata":"MUC"}
+      },"accommodationBooking":null}}
+    ]}}}
+    """
+    let page = try OpodoTripsGraphQLParser().parseTripPage(from: json)
+    #expect(page.rawTripCount == 1)
+    #expect(page.bookings.isEmpty)
+}
+
+@Test("OpodoTripsGraphQLParser wirft bei USER_NOT_LOGGED_IN statt leerer Liste")
+func opodoGraphQLThrowsWhenNotLoggedIn() {
+    let json = #"{"errors":[{"message":"Internal error","extensions":{"errorCode":"USER_NOT_LOGGED_IN"}}]}"#
+    #expect(throws: OpodoTripsGraphQLParserError.notLoggedIn) {
+        try OpodoTripsGraphQLParser().parseTrips(from: json)
+    }
+}
+
+@Test("OpodoTripsGraphQLParser wirft USER_NOT_LOGGED_IN auch wenn Trip-Rows da sind")
+func opodoGraphQLThrowsNotLoggedInEvenWithTripRows() {
+    let json = """
+    {"data":{"getTrips":{"trips":[{"trip":{"id":"x","tdToken":"FAKE"}}]}},
+     "errors":[{"message":"Internal error","extensions":{"errorCode":"USER_NOT_LOGGED_IN"}}]}
+    """
+    #expect(throws: OpodoTripsGraphQLParserError.notLoggedIn) {
+        try OpodoTripsGraphQLParser().parseTrips(from: json)
+    }
+}
+
+@Test("OpodoTripsGraphQLParser nutzt Trip-Rows trotz nicht-fataler GraphQL-Errors")
+func opodoGraphQLKeepsTripsWhenErrorsAreNonFatal() throws {
+    let json = """
+    {"data":{"getTrips":{"trips":[{"trip":{
+      "id":"h-1","tdToken":"FAKE_TOKEN_HOTEL","bookingStatus":"CONTRACT","bookingProductStatus":"CONFIRMED",
+      "accommodationBooking":{"accommodationName":"Test Hotel","city":"Berlin","checkInDate":1785843900000,"checkOutDate":1786016700000}
+    }}]}},
+     "errors":[{"message":"Field warning"}]}
+    """
+    let page = try OpodoTripsGraphQLParser().parseTripPage(from: json)
+    #expect(page.rawTripCount == 1)
+    #expect(page.bookings.count == 1)
+    #expect(page.bookings[0].bookingType == .hotel)
+}
+
+@Test("OpodoTripsGraphQLParser wirft GraphQL-Errors wenn keine Trip-Rows da sind")
+func opodoGraphQLThrowsWhenErrorsAndNoTripRows() {
+    let json = #"{"errors":[{"message":"Internal error"}]}"#
+    #expect(throws: OpodoTripsGraphQLParserError.graphQLErrors("Internal error")) {
+        try OpodoTripsGraphQLParser().parseTrips(from: json)
+    }
 }
 
 private func fixtureJSON(_ name: String) throws -> String {
