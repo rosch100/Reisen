@@ -4,6 +4,16 @@ import Foundation
 
 struct OpodoTripsEnvelope: Decodable {
     let data: OpodoTripsDataContainer?
+    let errors: [OpodoGraphQLError]?
+}
+
+struct OpodoGraphQLError: Decodable {
+    let message: String?
+    let extensions: OpodoGraphQLErrorExtensions?
+}
+
+struct OpodoGraphQLErrorExtensions: Decodable {
+    let errorCode: String?
 }
 
 struct OpodoTripsDataContainer: Decodable {
@@ -39,6 +49,7 @@ struct OpodoGraphQLTraveller: Decodable {
 }
 
 struct OpodoGraphQLItinerary: Decodable {
+    let transportTypes: [String]?
     let departureDate: Int64?
     let arrivalDate: Int64?
     let origin: OpodoGraphQLPlace?
