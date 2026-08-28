@@ -748,11 +748,13 @@ Extractor-Fehler nicht fangen und On-Device retryen.
 public enum PasteImportEditorPrefill {
     public static func draft(
         for candidate: PasteImportCandidate,
-        existing: SDBooking?,
-        tripStartDate: Date
+        existing: SDBooking?
     ) -> BookingEditorDraft
 }
 ```
+
+Kein `tripStartDate`: `PasteImportFilter` verwirft Extractions ohne Start, Beginn und Ende kommen
+also immer aus dem Kandidaten — anders als bei `BookingEditorDraft.createDefault`.
 
 - Neu (`match` none/ambiguous, `existing == nil`): Draft → Editor **ohne** `createDefault`. Leere Hotel-Minuten. `provider = .manual`.
 - Ergänzen (`isErgaenzen`, `existing != nil`): `let merged = PasteImportMerger.fillingGaps(on: DomainMapper.booking(from: existing), from: candidate.draft)` dann Editor-Draft aus der gemergten Domain-Entity + `bookingID = existing.id` (kein zweiter String-Gap-Fill). `provider` der SDBooking.

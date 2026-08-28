@@ -32,7 +32,7 @@ final class PasteImportIOSSession {
     enum Phase: Equatable {
         case idle
         case confirmingPrivateCloudCompute
-        case running
+        case running(PasteImportModelKind)
         case choosing([PasteImportCandidate])
         case failed(String)
     }
@@ -48,7 +48,14 @@ final class PasteImportIOSSession {
     private var task: Task<Void, Never>?
 
     var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
-    var isRunning: Bool { phase == .running }
+
+    /// Modellstufe des laufenden Imports; `nil`, solange kein Lauf offen ist.
+    var runningKind: PasteImportModelKind? {
+        if case .running(let kind) = phase { return kind }
+        return nil
+    }
+
+    var isRunning: Bool { runningKind != nil }
 
     var isChoosing: Bool {
         if case .choosing = phase { return true }
@@ -158,7 +165,7 @@ final class PasteImportIOSSession {
             return
         }
         let existing = existing
-        phase = .running
+        phase = .running(kind)
         task = Task { [weak self] in
             do {
                 let candidates = try await PasteImportRun.run(

@@ -1,4 +1,5 @@
 import Foundation
+import ReisenAppCore
 import ReisenDomain
 
 extension Notification.Name {
@@ -40,5 +41,15 @@ enum SidebarSelection: Hashable, Identifiable {
     var tripID: UUID? {
         if case .trip(let id) = self { return id }
         return nil
+    }
+
+    /// Einstieg eines hier ausgelösten Paste-Imports; alles außerhalb einer Reise bleibt offen.
+    var pasteImportEntry: PasteImportEntry {
+        switch self {
+        case .trip(let id):
+            return .trip(id)
+        case .trips, .providerSync, .openBookings:
+            return .open
+        }
     }
 }

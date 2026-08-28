@@ -9,13 +9,12 @@ import ReisenDomain
 /// (`PasteImportMerger.fillingGaps`). Die bestehende `SDBooking` wird dabei nicht verändert —
 /// gespeichert wird erst, wenn der Nutzer den Editor bestätigt.
 public enum PasteImportEditorPrefill {
-    /// - Parameter tripStartDate: Trip-Kontext des Editors. Anders als `BookingEditorDraft.createDefault`
-    ///   braucht der Prefill keinen Ersatz-Zeitraum: `PasteImportFilter` verwirft Extractions ohne
-    ///   Start, Beginn und Ende kommen deshalb immer aus dem Kandidaten.
+    /// Anders als `BookingEditorDraft.createDefault` braucht der Prefill keinen Reise-Zeitraum als
+    /// Ausgangspunkt: `PasteImportFilter` verwirft Extractions ohne Start, Beginn und Ende kommen
+    /// deshalb immer aus dem Kandidaten.
     public static func draft(
         for candidate: PasteImportCandidate,
-        existing: SDBooking?,
-        tripStartDate: Date
+        existing: SDBooking?
     ) -> BookingEditorDraft {
         guard candidate.isErgaenzen, let existing else {
             return newBooking(from: candidate.draft)

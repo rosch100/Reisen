@@ -1,23 +1,20 @@
 import Foundation
 import ReisenDomain
 
-public enum PasteImportMapperError: Error, Equatable {
-    /// Frist ohne verwertbares ISO8601-Datum.
-    case invalidDeadlineDate(String?)
-    /// Hinweis ohne Titel oder ohne Detail.
-    case incompleteGuestHint
-}
-
 /// DTO → `PasteImportExtraction`. Einzige Quelle für Typ-, Datums- und Enum-Übersetzung.
 ///
 /// Unbekannte Enum-Strings werden nicht auf einen Sammelfall gebogen: `bookingType` und `status`
 /// bleiben `nil`, damit `PasteImportFilter` bzw. der Editor entscheiden.
+///
+/// Ein unvollständiger Hinweis oder eine Frist ohne Datum verwirft nur sich selbst und nicht die
+/// ganze Buchung: ein einzelnes Detail, das das Modell halb erkannt hat, darf einen erkannten
+/// Flug nicht mitreißen. Der Nutzer bestätigt ohnehin jeden Kandidaten im Editor.
 public enum PasteImportGenerableMapper {
-    public static func extractions(from payload: PasteImportPayloadDTO) throws -> [PasteImportExtraction] {
-        try payload.bookings.map(extraction(from:))
+    public static func extractions(from payload: PasteImportPayloadDTO) -> [PasteImportExtraction] {
+        payload.bookings.map(extraction(from:))
     }
 
-    public static func extraction(from dto: PasteImportBookingDTO) throws -> PasteImportExtraction {
+    public static func extraction(from dto: PasteImportBookingDTO) -> PasteImportExtraction {
         PasteImportExtraction(
             bookingType: dto.bookingType.flatMap(bookingType(from:)),
             startAt: date(from: dto.startAtISO8601),
@@ -37,9 +34,9 @@ public enum PasteImportGenerableMapper {
             flightDepartureOffsetSeconds: dto.flightDepartureOffsetSeconds,
             flightArrivalOffsetSeconds: dto.flightArrivalOffsetSeconds,
             passengers: passengers(from: dto.passengers),
-            guestHints: try dto.guestHints.map(guestHint(from:)),
+            guestHints: dto.guestHints.compactMap(guestHint(from:)),
             rateDetails: dto.rateDetails.map(rateDetails(from:)),
-            deadlines: try dto.deadlines.map(deadline(from:))
+            deadlines: dto.deadlines.compactMap(deadline(from:))
         )
     }
 
@@ -76,9 +73,10 @@ public enum PasteImportGenerableMapper {
         }
     }
 
-    private static func guestHint(from dto: PasteImportGuestHintDTO) throws -> BookingGuestHint {
+    /// `nil` verwirft den Hinweis: ohne Titel oder Detail steht im Editor nichts Prüfbares.
+    private static func guestHint(from dto: PasteImportGuestHintDTO) -> BookingGuestHint? {
         guard let title = NonEmpty.string(dto.title), let detail = NonEmpty.string(dto.detail) else {
-            throw PasteImportMapperError.incompleteGuestHint
+            return nil
         }
         return BookingGuestHint(
             title: title,
@@ -105,10 +103,9 @@ public enum PasteImportGenerableMapper {
         return details
     }
 
-    private static func deadline(from dto: PasteImportDeadlineDTO) throws -> CancellationDeadline {
-        guard let deadlineAt = date(from: dto.deadlineAtISO8601) else {
-            throw PasteImportMapperError.invalidDeadlineDate(dto.deadlineAtISO8601)
-        }
+    /// `nil` verwirft die Frist: ohne Datum ist sie weder anzeigbar noch erinnerbar.
+    private static func deadline(from dto: PasteImportDeadlineDTO) -> CancellationDeadline? {
+        guard let deadlineAt = date(from: dto.deadlineAtISO8601) else { return nil }
         var deadline = CancellationDeadline(
             deadlineAt: deadlineAt,
             policyText: NonEmpty.string(dto.policyText),

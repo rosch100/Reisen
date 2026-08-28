@@ -113,6 +113,7 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .reisenPasteBooking)) { _ in
             pasteImport.start(
                 source: PasteImportMacSource.fromPasteboard(),
+                entry: pasteImportEntry,
                 existing: existingDomainBookings
             )
         }
@@ -987,15 +988,25 @@ struct ContentView: View {
         allBookings.map(DomainMapper.booking(from:))
     }
 
-    private var selectedTrip: SDTrip? {
-        guard let tripID = selection?.tripID else { return nil }
+    /// Einstieg des Paste-Imports beim Auslösen — die Auswahl darf danach wechseln.
+    private var pasteImportEntry: PasteImportEntry {
+        selection?.pasteImportEntry ?? .open
+    }
+
+    /// Reise des laufenden Imports, eingefroren beim Einstieg (`PasteImportMacSession.tripID`).
+    private var pasteImportTrip: SDTrip? {
+        guard let tripID = pasteImport.tripID else { return nil }
         return trips.first { $0.id == tripID }
     }
 
     private func startPasteImportFromFile() {
         do {
             guard let source = try PasteImportMacSource.fromOpenPanel() else { return }
-            pasteImport.start(source: source, existing: existingDomainBookings)
+            pasteImport.start(
+                source: source,
+                entry: pasteImportEntry,
+                existing: existingDomainBookings
+            )
         } catch {
             pasteImport.fail(L10n.string(.pasteImportErrorSource))
         }
@@ -1033,28 +1044,30 @@ struct ContentView: View {
         }
         let draft = PasteImportEditorPrefill.draft(
             for: candidate,
-            existing: booking,
-            tripStartDate: candidate.draft.startAt
+            existing: booking
         )
-        if let trip = selectedTrip, futureBookings(for: trip).contains(where: { $0.id == booking.id }) {
+        if let trip = pasteImportTrip, selection?.tripID == trip.id,
+           futureBookings(for: trip).contains(where: { $0.id == booking.id }) {
             selectedTimelineID = booking.id.uuidString
             bookingEditorSession = .edit(bookingID: booking.id, prefilledDraft: draft)
         } else {
-            pasteReview = PasteImportReview(draft: draft, booking: booking)
+            pasteReview = PasteImportReview(draft: draft, booking: booking, trip: nil)
         }
     }
 
     /// Ohne Reise-Kontext entsteht eine offene Buchung (`trip: nil`), keine Ersatzreise.
+    ///
+    /// Der Inspector legt immer in der gerade ausgewählten Reise an; steht dort inzwischen eine
+    /// andere, geht der Editor als eigenes Sheet mit der Reise des Einstiegs auf.
     private func reviewPasteImportNew(_ candidate: PasteImportCandidate) {
         let draft = PasteImportEditorPrefill.draft(
             for: candidate,
-            existing: nil,
-            tripStartDate: candidate.draft.startAt
+            existing: nil
         )
-        if selectedTrip == nil {
-            pasteReview = PasteImportReview(draft: draft, booking: nil)
-        } else {
+        if let trip = pasteImportTrip, selection?.tripID == trip.id {
             bookingEditorSession = .create(prefillStart: nil, prefillEnd: nil, prefilledDraft: draft)
+        } else {
+            pasteReview = PasteImportReview(draft: draft, booking: nil, trip: pasteImportTrip)
         }
     }
 

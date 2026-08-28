@@ -85,3 +85,18 @@ private func candidate(match: PasteImportMatch) -> PasteImportCandidate {
     #expect(unavailable.accessibilityLabel.contains(L10n.string(.menuPasteBooking)))
     #expect(unavailable.accessibilityLabel.contains(L10n.string(.pasteImportUnavailable)))
 }
+
+/// Während des Laufs muss sichtbar sein, ob das Material das Gerät verlässt.
+@MainActor
+@Test func pasteImportProgressPresentation_namesTheRunningModelKind() {
+    L10n.locale = presentationLocale
+    defer { L10n.locale = .current }
+
+    let onDevice = PasteImportProgressPresentation(kind: .onDevice)
+    let pcc = PasteImportProgressPresentation(kind: .privateCloudCompute)
+
+    #expect(onDevice.title == L10n.string(.pasteImportProgress))
+    #expect(onDevice.modelName == L10n.string(.pasteImportModelOnDevice))
+    #expect(pcc.modelName == L10n.string(.pasteImportModelPcc))
+    #expect(PasteImportProgressPresentation(kind: .unavailable).modelName == nil)
+}

@@ -40,7 +40,7 @@ enum PasteImportHandoff {
     }
 
     static func write(_ source: PasteImportSource) throws {
-        let container = try containerURL()
+        guard let container = containerURL() else { throw PasteImportHandoffError.appGroupUnavailable }
         let (kind, payload) = parts(of: source)
         // Erst `meta.json`: `payload.bin` ist der Auslöser und darf nie ohne Art dastehen.
         try JSONEncoder().encode(Meta(kind: kind))
@@ -48,31 +48,33 @@ enum PasteImportHandoff {
         try payload.write(to: container.appendingPathComponent(payloadFileName), options: .atomic)
     }
 
-    /// Konsumiert eine liegende Übergabe; `nil`, wenn keine liegt.
+    /// Konsumiert eine liegende Übergabe.
     ///
     /// Der einzige Konsum-Pfad und damit idempotent: URL-Öffnen und Aktivieren können beide
-    /// feuern, der zweite Aufruf findet nichts mehr und macht daraus keinen Fehler. Ob ein
-    /// fehlender Payload gemeldet wird, entscheidet der `PasteImportHandoffCoordinator`.
-    static func consumePending() throws -> PasteImportSource? {
-        let container = try containerURL()
+    /// feuern, der zweite Aufruf findet nichts mehr. Eine fehlende App Group ist hier kein
+    /// Verlust, sondern `.noPayload` — dort kann nie etwas gelegen haben, und die App aktiviert
+    /// sich ständig ohne jede Übergabe. Erst ein bereitliegender Payload, der sich nicht mehr
+    /// lesen lässt, ist `.lostPayload`. Ob daraus eine Meldung wird, entscheidet der
+    /// `PasteImportHandoffCoordinator` anhand des Auslösers.
+    static func consumePending() -> PasteImportHandoffOutcome {
+        guard let container = containerURL() else { return .noPayload }
         let payloadURL = container.appendingPathComponent(payloadFileName)
         let metaURL = container.appendingPathComponent(metaFileName)
-        guard FileManager.default.fileExists(atPath: payloadURL.path) else { return nil }
+        guard FileManager.default.fileExists(atPath: payloadURL.path) else { return .noPayload }
         defer {
             try? FileManager.default.removeItem(at: payloadURL)
             try? FileManager.default.removeItem(at: metaURL)
         }
-        let meta = try JSONDecoder().decode(Meta.self, from: try Data(contentsOf: metaURL))
-        return try source(kind: meta.kind, payload: try Data(contentsOf: payloadURL))
+        do {
+            let meta = try JSONDecoder().decode(Meta.self, from: try Data(contentsOf: metaURL))
+            return .payload(try source(kind: meta.kind, payload: try Data(contentsOf: payloadURL)))
+        } catch {
+            return .lostPayload
+        }
     }
 
-    private static func containerURL() throws -> URL {
-        guard let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupIdentifier
-        ) else {
-            throw PasteImportHandoffError.appGroupUnavailable
-        }
-        return container
+    private static func containerURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
     }
 
     private static func parts(of source: PasteImportSource) -> (Meta.Kind, Data) {

@@ -3,24 +3,20 @@ import Testing
 import ReisenAppCore
 import ReisenDomain
 
-private enum HandoffReadError: Error {
-    case unreadablePayload
-}
-
 private let sharedSource = PasteImportSource.text("ICE 123 Berlin")
 
 @Test func pasteImportHandoff_startsWhenPayloadIsPresent() {
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .url,
-            consumed: .success(sharedSource),
+            outcome: .payload(sharedSource),
             isSessionActive: false
         ) == .start(sharedSource)
     )
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .activation,
-            consumed: .success(sharedSource),
+            outcome: .payload(sharedSource),
             isSessionActive: false
         ) == .start(sharedSource)
     )
@@ -30,7 +26,7 @@ private let sharedSource = PasteImportSource.text("ICE 123 Berlin")
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .url,
-            consumed: .success(nil),
+            outcome: .noPayload,
             isSessionActive: false
         ) == .reportFailure
     )
@@ -41,42 +37,50 @@ private let sharedSource = PasteImportSource.text("ICE 123 Berlin")
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .url,
-            consumed: .success(nil),
+            outcome: .noPayload,
             isSessionActive: true
         ) == .ignore
     )
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .activation,
-            consumed: .success(nil),
+            outcome: .noPayload,
             isSessionActive: true
         ) == .ignore
     )
 }
 
-/// Aktivieren ohne liegende Übergabe ist der Normalfall jeder Rückkehr in die App.
+/// Aktivieren ohne liegende Übergabe ist der Normalfall jeder Rückkehr in die App — auch dann,
+/// wenn die Ablage gar nicht erreichbar ist und deshalb nie etwas darin liegen kann.
 @Test func pasteImportHandoff_ignoresMissingPayloadOnActivation() {
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .activation,
-            consumed: .success(nil),
+            outcome: .noPayload,
             isSessionActive: false
         ) == .ignore
     )
 }
 
-@Test func pasteImportHandoff_reportsReadFailureUnlessItWouldOverwriteARun() {
+@Test func pasteImportHandoff_reportsLostPayloadUnlessItWouldOverwriteARun() {
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .activation,
-            consumed: .failure(HandoffReadError.unreadablePayload),
+            outcome: .lostPayload,
             isSessionActive: false
         ) == .reportFailure
     )
     #expect(
         PasteImportHandoffCoordinator.action(
             trigger: .url,
-            consumed: .failure(HandoffReadError.unreadablePayload),
+            outcome: .lostPayload,
+            isSessionActive: false
+        ) == .reportFailure
+    )
+    #expect(
+        PasteImportHandoffCoordinator.action(
+            trigger: .url,
+            outcome: .lostPayload,
             isSessionActive: true
         ) == .ignore
     )

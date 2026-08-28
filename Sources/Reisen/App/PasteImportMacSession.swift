@@ -69,7 +69,7 @@ final class PasteImportMacSession {
     enum Phase: Equatable {
         case idle
         case confirmingPrivateCloudCompute
-        case running
+        case running(PasteImportModelKind)
         case choosing([PasteImportCandidate])
         case failed(String)
     }
@@ -77,13 +77,22 @@ final class PasteImportMacSession {
     private(set) var phase: Phase = .idle
     /// Kandidaten, die der Nutzer noch im Editor prüft.
     private(set) var pending: [PasteImportCandidate] = []
+    /// Reise des laufenden Imports, aus dem Einstieg — nicht aus einer inzwischen anderen Auswahl.
+    private(set) var tripID: UUID?
 
     private var source: PasteImportSource?
     private var existing: [Booking] = []
     private var task: Task<Void, Never>?
 
     var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
-    var isRunning: Bool { phase == .running }
+
+    /// Modellstufe des laufenden Imports; `nil`, solange kein Lauf offen ist.
+    var runningKind: PasteImportModelKind? {
+        if case .running(let kind) = phase { return kind }
+        return nil
+    }
+
+    var isRunning: Bool { runningKind != nil }
 
     var isChoosing: Bool {
         if case .choosing = phase { return true }
@@ -103,9 +112,13 @@ final class PasteImportMacSession {
         return nil
     }
 
-    /// - Parameter source: `nil` heißt „keine verwertbare Quelle“ und endet als Fehler.
-    func start(source: PasteImportSource?, existing: [Booking]) {
+    /// - Parameters:
+    ///   - source: `nil` heißt „keine verwertbare Quelle“ und endet als Fehler.
+    ///   - entry: bestimmt die Reise neuer Buchungen dieses Durchlaufs. Sie wird hier eingefroren,
+    ///     damit ein Wechsel der Seitenleisten-Auswahl den offenen Editor nicht umleitet.
+    func start(source: PasteImportSource?, entry: PasteImportEntry, existing: [Booking]) {
         reset()
+        tripID = entry.tripID
         guard let source else {
             phase = .failed(L10n.string(.pasteImportErrorSource))
             return
@@ -179,7 +192,7 @@ final class PasteImportMacSession {
             return
         }
         let existing = existing
-        phase = .running
+        phase = .running(kind)
         task = Task { [weak self] in
             do {
                 let candidates = try await PasteImportRun.run(
@@ -203,6 +216,7 @@ final class PasteImportMacSession {
         source = nil
         existing = []
         pending = []
+        tripID = nil
         phase = .idle
     }
 }
@@ -247,8 +261,8 @@ private struct PasteImportFlowModifier: ViewModifier {
                     set: { if !$0 { session.dismissSheet() } }
                 )
             ) {
-                if session.isRunning {
-                    PasteImportProgressSheet { session.cancelRun() }
+                if let kind = session.runningKind {
+                    PasteImportProgressSheet(kind: kind) { session.cancelRun() }
                 } else {
                     PasteImportCandidateSheet(
                         candidates: session.candidates,
@@ -280,12 +294,20 @@ private struct PasteImportFlowModifier: ViewModifier {
 }
 
 private struct PasteImportProgressSheet: View {
+    let kind: PasteImportModelKind
     let onCancel: () -> Void
 
     var body: some View {
+        let presentation = PasteImportProgressPresentation(kind: kind)
+
         VStack(spacing: 16) {
             ProgressView()
-            Text(L10n.string(.pasteImportProgress))
+            Text(presentation.title)
+            if let modelName = presentation.modelName {
+                Text(modelName)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             Button(L10n.string(.commonCancel), action: onCancel)
                 .keyboardShortcut(.cancelAction)
         }
@@ -324,8 +346,10 @@ private struct PasteImportCandidateSheet: View {
 struct PasteImportReview: Identifiable {
     let id = UUID()
     let draft: BookingEditorDraft
-    /// `nil` legt eine neue Buchung ohne Reise an (Offen).
+    /// `nil` legt eine neue Buchung an.
     let booking: SDBooking?
+    /// Reise der neuen Buchung aus dem Einstieg; `nil` heißt „offene Buchung“.
+    let trip: SDTrip?
 }
 
 struct PasteImportReviewSheet: View {
@@ -359,7 +383,11 @@ struct PasteImportReviewSheet: View {
                 if let booking = review.booking {
                     try draft.apply(to: booking, in: modelContext)
                 } else {
-                    try BookingEditorDraft.createBooking(from: draft, trip: nil, in: modelContext)
+                    try BookingEditorDraft.createBooking(
+                        from: draft,
+                        trip: review.trip,
+                        in: modelContext
+                    )
                 }
                 onFinished()
             }

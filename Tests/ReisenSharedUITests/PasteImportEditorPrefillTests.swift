@@ -33,8 +33,7 @@ private func hotelDraft(
 
     let draft = PasteImportEditorPrefill.draft(
         for: candidate,
-        existing: nil,
-        tripStartDate: prefillStart
+        existing: nil
     )
 
     #expect(draft.bookingID == nil)
@@ -59,8 +58,7 @@ private func hotelDraft(
 
     let draft = PasteImportEditorPrefill.draft(
         for: candidate,
-        existing: nil,
-        tripStartDate: prefillStart
+        existing: nil
     )
 
     #expect(draft.bookingID == nil)
@@ -76,8 +74,7 @@ private func hotelDraft(
 
     let draft = PasteImportEditorPrefill.draft(
         for: candidate,
-        existing: nil,
-        tripStartDate: prefillStart
+        existing: nil
     )
 
     #expect(draft.hotelCheckInMinutesText == "900")
@@ -109,8 +106,7 @@ private func hotelDraft(
 
     let draft = PasteImportEditorPrefill.draft(
         for: candidate,
-        existing: existing,
-        tripStartDate: prefillStart
+        existing: existing
     )
 
     #expect(draft.bookingID == existing.id)
@@ -146,8 +142,7 @@ private func hotelDraft(
 
     let draft = PasteImportEditorPrefill.draft(
         for: candidate,
-        existing: existing,
-        tripStartDate: prefillStart
+        existing: existing
     )
 
     #expect(draft == BookingEditorDraft.fromExisting(existing))

@@ -53,8 +53,8 @@ struct PasteImportHost<Content: View>: View {
                     set: { if !$0 { session.dismissSheet() } }
                 )
             ) {
-                if session.isRunning {
-                    PasteImportProgressSheet { session.cancelRun() }
+                if let kind = session.runningKind {
+                    PasteImportProgressSheet(kind: kind) { session.cancelRun() }
                         .reisenSheetDetents()
                 } else {
                     PasteImportCandidateSheet(
@@ -107,7 +107,7 @@ struct PasteImportHost<Content: View>: View {
     private func handleHandoff(trigger: PasteImportHandoffTrigger) {
         let action = PasteImportHandoffCoordinator.action(
             trigger: trigger,
-            consumed: Result { try PasteImportHandoff.consumePending() },
+            outcome: PasteImportHandoff.consumePending(),
             isSessionActive: session.isActive
         )
         switch action {
@@ -155,8 +155,7 @@ struct PasteImportHost<Content: View>: View {
             review = PasteImportReview(
                 draft: PasteImportEditorPrefill.draft(
                     for: candidate,
-                    existing: booking,
-                    tripStartDate: candidate.draft.startAt
+                    existing: booking
                 ),
                 booking: booking,
                 trip: nil
@@ -171,8 +170,7 @@ struct PasteImportHost<Content: View>: View {
             review = PasteImportReview(
                 draft: PasteImportEditorPrefill.draft(
                     for: candidate,
-                    existing: nil,
-                    tripStartDate: candidate.draft.startAt
+                    existing: nil
                 ),
                 booking: nil,
                 trip: try selectedTrip()
@@ -196,12 +194,20 @@ struct PasteImportHost<Content: View>: View {
 }
 
 private struct PasteImportProgressSheet: View {
+    let kind: PasteImportModelKind
     let onCancel: () -> Void
 
     var body: some View {
+        let presentation = PasteImportProgressPresentation(kind: kind)
+
         VStack(spacing: 16) {
             ProgressView()
-            Text(L10n.string(.pasteImportProgress))
+            Text(presentation.title)
+            if let modelName = presentation.modelName {
+                Text(modelName)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             Button(L10n.string(.commonCancel), action: onCancel)
         }
         .padding(24)

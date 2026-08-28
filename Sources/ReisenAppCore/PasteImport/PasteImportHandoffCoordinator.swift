@@ -27,18 +27,19 @@ public enum PasteImportHandoffAction: Equatable, Sendable {
 /// entscheidend, sondern zusammen mit dem Zustand der Session.
 public enum PasteImportHandoffCoordinator {
     /// - Parameters:
-    ///   - consumed: Ergebnis eines idempotenten Konsums; `.success(nil)` heißt „keine Übergabe“.
+    ///   - outcome: Ergebnis eines idempotenten Konsums.
     ///   - isSessionActive: Ein Lauf, eine Meldung oder eine Editor-Warteschlange ist offen.
     public static func action(
         trigger: PasteImportHandoffTrigger,
-        consumed: Result<PasteImportSource?, Error>,
+        outcome: PasteImportHandoffOutcome,
         isSessionActive: Bool
     ) -> PasteImportHandoffAction {
-        switch consumed {
-        case .success(let source):
-            guard let source else { return missingPayloadAction(trigger: trigger, isSessionActive: isSessionActive) }
+        switch outcome {
+        case .payload(let source):
             return .start(source)
-        case .failure:
+        case .noPayload:
+            return missingPayloadAction(trigger: trigger, isSessionActive: isSessionActive)
+        case .lostPayload:
             // Der Konsum löscht die Dateien: der Verlust ist echt und wird gemeldet, solange er
             // nichts überschreibt.
             return isSessionActive ? .ignore : .reportFailure
@@ -46,6 +47,9 @@ public enum PasteImportHandoffCoordinator {
     }
 
     /// Ohne Übergabe ist nur das Öffnen per URL ein Fehler — das Aktivieren läuft ins Leere.
+    ///
+    /// Das gilt auch, wenn die Ablage selbst fehlt: nur die URL behauptet, dass gerade etwas
+    /// geteilt wurde, also darf auch nur sie daraus eine Meldung machen.
     private static func missingPayloadAction(
         trigger: PasteImportHandoffTrigger,
         isSessionActive: Bool

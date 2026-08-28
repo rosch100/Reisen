@@ -46,7 +46,7 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             to: try Self.prompt(for: material),
             generating: PasteImportPayloadDTO.self
         )
-        return try PasteImportGenerableMapper.extractions(from: response.content)
+        return PasteImportGenerableMapper.extractions(from: response.content)
     }
 
     private func makeSession() throws -> LanguageModelSession {
