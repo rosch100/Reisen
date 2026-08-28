@@ -432,6 +432,7 @@ struct ContentView: View {
                     Text(L10n.string(.tripNoTripsYet))
                         .foregroundStyle(.secondary)
                 } else {
+                    let gapBadges = SDTrip.listGapBadgeCounts(for: trips)
                     ForEach(trips) { trip in
                         let tripBookings = futureBookings(for: trip)
                         let isExpanded = expandedTripIDs.contains(trip.id)
@@ -461,8 +462,11 @@ struct ContentView: View {
                                             Text(dateRange(trip))
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
-                                            if !tripBookings.isEmpty {
-                                                Text(L10n.format(.tripBookingCount, tripBookings.count))
+                                            if let meta = L10n.tripCompletenessListMeta(
+                                                futureBookingCount: tripBookings.count,
+                                                gapCount: gapBadges[trip.id]
+                                            ) {
+                                                Text(meta)
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
                                             }
@@ -626,9 +630,15 @@ struct ContentView: View {
                     }
                 }
             } else {
-                List(openBookings, selection: $selectedOpenBookingIDs) { booking in
-                    OpenBookingRow(booking: booking)
-                        .tag(booking.id)
+                let partition = OpenBookingMatching.partitionByFillOpportunity(
+                    bookings: openBookings,
+                    trips: trips
+                )
+                List(selection: $selectedOpenBookingIDs) {
+                    OpenBookingsFillSections(partition: partition) { booking, fillCaption in
+                        OpenBookingRow(booking: booking, fillCaption: fillCaption)
+                            .tag(booking.id)
+                    }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
                 .navigationTitle(L10n.string(.tripOpenBookings))

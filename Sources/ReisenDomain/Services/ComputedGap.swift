@@ -7,6 +7,9 @@ public struct ComputedGap: Identifiable, Equatable, Sendable {
     public let kind: GapKind
     public let fromBooking: Booking
     public let toBooking: Booking
+    /// `true` = Leading/Trailing am Trip-Fenster; `false` = Inter-Booking.
+    /// SSOT-Setzung nur in `GapAssembly` / `GapEdgeBuilder` (nicht aus IDs ableiten).
+    public let isTripBoundary: Bool
 
     public init(
         id: UUID = UUID(),
@@ -14,7 +17,8 @@ public struct ComputedGap: Identifiable, Equatable, Sendable {
         gapEnd: Date,
         kind: GapKind,
         fromBooking: Booking,
-        toBooking: Booking
+        toBooking: Booking,
+        isTripBoundary: Bool
     ) {
         self.id = id
         self.gapStart = gapStart
@@ -22,6 +26,7 @@ public struct ComputedGap: Identifiable, Equatable, Sendable {
         self.kind = kind
         self.fromBooking = fromBooking
         self.toBooking = toBooking
+        self.isTripBoundary = isTripBoundary
     }
 
     /// Stable key for persistence/UI matching (integer epoch seconds — SSOT).
