@@ -7,7 +7,8 @@
 | ReisenDomain | Foundation | SSOT: Entities, Repository-/Side-Effect-Ports, Use Cases, `ProviderID` |
 | ReisenData | Domain, SwiftData | Persistenz-Adapter, Hybrid-Stores V7 (`reisen-cloud` / `reisen-local`), Mapper |
 | ReisenProviders | Domain | `TravelProvider`, `ProviderRegistry`, Deep-Link-Ports |
-| ReisenAppCore | Domain, Data, Providers | Bootstrap, SyncStore, EventKit/Reminder Side Effects |
+| ReisenCrashSignal | Darwin | Async-signal-safe Pending-Writer für fatale POSIX-Signale (von AppCore genutzt) |
+| ReisenAppCore | Domain, Data, ReisenCrashSignal | Bootstrap, SyncStore, EventKit/Reminder Side Effects, GitHub-Issues |
 | ReisenCheck24 | Domain, Providers, WebKit | Check24 Sync |
 | ReisenOpodo | Domain, Providers, WebKit | Opodo Sync |
 | ReisenBookingCom | Domain, Providers, WebKit | Booking.com Sync |
