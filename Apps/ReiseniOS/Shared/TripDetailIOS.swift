@@ -11,6 +11,7 @@ struct TripDetailIOS: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.providerNativeAppPresence) private var nativeAppPresence
     @Query private var trips: [SDTrip]
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
 
@@ -51,6 +52,15 @@ struct TripDetailIOS: View {
                     ) { booking in
                         NavigationLink(destination: BookingDetailIOS(bookingID: booking.id)) {
                             OpenBookingRow(booking: booking)
+                        }
+                        .contextMenu {
+                            if let url = booking.browserURL {
+                                BookingPortalOpenButton(
+                                    bookingURL: url,
+                                    providerID: booking.provider,
+                                    isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
+                                )
+                            }
                         }
                     }
                 }

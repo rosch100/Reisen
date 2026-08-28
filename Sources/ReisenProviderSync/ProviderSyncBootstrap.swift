@@ -31,6 +31,9 @@ public enum ProviderSyncBootstrap {
             providers: providers,
             deepLinkBuilders: [
                 Check24DeepLinkBuilder(),
+                BookingComDeepLinkBuilder(),
+                AirbnbDeepLinkBuilder(),
+                GetYourGuideDeepLinkBuilder(),
                 TravelokaDeepLinkBuilder(),
             ]
         )

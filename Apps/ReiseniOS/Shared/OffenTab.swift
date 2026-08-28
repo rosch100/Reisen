@@ -96,6 +96,7 @@ struct OpenBookingsScreen: View {
     var onTripCreated: (UUID) -> Void
 
     @Environment(\.adaptiveUsesSplitNavigation) private var usesSplit
+    @Environment(\.providerNativeAppPresence) private var nativeAppPresence
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
 
@@ -235,6 +236,13 @@ struct OpenBookingsScreen: View {
                             createTripFromBooking(booking.id)
                         } label: {
                             CreateTripFromBookingsLabel()
+                        }
+                        if let url = booking.browserURL {
+                            BookingPortalOpenButton(
+                                bookingURL: url,
+                                providerID: booking.provider,
+                                isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
+                            )
                         }
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {

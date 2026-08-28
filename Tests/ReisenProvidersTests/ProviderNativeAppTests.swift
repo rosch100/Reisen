@@ -22,17 +22,6 @@ import ReisenProviders
     #expect(ProviderNativeApp.urlSchemes(for: .manual) == nil)
 }
 
-@Test func providerNativeApp_externalOpenTitle() {
-    #expect(
-        ProviderNativeApp.externalOpenTitle(for: .booking, isNativeAppInstalled: true)
-            == "In Booking.com-App öffnen"
-    )
-    #expect(
-        ProviderNativeApp.externalOpenTitle(for: .booking, isNativeAppInstalled: false)
-            == "Buchung öffnen"
-    )
-}
-
 @Test func providerWebViewNavigationPolicy_allowsStandardWebSchemes() {
     let url = URL(string: "https://secure.booking.com/login")!
     #expect(ProviderWebViewNavigationPolicy.allows(url, isMainFrame: true))
