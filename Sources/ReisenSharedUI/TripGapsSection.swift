@@ -83,6 +83,15 @@ public struct TripTimelineSection<BookingRow: View>: View {
             }
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            let rangeText = "\(gap.gapStart.formatted(date: .abbreviated, time: .shortened)) – \(gap.gapEnd.formatted(date: .abbreviated, time: .shortened))"
+            GapCopyMenuItems(
+                title: presentation.displayTitle,
+                rangeText: rangeText,
+                kindLabel: L10n.gapKindDisplay(presentation.effectiveKind),
+                priceText: presentation.priceText
+            )
+        }
     }
 
     private func saveGap(
