@@ -6,6 +6,7 @@ public struct CancellationDeadline: Identifiable, Equatable, Sendable {
     public var policyText: String?
     public var isStrict: Bool
     public var isFreeCancellation: Bool
+    /// Stay-/Lokal-Offset der Frist (historischer Name; Hotel und Mietwagen).
     public var hotelOffsetSeconds: Int?
     public var cancellationFeeAmount: Double?
     public var bookingID: UUID?

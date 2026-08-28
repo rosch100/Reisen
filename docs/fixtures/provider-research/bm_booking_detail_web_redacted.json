@@ -1,0 +1,96 @@
+{
+  "reservation": {
+    "id": "<REDACTED>",
+    "status": "canceled",
+    "internalBookingId": "<REDACTED-UUID>",
+    "voucherLink": "https://consumer-api.floyt.com/useraccount/v1/web/bookings/<REDACTED-UUID>/voucher.pdf",
+    "cancelUntil": "2026-06-21T08:00:00",
+    "createdAt": "2026-06-06T15:24:41"
+  },
+  "offer": {
+    "model": "Ford Focus STW",
+    "car_class_name": "compact",
+    "car_type": [
+      "wagon_estate"
+    ],
+    "transmission": "manual",
+    "seats": 4,
+    "doors": "4",
+    "provider": "Sunny Cars",
+    "supplier": "Thrifty",
+    "fuel_policy": "full_full",
+    "free_cancellation": true,
+    "free_cancellation_hours": 24,
+    "currency": "EUR",
+    "price": 58.0,
+    "price_per_day": 58.0,
+    "deposit": {
+      "price": 950,
+      "currency": "EUR"
+    },
+    "fees": [
+      {
+        "category_id": 1,
+        "price": 66.7,
+        "currency": "EUR",
+        "is_included_in_price": false,
+        "translation_key": "fee_oneway"
+      },
+      {
+        "category_id": 3,
+        "price": 58,
+        "currency": "EUR",
+        "is_included_in_price": true,
+        "translation_key": "fee_basic_fee"
+      }
+    ]
+  },
+  "rental": {
+    "rentalTermsLink": "https://consumer-api.floyt.com/v1/account/bookings/<REDACTED-UUID>/files/terms/<REDACTED>.pdf",
+    "tripType": "ONE-WAY",
+    "pickUp": {
+      "address": {
+        "street": "<REDACTED>",
+        "postalCode": "<REDACTED>",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "type": "cityOffice",
+      "datetime": "2026-06-22T08:00:00"
+    },
+    "dropOff": {
+      "address": {
+        "street": "<REDACTED>",
+        "postalCode": "<REDACTED>",
+        "city": "München",
+        "country": "DE"
+      },
+      "gpsCoordinates": {
+        "latitude": null,
+        "longitude": null
+      },
+      "type": "cityOffice",
+      "datetime": "2026-06-22T20:00:00"
+    }
+  },
+  "driver": {
+    "name": "<REDACTED>",
+    "address": {
+      "street": "<REDACTED>",
+      "postal_code": "<REDACTED>",
+      "city": "<REDACTED>",
+      "country": "DE"
+    },
+    "email": "<REDACTED>",
+    "birthday": "<REDACTED>",
+    "phone_number": "<REDACTED>"
+  },
+  "files": {
+    "voucher": {
+      "url": "https://consumer-api.floyt.com/useraccount/v1/web/bookings/<REDACTED-UUID>/voucher.pdf"
+    },
+    "calendar": {
+      "url": "https://consumer-api.floyt.com/useraccount/v1/web/bookings/<REDACTED-UUID>/export.ics"
+    }
+  }
+}

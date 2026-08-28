@@ -10,6 +10,7 @@ public enum ProviderSessionStatusHeuristic: Equatable {
     case sessionReady
     case shouldProbeOpodo
     case shouldProbeTraveloka
+    case shouldProbeBilligerMietwagen
     case unknown
 }
 
@@ -20,6 +21,14 @@ public enum ProviderSessionStatusResolver {
         let absolute = url.absoluteString.lowercased()
         let looksLikeLogin = AuthPageURLHeuristic.looksLikeLoginPage(absolute)
         let looksLikeAccount = AuthPageURLHeuristic.looksLikeAccountPage(absolute)
+
+        // billiger-mietwagen: Account-/Bookings-URLs ohne Live-session.php oft „ready“ trotz toter Cookies.
+        if BilligerMietwagenSessionProbe.applies(to: url) {
+            if looksLikeLogin {
+                return .needsLogin
+            }
+            return .shouldProbeBilligerMietwagen
+        }
 
         if looksLikeAccount && !looksLikeLogin {
             return .sessionReady

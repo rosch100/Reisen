@@ -16,6 +16,7 @@ Anmeldung mit deinem bestehenden Konto beim jeweiligen Portal; Reisen importiert
 | **Airbnb** | Unterkünfte, Erlebnisse |
 | **GetYourGuide** | Erlebnisse / Touren |
 | **Traveloka** | Hotel, Flug, Erlebnisse, Mietwagen, … |
+| **billiger-mietwagen.de** | Mietwagen |
 
 Zusätzlich: **manuelle Buchungen** (Flug, Hotel, Fähre, Erlebnis, Sonstiges) ohne Portal-Sync.
 
@@ -33,6 +34,8 @@ ReisenBookingCom     Booking.com-Adapter
 ReisenAirbnb         Airbnb-Adapter (Stays + Experiences)
 ReisenGetYourGuide   GetYourGuide-Adapter
 ReisenTraveloka      Traveloka-Adapter
+ReisenBilligerMietwagen  billiger-mietwagen.de-Adapter
+ReisenProviderSync   Produktions-Registry (ProviderSyncBootstrap)
 ReisenAppCore        Bootstrap, SyncStore, EventKit/Reminder Side Effects
 Reisen (macOS)       SwiftUI Composition Root + UI
 ReiseniOS            Universal App (iPhone + iPad)
@@ -113,6 +116,6 @@ Lizenz-Links:
 
 ## Weiterer Ausbau
 
-- Weitere Anbieter: `TravelProvider` implementieren, in `AppBootstrap.makeProviderRegistry()` und `ProviderID.syncProviderIDs` registrieren
+- Weitere Anbieter: `TravelProvider` implementieren, in `ProviderSyncBootstrap.makeProviderRegistry()` und `ProviderID.syncProviderIDs` registrieren
 - Provider-Recherche: [`docs/API_Research_Provider_Candidates.md`](docs/API_Research_Provider_Candidates.md)
 - Apple Developer (Signing, iCloud, Notarize): [docs/ci/apple-signing.md](docs/ci/apple-signing.md) — Setup: `bash ./Scripts/setup-apple-developer.sh`

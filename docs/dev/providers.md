@@ -1,6 +1,6 @@
 # Unterstützte Anbieter (Sync)
 
-SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities/ProviderID.swift) und [`AppBootstrap.makeProviderRegistry()`](../../Sources/ReisenAppCore/AppBootstrap.swift).
+SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities/ProviderID.swift) und [`ProviderSyncBootstrap.makeProviderRegistry()`](../../Sources/ReisenProviderSync/ProviderSyncBootstrap.swift).
 
 | Anbieter | Modul | Typische Buchungen | Impl-Spec / Notizen |
 |----------|-------|-------------------|---------------------|
@@ -10,13 +10,14 @@ SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities
 | Airbnb | ReisenAirbnb | Unterkünfte, Erlebnisse | [Experiences](airbnb-experiences-impl-spec.md) |
 | GetYourGuide | ReisenGetYourGuide | Erlebnisse / Touren | [Impl-Spec](getyourguide-impl-spec.md) |
 | Traveloka | ReisenTraveloka | Hotel, Flug, Erlebnisse, Mietwagen, … | [Impl-Spec](traveloka-impl-spec.md) |
+| billiger-mietwagen.de | ReisenBilligerMietwagen | Mietwagen (FLOYT) | [Impl-Spec](billiger-mietwagen-impl-spec.md) |
 
 **Manuell:** Buchungen ohne Portal (`ProviderID.manual`) — Flug, Hotel, Fähre, Erlebnis, Sonstiges.
 
 ## Neuen Anbieter hinzufügen
 
 1. SPM-Target + `TravelProvider`-Implementierung
-2. Eintrag in `ProviderID.syncProviderIDs` und `AppBootstrap.makeProviderRegistry()`
+2. Eintrag in `ProviderID.syncProviderIDs` und `ProviderSyncBootstrap.makeProviderRegistry()`
 3. Logo/UI-Liste (macOS + iOS)
 4. Tests + ggf. Fixture unter `docs/fixtures/provider-research/`
 

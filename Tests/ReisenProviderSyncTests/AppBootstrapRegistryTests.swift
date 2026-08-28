@@ -31,7 +31,7 @@ import ReisenDomain
         hotelCheckOutMinutes: 11 * 60
     )
 
-    for id in [ProviderID.airbnb, .booking, .getYourGuide, .opodo, .traveloka, .check24] {
+    for id in ProviderID.syncProviderIDs {
         #expect(
             try provider(id).needsDraftEnrichment(
                 draft: completeHotel,
@@ -39,6 +39,34 @@ import ReisenDomain
             ) == false
         )
     }
+
+    let catalogCarRental = ProviderBookingDraft(
+        provider: .billigerMietwagen,
+        bookingType: .carRental,
+        title: "Berlin → München",
+        externalUrl: "https://www.billiger-mietwagen.de/reservation/account/bookings/<REDACTED-UUID>",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Berlin",
+        locationTo: "München",
+        operatorName: "Thrifty",
+        status: .confirmed
+    )
+    #expect(
+        try provider(.billigerMietwagen).needsDraftEnrichment(
+            draft: catalogCarRental,
+            requiresDeadlines: false
+        )
+    )
+    var enrichedCarRental = catalogCarRental
+    enrichedCarRental.locationFromAddress = "Street 1, Berlin"
+    enrichedCarRental.locationToAddress = "Street 2, München"
+    #expect(
+        try provider(.billigerMietwagen).needsDraftEnrichment(
+            draft: enrichedCarRental,
+            requiresDeadlines: false
+        ) == false
+    )
 
     var unknownStatus = completeHotel
     unknownStatus.status = .unknown

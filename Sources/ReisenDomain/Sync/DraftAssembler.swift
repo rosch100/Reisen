@@ -106,11 +106,17 @@ public enum DraftAssembler {
         from facts: ProviderBookingFacts,
         window: BookingDateWindow?
     ) -> Int? {
-        guard facts.bookingType == .hotel else {
+        switch facts.bookingType {
+        case .hotel:
+            return facts.hotelOffsetSeconds
+                ?? window?.hotelOffsetSeconds
+                ?? facts.deadlines.firstStayOffsetSeconds
+        case .carRental:
+            // Pickup-/Storno-Ortszeit; Feld `hotelOffsetSeconds`. `BookingDateWindow` liefert hier keinen Offset.
+            return facts.hotelOffsetSeconds
+                ?? facts.deadlines.firstStayOffsetSeconds
+        case .flight, .ferry, .activity, .other:
             return nil
         }
-        return facts.hotelOffsetSeconds
-            ?? window?.hotelOffsetSeconds
-            ?? facts.deadlines.firstHotelOffsetSeconds
     }
 }
