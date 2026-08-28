@@ -3,11 +3,11 @@ import ReisenDomain
 
 public struct OpodoTripCancellationParseResult: Equatable, Sendable {
     public var deadlines: [CancellationDeadline]
-    public var status: BookingStatus?
+    public var statusRaw: String?
 
-    public init(deadlines: [CancellationDeadline], status: BookingStatus?) {
+    public init(deadlines: [CancellationDeadline], statusRaw: String?) {
         self.deadlines = deadlines
-        self.status = status
+        self.statusRaw = statusRaw
     }
 }
 

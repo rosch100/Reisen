@@ -6,9 +6,6 @@ import ReisenAppCore
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
-#if REISEN_PROVIDER_SYNC
-import ReisenProviders
-#endif
 
 struct BookingDetailIOS: View {
     let bookingID: UUID
@@ -67,9 +64,7 @@ struct BookingDetailIOS: View {
     }
 
     private var bookingNavigationTitle: String {
-        booking?.title
-            ?? booking?.bookingType.displayLabel
-            ?? L10n.string(.editorBooking)
+        booking?.presentationTitle ?? L10n.string(.editorBooking)
     }
 
     private func deletePendingBooking() {
@@ -174,18 +169,16 @@ struct BookingDetailIOS: View {
     private func bookingLinksSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.bookingDetailLinksSection)) {
             if let externalURL {
-                Button {
-                    SystemURLOpener.open(externalURL)
-                } label: {
-                    #if REISEN_PROVIDER_SYNC
-                    Text(ProviderNativeApp.externalOpenTitle(
-                        for: booking.provider,
-                        isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
-                    ))
-                    #else
-                    Text(L10n.string(.actionOpenInBrowser))
-                    #endif
-                }
+                #if REISEN_PROVIDER_SYNC
+                let installed = nativeAppPresence.isInstalled(booking.provider)
+                #else
+                let installed = false
+                #endif
+                BookingPortalOpenLink(
+                    bookingURL: externalURL,
+                    providerID: booking.provider,
+                    isNativeAppInstalled: installed
+                )
             } else {
                 Text(L10n.string(.bookingDetailNoBrowserLink))
                     .foregroundStyle(.secondary)
@@ -197,21 +190,21 @@ struct BookingDetailIOS: View {
     private func bookingOverviewSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.tripOverview)) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(booking.title ?? booking.bookingType.displayLabel)
+                Text(booking.presentationTitle)
                     .font(.headline)
                     .textSelection(.enabled)
 
-                Text("\(booking.bookingType.displayLabel) • \(booking.provider.rawValue.capitalized)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    BookingTypeLabel(booking.bookingType, font: .subheadline)
+                    Text("•")
+                    Text(booking.provider.rawValue.capitalized)
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-                let startText = booking.startAt.formatted(date: .abbreviated, time: .omitted)
-                let endText = booking.endAt.formatted(date: .abbreviated, time: .omitted)
                 HStack(spacing: 4) {
                     Text(BookingDetailLabels.dateRange)
-                    Text(startText)
-                    Text("–")
-                    Text(endText)
+                    Text(BookingScheduleRangeText.make(for: booking))
                 }
                 .foregroundStyle(.secondary)
             }

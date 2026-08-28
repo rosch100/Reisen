@@ -67,7 +67,7 @@ extension Check24TravelProvider {
             }
         case .nonHotel:
             return activity.bookings.compactMap { booking -> (ParsedBooking, URL)? in
-                guard booking.type == .flight || booking.type == .ferry else { return nil }
+                guard booking.type.supportsFlightOffsetAutofill else { return nil }
                 guard let urlString = booking.externalUrl, let url = URL(string: urlString) else { return nil }
                 guard isNonHotelBookingDetailURL(url) else { return nil }
                 return (booking, url)

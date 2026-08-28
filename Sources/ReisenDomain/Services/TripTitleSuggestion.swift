@@ -8,7 +8,7 @@ public enum TripTitleSuggestion {
     ) -> String? {
         guard let booking = earliestBooking(in: bookings) else { return nil }
 
-        let city = trimmedNonEmpty(booking.locationTo)
+        let city = NonEmpty.string(booking.locationTo)
         let bookingCountryCode = countryCode(from: booking, locale: locale)
         let deviceCountryCode = locale.region?.identifier.uppercased()
 
@@ -40,18 +40,12 @@ public enum TripTitleSuggestion {
         }
     }
 
-    private static func trimmedNonEmpty(_ value: String?) -> String? {
-        guard let value else { return nil }
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-
     private static func countryCode(from booking: Booking, locale: Locale) -> String? {
         isoCountryCode(fromAddress: booking.locationToAddress, locale: locale)
     }
 
     private static func isoCountryCode(fromAddress address: String?, locale: Locale) -> String? {
-        guard let address = trimmedNonEmpty(address) else { return nil }
+        guard let address = NonEmpty.string(address) else { return nil }
         guard let lastPart = address.split(separator: ",").last.map(String.init) else { return nil }
         let candidate = lastPart.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard candidate.count == 2, candidate.allSatisfy(\.isLetter) else { return nil }
@@ -60,9 +54,7 @@ public enum TripTitleSuggestion {
     }
 
     private static func localizedCountryName(for regionCode: String, locale: Locale) -> String? {
-        let name = locale.localizedString(forRegionCode: regionCode)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let name, !name.isEmpty else { return nil }
+        let name = NonEmpty.string(locale.localizedString(forRegionCode: regionCode))
         return name
     }
 }

@@ -2,30 +2,24 @@ import Foundation
 import ReisenDomain
 
 extension OpodoActivityListParser {
-    func draft(from match: NSTextCheckingResult, html: String) -> ProviderBookingDraft? {
-        guard match.numberOfRanges == 4 else { return nil }
-
-        guard let url = try? extractGroup(html: html, match: match, groupIndex: 1),
-              let startRaw = try? extractGroup(html: html, match: match, groupIndex: 2),
-              let endRaw = try? extractGroup(html: html, match: match, groupIndex: 3),
-              let startAt = parseDate(startRaw),
-              let endAt = parseDate(endRaw) else {
+    func draft(from match: NSTextCheckingResult, html: String) throws -> ProviderBookingDraft? {
+        guard let groups = try hrefDateGroups(from: match, html: html) else { return nil }
+        guard let startAt = parseDate(groups.startRaw),
+              let endAt = parseDate(groups.endRaw) else {
             return nil
         }
 
-        return ProviderBookingDraft(
-            provider: .opodo,
-            bookingType: bookingType(from: url),
-            title: nil,
-            confirmationCode: nil,
-            externalUrl: url,
-            startAt: startAt,
-            endAt: endAt,
-            locationFrom: nil,
-            locationTo: nil,
-            status: .unknown,
-            deadlines: [],
-            rateDetails: nil
+        guard let bookingType = bookingType(from: groups.url) else { return nil }
+        let times = TemporalFact.pair(bookingType: bookingType, start: startAt, end: endAt)
+        return DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .opodo,
+                bookingType: bookingType,
+                start: times.start,
+                end: times.end,
+                externalUrl: groups.url,
+                statusRaw: nil
+            )
         )
     }
 }

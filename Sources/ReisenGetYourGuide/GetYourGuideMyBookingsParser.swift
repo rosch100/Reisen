@@ -12,8 +12,12 @@ public enum GetYourGuideMyBookingsParser {
         var drafts: [ProviderBookingDraft] = []
         drafts.reserveCapacity(listed.count)
         for booking in listed {
-            guard let mapped = mapBooking(booking), seenHashes.insert(mapped.hash).inserted else { continue }
-            drafts.append(mapped.draft)
+            if let hash = NonEmpty.string(booking.bookingHash), !seenHashes.insert(hash).inserted {
+                continue
+            }
+            if let draft = mapBooking(booking) {
+                drafts.append(draft)
+            }
         }
         return ProviderCatalog(bookings: drafts)
     }
@@ -36,26 +40,30 @@ public enum GetYourGuideMyBookingsParser {
         (payload.upcomingBookings ?? []) + (payload.pastBookings ?? [])
     }
 
-    private static func mapBooking(_ booking: GYGListBooking) -> MappedListBooking? {
+    private static func mapBooking(_ booking: GYGListBooking) -> ProviderBookingDraft? {
         guard let status = GetYourGuideParsing.catalogStatus(booking.status) else { return nil }
-        guard let hash = GetYourGuideParsing.trimmedNonEmpty(booking.bookingHash) else { return nil }
         guard let startAt = booking.startingTime?.startTime else { return nil }
         guard let endAt = booking.bookingFinishDate else { return nil }
 
-        let draft = ProviderBookingDraft(
+        let hash = NonEmpty.string(booking.bookingHash)
+        let times = TemporalFact.pair(bookingType: .activity, start: startAt, end: endAt)
+        guard let window = BookingDateWindow.resolve(type: .activity, start: times.start, end: times.end) else {
+            return nil
+        }
+
+        return ProviderBookingDraft(
             provider: .getYourGuide,
             bookingType: .activity,
             title: booking.bookedOption?.activityTitle,
-            confirmationCode: GetYourGuideParsing.firstNonEmpty(booking.bookingReference, hash),
-            externalUrl: GetYourGuideWebConstants.bookingURL(hash: hash),
-            startAt: startAt,
-            endAt: endAt,
+            confirmationCode: NonEmpty.first(booking.bookingReference, hash),
+            externalUrl: hash.map(GetYourGuideWebConstants.bookingURL(hash:)),
+            startAt: window.startAt,
+            endAt: window.endAt,
             locationTo: booking.bookedOption?.activityLocation?.city?.name,
             status: status,
-            deadlines: GetYourGuideParsing.deadlines(from: booking.bookingCancellationPolicy),
+            deadlines: booking.bookingCancellationPolicy?.asDeadlines() ?? [],
             rateDetails: rateDetails(from: booking)
         )
-        return MappedListBooking(hash: hash, draft: draft)
     }
 
     private static func rateDetails(from booking: GYGListBooking) -> BookingRateDetails? {
@@ -73,11 +81,6 @@ public enum GetYourGuideMyBookingsParser {
 }
 
 // MARK: - DTOs
-
-private struct MappedListBooking {
-    let hash: String
-    let draft: ProviderBookingDraft
-}
 
 private struct MyBookingsEnvelope: Decodable {
     let myBookings: MyBookingsPayload?

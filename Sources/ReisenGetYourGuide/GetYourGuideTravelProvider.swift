@@ -53,7 +53,10 @@ private extension GetYourGuideTravelProvider {
         subject: String,
         parse: (String) throws -> T
     ) async throws -> T {
-        let webView = try extractWebView(from: session)
+        let webView = try ProviderWebView.webView(
+            from: session,
+            orThrow: GetYourGuideProviderError.missingWebViewSession
+        )
         onProgress?("Lade \(subject) (\(displayName))…")
         let html = try await fetchBookingHTML(using: webView, url: url)
         guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {
@@ -74,12 +77,5 @@ private extension GetYourGuideTravelProvider {
         } catch let error as AuthenticatedSessionError {
             throw GetYourGuideProviderError.from(error)
         }
-    }
-
-    func extractWebView(from session: any ProviderSession) throws -> WKWebView {
-        if let web = (session as? WebViewProviderSession)?.webView {
-            return web
-        }
-        throw GetYourGuideProviderError.missingWebViewSession
     }
 }

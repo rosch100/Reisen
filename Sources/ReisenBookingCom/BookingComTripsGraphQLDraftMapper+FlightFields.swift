@@ -10,16 +10,12 @@ extension BookingComTripsGraphQLParser {
         let route = flightRoute(reservation.flightComponents)
         fields.locationFrom = route.fromLabel
         fields.locationTo = route.toLabel
-        if let fromCity = route.fromCity, let toCity = route.toCity {
-            fields.title = "\(fromCity) → \(toCity)"
-        } else {
-            fields.title = tripTitle
-        }
-        fields.confirmationCode = BookingComParsing.nonEmpty(reservation.identifiers?.publicFacingIdentifier)
+        fields.title = PlaceLabel.route(from: route.fromCity, to: route.toCity) ?? tripTitle
+        fields.confirmationCode = NonEmpty.string(reservation.identifiers?.publicFacingIdentifier)
             ?? reservation.identifiers?.publicId
         fields.airline = route.airline
         fields.passengerCount = reservation.passengerCount
-        fields.flightDepartureOffsetSeconds = BookingComParsing.offsetSeconds(from: reservation.startDateTime)
-        fields.flightArrivalOffsetSeconds = BookingComParsing.offsetSeconds(from: reservation.endDateTime)
+        fields.flightDepartureOffsetSeconds = ISODateTime.offsetSeconds(from: reservation.startDateTime)
+        fields.flightArrivalOffsetSeconds = ISODateTime.offsetSeconds(from: reservation.endDateTime)
     }
 }

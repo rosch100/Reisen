@@ -42,6 +42,54 @@ func activityListExcludesCancelledAndPast() throws {
     #expect(parsed.bookings[0].title == "Zukunft Hotel")
 }
 
+@Test("ActivityListParser parst Hotel-ISO mit Offset-Suffix über Datumspräfix")
+func activityListParsesHotelISODateWithOffsetSuffix() throws {
+    let json = """
+    {
+      "activities": [
+        {
+          "startDate": "2099-08-11T00:00:00+07:00",
+          "endDate": "2099-08-14T12:00:00+07:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "hotel" },
+          "detail": { "line1": "Offset Hotel" },
+          "link": { "link": "https://hotel.check24.de/kundenbereich/buchung/44444444-4444-4444-4444-444444444444" }
+        }
+      ]
+    }
+    """
+    let parsed = try ActivityListParser().parseActivityListHTML(json)
+    #expect(parsed.bookings.count == 1)
+    #expect(parsed.bookings[0].title == "Offset Hotel")
+    #expect(parsed.bookings[0].startAt == HotelStayDate.parse("2099-08-11T00:00:00+07:00"))
+}
+
+@Test("ActivityListParser: Hotel-HAR-Abend wird vor dem Today-Gate zum Kalendertag")
+func activityListParseCatalogDate_hotelHarEveningIsCalendarDay() throws {
+    let parser = ActivityListParser()
+    let raw = "Tue Aug 11 2026 23:59:00 GMT+0200"
+    let flexible = try #require(parser.parseFlexibleDate(raw))
+    let parsed = try #require(parser.parseCatalogDate(raw, bookingType: .hotel))
+    #expect(parsed == HotelStayDate.calendarDay(fromParsed: flexible))
+}
+
+@Test("ActivityListParser: Hotel-Kalendertag gestern bleibt draußen, auch bei T23:59")
+func activityListHotelYesterdayEveningDoesNotPassTodayGate() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .current
+    let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 27, hour: 12))!
+    let activity: [String: Any] = [
+        "startDate": "2026-08-26T23:59:00",
+        "endDate": "2026-08-28T12:00:00",
+        "status": ["key": "upcoming"],
+        "product": ["key": "hotel"],
+        "detail": ["line1": "Gestern Hotel"],
+        "link": ["link": "https://hotel.check24.de/kundenbereich/buchung/55555555-5555-5555-5555-555555555555"]
+    ]
+    let parsed = ActivityListParser().parseOneActivityIfRelevant(activity, now: now)
+    #expect(parsed == nil)
+}
+
 @Test("ActivityListParser: leeres activities-Array ist leerer Katalog")
 func activityListEmptyJSONIsEmptyCatalog() throws {
     let parsed = try ActivityListParser().parseActivityListHTML("""
@@ -133,6 +181,8 @@ func deepLinkHotelURL() {
     )
     let result = Check24DeepLinkBuilder().suggestions(for: context)
     #expect(result.links.contains(where: { $0.url?.absoluteString.contains("hotel.check24.de/search/Side-81907") == true }))
+    #expect(result.links.allSatisfy { $0.category == .hotel })
+    #expect(!result.issues.contains(.missingFromIATA))
 }
 
 @Test("Check24DeepLinkBuilder Flug: Ankunft der vorherigen → Ort der nächsten Buchung")
@@ -147,7 +197,7 @@ func deepLinkFlightUsesArrivalThenNextOrigin() {
         toLocationTo: "TXL"
     )
     let result = Check24DeepLinkBuilder().suggestions(for: context)
-    let flight = result.links.first { $0.title.contains("Flug suchen") }
+    let flight = result.links.first { $0.category == .flight }
     let url = flight?.url?.absoluteString ?? ""
     #expect(url.contains("from_0=MUC-C"))
     #expect(url.contains("to_0=PMI-C"))
@@ -168,7 +218,7 @@ func deepLinkFlightCityFallback() {
     )
 
     let result = Check24DeepLinkBuilder().suggestions(for: context)
-    let flight = result.links.first { $0.title.contains("Flug suchen") }
+    let flight = result.links.first { $0.category == .flight }
     let url = flight?.url?.absoluteString ?? ""
 
     #expect(!url.isEmpty)
@@ -256,4 +306,58 @@ func activityListParserParsesPaymentIntoDetails() throws {
     #expect(abs((parsed.bookings[0].details?.totalPriceAmount ?? 0) - 203.83) < 0.001)
     #expect(parsed.bookings[1].details != nil)
     #expect(abs((parsed.bookings[1].details?.totalPriceAmount ?? 0) - 235.0) < 0.001)
+}
+
+@Test("Check24 UUID-Fallback nutzt Host nach Produkttyp")
+func activityListUUIDFallbackUsesProductHost() throws {
+    let json = """
+    {
+      "activities": [
+        {
+          "startDate": "2099-09-01T10:00:00",
+          "endDate": "2099-09-01T14:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "flight" },
+          "detail": { "line1": "FRA-PMI" },
+          "booking_uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        },
+        {
+          "startDate": "2099-09-02T10:00:00",
+          "endDate": "2099-09-02T18:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "ferry" },
+          "detail": { "line1": "Fähre" },
+          "product_specific_data": { "booking_uuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" }
+        },
+        {
+          "startDate": "2099-09-03T00:00:00",
+          "endDate": "2099-09-05T00:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "hotel" },
+          "detail": { "line1": "Hotel" },
+          "booking_uuid": "cccccccc-cccc-cccc-cccc-cccccccccccc"
+        }
+      ]
+    }
+    """
+
+    let parsed = try ActivityListParser().parseActivityListHTML(json)
+    #expect(parsed.bookings.count == 3)
+    let byType = Dictionary(uniqueKeysWithValues: parsed.bookings.map { ($0.type, $0.externalUrl) })
+    #expect(byType[.flight] == "https://flug.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    #expect(byType[.ferry] == "https://ferry.check24.de/kundenbereich/buchung/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+    #expect(byType[.hotel] == "https://hotel.check24.de/kundenbereich/buchung/cccccccc-cccc-cccc-cccc-cccccccccccc")
+    for booking in parsed.bookings {
+        #expect(BookingExternalURL.browserURL(from: booking.externalUrl) != nil)
+    }
+}
+
+@Test("Check24 Normalize: UUID-Buchungs-URL ohne Host-Token nutzt BookingType")
+func check24NormalizeUsesBookingTypeWhenHostAmbiguous() {
+    let parser = ActivityListParser()
+    let raw = "https://kundenbereich.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    let flight = parser.normalizeBookingDetailURL(raw, bookingType: .flight)
+    let ferry = parser.normalizeBookingDetailURL(raw, bookingType: .ferry)
+    #expect(flight == "https://flug.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    #expect(ferry == "https://ferry.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 }

@@ -14,7 +14,7 @@ extension Check24FlightPassengersAndLuggageParser {
             .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
         let familyName = parts.last
-        let givenName = parts.dropLast().joined(separator: " ").nilIfEmpty
+        let givenName = NonEmpty.string(parts.dropLast().joined(separator: " "))
 
         return BookingPassenger(
             passengerNumber: number,
@@ -41,12 +41,5 @@ extension Check24FlightPassengersAndLuggageParser {
                 toLabel: existing.toLabel
             )
         }
-    }
-}
-
-extension String {
-    fileprivate var nilIfEmpty: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
     }
 }

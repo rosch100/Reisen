@@ -30,16 +30,15 @@ public enum GetYourGuideBookingSummaryParser {
 
     private static func map(_ summary: BookingSummaryDTO) -> ProviderBookingEnrichment {
         let meeting = summary.activity?.meetingPoint
-        let locationToAddress = GetYourGuideParsing.firstNonEmpty(
+        let locationToAddress = NonEmpty.first(
             meeting?.location?.address,
             meeting?.description
         )
 
-        let deadlines = GetYourGuideParsing.deadlines(from: summary.booking?.bookingCancellationPolicy)
+        let deadlines = summary.booking?.bookingCancellationPolicy?.asDeadlines() ?? []
         let participants = mapPassengers(summary.booking?.activityParticipants ?? [])
         let occupancy = GetYourGuideParsing.occupancy(participants.count)
         let guestHints = mapGuestHints(summary.activity)
-        let status = GetYourGuideParsing.detailStatus(summary.booking?.status)
 
         let rateDetails: BookingRateDetails? = {
             let price = summary.booking?.price
@@ -53,15 +52,19 @@ public enum GetYourGuideBookingSummaryParser {
             )
         }()
 
-        return ProviderBookingEnrichment(
-            deadlines: deadlines,
-            rateDetails: rateDetails,
-            passengers: participants.isEmpty ? nil : participants,
-            guestHints: guestHints.isEmpty ? nil : guestHints,
-            status: status,
-            title: summary.activity?.activityTitle,
-            locationTo: summary.activity?.activityLocations?.city?.name,
-            locationToAddress: locationToAddress
+        return DraftAssembler.enrichment(
+            from: ProviderBookingFacts(
+                provider: .getYourGuide,
+                bookingType: .activity,
+                title: summary.activity?.activityTitle,
+                locationTo: summary.activity?.activityLocations?.city?.name,
+                locationToAddress: locationToAddress,
+                statusRaw: summary.booking?.status,
+                deadlines: deadlines,
+                rateDetails: rateDetails,
+                passengers: participants,
+                guestHints: guestHints
+            )
         )
     }
 
@@ -69,7 +72,7 @@ public enum GetYourGuideBookingSummaryParser {
         guard let activity else { return [] }
         let itineraryLines: [String] = (activity.itinerary?.items ?? []).compactMap { item in
             guard item.isImportant == true || item.type == "meeting_point" else { return nil }
-            return GetYourGuideParsing.firstNonEmpty(item.activityLabel, item.title, item.locationName)
+            return NonEmpty.first(item.activityLabel, item.title, item.locationName)
         }
         return GetYourGuideGuestHintMapper.hints(
             from: GetYourGuideGuestHintActivity(
@@ -89,7 +92,7 @@ public enum GetYourGuideBookingSummaryParser {
         var number = 1
         for participant in participants {
             let count = GetYourGuideParsing.participantCount(participant)
-            let type = travellerType(from: participant.priceCategoryLabel)
+            let type = TravellerType.parse(participant.priceCategoryLabel)
             for _ in 0..<count {
                 result.append(
                     BookingPassenger(
@@ -102,15 +105,6 @@ public enum GetYourGuideBookingSummaryParser {
             }
         }
         return result
-    }
-
-    private static func travellerType(from label: String?) -> TravellerType {
-        switch label?.lowercased() {
-        case "adult": return .adult
-        case "child", "youth": return .child
-        case "infant", "baby": return .infant
-        default: return .unknown
-        }
     }
 }
 

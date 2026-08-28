@@ -1,4 +1,5 @@
 import Foundation
+import ReisenDomain
 
 enum TravelokaJSON {
     static func object(from text: String) throws -> [String: Any] {
@@ -103,8 +104,7 @@ enum TravelokaJSON {
 
     static func string(_ value: Any?) -> String? {
         if let s = value as? String {
-            let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
-            return t.isEmpty ? nil : t
+            return NonEmpty.string(s)
         }
         if let n = value as? NSNumber {
             return n.stringValue
@@ -155,21 +155,14 @@ enum TravelokaJSON {
         return (y, m, d)
     }
 
-    static func minutesFromHHMM(_ value: String?) -> Int? {
-        guard let value else { return nil }
-        let parts = value.split(separator: ":")
-        guard parts.count >= 2, let h = Int(parts[0]), let m = Int(parts[1]) else { return nil }
-        return h * 60 + m
-    }
-
     /// `"14:00"` oder `{ "hour": "9", "minute": "0" }`.
     static func minutesFromTime(_ value: Any?) -> Int? {
-        if let fromString = minutesFromHHMM(string(value)) {
+        if let fromString = ClockTime.minutes(fromHHMM: string(value)) {
             return fromString
         }
         let parts = dictionary(value)
         guard let hour = int(parts["hour"]) else { return nil }
-        return hour * 60 + (int(parts["minute"]) ?? 0)
+        return ClockTime.minutes(hours: hour, minute: int(parts["minute"]) ?? 0)
     }
 
     static func dateFromDay(
@@ -203,8 +196,8 @@ enum TravelokaJSON {
 
     /// Traveloka Vehicle liefert oft Offset statt IANA (`+07:00`, `UTC+07:00`).
     static func timeZone(fromGMTOffset raw: String) -> TimeZone? {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let regex = gmtOffsetRegex,
+        guard let trimmed = NonEmpty.string(raw),
+              let regex = gmtOffsetRegex,
               let match = regex.firstMatch(
                   in: trimmed,
                   range: NSRange(location: 0, length: (trimmed as NSString).length)

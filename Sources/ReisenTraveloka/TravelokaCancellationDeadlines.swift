@@ -47,20 +47,4 @@ enum TravelokaCancellationDeadlines {
             cancellationFeeAmount: isFreeCancellation ? nil : feeAmount
         )
     }
-
-    /// Refund-HTML ergänzt fehlende Fristen; vorhandene Free-Frist aus dem Itinerary bleibt.
-    static func combining(
-        existing: [CancellationDeadline],
-        refund: [CancellationDeadline]
-    ) -> [CancellationDeadline] {
-        preferring(existing.filter(\.isFreeCancellation), else: refund.filter(\.isFreeCancellation))
-            + preferring(existing.filter { !$0.isFreeCancellation }, else: refund.filter { !$0.isFreeCancellation })
-    }
-
-    private static func preferring(
-        _ existing: [CancellationDeadline],
-        else refund: [CancellationDeadline]
-    ) -> [CancellationDeadline] {
-        existing.isEmpty ? refund : existing
-    }
 }

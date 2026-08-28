@@ -77,31 +77,59 @@ func gygMyBookingsMapsCancelledPast() throws {
     #expect(catalog.bookings.first?.status == .cancelled)
 }
 
-@Test("GetYourGuideMyBookingsParser überspringt done-Status")
-func gygMyBookingsSkipsDoneStatus() throws {
-    let json = """
-    {"myBookings":{"upcomingBookings":[],"pastBookings":[\(gygListBookingJSON(hash: "done1", status: "done"))]}}
-    """
-    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
-    #expect(catalog.bookings.isEmpty)
-}
-
 @Test("GetYourGuideMyBookingsParser überspringt Einträge ohne bookingFinishDate")
-func gygMyBookingsSkipsMissingFinishDate() throws {
+func gygMyBookingsSkipsEntryWithoutFinishDateAndKeepsOthers() throws {
     let json = """
-    {"myBookings":{"upcomingBookings":[\(gygListBookingJSON(hash: "nofin", status: "active", finish: nil))]}}
+    {
+      "myBookings": {
+        "upcomingBookings": [
+          {
+            "bookingHash": "keep",
+            "bookingReference": "keep-ref",
+            "status": "active",
+            "startingTime": { "startTime": "2026-08-08T19:00:00+07:00" },
+            "bookingFinishDate": "2026-08-08T21:00:00+07:00"
+          },
+          {
+            "bookingHash": "skip-end",
+            "bookingReference": "skip-ref",
+            "status": "active",
+            "startingTime": { "startTime": "2026-08-09T19:00:00+07:00" }
+          }
+        ]
+      }
+    }
     """
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
-    #expect(catalog.bookings.isEmpty)
+    #expect(catalog.bookings.map(\.confirmationCode) == ["keep-ref"])
 }
 
-@Test("GetYourGuideMyBookingsParser überspringt Einträge ohne bookingHash")
-func gygMyBookingsSkipsMissingHash() throws {
+@Test("GetYourGuideMyBookingsParser überspringt done-Status")
+func gygMyBookingsSkipsDoneStatusAndKeepsOthers() throws {
     let json = """
-    {"myBookings":{"upcomingBookings":[\(gygListBookingJSON(hash: nil, status: "active"))]}}
+    {
+      "myBookings": {
+        "upcomingBookings": [
+          {
+            "bookingHash": "keep",
+            "bookingReference": "keep-ref",
+            "status": "active",
+            "startingTime": { "startTime": "2026-08-08T19:00:00+07:00" },
+            "bookingFinishDate": "2026-08-08T21:00:00+07:00"
+          },
+          {
+            "bookingHash": "skip-done",
+            "bookingReference": "skip-ref",
+            "status": "done",
+            "startingTime": { "startTime": "2026-08-09T19:00:00+07:00" },
+            "bookingFinishDate": "2026-08-09T21:00:00+07:00"
+          }
+        ]
+      }
+    }
     """
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
-    #expect(catalog.bookings.isEmpty)
+    #expect(catalog.bookings.map(\.confirmationCode) == ["keep-ref"])
 }
 
 @Test("GetYourGuideInitialState erkennt Cloudflare-Challenge-HTML")
@@ -151,6 +179,37 @@ func gygBookingSummaryParsesEnrichment() throws {
     #expect(hints.contains { $0.sourceKey == "gyg:inclusions" })
     #expect(hints.contains { $0.sourceKey == "gyg:mobileVoucher" })
     #expect(hints.contains { $0.sourceKey.hasPrefix("gyg:itinerary:") })
+}
+
+@Test("GetYourGuideMyBookingsParser behält Draft ohne bookingHash (ohne Portal-URL)")
+func gygMyBookingsKeepsDraftWithoutHash() throws {
+    let json = """
+    {
+      "upcomingBookings": [
+        {
+          "status": "active",
+          "bookingReference": "REF-ONLY",
+          "startingTime": { "startTime": "2099-08-08T19:00:00+07:00" },
+          "bookingFinishDate": "2099-08-08T21:00:00+07:00",
+          "bookedOption": { "activityTitle": "Ohne Hash" }
+        }
+      ]
+    }
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    let draft = try #require(catalog.bookings.first)
+    #expect(draft.confirmationCode == "REF-ONLY")
+    #expect(draft.externalUrl == nil)
+    #expect(BookingExternalURL.browserURL(from: draft.externalUrl) == nil)
+}
+
+@Test("GetYourGuide Catalog-Drafts haben browserURL")
+func gygCatalogDraftsHaveBrowserURL() throws {
+    let json = try GetYourGuideResearchFixture.json(named: "gyg_myBookings_redacted.json")
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    for draft in catalog.bookings {
+        #expect(BookingExternalURL.browserURL(from: draft.externalUrl) != nil)
+    }
 }
 
 @Test("GetYourGuideInitialState extrahiert JSON-Objekt per Brace-Scan")

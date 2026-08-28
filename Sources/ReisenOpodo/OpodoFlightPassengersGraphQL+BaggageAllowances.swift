@@ -13,7 +13,7 @@ extension OpodoFlightPassengersGraphQL {
                 allowance.append(
                     BaggageAllowance(
                         passengerID: passengerID,
-                        type: baggageType(from: bag.type),
+                        type: BaggageType.parse(bag.type),
                         pieceCount: bag.numPieces,
                         weightKg: weightKg,
                         sectionID: section.id,
@@ -23,14 +23,5 @@ extension OpodoFlightPassengersGraphQL {
             }
         }
         return allowance
-    }
-
-    static func baggageType(from raw: String?) -> BaggageType {
-        switch (raw ?? "").uppercased() {
-        case "CHECKED_BAG": return .checkedBag
-        case "CABIN_BAG": return .cabinBag
-        case "PERSONAL_ITEM": return .personalItem
-        default: return .unknown
-        }
     }
 }

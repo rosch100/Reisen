@@ -1,60 +1,39 @@
 import Testing
 import Foundation
-import ReisenOpodo
+@testable import ReisenOpodo
 import ReisenDomain
 
 @Test("Opodo Status: CANCELLED vs CANCELLABLE")
 func opodoCancellationStatusTokens() {
-    #expect(OpodoTripCancellationGraphQLParser.isCancelledStatusToken("CANCELLED"))
-    #expect(OpodoTripCancellationGraphQLParser.isCancelledStatusToken("BOOKING_CANCELLED"))
-    #expect(!OpodoTripCancellationGraphQLParser.isCancelledStatusToken("CANCELLABLE"))
-    #expect(!OpodoTripCancellationGraphQLParser.isCancelledStatusToken("REFUNDABLE"))
+    #expect(BookingStatus.parseToken("CANCELLED") == .cancelled)
+    #expect(BookingStatus.parseToken("BOOKING_CANCELLED") == .cancelled)
+    #expect(BookingStatus.parseToken("CANCELLABLE") == .unknown)
+    #expect(BookingStatus.parseToken("REFUNDABLE") == .unknown)
     #expect(
-        OpodoTripCancellationGraphQLParser.status(
-            bookingStatus: "CONTRACT",
-            productStatus: "CONFIRMED",
-            cancellableStatus: "CANCELLABLE"
-        ) == nil
+        BookingStatus.parse(parts: ["CONTRACT", "CONFIRMED", "CANCELLABLE"]) == .confirmed
     )
-    #expect(
-        OpodoTripCancellationGraphQLParser.status(
-            bookingStatus: "CANCELLED",
-            productStatus: nil,
-            cancellableStatus: nil
-        ) == .cancelled
-    )
-    #expect(OpodoTripCancellationGraphQLParser.looksCancelled(inPageText: "Status\nStorniert\nHotel"))
-    #expect(!OpodoTripCancellationGraphQLParser.looksCancelled(inPageText: "Stornierungsrichtlinie Bis 1. August"))
+    #expect(BookingStatus.parse(parts: ["CANCELLED"]) == .cancelled)
+    #expect(BookingStatus.parse("Storniert") == .cancelled)
+    #expect(BookingStatus.parse("Stornierungsrichtlinie Bis 1. August") == .unknown)
 }
 
 @Test("Opodo Status: RETAINED/FINAL_RET sind Storno (HAR Hotel)")
 func opodoRetainedIsCancelled() {
     // HAR: accommodationBooking.bookingStatus=RETAINED bei storniertem Hotel;
     // Trip-Ebene bleibt oft CONTRACT — Hotel-Status muss gewinnen.
-    #expect(OpodoTripCancellationGraphQLParser.isCancelledStatusToken("RETAINED"))
-    #expect(OpodoTripCancellationGraphQLParser.isCancelledStatusToken("FINAL_RET"))
-    #expect(OpodoTripCancellationGraphQLParser.isCancelledStatusToken("DIDNOTBUY"))
-    #expect(
-        OpodoTripCancellationGraphQLParser.status(
-            bookingStatus: "RETAINED",
-            productStatus: nil,
-            cancellableStatus: nil
-        ) == .cancelled
-    )
-    #expect(
-        OpodoTripCancellationGraphQLParser.status(
-            bookingStatus: "CONTRACT",
-            productStatus: "CANCELLED",
-            cancellableStatus: nil
-        ) == .cancelled
-    )
+    #expect(BookingStatus.parseToken("RETAINED") == .cancelled)
+    #expect(BookingStatus.parseToken("FINAL_RET") == .cancelled)
+    #expect(BookingStatus.parseToken("DIDNOTBUY") == .cancelled)
+    #expect(BookingStatus.parse(parts: ["RETAINED"]) == .cancelled)
+    #expect(BookingStatus.parse(parts: ["CONTRACT", "CANCELLED"]) == .cancelled)
 }
 
-@Test("OpodoGetTripByTokenQuery extrahiert tdToken aus Detail-URL")
+@Test("OpodoWeb extrahiert tdToken aus Detail-URL")
 func opodoTdTokenFromExternalURL() {
-    let url = "https://www.opodo.de/travel/secure/#tripdetails/td=ABC_TOKEN_123"
-    #expect(OpodoGetTripByTokenQuery.tdToken(fromExternalURL: url) == "ABC_TOKEN_123")
-    #expect(OpodoGetTripByTokenQuery.tdToken(fromExternalURL: "https://www.opodo.de/") == nil)
+    let url = OpodoWeb.tripDetailsURL(token: "ABC_TOKEN_123")
+    #expect(url.hasPrefix(OpodoWeb.secureAreaURLString))
+    #expect(OpodoWeb.tdToken(fromExternalURL: url) == "ABC_TOKEN_123")
+    #expect(OpodoWeb.tdToken(fromExternalURL: OpodoWeb.homepageURLString) == nil)
 }
 
 @Test("OpodoTripCancellationGraphQLParser liest Hotel- und Flug-Storno")
@@ -185,7 +164,7 @@ func opodoCancellationGraphQLReadsMerlynnHARPolicies() throws {
     }
     """
     let parsed = try OpodoTripCancellationGraphQLParser().parse(from: json)
-    #expect(parsed.status == nil)
+    #expect(BookingStatus.parse(parsed.statusRaw) != .cancelled)
     let free = try #require(parsed.deadlines.first { $0.isFreeCancellation })
     #expect(free.policyText?.contains("Cancellation policy") == true)
     #expect(free.hotelOffsetSeconds == 2 * 3600)
@@ -270,4 +249,19 @@ func opodoCancellationGraphQLReadsProductBookingPolicies() throws {
     let cestComps = cest.dateComponents([.day, .hour], from: free.deadlineAt)
     #expect(cestComps.day == 2)
     #expect(cestComps.hour == 0)
+}
+
+@Test func opodoCancelledHotelEnrichmentDropsDeadlines() {
+    let paid = CancellationDeadline(
+        deadlineAt: Date(timeIntervalSince1970: 1_700_000_000),
+        isFreeCancellation: false
+    )
+    let enrichment = OpodoHotelGraphQLEnrichment.make(
+        statusRaw: "CANCELLED",
+        deadlines: [paid],
+        guestHints: []
+    )
+    #expect(enrichment.status == .cancelled)
+    #expect(enrichment.deadlines.isEmpty)
+    #expect(enrichment.guestHints == nil)
 }
