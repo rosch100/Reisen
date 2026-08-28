@@ -23,7 +23,7 @@
           "currencyIsoCode": "EUR",
           "amount": 0
         },
-        "bookingHash": "<REDACTED>",
+        "bookingHash": "<REDACTED-1>",
         "shoppingCartHash": "<REDACTED>",
         "activityId": "<REDACTED>",
         "activityOptionId": "<REDACTED>",
@@ -168,7 +168,7 @@
           "currencyIsoCode": "EUR",
           "amount": 0
         },
-        "bookingHash": "<REDACTED>",
+        "bookingHash": "<REDACTED-2>",
         "shoppingCartHash": "<REDACTED>",
         "activityId": "<REDACTED>",
         "activityOptionId": "<REDACTED>",
@@ -318,7 +318,7 @@
           "currencyIsoCode": "EUR",
           "amount": 0
         },
-        "bookingHash": "<REDACTED>",
+        "bookingHash": "<REDACTED-3>",
         "shoppingCartHash": "<REDACTED>",
         "activityId": "<REDACTED>",
         "activityOptionId": "<REDACTED>",

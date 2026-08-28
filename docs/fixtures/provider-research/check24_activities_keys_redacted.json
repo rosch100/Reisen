@@ -1,20 +1,95 @@
 {
   "_meta": {
-    "source": "Code-SSOT ActivityListParser.travelProductKeys + Unit-Tests (kein Live-HAR im Repo)",
-    "status": "partial",
-    "note": "Nur Keys, die der Produktivcode kennt/akzeptiert. Weitere Keys erfordern Live-HAR von /kb/api/activities."
+    "source": "Live GET https://kundenbereich.check24.de/kb/api/activities (2026-08-28, eingeloggtes Kundenkonto, Cursor-Browser). Seite feuert denselben XHR.",
+    "alsoObservedRequests": [
+      "GET https://kundenbereich.check24.de/kb/api/activities",
+      "GET https://kundenbereich.check24.de/kb/api/activity/center",
+      "GET https://www.check24.de/ajax/user/activity/get/"
+    ],
+    "status": "live-keys",
+    "capturedAt": "2026-08-28",
+    "activityCount": 64,
+    "note": "Rohpayload/HAR nicht im Repo (PII). Häufigkeiten aus einem Konto; Abwesenheit eines Keys heißt nicht, dass die API ihn nie liefert."
   },
-  "acceptedProductKeys": [
-    { "key": "hotel", "mapsTo": "hotel", "seenInUnitTests": true },
-    { "key": "flight", "mapsTo": "flight", "seenInUnitTests": true },
-    { "key": "ferry", "mapsTo": "ferry", "seenInUnitTests": false },
-    { "key": "holidayflat", "mapsTo": "hotel", "seenInUnitTests": false },
-    { "key": "package", "mapsTo": "hotel", "seenInUnitTests": false }
+  "jsonForm": {
+    "kbApiActivities": {
+      "url": "https://kundenbereich.check24.de/kb/api/activities",
+      "topLevelKeys": ["activities", "chips"],
+      "activitiesPath": "activities",
+      "casing": "camelCase",
+      "activityFieldExamples": ["foreignId", "startDate", "endDate", "productSpecificData", "detailButton", "travelInformation"],
+      "productObjectKeys": ["key", "label", "productGroupKey", "centerIdentifier"],
+      "linkShape": { "isBlank": "bool", "isInternal": "bool", "link": "string URL" },
+      "productSpecificDataOnKbApi": "nur orderId, in diesem Konto immer null — reiche hotel_* Felder liegen nicht in dieser Antwort"
+    },
+    "ajaxWidget": {
+      "url": "https://www.check24.de/ajax/user/activity/get/",
+      "topLevelKeys": ["status", "data"],
+      "activitiesPath": "data.activities",
+      "casing": "snake_case",
+      "activityFieldExamples": ["foreign_id", "start_date", "end_date", "product_specific_data", "activity_status"],
+      "note": "Homepage-Widget: data.count=49, aber nur 3 Activities im Array. Parser unterstützt diese Form bereits."
+    }
+  },
+  "chipsProductGroups": [
+    { "key": "hotel_holidayflat", "label": "Hotel & Ferienwohnung" },
+    { "key": "rentalcar", "label": "Mietwagen" },
+    { "key": "flight", "label": "Flüge" },
+    { "key": "insurance", "label": "Versicherungen" },
+    { "key": "energy", "label": "Strom & Gas" },
+    { "key": "travel", "label": "Reise" },
+    { "key": "telco", "label": "Internet" },
+    { "key": "mobile_communication", "label": "Handy" }
   ],
-  "rejectedOrUnknownKeys": [],
+  "acceptedProductKeys": [
+    { "key": "hotel", "mapsTo": "hotel", "liveCount": 33, "seenInUnitTests": true, "productGroupKey": "hotel_holidayflat", "detailUrlPattern": "hotel.check24.de/ul/kundenbereich/buchung/:uuid" },
+    { "key": "flight", "mapsTo": "flight", "liveCount": 4, "seenInUnitTests": true, "productGroupKey": "flight", "detailUrlPattern": "flug.check24.de/kundenbereich/:pnr/:name" },
+    { "key": "ferry", "mapsTo": "ferry", "liveCount": 0, "seenInUnitTests": false, "note": "Code-Whitelist; in diesem Live-Konto weder Activity noch Chip" },
+    { "key": "holidayflat", "mapsTo": "hotel", "liveCount": 6, "seenInUnitTests": false, "productGroupKey": "hotel_holidayflat", "detailUrlPattern": "ferienwohnung.check24.de/kundenbereich/buchung/:uuid" },
+    { "key": "package", "mapsTo": "hotel", "liveCount": 1, "seenInUnitTests": false, "productGroupKey": "travel", "label": "Pauschalreise", "detailUrlPattern": "urlaub.check24.de/kundenbereich/detail/:id" },
+    {
+      "key": "rentalcar",
+      "mapsTo": "carRental",
+      "today": "mapped_carRental",
+      "liveCount": 9,
+      "seenInUnitTests": true,
+      "productGroupKey": "rentalcar",
+      "productLabel": "Mietwagen",
+      "verticalOrigin": "https://mietwagen.check24.de/",
+      "detailUrlPattern": "https://mietwagen.check24.de/ul/booking/list/foreign/:id",
+      "searchJumpinPattern": "https://mietwagen.check24.de/ul/jumpin",
+      "voucherPattern": "https://mietwagen.check24.de/ajax/booking/document/...",
+      "statusBreakdown": { "cancelled": 5, "ended": 4 },
+      "notToConfuseWith": "product.key car = Kfz-Versicherung on www.check24.de/einsurance/kfz",
+      "enrichment": "Katalog + HTML-Detail (CpInitial → Check24CarRentalDetailParser); Fixture check24_rentalcar_detail_redacted.html."
+    }
+  ],
+  "rejectedOrUnknownKeys": [
+    {
+      "key": "car",
+      "liveCount": 1,
+      "productLabel": "Kfz-Versicherung",
+      "productGroupKey": "insurance",
+      "today": "skip_non_travel",
+      "note": "Nicht Mietwagen — nicht mit rentalcar verwechseln"
+    },
+    { "key": "un", "liveCount": 1, "productLabel": "Unfallversicherung", "productGroupKey": "insurance", "today": "skip_non_travel" },
+    { "key": "power", "liveCount": 6, "productLabel": "Strom", "productGroupKey": "energy", "today": "skip_non_travel" },
+    { "key": "gas", "liveCount": 1, "productLabel": "Gas", "productGroupKey": "energy", "today": "skip_non_travel" },
+    { "key": "dsl", "liveCount": 1, "productLabel": "Internet", "productGroupKey": "telco", "today": "skip_non_travel" },
+    { "key": "mobileservice", "liveCount": 1, "productLabel": "Handytarif", "productGroupKey": "mobile_communication", "today": "skip_non_travel" }
+  ],
+  "hypothesesResolved": [
+    { "hypothesis": "rentalcar", "verdict": "belegt", "key": "rentalcar", "bookingType": "carRental", "verticalOrigin": "https://mietwagen.check24.de/" },
+    { "hypothesis": "car / mobility", "verdict": "anders_benannt", "note": "car = Kfz-Versicherung (einsurance/kfz); Mietwagen = rentalcar auf https://mietwagen.check24.de/; mobility nicht gesehen" },
+    { "hypothesis": "insurance", "verdict": "anders_benannt", "note": "kein product.key insurance; Group insurance via car + un; Chip insurance" },
+    { "hypothesis": "train / bahn / rail", "verdict": "kein_buchungsprodukt", "note": "0 Activities/Chip; www.check24.de/bahn/ zeigt KFZ — kein Bahn-Vertical" },
+    { "hypothesis": "activity / ticket / event", "verdict": "vertical_ohne_sync_key", "note": "0 Activities/Chip; Verkauf https://erlebnisse.check24.de/ — Whitelist erst mit product.key" },
+    { "hypothesis": "package eigener Typ", "verdict": "zurueckgestellt", "note": "Detail urlaub.check24.de Composite Hotel+Flug ohne basketDetails; Katalog bleibt hotel" },
+    { "hypothesis": "mietwagen gap jumpin", "verdict": "umgesetzt", "note": "Check24DeepLinkBuilder /ul/jumpin?dep_destination_name=&dest_destination_name= füllt Formular" }
+  ],
   "hypothesesUnverified": [
-    { "key": "rentalcar", "possibleBookingType": "other_or_new" },
-    { "key": "train", "possibleBookingType": "train", "note": "Domain BookingType.train existiert; Key unverified — nicht whitelisten ohne HAR" },
-    { "key": "activity", "possibleBookingType": "activity" }
+    { "key": "ferry", "possibleBookingType": "ferry", "note": "Code-Whitelist; Live-Konto 0 — Key nicht streichen" },
+    { "key": "activity", "possibleBookingType": "activity", "note": "Vertical erlebnisse.check24.de; Sync-Key in Live-Konto nicht gesehen" }
   ]
 }

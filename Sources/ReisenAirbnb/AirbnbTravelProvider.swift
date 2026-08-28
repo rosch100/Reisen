@@ -79,18 +79,18 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         }
 
         onProgress?("Lade Reservation-Overview (Airbnb)…")
-        let scheduledEventsURL = reservationOverviewURL(
-            pathPrefix: "/api/v2/scheduled_events",
+        let stayDetailsURL = reservationOverviewURL(
+            pathPrefix: AirbnbAPI.stayReservationDetailsPathPrefix,
             schedulableType: schedulableType,
             confirmationCode: confirmationCode
         )
-        let scheduledEventsText = try await webView.airbnbFetchTextAsync(
-            url: scheduledEventsURL,
-            headers: scheduledEventsHeaders(referer: loginURL.absoluteString)
+        let stayDetailsText = try await webView.airbnbFetchTextAsync(
+            url: stayDetailsURL,
+            headers: reservationOverviewHeaders(referer: loginURL.absoluteString)
         )
 
-        let scheduledParsed = try AirbnbScheduledEventsParser.parse(responseText: scheduledEventsText)
-        let guestHints = AirbnbGuestHintParser().parse(from: scheduledEventsText)
+        let scheduledParsed = try AirbnbScheduledEventsParser.parse(responseText: stayDetailsText)
+        let guestHints = AirbnbGuestHintParser().parse(from: stayDetailsText)
 
         let hotelOffsetSeconds: Int? = {
             guard let timeZone = TimeZone(identifier: tripDetails.listingTimeZone) else { return nil }
@@ -141,13 +141,13 @@ private extension AirbnbTravelProvider {
     ) async throws -> ProviderBookingEnrichment {
         onProgress?("Lade Experience-Details (Airbnb)…")
         let detailsURL = reservationOverviewURL(
-            pathPrefix: "/api/v2/activity_reservation_details",
+            pathPrefix: AirbnbAPI.activityReservationDetailsPathPrefix,
             schedulableType: schedulableType,
             confirmationCode: confirmationCode
         )
         let detailsText = try await webView.airbnbFetchTextAsync(
             url: detailsURL,
-            headers: scheduledEventsHeaders(referer: loginURL.absoluteString)
+            headers: reservationOverviewHeaders(referer: loginURL.absoluteString)
         )
         let parsed = try AirbnbActivityReservationDetailsParser.parse(
             responseText: detailsText,
@@ -177,14 +177,15 @@ private extension AirbnbTravelProvider {
         )
     }
 
-    func scheduledEventsHeaders(referer: String) -> [String: String] {
+    func reservationOverviewHeaders(referer: String) -> [String: String] {
         [
+            AirbnbAPI.apiKeyHeader: AirbnbAPI.apiKeyValue,
             "Accept": "application/json",
             "Referer": referer,
         ]
     }
 
-    /// Shared query params for Stay `scheduled_events` and Experience `activity_reservation_details`.
+    /// Shared query params for Stay `stay_reservation_details` and Experience `activity_reservation_details`.
     func reservationOverviewURL(
         pathPrefix: String,
         schedulableType: String,

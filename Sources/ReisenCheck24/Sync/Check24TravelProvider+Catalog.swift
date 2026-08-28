@@ -1,10 +1,12 @@
 import Foundation
 import WebKit
+import ReisenDomain
 
 extension Check24TravelProvider {
     enum BookingURLGroup {
         case hotel
         case nonHotel
+        case carRental
     }
 
     func fetchActivity(using webView: WKWebView) async throws -> ParsedActivity {
@@ -57,21 +59,27 @@ extension Check24TravelProvider {
         for group: BookingURLGroup,
         in activity: ParsedActivity
     ) -> [(ParsedBooking, URL)] {
+        activity.bookings.compactMap { booking -> (ParsedBooking, URL)? in
+            guard matches(group, type: booking.type) else { return nil }
+            guard let urlString = booking.externalUrl, let url = URL(string: urlString) else { return nil }
+            guard accepts(group, url: url) else { return nil }
+            return (booking, url)
+        }
+    }
+
+    private func matches(_ group: BookingURLGroup, type: BookingType) -> Bool {
         switch group {
-        case .hotel:
-            return activity.bookings.compactMap { booking -> (ParsedBooking, URL)? in
-                guard booking.type == .hotel else { return nil }
-                guard let urlString = booking.externalUrl, let url = URL(string: urlString) else { return nil }
-                guard isHotelBookingDetailURL(url) else { return nil }
-                return (booking, url)
-            }
-        case .nonHotel:
-            return activity.bookings.compactMap { booking -> (ParsedBooking, URL)? in
-                guard booking.type.supportsFlightOffsetAutofill else { return nil }
-                guard let urlString = booking.externalUrl, let url = URL(string: urlString) else { return nil }
-                guard isNonHotelBookingDetailURL(url) else { return nil }
-                return (booking, url)
-            }
+        case .hotel: return type == .hotel
+        case .nonHotel: return type.supportsFlightOffsetAutofill
+        case .carRental: return type == .carRental
+        }
+    }
+
+    private func accepts(_ group: BookingURLGroup, url: URL) -> Bool {
+        switch group {
+        case .hotel: return isHotelBookingDetailURL(url)
+        case .nonHotel: return isNonHotelBookingDetailURL(url)
+        case .carRental: return isCarRentalBookingDetailURL(url)
         }
     }
 }

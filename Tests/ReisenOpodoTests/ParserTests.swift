@@ -52,8 +52,7 @@ func opodoLoginHTMLIndicatesMissingSession() {
     """
     #expect(AuthPageHTMLHeuristic.opodoLooksLikeLoginHTML(loginHTML))
     #expect(!AuthPageHTMLHeuristic.opodoLooksLikeLoginHTML(
-        "<html><body><a href=\"https://www.opodo.de/travel/secure/\">Trips</a></body></html>",
-        responseURL: URL(string: "https://www.opodo.de/travel/secure/")
+        "<html><body><a href=\"https://www.opodo.de/travel/secure/\">Trips</a></body></html>"
     ))
 }
 

@@ -29,12 +29,12 @@ Spec-Index: [`API_Research_Provider_Candidates.md`](../API_Research_Provider_Can
 4. `TravelProvider` fetchCatalog / enrichBooking (Cookie-Session)
 5. Tests gegen `gyg_*_redacted.json`
 
-**Done when:** Upcoming GYG-Activities als `.activity` Drafts + sinnvolles Enrichment.  
+**Done when:** GYG-Activities aus `upcomingBookings` **und** `pastBookings` als `.activity` Drafts + sinnvolles Enrichment.  
 Merge nach Phase 0; parallel zu Phase 1 vorbereitbar.
 
 ## Phase 3+ (nicht Teil der Activity-Arbeit)
 
-1. Check24 productKey Live-HAR-Audit ([Checkliste](check24-productkey-audit.md))
+1. Check24 productKey Live-Audit ([Checkliste](check24-productkey-audit.md)) — Keys erfasst 2026-08-28; `rentalcar` gemappt; HTML-Detail-Parser angebunden
 2. Expedia Trips HAR + Spec
 3. Viator / Gap-Deep-Links (Skyscanner/Kayak/GYG-Suche)
 4. Opodo optional TZ/ISO (nur mit Wall-Clock-Tests)

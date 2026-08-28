@@ -26,7 +26,7 @@ App-Store-iOS: keine Provider-Registry → keine Gap-Suche; Buchungs-Open über 
 | Opodo | `…/travel/secure/#tripdetails/td={token}` | Browser | Nein (Hash) → Safari |
 | Manual | `reisen://manual/{uuid}` | kein Open | kein Open |
 
-GYG ohne `bookingHash` / Airbnb ohne ableitbare Portal-URL: Draft bleibt (`externalUrl` nil); Open-UI nur bei `browserURL`.
+GYG ohne `bookingHash`: kein Katalog-Draft. Airbnb ohne ableitbare Portal-URL: Draft bleibt (`externalUrl` nil). Open-UI nur bei `browserURL`.
 
 ## Gap-Suche (Kategorie × Provider)
 

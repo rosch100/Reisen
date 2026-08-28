@@ -23,7 +23,7 @@ extension BookingComTripsGraphQLParser {
         )
     }
 
-    func isFreeCancellationPolicy(message: String, policyName: String?) -> Bool {
+    private func isFreeCancellationPolicy(message: String, policyName: String?) -> Bool {
         message.lowercased().contains("kostenlos")
             || (policyName?.lowercased().contains("kostenlos") ?? false)
     }

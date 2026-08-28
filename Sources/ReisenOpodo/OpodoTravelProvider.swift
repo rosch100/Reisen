@@ -211,7 +211,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
                 return try await webView.fetchAuthenticatedHTML(
                     url: OpodoWeb.secureAreaURL,
                     referer: loginURL.absoluteString,
-                    isLoginHTML: AuthPageHTMLHeuristic.opodoHTMLLooksLikeLogin
+                    isLoginHTML: AuthPageHTMLHeuristic.opodoLooksLikeLoginHTML
                 )
             } catch AuthenticatedSessionError.notEstablished {
                 throw OpodoProviderError.sessionNotEstablished

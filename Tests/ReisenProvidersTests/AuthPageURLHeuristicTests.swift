@@ -106,3 +106,19 @@ import ReisenProviders
     #expect(ProviderSessionStatusResolver.classify(URL(string: bookings)!) == .shouldProbeBilligerMietwagen)
     #expect(ProviderSessionStatusResolver.classify(URL(string: home)!) == .shouldProbeBilligerMietwagen)
 }
+
+@Test func getYourGuideLoginIsOTPAutofillNotAccount() {
+    let login = "https://www.getyourguide.com/login?next=/de-de/customer-bookings/"
+    #expect(AuthPageURLHeuristic.looksLikeLoginPage(login))
+    #expect(AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(login))
+    #expect(!AuthPageURLHeuristic.looksLikeAccountPage(login))
+}
+
+@Test func getYourGuideCustomerBookingsIsAccountNotLogin() {
+    let de = "https://www.getyourguide.com/de-de/customer-bookings/"
+    let en = "https://www.getyourguide.com/en-us/customer-bookings/"
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage(de))
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage(en))
+    #expect(!AuthPageURLHeuristic.looksLikeLoginPage(de))
+    #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(de))
+}

@@ -2,7 +2,11 @@ import Foundation
 import ReisenDomain
 
 extension GYGCancellationPolicy {
-    func asDeadlines() -> [CancellationDeadline] {
+    static func deadlines(_ policy: GYGCancellationPolicy?) -> [CancellationDeadline] {
+        policy?.asDeadlines() ?? []
+    }
+
+    private func asDeadlines() -> [CancellationDeadline] {
         guard let deadlineAt = expirationDate ?? policyExpirationDate else { return [] }
         let typeHaystack = [type, policyType]
             .compactMap { $0?.lowercased() }
