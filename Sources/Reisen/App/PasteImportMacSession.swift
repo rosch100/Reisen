@@ -204,7 +204,10 @@ final class PasteImportMacSession {
 
     private static func message(for error: Error) -> String {
         switch error {
-        case PasteImportSourceError.empty, PasteImportMacSourceError.unreadableFile:
+        case PasteImportSourceError.empty,
+            PasteImportMacSourceError.unreadableFile,
+            PasteImportAdapterError.unreadableSource,
+            PasteImportAdapterError.imageConversionFailed:
             return L10n.string(.pasteImportErrorSource)
         case PasteImportRunError.modelUnavailable, PasteImportAdapterError.unavailable:
             return L10n.string(.pasteImportUnavailable)

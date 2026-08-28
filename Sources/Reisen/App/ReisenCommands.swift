@@ -6,7 +6,10 @@ import ReisenSharedUI
 struct ReisenCommands: Commands {
     @FocusedValue(\.openBookingsCommandState) private var openBookingsCommandState
 
-    /// Verfügbarkeit entscheidet über beide Einfüge-Einträge; aufgelöst wird sie nur hier.
+    /// Verfügbarkeit entscheidet über beide Einfüge-Einträge im Menü.
+    ///
+    /// Die Notification trägt die Modellstufe nicht mit; `PasteImportMacSession.start()`
+    /// löst sie über `PasteImportModel.kind()` erneut auf — dieselbe Quelle, kein zweiter Pfad.
     private var pasteImportKind: PasteImportModelKind { PasteImportModel.kind() }
 
     var body: some Commands {
