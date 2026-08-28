@@ -1,5 +1,6 @@
 import SwiftUI
 import ReisenData
+import ReisenDomain
 
 /// Kompakte Zeile für offene Buchungen (Liste macOS/iOS).
 public struct OpenBookingRow: View {
@@ -15,11 +16,14 @@ public struct OpenBookingRow: View {
         let stornoLines = BookingStornoSummary.lines(for: booking)
 
         VStack(alignment: .leading, spacing: 4) {
-            Text(booking.displayTitle)
+            Text(booking.presentationTitle)
                 .lineLimit(1)
                 .font(.headline)
 
-            Text("\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))")
+            BookingTypeLabel(booking.bookingType)
+                .foregroundStyle(.secondary)
+
+            Text(BookingScheduleRangeText.make(for: booking))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 

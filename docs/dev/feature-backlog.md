@@ -1,6 +1,6 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
-Status: **Backlog** (teilweise umgesetzt; weitere Features geplant)  
+Status: **Backlog** (F01 implementiert, übrige Features geplant)  
 Stand: 2026-08-28
 
 ## Zweck und Leitlinie
@@ -17,7 +17,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 
 | ID | Feature | Status | Prio | Abhängigkeit |
 |----|---------|--------|------|--------------|
-| F01 | `BookingType.train` (Bahn) | geplant | P1 | — |
+| F01 | `BookingType.train` (Bahn) | implementiert | P1 | — |
 | F02 | Check-in-Erinnerungen (Hotel + Flug) | geplant | P1 | — |
 | F03 | Explizites Kopieren von Bestätigungscodes | geplant | P2 | — |
 | F04 | ICS/Text-Export einer Reise | geplant | P2 | — |
@@ -79,6 +79,8 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ### F01 — `BookingType.train` (Bahn)
 
+**Status:** implementiert (Spec: [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md))
+
 **Sinn:** DACH-Reisen ohne Bahn sind unvollständig. `.other` verschluckt Zugnummer, Bahnhof, Sitz — Transport-Gaps werden unscharf.
 
 **Machbarkeit:** hoch. Muster: [`booking-type-activity-impl-spec.md`](booking-type-activity-impl-spec.md).
@@ -90,7 +92,7 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 | Zeitmodell | Wie Flug/Fähre in `BookingTimeNormalizeDispatch` (Punkt-zu-Punkt) |
 | Labels | `L10n+Booking`, `BookingType+DetailFieldLabels`: Von/Nach Bahnhof, Abfahrt/Ankunft, Betreiber; `showsLocationFrom = true` |
 | UI | `BookingEditor` (`BookingType.allCases`), Timeline, Details |
-| Provider | Kein DB/ÖBB-Adapter in Welle 1; Quelle: manuell, später F06 |
+| Provider | Traveloka `TRAIN`/`TRAIN_GLOBAL` → `.train`; kein DB/ÖBB; Check24-Bahn ohne HAR |
 | Tests | Analog `bookingType_carRental_*` in `BookingTypeTests` |
 
 **Out of Scope:** Provider-Sync für Bahnportale; automatisches Parsen von Bahn-Tickets (→ F06).
@@ -267,7 +269,7 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ## Follow-up Specs (nach Backlog-Freigabe)
 
-1. [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md) — noch anzulegen
+1. [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md) — implementiert
 2. Check-in-Reminder-Spec — noch anzulegen
 3. Attachment-Spec (Schema + Privacy) — noch anzulegen
 4. Paste-Import-Spec — noch anzulegen

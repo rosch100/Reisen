@@ -10,6 +10,7 @@ enum TravelokaProductType: String, Sendable {
     case flightAncillary = "FLIGHT_ANCILLARY"
     case insurance = "INSURANCE"
     case train = "TRAIN"
+    case trainGlobal = "TRAIN_GLOBAL"
     case other
 
     init(raw: String?) {
@@ -24,6 +25,8 @@ enum TravelokaProductType: String, Sendable {
             self = .experience
         } else if value.contains("VEHICLE") || value.contains("CAR") {
             self = .vehicleRental
+        } else if value == "TRAIN" || value.hasPrefix("TRAIN_") {
+            self = .train
         } else {
             self = .other
         }
@@ -39,7 +42,9 @@ enum TravelokaProductType: String, Sendable {
             return .activity
         case .vehicleRental:
             return .carRental
-        case .airportTransport, .flightAncillary, .insurance, .train, .other:
+        case .train, .trainGlobal:
+            return .train
+        case .airportTransport, .flightAncillary, .insurance, .other:
             return .other
         }
     }

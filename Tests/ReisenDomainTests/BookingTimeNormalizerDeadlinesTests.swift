@@ -74,3 +74,43 @@ func bookingTimeNormalizerPropagatesBookingOffsetToDeadlines() {
     let normalizedDeadline = normalized.cancellationDeadlines.first
     #expect(normalizedDeadline?.hotelOffsetSeconds == 2 * 3600)
 }
+
+@Test("BookingTimeNormalizer normalisiert train mit Offsets wie Flug")
+func bookingTimeNormalizerNormalizesTrainWithOffsets() {
+    let rawStartAt = Date(timeIntervalSince1970: 1_780_000_000)
+    let rawEndAt = Date(timeIntervalSince1970: 1_780_010_000)
+
+    var booking = Booking(
+        provider: .manual,
+        bookingType: .train,
+        startAt: rawStartAt,
+        endAt: rawEndAt,
+        flightDepartureOffsetSeconds: 3600,
+        flightArrivalOffsetSeconds: 7200
+    )
+    booking.timesNormalized = false
+
+    let normalized = BookingTimeNormalizer().normalizePendingIfPossible(booking)
+    #expect(normalized.startAt == rawStartAt.addingTimeInterval(-3600))
+    #expect(normalized.endAt == rawEndAt.addingTimeInterval(-7200))
+    #expect(normalized.timesNormalized == true)
+}
+
+@Test("BookingTimeNormalizer lässt train ohne Offsets unverändert")
+func bookingTimeNormalizerLeavesTrainWithoutOffsetsUnchanged() {
+    let rawStartAt = Date(timeIntervalSince1970: 1_780_000_000)
+    let rawEndAt = Date(timeIntervalSince1970: 1_780_010_000)
+
+    var booking = Booking(
+        provider: .manual,
+        bookingType: .train,
+        startAt: rawStartAt,
+        endAt: rawEndAt
+    )
+    booking.timesNormalized = false
+
+    let normalized = BookingTimeNormalizer().normalizePendingIfPossible(booking)
+    #expect(normalized.startAt == rawStartAt)
+    #expect(normalized.endAt == rawEndAt)
+    #expect(normalized.timesNormalized != true)
+}

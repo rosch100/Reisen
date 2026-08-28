@@ -28,7 +28,7 @@ printf '%s' "$PAT" | base64 | tr -d '\n'
 | `Scripts/build-app.sh` (macOS `.app`) | Ja. Release-CI: Secret Pflicht (`REISEN_REQUIRE_GITHUB_ISSUE_TOKEN`). |
 | `Scripts/generate-ios-project.sh` | Ja, sofern nicht `REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true`. |
 | `Scripts/ios-run.sh` / `ios-run-device.sh` | Ja (lokales Token aus Env, `Secrets/github-issues.token` oder Keychain). |
-| `Scripts/ios-archive-appstore.sh` | Ja (`REISEN_EMBED_GITHUB_ISSUE_TOKEN=true`, `REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true`). Workflow **App Store Check** reicht `REISEN_GITHUB_ISSUES_TOKEN_BASE64` durch; das IPA-Artifact wird nach dem Scan gelöscht. |
+| `Scripts/ios-archive-appstore.sh` | Ja (`REISEN_EMBED_GITHUB_ISSUE_TOKEN=true`, `REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true`). Workflow **App Store Check** reicht `REISEN_GITHUB_ISSUES_TOKEN_BASE64` durch; das IPA wird nicht als Artifact hochgeladen. |
 | `Scripts/ios-archive-adhoc.sh` | Ja (wie Store). |
 | `Scripts/ci-test.sh` / `ci-build.sh` / `ios-test.sh` | Nein (`REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true`). |
 

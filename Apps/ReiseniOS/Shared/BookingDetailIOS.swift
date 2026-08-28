@@ -67,9 +67,7 @@ struct BookingDetailIOS: View {
     }
 
     private var bookingNavigationTitle: String {
-        booking?.title
-            ?? booking?.bookingType.displayLabel
-            ?? L10n.string(.editorBooking)
+        booking?.presentationTitle ?? L10n.string(.editorBooking)
     }
 
     private func deletePendingBooking() {
@@ -197,21 +195,21 @@ struct BookingDetailIOS: View {
     private func bookingOverviewSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.tripOverview)) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(booking.title ?? booking.bookingType.displayLabel)
+                Text(booking.presentationTitle)
                     .font(.headline)
                     .textSelection(.enabled)
 
-                Text("\(booking.bookingType.displayLabel) • \(booking.provider.rawValue.capitalized)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    BookingTypeLabel(booking.bookingType, font: .subheadline)
+                    Text("•")
+                    Text(booking.provider.rawValue.capitalized)
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-                let startText = booking.startAt.formatted(date: .abbreviated, time: .omitted)
-                let endText = booking.endAt.formatted(date: .abbreviated, time: .omitted)
                 HStack(spacing: 4) {
                     Text(BookingDetailLabels.dateRange)
-                    Text(startText)
-                    Text("–")
-                    Text(endText)
+                    Text(BookingScheduleRangeText.make(for: booking))
                 }
                 .foregroundStyle(.secondary)
             }

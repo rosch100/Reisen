@@ -1,7 +1,7 @@
-# Manueller App-Store-/Apple-Check zur Release-Vorbereitung (nicht auf PRs).
+# Manuelles Store-IPA-Archive zur Release-Vorbereitung (nicht auf PRs).
 # Nur Store-Target ReiseniOS (de.reisen.Reisen.ios) — nicht ReiseniOSPrivate.
 # IPA: Scripts/ios-archive-appstore.sh
-# Scan: https://appcompliance.io/blog/github-action-compliance-scanning-setup/
+# Prüft Signing, Store-Isolation und Apple ITMS-Validierung (altool --validate-app), nicht Review-Guidelines.
 name: App Store Check
 
 on:
@@ -19,35 +19,10 @@ defaults:
     shell: bash --noprofile --norc -eo pipefail {0}
 
 jobs:
-  appcompliance-secrets:
-    name: AppCompliance secrets
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      enabled: ${{ steps.check.outputs.enabled }}
-
-    steps:
-      - name: Report AppCompliance secret presence
-        id: check
-        env:
-          HAS_TOKEN: ${{ secrets.APPCOMPLIANCE_TOKEN != '' }}
-          HAS_URL: ${{ secrets.APPCOMPLIANCE_API_URL != '' }}
-        run: |
-          if [[ "$HAS_TOKEN" == "true" && "$HAS_URL" == "true" ]]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-            echo "AppCompliance-Secrets vorhanden; Scan-Job läuft nach dem Archive."
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::AppCompliance-Scan wird übersprungen: GitHub-Secrets APPCOMPLIANCE_TOKEN und/oder APPCOMPLIANCE_API_URL fehlen. Siehe docs/ci/appcompliance.md. Das Store-IPA-Archive läuft unabhängig."
-          fi
-
   archive:
     name: Archive Store IPA
     runs-on: xcode-27
     timeout-minutes: 45
-    outputs:
-      ipa_name: ${{ steps.archive.outputs.ipa_name }}
-      artifact_id: ${{ steps.upload.outputs.artifact-id }}
 
     steps:
       - name: Checkout
@@ -56,6 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Select Xcode 27
+        # Self-hosted runner label xcode-27: `latest` is SSOT (Scripts/update-versions.sh).
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest
@@ -64,7 +40,6 @@ jobs:
         run: brew install xcodegen
 
       - name: Archive Store IPA
-        id: archive
         env:
           REISEN_GITHUB_ISSUES_TOKEN_BASE64: ${{ secrets.REISEN_GITHUB_ISSUES_TOKEN_BASE64 }}
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
@@ -84,87 +59,10 @@ jobs:
               exit 1
               ;;
           esac
-          STAGING="$GITHUB_WORKSPACE/appcompliance-ipa"
-          rm -rf "$STAGING"
-          mkdir -p "$STAGING"
-          cp "$IPA" "$STAGING/$IPA_NAME"
-          bash ./Scripts/ios-verify-binary-isolation.sh --mode store --ipa "$STAGING/$IPA_NAME"
-          echo "ipa_name=$IPA_NAME" >> "$GITHUB_OUTPUT"
+          bash ./Scripts/ios-verify-binary-isolation.sh --mode store --ipa "$IPA"
+          bash ./Scripts/ios-validate-appstore.sh "$IPA"
 
-      - name: Upload Store IPA
-        id: upload
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: reisen-ios-ipa
-          path: appcompliance-ipa/*
-          if-no-files-found: error
-          retention-days: 1
-
-  scan:
-    name: AppCompliance scan
-    needs: [appcompliance-secrets, archive]
-    if: needs.appcompliance-secrets.outputs.enabled == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    permissions:
-      contents: read
-      security-events: write
-
-    steps:
-      - name: Download Store IPA
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: reisen-ios-ipa
-          path: build/
-
-      - name: Reject Private IPA
+      - name: Remove Store IPA and archive
+        if: always()
         run: |
-          IPA_NAME="${{ needs.archive.outputs.ipa_name }}"
-          case "$IPA_NAME" in
-            *Private*|*private*|'')
-              echo "Fehler: App Store Check scannt nur das Store-IPA, nicht: ${IPA_NAME:-leer}" >&2
-              exit 1
-              ;;
-          esac
-          if [[ ! -f "build/${IPA_NAME}" ]]; then
-            echo "Fehler: Store-IPA fehlt: build/${IPA_NAME}" >&2
-            exit 1
-          fi
-
-      - name: Run compliance scan
-        id: compliance
-        continue-on-error: true
-        uses: appcompliance/scan@v1
-        with:
-          api_url: ${{ secrets.APPCOMPLIANCE_API_URL }}
-          token: ${{ secrets.APPCOMPLIANCE_TOKEN }}
-          binary_path: build/${{ needs.archive.outputs.ipa_name }}
-
-      - name: Upload SARIF to Code Scanning
-        if: always() && hashFiles('appcompliance.sarif') != ''
-        uses: github/codeql-action/upload-sarif@e58424170fb0262c8d7ed60a2e84b9bffe205c67 # pinned
-        with:
-          sarif_file: appcompliance.sarif
-          category: appcompliance
-
-  retract-ipa-artifact:
-    name: Retract Store IPA artifact
-    needs: [archive, scan]
-    if: always() && needs.archive.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      actions: write
-      contents: read
-
-    steps:
-      - name: Delete Store IPA artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: ${{ needs.archive.outputs.artifact_id }}
-        run: |
-          if [[ -z "$ARTIFACT_ID" ]]; then
-            echo "Fehler: archive.outputs.artifact_id fehlt; Store-IPA-Artifact würde auf dem öffentlichen Repo liegen bleiben." >&2
-            exit 1
-          fi
-          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}"
+          rm -rf .build/ReiseniOS.xcarchive .build/ReiseniOS-ipa

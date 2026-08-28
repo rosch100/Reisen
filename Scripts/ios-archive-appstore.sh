@@ -37,6 +37,10 @@ mkdir -p "$(dirname "$ARCHIVE_PATH")"
 rm -rf "$EXPORT_PATH"
 mkdir -p "$EXPORT_PATH"
 
+# Homebrew rsync 3.x versteht Xcodes -E/--extended-attributes nicht
+# (exportArchive: Copy failed). /usr/bin/rsync (openrsync) muss zuerst kommen.
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
+
 echo "Archive (Release, generic iOS) …" >&2
 xcodebuild \
   -project "$PROJECT" \

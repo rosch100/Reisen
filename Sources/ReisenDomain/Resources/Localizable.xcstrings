@@ -1345,6 +1345,22 @@
         }
       }
     },
+    "booking.field.location_from.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrtsbahnhof"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From station"
+          }
+        }
+      }
+    },
     "booking.field.location_from.flight": {
       "localizations": {
         "de": {
@@ -1399,6 +1415,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abfahrtadresse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departure address"
+          }
+        }
+      }
+    },
+    "booking.field.location_from_address.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrtsadresse"
           }
         },
         "en": {
@@ -1469,6 +1501,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Arrival"
+          }
+        }
+      }
+    },
+    "booking.field.location_to.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunftsbahnhof"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To station"
           }
         }
       }
@@ -1553,6 +1601,22 @@
         }
       }
     },
+    "booking.field.location_to_address.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunftsadresse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival address"
+          }
+        }
+      }
+    },
     "booking.field.location_to_address.hotel": {
       "localizations": {
         "de": {
@@ -1617,6 +1681,22 @@
         }
       }
     },
+    "booking.field.operator.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betreiber"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operator"
+          }
+        }
+      }
+    },
     "booking.field.operator.default": {
       "localizations": {
         "de": {
@@ -1661,6 +1741,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transmission"
+          }
+        }
+      }
+    },
+    "booking.field.room_category.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sitz / Klasse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seat / class"
           }
         }
       }
@@ -1761,6 +1857,22 @@
         }
       }
     },
+    "booking.field.schedule_end.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival"
+          }
+        }
+      }
+    },
     "booking.field.schedule_end.flight": {
       "localizations": {
         "de": {
@@ -1837,6 +1949,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Departure time"
+          }
+        }
+      }
+    },
+    "booking.field.schedule_start.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departure"
           }
         }
       }
@@ -2001,6 +2129,38 @@
         }
       }
     },
+    "booking.timeline.train_departure": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrt: %1$@ (%2$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departure: %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "booking.timeline.train_arrival": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunft: %1$@ (%2$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival: %1$@ (%2$@)"
+          }
+        }
+      }
+    },
     "booking.timeline.ferry_departure": {
       "localizations": {
         "de": {
@@ -2141,6 +2301,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ferry"
+          }
+        }
+      }
+    },
+    "booking.type.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bahn"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Train"
           }
         }
       }
