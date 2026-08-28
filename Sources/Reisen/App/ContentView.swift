@@ -558,8 +558,10 @@ struct ContentView: View {
                                         Button(L10n.string(.actionAddBooking)) {
                                             startCreateBooking(in: trip, selectBookingID: booking.id)
                                         }
+                                        BookingCopyConfirmationMenuItems(booking: booking)
                                         if let url = booking.browserURL {
                                             BookingPortalOpenButton(browserURL: url)
+                                            CopyLinkMenuItem(url: url)
                                         }
                                         Button(role: .destructive) {
                                             applyAfterTripFocus(trip: trip) {
@@ -671,8 +673,10 @@ struct ContentView: View {
                     if selectedIDs.count == 1,
                        let bookingID = selectedIDs.first,
                        let booking = openBookings.first(where: { $0.id == bookingID }) {
+                        BookingCopyConfirmationMenuItems(booking: booking)
                         if let url = booking.browserURL {
                             BookingPortalOpenButton(browserURL: url)
+                            CopyLinkMenuItem(url: url)
                         }
                         if let trip = matchingTrip(for: booking) {
                             Button(L10n.string(.actionAssignToTrip)) {

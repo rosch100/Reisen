@@ -120,12 +120,22 @@ struct BookingDetailIOS: View {
     private func bookingRateSections(for booking: SDBooking) -> some View {
         if let rate = booking.rateDetails {
             Section(BookingDetailLabels.rateSection) {
-                BookingRateFieldsView(rate: rate, booking: booking)
+                ForEach(BookingRateFields.make(rate: rate, booking: booking)) { field in
+                    CopyableLabeledValue(field: field, style: .list)
+                }
             }
 
             if !rate.resolvedRoomItems.isEmpty {
                 Section(BookingDetailLabels.roomItemsSection) {
-                    BookingRoomItemsView(rate: rate)
+                    ForEach(
+                        rate.resolvedRoomItems.sorted(by: { ($0.sortIndex ?? 0) < ($1.sortIndex ?? 0) })
+                    ) { item in
+                        BookingRoomItemRow(
+                            item: item,
+                            rateCurrency: rate.totalPriceCurrency,
+                            style: .list
+                        )
+                    }
                 }
             }
         }
@@ -135,8 +145,11 @@ struct BookingDetailIOS: View {
     private func bookingAssignmentSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.tripAssign)) {
             if let trip = bookingTrip {
-                Text(L10n.format(.tripInTrip, trip.title))
-                    .foregroundStyle(.secondary)
+                CopyableLabeledValue(
+                    label: L10n.string(.tripNameField),
+                    value: trip.title,
+                    style: .list
+                )
             } else if let trip = matchingTrip {
                 Button(L10n.string(.actionAssignToTrip)) {
                     do {
@@ -179,6 +192,9 @@ struct BookingDetailIOS: View {
                     providerID: booking.provider,
                     isNativeAppInstalled: installed
                 )
+                .contextMenu {
+                    CopyLinkMenuItem(url: externalURL)
+                }
             } else {
                 Text(L10n.string(.bookingDetailNoBrowserLink))
                     .foregroundStyle(.secondary)
@@ -189,32 +205,36 @@ struct BookingDetailIOS: View {
     @ViewBuilder
     private func bookingOverviewSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.tripOverview)) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(booking.presentationTitle)
-                    .font(.headline)
-                    .textSelection(.enabled)
-
-                HStack(spacing: 6) {
-                    BookingTypeLabel(booking.bookingType, font: .subheadline)
-                    Text("•")
-                    Text(booking.provider.rawValue.capitalized)
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-                HStack(spacing: 4) {
-                    Text(BookingDetailLabels.dateRange)
-                    Text(BookingScheduleRangeText.make(for: booking))
-                }
-                .foregroundStyle(.secondary)
-            }
+            CopyableLabeledValue(
+                label: L10n.string(.editorTitle),
+                value: booking.presentationTitle,
+                style: .list,
+                valueTextStyle: .headline
+            )
+            CopyableLabeledValue(
+                label: L10n.string(.editorType),
+                value: booking.bookingType.displayLabel,
+                style: .list
+            )
+            CopyableLabeledValue(
+                label: L10n.string(.editorProvider),
+                value: booking.provider.rawValue.capitalized,
+                style: .list
+            )
+            CopyableLabeledValue(
+                label: BookingDetailLabels.dateRange,
+                value: BookingScheduleRangeText.make(for: booking),
+                style: .list
+            )
         }
     }
 
     @ViewBuilder
     private func bookingTypeDetailsSection(for booking: SDBooking) -> some View {
         Section(booking.bookingType.displayLabel) {
-            BookingScheduleFieldsView(booking: booking)
+            ForEach(BookingScheduleFields.make(booking: booking)) { field in
+                CopyableLabeledValue(field: field, style: .list)
+            }
         }
     }
 
@@ -223,7 +243,12 @@ struct BookingDetailIOS: View {
         Section(L10n.string(.bookingDetailSyncStatusSection)) {
             if let synced = booking.lastSyncedAt {
                 let syncedText = synced.formatted(date: .abbreviated, time: .shortened)
-                LabeledContent(L10n.string(.tripLastSynced), value: syncedText)
+                CopyableLabeledValue(
+                    label: L10n.string(.tripLastSynced),
+                    value: syncedText,
+                    kind: .standard,
+                    style: .list
+                )
             } else {
                 Text(L10n.string(.tripNotSyncedYet))
                     .foregroundStyle(.secondary)
@@ -245,16 +270,28 @@ struct BookingDetailIOS: View {
 
                     if !booking.resolvedCancellationDeadlines.isEmpty {
                         Section(BookingDetailLabels.cancellationSection) {
-                            BookingCancellationDeadlinesView(
-                                booking: booking,
-                                hotelTimeZone: hotelTimeZone
-                            )
+                            ForEach(
+                                booking.resolvedCancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt }),
+                                id: \.id
+                            ) { deadline in
+                                BookingCancellationDeadlineRow(
+                                    deadline: deadline,
+                                    feeCurrency: booking.rateDetails?.totalPriceCurrency,
+                                    hotelTimeZone: hotelTimeZone,
+                                    style: .list
+                                )
+                            }
                         }
                     }
 
                     if !booking.resolvedGuestHints.isEmpty {
                         Section(GuestHintCategory.preTravelImportant.displayTitle) {
-                            BookingGuestHintsView(booking: booking)
+                            ForEach(
+                                booking.resolvedGuestHints.sorted(by: { $0.title < $1.title }),
+                                id: \.id
+                            ) { hint in
+                                BookingGuestHintRow(hint: hint, style: .list)
+                            }
                         }
                     }
 
@@ -264,6 +301,7 @@ struct BookingDetailIOS: View {
 
                     bookingActionsSection(for: booking)
                 }
+                .id(booking.id)
             } else {
                 ContentUnavailableView(
                     L10n.string(.tripBookingMissing),
