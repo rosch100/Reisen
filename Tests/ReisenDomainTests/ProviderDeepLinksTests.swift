@@ -17,10 +17,17 @@ private struct StubGapBuilder: GapDeepLinkBuilding {
     #expect(!GapSearchCategory.flight.isVisible(for: .lodging))
 
     #expect(GapSearchCategory.flight.isVisible(for: .transport))
+    #expect(GapSearchCategory.carRental.isVisible(for: .transport))
     #expect(!GapSearchCategory.hotel.isVisible(for: .transport))
 
     #expect(GapSearchCategory.hotel.isVisible(for: .both))
     #expect(GapSearchCategory.flight.isVisible(for: .both))
+}
+
+@Test func deepLinkIssue_missingDestinationHint_visibleForTransportViaCarRental() {
+    #expect(DeepLinkIssue.missingDestinationHint.isVisible(for: .transport))
+    #expect(DeepLinkIssue.missingDestinationHint.isVisible(for: .lodging))
+    #expect(!DeepLinkIssue.destinationIdNotDerivable.isVisible(for: .transport))
 }
 
 @Test func providerDeepLinks_shouldShow_usesCategoryNotTitle() {

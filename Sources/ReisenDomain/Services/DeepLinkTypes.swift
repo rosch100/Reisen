@@ -22,7 +22,10 @@ public enum DeepLinkIssue: LocalizedError, Equatable, Sendable {
     /// Kategorien, für die dieses Issue fachlich relevant ist (für GapKind-Filter).
     public var relevantCategories: Set<GapSearchCategory> {
         switch self {
-        case .missingDestinationHint, .destinationIdNotDerivable:
+        case .missingDestinationHint:
+            // Hotel/Erlebnis + Mietwagen (Ortsname); sichtbar bei lodging und transport.
+            return [.hotel, .activity, .carRental]
+        case .destinationIdNotDerivable:
             return [.hotel, .activity]
         case .missingFromIATA, .missingToIATA:
             return [.flight]
