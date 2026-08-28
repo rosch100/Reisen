@@ -24,6 +24,23 @@ func opodoParsesFlightsAndHotels() throws {
     #expect(typesByUrl["https://www.opodo.de/flight/def"] == .flight)
 }
 
+@Test("OpodoActivityListParser ignoriert Upsell- und Mietwagen-Links")
+func opodoHTMLSkipsNonFlightHotel() throws {
+    let html = """
+    <html>
+      <body>
+        <a href="https://www.opodo.de/cars/xyz" data-start="2026-08-01" data-end="2026-08-05">Mietwagen</a>
+        <a href="https://www.opodo.de/transfer/abc" data-start="2026-08-01" data-end="2026-08-02">Transfer</a>
+        <a href="https://www.opodo.de/hotel/stay" data-start="2026-08-01" data-end="2026-08-05">Hotel</a>
+      </body>
+    </html>
+    """
+    let bookings = try OpodoActivityListParser().parseBookings(from: html)
+    #expect(bookings.count == 1)
+    #expect(bookings[0].bookingType == .hotel)
+    #expect(bookings[0].externalUrl == "https://www.opodo.de/hotel/stay")
+}
+
 @Test("Opodo: Login-HTML wird als fehlende Session erkannt")
 func opodoLoginHTMLIndicatesMissingSession() {
     let loginHTML = """
