@@ -42,6 +42,13 @@ public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginC
         return ProviderCatalog(bookings: byFingerprint.values.sorted { $0.startAt < $1.startAt })
     }
 
+    public func needsDraftEnrichment(
+        draft: ProviderBookingDraft,
+        requiresDeadlines: Bool
+    ) -> Bool {
+        TravelokaDraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: requiresDeadlines)
+    }
+
     public func enrichBooking(
         session: any ProviderSession,
         ref: ProviderBookingRef

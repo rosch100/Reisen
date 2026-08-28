@@ -4,42 +4,42 @@
     "message": null,
     "itineraryDisplayIdList": [
       {
-        "bookingId": "1387358428",
-        "itineraryId": "1874509835987345547",
+        "bookingId": "REDACTED_EXPERIENCE_BOOKING_ID",
+        "itineraryId": "REDACTED_EXPERIENCE_ITINERARY_ID",
         "productMappingId": null,
         "itineraryType": "EXPERIENCE"
       },
       {
-        "bookingId": "1387353870",
-        "itineraryId": "20261123186899",
+        "bookingId": "REDACTED_HOTEL_BOOKING_ID",
+        "itineraryId": "REDACTED_HOTEL_ITINERARY_ID",
         "productMappingId": null,
         "itineraryType": "HOTEL"
       },
       {
-        "bookingId": "1387355867",
-        "itineraryId": "1387355867",
+        "bookingId": "REDACTED_VEHICLE_BOOKING_ID",
+        "itineraryId": "REDACTED_VEHICLE_BOOKING_ID",
         "productMappingId": null,
         "itineraryType": "VEHICLE_RENTAL"
       },
       {
-        "bookingId": "1000000001",
-        "itineraryId": "2000000001",
+        "bookingId": "REDACTED_FLIGHT_BOOKING_ID",
+        "itineraryId": "REDACTED_FLIGHT_ITINERARY_ID",
         "productMappingId": null,
         "itineraryType": "FLIGHT"
       }
     ],
     "itineraryEntryList": [
       {
-        "bookingId": "1387358428",
-        "itineraryId": "1874509835987345547",
-        "tripId": "1387358428",
+        "bookingId": "REDACTED_EXPERIENCE_BOOKING_ID",
+        "itineraryId": "REDACTED_EXPERIENCE_ITINERARY_ID",
+        "tripId": "REDACTED_EXPERIENCE_BOOKING_ID",
         "productMappingId": null,
         "itineraryType": "EXPERIENCE",
         "itineraryDetailId": null,
         "relatedItems": [],
         "bookingInfo": null,
         "paymentInfo": {
-          "bookingId": "1387358428",
+          "bookingId": "REDACTED_EXPERIENCE_BOOKING_ID",
           "paymentConfirmationTime": "0",
           "paymentVerificationTime": "1787671920438",
           "paymentExpirationTime": "1787678948514",
@@ -63,8 +63,8 @@
           "latestPaymentStatus": "PAID",
           "subInvoiceDtos": [
             {
-              "id": "880217839422705664",
-              "masterInvoiceId": "1874509836083822487",
+              "id": "REDACTED_EXPERIENCE_PAYMENT_ID",
+              "masterInvoiceId": "REDACTED_EXPERIENCE_INVOICE_ID",
               "outstandingAmount": {
                 "currency": "EUR",
                 "amount": "0",
@@ -106,9 +106,9 @@
         "insuranceInfoList": null,
         "cardSummaryInfo": {
           "commonSummary": {
-            "invoiceId": "1874509836083822487",
+            "invoiceId": "REDACTED_EXPERIENCE_INVOICE_ID",
             "bookingTime": "1787671886462",
-            "auth": "4380f12ce9",
+            "auth": "redacted",
             "bookingContact": {
               "personTitle": "MR",
               "firstName": "REDACTED",
@@ -119,7 +119,7 @@
             "tripType": "EXPERIENCE",
             "attentionNeeded": true,
             "itineraryBookingStatus": "SUCCESS",
-            "itineraryId": "1874509835987345547",
+            "itineraryId": "REDACTED_EXPERIENCE_ITINERARY_ID",
             "issuingTime": "1800000",
             "title": null,
             "subtitles": null,
@@ -201,7 +201,7 @@
             "reservationIds": null,
             "isUsed": false,
             "ticketName": "(Nighttime) Bus Pass Around Hanoi",
-            "experienceId": "2000536971739",
+            "experienceId": "REDACTED_EXPERIENCE_PRODUCT_ID",
             "experienceNameEN": "Ha Noi Double Decker Bus Pass by City Sightseeing",
             "seatMapURL": null,
             "validityPeriod": {
@@ -327,7 +327,7 @@
                     },
                     {
                       "id": "contactNumber",
-                      "label": "+17813504303"
+                      "label": "REDACTED_PHONE"
                     },
                     {
                       "id": "emailId",
@@ -531,8 +531,8 @@
         "eTicket": null
       },
       {
-        "bookingId": "1387353870",
-        "itineraryId": "20261123186899",
+        "bookingId": "REDACTED_HOTEL_BOOKING_ID",
+        "itineraryId": "REDACTED_HOTEL_ITINERARY_ID",
         "itineraryType": "HOTEL",
         "itineraryTags": [
           {
@@ -632,8 +632,8 @@
         }
       },
       {
-        "bookingId": "1387355867",
-        "itineraryId": "1387355867",
+        "bookingId": "REDACTED_VEHICLE_BOOKING_ID",
+        "itineraryId": "REDACTED_VEHICLE_BOOKING_ID",
         "itineraryType": "VEHICLE_RENTAL",
         "itineraryTags": [
           {
@@ -680,8 +680,8 @@
         }
       },
       {
-        "bookingId": "1000000001",
-        "itineraryId": "2000000001",
+        "bookingId": "REDACTED_FLIGHT_BOOKING_ID",
+        "itineraryId": "REDACTED_FLIGHT_ITINERARY_ID",
         "itineraryType": "FLIGHT",
         "itineraryTags": [
           {

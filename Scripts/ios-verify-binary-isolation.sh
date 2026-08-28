@@ -2,7 +2,7 @@
 # Prüft iOS-App-Binaries auf Provider-Isolation (Store vs Private).
 #
 # Store (ReiseniOS): linkt ReisenAppCore + ReisenSharedUI ohne ReisenProviders.
-#   Keine Adapter-URLs/Symbole und keine Session-Probe-Strings (Opodo/Traveloka).
+#   Keine Adapter-URLs/Symbole und keine Session-Probe-Strings (Opodo/Traveloka/billiger-mietwagen).
 # Private (ReiseniOSPrivate): linkt zusätzlich ReisenProviderSync + Adapter.
 set -euo pipefail
 
@@ -94,6 +94,7 @@ ADAPTER_URL_MARKERS=(
   "www.getyourguide.com"
   "www.opodo.de/frontend-api/service/graphql"
   "traveloka.com/api/v2/user/whoami"
+  "consumer-api.floyt.com/useraccount/v1/bookings"
 )
 
 STORE_FORBIDDEN_SYMBOLS=(
@@ -104,8 +105,10 @@ STORE_FORBIDDEN_SYMBOLS=(
   AirbnbTravelProvider
   GetYourGuideTravelProvider
   TravelokaTravelProvider
+  BilligerMietwagenTravelProvider
   OpodoSessionProbe
   TravelokaSessionProbe
+  BilligerMietwagenSessionProbe
   ProviderSessionStatusResolver
 )
 

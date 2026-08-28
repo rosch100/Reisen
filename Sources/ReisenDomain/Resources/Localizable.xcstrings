@@ -113,6 +113,38 @@
         }
       }
     },
+    "action.copy_confirmation": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchungsnr. kopieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy confirmation number"
+          }
+        }
+      }
+    },
+    "action.copy_link": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link kopieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Link"
+          }
+        }
+      }
+    },
     "action.create_trip": {
       "localizations": {
         "de": {
@@ -129,22 +161,6 @@
         }
       }
     },
-    "action.create_trip_from_bookings": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neue Reise erstellen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Create trip from bookings"
-          }
-        }
-      }
-    },
     "action.create_trip_from_all_open_bookings": {
       "localizations": {
         "de": {
@@ -157,6 +173,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "New Trip from All %lld Open Bookings…"
+          }
+        }
+      }
+    },
+    "action.create_trip_from_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Reise erstellen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create trip from bookings"
           }
         }
       }
@@ -957,6 +989,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Breakfast"
+          }
+        }
+      }
+    },
+    "booking.detail.cancellation_cost": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kosten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cost"
           }
         }
       }
@@ -2433,6 +2481,22 @@
         }
       }
     },
+    "common.copied": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        }
+      }
+    },
     "common.copy": {
       "localizations": {
         "de": {
@@ -2493,22 +2557,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edit"
-          }
-        }
-      }
-    },
-    "common.select": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auswählen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Select"
           }
         }
       }
@@ -2621,6 +2669,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save"
+          }
+        }
+      }
+    },
+    "common.select": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select"
           }
         }
       }
@@ -3421,6 +3485,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Note"
+          }
+        }
+      }
+    },
+    "editor.hint_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweis-Titel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hint title"
           }
         }
       }
@@ -6993,6 +7073,38 @@
         }
       }
     },
+    "trip.assign_count_in_window": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d offene Buchungen in diesem Zeitraum werden zugeordnet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d open bookings in this date range will be assigned"
+          }
+        }
+      }
+    },
+    "trip.assign_count_selected": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d ausgewählte Buchungen werden zugeordnet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d selected bookings will be assigned"
+          }
+        }
+      }
+    },
     "trip.assign_failed": {
       "localizations": {
         "de": {
@@ -7037,38 +7149,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Assign open bookings to this trip"
-          }
-        }
-      }
-    },
-    "trip.assign_count_in_window": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d offene Buchungen in diesem Zeitraum werden zugeordnet"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d open bookings in this date range will be assigned"
-          }
-        }
-      }
-    },
-    "trip.assign_count_selected": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d ausgewählte Buchungen werden zugeordnet"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d selected bookings will be assigned"
           }
         }
       }
@@ -7137,22 +7217,6 @@
         }
       }
     },
-    "trip.create_from_bookings_failed": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aus der Auswahl lassen sich keine Reisedaten ableiten."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trip dates cannot be derived from the selection."
-          }
-        }
-      }
-    },
     "trip.collapse_bookings": {
       "localizations": {
         "de": {
@@ -7169,6 +7233,279 @@
         }
       }
     },
+    "trip.completeness.a11y_complete": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Lücken zwischen Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No gaps between bookings"
+          }
+        }
+      }
+    },
+    "trip.completeness.a11y_incomplete": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reise unvollständig, %1$d Lücken zwischen Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trip incomplete, %1$d gaps between bookings"
+          }
+        }
+      }
+    },
+    "trip.completeness.edge_many": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d× Beginn/Ende ohne Buchung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d× start/end without booking"
+          }
+        }
+      }
+    },
+    "trip.completeness.edge_one": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beginn/Ende ohne Buchung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start/end without booking"
+          }
+        }
+      }
+    },
+    "trip.completeness.fill_caption": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kann „%1$@“ ergänzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can complement “%1$@”"
+          }
+        }
+      }
+    },
+    "trip.completeness.gap_many": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d Lücken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d gaps"
+          }
+        }
+      }
+    },
+    "trip.completeness.gap_one": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Lücke"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 gap"
+          }
+        }
+      }
+    },
+    "trip.completeness.help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeitliche Lücken von mindestens 12 Stunden zwischen Buchungen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time gaps of at least 12 hours between bookings."
+          }
+        }
+      }
+    },
+    "trip.completeness.label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lücken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gaps"
+          }
+        }
+      }
+    },
+    "trip.completeness.none": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Lücken zwischen Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No gaps between bookings"
+          }
+        }
+      }
+    },
+    "trip.completeness.none_short": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        }
+      }
+    },
+    "trip.completeness.open_other_section": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weitere offene Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other open bookings"
+          }
+        }
+      }
+    },
+    "trip.completeness.open_section": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kann Lücken füllen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can fill gaps"
+          }
+        }
+      }
+    },
+    "trip.completeness.open_section_footer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Buchungen liegen im Zeitraum einer Reise mit Lücken."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These bookings fall within a trip that has gaps."
+          }
+        }
+      }
+    },
+    "trip.completeness.sidebar_with_gaps": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d Buchungen · %2$d Lücken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d bookings · %2$d gaps"
+          }
+        }
+      }
+    },
+    "trip.completeness.unknown_many": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d unbestätigt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d unconfirmed"
+          }
+        }
+      }
+    },
+    "trip.create_from_bookings_failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus der Auswahl lassen sich keine Reisedaten ableiten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trip dates cannot be derived from the selection."
+          }
+        }
+      }
+    },
+
     "trip.delete_confirm_message": {
       "localizations": {
         "de": {
@@ -7745,22 +8082,6 @@
         }
       }
     },
-    "trip.selected_open_bookings": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d offene Buchungen ausgewählt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d open bookings selected"
-          }
-        }
-      }
-    },
     "trip.select_sidebar": {
       "localizations": {
         "de": {
@@ -7837,6 +8158,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Select a trip in the sidebar or sync a provider first."
+          }
+        }
+      }
+    },
+    "trip.selected_open_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d offene Buchungen ausgewählt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d open bookings selected"
           }
         }
       }
@@ -7965,6 +8302,278 @@
           "stringUnit": {
             "state": "translated",
             "value": "Welcome"
+          }
+        }
+      }
+    },
+    "action.open_booking": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open booking"
+          }
+        }
+      }
+    },
+    "action.open_in_browser_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet die Buchung im Standard-Browser."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the booking in your default browser."
+          }
+        }
+      }
+    },
+    "action.open_in_provider_app": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In %1$@-App öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in %1$@ app"
+          }
+        }
+      }
+    },
+    "gap.search.activity": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlebnis suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search experiences (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.all_enabled": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle aktiven Portale"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All enabled portals"
+          }
+        }
+      }
+    },
+    "gap.search.car_rental": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mietwagen suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search car rental (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.ferry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fähre suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search ferry (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.flight": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flug suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search flights (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.hotel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotel suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search hotels (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.menu": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search"
+          }
+        }
+      }
+    },
+    "gap.search.one_provider": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Portal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One portal"
+          }
+        }
+      }
+    },
+    "gap.search.provider_picker": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portal für Suche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search portal"
+          }
+        }
+      }
+    },
+    "gap.search.category_hotel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotels"
+          }
+        }
+      }
+    },
+    "gap.search.category_flight": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flug"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flights"
+          }
+        }
+      }
+    },
+    "gap.search.category_ferry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fähre"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferry"
+          }
+        }
+      }
+    },
+    "gap.search.category_activity": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlebnis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experiences"
+          }
+        }
+      }
+    },
+    "gap.search.category_car_rental": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mietwagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Car rental"
           }
         }
       }

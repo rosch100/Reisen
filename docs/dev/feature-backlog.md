@@ -1,6 +1,6 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
-Status: **Backlog** (F01 implementiert, übrige Features geplant)  
+Status: **Backlog** (F01, F03, F09 umgesetzt; übrige Features geplant)  
 Stand: 2026-08-28
 
 ## Zweck und Leitlinie
@@ -19,13 +19,13 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 |----|---------|--------|------|--------------|
 | F01 | `BookingType.train` (Bahn) | implementiert | P1 | — |
 | F02 | Check-in-Erinnerungen (Hotel + Flug) | geplant | P1 | — |
-| F03 | Explizites Kopieren von Bestätigungscodes | geplant | P2 | — |
+| F03 | Copy/Paste für Info- und Editor-Felder | umgesetzt | P2 | — |
 | F04 | ICS/Text-Export einer Reise | geplant | P2 | — |
 | F05 | Dokumente an der Buchung | geplant | P2 | eigene Spec |
 | F06 | On-device Paste-Import | geplant | P2 | F01, F05 optional |
 | F07 | Next-up Widget / Live Activity | geplant | P3 | F02 |
 | F08 | macOS-Suche und Typfilter | geplant | P3 | — |
-| F09 | Vollständigkeitsanzeige (Gaps) | geplant | P3 | — |
+| F09 | Vollständigkeitsanzeige (Gaps) | umgesetzt | P3 | — |
 | F10 | Kartenansicht der Reise | bedingt | P3 | Geocoding zuverlässig |
 | F11 | Zeitzonenwechsel in Timeline | bedingt | P3 | — |
 | F12 | Wetter am Aufenthaltsort | bedingt | P3 | Koordinate |
@@ -40,7 +40,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 | X06 | Öffentlicher iCal-Feed-URL | abgelehnt | — | — |
 | X07 | Eigener Live-Flugstatus / Gate | abgelehnt | — | — |
 
-**Empfohlene Implementierungsreihenfolge:** F01 → F02 → F03/F04 → F05 → F06 → F07–F09.
+**Empfohlene Implementierungsreihenfolge:** F02 → F04 → F05 → F06 → F07–F08.
 
 ---
 
@@ -121,19 +121,21 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ---
 
-### F03 — Explizites Kopieren von Bestätigungscodes
+### F03 — Copy/Paste für Info- und Editor-Felder
 
-**Sinn:** Am Counter ein Tap statt Textselektion. Felder (`confirmationCode`, PNR) existieren.
+**Status:** umgesetzt. Spec: [`f03-copy-paste-fields.md`](f03-copy-paste-fields.md).
 
-**Machbarkeit:** hoch.
+**Sinn:** Am Counter ein Tap auf die Buchungsnr./PNR statt Textselektion; alle Info-Feldwerte ohne Markier-Akrobatik kopierbar; Editoren mit systemischem Cut/Copy/Paste.
 
 | Aspekt | Vorgehen |
 |--------|----------|
-| iOS | Copy-Action an Detailfeldern; optional Share-Snapshot |
-| macOS | Ergänzung zu `CopyableText` / dedizierte Copy-Buttons |
-| SSOT | Keine parallelen Formatierungen |
+| Stufen | `standard` (Selektion + Kontextmenü) vs. `identifier` (Tap-to-Copy nur Buchungsnr./Zimmer-Code) |
+| iOS | Eine List-Zeile pro Feld; URL: Tap öffnet, Kontextmenü kopiert |
+| macOS | Inspector-Werte über `CopyableTextView` (Ablage → Kopieren ohne Markierung) |
+| Editor | Natives TextField-Pasteboard; `textContentType` für Namen/URL; kein Trailing-Copy |
+| SSOT | `StringPasteboard` + `FieldCopyKind` im Feldkatalog; kein `"Label: Wert"` in der Zwischenablage |
 
-**Out of Scope:** Automatisches Clipboard-Monitoring.
+**Out of Scope:** Clipboard-Monitoring (→ F06); Share-Snapshot (→ F04); Copy-Buttons an jeder Standardzeile.
 
 ---
 
@@ -219,11 +221,11 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ### F09 — Vollständigkeitsanzeige (Gaps)
 
+**Status:** umgesetzt.
+
 **Sinn:** Vorhandene Gap-Logik sichtbar machen (Vorbild: Voyager „planning percentage“).
 
-**Machbarkeit:** hoch.
-
-**Vorgehen:** Aus `ComputedGap` + Buchungsstatus ableiten; Trip-Header / Offen-Tab. Kein Dummy-Prozent ohne Daten.
+**Umsetzung:** Inter-Booking-Lücken (nicht Rand-Gaps) in Trip-Übersicht, Reisen-Liste/Sidebar und Offen-Gruppierung „Kann Lücken füllen“. Kein Dummy-Prozent; `unknown`-Status nur als ruhige Detail-Caption.
 
 ---
 
@@ -258,9 +260,9 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 | Reisen hat | Konkurrenz | Folge |
 |------------|------------|-------|
-| Provider-Session-Sync (6 OTAs) | Mail-Parser | Nicht durch Inbox ersetzen |
+| Provider-Session-Sync (7 OTAs) | Mail-Parser | Nicht durch Inbox ersetzen |
 | `CancellationDeadline` + Notifications | Kaum modelliert | Kern halten; F02 analog erweitern |
-| Gaps + Deep-Links | Voyager flagged nur Lücken | F09 UI obendrauf |
+| Gaps + Deep-Links + Vollständigkeits-UI (F09) | Voyager flagged nur Lücken | Kern halten |
 | Pre-Travel Hints, Passagiere, Gepäck | Freitext in Mails | Kein generisches „Tipps“-Feature |
 | EventKit schreiben | iCal-Feed-URL | F04 Datei-Share, kein Feed (X06) |
 | Offen-Tab / Zuordnung | TripIt merged nach Datum | Beibehalten |

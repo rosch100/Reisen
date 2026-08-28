@@ -156,7 +156,7 @@ import ReisenDomain
     #expect(BookingIdentityKey.make(externalUrl: nil, confirmationCode: nil, startAt: start) == nil)
 }
 
-@Test func cancellationDeadlines_firstHotelOffsetAndLatestFree() {
+@Test func cancellationDeadlines_firstStayOffsetAndLatestFree() {
     let earlier = CancellationDeadline(
         deadlineAt: Date(timeIntervalSince1970: 1),
         isFreeCancellation: true,
@@ -172,7 +172,7 @@ import ReisenDomain
         isFreeCancellation: false
     )
     let deadlines = [earlier, paid, laterFree]
-    #expect(deadlines.firstHotelOffsetSeconds == 3600)
+    #expect(deadlines.firstStayOffsetSeconds == 3600)
     #expect(deadlines.preferringLatestFree == [laterFree])
     let duplicatePaid = CancellationDeadline(
         deadlineAt: Date(timeIntervalSince1970: 3),
@@ -612,6 +612,10 @@ import ReisenDomain
 }
 
 @Test func catalogListing_dropsCancelledEndedAndDone() {
+    #expect(CatalogListing.isCompleted("done"))
+    #expect(CatalogListing.isCompleted("ENDED"))
+    #expect(!CatalogListing.isCompleted("cancelled"))
+    #expect(!CatalogListing.isCompleted("upcoming"))
     #expect(CatalogListing.shouldDrop("cancelled"))
     #expect(CatalogListing.shouldDrop("ENDED"))
     #expect(CatalogListing.shouldDrop("done"))
@@ -619,6 +623,17 @@ import ReisenDomain
     #expect(!CatalogListing.shouldDrop(nil))
     #expect(!CatalogListing.shouldFetchDetails("CANCELLED"))
     #expect(CatalogListing.shouldFetchDetails("CONTRACT"))
+    #expect(
+        DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .getYourGuide,
+                bookingType: .activity,
+                start: .instant(Date(timeIntervalSince1970: 10)),
+                end: .instant(Date(timeIntervalSince1970: 20)),
+                statusRaw: "cancelled"
+            )
+        ) == nil
+    )
     #expect(
         DraftAssembler.draft(
             from: ProviderBookingFacts(
@@ -711,10 +726,31 @@ import ReisenDomain
 }
 
 @Test func draftEnrichmentNeeds_completeHotel_skipsForAllProviders() {
-    for provider in [ProviderID.booking, .airbnb, .opodo, .traveloka, .check24] {
+    for provider in ProviderID.syncProviderIDs {
         let draft = catalogHotelDraft(provider: provider, externalUrl: "https://example.com/booking")
         #expect(DraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: false) == false)
     }
+}
+
+@Test func draftEnrichmentNeeds_catalogCarRental_needsAddresses() {
+    let catalog = ProviderBookingDraft(
+        provider: .billigerMietwagen,
+        bookingType: .carRental,
+        title: "Berlin → München",
+        externalUrl: "https://www.billiger-mietwagen.de/reservation/account/bookings/<REDACTED-UUID>",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Berlin",
+        locationTo: "München",
+        operatorName: "Thrifty",
+        status: .confirmed
+    )
+    #expect(DraftEnrichmentNeeds.shouldEnrich(catalog, requiresDeadlines: false))
+
+    var enriched = catalog
+    enriched.locationFromAddress = "Street 1, Berlin"
+    enriched.locationToAddress = "Street 2, München"
+    #expect(DraftEnrichmentNeeds.shouldEnrich(enriched, requiresDeadlines: false) == false)
 }
 
 @Test func draftEnrichmentNeeds_completeActivity_skips() {
@@ -798,6 +834,65 @@ import ReisenDomain
     var completeRoute = bothPortsWithoutOperator
     completeRoute.operatorName = "Stena Line"
     #expect(DraftEnrichmentNeeds.shouldEnrich(completeRoute, requiresDeadlines: false) == false)
+}
+
+@Test func draftEnrichmentNeeds_carRentalFieldGaps() {
+    let complete = ProviderBookingDraft(
+        provider: .check24,
+        bookingType: .carRental,
+        title: "Toyota Aygo",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Madeira Flughafen",
+        locationTo: "Madeira Flughafen",
+        locationFromAddress: "Madeira Airport, 9100-105 Madeira",
+        locationToAddress: "Madeira Airport, 9100-105 Madeira",
+        operatorName: "Car Alliance",
+        status: .confirmed
+    )
+    #expect(DraftEnrichmentNeeds.shouldEnrich(complete, requiresDeadlines: false) == false)
+
+    let missingPickup = ProviderBookingDraft(
+        provider: .check24,
+        bookingType: .carRental,
+        title: "Toyota Aygo",
+        startAt: Date(),
+        endAt: Date(),
+        locationTo: "Madeira Flughafen",
+        locationFromAddress: "Madeira Airport",
+        locationToAddress: "Madeira Airport",
+        operatorName: "Car Alliance",
+        status: .confirmed
+    )
+    #expect(DraftEnrichmentNeeds.shouldEnrich(missingPickup, requiresDeadlines: false) == true)
+
+    let missingOperator = ProviderBookingDraft(
+        provider: .check24,
+        bookingType: .carRental,
+        title: "Toyota Aygo",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Madeira Flughafen",
+        locationTo: "Madeira Flughafen",
+        locationFromAddress: "Madeira Airport",
+        locationToAddress: "Madeira Airport",
+        status: .confirmed
+    )
+    #expect(DraftEnrichmentNeeds.shouldEnrich(missingOperator, requiresDeadlines: false) == true)
+
+    let missingDropoffAddress = ProviderBookingDraft(
+        provider: .check24,
+        bookingType: .carRental,
+        title: "Toyota Aygo",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Madeira Flughafen",
+        locationTo: "Madeira Flughafen",
+        locationFromAddress: "Madeira Airport",
+        operatorName: "Car Alliance",
+        status: .confirmed
+    )
+    #expect(DraftEnrichmentNeeds.shouldEnrich(missingDropoffAddress, requiresDeadlines: false) == true)
 }
 
 @Test func bookingRateDetailsMerging_ignoresEmptyFingerprint() throws {

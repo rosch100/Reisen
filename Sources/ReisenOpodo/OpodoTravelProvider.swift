@@ -14,7 +14,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
     public var loginURL: URL {
         // HAR: PasswordLogin läuft über Homepage-Stack (Referer www.opodo.de/),
         // nicht über /travel/secure/ (My-Trips/magic_link — hängt in WKWebView bei „Anmelden…“).
-        URL(string: "https://www.opodo.de/")!
+        OpodoWeb.homepageURL
     }
 
     public var keychainServerHost: String { "opodo.de" }
@@ -24,10 +24,11 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
         let webView = try webView(from: session)
         try await ensureGraphQLSession(using: webView)
-        if let catalog = try await fetchGraphQLCatalog(using: webView) {
-            return catalog
+        let graphQL = try await fetchUpcomingTrips(using: webView)
+        if graphQL.needsHTMLFallback {
+            return graphQL.resolved(htmlFallback: try await fetchHTMLCatalogFallback(using: webView))
         }
-        return try await fetchHTMLCatalogFallback(using: webView)
+        return graphQL.resolved()
     }
 
     private func ensureGraphQLSession(using webView: WKWebView) async throws {
@@ -46,35 +47,10 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         }
     }
 
-    private func fetchGraphQLCatalog(using webView: WKWebView) async throws -> ProviderCatalog? {
-        onProgress?("Lade Buchungen (GraphQL getTrips)…")
-        do {
-            let bookings = try await fetchUpcomingTrips(using: webView)
-            guard !bookings.isEmpty else { return nil }
-            return ProviderCatalog(bookings: bookings)
-        } catch let error as OpodoProviderError {
-            if case .sessionNotEstablished = error {
-                throw error
-            }
-            return nil
-        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
-            throw OpodoProviderError.sessionNotEstablished
-        } catch {
-            return nil
-        }
-    }
-
-    private func fetchHTMLCatalogFallback(using webView: WKWebView) async throws -> ProviderCatalog {
-        onProgress?("GraphQL-Katalog fehlgeschlagen, lade Buchungen (HTML-Fallback)…")
+    private func fetchHTMLCatalogFallback(using webView: WKWebView) async throws -> [ProviderBookingDraft] {
+        onProgress?("GraphQL-Katalog leer, lade Buchungen (HTML-Fallback)…")
         let html = try await fetchSecureHTML(using: webView)
-
-        let bookings: [ProviderBookingDraft]
-        do {
-            bookings = try OpodoActivityListParser().parseBookings(from: html)
-        } catch is OpodoActivityListParserError {
-            bookings = []
-        }
-        return ProviderCatalog(bookings: bookings)
+        return try OpodoActivityListParser().parseBookings(from: html)
     }
 
     public func enrichBooking(
@@ -82,18 +58,21 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         ref: ProviderBookingRef
     ) async throws -> ProviderBookingEnrichment {
         let webView = try webView(from: session)
-        guard ref.bookingType == .hotel else {
+        switch ref.bookingType {
+        case .hotel:
+            return try await enrichHotelBooking(webView: webView, externalUrl: ref.externalUrl)
+        case .flight:
             return try await enrichFlightBooking(webView: webView, externalUrl: ref.externalUrl)
+        case .ferry, .train, .activity, .carRental, .other:
+            throw OpodoProviderError.catalogNotFound
         }
-
-        return try await enrichHotelBooking(webView: webView, externalUrl: ref.externalUrl)
     }
 
     private func enrichFlightBooking(
         webView: WKWebView,
         externalUrl: String
     ) async throws -> ProviderBookingEnrichment {
-        guard let token = OpodoGetTripByTokenQuery.tdToken(fromExternalURL: externalUrl) else {
+        guard let token = OpodoWeb.tdToken(fromExternalURL: externalUrl) else {
             // Falls kein Token extrahierbar ist, ist ein strukturierter Sync nicht möglich.
             throw OpodoProviderError.catalogNotFound
         }
@@ -101,7 +80,6 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         onProgress?("Lade Flug-Passagiere & Gepäck…")
         let passengers = try await OpodoFlightPassengersGraphQL.fetchPassengersAndBaggage(
             token: token,
-            tripDetailsToken: token,
             using: webView
         )
 
@@ -136,7 +114,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             )
         }
 
-        let deadlines = selectGraphQLHotelDeadlines(graphqlDeadlines)
+        let deadlines = graphqlDeadlines.preferringLatestFree
         let pageText = try await loadTripDetailsPageText(in: webView, externalURL: externalUrl)
         let guestHints = StayHintHTMLExtractor.extract(
             from: pageText,
@@ -157,17 +135,13 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         var graphqlDeadlines: [CancellationDeadline] = []
         var statusRaw: String?
 
-        if let token = OpodoGetTripByTokenQuery.tdToken(fromExternalURL: externalUrl) {
+        if let token = OpodoWeb.tdToken(fromExternalURL: externalUrl) {
             do {
                 let body = try OpodoGetTripByTokenQuery.requestBody(token: token)
-                // HAR: Referer ohne trailing slash.
-                let json = try await webView.fetchAuthenticatedText(
-                    url: OpodoSessionProbe.graphqlURL,
-                    method: "POST",
-                    accept: "application/json",
-                    referer: "https://www.opodo.de/travel/secure",
-                    contentType: "application/json",
-                    body: body
+                let json = try await postFrontendGraphQL(
+                    using: webView,
+                    body: body,
+                    referer: OpodoWeb.secureAreaRefererWithoutTrailingSlash
                 )
                 let parsed = try OpodoTripCancellationGraphQLParser().parse(from: json)
                 graphqlDeadlines = parsed.deadlines
@@ -185,29 +159,25 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         return (graphqlDeadlines, statusRaw)
     }
 
-    private func selectGraphQLHotelDeadlines(_ graphqlDeadlines: [CancellationDeadline]) -> [CancellationDeadline] {
-        graphqlDeadlines.preferringLatestFree
-    }
-
     /// Opodo My-Trips ist eine Hash-SPA unter `/travel/secure/`.
     /// Verifiziert: Hash nur auf `www.opodo.de/` setzen landet auf `www.opodo.de/#tripdetails/…`
     /// ohne Secure-Shell — dann fehlt Storno-Text im `innerText`.
     private func loadTripDetailsPageText(in webView: WKWebView, externalURL: String) async throws -> String {
-        guard let token = OpodoGetTripByTokenQuery.tdToken(fromExternalURL: externalURL) else {
+        guard let token = OpodoWeb.tdToken(fromExternalURL: externalURL) else {
             if let url = URL(string: externalURL) {
                 try await NavigationAwaiter().load(url, in: webView)
             }
             return try await snapshotPageText(in: webView) ?? ""
         }
 
-        let detailURLString = "https://www.opodo.de/travel/secure/#tripdetails/td=\(token)"
+        let detailURLString = OpodoWeb.tripDetailsURL(token: token)
         guard let detailURL = URL(string: detailURLString) else {
             throw OpodoProviderError.catalogNotFound
         }
 
         let alreadyOnDetail = webView.url?.absoluteString == detailURLString
-            || (webView.url?.path.contains("/travel/secure") == true
-                && webView.url?.fragment == "tripdetails/td=\(token)")
+            || (webView.url?.path.hasPrefix(OpodoWeb.secureAreaPathPrefix) == true
+                && webView.url?.fragment == detailURL.fragment)
         if !alreadyOnDetail {
             try await NavigationAwaiter().load(detailURL, in: webView)
         }
@@ -234,16 +204,14 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         return try await webView.evaluateJavaScriptStringAsync(js)
     }
 
-    private static let secureURL = URL(string: "https://www.opodo.de/travel/secure/")!
-
     private func fetchSecureHTML(using webView: WKWebView) async throws -> String {
         var lastError: Error?
         for attempt in 1...3 {
             do {
                 return try await webView.fetchAuthenticatedHTML(
-                    url: Self.secureURL,
-                    referer: "https://www.opodo.de/",
-                    isLoginHTML: AuthPageHTMLHeuristic.opodoHTMLLooksLikeLogin
+                    url: OpodoWeb.secureAreaURL,
+                    referer: loginURL.absoluteString,
+                    isLoginHTML: AuthPageHTMLHeuristic.opodoLooksLikeLoginHTML
                 )
             } catch AuthenticatedSessionError.notEstablished {
                 throw OpodoProviderError.sessionNotEstablished
@@ -267,44 +235,67 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         try ProviderWebView.webView(from: session, orThrow: OpodoProviderError.sessionNotEstablished)
     }
 
-    private func fetchUpcomingTrips(using webView: WKWebView) async throws -> [ProviderBookingDraft] {
+    private func fetchUpcomingTrips(using webView: WKWebView) async throws -> OpodoGraphQLCatalog {
+        onProgress?("Lade Buchungen (GraphQL getTrips)…")
+        do {
+            return try await loadUpcomingTripPages(using: webView)
+        } catch OpodoTripsGraphQLParserError.notLoggedIn {
+            throw OpodoProviderError.sessionNotEstablished
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw OpodoProviderError.sessionNotEstablished
+        }
+    }
+
+    private func loadUpcomingTripPages(using webView: WKWebView) async throws -> OpodoGraphQLCatalog {
         var all: [ProviderBookingDraft] = []
+        var rawTripCount = 0
         for page in 0..<Self.maxPages {
             let body = try OpodoGetTripsQuery.requestBody(
                 filter: "UPCOMING",
                 maxNumBookingsByPage: Self.pageSize,
                 offsetPage: page
             )
-            let json = try await webView.fetchAuthenticatedText(
-                url: OpodoSessionProbe.graphqlURL,
-                method: "POST",
-                accept: "application/json",
-                referer: "https://www.opodo.de/travel/secure/",
-                contentType: "application/json",
-                body: body
+            let json = try await postFrontendGraphQL(
+                using: webView,
+                body: body,
+                referer: OpodoWeb.secureAreaURLString
             )
-            let pageBookings = try OpodoTripsGraphQLParser().parseTrips(from: json)
-            if pageBookings.isEmpty {
-                break
-            }
-            all.append(contentsOf: pageBookings)
-            if pageBookings.count < Self.pageSize {
+            let pageResult = try OpodoTripsGraphQLParser().parseTripPage(from: json)
+            rawTripCount += pageResult.rawTripCount
+            guard pageResult.rawTripCount > 0 else { break }
+            all.append(contentsOf: pageResult.bookings)
+            if pageResult.rawTripCount < Self.pageSize {
                 break
             }
         }
 
-        return ProviderCatalog(bookings: all).dedupedByExternalURL().bookings
+        return OpodoGraphQLCatalog(
+            bookings: all,
+            rawTripCount: rawTripCount
+        )
     }
 
     /// Session GraphQL from HAR discovery (GetUserAccount). Not a booking catalog.
     private func fetchGraphQLUserAccount(using webView: WKWebView) async throws -> String {
-        return try await webView.fetchAuthenticatedText(
+        try await postFrontendGraphQL(
+            using: webView,
+            body: OpodoSessionProbe.getUserAccountRequestBody(),
+            referer: loginURL.absoluteString
+        )
+    }
+
+    private func postFrontendGraphQL(
+        using webView: WKWebView,
+        body: Data,
+        referer: String
+    ) async throws -> String {
+        try await webView.fetchAuthenticatedText(
             url: OpodoSessionProbe.graphqlURL,
             method: "POST",
             accept: "application/json",
-            referer: "https://www.opodo.de/",
+            referer: referer,
             contentType: "application/json",
-            body: OpodoSessionProbe.getUserAccountRequestBody()
+            body: body
         )
     }
 }

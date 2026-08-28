@@ -23,10 +23,10 @@ Zudem enthält die Capture:
 - HTML Login-Seitenaufruf und Redirects (u.a. Google Sign-In Seite)
 
 Status / Rest:
-- In der Capture sind noch keine klar benennbaren "List"- oder "Cancellation"-REST-Endpunkte als stabile Strings sichtbar, weil vieles über GraphQL läuft.
-- Implementierungsvorschlag (aus dem Plan):
-  - Primär: GraphQL ApiClient nutzen (Session via WebView-Cookies)
-  - Wenn GraphQL-Felder/Queries nicht vollständig ableitbar: HTML-Fallback auf Basis von Tripdetail-Seiten/HTML-Snapshots.
+- Login-SSOT: Homepage `https://www.opodo.de/` (nicht `/travel/secure/` — dort Login-Modal über Checkout-HTML).
+- Primär: GraphQL `getTrips` (Session via WebView-Cookies auf der Homepage).
+- HTML-Fallback nur wenn `getTrips` **0 Trip-Rows** liefert. GraphQL-Fehler (inkl. `USER_NOT_LOGGED_IN`) nicht per HTML ersetzen.
+- Katalog nur Flug (`transportTypes: PLANE`) und Hotel; `insuranceBookings` und Vehicle-/Transfer-Offers nicht syncen.
 
 ## Booking.com (secure.booking.com / account.booking.com / flights.booking.com) - relevante Anker
 
@@ -45,7 +45,7 @@ Gefundene Anker aus HAR (u. a. Capture 2026-07-20):
 
 - Trip-Timeline mit Reservierungen (GraphQL):
   - Operation `SingleTimelineQuery` → `singleTripTimelineQueries.singleTripTimeline`
-  - Enthält `FlightReservation` und `AccommodationReservation` (inkl. `policy` für Hotel-Storno-Text)
+  - Live 2026-08: V1 weiterhin gültig; MFE enthält zusätzlich `SingleTimelineQueryV2`. In einem Konto u. a. `FlightReservation`, `AccommodationReservation`, `PrebookTaxiReservation` — siehe [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md).
 
 - Flug-Confirmation / Storno (REST):
   - `GET https://flights.booking.com/api/order/{orderToken}?pb=1&cancellationOptionsType=1`

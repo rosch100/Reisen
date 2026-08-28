@@ -4,13 +4,16 @@ import ReisenData
 
 /// Ein Tarif-Feld (Label/Wert) für Detail-UIs.
 public struct BookingRateField: Identifiable, Equatable, Sendable {
-    public var id: String { label }
+    public let id: String
     public let label: String
     public let value: String
+    public let copyKind: FieldCopyKind
 
-    public init(label: String, value: String) {
+    public init(id: String, label: String, value: String, copyKind: FieldCopyKind = .standard) {
+        self.id = id
         self.label = label
         self.value = value
+        self.copyKind = copyKind
     }
 }
 
@@ -23,57 +26,82 @@ public enum BookingRateFields {
         if let amount = rate.totalPriceAmount {
             fields.append(
                 BookingRateField(
+                    id: "rate.price",
                     label: BookingDetailLabels.price,
                     value: Formatting.formatCurrencyAmount(amount, currencyCode: rate.totalPriceCurrency)
                 )
             )
         }
         if let currency = rate.totalPriceCurrency, !currency.isEmpty {
-            fields.append(BookingRateField(label: BookingDetailLabels.currency, value: currency))
+            fields.append(
+                BookingRateField(id: "rate.currency", label: BookingDetailLabels.currency, value: currency)
+            )
         }
         if rate.resolvedRoomItems.isEmpty,
            let room = rate.roomCategory,
            !room.isEmpty,
            let roomLabel = bookingType.roomCategoryLabel {
-            fields.append(BookingRateField(label: roomLabel, value: room))
+            fields.append(BookingRateField(id: "rate.roomCategory", label: roomLabel, value: room))
         }
         if let breakfast = rate.includedBreakfast {
             fields.append(
                 BookingRateField(
+                    id: "rate.breakfast",
                     label: BookingDetailLabels.breakfastIncluded,
                     value: BookingDetailLabels.yesNo(breakfast)
                 )
             )
         }
         if let guests = rate.guestCount {
-            fields.append(BookingRateField(label: BookingDetailLabels.guests, value: "\(guests)"))
+            fields.append(
+                BookingRateField(id: "rate.guests", label: BookingDetailLabels.guests, value: "\(guests)")
+            )
         }
         if let rooms = rate.roomCount, let roomCountLabel = bookingType.roomCountLabel {
-            fields.append(BookingRateField(label: roomCountLabel, value: "\(rooms)"))
+            fields.append(BookingRateField(id: "rate.roomCount", label: roomCountLabel, value: "\(rooms)"))
         }
         if let airline = rate.airline, !airline.isEmpty {
-            fields.append(BookingRateField(label: BookingDetailLabels.airline, value: airline))
+            fields.append(
+                BookingRateField(id: "rate.airline", label: BookingDetailLabels.airline, value: airline)
+            )
         }
 
         let names = booking.passengerDisplayNames
         if !names.isEmpty {
-            fields.append(BookingRateField(label: BookingDetailLabels.passengers, value: names.joined(separator: ", ")))
+            fields.append(
+                BookingRateField(
+                    id: "rate.passengers.names",
+                    label: BookingDetailLabels.passengers,
+                    value: names.joined(separator: ", ")
+                )
+            )
         } else if let passengers = rate.passengerCount {
-            fields.append(BookingRateField(label: BookingDetailLabels.passengers, value: "\(passengers)"))
+            fields.append(
+                BookingRateField(
+                    id: "rate.passengers.count",
+                    label: BookingDetailLabels.passengers,
+                    value: "\(passengers)"
+                )
+            )
         }
 
         if let baggage = rate.baggageInfoRaw, !baggage.isEmpty {
-            fields.append(BookingRateField(label: BookingDetailLabels.baggage, value: baggage))
+            fields.append(
+                BookingRateField(id: "rate.baggage", label: BookingDetailLabels.baggage, value: baggage)
+            )
         }
         if let rawBoardType = rate.boardTypeRaw,
            !rawBoardType.isEmpty,
            let boardType = BookingBoardType(rawValue: rawBoardType),
            let boardLabel = boardType.displayLabelIfKnown {
-            fields.append(BookingRateField(label: BookingDetailLabels.boardType, value: boardLabel))
+            fields.append(
+                BookingRateField(id: "rate.boardType", label: BookingDetailLabels.boardType, value: boardLabel)
+            )
         }
         if let parsed = rate.lastParsedAt {
             fields.append(
                 BookingRateField(
+                    id: "rate.lastParsed",
                     label: BookingDetailLabels.rateLastParsed,
                     value: parsed.formatted(date: .abbreviated, time: .shortened)
                 )
@@ -84,38 +112,24 @@ public enum BookingRateFields {
     }
 }
 
-/// Inline-Darstellung „Label: Wert“ (iOS-Listen).
-public struct BookingRateFieldsView: View {
-    let fields: [BookingRateField]
-
-    public init(rate: SDBookingRateDetails, booking: SDBooking) {
-        self.fields = BookingRateFields.make(rate: rate, booking: booking)
-    }
-
-    public init(fields: [BookingRateField]) {
-        self.fields = fields
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(fields) { field in
-                Text("\(field.label): \(field.value)")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .textSelection(.enabled)
-    }
-}
-
 /// SSOT für Status, Orte und Start/Ende/Check-in/out.
 public enum BookingScheduleFields {
     public static func make(booking: SDBooking) -> [BookingRateField] {
         var fields: [BookingRateField] = [
-            BookingRateField(label: BookingDetailLabels.status, value: booking.status.displayLabel)
+            BookingRateField(
+                id: "schedule.status",
+                label: BookingDetailLabels.status,
+                value: booking.status.displayLabel
+            )
         ]
         if let code = booking.confirmationCode, !code.isEmpty {
             fields.append(
-                BookingRateField(label: BookingDetailLabels.confirmationNumber, value: code)
+                BookingRateField(
+                    id: "schedule.confirmation",
+                    label: BookingDetailLabels.confirmationNumber,
+                    value: code,
+                    copyKind: .identifier
+                )
             )
         }
         let bookingType = booking.bookingType
@@ -123,28 +137,50 @@ public enum BookingScheduleFields {
         if bookingType.showsLocationFrom,
            let from = booking.locationFrom,
            !from.isEmpty {
-            fields.append(BookingRateField(label: bookingType.locationFromLabel, value: from))
+            fields.append(
+                BookingRateField(id: "schedule.locationFrom", label: bookingType.locationFromLabel, value: from)
+            )
         }
         if let to = booking.locationTo, !to.isEmpty {
-            fields.append(BookingRateField(label: bookingType.locationToLabel, value: to))
+            fields.append(
+                BookingRateField(id: "schedule.locationTo", label: bookingType.locationToLabel, value: to)
+            )
         }
         if bookingType.showsLocationFrom,
            let fromAddress = booking.locationFromAddress,
            !fromAddress.isEmpty,
            let fromAddressLabel = bookingType.locationFromAddressLabel {
-            fields.append(BookingRateField(label: fromAddressLabel, value: fromAddress))
+            fields.append(
+                BookingRateField(
+                    id: "schedule.locationFromAddress",
+                    label: fromAddressLabel,
+                    value: fromAddress
+                )
+            )
         }
         if let toAddress = booking.locationToAddress,
            !toAddress.isEmpty,
            let toAddressLabel = bookingType.locationToAddressLabel {
-            fields.append(BookingRateField(label: toAddressLabel, value: toAddress))
+            fields.append(
+                BookingRateField(id: "schedule.locationToAddress", label: toAddressLabel, value: toAddress)
+            )
         }
         if let operatorName = booking.operatorName, !operatorName.isEmpty {
-            fields.append(BookingRateField(label: bookingType.operatorNameLabel, value: operatorName))
+            fields.append(
+                BookingRateField(
+                    id: "schedule.operator",
+                    label: bookingType.operatorNameLabel,
+                    value: operatorName
+                )
+            )
         }
         if booking.isAllDay == true {
             fields.append(
-                BookingRateField(label: BookingDetailLabels.allDay, value: BookingDetailLabels.yesNo(true))
+                BookingRateField(
+                    id: "schedule.allDay",
+                    label: BookingDetailLabels.allDay,
+                    value: BookingDetailLabels.yesNo(true)
+                )
             )
         }
 
@@ -204,12 +240,20 @@ public enum BookingScheduleFields {
 
         if let checkIn = booking.hotelCheckInMinutes {
             fields.append(
-                BookingRateField(label: BookingDetailLabels.checkIn, value: Formatting.minutesToHHmm(checkIn))
+                BookingRateField(
+                    id: "schedule.checkIn",
+                    label: BookingDetailLabels.checkIn,
+                    value: Formatting.minutesToHHmm(checkIn)
+                )
             )
         }
         if let checkOut = booking.hotelCheckOutMinutes {
             fields.append(
-                BookingRateField(label: BookingDetailLabels.checkOut, value: Formatting.minutesToHHmm(checkOut))
+                BookingRateField(
+                    id: "schedule.checkOut",
+                    label: BookingDetailLabels.checkOut,
+                    value: Formatting.minutesToHHmm(checkOut)
+                )
             )
         }
 
@@ -223,64 +267,88 @@ public enum BookingScheduleFields {
         startValue: String,
         endValue: String
     ) {
-        fields.append(BookingRateField(label: startLabel, value: startValue))
-        fields.append(BookingRateField(label: endLabel, value: endValue))
-    }
-}
-
-public struct BookingScheduleFieldsView: View {
-    let fields: [BookingRateField]
-
-    public init(booking: SDBooking) {
-        self.fields = BookingScheduleFields.make(booking: booking)
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(fields) { field in
-                Text("\(field.label): \(field.value)")
-                    .foregroundStyle(.secondary)
-            }
-        }
+        fields.append(BookingRateField(id: "schedule.start", label: startLabel, value: startValue))
+        fields.append(BookingRateField(id: "schedule.end", label: endLabel, value: endValue))
     }
 }
 
 /// Zimmer-/Positions-Liste einer Buchungsrate (iOS + macOS).
 public struct BookingRoomItemsView: View {
     let rate: SDBookingRateDetails
+    let style: CopyableLabeledValueStyle
 
-    public init(rate: SDBookingRateDetails) {
+    public init(rate: SDBookingRateDetails, style: CopyableLabeledValueStyle = .inspector) {
         self.rate = rate
+        self.style = style
+    }
+
+    private var sortedItems: [SDBookingRoomItem] {
+        rate.resolvedRoomItems.sorted(by: { ($0.sortIndex ?? 0) < ($1.sortIndex ?? 0) })
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(rate.resolvedRoomItems.sorted(by: { ($0.sortIndex ?? 0) < ($1.sortIndex ?? 0) })) { item in
-                VStack(alignment: .leading, spacing: 4) {
-                    if let category = item.category, !category.isEmpty {
-                        Text(category)
-                            .font(.caption.weight(.medium))
-                    }
-                    if let code = item.confirmationCode, !code.isEmpty {
-                        Text("\(BookingDetailLabels.confirmationNumber): \(code)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let guest = item.guestSummary, !guest.isEmpty {
-                        Text(guest)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let amount = item.priceAmount {
-                        let currency = item.priceCurrency ?? rate.totalPriceCurrency
-                        Text("\(BookingDetailLabels.unitPrice): \(Formatting.formatCurrencyAmount(amount, currencyCode: currency))")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 4)
+            ForEach(sortedItems) { item in
+                BookingRoomItemRow(item: item, rateCurrency: rate.totalPriceCurrency, style: style)
             }
         }
+    }
+}
+
+/// Eine Zimmerposition — als eigene List-Zeile oder Inspector-Block.
+public struct BookingRoomItemRow: View {
+    let item: SDBookingRoomItem
+    let rateCurrency: String?
+    let style: CopyableLabeledValueStyle
+
+    public init(item: SDBookingRoomItem, rateCurrency: String?, style: CopyableLabeledValueStyle) {
+        self.item = item
+        self.rateCurrency = rateCurrency
+        self.style = style
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let category = item.category, !category.isEmpty {
+                CopyableFieldValue(
+                    value: category,
+                    textStyle: style.titleValueTextStyle,
+                    lineLimit: 2
+                )
+            }
+            if let code = item.confirmationCode, !code.isEmpty {
+                detailLabeled(
+                    BookingDetailLabels.confirmationNumber,
+                    code,
+                    kind: .identifier
+                )
+            }
+            if let guest = item.guestSummary, !guest.isEmpty {
+                detailLabeled(BookingDetailLabels.guests, guest)
+            }
+            if let amount = item.priceAmount {
+                let currency = item.priceCurrency ?? rateCurrency
+                detailLabeled(
+                    BookingDetailLabels.unitPrice,
+                    Formatting.formatCurrencyAmount(amount, currencyCode: currency)
+                )
+            }
+        }
+        .bookingDetailRowPadding(style)
+    }
+
+    private func detailLabeled(
+        _ label: String,
+        _ value: String,
+        kind: FieldCopyKind = .standard
+    ) -> CopyableLabeledValue {
+        CopyableLabeledValue(
+            label: label,
+            value: value,
+            kind: kind,
+            style: style,
+            valueTextStyle: style.detailValueTextStyle
+        )
     }
 }
 
@@ -288,88 +356,214 @@ public struct BookingRoomItemsView: View {
 public struct BookingCancellationDeadlinesView: View {
     let booking: SDBooking
     let hotelTimeZone: TimeZone
+    let style: CopyableLabeledValueStyle
 
-    public init(booking: SDBooking, hotelTimeZone: TimeZone? = nil) {
+    public init(
+        booking: SDBooking,
+        hotelTimeZone: TimeZone? = nil,
+        style: CopyableLabeledValueStyle = .inspector
+    ) {
         self.booking = booking
         self.hotelTimeZone = hotelTimeZone ?? booking.resolvedHotelTimeZone
+        self.style = style
+    }
+
+    private var sortedDeadlines: [SDCancellationDeadline] {
+        booking.resolvedCancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt })
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(
-                booking.resolvedCancellationDeadlines.sorted(by: { $0.deadlineAt < $1.deadlineAt }),
-                id: \.id
-            ) { deadline in
-                let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
-                    ?? hotelTimeZone
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(
-                        Formatting.formatOrtszeit(
-                            deadline.deadlineAt,
-                            dateFormat: "d.M.yyyy HH:mm",
-                            timeZone: tz
-                        )
-                    )
-                    .font(.caption.weight(.medium))
-
-                    HStack(spacing: 8) {
-                        Text(deadline.isFreeCancellation ? BookingDetailLabels.cancellationFree : BookingDetailLabels.cancellationPaid)
-                            .font(.caption2)
-                            .foregroundStyle(deadline.isFreeCancellation ? .green : .secondary)
-
-                        if let fee = deadline.cancellationFeeAmount {
-                            Text(
-                                Formatting.formatCurrencyAmount(
-                                    fee,
-                                    currencyCode: booking.rateDetails?.totalPriceCurrency
-                                )
-                            )
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        }
-
-                        if deadline.isStrict {
-                            Text(BookingDetailLabels.strictDeadline)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    if let policy = deadline.policyText, !policy.isEmpty {
-                        Text(policy)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                }
-                .padding(.vertical, 4)
+            ForEach(sortedDeadlines, id: \.id) { deadline in
+                BookingCancellationDeadlineRow(
+                    deadline: deadline,
+                    feeCurrency: booking.rateDetails?.totalPriceCurrency,
+                    hotelTimeZone: hotelTimeZone,
+                    style: style
+                )
             }
+        }
+    }
+}
+
+/// Eine Stornofrist — als eigene List-Zeile oder Inspector-Block.
+public struct BookingCancellationDeadlineRow: View {
+    let deadline: SDCancellationDeadline
+    let feeCurrency: String?
+    let hotelTimeZone: TimeZone
+    let style: CopyableLabeledValueStyle
+
+    public init(
+        deadline: SDCancellationDeadline,
+        feeCurrency: String?,
+        hotelTimeZone: TimeZone,
+        style: CopyableLabeledValueStyle
+    ) {
+        self.deadline = deadline
+        self.feeCurrency = feeCurrency
+        self.hotelTimeZone = hotelTimeZone
+        self.style = style
+    }
+
+    private var deadlineText: String {
+        let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
+            ?? hotelTimeZone
+        return Formatting.formatOrtszeit(
+            deadline.deadlineAt,
+            dateFormat: "d.M.yyyy HH:mm",
+            timeZone: tz
+        )
+    }
+
+    private var freePaid: String {
+        deadline.isFreeCancellation
+            ? BookingDetailLabels.cancellationFree
+            : BookingDetailLabels.cancellationPaid
+    }
+
+    private var feeText: String? {
+        guard let fee = deadline.cancellationFeeAmount else { return nil }
+        return Formatting.formatCurrencyAmount(fee, currencyCode: feeCurrency)
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if style == .list {
+                listBody
+            } else {
+                inspectorBody
+            }
+        }
+        .bookingDetailRowPadding(style)
+    }
+
+    @ViewBuilder
+    private var listBody: some View {
+        listLabeled(L10n.string(.editorCancellationUntil), deadlineText)
+        listLabeled(BookingDetailLabels.cancellationCost, freePaid)
+        if let feeText {
+            listLabeled(L10n.string(.editorFee), feeText)
+        }
+        if deadline.isStrict {
+            Text(BookingDetailLabels.strictDeadline)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        if let policy = deadline.policyText, !policy.isEmpty {
+            listLabeled(L10n.string(.editorPolicyText), policy, valueLineLimit: 6)
+        }
+    }
+
+    private func listLabeled(
+        _ label: String,
+        _ value: String,
+        valueLineLimit: Int? = nil
+    ) -> CopyableLabeledValue {
+        CopyableLabeledValue(
+            label: label,
+            value: value,
+            style: style,
+            valueLineLimit: valueLineLimit
+        )
+    }
+
+    @ViewBuilder
+    private var inspectorBody: some View {
+        CopyableFieldValue(
+            value: deadlineText,
+            textStyle: style.titleValueTextStyle,
+            lineLimit: 2
+        )
+
+        HStack(spacing: 8) {
+            CopyableFieldValue(
+                value: freePaid,
+                textStyle: style.detailValueTextStyle,
+                foregroundStyle: deadline.isFreeCancellation ? Color.green : Color.secondary
+            )
+
+            if let feeText {
+                CopyableFieldValue(
+                    value: feeText,
+                    textStyle: style.detailValueTextStyle,
+                    foregroundStyle: .secondary
+                )
+            }
+
+            if deadline.isStrict {
+                Text(BookingDetailLabels.strictDeadline)
+                    .font(style.detailValueTextStyle.swiftUIFont)
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        if let policy = deadline.policyText, !policy.isEmpty {
+            CopyableFieldValue(
+                value: policy,
+                textStyle: style.detailValueTextStyle,
+                foregroundStyle: .secondary,
+                lineLimit: 6
+            )
         }
     }
 }
 
 public struct BookingGuestHintsView: View {
     let booking: SDBooking
+    let style: CopyableLabeledValueStyle
 
-    public init(booking: SDBooking) {
+    public init(booking: SDBooking, style: CopyableLabeledValueStyle = .inspector) {
         self.booking = booking
+        self.style = style
+    }
+
+    private var sortedHints: [SDBookingGuestHint] {
+        booking.resolvedGuestHints.sorted(by: { $0.title < $1.title })
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(booking.resolvedGuestHints.sorted(by: { $0.title < $1.title }), id: \.id) { hint in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(hint.title)
-                        .font(.caption.weight(.medium))
-                    if !hint.detail.isEmpty {
-                        Text(hint.detail)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                }
-                .padding(.vertical, 4)
+            ForEach(sortedHints, id: \.id) { hint in
+                BookingGuestHintRow(hint: hint, style: style)
             }
         }
+    }
+}
+
+/// Ein Gast-Hinweis — als eigene List-Zeile oder Inspector-Block.
+public struct BookingGuestHintRow: View {
+    let hint: SDBookingGuestHint
+    let style: CopyableLabeledValueStyle
+
+    public init(hint: SDBookingGuestHint, style: CopyableLabeledValueStyle) {
+        self.hint = hint
+        self.style = style
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            CopyableLabeledValue(
+                label: L10n.string(.editorHintTitle),
+                value: hint.title,
+                style: style,
+                valueTextStyle: style.titleValueTextStyle
+            )
+            if !hint.detail.isEmpty {
+                CopyableLabeledValue(
+                    label: L10n.string(.editorHintDetail),
+                    value: hint.detail,
+                    style: style,
+                    valueTextStyle: style.detailValueTextStyle,
+                    valueLineLimit: 8
+                )
+            }
+        }
+        .bookingDetailRowPadding(style)
+    }
+}
+
+private extension View {
+    func bookingDetailRowPadding(_ style: CopyableLabeledValueStyle) -> some View {
+        padding(.vertical, style == .inspector ? 4 : 0)
     }
 }

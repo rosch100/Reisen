@@ -18,6 +18,7 @@ public struct ProviderBookingDraft: Equatable, Sendable {
     public var status: BookingStatus
     public var deadlines: [CancellationDeadline]
     public var rateDetails: BookingRateDetails?
+    /// Stay-/Lokal-Offset (historischer Name; Hotel und Mietwagen-Pickup).
     public var hotelOffsetSeconds: Int?
     public var hotelCheckInMinutes: Int?
     public var hotelCheckOutMinutes: Int?
@@ -91,17 +92,21 @@ public struct ProviderCatalog: Equatable, Sendable {
 public struct ProviderBookingRef: Hashable, Sendable {
     public var externalUrl: String
     public var bookingType: BookingType
-    /// Hotel-Ortszeit-Offset für Storno-Parsing (Booking.com Confirmation: Zeitzone der Unterkunft).
+    /// Stay-/Lokal-Offset für Storno-Parsing (historischer Name; Hotel-Ortszeit bzw. Mietwagen-Pickup).
     public var hotelOffsetSeconds: Int?
+    /// Katalog-`startAt` (mit Offset), wenn Detail-Zeiten ohne Offset keine Stornofrist erlauben.
+    public var referenceStartAt: Date?
 
     public init(
         externalUrl: String,
         bookingType: BookingType,
-        hotelOffsetSeconds: Int? = nil
+        hotelOffsetSeconds: Int? = nil,
+        referenceStartAt: Date? = nil
     ) {
         self.externalUrl = externalUrl
         self.bookingType = bookingType
         self.hotelOffsetSeconds = hotelOffsetSeconds
+        self.referenceStartAt = referenceStartAt
     }
 }
 
@@ -110,6 +115,7 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
     public var rateDetails: BookingRateDetails?
     public var passengers: [BookingPassenger]?
     public var guestHints: [BookingGuestHint]?
+    /// Stay-/Lokal-Offset (historischer Name; Hotel und Mietwagen-Pickup).
     public var hotelOffsetSeconds: Int?
     public var hotelCheckInMinutes: Int?
     public var hotelCheckOutMinutes: Int?

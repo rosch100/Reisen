@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ReisenProviders
 
@@ -92,4 +93,32 @@ import ReisenProviders
 @Test func travelokaMyBookingIsAccountPage() {
     #expect(AuthPageURLHeuristic.looksLikeAccountPage("https://www.traveloka.com/en-en/user/mybooking"))
     #expect(AuthPageURLHeuristic.looksLikeLoginPage("https://www.traveloka.com/en-en/user/signin"))
+}
+
+@Test func billigerMietwagenLoginNeedsLoginAndBookingsProbeSession() {
+    let login = "https://www.billiger-mietwagen.de/reservation/account/login"
+    let bookings = "https://www.billiger-mietwagen.de/reservation/account/bookings"
+    let home = "https://www.billiger-mietwagen.de/"
+    #expect(AuthPageURLHeuristic.looksLikeLoginPage(login))
+    #expect(ProviderSessionStatusResolver.classify(URL(string: login)!) == .needsLogin)
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage(bookings))
+    #expect(!AuthPageURLHeuristic.looksLikeLoginPage(bookings))
+    #expect(ProviderSessionStatusResolver.classify(URL(string: bookings)!) == .shouldProbeBilligerMietwagen)
+    #expect(ProviderSessionStatusResolver.classify(URL(string: home)!) == .shouldProbeBilligerMietwagen)
+}
+
+@Test func getYourGuideLoginIsOTPAutofillNotAccount() {
+    let login = "https://www.getyourguide.com/login?next=/de-de/customer-bookings/"
+    #expect(AuthPageURLHeuristic.looksLikeLoginPage(login))
+    #expect(AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(login))
+    #expect(!AuthPageURLHeuristic.looksLikeAccountPage(login))
+}
+
+@Test func getYourGuideCustomerBookingsIsAccountNotLogin() {
+    let de = "https://www.getyourguide.com/de-de/customer-bookings/"
+    let en = "https://www.getyourguide.com/en-us/customer-bookings/"
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage(de))
+    #expect(AuthPageURLHeuristic.looksLikeAccountPage(en))
+    #expect(!AuthPageURLHeuristic.looksLikeLoginPage(de))
+    #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(de))
 }

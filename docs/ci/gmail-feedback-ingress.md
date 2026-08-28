@@ -8,6 +8,8 @@ Labels: `kind/feedback`, `source/email`. Titel: `[Feedback] ` plus Betreff (max.
 
 Die Logik liegt nur im Script; der Workflow [gmail-feedback-ingress.yml](../../.github/workflows/gmail-feedback-ingress.yml) ruft das Script auf.
 
+Nach erfolgreichem Issue-Create feuert GitHub `issues: opened` → [issue-dev-wake.yml](../../.github/workflows/issue-dev-wake.yml) (kein IMAP im Grok-Bot). Siehe [issue-dev.md](issue-dev.md).
+
 Kein App-Passwort, kein IMAP, kein Google-Konto-Passwort.
 
 ## Secrets

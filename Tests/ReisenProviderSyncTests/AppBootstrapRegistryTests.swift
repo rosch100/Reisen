@@ -31,7 +31,8 @@ import ReisenDomain
         hotelCheckOutMinutes: 11 * 60
     )
 
-    for id in [ProviderID.airbnb, .booking, .getYourGuide, .opodo, .traveloka, .check24] {
+    // Traveloka braucht zusätzlich GuestHints — separat unten.
+    for id in [ProviderID.airbnb, .booking, .getYourGuide, .opodo, .check24, .billigerMietwagen] {
         #expect(
             try provider(id).needsDraftEnrichment(
                 draft: completeHotel,
@@ -39,6 +40,57 @@ import ReisenDomain
             ) == false
         )
     }
+
+    var travelokaHotel = completeHotel
+    travelokaHotel.provider = .traveloka
+    #expect(
+        try provider(.traveloka).needsDraftEnrichment(
+            draft: travelokaHotel,
+            requiresDeadlines: false
+        ) == true
+    )
+    travelokaHotel.guestHints = [
+        BookingGuestHint(
+            title: "Hausregeln",
+            detail: "Example policy",
+            sourceKey: "traveloka:property_policy",
+            providerRaw: ProviderID.traveloka.rawValue
+        ),
+    ]
+    #expect(
+        try provider(.traveloka).needsDraftEnrichment(
+            draft: travelokaHotel,
+            requiresDeadlines: false
+        ) == false
+    )
+
+    let catalogCarRental = ProviderBookingDraft(
+        provider: .billigerMietwagen,
+        bookingType: .carRental,
+        title: "Berlin → München",
+        externalUrl: "https://www.billiger-mietwagen.de/reservation/account/bookings/<REDACTED-UUID>",
+        startAt: Date(),
+        endAt: Date(),
+        locationFrom: "Berlin",
+        locationTo: "München",
+        operatorName: "Thrifty",
+        status: .confirmed
+    )
+    #expect(
+        try provider(.billigerMietwagen).needsDraftEnrichment(
+            draft: catalogCarRental,
+            requiresDeadlines: false
+        )
+    )
+    var enrichedCarRental = catalogCarRental
+    enrichedCarRental.locationFromAddress = "Street 1, Berlin"
+    enrichedCarRental.locationToAddress = "Street 2, München"
+    #expect(
+        try provider(.billigerMietwagen).needsDraftEnrichment(
+            draft: enrichedCarRental,
+            requiresDeadlines: false
+        ) == false
+    )
 
     var unknownStatus = completeHotel
     unknownStatus.status = .unknown

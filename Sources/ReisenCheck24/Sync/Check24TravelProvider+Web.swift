@@ -41,15 +41,14 @@ extension Check24TravelProvider {
     }
 
     func isHotelBookingDetailURL(_ url: URL) -> Bool {
-        let host = (url.host ?? "").lowercased()
-        let path = url.path.lowercased()
-        return host.contains("hotel.check24.de") && path.contains("/kundenbereich/buchung/")
+        Check24BookingDetailURL.isHotelStayDetail(url)
     }
 
     func isNonHotelBookingDetailURL(_ url: URL) -> Bool {
-        let host = (url.host ?? "").lowercased()
-        let path = url.path.lowercased()
-        return (host.contains("flug.check24.de") || host.contains("ferry.check24.de"))
-            && path.contains("/kundenbereich/buchung/")
+        Check24BookingDetailURL.isFlightOrFerryDetail(url)
+    }
+
+    func isCarRentalBookingDetailURL(_ url: URL) -> Bool {
+        Check24BookingDetailURL.isCarRentalDetail(url)
     }
 }

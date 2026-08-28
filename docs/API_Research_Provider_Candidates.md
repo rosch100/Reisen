@@ -15,7 +15,9 @@ Partner-/Demand-APIs (Amadeus, Sabre, GYG Partner, Expedia Lodging Supply) bleib
 | [`dev/booking-type-activity-impl-spec.md`](dev/booking-type-activity-impl-spec.md) | Gemeinsame Basis `BookingType.activity` |
 | [`dev/airbnb-experiences-impl-spec.md`](dev/airbnb-experiences-impl-spec.md) | Airbnb Catalog + `activity_reservation_details` |
 | [`dev/getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md) | Neuer Provider GYG |
+| [`dev/billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md) | Neuer Provider billiger-mietwagen.de (FLOYT) |
 | [`dev/check24-productkey-audit.md`](dev/check24-productkey-audit.md) | productKey-Inventory + Live-Audit-Checkliste |
+| [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md) | Booking.com `verticalType` / Reservation-`__typename` + Query-Shape 2026-08 |
 
 Ausführungsdetails nur im Plan — nicht hier wiederholen.
 
@@ -29,7 +31,7 @@ Ausführungsdetails nur im Plan — nicht hier wiederholen.
 | Partner/Metasearch-API | Amadeus, Skyscanner Travel API, GYG Partner API, Expedia Lodging Supply | **Nein** |
 | Gap-Deep-Links | Check24 Hotel/Flug-Suche | Teilweise (nur Suche, kein Sync) |
 
-Neue Provider = [`TravelProvider`](../Sources/ReisenProviders/TravelProvider.swift) + `WKWebView`-Session, wie die **sechs** registrierten Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka).
+Neue Provider = [`TravelProvider`](../Sources/ReisenDomain/Ports/TravelProvider.swift) + `WKWebView`-Session, wie die registrierten Sync-Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen.de).
 
 ```mermaid
 flowchart LR
@@ -76,7 +78,51 @@ Domain-Basis: [`BookingType.activity`](dev/booking-type-activity-impl-spec.md). 
 
 ### Prio 3 – Transport (optional)
 
-FlixBus/DB, Sixt — neuer Typ oder zuerst Check24-`productKey`-Whitelist (siehe [Check24](#check24--productkey-audit)).
+| Provider | Sync-Pfad | Aufwand | Status Recherche |
+|----------|-----------|---------|------------------|
+| **billiger-mietwagen.de** (FLOYT) | Session.php + `consumer-api.floyt.com` bookings | Mittel | Live-Capture 2026-08-28; [Impl-Spec](dev/billiger-mietwagen-impl-spec.md) |
+| FlixBus/DB, Sixt | — | — | nachrangig; ggf. Check24-`productKey`-Whitelist |
+
+---
+
+## Teil A.4 – billiger-mietwagen.de / FLOYT
+
+**HAR-SSOT** (Surfaces). **Mapping-SSOT:** [`billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md).
+
+**Quelle:** Live authenticated fetch 2026-08-28 (FLOYT SPA unter `/reservation/`); Roh-HAR optional unter `HAR/billiger-mietwagen_*.har` (gitignored).  
+**Fixtures:** `bm_bookings_active_redacted.json`, `bm_bookings_inactive_redacted.json`, `bm_booking_detail_web_redacted.json`, `bm_session_*_redacted.json`.
+
+### Surfaces
+
+| Rolle | URL / Endpoint | Inhalt |
+|-------|----------------|--------|
+| Login-UI | `GET …/reservation/account/login` | E-Mail/Passwort + Social (Apple/Google) |
+| Buchungsliste-UI | `GET …/reservation/account/bookings` | SPA; braucht JS |
+| Login API | `POST https://consumer-api.floyt.com/auth/v1/login` | Body `username`/`password`; Header `X-Whitelabel: DE_billiger-mietwagen` → Tokens inkl. `id_token` |
+| Session schreiben | `POST …/user_account/session.php` | Body `access_token`+`refresh_token`; Cookies `__Secure-billigermietwagen`, `__Secure-user_account` |
+| Session lesen | `GET …/user_account/session.php` | Tokens für Sync/Probe |
+| Token-Refresh | `POST …/auth/v1/refresh-token` | Body `{refresh_token,user_id}` mit `user_id`=JWT-`username` (nicht `sub`); oft nötig vor Catalog (401 sonst) |
+| Catalog active | `GET …/useraccount/v1/bookings?activity_status=active&…` | Upcoming |
+| Catalog inactive | `GET …/bookings?activity_status=inactive&sort_by=DropOffDate&…` | Past/storniert (SPA-Parität) |
+| Detail | `GET …/useraccount/v1/web/bookings/{id}` | Web-Detail (länger als Non-Web) |
+| Settings | `GET https://api.billiger-mietwagen.de/v1/site/settings` | Locale, Social-Client-IDs |
+| Deep-Link UI | `GET …/reservation/account/bookings/{uuid}` | Buchungsdetails-SPA |
+
+**Hosts:** `e` = `www.billiger-mietwagen.de`, `t` = `api.billiger-mietwagen.de`, `n` = `consumer-api.floyt.com` (URL-Map in SPA `iframe-connector`).
+
+**Kernbefund:** Ein Primärpfad Cookie → session.php → **Refresh** → Bearer JSON (active+inactive). `/reservation/account/` ohne Suffix → SPA-404; Login und Bookings sind getrennte Pfade (Heuristik ok; Homepage → Session-Probe).
+
+**Auth-Header:** Live-HAR Login nutzt `X-Whitelabel: DE_billiger-mietwagen`; **kein** CSRF/XSRF-Header — Cookies + Bearer reichen. Session-`access_token` allein oft **401** an Consumer-API → Refresh Pflicht.
+
+**Cookie-Banner:** Consent-Banner muss im WKWebView vom Nutzer geschlossen werden; sonst Login/Sync blockiert. Kein Auto-Dismiss in der App.
+
+**Browser-Verifikation 2026-08-28:** Deep-Link + Web-Detail OK; Testkonto nur inactive/storniert → Domain droppt Drafts (0 syncbare Upcoming).
+
+### Offene Punkte
+
+- Safari-HAR-Datei optional nachziehen (WebKit-Parität; JSON-Shape und Login-HAR bereits belegt; Capture-SSOT ergänzen)
+- Pagination `pointers.next` für >10 Buchungen pro Status (Sync lädt alle Seiten)
+- Manueller Live-Sync in App-WebView (Cookie-Banner → Login → eine aktive Buchung) als Abnahme
 
 ---
 
@@ -85,19 +131,25 @@ FlixBus/DB, Sixt — neuer Typ oder zuerst Check24-`productKey`-Whitelist (siehe
 **HAR-SSOT** (Surfaces, Feldinventar, offene Punkte).  
 **Mapping-SSOT:** [`getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md).
 
-**Quelle:** `HAR/www.getyourguide.com_Archive [26-08-03 17-26-52].har` (532 Entries).  
-**Fixtures:** `gyg_myBookings_redacted.json`, `gyg_bookingSummary_redacted.json`.
+**Quellen:**  
+- `HAR/www.getyourguide.com_Archive [26-08-03 17-26-52].har` (532 Entries) — Surfaces/Feldinventar.  
+- `HAR/www.getyourguide.com_Archive [26-08-28 10-02-09].har` (585 Entries, Firefox, eingeloggte Session) — Pagination + Cloudflare.  
+- `HAR/www.getyourguide.com_Archive [26-08-28 10-18-20].har` (54 Entries, Firefox) — E-Mail-Login (passwordless OTP, ohne Social).  
+**Fixtures:** `gyg_myBookings_redacted.json`, `gyg_myBookings_ssr_lists_redacted.json`, `gyg_bookingSummary_redacted.json`.
 
 ### Surfaces
 
 | Rolle | URL / Endpoint | Inhalt |
 |-------|----------------|--------|
-| Katalog (SSR) | `GET …/de-de/customer-bookings/` | HTML mit `window.__INITIAL_STATE__.myBookings` |
-| Detail (SSR) | `GET …/de-de/booking/{bookingHash}` | HTML mit `booking.bookingSummary` |
-| Auth Token | `POST /auth/social/exchange` | Bearer + claims — **nicht** persistieren |
-| Session Nachlauf | `POST travelers-api…/customer/management/v1/post-login` | nach Login |
+| Katalog (SSR) | `GET …/{locale}/customer-bookings/` — HAR `de-de`, Sync-Impl `en-us` | HTML mit `window.__INITIAL_STATE__.myBookings` |
+| Detail (SSR) | `GET …/{locale}/booking/{bookingHash}` — HAR `de-de`, Sync-Impl `en-us` | HTML mit `booking.bookingSummary` |
+| Auth Token (Social) | `POST /auth/social/exchange` | Bearer + claims — **nicht** persistieren |
+| Auth OTP senden | `POST /auth/passwordless/otp/send` | Body `{email}` → `200` Text `OK` |
+| Auth OTP tauschen | `POST /auth/passwordless/otp/exchange` | 6-stelliger OTP → `accessToken` + claims; setzt Cookies — **nicht** persistieren |
+| Letzte Login-Methode | `POST travelers-api…/customer/action/v1/last-login-method` | Body `{email}` → `{last_sign_in_method}` (hier leer) |
+| Session Nachlauf | `POST travelers-api…/customer/management/v1/post-login` | nach Login (Social und E-Mail) |
 | Profil | `GET travelers-api…/customers/{id}` | Stammdaten — Sync nicht nötig |
-| GraphQL | `POST travelers-api…/graphql` | in HAR nur Wishlists — **nicht** Buchungsliste |
+| GraphQL | `POST travelers-api…/graphql` | nur `GetWishlistsSummary` — **nicht** Buchungsliste |
 | QR/Voucher | `travelers-api…/barcode/qrcode?code=…` | in Detail referenziert |
 | Tracking | Observer PageRequests | irrelevant |
 
@@ -106,11 +158,14 @@ FlixBus/DB, Sixt — neuer Typ oder zuerst Check24-`productKey`-Whitelist (siehe
 ```mermaid
 flowchart TD
   Login[WKWebView Login GYG]
-  Login --> Token[Cookie Session]
-  Token --> Catalog["GET /de-de/customer-bookings/"]
+  Login --> EmailOTP["passwordless OTP in der Seite"]
+  Login --> Social[optional Social/OIDC]
+  EmailOTP --> Token[Cookie Session]
+  Social --> Token
+  Token --> Catalog["GET /en-us/customer-bookings/"]
   Catalog --> State["Parse __INITIAL_STATE__.myBookings"]
   State --> Drafts[ProviderBookingDraft activity]
-  Drafts --> Detail["GET /de-de/booking/hash"]
+  Drafts --> Detail["GET /en-us/booking/hash"]
   Detail --> Summary["Parse booking.bookingSummary"]
   Summary --> Enrich[ProviderBookingEnrichment]
 ```
@@ -129,12 +184,48 @@ flowchart TD
 Catalog allein reicht für sinnvolle Drafts; Enrichment für Treffpunkt, Itinerary, feinere Policy.  
 Feld→Domain-Mapping: [GYG Impl-Spec](dev/getyourguide-impl-spec.md).
 
+Live-Shape 2026-08-28: `myBookings`-Keys nur `upcomingBookings`, `pastBookings`, `customerEmail`, `isCustomerEmailValidated` — **keine** `page`/`offset`/`cursor`/`hasMore`. In dieser Session 0 upcoming, 4 past (GYG legt beendete Termine nach `pastBookings`, auch mit Status `active`). Catalog-Parser mappt **beide** Listen über `DraftAssembler.draft` (Dedup `dedupedByExternalURL`); `CatalogListing.shouldDrop` sowie Einträge ohne Hash/Ende werden übersprungen.
+
+### Pagination (2026-08-28, geschlossen)
+
+Auf `/customer-bookings/` feuern **keine** Listen-Pagination-Requests.
+
+- Zwei identische `GET /de-de/customer-bookings/` (Liste → Detail → Liste → Detail), gleicher SSR-Body.
+- Page-Chunk `my-bookings-*.js` rendert nur `state.upcomingBookings` / `state.pastBookings`; SSR-Prefetch `myBookings/loadDefaultState`; Mount holt höchstens `reviews/submission-details` und Profil. Kein `loadMore`, kein `pageSize`.
+- Kein `GET travelers-api…/customers/{id}/bookings`, kein `/upcoming-bookings.json` (Routen existieren im Frontend-Registry, werden auf dieser Seite nicht aufgerufen).
+- GraphQL unverändert nur Wishlists.
+
+**Sync:** ein authentifizierter HTML-GET, keine Page-Schleife.
+
+### Cloudflare (Cursor-Tab + HAR 2026-08-28, geschlossen)
+
+Kein Challenge/Turnstile in den beobachteten Sessions.
+
+- Cursor-Tab: Login-HTML ohne Interstitial; nur Cloudflare-Insights-Beacon (`static.cloudflareinsights.com`) plus Usercentrics-Cookie-Banner.
+- Firefox-HAR: `server: cloudflare`, `cf-ray`, `cf-cache-status: DYNAMIC` auf www/cdn/`travelers-api`; **`cf-mitigated` nie gesetzt**; 0 Challenge-Bodies. Katalog- und Detail-HTML 200.
+- Forter-Scripts sind Fraud/Device, kein CF-Interstitial.
+
+WebView-Pfad bleibt korrekt. Eine spätere Challenge (200 oder 403) mit Challenge-Body → `cloudflareChallenge`, kein stiller Fallback und kein „bitte anmelden“.
+
+### Login ohne Social (2026-08-28, geschlossen)
+
+Passwordless E-Mail-OTP, kein Passwort-Feld, kein `POST /auth/social/exchange`. Capture startet auf der Homepage; Login-UI ist SPA (`otp-centric-login-wrapper-*.js`), daher keine HTML-Navigation auf `/login` in dieser HAR.
+
+| Schritt | Request | Body-Shape (keine Werte) | Response |
+|--------|---------|--------------------------|----------|
+| 1 | `POST travelers-api.getyourguide.com/customer/action/v1/last-login-method` | `{email}` | `{last_sign_in_method: ""}` (leer in dieser Session) |
+| 2 | `POST www.getyourguide.com/auth/passwordless/otp/send` | `{email}` | `200` `text/plain` **`OK`** |
+| 3 | Nutzer: 6-stelliger OTP | | |
+| 4 | `POST www.getyourguide.com/auth/passwordless/otp/exchange` | `email`, `otp` (Länge 6), `firstName`, `lastName`, `signupMethod`: **`pre_payment_otp`**, Newsletter-Flags, `locale`: `de-DE`, `visitorId` | JSON `accessToken` + `claims` (`gyg/auth_provider`: **`email`**, `gyg/email_verified`, `expiresAt`, …) |
+| 5 | `POST travelers-api…/customer/management/v1/post-login` | Newsletter/Locale | `200` leer; `Authorization: Bearer` aus Exchange |
+
+Session-Cookies nach `otp/exchange` (HttpOnly + Secure + SameSite): `tfe_access_token`, `tfe_authenticated_session`. `post-login` setzt `__cf_bm`. Cloudflare nur CDN (`cf-mitigated` nie).
+
+**Sync bleibt Cookie-`WKWebView`.** Native Calls von `otp/send` / `otp/exchange` sind nicht vorgesehen. Access-Token, OTP und E-Mail weder persistieren noch loggen. App-Login-URL ist `/login?next=/de-de/customer-bookings/` (OTP-Autofill + E-Mail-Fill). Catalog `/customer-bookings/` ist Account, nicht Login. Autofill klickt nach E-Mail-Fill keinen Social-/IdP-Button (Apple/Google/Facebook). Catalog-200 ohne `myBookings`/`bookingSummary` in `__INITIAL_STATE__` gilt als fehlende Session; ein leeres `myBookings`-Objekt ist eingeloggt (leerer Katalog).
+
 ### Offene Punkte (HAR)
 
-- Dedizierte JSON-Bookings-API (Mobil) — für Web-SSR nicht nötig
-- Pagination
-- Login ohne Social
-- Cloudflare/Bot-Schutz → WebView-Pfad
+- Dedizierte JSON-Bookings-API (Mobil) — Web-SSR braucht sie nicht; Registry-Routen ohne Live-Call
 
 ---
 
@@ -186,11 +277,11 @@ Row-`id`→Feld-Mapping: [Airbnb Impl-Spec § Neuer Parser](dev/airbnb-experienc
 | 1 | Flug | SIN→CGK, `transportTypes: [PLANE]`, Preis |
 | 2–4 | Hotel | Unterkünfte, Board, Check-in/out |
 
-`getTrips(PAST)`: leer. **Keine** gebuchten Mietwagen, Transfers, Bahn, Activities.
+`getTrips(PAST)` (Live 2026-08-28, Konto-Beleg): 5 Rows — 2× `PLANE`, 3× Hotel (davon RETAINED). **Keine** gebuchten Mietwagen, Transfers, Bahn, Activities. `vehicleBooking` ist kein Trip-Feld. `insuranceBookings` hängt als Ancillary am Trip, wird nicht abgefragt.
 
 ### Bereits im Code
 
-Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage — deckt den HAR-Inhalt ab.
+Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage. HTML-Fallback nur bei **leerer** GraphQL-Liste (nicht bei GraphQL-Fehler). Upsell-Rows und Nicht-`PLANE`-Itineraries werden verworfen.
 
 ### Nicht syncen
 
@@ -209,12 +300,11 @@ Flug/Hotel über `getTrips` / `getTripByToken` / Support-Area Passengers+Baggage
 
 ### Implement-Verdict
 
-**Kein Muss-Implement aus dieser Opodo-HAR.**
+**Katalog-Vertrag (Live 2026-08-28 + HAR):** nur Flug/Hotel; Upsell ignorieren; HTML nur wenn GraphQL leer.
 
 - Neue Buchungstypen: **nein**
-- Kritische Catalog/Enrichment-Lücken Hotel/Flug: **keine**
+- `getTrips(UPCOMING)` kann leer sein, während PAST Flug/Hotel enthält — Katalog bleibt UPCOMING
 - Optional später (separat spezifizieren): Departure-Offset aus ISO — nur mit Wall-Clock-Tests
-- **Opodo-Produktivcode in diesem Recherche-Schritt nicht anfassen**
 
 ---
 
@@ -255,16 +345,19 @@ flowchart TD
 | Traveloka | Domain |
 |-----------|--------|
 | `FLIGHT` | `.flight` |
-| `HOTEL` (Villa/Apartment analog) | `.hotel` |
+| `HOTEL` (Villa/Apartment-Heuristik) | `.hotel` |
 | `EXPERIENCE` | `.activity` |
-| `VEHICLE_RENTAL`, Airport Transport, Train, Ancillary, Insurance, unbekannt | `.other` |
+| `VEHICLE_RENTAL` | `.carRental` |
+| `TRAIN` / `TRAIN_GLOBAL` | `.train` (Typ-Mapping; **nicht** in Catalog-`itineraryTypes` — Live 2026-08-28 leere Liste) |
+| Airport Transport, Ancillary, Insurance, unbekannt | `.other` |
 
 ### Feldinventar (Kurz)
 
-- **Hotel:** dual Free+Fee-`cancellationPolicies`; Check-in/out Minuten; `hotelOffsetSeconds` aus `ianaTimezoneBegin`
+- **Hotel:** dual Free+Fee-`cancellationPolicies`; Check-in/out Minuten; `hotelOffsetSeconds` aus `ianaTimezoneBegin`; Stay-Hints aus `importantNoticePolicies` / `propertyPolicy` (Live 2026-08-28); keine Pet-/Linen-Felder in diesem Konto
 - **Experience:** `operatorInfo.name` → `operatorName`; All-Day → `isAllDay`; `travelersInfo` / `experiencePaxType` → `travellerType`; Policy-Strings für Free-Deadline
 - **Vehicle:** `providerName` → `operatorName`; Pick-up/Drop-off Adressen; Free-Cancel-Local
 - **Flight:** Live-E-Ticket `flightBookingInfo.bookingDetail` + `flightTicketInfo`; Non-Refundable ohne Deadline; Fee-Refund nur mit `refundFeeAmount` + `refundDeadlineLocal` (keine Free-Deadline erfinden)
+- **Train:** Stub (`productName` + IANA-Offsets); Stations-Keys ohne Live-`single` nicht geraten
 
 ### Login (TV + AP)
 
@@ -272,11 +365,15 @@ flowchart TD
 2. Apple-Button im WKWebView → `appleid.apple.com` → `signinexternalaccount` (`AP`) — **kein** natives `ASAuthorization`
 3. Autofill nur auf `*.traveloka.com`; IdP-Hosts nicht `sessionReady`
 
-### Offene Punkte
+### Offene Punkte / Gap-Status (Stand Live 2026-08-28)
 
-- Live-HAR für Fee-Refund-Flug (Fixture synthetisch, Schema-aligned)
-- `sentinel` / `x-did` / `tv-clientsessionid` aus WebView-Session (`sen_t`, `clientSessionId`, Device-ID Storage) — implementiert in `TravelokaSessionContext`
-- Train Desktop nicht sync-/deep-link-fähig
+| Gap | Status |
+|-----|--------|
+| Fee-Refund-Flug Live-Shape | **Rest** — Konto ohne Fee-Flug; Fixture weiter synthetisch/schema-aligned |
+| TRAIN Catalog+Stations | **Konto hat Vertical nicht** (UPCOMING 200 leer); Catalog-Types unverändert; Stations-Parser Rest |
+| Product-Type-Heuristik Villa/Car | Unverändert; Unit-Tests für `VILLA`/`APARTMENT`/`CAR_RENTAL`; Live-Enums nicht gesehen |
+| Pre-Travel Stay-Hints | **gefüllt** via Mapper + Traveloka-Enrichment bei leeren Hotel-`guestHints` (Catalog oft ohne Policies); Pets/Linen Rest („Petunjuk“ ≠ pet) |
+| `PAST` Catalog-Status | API 400 — Code nutzt nur `UPCOMING` |
 
 ---
 
@@ -285,13 +382,14 @@ flowchart TD
 ### Check24 – productKey-Audit
 
 SSOT (Keys, Hypothesen, Live-Checkliste): [`check24-productkey-audit.md`](dev/check24-productkey-audit.md).  
-Kurz: Code-Whitelist bekannt; vollständige Live-API-Keys **fehlen** (keine Check24-HAR).
+Kurz: Live-GET `/kb/api/activities` 2026-08-28 — 11 Keys inkl. `rentalcar` → `.carRental`; HTML-Detail-Parser (`CpInitial`) angebunden.
 
 ### Booking.com
 
-**Heute:** GraphQL-Reservierungen `FLIGHT` + `ACCOMMODATION`.  
-**Offen:** Attractions/Taxi/Car in My Trips — nur mit eigener HAR prüfen.  
-`supportedExperiences` / Connectors sind **UI-Flags**, keine Activity-Buchungen.
+SSOT: [`bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md).  
+Live 2026-08-28 (`GetTripsQuery` + `SingleTimelineQuery` V1): in **diesem Konto** `ACCOMMODATION` (47), `FLIGHT` (2), `PREBOOK_TAXI` (2).  
+`AttractionReservation` / `CarReservation`: MFE-Schema vorhanden, **0 Timeline-Treffer in diesem Konto** (nicht „API existiert nicht“).  
+`supportedExperiences` der V1-Query unverändert (`TAXI_ARRIVAL` inkl.); Connectors auf Live-`R`-Liste. WAF = In-Page-fetch + Challenge-Cookie.
 
 ### Airbnb / Opodo (nach HAR)
 
@@ -332,8 +430,8 @@ Siehe A.2 bzw. A.3 — keine zusätzlichen Teil-B-Befunde.
 | Airbnb/GYG Impl-Specs + Activity-Basis + Ausführungsplan | erledigt | Phase 0–2 Produktivcode umgesetzt |
 | Opodo Verdict „kein Muss“ | erledigt | optional TZ später |
 | Expedia Bewertung | erledigt | Live-HAR fehlt |
-| Check24 „alle productKeys erfassen“ | **teilweise** | Live-HAR fehlt; Code-known Keys + Fixture dokumentiert |
-| Redigierte Fixtures GYG/Airbnb/(Opodo) | erledigt | Check24-Keys-Fixture (Code-SSOT); Live-Keys fehlen |
+| Check24 „alle productKeys erfassen“ | **Live-Keys** | Fixture + Audit 2026-08-28; `rentalcar` → `.carRental`; Detail-Parser angebunden |
+| Redigierte Fixtures GYG/Airbnb/(Opodo) | erledigt | Check24-Keys-Fixture auf Live-Keys gehoben |
 | Activity Produktivcode (Airbnb + GYG) | erledigt | Unit-Tests grün; Live-Sync manuell prüfen |
 
 ---

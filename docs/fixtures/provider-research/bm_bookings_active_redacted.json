@@ -1,0 +1,45 @@
+{
+  "total_count": 1,
+  "_pointers": {
+    "self": "0",
+    "first": "0",
+    "last": "0"
+  },
+  "items": [
+    {
+      "id": "<REDACTED-UUID>",
+      "type": "car_rental",
+      "status": "confirmed",
+      "reservation_id": "<REDACTED>",
+      "is_upcoming": true,
+      "pick_up": {
+        "city": "Berlin",
+        "date": "2026-09-15T10:00:00+02:00"
+      },
+      "drop_off": {
+        "city": "München",
+        "date": "2026-09-20T10:00:00+02:00"
+      },
+      "provider": {
+        "name": "Sunny Cars"
+      },
+      "supplier": {
+        "name": "Thrifty"
+      },
+      "price": {
+        "total": {
+          "amount": 58.0,
+          "currency": "EUR"
+        }
+      },
+      "vehicle": {
+        "image_url": "sunnycars/small/Ford_FocusTurnier_4dr.jpg",
+        "car_class": "compact",
+        "car_type": [
+          "wagon_estate"
+        ]
+      },
+      "additional_insurances": []
+    }
+  ]
+}

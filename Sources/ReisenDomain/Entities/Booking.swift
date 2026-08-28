@@ -10,6 +10,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
     public var externalUrl: String?
     public var startAt: Date
     public var endAt: Date
+    /// Stay-/Lokal-Offset (historischer Name; Hotel und Mietwagen-Pickup). Persistiert unter diesem Key.
     public var hotelOffsetSeconds: Int?
     public var flightDepartureOffsetSeconds: Int?
     public var flightArrivalOffsetSeconds: Int?

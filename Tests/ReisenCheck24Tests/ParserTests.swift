@@ -144,14 +144,6 @@ func check24LoginHTMLIndicatesMissingSession() {
     </body></html>
     """
     #expect(AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(loginHTML))
-    #expect(AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
-        loginHTML,
-        responseURL: URL(string: "https://kundenbereich.check24.de/user/login.html")
-    ))
-    #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
-        loginHTML,
-        responseURL: URL(string: "https://kundenbereich.check24.de/user/account/activities.html")
-    ))
     #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(#"{ "activities": [] }"#))
     #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
         "<html><body><a href=\"/user/account/activities.html\">Aktivitäten</a></body></html>"
@@ -181,6 +173,8 @@ func deepLinkHotelURL() {
     )
     let result = Check24DeepLinkBuilder().suggestions(for: context)
     #expect(result.links.contains(where: { $0.url?.absoluteString.contains("hotel.check24.de/search/Side-81907") == true }))
+    #expect(result.links.allSatisfy { $0.category == .hotel })
+    #expect(!result.issues.contains(.missingFromIATA))
 }
 
 @Test("Check24DeepLinkBuilder Flug: Ankunft der vorherigen → Ort der nächsten Buchung")
@@ -195,7 +189,7 @@ func deepLinkFlightUsesArrivalThenNextOrigin() {
         toLocationTo: "TXL"
     )
     let result = Check24DeepLinkBuilder().suggestions(for: context)
-    let flight = result.links.first { $0.title.contains("Flug suchen") }
+    let flight = result.links.first { $0.category == .flight }
     let url = flight?.url?.absoluteString ?? ""
     #expect(url.contains("from_0=MUC-C"))
     #expect(url.contains("to_0=PMI-C"))
@@ -216,12 +210,85 @@ func deepLinkFlightCityFallback() {
     )
 
     let result = Check24DeepLinkBuilder().suggestions(for: context)
-    let flight = result.links.first { $0.title.contains("Flug suchen") }
+    let flight = result.links.first { $0.category == .flight }
     let url = flight?.url?.absoluteString ?? ""
 
     #expect(!url.isEmpty)
     #expect(url.contains("from_0=JOG-C"))
     #expect(url.contains("to_0=YOGYAKARTA-C"))
+}
+
+@Test("Check24DeepLinkBuilder Mietwagen: Jumpin mit Ortsnamen, Hotel-ID abgestreift")
+func deepLinkCarRentalJumpinUsesPlaceNames() {
+    let context = GapContext(
+        gapStart: Date(timeIntervalSince1970: 1_800_000_000),
+        gapEnd: Date(timeIntervalSince1970: 1_800_086_400),
+        kind: .transport,
+        fromLocationFrom: nil,
+        fromLocationTo: "Berlin",
+        toLocationFrom: "Side-81907",
+        toLocationTo: nil
+    )
+    let result = Check24DeepLinkBuilder().suggestions(for: context)
+    let url = result.links.first { $0.category == .carRental }?.url?.absoluteString ?? ""
+    #expect(url.contains("mietwagen.check24.de/ul/jumpin"))
+    #expect(url.contains("dep_destination_name=Berlin"))
+    #expect(url.contains("dest_destination_name=Side"))
+    #expect(!url.contains("81907"))
+}
+
+@Test("Check24DeepLinkBuilder Mietwagen: reine IATA-Hints werden übersprungen")
+func deepLinkCarRentalSkipsBareIATA() {
+    let iataOnly = GapContext(
+        gapStart: Date(timeIntervalSince1970: 1_800_000_000),
+        gapEnd: Date(timeIntervalSince1970: 1_800_086_400),
+        kind: .transport,
+        fromLocationFrom: "FRA",
+        fromLocationTo: "MUC",
+        toLocationFrom: "PMI",
+        toLocationTo: "TXL"
+    )
+    let iataResult = Check24DeepLinkBuilder().suggestions(for: iataOnly)
+    #expect(!iataResult.links.contains { $0.category == .carRental })
+    #expect(iataResult.issues.contains(.missingDestinationHint))
+    #expect(
+        ProviderDeepLinks.suggestions(for: iataOnly, allBuilders: [Check24DeepLinkBuilder()])
+            .issues.contains(.missingDestinationHint)
+    )
+
+    let mixed = GapContext(
+        gapStart: Date(timeIntervalSince1970: 1_800_000_000),
+        gapEnd: Date(timeIntervalSince1970: 1_800_086_400),
+        kind: .transport,
+        fromLocationFrom: nil,
+        fromLocationTo: "MUC",
+        toLocationFrom: nil,
+        toLocationTo: "Yogyakarta"
+    )
+    let mixedResult = Check24DeepLinkBuilder().suggestions(for: mixed)
+    let url = mixedResult.links.first { $0.category == .carRental }?.url?.absoluteString ?? ""
+    #expect(url.contains("dep_destination_name=Yogyakarta"))
+    #expect(url.contains("dest_destination_name=Yogyakarta"))
+    #expect(!url.contains("MUC"))
+}
+
+@Test("Check24DeepLinkBuilder Mietwagen: Stadt mit IATA in Klammern")
+func deepLinkCarRentalStripsParentheticalIATA() {
+    let context = GapContext(
+        gapStart: Date(timeIntervalSince1970: 1_800_000_000),
+        gapEnd: Date(timeIntervalSince1970: 1_800_086_400),
+        kind: .transport,
+        fromLocationFrom: nil,
+        fromLocationTo: "Frankfurt (FRA)",
+        toLocationFrom: "München (MUC)",
+        toLocationTo: nil
+    )
+    let url = Check24DeepLinkBuilder().suggestions(for: context)
+        .links.first { $0.category == .carRental }?.url?.absoluteString ?? ""
+    #expect(url.contains("dep_destination_name=Frankfurt"))
+    #expect(url.contains("dest_destination_name=") && url.contains("nchen"))
+    #expect(!url.contains("FRA"))
+    #expect(!url.contains("MUC"))
 }
 
 @Test("BookingDetailsParser nimmt effectivePrice statt basketPrice")
@@ -269,6 +336,135 @@ func bookingDetailsParserFallsBackToChooserLabel() {
     #expect(parsed.totalPriceCurrency == "EUR")
 }
 
+@Test("ActivityListParser: rentalcar → carRental; car/ended/cancelled verworfen")
+func activityListRentalcarMapsToCarRentalAndSkipsInsuranceAndPast() throws {
+    let json = """
+    {
+      "activities": [
+        {
+          "startDate": "2099-06-22T08:00:00",
+          "endDate": "2099-06-29T08:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "rentalcar", "label": "Mietwagen" },
+          "detail": { "line1": "Mietwagen Test", "line2": "Palma de Mallorca" },
+          "link": { "link": "https://mietwagen.check24.de/ul/booking/list/foreign/testrental1" },
+          "foreignId": "RC-TEST-1"
+        },
+        {
+          "startDate": "2099-01-01T00:00:00",
+          "endDate": "2099-12-31T00:00:00",
+          "status": { "key": "presale_priced" },
+          "product": { "key": "car", "label": "Kfz-Versicherung" },
+          "detail": { "line1": "Kfz" },
+          "link": { "link": "https://www.check24.de/einsurance/kfz/kfzEntry.kfz" }
+        },
+        {
+          "startDate": "2025-06-22T08:00:00",
+          "endDate": "2025-06-29T08:00:00",
+          "status": { "key": "ended" },
+          "product": { "key": "rentalcar" },
+          "detail": { "line1": "Vergangen Mietwagen" },
+          "link": { "link": "https://mietwagen.check24.de/ul/booking/list/foreign/ended1" }
+        },
+        {
+          "startDate": "2099-07-01T08:00:00",
+          "endDate": "2099-07-08T08:00:00",
+          "status": { "key": "cancelled" },
+          "product": { "key": "rentalcar" },
+          "detail": { "line1": "Storniert Mietwagen" },
+          "link": { "link": "https://mietwagen.check24.de/ul/booking/list/foreign/cancel1" }
+        },
+        {
+          "startDate": "2099-08-11T23:59:00",
+          "endDate": "2099-08-14T12:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "hotel" },
+          "detail": { "line1": "Hotel Regression" },
+          "link": { "link": "https://hotel.check24.de/kundenbereich/buchung/11111111-1111-1111-1111-111111111111" }
+        },
+        {
+          "startDate": "2099-09-01T10:00:00",
+          "endDate": "2099-09-05T18:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "flight" },
+          "detail": { "line1": "Flug Regression" },
+          "link": { "link": "https://flug.check24.de/kundenbereich/TESTPNR/Name" }
+        },
+        {
+          "startDate": "2099-08-18T23:59:00",
+          "endDate": "2099-08-19T12:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "holidayflat" },
+          "detail": { "line1": "Ferienwohnung Regression" },
+          "link": { "link": "https://ferienwohnung.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" }
+        },
+        {
+          "startDate": "2099-10-26T00:00:00",
+          "endDate": "2099-11-02T00:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "package" },
+          "detail": { "line1": "Pauschalreise Regression" },
+          "link": { "link": "https://urlaub.check24.de/kundenbereich/detail/packagetest1" }
+        }
+      ]
+    }
+    """
+
+    let parsed = try ActivityListParser().parseActivityListHTML(json)
+    #expect(parsed.bookings.count == 5)
+
+    let rental = try #require(parsed.bookings.first { $0.type == .carRental })
+    #expect(rental.title == "Mietwagen Test")
+    #expect(rental.externalUrl == "https://mietwagen.check24.de/ul/booking/list/foreign/testrental1")
+    #expect(rental.confirmationCode == "RC-TEST-1")
+    #expect(rental.locationTo == "Palma de Mallorca")
+
+    #expect(parsed.bookings.contains { $0.type == .hotel && $0.title == "Hotel Regression" })
+    #expect(parsed.bookings.contains { $0.type == .flight && $0.title == "Flug Regression" })
+    #expect(parsed.bookings.contains { $0.type == .hotel && $0.title == "Ferienwohnung Regression" })
+    #expect(parsed.bookings.contains { $0.type == .hotel && $0.title == "Pauschalreise Regression" })
+    #expect(!parsed.bookings.contains { $0.title == "Kfz" })
+    #expect(!parsed.bookings.contains { $0.title == "Vergangen Mietwagen" })
+    #expect(!parsed.bookings.contains { $0.title == "Storniert Mietwagen" })
+}
+
+@Test("ActivityListParser mapBookingType: rentalcar → carRental")
+func activityListMapBookingTypeRentalcar() {
+    let parser = ActivityListParser()
+    #expect(parser.mapBookingType("rentalcar") == .carRental)
+    #expect(parser.mapBookingType("car") == .other)
+    #expect(parser.mapBookingType("hotel") == .hotel)
+}
+
+@Test("ActivityListParser HTML-Fallback: mietwagen-Link → carRental")
+func activityListHTMLFallbackMietwagenIsCarRental() throws {
+    let html = """
+    <html><body>
+    <a href="https://mietwagen.check24.de/ul/booking/list/foreign/testrental1">Mietwagen Test</a>
+    22.06.2099 – 29.06.2099
+    </body></html>
+    """
+    let parsed = try ActivityListParser().parseActivityListHTML(html)
+    #expect(parsed.bookings.count == 1)
+    #expect(parsed.bookings[0].type == .carRental)
+    #expect(parsed.bookings[0].externalUrl == "https://mietwagen.check24.de/ul/booking/list/foreign/testrental1")
+}
+
+@Test("ActivityListParser normalizeBookingDetailURL: Mietwagen-URL unverändert")
+func activityListNormalizeLeavesCarRentalURLUntouched() {
+    let parser = ActivityListParser()
+    let rental = "https://mietwagen.check24.de/ul/booking/list/foreign/testrental1"
+    #expect(parser.normalizeBookingDetailURL(rental) == rental)
+    #expect(parser.normalizeBookingDetailURL("\(rental)?foo=1") == rental)
+
+    let hotelUUID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    #expect(
+        parser.normalizeBookingDetailURL(
+            "https://m.hotel.check24.de/ul/kundenbereich/buchung/\(hotelUUID)?x=1"
+        ) == "https://hotel.check24.de/kundenbereich/buchung/\(hotelUUID)"
+    )
+}
+
 @Test("ActivityListParser baut Details aus payment.amount pro Zimmer")
 func activityListParserParsesPaymentIntoDetails() throws {
     let json = """
@@ -304,4 +500,58 @@ func activityListParserParsesPaymentIntoDetails() throws {
     #expect(abs((parsed.bookings[0].details?.totalPriceAmount ?? 0) - 203.83) < 0.001)
     #expect(parsed.bookings[1].details != nil)
     #expect(abs((parsed.bookings[1].details?.totalPriceAmount ?? 0) - 235.0) < 0.001)
+}
+
+@Test("Check24 UUID-Fallback nutzt Host nach Produkttyp")
+func activityListUUIDFallbackUsesProductHost() throws {
+    let json = """
+    {
+      "activities": [
+        {
+          "startDate": "2099-09-01T10:00:00",
+          "endDate": "2099-09-01T14:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "flight" },
+          "detail": { "line1": "FRA-PMI" },
+          "booking_uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        },
+        {
+          "startDate": "2099-09-02T10:00:00",
+          "endDate": "2099-09-02T18:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "ferry" },
+          "detail": { "line1": "Fähre" },
+          "product_specific_data": { "booking_uuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" }
+        },
+        {
+          "startDate": "2099-09-03T00:00:00",
+          "endDate": "2099-09-05T00:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "hotel" },
+          "detail": { "line1": "Hotel" },
+          "booking_uuid": "cccccccc-cccc-cccc-cccc-cccccccccccc"
+        }
+      ]
+    }
+    """
+
+    let parsed = try ActivityListParser().parseActivityListHTML(json)
+    #expect(parsed.bookings.count == 3)
+    let byType = Dictionary(uniqueKeysWithValues: parsed.bookings.map { ($0.type, $0.externalUrl) })
+    #expect(byType[.flight] == "https://flug.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    #expect(byType[.ferry] == "https://ferry.check24.de/kundenbereich/buchung/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+    #expect(byType[.hotel] == "https://hotel.check24.de/kundenbereich/buchung/cccccccc-cccc-cccc-cccc-cccccccccccc")
+    for booking in parsed.bookings {
+        #expect(BookingExternalURL.browserURL(from: booking.externalUrl) != nil)
+    }
+}
+
+@Test("Check24 Normalize: UUID-Buchungs-URL ohne Host-Token nutzt BookingType")
+func check24NormalizeUsesBookingTypeWhenHostAmbiguous() {
+    let parser = ActivityListParser()
+    let raw = "https://kundenbereich.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    let flight = parser.normalizeBookingDetailURL(raw, bookingType: .flight)
+    let ferry = parser.normalizeBookingDetailURL(raw, bookingType: .ferry)
+    #expect(flight == "https://flug.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    #expect(ferry == "https://ferry.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 }

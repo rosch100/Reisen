@@ -168,9 +168,10 @@ private struct TripListPane: View {
                     #endif
                 }
             } else {
+                let gapBadges = SDTrip.listGapBadgeCounts(for: filteredTrips)
                 List(selection: $selectedTripID) {
                     ForEach(filteredTrips) { trip in
-                        tripRow(trip)
+                        tripRow(trip, gapCount: gapBadges[trip.id])
                             .tag(trip.id)
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(L10n.string(.commonDelete), role: .destructive) {
@@ -189,14 +190,20 @@ private struct TripListPane: View {
     }
 
     @ViewBuilder
-    private func tripRow(_ trip: SDTrip) -> some View {
+    private func tripRow(_ trip: SDTrip, gapCount: Int?) -> some View {
         AdaptiveUUIDSelectionRow(id: trip.id, selection: $selectedTripID, usesSplit: usesSplit) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(trip.title)
-                    .font(.headline)
-                Text("\(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(trip.title)
+                        .font(.headline)
+                    Text("\(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                if let gapCount {
+                    TripCompletenessListAccessory(gapCount: gapCount)
+                }
             }
         }
     }

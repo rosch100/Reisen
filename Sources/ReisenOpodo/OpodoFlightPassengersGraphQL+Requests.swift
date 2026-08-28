@@ -2,8 +2,8 @@ import Foundation
 
 extension OpodoFlightPassengersGraphQL {
     public static func getTripByTokenSupportAreaRequestBody(token: String) throws -> Data {
-        let payload: [String: Any] = [
-            "query": """
+        try OpodoGraphQLRequest.body(
+            query: """
             query getTripByTokenSupportArea($token: String!) {
               getTripByToken(token: $token) {
                 trip {
@@ -19,17 +19,14 @@ extension OpodoFlightPassengersGraphQL {
               }
             }
             """,
-            "operationName": "getTripByTokenSupportArea",
-            "variables": [
-                "token": token,
-            ],
-        ]
-        return try JSONSerialization.data(withJSONObject: payload, options: [])
+            operationName: "getTripByTokenSupportArea",
+            variables: ["token": token]
+        )
     }
 
     public static func baggageInfoRequestBody(tripDetailsToken: String) throws -> Data {
-        let payload: [String: Any] = [
-            "query": """
+        try OpodoGraphQLRequest.body(
+            query: """
             query baggageInfo($request: BookingBaggageInfoRequest!) {
               baggageInfo(request: $request) {
                 travellers {
@@ -48,13 +45,12 @@ extension OpodoFlightPassengersGraphQL {
               }
             }
             """,
-            "operationName": "baggageInfo",
-            "variables": [
+            operationName: "baggageInfo",
+            variables: [
                 "request": [
                     "tripDetailsToken": tripDetailsToken,
                 ],
-            ],
-        ]
-        return try JSONSerialization.data(withJSONObject: payload, options: [])
+            ]
+        )
     }
 }

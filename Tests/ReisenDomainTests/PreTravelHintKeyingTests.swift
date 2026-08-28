@@ -84,6 +84,16 @@ import ReisenDomain
     #expect(unwanted == [c])
 }
 
+@Test func bookingGuestHintPrepKeywords_matchLinenTowelsNotGenericBringOrFee() {
+    #expect(!BookingGuestHintPrepKeywords.matches("Parkplatz gegen Aufpreis von 15 EUR."))
+    #expect(!BookingGuestHintPrepKeywords.matches("Frühstück gegen Gebühr am Morgen."))
+    #expect(!BookingGuestHintPrepKeywords.matches("Parking extra fee."))
+    #expect(!BookingGuestHintPrepKeywords.matches("Schlüssel mitbringen."))
+    #expect(BookingGuestHintPrepKeywords.matches("Handtücher gegen Aufpreis."))
+    #expect(BookingGuestHintPrepKeywords.matches("Towels extra fee."))
+    #expect(BookingGuestHintPrepKeywords.matches("Bettwäsche selbst mitbringen."))
+}
+
 @Test func bookingGuestHint_dedupedBySourceKey_keepsFirstOccurrence() {
     let hints = [
         BookingGuestHint(title: "A", detail: "1", sourceKey: "k1"),

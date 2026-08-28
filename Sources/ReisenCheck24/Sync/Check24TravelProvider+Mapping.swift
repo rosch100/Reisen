@@ -9,7 +9,8 @@ extension Check24TravelProvider {
         deadlinesByBookingURL: [String: [ParsedCancellationDeadline]],
         hotelStayByBookingURL: [String: HotelCheckInOut],
         guestHintsByBookingURL: [String: [BookingGuestHint]],
-        bookingDetailsByBookingKey: [String: ParsedBookingDetails]
+        bookingDetailsByBookingKey: [String: ParsedBookingDetails],
+        carRentalDetail: ParsedCarRentalDetail? = nil
     ) -> ProviderBookingDraft? {
         let url = parsed.externalUrl
         let deadlines = (url.flatMap { deadlinesByBookingURL[$0] } ?? []).map(\.asDomain)
@@ -17,7 +18,7 @@ extension Check24TravelProvider {
         let guestHints = url.flatMap { guestHintsByBookingURL[$0] } ?? []
         let enrichedDetails = parsed.identityKey.flatMap { bookingDetailsByBookingKey[$0] }
         let details = ParsedBookingDetails.merging(enrichedDetails, with: parsed.details)
-        let rateDetails = HotelBookingPriceResolver.resolve(
+        let catalogRates = HotelBookingPriceResolver.resolve(
             booking: parsed,
             siblings: allBookings,
             detail: details
@@ -28,27 +29,27 @@ extension Check24TravelProvider {
             end: parsed.endAt
         )
 
-        return DraftAssembler.draft(
-            from: ProviderBookingFacts(
-                provider: .check24,
-                bookingType: parsed.type,
-                start: times.start,
-                end: times.end,
-                title: parsed.title,
-                confirmationCode: parsed.confirmationCode,
-                externalUrl: parsed.externalUrl,
-                locationFrom: parsed.locationFrom,
-                locationTo: parsed.locationTo,
-                locationFromAddress: parsed.locationFromAddress,
-                locationToAddress: parsed.locationToAddress,
-                statusRaw: parsed.statusRaw,
-                deadlines: deadlines,
-                rateDetails: rateDetails,
-                hotelCheckInMinutes: stay?.checkInMinutes,
-                hotelCheckOutMinutes: stay?.checkOutMinutes,
-                rawPayloadFingerprint: details?.rawDetailsFingerprint,
-                guestHints: guestHints
-            )
+        var facts = ProviderBookingFacts(
+            provider: .check24,
+            bookingType: parsed.type,
+            start: times.start,
+            end: times.end,
+            title: parsed.title,
+            confirmationCode: parsed.confirmationCode,
+            externalUrl: parsed.externalUrl,
+            locationFrom: parsed.locationFrom,
+            locationTo: parsed.locationTo,
+            locationFromAddress: parsed.locationFromAddress,
+            locationToAddress: parsed.locationToAddress,
+            statusRaw: parsed.statusRaw,
+            deadlines: deadlines,
+            rateDetails: catalogRates,
+            hotelCheckInMinutes: stay?.checkInMinutes,
+            hotelCheckOutMinutes: stay?.checkOutMinutes,
+            rawPayloadFingerprint: details?.rawDetailsFingerprint,
+            guestHints: guestHints
         )
+        carRentalDetail?.apply(to: &facts)
+        return DraftAssembler.draft(from: facts)
     }
 }

@@ -1,0 +1,111 @@
+{
+  "total_count": 3,
+  "_pointers": {
+    "self": "0",
+    "first": "0",
+    "last": "0"
+  },
+  "items": [
+    {
+      "id": "<REDACTED-UUID>",
+      "type": "car_rental",
+      "status": "canceled",
+      "reservation_id": "<REDACTED>",
+      "is_upcoming": false,
+      "pick_up": {
+        "city": "Berlin",
+        "date": "2026-06-22T08:00:00+02:00"
+      },
+      "drop_off": {
+        "city": "München",
+        "date": "2026-06-22T20:00:00+02:00"
+      },
+      "provider": {
+        "name": "Sunny Cars"
+      },
+      "supplier": {
+        "name": "Thrifty"
+      },
+      "price": {
+        "total": {
+          "amount": 58.0,
+          "currency": "EUR"
+        }
+      },
+      "vehicle": {
+        "car_class": "compact",
+        "car_type": [
+          "wagon_estate"
+        ]
+      },
+      "additional_insurances": []
+    },
+    {
+      "id": "<REDACTED-UUID>",
+      "type": "car_rental",
+      "status": "error",
+      "is_upcoming": false,
+      "pick_up": {
+        "city": "Potsdam",
+        "date": "2026-06-22T07:45:00+02:00"
+      },
+      "drop_off": {
+        "city": "München",
+        "date": "2026-06-22T20:00:00+02:00"
+      },
+      "provider": {
+        "name": "Enterprise"
+      },
+      "supplier": {
+        "name": "Enterprise"
+      },
+      "price": {
+        "total": {
+          "amount": 115.11,
+          "currency": "EUR"
+        }
+      },
+      "vehicle": {
+        "car_class": "compact",
+        "car_type": [
+          "wagon_estate"
+        ]
+      },
+      "additional_insurances": []
+    },
+    {
+      "id": "<REDACTED-UUID>",
+      "type": "car_rental",
+      "status": "canceled",
+      "reservation_id": "<REDACTED>",
+      "is_upcoming": false,
+      "pick_up": {
+        "city": "Potsdam",
+        "date": "2026-06-22T08:00:00+02:00"
+      },
+      "drop_off": {
+        "city": "München",
+        "date": "2026-06-22T20:00:00+02:00"
+      },
+      "provider": {
+        "name": "Enterprise"
+      },
+      "supplier": {
+        "name": "Enterprise"
+      },
+      "price": {
+        "total": {
+          "amount": 115.11,
+          "currency": "EUR"
+        }
+      },
+      "vehicle": {
+        "car_class": "compact",
+        "car_type": [
+          "wagon_estate"
+        ]
+      },
+      "additional_insurances": []
+    }
+  ]
+}

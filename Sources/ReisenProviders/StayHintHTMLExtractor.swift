@@ -1,102 +1,114 @@
 import Foundation
 import ReisenDomain
 
-/// Shared HTML heuristics for prep-relevant stay hints (linen, towels, important notices).
-/// Used by Check24 / Opodo detail pages. Returns empty when nothing matches — no dummy content.
+/// Shared HTML heuristics for prep-relevant stay hints (linen, important notices).
+/// Booking.com house rules pass extra `HintPattern`s; Check24/Opodo use `extract(from:providerRaw:)`.
+/// Returns empty when nothing matches — no dummy content.
 public enum StayHintHTMLExtractor {
-    public static func extract(
+    package struct HintPattern: Sendable {
+        let needles: [String]
+        let title: String
+        let detail: String
+        let key: String
+
+        package init(_ needles: String..., title: String, detail: String, key: String) {
+            self.needles = needles
+            self.title = title
+            self.detail = detail
+            self.key = key
+        }
+    }
+
+    public static func extract(from html: String, providerRaw: String) -> [BookingGuestHint] {
+        extract(from: html, providerRaw: providerRaw, matching: [], firstMatching: [])
+    }
+
+    package static func extract(
         from html: String,
+        providerRaw: String,
+        matching additional: [HintPattern],
+        firstMatching exclusive: [HintPattern]
+    ) -> [BookingGuestHint] {
+        let original = HTMLPlainText.flatten(html)
+        guard !original.isEmpty else { return [] }
+        let text = VisibleText(original: original, lowercased: original.lowercased())
+        return BookingGuestHint.dedupedBySourceKey(
+            stayHints(in: text, providerRaw: providerRaw)
+                + allMatches(additional, in: text.lowercased, providerRaw: providerRaw)
+                + firstMatch(exclusive, in: text.lowercased, providerRaw: providerRaw)
+        )
+    }
+
+    private struct VisibleText {
+        let original: String
+        let lowercased: String
+    }
+
+    private static func stayHints(in text: VisibleText, providerRaw: String) -> [BookingGuestHint] {
+        allMatches(linenPatterns, in: text.lowercased, providerRaw: providerRaw)
+            + importantNoticeHints(in: text, providerRaw: providerRaw)
+    }
+
+    private static let linenPatterns: [HintPattern] = [
+        HintPattern(
+            "bettwäsche wird nicht",
+            title: "Bettwäsche",
+            detail: "Bettwäsche wird nicht gestellt — bitte selbst mitbringen oder vor Ort klären.",
+            key: "linen:not_provided"
+        ),
+        HintPattern(
+            "handtücher selbst",
+            title: "Handtücher",
+            detail: "Handtücher selbst mitbringen.",
+            key: "towels:bring_own"
+        ),
+        HintPattern(
+            "handtücher werden nicht",
+            title: "Handtücher",
+            detail: "Handtücher werden nicht gestellt — bitte selbst mitbringen.",
+            key: "towels:not_provided"
+        ),
+        HintPattern(
+            "towels/sheets (extra fee)",
+            title: "Bettwäsche / Handtücher",
+            detail: "Towels/sheets (extra fee) — Bettwäsche und Handtücher ggf. gegen Gebühr.",
+            key: "towels_sheets:extra_fee"
+        ),
+        HintPattern(
+            "bed linens and towels are not included",
+            title: "Bettwäsche / Handtücher",
+            detail: "Bed linens and towels are not included in the room rate.",
+            key: "linen:not_included_en"
+        ),
+        HintPattern(
+            "hotelchainbedlinen",
+            title: "Bettwäsche / Handtücher",
+            detail: "Bettwäsche und Handtücher sind nicht im Zimmerpreis enthalten.",
+            key: "standard_phrase:HotelChainBedLinen"
+        ),
+    ]
+
+    private static let importantNoticeMarkers = [
+        "wichtige hinweise",
+        "wichtige informationen",
+        "wichtige information",
+        "important information",
+        "important notice",
+    ]
+
+    private static func importantNoticeHints(
+        in text: VisibleText,
         providerRaw: String
     ) -> [BookingGuestHint] {
-        let text = flattenHTML(html)
-        guard !text.isEmpty else { return [] }
-
-        var hints: [BookingGuestHint] = []
-        hints.append(contentsOf: linenHints(in: text, providerRaw: providerRaw))
-        hints.append(contentsOf: importantNoticeHints(in: text, providerRaw: providerRaw))
-        return BookingGuestHint.dedupedBySourceKey(hints)
-    }
-
-    private static func linenHints(in text: String, providerRaw: String) -> [BookingGuestHint] {
-        let patterns: [(needle: String, title: String, detail: String, key: String)] = [
-            (
-                "bettwäsche wird nicht",
-                "Bettwäsche",
-                "Bettwäsche wird nicht gestellt — bitte selbst mitbringen oder vor Ort klären.",
-                "linen:not_provided"
-            ),
-            (
-                "handtücher selbst",
-                "Handtücher",
-                "Handtücher selbst mitbringen.",
-                "towels:bring_own"
-            ),
-            (
-                "handtücher werden nicht",
-                "Handtücher",
-                "Handtücher werden nicht gestellt — bitte selbst mitbringen.",
-                "towels:not_provided"
-            ),
-            (
-                "towels/sheets (extra fee)",
-                "Bettwäsche / Handtücher",
-                "Towels/sheets (extra fee) — Bettwäsche und Handtücher ggf. gegen Gebühr.",
-                "towels_sheets:extra_fee"
-            ),
-            (
-                "bed linens and towels are not included",
-                "Bettwäsche / Handtücher",
-                "Bed linens and towels are not included in the room rate.",
-                "linen:not_included_en"
-            ),
-            (
-                "hotelchainbedlinen",
-                "Bettwäsche / Handtücher",
-                "Bettwäsche und Handtücher sind nicht im Zimmerpreis enthalten.",
-                "standard_phrase:HotelChainBedLinen"
-            ),
-        ]
-
-        let lower = text.lowercased()
-        var result: [BookingGuestHint] = []
-        for pattern in patterns {
-            guard lower.contains(pattern.needle) else { continue }
-            result.append(
-                BookingGuestHint(
-                    category: .preTravelImportant,
-                    title: pattern.title,
-                    detail: pattern.detail,
-                    sourceKey: "\(providerRaw):html:\(pattern.key)",
-                    providerRaw: providerRaw
-                )
-            )
-        }
-        return result
-    }
-
-    private static func importantNoticeHints(in text: String, providerRaw: String) -> [BookingGuestHint] {
-        let markers = [
-            "wichtige hinweise",
-            "wichtige informationen",
-            "important information",
-            "important notice",
-        ]
-        let lower = text.lowercased()
-        for marker in markers {
-            guard let range = lower.range(of: marker) else { continue }
-            let start = text.index(text.startIndex, offsetBy: lower.distance(from: lower.startIndex, to: range.lowerBound))
-            let snippet = String(text[start...]).prefix(400)
-            let cleaned = String(snippet)
-                .replacingOccurrences(of: "\n", with: " ")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+        for marker in importantNoticeMarkers {
+            guard let cleaned = noticeSlice(text.original, marker: marker) else { continue }
             guard cleaned.count > marker.count + 10 else { continue }
             guard BookingGuestHintPrepKeywords.matches(cleaned) else { continue }
             return [
-                BookingGuestHint(
-                    category: .preTravelImportant,
+                hint(
                     title: "Wichtige Hinweise",
                     detail: cleaned,
-                    sourceKey: "\(providerRaw):html:important_notice",
+                    key: "important_notice",
                     providerRaw: providerRaw
                 ),
             ]
@@ -104,23 +116,52 @@ public enum StayHintHTMLExtractor {
         return []
     }
 
-    private static func flattenHTML(_ html: String) -> String {
-        var s = html
-        if let regex = try? NSRegularExpression(pattern: "<[^>]+>", options: []) {
-            s = regex.stringByReplacingMatches(
-                in: s,
-                options: [],
-                range: NSRange(s.startIndex..., in: s),
-                withTemplate: " "
-            )
+    private static func noticeSlice(_ original: String, marker: String) -> String? {
+        guard let range = original.range(of: marker, options: .caseInsensitive) else { return nil }
+        return String(original[range.lowerBound...].prefix(400))
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func allMatches(
+        _ patterns: [HintPattern],
+        in lowercased: String,
+        providerRaw: String
+    ) -> [BookingGuestHint] {
+        patterns.compactMap { pattern in
+            guard matches(pattern, in: lowercased) else { return nil }
+            return hint(from: pattern, providerRaw: providerRaw)
         }
-        s = s
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&#39;", with: "'")
-        while s.contains("  ") {
-            s = s.replacingOccurrences(of: "  ", with: " ")
-        }
-        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func firstMatch(
+        _ patterns: [HintPattern],
+        in lowercased: String,
+        providerRaw: String
+    ) -> [BookingGuestHint] {
+        Array(allMatches(patterns, in: lowercased, providerRaw: providerRaw).prefix(1))
+    }
+
+    private static func matches(_ pattern: HintPattern, in lowercased: String) -> Bool {
+        pattern.needles.contains { lowercased.contains($0) }
+    }
+
+    private static func hint(from pattern: HintPattern, providerRaw: String) -> BookingGuestHint {
+        hint(title: pattern.title, detail: pattern.detail, key: pattern.key, providerRaw: providerRaw)
+    }
+
+    private static func hint(
+        title: String,
+        detail: String,
+        key: String,
+        providerRaw: String
+    ) -> BookingGuestHint {
+        BookingGuestHint(
+            category: .preTravelImportant,
+            title: title,
+            detail: detail,
+            sourceKey: "\(providerRaw):html:\(key)",
+            providerRaw: providerRaw
+        )
     }
 }

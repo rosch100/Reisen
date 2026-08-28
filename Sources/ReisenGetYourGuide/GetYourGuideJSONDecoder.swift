@@ -17,4 +17,8 @@ enum GetYourGuideJSONDecoder {
         }
         return decoder
     }()
+
+    static func decode<T: Decodable>(_ type: T.Type, from data: Data) -> T? {
+        try? shared.decode(type, from: data)
+    }
 }

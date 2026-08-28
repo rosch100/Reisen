@@ -236,6 +236,33 @@ struct ContentView: View {
                 ? OpenBookingsCommandState(canCreateTripFromSelection: true)
                 : nil
         )
+        .focusedSceneValue(
+            \.bookingPortalOpenCommandState,
+            BookingPortalOpenCommandState(url: selectedBookingPortalURL)
+        )
+    }
+
+    /// Aktuell selektierte Buchung mit öffentlicher Portal-URL (Menü/Command).
+    private var selectedBookingPortalURL: URL? {
+        switch selection {
+        case .openBookings:
+            guard selectedOpenBookingIDs.count == 1,
+                  let id = selectedOpenBookingIDs.first,
+                  let booking = openBookings.first(where: { $0.id == id }) else {
+                return nil
+            }
+            return booking.browserURL
+        case .trip(let tripID):
+            guard let trip = trips.first(where: { $0.id == tripID }),
+                  let timelineID = selectedTimelineID,
+                  let bookingUUID = UUID(uuidString: timelineID),
+                  let booking = trip.resolvedBookings.first(where: { $0.id == bookingUUID }) else {
+                return nil
+            }
+            return booking.browserURL
+        default:
+            return nil
+        }
     }
 
     @ViewBuilder
@@ -377,12 +404,6 @@ struct ContentView: View {
     }
 
     private func handleSessionProbeFinished(needingLogin: [ProviderID]) {
-        AgentDebugLog.write(
-            hypothesisId: "BOOT",
-            location: "ContentView.swift:handleSessionProbeFinished",
-            message: "session probe finished",
-            data: ["needingLogin": needingLogin.map(\.rawValue).joined(separator: ",")]
-        )
         sessionProbeFinished = true
         guard !didApplyInitialSelection else { return }
         didApplyInitialSelection = true
@@ -458,6 +479,7 @@ struct ContentView: View {
                     Text(L10n.string(.tripNoTripsYet))
                         .foregroundStyle(.secondary)
                 } else {
+                    let gapBadges = SDTrip.listGapBadgeCounts(for: trips)
                     ForEach(trips) { trip in
                         let tripBookings = futureBookings(for: trip)
                         let isExpanded = expandedTripIDs.contains(trip.id)
@@ -487,8 +509,11 @@ struct ContentView: View {
                                             Text(dateRange(trip))
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
-                                            if !tripBookings.isEmpty {
-                                                Text(L10n.format(.tripBookingCount, tripBookings.count))
+                                            if let meta = L10n.tripCompletenessListMeta(
+                                                futureBookingCount: tripBookings.count,
+                                                gapCount: gapBadges[trip.id]
+                                            ) {
+                                                Text(meta)
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
                                             }
@@ -553,10 +578,10 @@ struct ContentView: View {
                                         Button(L10n.string(.actionAddBooking)) {
                                             startCreateBooking(in: trip, selectBookingID: booking.id)
                                         }
+                                        BookingCopyConfirmationMenuItems(booking: booking)
                                         if let url = booking.browserURL {
-                                            Button(L10n.string(.actionOpenInBrowser)) {
-                                                NSWorkspace.shared.open(url)
-                                            }
+                                            BookingPortalOpenButton(browserURL: url)
+                                            CopyLinkMenuItem(url: url)
                                         }
                                         Button(role: .destructive) {
                                             applyAfterTripFocus(trip: trip) {
@@ -652,9 +677,15 @@ struct ContentView: View {
                     }
                 }
             } else {
-                List(openBookings, selection: $selectedOpenBookingIDs) { booking in
-                    OpenBookingRow(booking: booking)
-                        .tag(booking.id)
+                let partition = OpenBookingMatching.partitionByFillOpportunity(
+                    bookings: openBookings,
+                    trips: trips
+                )
+                List(selection: $selectedOpenBookingIDs) {
+                    OpenBookingsFillSections(partition: partition) { booking, fillCaption in
+                        OpenBookingRow(booking: booking, fillCaption: fillCaption)
+                            .tag(booking.id)
+                    }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
                 .navigationTitle(L10n.string(.tripOpenBookings))
@@ -662,10 +693,10 @@ struct ContentView: View {
                     if selectedIDs.count == 1,
                        let bookingID = selectedIDs.first,
                        let booking = openBookings.first(where: { $0.id == bookingID }) {
+                        BookingCopyConfirmationMenuItems(booking: booking)
                         if let url = booking.browserURL {
-                            Button(L10n.string(.actionOpenInBrowser)) {
-                                NSWorkspace.shared.open(url)
-                            }
+                            BookingPortalOpenButton(browserURL: url)
+                            CopyLinkMenuItem(url: url)
                         }
                         if let trip = matchingTrip(for: booking) {
                             Button(L10n.string(.actionAssignToTrip)) {

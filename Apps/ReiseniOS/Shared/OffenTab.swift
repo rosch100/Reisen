@@ -103,7 +103,9 @@ struct OpenBookingsScreen: View {
     var onTripCreated: (UUID) -> Void
 
     @Environment(\.adaptiveUsesSplitNavigation) private var usesSplit
+    @Environment(\.providerNativeAppPresence) private var nativeAppPresence
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
+    @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
 
     private var openBookings: [SDBooking] {
         OpenBookingMatching.openUnassigned(in: allBookings)
@@ -138,40 +140,23 @@ struct OpenBookingsScreen: View {
                         .buttonStyle(.borderedProminent)
                         #endif
                 }
-            } else if isSelectingForTripCreate {
-                List(selection: $multiSelection) {
-                    ForEach(filtered, id: \.id) { booking in
-                        OpenBookingRow(booking: booking)
-                            .tag(booking.id)
-                    }
-                }
-                .environment(\.editMode, .constant(.active))
-                .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             } else {
-                List(selection: $selectedBookingID) {
-                    ForEach(filtered, id: \.id) { booking in
-                        bookingRow(booking)
-                            .tag(booking.id)
-                            .contextMenu {
-                                Button {
-                                    createTripFromBooking(booking.id)
-                                } label: {
-                                    CreateTripFromBookingsLabel()
-                                }
-                            }
-                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                if !usesSplit {
-                                    Button {
-                                        createTripFromBooking(booking.id)
-                                    } label: {
-                                        CreateTripFromBookingsLabel()
-                                    }
-                                    .tint(.accentColor)
-                                }
-                            }
+                let partition = OpenBookingMatching.partitionByFillOpportunity(
+                    bookings: filtered,
+                    trips: trips
+                )
+                if isSelectingForTripCreate {
+                    List(selection: $multiSelection) {
+                        openBookingSections(partition: partition, interactive: false)
                     }
+                    .environment(\.editMode, .constant(.active))
+                    .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
+                } else {
+                    List(selection: $selectedBookingID) {
+                        openBookingSections(partition: partition, interactive: true)
+                    }
+                    .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
                 }
-                .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
             }
         }
         .navigationTitle(
@@ -233,6 +218,59 @@ struct OpenBookingsScreen: View {
         })
     }
 
+    @ViewBuilder
+    private func openBookingSections(
+        partition: OpenBookingFillPartition,
+        interactive: Bool
+    ) -> some View {
+        OpenBookingsFillSections(partition: partition) { booking, fillCaption in
+            openBookingListRow(booking, fillCaption: fillCaption, interactive: interactive)
+        }
+    }
+
+    @ViewBuilder
+    private func openBookingListRow(
+        _ booking: SDBooking,
+        fillCaption: String?,
+        interactive: Bool
+    ) -> some View {
+        Group {
+            if interactive {
+                bookingRow(booking, fillCaption: fillCaption)
+                    .tag(booking.id)
+                    .contextMenu {
+                        BookingCopyConfirmationMenuItems(booking: booking)
+                        Button {
+                            createTripFromBooking(booking.id)
+                        } label: {
+                            CreateTripFromBookingsLabel()
+                        }
+                        if let url = booking.browserURL {
+                            BookingPortalOpenButton(
+                                bookingURL: url,
+                                providerID: booking.provider,
+                                isNativeAppInstalled: nativeAppPresence.isInstalled(booking.provider)
+                            )
+                            CopyLinkMenuItem(url: url)
+                        }
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        if !usesSplit {
+                            Button {
+                                createTripFromBooking(booking.id)
+                            } label: {
+                                CreateTripFromBookingsLabel()
+                            }
+                            .tint(.accentColor)
+                        }
+                    }
+            } else {
+                OpenBookingRow(booking: booking, fillCaption: fillCaption)
+                    .tag(booking.id)
+            }
+        }
+    }
+
     private func createTripFromBooking(_ bookingID: UUID) {
         presentCreateTripFromSelection(Set([bookingID]))
     }
@@ -259,9 +297,9 @@ struct OpenBookingsScreen: View {
     }
 
     @ViewBuilder
-    private func bookingRow(_ booking: SDBooking) -> some View {
+    private func bookingRow(_ booking: SDBooking, fillCaption: String? = nil) -> some View {
         AdaptiveUUIDSelectionRow(id: booking.id, selection: $selectedBookingID, usesSplit: usesSplit) {
-            OpenBookingRow(booking: booking)
+            OpenBookingRow(booking: booking, fillCaption: fillCaption)
         }
     }
 }

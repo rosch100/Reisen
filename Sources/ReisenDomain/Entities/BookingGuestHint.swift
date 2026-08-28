@@ -45,17 +45,33 @@ public struct BookingGuestHint: Identifiable, Equatable, Sendable, Codable {
 
 extension BookingGuestHint {
     public static func dedupedBySourceKey(_ hints: [BookingGuestHint]) -> [BookingGuestHint] {
-        var seen = Set<String>()
-        return hints.filter { seen.insert($0.sourceKey).inserted }
+        uniqueKeepingFirst(hints) { $0.sourceKey }
+    }
+
+    /// Keeps first hint per normalized detail text (whitespace/case-insensitive).
+    public static func dedupedByNormalizedDetail(_ hints: [BookingGuestHint]) -> [BookingGuestHint] {
+        uniqueKeepingFirst(hints) { hint in
+            let key = hint.detail
+                .lowercased()
+                .split(whereSeparator: \.isWhitespace)
+                .joined(separator: " ")
+            return key.isEmpty ? nil : key
+        }
     }
 
     public static func merged(existing: [BookingGuestHint], with new: [BookingGuestHint]) -> [BookingGuestHint] {
-        var seen = Set(existing.map(\.sourceKey))
-        var merged = existing
-        for hint in new where seen.insert(hint.sourceKey).inserted {
-            merged.append(hint)
+        uniqueKeepingFirst(existing + new) { $0.sourceKey }
+    }
+
+    private static func uniqueKeepingFirst(
+        _ hints: [BookingGuestHint],
+        key: (BookingGuestHint) -> String?
+    ) -> [BookingGuestHint] {
+        var seen = Set<String>()
+        return hints.filter { hint in
+            guard let key = key(hint) else { return false }
+            return seen.insert(key).inserted
         }
-        return merged
     }
 
     public static func manualPersistable(from draft: BookingGuestHint, bookingID: UUID) -> BookingGuestHint? {
@@ -116,14 +132,19 @@ public enum BookingGuestHintSummary {
 
 public enum BookingGuestHintPrepKeywords {
     public static let all: [String] = [
-        "linen", "linens", "towel", "towels", "bettwäsche", "handtuch", "handtücher",
-        "mitbringen", "nicht enthalten", "not included", "not provided", "extra fee",
+        "linen", "towel", "bettwäsche", "handtuch", "handtücher",
+        "nicht enthalten", "not included", "not provided",
         "bring your own", "selbst mitbringen", "wird nicht gestellt",
+        "keine wäsche",
     ]
 
     public static func matches(_ text: String) -> Bool {
-        let lower = text.lowercased()
-        return all.contains { lower.contains($0) }
+        firstRange(in: text) != nil
+    }
+
+    public static func firstRange(in text: String) -> Range<String.Index>? {
+        all.compactMap { text.range(of: $0, options: .caseInsensitive) }
+            .min { $0.lowerBound < $1.lowerBound }
     }
 }
 

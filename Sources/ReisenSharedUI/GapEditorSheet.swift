@@ -5,6 +5,7 @@ import ReisenAppCore
 public struct GapEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.providerRegistry) private var providerRegistry
+    @Environment(\.openURL) private var openURL
 
     let payload: GapEditorPayload
     let onSave: (String, GapKind, Double?, String?) -> Void
@@ -12,6 +13,7 @@ public struct GapEditorSheet: View {
     @State private var editedTitle: String
     @State private var editedKind: GapKind
     @State private var editedPriceText: String
+    @State private var preferredSearchProvider: ProviderID?
     @State private var gapDeepLinks: (links: [DeepLinkSuggestion], issues: [DeepLinkIssue]) = ([], [])
 
     public init(
@@ -25,12 +27,19 @@ public struct GapEditorSheet: View {
         _editedPriceText = State(initialValue: Self.formatPriceAmount(payload.priceAmount))
     }
 
+    private var enabledGapSearchProviders: [ProviderID] {
+        providerRegistry?.enabledGapSearchProviderIDs() ?? []
+    }
+
     private func refreshGapDeepLinks() {
         guard let registry = providerRegistry else {
             gapDeepLinks = ([], [])
             return
         }
-        gapDeepLinks = registry.gapDeepLinkSuggestions(for: payload.gapContext(kind: editedKind))
+        gapDeepLinks = registry.gapDeepLinkSuggestions(
+            for: payload.gapContext(kind: editedKind),
+            preferredProvider: preferredSearchProvider
+        )
     }
 
     private var isValid: Bool {
@@ -72,18 +81,21 @@ public struct GapEditorSheet: View {
                     TextField(L10n.string(.gapAmountEur), text: $editedPriceText)
                 }
 
-                if !gapDeepLinks.links.isEmpty || !gapDeepLinks.issues.isEmpty {
+                if GapSearchControls.hasContent(
+                    enabledProviderIDs: enabledGapSearchProviders,
+                    links: gapDeepLinks.links,
+                    issues: gapDeepLinks.issues
+                ) {
                     Section(L10n.string(.gapFill)) {
-                        GapDeepLinkButtons(
+                        GapSearchControls(
+                            enabledProviderIDs: enabledGapSearchProviders,
+                            preferredProviderID: $preferredSearchProvider,
                             links: gapDeepLinks.links,
+                            issues: gapDeepLinks.issues,
                             gapKind: editedKind,
-                            openURL: SystemURLOpener.open
+                            style: .form,
+                            openURL: { openURL($0) }
                         )
-                        if let issuesMessage = ProviderDeepLinks.issuesMessage(gapDeepLinks.issues) {
-                            Text(issuesMessage)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
                     }
                 }
             }
@@ -109,12 +121,13 @@ public struct GapEditorSheet: View {
             }
             .onAppear { refreshGapDeepLinks() }
             .onChange(of: editedKind) { _, _ in refreshGapDeepLinks() }
+            .onChange(of: preferredSearchProvider) { _, _ in refreshGapDeepLinks() }
 #if os(iOS)
             .reisenSheetDetents()
 #endif
         }
 #if os(macOS)
-        .frame(width: 480, height: 320)
+        .frame(width: 480, height: 360)
 #endif
     }
 }

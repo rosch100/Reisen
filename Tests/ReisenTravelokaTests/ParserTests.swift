@@ -5,17 +5,26 @@ import ReisenProviders
 @testable import ReisenTraveloka
 
 private enum TravelokaFixtureLoader {
+    /// Placeholders shared with `docs/fixtures/provider-research/traveloka_*_redacted.json`.
+    static let redactedHotelBookingId = "REDACTED_HOTEL_BOOKING_ID"
+    static let redactedExperienceBookingId = "REDACTED_EXPERIENCE_BOOKING_ID"
+    static let redactedExperienceItineraryId = "REDACTED_EXPERIENCE_ITINERARY_ID"
+    static let redactedVehicleBookingId = "REDACTED_VEHICLE_BOOKING_ID"
+    static let redactedFlightBookingId = "REDACTED_FLIGHT_BOOKING_ID"
+
+    private static let fixturesRelativePath = "docs/fixtures/provider-research"
+
     static func load(_ name: String) throws -> String {
-        let candidates = [
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("docs/fixtures/provider-research/\(name)"),
-            URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()
-                .deletingLastPathComponent()
-                .deletingLastPathComponent()
-                .appendingPathComponent("docs/fixtures/provider-research/\(name)"),
-        ]
-        for url in candidates {
+        let fromCWD = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent(fixturesRelativePath)
+            .appendingPathComponent(name)
+        let fromSource = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(fixturesRelativePath)
+            .appendingPathComponent(name)
+        for url in [fromCWD, fromSource] {
             if let text = try? String(contentsOf: url, encoding: .utf8) {
                 return text
             }
@@ -33,7 +42,7 @@ private enum TravelokaFixtureLoader {
     let byType = Dictionary(uniqueKeysWithValues: catalog.bookings.map { ($0.bookingType, $0) })
     let activity = try #require(byType[.activity])
     #expect(activity.provider == .traveloka)
-    #expect(activity.confirmationCode == "1387358428")
+    #expect(activity.confirmationCode == TravelokaFixtureLoader.redactedExperienceBookingId)
     #expect(activity.title?.contains("Ha Noi") == true)
     #expect(activity.operatorName == "AXES")
     #expect(activity.isAllDay == true)
@@ -41,7 +50,7 @@ private enum TravelokaFixtureLoader {
     #expect(activity.externalUrl?.contains("type=EXPERIENCE") == true)
 
     let hotel = try #require(byType[.hotel])
-    #expect(hotel.confirmationCode == "1387353870")
+    #expect(hotel.confirmationCode == TravelokaFixtureLoader.redactedHotelBookingId)
     #expect(hotel.title?.contains("Example Hotel") == true)
     #expect(hotel.locationTo == "South Jakarta")
     #expect(hotel.locationToAddress?.contains("Cilandak") == true)
@@ -50,9 +59,14 @@ private enum TravelokaFixtureLoader {
     #expect(hotel.hotelCheckInMinutes == 14 * 60)
     #expect(hotel.deadlines.contains { $0.isFreeCancellation } == true)
     #expect(hotel.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 } == true)
+    // Catalog card often omits stay policies; Traveloka still enriches hotels with empty hints.
+    #expect(hotel.guestHints.isEmpty)
+    #expect(
+        TravelokaDraftEnrichmentNeeds.shouldEnrich(hotel, requiresDeadlines: false) == true
+    )
 
     let vehicle = try #require(byType[.carRental])
-    #expect(vehicle.confirmationCode == "1387355867")
+    #expect(vehicle.confirmationCode == TravelokaFixtureLoader.redactedVehicleBookingId)
     #expect(vehicle.title == "Daihatsu Sigra - Jakarta")
     #expect(vehicle.operatorName == "Jayamahe Easy Ride Jakarta")
     #expect(vehicle.locationFrom?.contains("Bandara") == true)
@@ -61,7 +75,7 @@ private enum TravelokaFixtureLoader {
     #expect(vehicle.deadlines.contains { $0.isFreeCancellation } == true)
 
     let flight = try #require(catalog.bookings.first { $0.bookingType == .flight })
-    #expect(flight.confirmationCode == "1000000001")
+    #expect(flight.confirmationCode == TravelokaFixtureLoader.redactedFlightBookingId)
     #expect(flight.title?.contains("Jakarta") == true)
     #expect(flight.hotelOffsetSeconds == nil)
 }
@@ -70,7 +84,11 @@ private enum TravelokaFixtureLoader {
     let text = try TravelokaFixtureLoader.load("traveloka_itineraries_fetch_redacted.json")
     let catalog = try TravelokaCatalogParser.parse(from: text)
     let activity = try #require(catalog.bookings.first { $0.bookingType == .activity })
-    #expect(activity.externalUrl?.contains("/en-en/item/details/1387358428") == true)
+    #expect(
+        activity.externalUrl?.contains(
+            "/en-en/item/details/\(TravelokaFixtureLoader.redactedExperienceBookingId)"
+        ) == true
+    )
 }
 
 @Test func travelokaCatalogSkipsEntryWithoutTimestampsAndKeepsOthers() throws {
@@ -385,6 +403,21 @@ private func travelokaCatalogHotelEntry(
     let expected = try #require(TravelokaJSON.localDateTime("2026-09-01T12:59:00", timeZone: tz))
     #expect(abs((enrichment.deadlines.first { $0.isFreeCancellation }?.deadlineAt.timeIntervalSince(expected) ?? 99)) < 0.01)
     #expect(abs(fee.deadlineAt.timeIntervalSince(expected)) < 0.01)
+    let hints = try #require(enrichment.guestHints)
+    // Notices + propertyPolicy share near-identical copy; detail-dedup keeps distinct texts only.
+    #expect(hints.count == 2)
+    #expect(hints.contains { $0.sourceKey.contains("IMPORTANT_NOTICE") } == true)
+    #expect(hints.contains { $0.detail.localizedCaseInsensitiveContains("marriage certificate") } == true)
+    #expect(hints.contains { $0.detail.localizedCaseInsensitiveContains("unmarried couples") } == true)
+    #expect(hints.contains { $0.sourceKey == "traveloka:property_policy" } == false)
+    #expect(hints.contains { $0.sourceKey.contains("specialRequest") } == false)
+}
+
+@Test func travelokaProductType_heuristics_villaApartmentCar() {
+    #expect(TravelokaProductType(raw: "VILLA").bookingType == .hotel)
+    #expect(TravelokaProductType(raw: "APARTMENT").bookingType == .hotel)
+    #expect(TravelokaProductType(raw: "CAR_RENTAL").bookingType == .carRental)
+    #expect(TravelokaProductType(raw: "TRAINING").bookingType == .other)
 }
 
 @Test func travelokaEnrichmentVehicle() throws {
@@ -521,10 +554,12 @@ private func travelokaCatalogHotelEntry(
 }
 
 @Test func travelokaDetailURLIds() throws {
-    let url = "https://www.traveloka.com/en-en/item/details/1387358428?type=EXPERIENCE&id=1874509835987345547"
+    let bookingId = TravelokaFixtureLoader.redactedExperienceBookingId
+    let itineraryId = TravelokaFixtureLoader.redactedExperienceItineraryId
+    let url = "https://www.traveloka.com/en-en/item/details/\(bookingId)?type=EXPERIENCE&id=\(itineraryId)"
     let ids = try TravelokaExternalURL.detailIds(from: url)
-    #expect(ids.bookingId == "1387358428")
-    #expect(ids.itineraryId == "1874509835987345547")
+    #expect(ids.bookingId == bookingId)
+    #expect(ids.itineraryId == itineraryId)
     #expect(ids.productType == "EXPERIENCE")
 }
 
@@ -657,9 +692,23 @@ private func travelokaCatalogHotelEntry(
         ],
         rateDetails: BookingRateDetails(roomCategory: "Standard Double"),
         hotelCheckInMinutes: 14 * 60,
-        hotelCheckOutMinutes: 12 * 60
+        hotelCheckOutMinutes: 12 * 60,
+        guestHints: [
+            BookingGuestHint(
+                title: "Hausregeln",
+                detail: "Unmarried couples are not allowed.",
+                sourceKey: "traveloka:property_policy",
+                providerRaw: ProviderID.traveloka.rawValue
+            ),
+        ]
     )
     #expect(DraftEnrichmentNeeds.shouldEnrich(complete, requiresDeadlines: true) == false)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(complete, requiresDeadlines: true) == false)
+
+    var completeWithoutHints = complete
+    completeWithoutHints.guestHints = []
+    #expect(DraftEnrichmentNeeds.shouldEnrich(completeWithoutHints, requiresDeadlines: true) == false)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(completeWithoutHints, requiresDeadlines: true) == true)
 
     let missingCheckIn = ProviderBookingDraft(
         provider: .traveloka,
@@ -671,6 +720,7 @@ private func travelokaCatalogHotelEntry(
         hotelCheckOutMinutes: 12 * 60
     )
     #expect(DraftEnrichmentNeeds.shouldEnrich(missingCheckIn, requiresDeadlines: true) == true)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(missingCheckIn, requiresDeadlines: true) == true)
 
     let missingAddress = ProviderBookingDraft(
         provider: .traveloka,
@@ -700,6 +750,7 @@ private func travelokaCatalogHotelEntry(
         status: .confirmed
     )
     #expect(DraftEnrichmentNeeds.shouldEnrich(completeCarRental, requiresDeadlines: false) == false)
+    #expect(TravelokaDraftEnrichmentNeeds.shouldEnrich(completeCarRental, requiresDeadlines: false) == false)
 
     let missingCarPickup = ProviderBookingDraft(
         provider: .traveloka,
