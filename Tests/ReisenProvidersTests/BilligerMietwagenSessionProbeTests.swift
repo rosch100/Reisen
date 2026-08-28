@@ -21,8 +21,10 @@ import ReisenProviders
     #expect(BilligerMietwagenAuthConstants.whitelabel == "DE_billiger-mietwagen")
     #expect(BilligerMietwagenAuthConstants.loginAPIURL.absoluteString == "https://consumer-api.floyt.com/auth/v1/login")
     #expect(BilligerMietwagenAuthConstants.sessionURL.path == "/user_account/session.php")
-    #expect(BilligerMietwagenAuthConstants.sessionProbeReferer.contains("/reservation/account/login"))
+    #expect(BilligerMietwagenAuthConstants.sessionReferer.contains("/reservation/account/bookings"))
+    #expect(BilligerMietwagenAuthConstants.sessionProbeReferer == BilligerMietwagenAuthConstants.sessionReferer)
     #expect(BilligerMietwagenAuthConstants.jwtUsernameClaim == "username")
+    #expect(BilligerMietwagenAuthConstants.spaClientID == "web")
     #expect(
         BilligerMietwagenAuthConstants.hasSessionTokens(
             inSessionJSON: #"{"access_token":"a","refresh_token":"r"}"#
@@ -31,4 +33,9 @@ import ReisenProviders
     let api = BilligerMietwagenAuthConstants.apiRequestHeaders(accessToken: "tok")
     #expect(api["X-Whitelabel"] == "DE_billiger-mietwagen")
     #expect(api["Authorization"] == "Bearer tok")
+    #expect(api["client-id"] == "web")
+    #expect(api["Origin"] == "https://www.billiger-mietwagen.de")
+    let sessionHeaders = BilligerMietwagenAuthConstants.sessionBrowserHeaders
+    #expect(sessionHeaders["client-id"] == "web")
+    #expect(sessionHeaders["Origin"] == "https://www.billiger-mietwagen.de")
 }

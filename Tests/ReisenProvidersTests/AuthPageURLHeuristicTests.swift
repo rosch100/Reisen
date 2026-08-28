@@ -95,12 +95,12 @@ import ReisenProviders
     #expect(AuthPageURLHeuristic.looksLikeLoginPage("https://www.traveloka.com/en-en/user/signin"))
 }
 
-@Test func billigerMietwagenLoginNeedsLoginAndBookingsProbeSession() {
+@Test func billigerMietwagenLoginURLProbesSessionBecauseSPAKeepsLoginPath() {
     let login = "https://www.billiger-mietwagen.de/reservation/account/login"
     let bookings = "https://www.billiger-mietwagen.de/reservation/account/bookings"
     let home = "https://www.billiger-mietwagen.de/"
     #expect(AuthPageURLHeuristic.looksLikeLoginPage(login))
-    #expect(ProviderSessionStatusResolver.classify(URL(string: login)!) == .needsLogin)
+    #expect(ProviderSessionStatusResolver.classify(URL(string: login)!) == .shouldProbeBilligerMietwagen)
     #expect(AuthPageURLHeuristic.looksLikeAccountPage(bookings))
     #expect(!AuthPageURLHeuristic.looksLikeLoginPage(bookings))
     #expect(ProviderSessionStatusResolver.classify(URL(string: bookings)!) == .shouldProbeBilligerMietwagen)

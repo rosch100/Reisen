@@ -10,6 +10,9 @@ public enum BilligerMietwagenAuthConstants {
 
     /// `X-Whitelabel` aus HAR `POST …/auth/v1/login` (nicht Hostname).
     public static let whitelabel = "DE_billiger-mietwagen"
+    /// HAR `client-id` an Login, Session-POST und Consumer-API.
+    public static let spaClientID = "web"
+    public static let spaClientIDHeader = "client-id"
 
     /// JSON-Feldnamen Session/Refresh (SSOT für Bodies, Codable, Probe).
     public static let accessTokenField = "access_token"
@@ -18,15 +21,24 @@ public enum BilligerMietwagenAuthConstants {
     /// Cognito-JWT-Claim; FLOYT erwartet denselben Wert als `user_id` beim Refresh.
     public static let jwtUsernameClaim = "username"
 
+    /// SPA-Browser-Header laut Login-HAR (`Origin` + `client-id: web`).
+    public static var sessionBrowserHeaders: [String: String] {
+        [
+            "Origin": origin,
+            spaClientIDHeader: spaClientID,
+        ]
+    }
+
+    /// Consumer-API (`login`/`refresh-token`/Catalog): Whitelabel plus SPA-Browser-Header.
     public static var whitelabelHeaders: [String: String] {
-        ["X-Whitelabel": whitelabel]
+        ["X-Whitelabel": whitelabel].merging(sessionBrowserHeaders) { _, new in new }
     }
 
     public static func bearerAuthorizationHeader(accessToken: String) -> [String: String] {
         ["Authorization": "Bearer \(accessToken)"]
     }
 
-    /// Whitelabel + Bearer für Consumer-API-Calls (Catalog/Detail).
+    /// Whitelabel + SPA-Header + Bearer für Consumer-API-Calls (Catalog/Detail).
     public static func apiRequestHeaders(accessToken: String) -> [String: String] {
         whitelabelHeaders.merging(bearerAuthorizationHeader(accessToken: accessToken)) { _, new in new }
     }
@@ -48,10 +60,18 @@ public enum BilligerMietwagenAuthConstants {
         portalURL("\(accountPathPrefix)/login")
     }
 
-    /// Referer für `session.php` während Login-Probe (HAR nach Passwort).
-    /// Sync nach Login nutzt bewusst `BilligerMietwagenWebConstants.catalogReferer` (SPA-Katalog).
+    public static var accountBookingsPath: String {
+        "\(accountPathPrefix)/bookings"
+    }
+
+    /// Referer für `session.php` und Consumer-API (SPA „Meine Buchungen“, HAR-Origin-Parität).
+    public static var sessionReferer: String {
+        portalURL(accountBookingsPath).absoluteString
+    }
+
+    /// Probe nutzt denselben Referer wie Sync — Login-Referer liefert oft leere Session.
     public static var sessionProbeReferer: String {
-        loginPageURL.absoluteString
+        sessionReferer
     }
 
     public static func portalURL(_ path: String) -> URL {

@@ -7,9 +7,19 @@ extension BilligerMietwagenTokenPair {
         try requiringBothTokens(orThrow: .sessionNotAuthenticated)
     }
 
-    /// Refresh-Antwort: beide Tokens non-empty (kein Fallback auf den alten Refresh).
-    func requiringRefreshedTokens() throws -> (access: String, refresh: String) {
-        try requiringBothTokens(orThrow: .tokenRefreshFailed)
+    /// Live-Refresh (201): oft nur `access_token`/`id_token`. Rotierter Refresh
+    /// wenn vorhanden, sonst der soeben erfolgreiche Session-Refresh (SPA-Parität).
+    func requiringRefreshedTokens(reusingRefresh previous: String) throws -> (access: String, refresh: String) {
+        guard let access = NonEmpty.string(accessToken) else {
+            throw BilligerMietwagenProviderError.tokenRefreshFailed
+        }
+        if let rotated = NonEmpty.string(refreshToken) {
+            return (access, rotated)
+        }
+        guard let previous = NonEmpty.string(previous) else {
+            throw BilligerMietwagenProviderError.tokenRefreshFailed
+        }
+        return (access, previous)
     }
 
     private func requiringBothTokens(
