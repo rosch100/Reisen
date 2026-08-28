@@ -79,6 +79,34 @@ private let germanLocale = Locale(identifier: "de")
     #expect(trainText.contains(":"))
 }
 
+@Test func bookingType_systemImageName_nonEmptyForAllCases() {
+    for type in BookingType.allCases {
+        #expect(!type.systemImageName.isEmpty)
+    }
+    #expect(BookingType.train.systemImageName == "train.side.front.car")
+}
+
+@Test func bookingPresentationTitle_prefersTitleThenLocalizedType() {
+    let withTitle = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.train.rawValue,
+        title: "ICE 123",
+        startAt: Date(timeIntervalSince1970: 1),
+        endAt: Date(timeIntervalSince1970: 2),
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    let withoutTitle = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.train.rawValue,
+        startAt: Date(timeIntervalSince1970: 1),
+        endAt: Date(timeIntervalSince1970: 2),
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    #expect(withTitle.presentationTitle == "ICE 123")
+    #expect(withoutTitle.presentationTitle == withoutTitle.bookingType.displayLabel)
+    #expect(withoutTitle.displayTitle == BookingType.train.defaultDisplayTitle)
+}
+
 @Test func bookingScheduleRangeText_usesDepartureArrivalOrtszeit() throws {
     let start = Date(timeIntervalSince1970: 1_800_000_000)
     let end = start.addingTimeInterval(7_200)

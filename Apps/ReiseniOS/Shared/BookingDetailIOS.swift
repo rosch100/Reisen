@@ -67,7 +67,7 @@ struct BookingDetailIOS: View {
     }
 
     private var bookingNavigationTitle: String {
-        booking?.localizedDisplayTitle ?? L10n.string(.editorBooking)
+        booking?.presentationTitle ?? L10n.string(.editorBooking)
     }
 
     private func deletePendingBooking() {
@@ -195,7 +195,7 @@ struct BookingDetailIOS: View {
     private func bookingOverviewSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.tripOverview)) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(booking.localizedDisplayTitle)
+                Text(booking.presentationTitle)
                     .font(.headline)
                     .textSelection(.enabled)
 

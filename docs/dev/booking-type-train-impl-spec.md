@@ -15,7 +15,7 @@ Datei: `Sources/ReisenDomain/Entities/BookingType.swift`
 - `case train` nach `ferry` (`CaseIterable`-Reihenfolge = Picker)
 - `rawValue` = `"train"` (SwiftData `bookingTypeRaw`, keine Migration)
 - `usesFlightLikeSchedule` / `isTransport`: Flug, Fähre, Bahn
-- `systemImageName`: `train.side.front.car` (SF Symbol SSOT)
+- `systemImageName`: SharedUI (`BookingType+SystemImage`, Symbol `train.side.front.car`)
 
 ## Persistenz
 
@@ -51,7 +51,7 @@ Kein DB-Branding, kein Icon-only-Picker, kein paralleles Timeline-Layout nur fü
 | Provider | Status |
 |----------|--------|
 | Traveloka | `TRAIN` / `TRAIN_GLOBAL` → `.train` (Titel aus `productName`; Stations-Parser folgt mit HAR) |
-| Check24 | **kein** Mapping — Keys `train`/`bahn`/`rail` unverified ([check24-productkey-audit.md](check24-productkey-audit.md)) |
+| Check24 | **kein** Mapping — Live 2026-08-28: `train`/`bahn`/`rail` in 64 Activities nicht gesehen ([check24-productkey-audit.md](check24-productkey-audit.md)) |
 | Opodo | **kein** Mapping — `rail` in HAR nicht als Booking beobachtet |
 | Booking.com / Airbnb | kein Bahn-Vertical in den belegten Typ-Mappern |
 
@@ -59,7 +59,8 @@ Manuell und F06 Paste-Import bleiben zusätzliche Quellen. Kein DB/ÖBB-Adapter.
 
 ## Tests
 
-- `BookingTypeTests`: rawValue, Labels, `usesFlightLikeSchedule`, `systemImageName`
+- `BookingTypeTests`: rawValue, Labels, `usesFlightLikeSchedule`
+- SharedUI: `systemImageName`, `presentationTitle`
 - `GapKindClassifierTests`: hotel/flight/train-Kombinationen
 - `BookingTimeNormalizerDeadlinesTests`: train mit/ohne Offsets
 - `BookingScheduleFieldsTests`: Bahnhof-Labels, Abfahrt/Ankunft

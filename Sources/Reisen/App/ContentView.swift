@@ -502,7 +502,7 @@ struct ContentView: View {
                                         }
                                     } label: {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(booking.localizedDisplayTitle)
+                                            Text(booking.presentationTitle)
                                                 .lineLimit(1)
                                             Text(BookingScheduleRangeText.make(for: booking))
                                                 .font(.caption2)
@@ -736,7 +736,7 @@ struct ContentView: View {
                     }
                 )
                 .id(booking.id)
-                .navigationTitle(booking.localizedDisplayTitle)
+                .navigationTitle(booking.presentationTitle)
             } else if let first = openBookings.first {
                 OpenBookingDetailView(
                     booking: first,
@@ -751,7 +751,7 @@ struct ContentView: View {
                     }
                 )
                 .id(first.id)
-                .navigationTitle(first.localizedDisplayTitle)
+                .navigationTitle(first.presentationTitle)
             } else {
                 ContentUnavailableView(
                     L10n.string(.tripNoOpenBookings),

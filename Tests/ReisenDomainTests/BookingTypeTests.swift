@@ -49,13 +49,6 @@ private let germanLocale = Locale(identifier: "de")
     #expect(!BookingType.other.usesFlightLikeSchedule)
 }
 
-@Test func bookingType_systemImageName_nonEmptyForAllCases() {
-    for type in BookingType.allCases {
-        #expect(!type.systemImageName.isEmpty)
-    }
-    #expect(BookingType.train.systemImageName == "train.side.front.car")
-}
-
 @Test func bookingType_detailFieldLabels_train() {
     L10n.locale = germanLocale
     defer { L10n.locale = .current }

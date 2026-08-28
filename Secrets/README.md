@@ -9,4 +9,4 @@ Dieses Verzeichnis ist in `.gitignore` (außer `*.example`).
 
 Gmail-Feedback-Ingress: OAuth-Client und Refresh-Token nur als GitHub-Actions-Secrets (`REISEN_GMAIL_OAUTH_*`) — siehe `docs/ci/gmail-feedback-ingress.md`. Nicht in diesem Verzeichnis ablegen.
 
-App Store Check (manuelles Store-IPA-Archive): GitHub-Secrets `REISEN_GITHUB_ISSUES_TOKEN_BASE64` und `APP_STORE_CONNECT_API_KEY_*` — siehe `docs/ci/app-store-check.md`. Nicht in diesem Verzeichnis ablegen.
+App Store Check (manuelles Store-IPA-Archive): GitHub-Secrets `REISEN_GITHUB_ISSUES_TOKEN_BASE64`, `APP_STORE_CONNECT_API_KEY_*` und `APPLE_TEAM_ID` — siehe `docs/ci/app-store-check.md`. Nicht in diesem Verzeichnis ablegen.

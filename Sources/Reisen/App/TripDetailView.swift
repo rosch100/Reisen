@@ -884,7 +884,7 @@ private struct BookingRow: View {
     private func bookingFullCopyText(now: Date) -> String {
         var parts: [String] = []
 
-        parts.append(booking.localizedDisplayTitle)
+        parts.append(booking.presentationTitle)
         parts.append(booking.bookingType.displayLabel)
         parts.append(L10n.format(.bookingCopyPriceLine, bookingPriceText))
 
@@ -924,7 +924,7 @@ private struct BookingRow: View {
         let secondary = NSColor.secondaryLabelColor
         let orange = NSColor.systemOrange
 
-        let title = booking.localizedDisplayTitle
+        let title = booking.presentationTitle
         ns.append(NSAttributedString(string: title, attributes: [
             .font: headlineFont,
             .foregroundColor: secondary
@@ -1160,7 +1160,7 @@ private struct BookingRow: View {
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text(booking.localizedDisplayTitle)
+                    Text(booking.presentationTitle)
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .lineLimit(2)

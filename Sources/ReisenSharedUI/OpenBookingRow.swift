@@ -14,7 +14,7 @@ public struct OpenBookingRow: View {
         let stornoLines = BookingStornoSummary.lines(for: booking)
 
         VStack(alignment: .leading, spacing: 4) {
-            Text(booking.localizedDisplayTitle)
+            Text(booking.presentationTitle)
                 .lineLimit(1)
                 .font(.headline)
 

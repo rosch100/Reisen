@@ -1350,7 +1350,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Von Bahnhof"
+            "value": "Abfahrtsbahnhof"
           }
         },
         "en": {
@@ -1430,7 +1430,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Von-Adresse"
+            "value": "Abfahrtsadresse"
           }
         },
         "en": {
@@ -1510,7 +1510,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nach Bahnhof"
+            "value": "Ankunftsbahnhof"
           }
         },
         "en": {
@@ -1606,7 +1606,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nach-Adresse"
+            "value": "Ankunftsadresse"
           }
         },
         "en": {
