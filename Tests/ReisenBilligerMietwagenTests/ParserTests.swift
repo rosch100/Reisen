@@ -319,24 +319,43 @@ func bmAccessTokenReadsUsernameClaim() throws {
     #expect(BilligerMietwagenAccessToken.userID(fromAccessToken: jwt) == "70321a5d-594f-40e2-93db-a8a69be5dd4b")
 }
 
+@Test("BilligerMietwagenAccessToken ohne username-Claim liefert nil")
+func bmAccessTokenMissingUsernameClaimReturnsNil() {
+    let payloadJSON = #"{"sub":"70321a5d-594f-40e2-93db-a8a69be5dd4b"}"#
+    let payload = Data(payloadJSON.utf8).base64EncodedString()
+        .replacingOccurrences(of: "+", with: "-")
+        .replacingOccurrences(of: "/", with: "_")
+        .replacingOccurrences(of: "=", with: "")
+    let jwt = "hdr.\(payload).sig"
+    #expect(BilligerMietwagenAccessToken.userID(fromAccessToken: jwt) == nil)
+}
+
 @Test("BilligerMietwagenTokenPair.parseRefresh liest access_token")
 func bmRefreshParserReadsAccessToken() throws {
     let json = #"{"access_token":"<REDACTED_ACCESS>","refresh_token":"<REDACTED_REFRESH>","id_token":"<REDACTED_ID>"}"#
     let payload = try BilligerMietwagenTokenPair.parseRefresh(from: json)
     #expect(payload.accessToken == "<REDACTED_ACCESS>")
     #expect(payload.refreshToken == "<REDACTED_REFRESH>")
-    let tokens = try payload.requiringRefreshedTokens()
+    let tokens = try payload.requiringRefreshedTokens(reusingRefresh: "<REDACTED_PREVIOUS>")
     #expect(tokens.access == "<REDACTED_ACCESS>")
     #expect(tokens.refresh == "<REDACTED_REFRESH>")
 }
 
-@Test("BilligerMietwagenTokenPair.requiringRefreshedTokens verlangt refresh_token")
-func bmRefreshRequiresRefreshToken() throws {
+@Test("Refresh ohne refresh_token in der Antwort behält den verwendeten Refresh")
+func bmRefreshReusesPreviousRefreshWhenResponseOmitsIt() throws {
     let payload = try BilligerMietwagenTokenPair.parseRefresh(
         from: #"{"access_token":"<REDACTED_ACCESS>","id_token":"<REDACTED_ID>"}"#
     )
+    let tokens = try payload.requiringRefreshedTokens(reusingRefresh: "<REDACTED_PREVIOUS>")
+    #expect(tokens.access == "<REDACTED_ACCESS>")
+    #expect(tokens.refresh == "<REDACTED_PREVIOUS>")
+}
+
+@Test("Refresh ohne access_token bleibt Fehler")
+func bmRefreshWithoutAccessTokenFails() throws {
+    let payload = try BilligerMietwagenTokenPair.parseRefresh(from: #"{"id_token":"<REDACTED_ID>"}"#)
     #expect(throws: BilligerMietwagenProviderError.tokenRefreshFailed) {
-        try payload.requiringRefreshedTokens()
+        try payload.requiringRefreshedTokens(reusingRefresh: "<REDACTED_PREVIOUS>")
     }
 }
 

@@ -4,6 +4,7 @@ import ReisenProviders
 enum BilligerMietwagenProviderError: Error, LocalizedError, Equatable {
     case missingWebViewSession
     case sessionNotAuthenticated
+    case accessTokenMissingUsernameClaim
     case tokenRefreshFailed
     case invalidBookingURL
     case catalogPaginationLimitExceeded
@@ -17,6 +18,8 @@ enum BilligerMietwagenProviderError: Error, LocalizedError, Equatable {
             return "\(host) benötigt eine WKWebView-basierte Session."
         case .sessionNotAuthenticated:
             return "\(host): nicht angemeldet (\(sessionFile) ohne \(access))."
+        case .accessTokenMissingUsernameClaim:
+            return "\(host): \(access) ohne JWT-Claim \(BilligerMietwagenAuthConstants.jwtUsernameClaim)."
         case .tokenRefreshFailed:
             return "\(host): \(access) konnte nicht erneuert werden (\(BilligerMietwagenAuthConstants.refreshTokenURL.lastPathComponent))."
         case .invalidBookingURL:

@@ -139,6 +139,51 @@ fi
 (
   # shellcheck source=apple-developer.sh
   source "$ROOT/Scripts/apple-developer.sh"
+  _reisen_profile_local="$(mktemp -d "${TMPDIR:-/tmp}/reisen-profile-local.XXXXXX")"
+  mkdir -p "$_reisen_profile_local/.signing"
+  printf 'local-profile\n' >"$_reisen_profile_local/.signing/Reisen.provisionprofile"
+  _reisen_got="$(reisen_provision_profile_path "$_reisen_profile_local")"
+  if [[ "$_reisen_got" != "$_reisen_profile_local/.signing/Reisen.provisionprofile" ]]; then
+    echo "Fehler: reisen_provision_profile_path muss \$ROOT/.signing/Reisen.provisionprofile bevorzugen." >&2
+    rm -rf "$_reisen_profile_local"
+    exit 1
+  fi
+  rm -rf "$_reisen_profile_local"
+
+  _reisen_primary="$(mktemp -d "${TMPDIR:-/tmp}/reisen-profile-primary.XXXXXX")"
+  git -C "$_reisen_primary" init -q
+  git -C "$_reisen_primary" config user.email "test@example.com"
+  git -C "$_reisen_primary" config user.name "Test"
+  git -C "$_reisen_primary" config core.autocrlf false
+  mkdir -p "$_reisen_primary/.signing"
+  printf 'primary-profile\n' >"$_reisen_primary/.signing/Reisen.provisionprofile"
+  printf 'init\n' >"$_reisen_primary/README"
+  git -C "$_reisen_primary" add README
+  git -C "$_reisen_primary" commit -qm init
+  _reisen_wt="$(mktemp -d "${TMPDIR:-/tmp}/reisen-profile-wt.XXXXXX")"
+  rmdir "$_reisen_wt"
+  git -C "$_reisen_primary" worktree add -q "$_reisen_wt" HEAD
+  _reisen_got="$(reisen_provision_profile_path "$_reisen_wt")"
+  if [[ ! -f "$_reisen_got" ]] || [[ "$(cat "$_reisen_got")" != "primary-profile" ]]; then
+    echo "Fehler: reisen_provision_profile_path muss in Worktrees das Profil des Primär-Checkouts finden." >&2
+    git -C "$_reisen_primary" worktree remove --force "$_reisen_wt" >/dev/null 2>&1 || true
+    rm -rf "$_reisen_primary" "$_reisen_wt"
+    exit 1
+  fi
+  case "$_reisen_got" in
+    "$_reisen_wt"/*)
+      echo "Fehler: Worktree-Lookup darf nicht auf einen Pfad unter dem Worktree zeigen." >&2
+      git -C "$_reisen_primary" worktree remove --force "$_reisen_wt" >/dev/null 2>&1 || true
+      rm -rf "$_reisen_primary" "$_reisen_wt"
+      exit 1
+      ;;
+  esac
+  git -C "$_reisen_primary" worktree remove --force "$_reisen_wt"
+  rm -rf "$_reisen_primary"
+)
+(
+  # shellcheck source=apple-developer.sh
+  source "$ROOT/Scripts/apple-developer.sh"
   APP_STORE_CONNECT_API_KEY_KEY_ID="TESTKEYID"
   APP_STORE_CONNECT_API_KEY_ISSUER="00000000-0000-0000-0000-000000000000"
   APP_STORE_CONNECT_API_KEY_BASE64="$(printf 'reisen-asc-key-fixture' | base64)"
