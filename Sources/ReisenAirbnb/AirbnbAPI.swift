@@ -22,6 +22,10 @@ enum AirbnbAPI {
     static let csrfWithoutTokenHeader = "X-CSRF-Without-Token"
     static let csrfWithoutTokenValue = "1"
 
+    /// Stay reservation-overview (live Stay-Detail). Same row contract as legacy `scheduled_events`.
+    static let stayReservationDetailsPathPrefix = "/api/v2/stay_reservation_details"
+    static let activityReservationDetailsPathPrefix = "/api/v2/activity_reservation_details"
+
     static func tripListQueryURL() -> URL {
         URL(string: "/api/v3/TripListQuery/\(tripListQuerySHA)")!.appendingQueryItems(
             [

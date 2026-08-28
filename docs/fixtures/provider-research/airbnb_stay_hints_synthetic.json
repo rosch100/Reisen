@@ -1,1 +1,80 @@
-{"scheduled_event":{"rows":[{"id":"amenities","title":"Essentials","available":false},{"id":"house_rules","text":"Please bring your own towels and linens"}]},"metadata":{"title":"Synthetic stay for hint parsing"}}
+{
+  "_meta": {
+    "source": "Airbnb stay_reservation_details / scheduled_events Stay-RO (live 2026-08-28)",
+    "note": "PII redacted; house_rules additional subtitle is synthetic prep phrase placed deeper than a 300-char blob snippet"
+  },
+  "scheduled_event": {
+    "schedulable_type": "RESERVATION2_CHECKIN",
+    "rows": [
+      {
+        "id": "checkin_checkout_arrival_guide",
+        "type": "row:split_title_subtitle_kicker_arrival_guide_v2",
+        "leading_subtitle": "23:00",
+        "trailing_subtitle": "11:00"
+      },
+      {
+        "id": "house_manual",
+        "type": "row:modal_preview",
+        "title": "Gäste-Handbuch",
+        "preview_text": "In your room is a water-heater on the table — tea and cups are in the cabinet.",
+        "destination": {
+          "type": "things_to_know_modal",
+          "modal_type": "house_manual",
+          "house_manual_section": {
+            "title": "Gäste-Handbuch",
+            "house_manual": "In your room is a water-heater on the table — tea and cups are in the cabinet."
+          }
+        }
+      },
+      {
+        "id": "house_rules",
+        "type": "row:modal_preview",
+        "title": "Hausregeln",
+        "preview_text": "Höchstens 2 Gäste Haustiere erlaubt Ruhezeiten: 22:00 - 07:00",
+        "destination": {
+          "type": "things_to_know_modal",
+          "modal_type": "house_rules",
+          "house_rules_section": {
+            "house_rules_title": "Hausregeln",
+            "house_rules_subtitle": "Behandle die Unterkunft mit Sorgfalt und Respekt.",
+            "house_rules_sections": [
+              {
+                "title": "Check-in und Check-out",
+                "items": [
+                  { "title": "Check-in ab 23:00" },
+                  { "title": "Check-out vor 11:00" }
+                ]
+              },
+              {
+                "title": "Während deines Aufenthalts",
+                "items": [
+                  { "title": "Höchstens 2 Gäste" },
+                  { "title": "Haustiere erlaubt" },
+                  { "title": "Ruhezeiten", "subtitle": "22:00 - 07:00" },
+                  { "title": "Keine Partys oder Veranstaltungen" },
+                  {
+                    "title": "Eigene Bettwäsche",
+                    "subtitle": "Bitte Laken und Bezüge selbst mitbringen — es liegt keine Wäsche bereit."
+                  },
+                  {
+                    "title": "Zusätzliche Regeln",
+                    "subtitle": "Frühstück gegen Aufpreis von 10 EUR. Handtücher selbst mitbringen."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "payment_summary",
+        "type": "row:basic_title_subtitle",
+        "title": "Bezahlter Betrag",
+        "subtitle": "52,56 €"
+      }
+    ]
+  },
+  "metadata": {
+    "title": "Synthetic stay for hint parsing"
+  }
+}
