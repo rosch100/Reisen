@@ -31,7 +31,7 @@ import ReisenDomain
         hotelCheckOutMinutes: 11 * 60
     )
 
-    for id in [ProviderID.airbnb, .booking, .getYourGuide, .opodo, .traveloka, .check24] {
+    for id in [ProviderID.airbnb, .booking, .getYourGuide, .opodo, .check24] {
         #expect(
             try provider(id).needsDraftEnrichment(
                 draft: completeHotel,
@@ -39,6 +39,29 @@ import ReisenDomain
             ) == false
         )
     }
+
+    var travelokaHotel = completeHotel
+    travelokaHotel.provider = .traveloka
+    #expect(
+        try provider(.traveloka).needsDraftEnrichment(
+            draft: travelokaHotel,
+            requiresDeadlines: false
+        ) == true
+    )
+    travelokaHotel.guestHints = [
+        BookingGuestHint(
+            title: "Hausregeln",
+            detail: "Example policy",
+            sourceKey: "traveloka:property_policy",
+            providerRaw: ProviderID.traveloka.rawValue
+        ),
+    ]
+    #expect(
+        try provider(.traveloka).needsDraftEnrichment(
+            draft: travelokaHotel,
+            requiresDeadlines: false
+        ) == false
+    )
 
     var unknownStatus = completeHotel
     unknownStatus.status = .unknown

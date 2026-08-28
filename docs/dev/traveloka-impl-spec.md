@@ -15,7 +15,7 @@ Neuer Provider `ReisenTraveloka` / `ProviderID.traveloka`: persönliche Buchunge
 |---------|-----------|-------|
 | Login-Start | `https://www.traveloka.com/en-en/user/signin?referrer=/en-en/user/mybooking` | Interaktives WKWebView (E-Mail/OTP **oder** Sign in with Apple) |
 | Session-Probe | `POST /api/v2/user/whoami` | `data.loginMethod` ∈ {`TV`,`AP`,…}; kein `revoked` |
-| Catalog | `POST /api/v2/tripitinerary/itineraries/v2/fetch` (+ optional `transactions/number`) | Itinerary-Entries / Gruppen `ACTIVE_BOOKING`; Phasen `UPCOMING` + `PAST` |
+| Catalog | `POST /api/v2/tripitinerary/itineraries/v2/fetch` (+ optional `transactions/number`) | Itinerary-Entries / Gruppen `ACTIVE_BOOKING`; Phase **`UPCOMING` only** (Live 2026-08-28: `PAST` → HTTP 400 Illegal argument) |
 | Enrich | `POST /api/v2/tripitinerary/itineraries/v2/single` | `cardSummaryInfo` + `cardDetailInfo` |
 | Refund (wenn Detail ohne **Fee**-Deadline) | `GET /en-en/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | `__NEXT_DATA__` Deadline-Locals; **mergen** (Itinerary-Free behalten, Fee ergänzen) |
 | Detail-Deep-Link | `/en-en/item/details/{bookingId}?type={PRODUCT}&id={itineraryId}` | `externalUrl` |
@@ -70,9 +70,9 @@ Status-SSOT: Tag/Text `Voucher issued` / `E-ticket issued` / `userTripStatus: ET
 Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 
 - Experience: `operatorInfo.name` → `operatorName`; `timeSlotId == all_day_pass` / „All Day“ → `isAllDay`
-- Hotel: Live-API `hotelDetail.voucherInfo` + `localeAwareInfos` (kein `hotelSummary`); Ort `bookingInfo.hotelBookingInfo.hotelGeoDisplayName`; Free+Fee-Fristen primär aus `cancellationPolicyInfos` (`FREE_CANCELLATION` / `FULL_CHARGE`, Betrag = `amount` / `10^numOfDecimalPoint`); Fallback Policy-String; Check-in/out aus Voucher-Zeiten
+- Hotel: Live-API `hotelDetail.voucherInfo` + `localeAwareInfos` (kein `hotelSummary`); Ort `bookingInfo.hotelBookingInfo.hotelGeoDisplayName`; Free+Fee-Fristen primär aus `cancellationPolicyInfos` (`FREE_CANCELLATION` / `FULL_CHARGE`, Betrag = `amount` / `10^numOfDecimalPoint`); Fallback Policy-String; Check-in/out aus Voucher-Zeiten; **Stay-Hints** aus `importantNoticeDisplay.importantNoticePolicies`, `propertyPolicy` (Hausregeln), optional `checkInInstruction` nur bei `BookingGuestHintPrepKeywords` — **nicht** `specialRequests`
 - Flight: Live-E-Ticket liest `bookingInfo.flightBookingInfo.bookingDetail` (Segmente `segments`, sonst `routes` / `flightRouteGroups`; Airports `sourceAirport`/`destinationAirport` oder Search-Shape `departureCity`/`arrivalCityCode`) plus `flightTicketInfo.eTicketDetailMap` / `eTicketButtonInfo`. Kein `flightSummary`. Keine Free-Deadline erfinden; Fee nur mit echter Deadline (`refundFeeAmount` + `refundDeadlineLocal` bzw. Refund-HTML)
-- Train: `TRAIN`/`TRAIN_GLOBAL` → `.train`; Titel `productName`; `ianaTimezoneBegin`/`ianaTimezoneEnd` → Flight-Offsets (Anzeige-Ortszeit). Stations-/Sitz-Parser folgt mit HAR
+- Train: `TRAIN`/`TRAIN_GLOBAL` → `.train`; Titel `productName`; `ianaTimezoneBegin`/`ianaTimezoneEnd` → Flight-Offsets (Anzeige-Ortszeit). Stations-/Sitz-Parser folgt mit HAR. **Nicht** in `catalogItineraryTypes` (Live 2026-08-28 Research-fetch: UPCOMING 200 + leere Liste, Konto-Beleg)
 - Vehicle: `supplierName`, `pickupLocation`/`pickupAddress` (nicht `providerName`/`pickUpAddress`); Titel `vehicleName` + `routeName`; Transmission `withoutDriverDetailInfo.product.transmissionTypeLabel`; Free-Frist 24h vor Pickup (EN „24 hours before“ / ID „24 jam sebelum“); Zeitzone oft Offset `+07:00` statt IANA
 
 ## Login
@@ -97,4 +97,23 @@ Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 ## Nicht in Scope
 
 - Partner-API, Payment Method, Redeem-Fließtext, Special Requests
-- TRAIN-Stations-/Sitz-Parser (kein TRAIN-Detail-HAR im Repo; Typ-Mapping existiert)
+- TRAIN-Stations-/Sitz-Parser (kein TRAIN-Detail-HAR im Repo; Typ-Mapping existiert; Catalog fragt TRAIN nicht an)
+- Pet-Keywords in `BookingGuestHintPrepKeywords` (Live 2026-08-28: kein Pet-Policy-Feld; `/pet/i` trifft ID „Petunjuk“ = False-Positive)
+
+## Live-Research 2026-08-28 (Konto-Beleg)
+
+| Frage | Ergebnis |
+|-------|----------|
+| `fetch` + `TRAIN`/`TRAIN_GLOBAL` UPCOMING | HTTP 200, `SUCCESS`, **leere** Bahn-Liste |
+| `fetch` PAST (mit/ohne TRAIN) | HTTP **400** Illegal argument |
+| Sichtbare `itineraryType` | `HOTEL`, `EXPERIENCE`, `VEHICLE_RENTAL` (kein `VILLA`/`APARTMENT`-Enum in diesem Konto; Heuristik unverändert) |
+| Fee-Refund-Flug | **nicht** in Katalog → Fixture weiter synthetisch |
+| Stay-Regeln Hotel | Policies in **`single`** (`importantNoticePolicies`, `propertyPolicy`, …); Catalog-Karten oft ohne — Traveloka enrich’t Hotels mit leeren `guestHints`. Haustiere/Bettwäsche **nicht** belegt |
+
+### Konformitätsprotokoll
+
+- Facts → `DraftAssembler` (`guestHints` über `ProviderBookingFacts`); kein zweites Draft-Init
+- no-fallbacks: fehlende Stay-Felder → leeres Array; keine geratenen TRAIN-Station-Keys; TRAIN nicht in Whitelist ohne Entries
+- SSOT: Typ-Mapping `TravelokaProductType`; Prep-Keywords Domain; Catalog-Types unverändert
+- Traveloka `needsDraftEnrichment`: Hotel mit leeren `guestHints` → `single` (Catalog-Karten oft ohne Policies; Sync überschreibt Hints aus dem Draft)
+- Doc-Drift A.4 TRAIN → `.train` korrigiert
