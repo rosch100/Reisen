@@ -154,11 +154,16 @@ public struct BookingEditorDraft: Equatable, Sendable {
     }
 
     public static func fromExisting(_ booking: SDBooking) -> BookingEditorDraft {
+        fromDomain(DomainMapper.booking(from: booking))
+    }
+
+    /// Editor-Felder aus einer Domain-Buchung — SSOT für `fromExisting` und Paste-Import-Prefill.
+    public static func fromDomain(_ booking: Booking) -> BookingEditorDraft {
         BookingEditorDraft(
             bookingID: booking.id,
-            provider: ProviderID(rawValue: booking.providerRaw),
-            bookingType: BookingType(rawValue: booking.bookingTypeRaw) ?? .other,
-            status: BookingStatus(rawValue: booking.statusRaw) ?? .unknown,
+            provider: booking.provider,
+            bookingType: booking.bookingType,
+            status: booking.status,
             title: booking.title ?? "",
             confirmationCode: booking.confirmationCode ?? "",
             externalUrl: booking.externalUrl ?? "",
@@ -177,7 +182,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             totalPriceCurrency: booking.rateDetails?.totalPriceCurrency ?? "EUR",
             roomCategory: booking.rateDetails?.roomCategory ?? "",
             operatorName: booking.operatorName ?? "",
-            boardType: BookingBoardType(rawValue: booking.rateDetails?.boardTypeRaw ?? "") ?? .unknown,
+            boardType: booking.rateDetails?.boardType ?? .unknown,
             includedBreakfastState: BookingIncludedBreakfastState.fromBool(booking.rateDetails?.includedBreakfast),
             guestCountText: booking.rateDetails?.guestCount.map { String($0) } ?? "",
             roomCountText: booking.rateDetails?.roomCount.map { String($0) } ?? "",
@@ -185,7 +190,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             passengerCountText: booking.rateDetails?.passengerCount.map { String($0) } ?? "",
             baggageInfoRaw: booking.rateDetails?.baggageInfoRaw ?? "",
             lastParsedAt: booking.rateDetails?.lastParsedAt,
-            cancellationDeadlines: booking.resolvedCancellationDeadlines
+            cancellationDeadlines: booking.cancellationDeadlines
                 .map { deadline in
                     CancellationDeadlineDraft(
                         id: deadline.id,
@@ -198,8 +203,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     )
                 }
                 .sorted { $0.deadlineAt < $1.deadlineAt },
-            passengers: booking.resolvedPassengers.map(DomainMapper.passenger(from:)),
-            guestHints: booking.resolvedGuestHints.map(DomainMapper.guestHint(from:))
+            passengers: booking.passengers,
+            guestHints: booking.guestHints
         )
     }
 
