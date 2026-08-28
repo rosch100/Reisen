@@ -15,6 +15,7 @@
               { "travellerType": "ADULT" }
             ],
             "itinerary": {
+              "transportTypes": ["PLANE"],
               "departureDate": 1785843900000,
               "arrivalDate": 1785846600000,
               "origin": {
