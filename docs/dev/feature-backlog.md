@@ -1,6 +1,6 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
-Status: **Backlog** (F01 implementiert, übrige Features geplant)  
+Status: **Backlog** (F01, F03, F09 umgesetzt; übrige Features geplant)  
 Stand: 2026-08-28
 
 ## Zweck und Leitlinie
@@ -40,7 +40,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 | X06 | Öffentlicher iCal-Feed-URL | abgelehnt | — | — |
 | X07 | Eigener Live-Flugstatus / Gate | abgelehnt | — | — |
 
-**Empfohlene Implementierungsreihenfolge:** F01 → F02 → F03/F04 → F05 → F06 → F07–F08.
+**Empfohlene Implementierungsreihenfolge:** F02 → F04 → F05 → F06 → F07–F08.
 
 ---
 
@@ -123,9 +123,9 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ### F03 — Copy/Paste für Info- und Editor-Felder
 
-**Sinn:** Am Counter ein Tap auf die Buchungsnr./PNR statt Textselektion; alle Info-Feldwerte ohne Markier-Akrobatik kopierbar; Editoren mit systemischem Cut/Copy/Paste.
+**Status:** umgesetzt. Spec: [`f03-copy-paste-fields.md`](f03-copy-paste-fields.md).
 
-**Machbarkeit:** hoch. Spec: [`f03-copy-paste-fields.md`](f03-copy-paste-fields.md).
+**Sinn:** Am Counter ein Tap auf die Buchungsnr./PNR statt Textselektion; alle Info-Feldwerte ohne Markier-Akrobatik kopierbar; Editoren mit systemischem Cut/Copy/Paste.
 
 | Aspekt | Vorgehen |
 |--------|----------|
@@ -260,9 +260,9 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 | Reisen hat | Konkurrenz | Folge |
 |------------|------------|-------|
-| Provider-Session-Sync (6 OTAs) | Mail-Parser | Nicht durch Inbox ersetzen |
+| Provider-Session-Sync (7 OTAs) | Mail-Parser | Nicht durch Inbox ersetzen |
 | `CancellationDeadline` + Notifications | Kaum modelliert | Kern halten; F02 analog erweitern |
-| Gaps + Deep-Links | Voyager flagged nur Lücken | F09 UI obendrauf |
+| Gaps + Deep-Links + Vollständigkeits-UI (F09) | Voyager flagged nur Lücken | Kern halten |
 | Pre-Travel Hints, Passagiere, Gepäck | Freitext in Mails | Kein generisches „Tipps“-Feature |
 | EventKit schreiben | iCal-Feed-URL | F04 Datei-Share, kein Feed (X06) |
 | Offen-Tab / Zuordnung | TripIt merged nach Datum | Beibehalten |

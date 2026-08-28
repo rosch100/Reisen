@@ -12,7 +12,7 @@ SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities
 | Traveloka | ReisenTraveloka | Hotel, Flug, Erlebnisse, Mietwagen, … | [Impl-Spec](traveloka-impl-spec.md) |
 | billiger-mietwagen.de | ReisenBilligerMietwagen | Mietwagen (FLOYT) | [Impl-Spec](billiger-mietwagen-impl-spec.md) |
 
-**Manuell:** Buchungen ohne Portal (`ProviderID.manual`) — Flug, Hotel, Fähre, Erlebnis, Sonstiges.
+**Manuell:** Buchungen ohne Portal (`ProviderID.manual`) — Flug, Hotel, Fähre, Bahn, Mietwagen, Erlebnis, Sonstiges (`BookingType`).
 
 ## Neuen Anbieter hinzufügen
 
