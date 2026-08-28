@@ -612,6 +612,10 @@ import ReisenDomain
 }
 
 @Test func catalogListing_dropsCancelledEndedAndDone() {
+    #expect(CatalogListing.isCompleted("done"))
+    #expect(CatalogListing.isCompleted("ENDED"))
+    #expect(!CatalogListing.isCompleted("cancelled"))
+    #expect(!CatalogListing.isCompleted("upcoming"))
     #expect(CatalogListing.shouldDrop("cancelled"))
     #expect(CatalogListing.shouldDrop("ENDED"))
     #expect(CatalogListing.shouldDrop("done"))

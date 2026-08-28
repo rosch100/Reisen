@@ -17,7 +17,7 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     #expect(draft.status == .confirmed)
     #expect(draft.title == "Yogyakarta: Ramayana Ballett Prambanan")
     #expect(draft.confirmationCode == "<REDACTED>")
-    #expect(draft.externalUrl == "https://www.getyourguide.com/en-us/booking/<REDACTED-1>")
+    #expect(draft.externalUrl == GetYourGuideWebConstants.bookingURL(hash: "<REDACTED-1>"))
     #expect(catalog.bookings.map(\.status) == [.confirmed, .cancelled, .confirmed])
     #expect(draft.startAt == iso8601("2026-08-08T19:00:00+07:00"))
     #expect(draft.endAt == iso8601("2026-08-08T21:00:00+07:00"))
@@ -40,7 +40,7 @@ func gygMyBookingsParsesPastWhenUpcomingEmpty() throws {
     #expect(catalog.bookings.count == 1)
     let draft = try #require(catalog.bookings.first)
     #expect(draft.status == .confirmed)
-    #expect(draft.externalUrl == "https://www.getyourguide.com/en-us/booking/<REDACTED>")
+    #expect(draft.externalUrl == GetYourGuideWebConstants.bookingURL(hash: "<REDACTED>"))
     #expect(draft.startAt == iso8601("2026-08-08T19:00:00+07:00"))
     #expect(draft.endAt == iso8601("2026-08-08T21:00:00+07:00"))
 }
@@ -65,6 +65,25 @@ func gygMyBookingsDedupesUpcomingAndPastByHash() throws {
     """
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
     #expect(catalog.bookings.count == 1)
+}
+
+@Test("GetYourGuideMyBookingsParser behält past, wenn upcoming mit gleichem Hash nicht mappbar ist")
+func gygMyBookingsKeepsPastWhenUpcomingSameHashDoesNotMap() throws {
+    let json = """
+    {"myBookings":{"upcomingBookings":[\
+    \(gygListBookingJSON(hash: "same", status: "done")),\
+    \(gygListBookingJSON(hash: "nofin", status: "active", finish: nil))\
+    ],"pastBookings":[\
+    \(gygListBookingJSON(hash: "same", status: "active")),\
+    \(gygListBookingJSON(hash: "nofin", status: "cancelled"))\
+    ]}}
+    """
+    let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
+    #expect(catalog.bookings.map(\.status) == [.confirmed, .cancelled])
+    #expect(catalog.bookings.map(\.externalUrl) == [
+        GetYourGuideWebConstants.bookingURL(hash: "same"),
+        GetYourGuideWebConstants.bookingURL(hash: "nofin"),
+    ])
 }
 
 @Test("GetYourGuideMyBookingsParser mappt cancelled in pastBookings")
@@ -104,8 +123,8 @@ func gygMyBookingsSkipsEntryWithoutFinishDateAndKeepsOthers() throws {
     #expect(catalog.bookings.map(\.confirmationCode) == ["keep-ref"])
 }
 
-@Test("GetYourGuideMyBookingsParser überspringt done-Status")
-func gygMyBookingsSkipsDoneStatusAndKeepsOthers() throws {
+@Test("GetYourGuideMyBookingsParser überspringt done- und ended-Status")
+func gygMyBookingsSkipsCompletedStatusAndKeepsOthers() throws {
     let json = """
     {
       "myBookings": {
@@ -123,6 +142,13 @@ func gygMyBookingsSkipsDoneStatusAndKeepsOthers() throws {
             "status": "done",
             "startingTime": { "startTime": "2026-08-09T19:00:00+07:00" },
             "bookingFinishDate": "2026-08-09T21:00:00+07:00"
+          },
+          {
+            "bookingHash": "skip-ended",
+            "bookingReference": "skip-ended-ref",
+            "status": "ended",
+            "startingTime": { "startTime": "2026-08-10T19:00:00+07:00" },
+            "bookingFinishDate": "2026-08-10T21:00:00+07:00"
           }
         ]
       }
@@ -181,8 +207,8 @@ func gygBookingSummaryParsesEnrichment() throws {
     #expect(hints.contains { $0.sourceKey.hasPrefix("gyg:itinerary:") })
 }
 
-@Test("GetYourGuideMyBookingsParser behält Draft ohne bookingHash (ohne Portal-URL)")
-func gygMyBookingsKeepsDraftWithoutHash() throws {
+@Test("GetYourGuideMyBookingsParser überspringt Draft ohne bookingHash")
+func gygMyBookingsSkipsDraftWithoutHash() throws {
     let json = """
     {
       "upcomingBookings": [
@@ -197,10 +223,7 @@ func gygMyBookingsKeepsDraftWithoutHash() throws {
     }
     """
     let catalog = try GetYourGuideMyBookingsParser.parse(from: json)
-    let draft = try #require(catalog.bookings.first)
-    #expect(draft.confirmationCode == "REF-ONLY")
-    #expect(draft.externalUrl == nil)
-    #expect(BookingExternalURL.browserURL(from: draft.externalUrl) == nil)
+    #expect(catalog.bookings.isEmpty)
 }
 
 @Test("GetYourGuide Catalog-Drafts haben browserURL")

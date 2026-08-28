@@ -23,15 +23,15 @@ enum GetYourGuideWebConstants {
     }
 
     static var loginURL: URL {
-        pageURL("/login?next=/\(loginLocalePath)/\(bookingsPath)/")
+        pageURL("/login?next=\(localeBookingsPath(loginLocalePath))")
     }
 
     static var catalogSyncURL: URL {
-        pageURL("/\(syncLocalePath)/\(bookingsPath)/")
+        pageURL(localeBookingsPath(syncLocalePath))
     }
 
     static func bookingURL(hash: String) -> String {
-        page("/\(syncLocalePath)/booking/\(hash)")
+        page(withSyncLocale("/booking/\(hash)"))
     }
 
     static func syncBookingURL(from externalUrl: String) -> URL? {
@@ -44,13 +44,21 @@ enum GetYourGuideWebConstants {
         let path = components.path.isEmpty ? "/" : components.path
         if let match = path.wholeMatch(of: /^\/([a-z]{2}-[a-z]{2})(\/.*)?$/) {
             let suffix = match.2.map(String.init) ?? ""
-            components.path = "/\(syncLocalePath)\(suffix)"
+            components.path = withSyncLocale(suffix)
         } else if path == "/" {
-            components.path = "/\(syncLocalePath)/"
+            components.path = withSyncLocale("/")
         } else {
-            components.path = "/\(syncLocalePath)\(path)"
+            components.path = withSyncLocale(path)
         }
         return components.url
+    }
+
+    private static func localeBookingsPath(_ locale: String) -> String {
+        "/\(locale)/\(bookingsPath)/"
+    }
+
+    private static func withSyncLocale(_ pathSuffix: String) -> String {
+        "/\(syncLocalePath)\(pathSuffix)"
     }
 
     private static func isOwnHost(_ host: String) -> Bool {

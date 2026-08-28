@@ -19,8 +19,7 @@ public final class GetYourGuideTravelProvider: TravelProvider, TravelProviderLog
     public var onProgress: (@MainActor (String) -> Void)?
 
     public func fetchCatalog(session: any ProviderSession) async throws -> ProviderCatalog {
-        // Ein HTML-GET: HAR 2026-08-28 ohne Listen-Pagination; Cloudflare-Challenge wirft statt leerem Parse.
-        return try await fetchParsed(
+        try await fetchParsed(
             from: session,
             url: GetYourGuideWebConstants.catalogSyncURL,
             subject: "Buchungen",
@@ -57,13 +56,17 @@ private extension GetYourGuideTravelProvider {
             from: session,
             orThrow: GetYourGuideProviderError.missingWebViewSession
         )
-        onProgress?("Lade \(subject) (\(displayName))…")
+        reportProgress("Lade", subject)
         let html = try await fetchBookingHTML(using: webView, url: url)
         guard let stateJSON = GetYourGuideInitialState.extractJSONObject(fromHTML: html) else {
             throw GetYourGuideProviderError.initialStateNotFound
         }
-        onProgress?("Parser \(subject) (\(displayName))…")
+        reportProgress("Parser", subject)
         return try parse(stateJSON)
+    }
+
+    func reportProgress(_ action: String, _ subject: String) {
+        onProgress?("\(action) \(subject) (\(displayName))…")
     }
 
     func fetchBookingHTML(using webView: WKWebView, url: URL) async throws -> String {

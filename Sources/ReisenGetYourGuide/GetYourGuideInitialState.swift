@@ -17,9 +17,8 @@ public enum GetYourGuideInitialState {
         containsAny(html.lowercased(), challengeMarkers)
     }
 
-    /// Passwordless OTP (HAR): kein Passwort-Feld. Login-URL prüft `AuthenticatedHTMLSession`.
-    /// Session: Keys `myBookings` oder `bookingSummary` in `__INITIAL_STATE__` (nicht Asset-Substrings).
-    /// `__INITIAL_STATE__` ohne diese Keys → Login.
+    /// Passwordless OTP: kein Passwort-Feld. Login-URL prüft `AuthenticatedHTMLSession`.
+    /// Session nur bei JSON-Objekten `myBookings` / `bookingSummary` in `__INITIAL_STATE__`.
     public static func looksLikeLoginHTML(_ html: String) -> Bool {
         guard let json = extractJSONObject(fromHTML: html) else {
             return containsAny(html.lowercased(), passwordlessLoginMarkers)
@@ -44,21 +43,22 @@ public enum GetYourGuideInitialState {
         guard let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)) else {
             return false
         }
-        return hasSessionKeys(inJSONValue: object)
+        return hasSessionKeys(in: object)
     }
 
-    private static func hasSessionKeys(inJSONValue value: Any) -> Bool {
+    private static func hasSessionKeys(in value: Any) -> Bool {
         switch value {
         case let dict as [String: Any]:
-            if sessionJSONKeys.contains(where: { dict[$0] != nil }) {
-                return true
-            }
-            return dict.values.contains { hasSessionKeys(inJSONValue: $0) }
+            return hasSessionObject(in: dict) || dict.values.contains { hasSessionKeys(in: $0) }
         case let array as [Any]:
-            return array.contains { hasSessionKeys(inJSONValue: $0) }
+            return array.contains { hasSessionKeys(in: $0) }
         default:
             return false
         }
+    }
+
+    private static func hasSessionObject(in dict: [String: Any]) -> Bool {
+        sessionJSONKeys.contains { dict[$0] is [String: Any] }
     }
 
     private static func containsAny(_ haystack: String, _ markers: [String]) -> Bool {

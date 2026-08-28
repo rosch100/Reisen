@@ -6,27 +6,18 @@ enum GetYourGuideParsing {
         count > 0 ? count : nil
     }
 
+    static func occupancy(of participants: [GYGParticipant]?) -> Int? {
+        occupancy((participants ?? []).reduce(0) { $0 + participantCount($1) })
+    }
+
     static func participantCount(_ participant: GYGParticipant) -> Int {
         max(0, participant.count ?? 0)
     }
 
-    /// Katalog: fehlend/`unknown` → `.unknown`, `done` → überspringen.
-    /// Storno bleibt im Katalog (GYG past/upcoming), im Gegensatz zu `CatalogListing.shouldDrop`.
+    /// Katalog: abgeschlossen überspringen; Storno bleibt (anders als `CatalogListing.shouldDrop`).
     static func catalogStatus(_ raw: String?) -> BookingStatus? {
-        guard let raw else { return .unknown }
-        if raw.lowercased() == "done" { return nil }
-        return confirmedOrCancelled(raw) ?? .unknown
-    }
-
-    private static func confirmedOrCancelled(_ raw: String) -> BookingStatus? {
-        switch raw.lowercased() {
-        case "active":
-            return .confirmed
-        case "cancelled", "canceled":
-            return .cancelled
-        default:
-            return nil
-        }
+        guard !CatalogListing.isCompleted(raw) else { return nil }
+        return BookingStatus.parse(raw)
     }
 }
 

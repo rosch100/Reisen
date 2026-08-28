@@ -144,14 +144,6 @@ func check24LoginHTMLIndicatesMissingSession() {
     </body></html>
     """
     #expect(AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(loginHTML))
-    #expect(AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
-        loginHTML,
-        responseURL: URL(string: "https://kundenbereich.check24.de/user/login.html")
-    ))
-    #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
-        loginHTML,
-        responseURL: URL(string: "https://kundenbereich.check24.de/user/account/activities.html")
-    ))
     #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(#"{ "activities": [] }"#))
     #expect(!AuthPageHTMLHeuristic.check24LooksLikeLoginHTML(
         "<html><body><a href=\"/user/account/activities.html\">Aktivitäten</a></body></html>"

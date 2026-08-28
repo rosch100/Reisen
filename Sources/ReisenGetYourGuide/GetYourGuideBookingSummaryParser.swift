@@ -10,17 +10,17 @@ public enum GetYourGuideBookingSummaryParser {
     }
 
     private static func decodeSummary(from data: Data) throws -> BookingSummaryDTO {
-        if let bookingEnvelope = try? GetYourGuideJSONDecoder.shared.decode(BookingEnvelope.self, from: data),
+        if let bookingEnvelope = GetYourGuideJSONDecoder.decode(BookingEnvelope.self, from: data),
            let summary = bookingEnvelope.booking?.bookingSummary ?? bookingEnvelope.bookingSummary
         {
             return summary
         }
-        if let wrapper = try? GetYourGuideJSONDecoder.shared.decode(SummaryWrapper.self, from: data),
+        if let wrapper = GetYourGuideJSONDecoder.decode(SummaryWrapper.self, from: data),
            let summary = wrapper.bookingSummary
         {
             return summary
         }
-        if let direct = try? GetYourGuideJSONDecoder.shared.decode(BookingSummaryDTO.self, from: data),
+        if let direct = GetYourGuideJSONDecoder.decode(BookingSummaryDTO.self, from: data),
            direct.activity != nil || direct.booking != nil
         {
             return direct

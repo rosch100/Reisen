@@ -27,7 +27,7 @@ HAR-Inventar inkl. Auth/GraphQL/QR: Research A.1. Primärpfad:
 
 ## Catalog-Mapping (`myBookings`)
 
-Listen: `upcomingBookings` **und** `pastBookings` (gleiche Mapper, Dedup per `bookingHash`). GYG schiebt beendete Termine nach `past` (auch Status `active`). `done` skip; ohne `bookingHash` oder `bookingFinishDate` skip. Keine Pagination-Felder (HAR 2026-08-28).
+Listen: `upcomingBookings` **und** `pastBookings` (gleiche Mapper, Dedup per `bookingHash` erst nach erfolgreichem Mapping). GYG schiebt beendete Termine nach `past` (auch Status `active`). `done`/`ended` skip; ohne `bookingHash` oder `bookingFinishDate` skip. Keine Pagination-Felder (HAR 2026-08-28).
 
 | GYG | Reisen |
 |-----|--------|
@@ -60,7 +60,7 @@ Parser: robuster Extract von `__INITIAL_STATE__` (Brace-Scan, kein naives Regex 
 - E-Mail-Login ist **passwordless OTP** in der WebView (`POST /auth/passwordless/otp/send` → Nutzer-Code → `POST /auth/passwordless/otp/exchange`). `signupMethod`: `pre_payment_otp`; Claim `gyg/auth_provider`: `email`. Kein natives OTP-API.
 - Social/OIDC (`POST /auth/social/exchange` → Bearer) bleibt optional — in der E-Mail-HAR nicht gefeuert.
 - Access-Token, OTP, E-Mail und Claims **nicht** persistieren/loggen. Session über Cookies `tfe_access_token` / `tfe_authenticated_session` (HttpOnly).
-- Primärpfad: Cookie-Session der WebView für die beiden HTML-GETs (`fetchAuthenticatedHTML` / Cookie-`URLSession` wie Check24/Opodo). Login-HTML (Redirect auf `/login`, passwordless-Marker, oder `__INITIAL_STATE__` ohne Keys `myBookings`/`bookingSummary`) → `sessionNotEstablished`. Asset-Substrings zählen nicht; Session-Keys nur im JSON-Objekt. Leeres `myBookings`-Objekt zählt als Session (leerer Katalog), nicht als Login. HTTP 401/403 oder 200 mit Cloudflare-Challenge-Body (auch unter `/login`) → `cloudflareChallenge` (nicht „bitte anmelden“).
+- Primärpfad: Cookie-Session der WebView für die beiden HTML-GETs (`fetchAuthenticatedHTML` / Cookie-`URLSession` wie Check24/Opodo). Login-HTML (Redirect auf `/login`, passwordless-Marker, oder `__INITIAL_STATE__` ohne Objekt-Keys `myBookings`/`bookingSummary`) → `sessionNotEstablished`. Asset-Substrings, JSON-`null` und String-Werte zählen nicht; nur JSON-Objekte. Leeres `myBookings`-Objekt zählt als Session (leerer Katalog), nicht als Login. HTTP 401/403 oder 200 mit Cloudflare-Challenge-Body (auch unter `/login`) → `cloudflareChallenge` (nicht „bitte anmelden“).
 - Login-Start-URL = `/login?next=/de-de/customer-bookings/` (OTP-Autofill + E-Mail-Fill ab erster Navigation; nach Login `next=` → Kundenbuchungen).
 - API-Header aus HAR (nur falls SSR ohne Cookies scheitert): `Authorization: Bearer …`, `x-gyg-app-type: Web`, `x-gyg-partner-hash`, `apollographql-client-name` — Werte nicht hardcoden aus HAR.
 

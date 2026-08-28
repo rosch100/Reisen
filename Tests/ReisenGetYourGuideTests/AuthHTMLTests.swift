@@ -40,6 +40,16 @@ func gygLooksLikeLoginHTMLIgnoresAssetSubstrings() {
     #expect(GetYourGuideInitialState.looksLikeLoginHTML(html))
 }
 
+@Test("GetYourGuide JSON-null und String-Keys sind keine Session")
+func gygLooksLikeLoginHTMLIgnoresNullAndStringSessionKeys() {
+    #expect(GetYourGuideInitialState.looksLikeLoginHTML(
+        GetYourGuideResearchFixture.initialStateHTML(#"{"myBookings":null,"bookingSummary":null}"#)
+    ))
+    #expect(GetYourGuideInitialState.looksLikeLoginHTML(
+        GetYourGuideResearchFixture.initialStateHTML(#"{"i18n":{"bookingSummary":"Buchungsübersicht"}}"#)
+    ))
+}
+
 @Test("AuthenticatedHTMLSession erkennt GYG-Catalog-200 ohne myBookings als fehlende Session")
 func gygAuthenticatedHTMLSessionRejectsCatalogLoginState() {
     expectAuthenticatedHTML(
