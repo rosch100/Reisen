@@ -1,0 +1,20 @@
+# Template: copy to Reisen `.github/ISSUE_TEMPLATE/feature.yml`
+
+name: Feature
+description: Feature-Request für Reisen (nach Freigabe Issue-Dev /feature-dev)
+title: "[Feature] "
+labels: ["kind/feature"]
+body:
+  - type: textarea
+    id: want
+    attributes:
+      label: Was soll die App können?
+      description: Die Meldung ist öffentlich auf GitHub sichtbar.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Warum / Kontext
+    validations:
+      required: false
