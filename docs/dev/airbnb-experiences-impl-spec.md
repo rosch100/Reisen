@@ -70,5 +70,9 @@ Kein Hotel-Check-in/out für Activities; Event-Zeitfenster reicht.
 ## Nicht in Scope
 
 - Partner-APIs
-- Past Experiences (optional später)
+- Past Experiences: optional. Live `PastTripsListQuery` (`first: 50`, Konto-Beleg 2026-08-28) hatte nur `RESERVATION2_CHECKIN`, keine `EXPERIENCE_RESERVATION`.
 - Locale-spezifische Textparser ohne Row-`id`
+
+## Stay Pre-Travel-Hints
+
+Stay-Detail (`GET /api/v2/stay_reservation_details/RESERVATION2_CHECKIN/{code}`, gleicher Row-Vertrag wie Legacy `scheduled_events`) enthält sichtbare Rows `house_rules` und `house_manual`. `AirbnbGuestHintParser` mappt nur diese Rows **nach `id`**, und nur wenn `BookingGuestHintPrepKeywords` im sichtbaren Text trifft (kein Dummy). Fetch braucht den öffentlichen Web-`X-Airbnb-API-Key` (sonst `400 invalid_key`).
