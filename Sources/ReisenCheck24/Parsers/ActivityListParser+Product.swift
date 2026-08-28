@@ -3,7 +3,7 @@ import ReisenDomain
 
 extension ActivityListParser {
     static let travelProductKeys: Set<String> = [
-        "hotel", "flight", "ferry", "holidayflat", "package"
+        "hotel", "flight", "ferry", "holidayflat", "package", "rentalcar"
     ]
 
     func productKey(from activity: [String: Any]) -> String {

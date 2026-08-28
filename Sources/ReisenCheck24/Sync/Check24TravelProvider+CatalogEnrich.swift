@@ -83,4 +83,26 @@ extension Check24TravelProvider {
             )
         }
     }
+
+    func enrichCarRentalBookings(
+        carRentalBookingsWithURL: [(ParsedBooking, URL)],
+        webView: WKWebView,
+        carRentalDetailByBookingKey: inout [String: ParsedCarRentalDetail]
+    ) async throws {
+        for (index, item) in carRentalBookingsWithURL.enumerated() {
+            let (parsedBooking, bookingURL) = item
+            if let key = parsedBooking.identityKey,
+               carRentalDetailByBookingKey[key] != nil {
+                continue
+            }
+
+            onProgress?("Mietwagen \(index + 1)/\(carRentalBookingsWithURL.count)…")
+            try await enrichCarRentalDetail(
+                webView: webView,
+                parsedBooking: parsedBooking,
+                bookingURL: bookingURL,
+                carRentalDetailByBookingKey: &carRentalDetailByBookingKey
+            )
+        }
+    }
 }

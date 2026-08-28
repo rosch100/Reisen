@@ -94,6 +94,7 @@ extension Check24TravelProvider {
         hotelStayByBookingURL: [String: HotelCheckInOut],
         guestHintsByBookingURL: [String: [BookingGuestHint]],
         bookingDetailsByBookingKey: [String: ParsedBookingDetails],
+        carRentalDetailByBookingKey: [String: ParsedCarRentalDetail] = [:],
         draftByExternalUrl: inout [String: ProviderBookingDraft]
     ) {
         for parsed in activity.bookings {
@@ -104,7 +105,9 @@ extension Check24TravelProvider {
                 }
             }
 
-            guard parsed.type.supportsFlightOffsetAutofill || parsed.type == .hotel else { continue }
+            guard parsed.type == .hotel
+                || parsed.type == .carRental
+                || parsed.type.supportsFlightOffsetAutofill else { continue }
 
             guard let draft = mapDraft(
                 parsed,
@@ -112,7 +115,8 @@ extension Check24TravelProvider {
                 deadlinesByBookingURL: deadlinesByBookingURL,
                 hotelStayByBookingURL: hotelStayByBookingURL,
                 guestHintsByBookingURL: guestHintsByBookingURL,
-                bookingDetailsByBookingKey: bookingDetailsByBookingKey
+                bookingDetailsByBookingKey: bookingDetailsByBookingKey,
+                carRentalDetail: parsed.identityKey.flatMap { carRentalDetailByBookingKey[$0] }
             ) else { continue }
             guard let key = draft.externalUrl else { continue }
             draftByExternalUrl[key] = draft

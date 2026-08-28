@@ -27,6 +27,7 @@ extension ActivityListParser {
                 || lower.contains("flight")
                 || lower.contains("ferry")
                 || lower.contains("faehre")
+                || lower.contains("mietwagen")
                 || lower.contains("reise")
         }
     }
@@ -95,6 +96,7 @@ extension ActivityListParser {
 
     private func bookingType(from href: String) -> BookingType {
         let lower = href.lowercased()
+        if lower.contains("mietwagen") { return .carRental }
         if lower.contains("hotel") || lower.contains("ferienwohnung") { return .hotel }
         if lower.contains("flug") || lower.contains("flight") { return .flight }
         if lower.contains("ferry") || lower.contains("faehre") { return .ferry }

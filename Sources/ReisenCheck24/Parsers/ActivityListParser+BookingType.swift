@@ -10,6 +10,8 @@ extension ActivityListParser {
             return .flight
         case "ferry":
             return .ferry
+        case "rentalcar":
+            return .carRental
         default:
             return .other
         }

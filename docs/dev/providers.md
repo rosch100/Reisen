@@ -4,7 +4,7 @@ SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities
 
 | Anbieter | Modul | Typische Buchungen | Impl-Spec / Notizen |
 |----------|-------|-------------------|---------------------|
-| Check24 | ReisenCheck24 | Flug, Hotel, Fähre, Mietwagen, … | productKey-basiert; [Audit](check24-productkey-audit.md) |
+| Check24 | ReisenCheck24 | Flug, Hotel, Fähre, Mietwagen (`rentalcar` → [mietwagen.check24.de](https://mietwagen.check24.de/) → `.carRental`), … | productKey-basiert; [Audit](check24-productkey-audit.md) |
 | Opodo | ReisenOpodo | Flug, Hotel | [API-Recherche](../API_Research_Opodo_Booking.md) |
 | Booking.com | ReisenBookingCom | Flug, Hotel, Erlebnisse | GraphQL + HTML-Fallback |
 | Airbnb | ReisenAirbnb | Unterkünfte, Erlebnisse | [Experiences](airbnb-experiences-impl-spec.md) |

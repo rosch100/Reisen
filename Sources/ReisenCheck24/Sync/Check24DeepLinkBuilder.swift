@@ -12,33 +12,59 @@ public struct Check24DeepLinkBuilder: GapDeepLinkBuilding {
         var links: [DeepLinkSuggestion] = []
 
         let destinationHint = gap.fromLocationTo ?? gap.toLocationFrom ?? gap.toLocationTo
-        do {
-            let hotelURL = try makeHotelSearchURL(
+        appendSuggestion(
+            title: "Hotel suchen (Check24)",
+            into: &links,
+            issues: &issues,
+            fallbackIssue: .destinationIdNotDerivable
+        ) {
+            try makeHotelSearchURL(
                 destinationHint: destinationHint,
                 checkIn: gap.gapStart,
                 checkOut: gap.gapEnd
             )
-            links.append(DeepLinkSuggestion(title: "Hotel suchen (Check24)", url: hotelURL))
-        } catch let issue as DeepLinkIssue {
-            issues.append(issue)
-        } catch {
-            issues.append(.destinationIdNotDerivable)
         }
 
-        do {
+        appendSuggestion(
+            title: "Flug suchen (Check24)",
+            into: &links,
+            issues: &issues,
+            fallbackIssue: .missingFromIATA
+        ) {
             // Zwischen-Transport: Abflug = letzter Ankunftsort, Ziel = Ort der nächsten Buchung.
-            let flightURL = try makeFlightSearchURL(
+            try makeFlightSearchURL(
                 fromHint: gap.fromLocationTo ?? gap.fromLocationFrom,
                 toHint: gap.toLocationFrom ?? gap.toLocationTo,
                 date: gap.gapStart
             )
-            links.append(DeepLinkSuggestion(title: "Flug suchen (Check24)", url: flightURL))
-        } catch let issue as DeepLinkIssue {
-            issues.append(issue)
-        } catch {
-            issues.append(.missingFromIATA)
+        }
+
+        appendSuggestion(
+            title: "Mietwagen suchen (Check24)",
+            into: &links,
+            issues: &issues,
+            fallbackIssue: .missingDestinationHint
+        ) {
+            try makeCarRentalSearchURL(for: gap)
         }
 
         return (links, issues)
+    }
+
+    private func appendSuggestion(
+        title: String,
+        into links: inout [DeepLinkSuggestion],
+        issues: inout [DeepLinkIssue],
+        fallbackIssue: DeepLinkIssue,
+        makeURL: () throws -> URL
+    ) {
+        do {
+            let url = try makeURL()
+            links.append(DeepLinkSuggestion(title: title, url: url))
+        } catch let issue as DeepLinkIssue {
+            issues.append(issue)
+        } catch {
+            issues.append(fallbackIssue)
+        }
     }
 }
