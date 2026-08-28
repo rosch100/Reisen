@@ -121,7 +121,7 @@ private enum PasteImportShareConfig {
     }
 }
 
-@Test func pasteImportShare_activationCoversTextImageAndPDFOnly() throws {
+@Test func pasteImportShare_activationCoversTextImagePDFAndFileURL() throws {
     let plist = try PasteImportShareConfig.plist("Apps/ReisenPasteImportShare/Info.plist")
     let extensionDict = plist["NSExtension"] as? [String: Any] ?? [:]
     #expect(extensionDict["NSExtensionPointIdentifier"] as? String == "com.apple.share-services")
@@ -131,6 +131,7 @@ private enum PasteImportShareConfig {
     #expect(rule.contains("public.plain-text"))
     #expect(rule.contains("public.image"))
     #expect(rule.contains("com.adobe.pdf"))
+    #expect(rule.contains("public.file-url"))
     #expect(!rule.contains("NSExtensionActivationSupportsFileWithMaxCount"))
-    #expect(!rule.contains("public.url"))
+    #expect(!rule.contains("NSExtensionActivationSupportsWebURLWithMaxCount"))
 }

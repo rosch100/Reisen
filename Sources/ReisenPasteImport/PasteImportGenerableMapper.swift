@@ -5,6 +5,9 @@ import ReisenDomain
 ///
 /// Unbekannte Enum-Strings werden nicht auf einen Sammelfall gebogen: `bookingType` und `status`
 /// bleiben `nil`, damit `PasteImportFilter` bzw. der Editor entscheiden.
+/// Bekannte DE/EN-Aliase (`Flug`, `Tour`, `Mietwagen`) und Ticket-Datumsformate
+/// (`28.08.2026 09:02`, `Sat, 8 Aug 2026 07:45`) übersetzt `PasteImportBookingLabel` /
+/// `PasteImportTicketDate` — das ist keine Schätzung fehlender Werte.
 ///
 /// Ein unvollständiger Hinweis oder eine Frist ohne Datum verwirft nur sich selbst und nicht die
 /// ganze Buchung: ein einzelnes Detail, das das Modell halb erkannt hat, darf einen erkannten
@@ -16,11 +19,11 @@ public enum PasteImportGenerableMapper {
 
     public static func extraction(from dto: PasteImportBookingDTO) -> PasteImportExtraction {
         PasteImportExtraction(
-            bookingType: dto.bookingType.flatMap(bookingType(from:)),
-            startAt: date(from: dto.startAtISO8601),
-            endAt: date(from: dto.endAtISO8601),
+            bookingType: dto.bookingType.flatMap(PasteImportBookingLabel.bookingType(from:)),
+            startAt: PasteImportTicketDate.parse(dto.startAtISO8601),
+            endAt: PasteImportTicketDate.parse(dto.endAtISO8601),
             title: NonEmpty.string(dto.title),
-            confirmationCode: NonEmpty.string(dto.confirmationCode),
+            confirmationCode: PasteImportConfirmationCode.sanitize(dto.confirmationCode),
             externalUrl: NonEmpty.string(dto.externalUrl),
             locationFrom: NonEmpty.string(dto.locationFrom),
             locationTo: NonEmpty.string(dto.locationTo),
@@ -40,21 +43,12 @@ public enum PasteImportGenerableMapper {
         )
     }
 
-    private static func bookingType(from raw: String) -> BookingType? {
-        NonEmpty.string(raw).flatMap(BookingType.init(rawValue:))
-    }
-
     private static func status(from raw: String) -> BookingStatus? {
-        NonEmpty.string(raw).flatMap(BookingStatus.init(rawValue:))
+        PasteImportBookingLabel.status(from: raw)
     }
 
-    /// `withInternetDateTime` deckt `…T10:00:00Z` ab, Modelle liefern teils Millisekunden.
     private static func date(from raw: String?) -> Date? {
-        guard let text = NonEmpty.string(raw) else { return nil }
-        let formatter = ISO8601DateFormatter()
-        if let date = formatter.date(from: text) { return date }
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: text)
+        PasteImportTicketDate.parse(raw)
     }
 
     /// Fehlende `passengerNumber` ist die Position im Array (1..n), keine erfundene Zahl.

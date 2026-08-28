@@ -1,7 +1,6 @@
 import PhotosUI
 import SwiftData
 import SwiftUI
-import UniformTypeIdentifiers
 
 import ReisenAppCore
 import ReisenDomain
@@ -10,19 +9,7 @@ import ReisenSharedUI
 /// Quellen des iOS-Einstiegs: Dateiauswahl und Fotos.
 enum PasteImportIOSSource {
     static func fromFile(_ url: URL) throws -> PasteImportSource {
-        // `fileImporter` liefert eine URL außerhalb der App-Sandbox; ohne Zugriff schlägt das Lesen fehl.
-        let didStartAccess = url.startAccessingSecurityScopedResource()
-        defer {
-            if didStartAccess { url.stopAccessingSecurityScopedResource() }
-        }
-        let data = try Data(contentsOf: url)
-        let type = UTType(filenameExtension: url.pathExtension)
-        if type?.conforms(to: .pdf) == true { return .pdf(data) }
-        if type?.conforms(to: .image) == true { return .image(data) }
-        guard let text = String(data: data, encoding: .utf8) else {
-            throw PasteImportIOSSourceError.unreadableFile
-        }
-        return .text(text)
+        try PasteImportFileSource.source(from: url)
     }
 
     static func fromPhoto(_ item: PhotosPickerItem) async throws -> PasteImportSource {
@@ -73,7 +60,7 @@ private struct PasteImportToolbarModifier: ViewModifier {
             }
             .fileImporter(
                 isPresented: $isImportingFile,
-                allowedContentTypes: [.pdf, .image, .plainText]
+                allowedContentTypes: PasteImportFileSource.allowedContentTypes
             ) { result in
                 startFromFile(result)
             }

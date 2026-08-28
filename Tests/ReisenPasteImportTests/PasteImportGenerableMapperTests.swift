@@ -30,10 +30,56 @@ import ReisenPasteImport
 }
 
 @Test func pasteImportGenerableMapper_unparsableDatesBecomeNil() {
-    let dto = PasteImportBookingDTO(startAtISO8601: "28.08.2026", endAtISO8601: "   ")
+    let dto = PasteImportBookingDTO(startAtISO8601: "not-a-date", endAtISO8601: "   ")
     let extraction = PasteImportGenerableMapper.extraction(from: dto)
     #expect(extraction.startAt == nil)
     #expect(extraction.endAt == nil)
+}
+
+@Test func pasteImportGenerableMapper_rejectsAmbiguousSlashDates() {
+    let dto = PasteImportBookingDTO(startAtISO8601: "08/09/2026")
+    #expect(PasteImportGenerableMapper.extraction(from: dto).startAt == nil)
+}
+
+@Test func pasteImportGenerableMapper_germanAndEnglishTicketDatesBecomeStartAt() throws {
+    let german = PasteImportGenerableMapper.extraction(
+        from: PasteImportBookingDTO(startAtISO8601: "28.08.2026 09:02")
+    )
+    let english = PasteImportGenerableMapper.extraction(
+        from: PasteImportBookingDTO(startAtISO8601: "Sat, 8 Aug 2026 07:45")
+    )
+    let localISO = PasteImportGenerableMapper.extraction(
+        from: PasteImportBookingDTO(startAtISO8601: "2026-08-08T07:45:00")
+    )
+    let dateOnly = PasteImportGenerableMapper.extraction(
+        from: PasteImportBookingDTO(startAtISO8601: "28.08.2026")
+    )
+    #expect(try #require(german.startAt) == ticketDate(2026, 8, 28, 9, 2))
+    #expect(try #require(english.startAt) == ticketDate(2026, 8, 8, 7, 45))
+    #expect(try #require(localISO.startAt) == ticketDate(2026, 8, 8, 7, 45))
+    #expect(try #require(dateOnly.startAt) == ticketDate(2026, 8, 28, 0, 0))
+}
+
+@Test func pasteImportGenerableMapper_acceptsSpokenTypeAliasesNotUnknownLabels() {
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "Flug")).bookingType == .flight)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "Train")).bookingType == .train)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "Tour")).bookingType == .activity)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "Mietwagen")).bookingType == .carRental)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "Unterkunft")).bookingType == .hotel)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "Fähre")).bookingType == .ferry)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(status: "bestätigt")).status == .confirmed)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "spaceship")).bookingType == nil)
+}
+
+private func ticketDate(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
+    var parts = DateComponents()
+    parts.year = year
+    parts.month = month
+    parts.day = day
+    parts.hour = hour
+    parts.minute = minute
+    parts.second = 0
+    return Calendar.current.date(from: parts)!
 }
 
 @Test func pasteImportGenerableMapper_blankStringsBecomeNilAndValuesAreTrimmed() {

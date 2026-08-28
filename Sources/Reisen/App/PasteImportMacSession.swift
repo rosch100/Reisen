@@ -2,7 +2,6 @@ import AppKit
 import Foundation
 import SwiftData
 import SwiftUI
-import UniformTypeIdentifiers
 import ReisenAppCore
 import ReisenData
 import ReisenDomain
@@ -14,15 +13,6 @@ enum PasteImportModel {
     static func kind() -> PasteImportModelKind {
         PasteImportModelResolver.resolve(FoundationModelsPasteImportAvailability().availability())
     }
-}
-
-/// Die Datei liegt vor, ist aber nicht als Text, Bild oder PDF lesbar.
-enum PasteImportMacSourceError: Error, Equatable, Sendable {
-    case unreadableFile
-}
-
-extension PasteImportMacSourceError: PasteImportFailureClassifying {
-    var pasteImportFailure: PasteImportFailure { .source }
 }
 
 /// Quellen des macOS-Einstiegs: Zwischenablage und Dateiauswahl.
@@ -37,25 +27,18 @@ enum PasteImportMacSource {
     }
 
     /// `nil`, wenn der Nutzer die Auswahl abbricht.
+    ///
+    /// `begin()` statt `runModal()`: ein Menübefehl darf kein geschachteltes Modal starten,
+    /// sonst erscheint der Dialog nicht.
     @MainActor
-    static func fromOpenPanel() throws -> PasteImportSource? {
+    static func fromOpenPanel() async throws -> PasteImportSource? {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.pdf, .image, .plainText]
+        panel.allowedContentTypes = PasteImportFileSource.allowedContentTypes
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        guard panel.runModal() == .OK, let url = panel.url else { return nil }
-        return try source(ofFile: url)
-    }
-
-    private static func source(ofFile url: URL) throws -> PasteImportSource {
-        let data = try Data(contentsOf: url)
-        let type = UTType(filenameExtension: url.pathExtension)
-        if type?.conforms(to: .pdf) == true { return .pdf(data) }
-        if type?.conforms(to: .image) == true { return .image(data) }
-        guard let text = String(data: data, encoding: .utf8) else {
-            throw PasteImportMacSourceError.unreadableFile
-        }
-        return .text(text)
+        let response = await panel.begin()
+        guard response == .OK, let url = panel.url else { return nil }
+        return try PasteImportFileSource.source(from: url)
     }
 }
 
@@ -230,6 +213,28 @@ extension View {
         onReviewQueue: @escaping () -> Void
     ) -> some View {
         modifier(PasteImportFlowModifier(session: session, onReviewQueue: onReviewQueue))
+    }
+
+    /// Fenster-Drop und Inbox für Dock/„Öffnen mit“.
+    func pasteImportMacDropAndOpen(
+        onDropped: @escaping ([URL]) -> Void,
+        onExternal: @escaping () -> Void
+    ) -> some View {
+        modifier(PasteImportMacDropAndOpenModifier(onDropped: onDropped, onExternal: onExternal))
+    }
+}
+
+private struct PasteImportMacDropAndOpenModifier: ViewModifier {
+    let onDropped: ([URL]) -> Void
+    let onExternal: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .pasteImportExternalFilesOffered)) { _ in
+                onExternal()
+            }
+            .onAppear(perform: onExternal)
+            .pasteImportDropTarget(onURLs: onDropped)
     }
 }
 

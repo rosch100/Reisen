@@ -31,7 +31,7 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 
 ### In Scope (v1)
 
-- Eingabe: Zwischenablage-Text, Bilder, PDF (ephemer). Text-PDF über PDFKit-Text; **gescannte Seiten als Bilder** an das Modell (wie Foto), kein OCR-Workaround.
+- Eingabe: Zwischenablage-Text, Bilder, PDF (ephemer), inkl. Dateidialog, Drop und iOS „Senden an“/Teilen. Text-PDF über PDFKit-Text; **gescannte Seiten als Bilder** an das Modell (wie Foto), kein OCR-Workaround.
 - Mehrere Kandidaten: Auswahlliste, Nutzer wählt 0..n, danach Editor nacheinander.
 - Einstieg: geöffnete Reise oder Offen-Tab; iOS zusätzlich Share-Sheet.
 - Alle `BookingType`-Fälle.
@@ -43,6 +43,7 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 - Create ohne Reise: `BookingEditorDraft.createBooking(..., trip: SDTrip?)` mit `trip == nil` für Offen (kein Dummy-Trip).
 - Modell: PCC wenn verfügbar, sonst On-Device, sonst disabled. Lauf-Fehler: Dialog, **kein** zweiten Extract mit der anderen Stufe.
 - Privacy-HTML: PCC und Paste-Import.
+- Erkennung: Few-Shot-Beispiele DE/EN (Flug inkl. LCC/Screenshot/PNR-unter-Label, Bahn DB/ÖBB/Trainline, Hotel Booking.com/Airbnb, Mietwagen Sixt/Hertz, Event GetYourGuide/Eventbrite, Fähre) in `PasteImportExtractionInstructions`; Typ-Aliase und Ticket-Datenformate im Mapper; AGB-Seiten im PDF-Text weglassen; `confirmationCode` ohne Labels/Preise/Initialen; fehlendes `startAt` aus Abfahrt/Check-in im Quelltext, wenn genau eine Buchung betroffen ist. Unbekanntes Typ-Label bleibt `nil`. Gescannte Bilder nur, wenn die Runtime `Attachment` exportiert — sonst `imageInputUnsupported`, kein Crash.
 
 ### Nicht in Scope
 
@@ -64,7 +65,7 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 | **ReisenPasteImport** | Availability, Session, ein `@Generable`/`Codable`-Payload (Felder = Extraction), PDFKit-Text + Seiten-Render, Bild-`Attachment`. Output: `[PasteImportExtraction]`. |
 | **ReisenAppCore** | Orchestrierung eines Laufs: Availability → Resolver → Extract (ein kind) → Pipeline. Bei Extract-Fehler **kein** Retry mit anderem kind. |
 | **ReisenSharedUI** | Aktion (disabled+Begründung), PCC-Sheet-Chrome, Liste, Prefill. Abhängigkeit **nur Domain (+ Data für `SDBooking`)**. Kein `ReisenPasteImport`. Prefill: Neu aus Draft ohne `createDefault`; Ergänzen = `fromExisting` nach Mapping aus `fillingGaps(DomainMapper.booking(from:), draft)`. |
-| **Reisen / ReiseniOS** | Clipboard, Datei, Share-Consume, verdrahten Extractor. |
+| **Reisen / ReiseniOS** | Clipboard, Datei, Drop / „Öffnen mit“, Share / „Senden an“, verdrahten Extractor. |
 | **ReisenData** | `createBooking(trip: SDTrip?)` (`nil` = Offen); Edit weiter `apply`. |
 
 CI mockt `PasteImportExtracting`. SharedUI mockt keine Modelle.
@@ -114,8 +115,8 @@ Wie zuvor: unavailable disabled; Modellfehler Dialog ohne Stufenwechsel; leere Q
 
 ## UI / HIG
 
-- ⌘V System-Paste. macOS „Buchung einfügen…“ ⌘⇧V in Reise **und** Offen.
-- iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. App Group `group.de.reisen.Reisen.pasteimport`. Handoff-URL-Scheme **`reisen://paste-import`** (Info.plist beider iOS-Apps). Consume löscht die Temp-Datei.
+- ⌘V System-Paste. macOS „Buchung einfügen…“ ⌘⇧V in Reise **und** Offen. Dateidialog und **Drop** (Fenster, Dock, „Öffnen mit“) teilen Typen PDF/Bild/Text; ein File pro Drop (erstes gültiges). `LSHandlerRank` Alternate, Rolle Viewer — Reisen wird nicht Default-PDF-App.
+- iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. App Group `group.de.reisen.Reisen.pasteimport`. Handoff-URL-Scheme **`reisen://paste-import`** (Info.plist beider iOS-Apps). Consume löscht die Temp-Datei. iPad-Drop, „Öffnen in Reisen“ und **Senden an / Teilen** (Share-Sheet, inkl. `public.file-url` aus der Dateien-App) denselben Datei-Pfad.
 - Badge = L10n-Text (Neu / Ergänzen), nicht nur Farbe; VoiceOver-Label gleich.
 - EN-Badge: **Enrich**, nicht Update.
 - PCC-Sheet vor dem Senden. Progress + Abbrechen.

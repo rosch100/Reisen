@@ -42,7 +42,7 @@ struct RootTabView: View {
 
     @ViewBuilder
     var body: some View {
-        PasteImportHost(session: pasteImport) {
+        PasteImportHost(session: pasteImport, entry: { pasteImportEntry }) {
             tabsWithSessionProbe
         }
     }
@@ -92,6 +92,22 @@ struct RootTabView: View {
     private func focusCreatedTrip(_ tripID: UUID) {
         selectedTripID = tripID
         selectedTab = .reisen
+    }
+
+    /// Drop und „Öffnen mit“ nutzen den sichtbaren Tab, nicht einen anderen Reise-Kontext.
+    private var pasteImportEntry: PasteImportEntry {
+        switch selectedTab {
+        case .reisen:
+            return .trip(selectedTripID)
+        case .offen:
+            return .open
+        #if REISEN_PROVIDER_SYNC
+        case .sync:
+            return .open
+        #endif
+        case .mehr:
+            return .open
+        }
     }
 
     private var tabs: some View {

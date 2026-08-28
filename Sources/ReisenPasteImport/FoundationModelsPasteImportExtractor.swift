@@ -46,7 +46,10 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             to: try Self.prompt(for: material),
             generating: PasteImportPayloadDTO.self
         )
-        return PasteImportGenerableMapper.extractions(from: response.content)
+        return PasteImportExtractionCompleter.fillingOmittedTravelDates(
+            PasteImportGenerableMapper.extractions(from: response.content),
+            from: material.text
+        )
     }
 
     private func makeSession() throws -> LanguageModelSession {
@@ -54,12 +57,16 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         case .unavailable:
             throw PasteImportAdapterError.unavailable
         case .onDevice:
-            return LanguageModelSession(model: SystemLanguageModel.default) { Self.instructions }
+            return LanguageModelSession(model: SystemLanguageModel.default) {
+                PasteImportExtractionInstructions.text
+            }
         case .privateCloudCompute:
             guard #available(macOS 27.0, iOS 27.0, visionOS 27.0, *) else {
                 throw PasteImportAdapterError.unavailable
             }
-            return LanguageModelSession(model: PrivateCloudComputeLanguageModel()) { Self.instructions }
+            return LanguageModelSession(model: PrivateCloudComputeLanguageModel()) {
+                PasteImportExtractionInstructions.text
+            }
         }
     }
 
@@ -79,10 +86,22 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
     private static func prompt(for material: PasteImportPromptMaterial) throws -> Prompt {
         let request = request(for: material)
         guard !material.images.isEmpty else { return Prompt(request) }
+        try PasteImportImageAttachments.requireSupport()
         guard #available(macOS 27.0, iOS 27.0, visionOS 27.0, *) else {
             throw PasteImportAdapterError.imageInputUnsupported
         }
-        let attachments = try material.images.map { Attachment(try PasteImportImageData.image(from: $0)) }
+        let attachments: [Attachment<ImageAttachmentContent>]
+        if PasteImportImageAttachments.cgImageInitializerAvailable {
+            attachments = try material.images.map { Attachment(try PasteImportImageData.image(from: $0)) }
+        } else {
+            attachments = try material.images.map { data in
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension("png")
+                try data.write(to: url, options: .atomic)
+                return Attachment(imageURL: url)
+            }
+        }
         return Prompt {
             request
             attachments
@@ -91,31 +110,15 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
 
     private static func request(for material: PasteImportPromptMaterial) -> String {
         guard let text = material.text else {
-            return "Das Material liegt als Bild vor. Lies die Buchungen daraus."
+            return """
+                Das Material liegt als Bild vor. Lies die Buchungen daraus: Typ, Reisebeginn, Code, Orte.
+                AGB ignorieren. Tour/Event = activity. Abfahrt, nicht Buchungsdatum.
+                """
         }
         return """
             Material:
             \(text)
             """
-    }
-
-    /// Die erlaubten Labels stammen aus der Domain, damit Prompt und Mapper nicht auseinanderlaufen.
-    private static let instructions = """
-        Du liest Reise-Bestätigungen und gibst nur zurück, was das Material belegt.
-
-        - Nichts ergänzen, nichts schätzen, nichts aus Erfahrung ableiten.
-        - Unsichere Felder weglassen statt raten.
-        - Zeitpunkte als ISO8601 mit Zeitzone, z. B. 2026-08-28T10:00:00Z.
-        - bookingType nur aus: \(labels(BookingType.allCases)); sonst weglassen.
-        - status nur aus: \(labels(BookingStatus.allCases)); sonst weglassen.
-        - travellerType nur aus: \(labels(TravellerType.allCases)).
-        - boardType nur aus: \(labels(BookingBoardType.allCases)).
-        - Jede Buchung im Material wird ein eigener Eintrag in bookings.
-        """
-
-    private static func labels<Label: RawRepresentable>(_ cases: [Label]) -> String
-    where Label.RawValue == String {
-        cases.map(\.rawValue).joined(separator: ", ")
     }
 }
 

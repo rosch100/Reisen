@@ -118,8 +118,14 @@ struct ContentView: View {
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenPasteBookingFromFile)) { _ in
-            startPasteImportFromFile()
+            Task { @MainActor in
+                await startPasteImportFromFile()
+            }
         }
+        .pasteImportMacDropAndOpen(
+            onDropped: { startPasteImport(fromDropped: $0) },
+            onExternal: consumeExternalFiles
+        )
         .pasteImportFlow(session: pasteImport, onReviewQueue: advancePasteImportQueue)
         .sheet(item: $pasteReview) { review in
             PasteImportReviewSheet(review: review) {
@@ -1030,9 +1036,9 @@ struct ContentView: View {
         return trips.first { $0.id == tripID }
     }
 
-    private func startPasteImportFromFile() {
+    private func startPasteImportFromFile() async {
         do {
-            guard let source = try PasteImportMacSource.fromOpenPanel() else { return }
+            guard let source = try await PasteImportMacSource.fromOpenPanel() else { return }
             pasteImport.start(
                 source: source,
                 entry: pasteImportEntry,
@@ -1040,6 +1046,30 @@ struct ContentView: View {
             )
         } catch {
             pasteImport.fail(L10n.string(.pasteImportErrorSource))
+        }
+    }
+
+    private func consumeExternalFiles() {
+        startPasteImport(fromDropped: PasteImportExternalFileInbox.take())
+    }
+
+    /// Ein Drop bzw. „Öffnen mit“ startet denselben Lauf wie der Dateidialog; das erste gültige File zählt.
+    private func startPasteImport(fromDropped urls: [URL]) {
+        let files = PasteImportFileSource.acceptedFiles(in: urls)
+        guard let url = files.first else {
+            if !urls.isEmpty {
+                pasteImport.fail(L10n.string(.pasteImportErrorSource))
+            }
+            return
+        }
+        do {
+            pasteImport.start(
+                source: try PasteImportFileSource.source(from: url),
+                entry: pasteImportEntry,
+                existing: existingDomainBookings
+            )
+        } catch {
+            pasteImport.fail(PasteImportFailureMessage.text(for: error))
         }
     }
 

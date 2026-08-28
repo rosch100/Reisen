@@ -55,7 +55,9 @@ final class ShareViewController: UIViewController {
         throw PasteImportShareError.unreadableSource
     }
 
-    /// PDF vor Bild vor Text — dieselbe Reihenfolge wie der macOS-Einstieg.
+    /// PDF vor Bild vor Text vor Datei-URL — dieselbe Reihenfolge wie der macOS-Einstieg.
+    ///
+    /// Die Dateien-App registriert beim „Senden an“ oft nur `public.file-url`, keinen Inhalts-UTI.
     private static func source(from provider: NSItemProvider) async throws -> PasteImportSource? {
         if let identifier = identifier(in: provider, conformingTo: .pdf) {
             return .pdf(try await data(from: provider, typeIdentifier: identifier))
@@ -70,7 +72,26 @@ final class ShareViewController: UIViewController {
             }
             return .text(text)
         }
+        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            do {
+                return try PasteImportFileSource.source(from: try await fileURL(from: provider))
+            } catch {
+                throw PasteImportShareError.unreadableSource
+            }
+        }
         return nil
+    }
+
+    private static func fileURL(from provider: NSItemProvider) async throws -> URL {
+        try await withCheckedThrowingContinuation { continuation in
+            _ = provider.loadObject(ofClass: URL.self) { object, error in
+                if let url = object as? URL {
+                    continuation.resume(returning: url)
+                } else {
+                    continuation.resume(throwing: error ?? PasteImportShareError.unreadableSource)
+                }
+            }
+        }
     }
 
     private static func identifier(in provider: NSItemProvider, conformingTo type: UTType) -> String? {

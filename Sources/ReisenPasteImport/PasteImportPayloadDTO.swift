@@ -16,13 +16,14 @@ public struct PasteImportPayloadDTO: Equatable, Sendable, Codable {
 /// Bewusst ohne Domain-Typen, damit `@Generable` hier im Adapter liegt.
 @Generable(description: "Eine Buchung aus dem eingefügten Material.")
 public struct PasteImportBookingDTO: Equatable, Sendable, Codable {
-    @Guide(description: "Art der Buchung, genau eines der erlaubten Labels.")
+    @Guide(description: "Art der Buchung, genau eines von: flight, hotel, ferry, train, activity, carRental, other. Tour/Event = activity, Zug = train, Mietwagen = carRental.")
     public var bookingType: String?
-    @Guide(description: "Beginn als ISO8601 mit Zeitzone, z. B. 2026-08-28T10:00:00Z.")
+    @Guide(description: "Reisebeginn als ISO8601: Abfahrt/Check-in/Pickup/Tourstart, nicht das Buchungsdatum. Ohne Zeitzone lokale Uhrzeit ohne Z, z. B. 2026-08-08T07:45:00.")
     public var startAtISO8601: String?
-    @Guide(description: "Ende als ISO8601 mit Zeitzone.")
+    @Guide(description: "Reiseende als ISO8601: Ankunft/Check-out/Rückgabe. Ohne Zeitzone lokale Uhrzeit ohne Z.")
     public var endAtISO8601: String?
     public var title: String?
+    @Guide(description: "PNR/Auftragsnummer/Reservierung — der Code selbst, nicht das Label (nicht Booking reference), nicht Initialen, nicht der Preis.")
     public var confirmationCode: String?
     public var externalUrl: String?
     public var locationFrom: String?
@@ -30,7 +31,7 @@ public struct PasteImportBookingDTO: Equatable, Sendable, Codable {
     public var locationFromAddress: String?
     public var locationToAddress: String?
     public var operatorName: String?
-    @Guide(description: "Status, genau eines der erlaubten Labels.")
+    @Guide(description: "Status, genau eines von: confirmed, cancelled, unknown. bestätigt/booked = confirmed.")
     public var status: String?
     public var hotelCheckInMinutes: Int?
     public var hotelCheckOutMinutes: Int?

@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 import ReisenDomain
-import ReisenPasteImport
+@testable import ReisenPasteImport
 
 @Test func pasteImportAdapterError_classifiesEveryCase() {
     #expect(PasteImportAdapterError.unavailable.pasteImportFailure == .modelUnavailable)
@@ -10,9 +10,8 @@ import ReisenPasteImport
     #expect(PasteImportAdapterError.imageInputUnsupported.pasteImportFailure == .imageUnsupported)
 }
 
-@Test func pasteImportAdapterError_messageComesFromSharedMapping() {
-    #expect(
-        PasteImportFailureMessage.text(for: PasteImportAdapterError.imageInputUnsupported)
-            == L10n.string(.pasteImportErrorImageUnsupported)
-    )
+@Test func pasteImportImageAttachments_unsupportedThrowsImageInputUnsupported() {
+    #expect(throws: PasteImportAdapterError.imageInputUnsupported) {
+        try PasteImportImageAttachments.requireSupport(false)
+    }
 }

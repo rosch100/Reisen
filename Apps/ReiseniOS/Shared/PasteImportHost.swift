@@ -20,14 +20,26 @@ struct PasteImportReview: Identifiable {
 ///
 /// Der Lauf liegt in `PasteImportRun`, der Prefill in `PasteImportEditorPrefill`; hier steht nur die
 /// Präsentation. Die Übergabe der Share-Extension wird über `reisen://paste-import` konsumiert und
-/// beim Aktivieren nachgeholt, falls iOS die App nicht direkt geöffnet hat.
+/// beim Aktivieren nachgeholt, falls iOS die App nicht direkt geöffnet hat. Datei-Drop und
+/// „Öffnen mit“ nutzen denselben Lauf wie der Dateidialog.
 struct PasteImportHost<Content: View>: View {
     let session: PasteImportIOSSession
+    let entry: () -> PasteImportEntry
     @ViewBuilder let content: Content
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var review: PasteImportReview?
+
+    init(
+        session: PasteImportIOSSession,
+        entry: @escaping () -> PasteImportEntry,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.session = session
+        self.entry = entry
+        self.content = content()
+    }
 
     var body: some View {
         content
@@ -92,13 +104,49 @@ struct PasteImportHost<Content: View>: View {
                 .reisenSheetDetents()
             }
             .onOpenURL { url in
-                guard PasteImportHandoff.isHandoff(url) else { return }
-                handleHandoff(trigger: .url)
+                if PasteImportHandoff.isHandoff(url) {
+                    handleHandoff(trigger: .url)
+                } else if url.isFileURL {
+                    startFromDroppedFiles([url])
+                }
             }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 handleHandoff(trigger: .activation)
+                consumeExternalFiles()
             }
+            .onAppear {
+                consumeExternalFiles()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .pasteImportExternalFilesOffered)) { _ in
+                consumeExternalFiles()
+            }
+            .pasteImportDropTarget { urls in
+                startFromDroppedFiles(urls)
+            }
+    }
+
+    private func consumeExternalFiles() {
+        startFromDroppedFiles(PasteImportExternalFileInbox.take())
+    }
+
+    private func startFromDroppedFiles(_ urls: [URL]) {
+        let files = PasteImportFileSource.acceptedFiles(in: urls)
+        guard let url = files.first else {
+            if !urls.isEmpty {
+                session.fail(L10n.string(.pasteImportErrorSource))
+            }
+            return
+        }
+        do {
+            session.start(
+                source: try PasteImportFileSource.source(from: url),
+                entry: entry(),
+                in: modelContext
+            )
+        } catch {
+            session.fail(PasteImportFailureMessage.text(for: error))
+        }
     }
 
     /// Beide Auslöser der Übergabe über einen Konsum: `consumePending` ist idempotent, und die
