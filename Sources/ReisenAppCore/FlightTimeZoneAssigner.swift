@@ -20,7 +20,7 @@ public final class FlightTimeZoneAssigner {
 
     public func assignMissingOffsets() async throws {
         let bookings = try bookingRepository.fetchAll().filter {
-            ($0.bookingType == .flight || $0.bookingType == .ferry)
+            $0.bookingType.supportsFlightOffsetAutofill
                 && ($0.flightDepartureOffsetSeconds == nil || $0.flightArrivalOffsetSeconds == nil)
         }
 

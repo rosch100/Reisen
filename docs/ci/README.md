@@ -5,7 +5,7 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 ## Verfügbare Workflows
 
 - `ci.yml`: Build+Test auf **jedem PR gegen `master`** und Push auf `master` (macOS-Tests, iOS-Simulator Store **und** Private, Release-Binary-Isolation). Pflicht-Check für Merges.
-- `app-store-check.yml`: manueller **App Store Check** zur Release-Vorbereitung (Store-IPA + AppCompliance). Nicht auf PRs. Siehe [`appcompliance.md`](appcompliance.md).
+- `app-store-check.yml`: manueller **App Store Check** zur Release-Vorbereitung (Store-IPA-Archive, Isolation, Apple ITMS-Validierung). Nicht auf PRs. Siehe [`app-store-check.md`](app-store-check.md).
 - `codeql.yml`: CodeQL auf Push nach `master` und wöchentlichem Schedule (nicht auf jedem PR — der instrumentierte Swift-Build kostet ~30 min macOS)
 - `gitleaks.yml`: Secret-Scan auf PR, Push und täglichem Schedule
 - `actionlint.yml`: Workflow-Lint bei Änderungen unter `.github/workflows/`
@@ -30,7 +30,7 @@ Dependabot-PRs laufen durch die echte CI. Der Versions-Workflow nutzt `--verify`
 | + iOS Release-Binary-Isolation | `bash ./Scripts/ci-test.sh --with-ios-release-check` |
 | iOS-Simulator (Store + Private) | `IOS_SCHEME=all bash ./Scripts/ios-test.sh` |
 
-Vollständige GitHub-CI auf PRs gegen `master`: `ios-test.sh` und `ios-build-release-check.sh` als Steps in [`ci.yml`](../../.github/workflows/ci.yml). App-Store-/Apple-Check vor Einreichung: Workflow **App Store Check** ([`app-store-check.yml`](../../.github/workflows/app-store-check.yml)), manuell.
+Vollständige GitHub-CI auf PRs gegen `master`: `ios-test.sh` und `ios-build-release-check.sh` als Steps in [`ci.yml`](../../.github/workflows/ci.yml). Store-IPA vor Einreichung: Workflow **App Store Check** ([`app-store-check.yml`](../../.github/workflows/app-store-check.yml)), manuell (Archive, Isolation, Apple ITMS).
 
 ## SwiftPM-Cache (CI + CodeQL)
 
@@ -65,7 +65,7 @@ Team-ID, Bundle-IDs, lokales Setup und Release-Secrets: [`apple-signing.md`](app
 | Variante | Doku |
 |----------|------|
 | App Store (Store-iOS) | [`app-store-connect.md`](app-store-connect.md) |
-| App Store Check (manuell, IPA + AppCompliance) | [`appcompliance.md`](appcompliance.md) |
+| App Store Check (manuell, Store-IPA + ITMS) | [`app-store-check.md`](app-store-check.md) |
 | Private-iOS (Ad Hoc / Internal TestFlight) | [`ios-private-distribution.md`](ios-private-distribution.md) |
 | macOS Developer ID | [`apple-signing.md`](apple-signing.md) (Release-Section) |
 

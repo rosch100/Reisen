@@ -916,6 +916,44 @@ private func travelokaCatalogHotelEntry(
     #expect(draft.locationTo?.contains("BKK") == true)
 }
 
+@Test func travelokaProductType_train_mapsToTrain() {
+    #expect(TravelokaProductType(raw: "TRAIN").bookingType == .train)
+    #expect(TravelokaProductType(raw: "TRAIN_GLOBAL").bookingType == .train)
+    #expect(TravelokaProductType.train.rawValue == "TRAIN")
+    #expect(TravelokaProductType.trainGlobal.rawValue == "TRAIN_GLOBAL")
+    #expect(TravelokaProductType(raw: "TRAINING").bookingType == .other)
+}
+
+@Test func travelokaTrainDraft_mapsBookingTypeAndProductName() throws {
+    let entry: [String: Any] = [
+        "bookingId": "train-1",
+        "itineraryId": "train-2",
+        "itineraryType": "TRAIN",
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "productName": "Argo Bromo",
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_014_400_000,
+                "ianaTimezoneBegin": "Asia/Jakarta",
+                "ianaTimezoneEnd": "Asia/Jakarta",
+            ],
+            "trainSummary": nil,
+        ],
+        "cardDetailInfo": [
+            "trainDetail": nil,
+        ],
+    ]
+    let draft = try TravelokaItineraryEntryParser.draft(from: entry)
+    #expect(draft.bookingType == .train)
+    #expect(draft.title == "Argo Bromo")
+    #expect(draft.locationFrom == nil)
+    #expect(draft.locationTo == nil)
+    #expect(draft.externalUrl?.contains("type=TRAIN") == true)
+    #expect(draft.hotelOffsetSeconds == nil)
+    #expect(draft.flightDepartureOffsetSeconds == nil)
+    #expect(draft.flightArrivalOffsetSeconds == nil)
+}
+
 @Test func travelokaVehicleParsesIndonesian24hFreeCancellation() throws {
     let entry: [String: Any] = [
         "bookingId": "1",

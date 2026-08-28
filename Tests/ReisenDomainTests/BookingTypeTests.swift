@@ -22,6 +22,64 @@ private let germanLocale = Locale(identifier: "de")
     #expect(BookingType.allCases.contains(.carRental))
 }
 
+@Test func bookingType_train_rawValueAndLabel() {
+    L10n.locale = germanLocale
+    defer { L10n.locale = .current }
+
+    #expect(BookingType.train.rawValue == "train")
+    #expect(BookingType.train.displayLabel == L10n.string(.bookingTypeTrain))
+    #expect(BookingType.allCases.contains(.train))
+    let ferryIndex = BookingType.allCases.firstIndex(of: .ferry)
+    let trainIndex = BookingType.allCases.firstIndex(of: .train)
+    let activityIndex = BookingType.allCases.firstIndex(of: .activity)
+    #expect(ferryIndex != nil)
+    #expect(trainIndex != nil)
+    #expect(activityIndex != nil)
+    #expect(ferryIndex! < trainIndex!)
+    #expect(trainIndex! < activityIndex!)
+}
+
+@Test func bookingType_usesFlightLikeSchedule() {
+    #expect(BookingType.flight.usesFlightLikeSchedule)
+    #expect(BookingType.ferry.usesFlightLikeSchedule)
+    #expect(BookingType.train.usesFlightLikeSchedule)
+    #expect(!BookingType.hotel.usesFlightLikeSchedule)
+    #expect(!BookingType.activity.usesFlightLikeSchedule)
+    #expect(!BookingType.carRental.usesFlightLikeSchedule)
+    #expect(!BookingType.other.usesFlightLikeSchedule)
+}
+
+@Test func bookingType_systemImageName_nonEmptyForAllCases() {
+    for type in BookingType.allCases {
+        #expect(!type.systemImageName.isEmpty)
+    }
+    #expect(BookingType.train.systemImageName == "train.side.front.car")
+}
+
+@Test func bookingType_detailFieldLabels_train() {
+    L10n.locale = germanLocale
+    defer { L10n.locale = .current }
+
+    #expect(BookingType.train.showsLocationFrom == true)
+    #expect(BookingType.train.locationFromLabel == L10n.string(.bookingFieldLocationFromTrain))
+    #expect(BookingType.train.locationToLabel == L10n.string(.bookingFieldLocationToTrain))
+    #expect(BookingType.train.locationFromAddressLabel == L10n.string(.bookingFieldLocationFromAddressTrain))
+    #expect(BookingType.train.locationToAddressLabel == L10n.string(.bookingFieldLocationToAddressTrain))
+    #expect(BookingType.train.roomCategoryLabel == L10n.string(.bookingFieldRoomCategoryTrain))
+    #expect(BookingType.train.roomCountLabel == nil)
+    #expect(BookingType.train.scheduleStartLabel == L10n.string(.bookingFieldScheduleStartTrain))
+    #expect(BookingType.train.scheduleEndLabel == L10n.string(.bookingFieldScheduleEndTrain))
+    #expect(BookingType.train.operatorNameLabel == L10n.string(.bookingFieldOperatorTrain))
+    #expect(BookingType.train.showsOperatorNameField)
+    #expect(!BookingType.hotel.showsOperatorNameField)
+    #expect(!BookingType.flight.showsOperatorNameField)
+    #expect(BookingType.activity.showsOperatorNameField)
+    #expect(BookingType.carRental.showsOperatorNameField)
+    #expect(BookingType.flight.supportsFlightOffsetAutofill)
+    #expect(BookingType.ferry.supportsFlightOffsetAutofill)
+    #expect(!BookingType.train.supportsFlightOffsetAutofill)
+}
+
 @Test func bookingStatus_displayLabels() {
     L10n.locale = germanLocale
     defer { L10n.locale = .current }

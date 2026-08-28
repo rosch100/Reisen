@@ -23,7 +23,7 @@ enum AirbnbTripDetailsEdgeFinder {
         switch bookingType {
         case .hotel:
             return edge.node.details?.stayReservation?.confirmationCode == confirmationCode
-        case .activity, .carRental, .flight, .ferry, .other:
+        case .activity, .carRental, .flight, .ferry, .train, .other:
             return edge.node.details?.activityReservation?.confirmationCode == confirmationCode
         }
     }

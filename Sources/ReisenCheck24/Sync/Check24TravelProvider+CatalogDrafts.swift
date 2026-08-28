@@ -104,7 +104,7 @@ extension Check24TravelProvider {
                 }
             }
 
-            guard parsed.type == .flight || parsed.type == .ferry || parsed.type == .hotel else { continue }
+            guard parsed.type.supportsFlightOffsetAutofill || parsed.type == .hotel else { continue }
 
             guard let draft = mapDraft(
                 parsed,

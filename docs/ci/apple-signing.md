@@ -111,7 +111,7 @@ Das Script:
 3. erzeugt ein **Release**-Archive (`xcodebuild archive`, `generic/platform=iOS`)
 4. exportiert ein IPA (`Scripts/ios-export-appstore.plist`, `method: app-store`)
 
-Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Connect. Vor dem Upload: manueller Workflow **App Store Check** ([`appcompliance.md`](appcompliance.md)).
+Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Connect. Vor dem Upload: manueller Workflow **App Store Check** ([`app-store-check.md`](app-store-check.md)).
 
 Voraussetzungen:
 
@@ -129,5 +129,8 @@ Private-iOS (Ad Hoc): [`ios-private-distribution.md`](ios-private-distribution.m
 - Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)
 - Keychain Identity für Notary nicht gefunden: importiertes Zertifikat muss **Developer ID Application** sein; Keychain entsperrt/importiert
 - App Store Check `exportArchive` / **Cloud signing permission error**: der App-Store-Connect-API-Key braucht Zugriff auf **Cloud Managed Distribution Certificates** (Account Holder/Admin in [Users and Access](https://appstoreconnect.apple.com/access/users)). Ohne das findet Xcode kein iOS-App-Store-Profil für `de.reisen.Reisen.ios`. Developer-ID-`.p12` (macOS) ersetzt das nicht.
+- App Store Check `altool --validate-app`: derselbe App-Store-Connect-API-Key wie beim Archive; `Scripts/ios-validate-appstore.sh` setzt `API_PRIVATE_KEYS_DIR` auf das materialisierte `.p8`. ITMS-`product-errors` (z. B. fehlendes Privacy Manifest) machen den Job rot. Das ist keine Review-Freigabe.
+- `Unable to find Apple ID for Bundle ID 'de.reisen.Reisen.ios'`: Auth war ok, aber in App Store Connect fehlt der iOS-App-Eintrag (oder der API-Key sieht ihn nicht). Anlegen: [`app-store-connect.md`](app-store-connect.md). Optional `APP_STORE_CONNECT_APPLE_ID` (numerische Apple-ID aus App Information, nicht die Login-E-Mail).
+- ITMS **90534** (Unsupported SDK or Xcode version): das IPA wurde mit einer **älteren Xcode-27-Beta** gebaut. Apple akzeptiert nur die **neueste** 27-Beta oder RC ([Releases](https://developer.apple.com/news/releases/)). Lokal `xcodebuild -version` prüfen, Xcode-beta aktualisieren, IPA neu archivieren. Info.plist-Felder (`DTXcodeBuild`) nicht fälschen.
 - Notarization: `notarytool submit --wait` liefert die Apple-Antwort in den Workflow-Logs
 - CloudKit: Container laut `PersistenceBootstrap.cloudKitContainerID` muss im Portal an **drei** App-IDs gebunden sein (macOS, Store-iOS, Private-iOS)

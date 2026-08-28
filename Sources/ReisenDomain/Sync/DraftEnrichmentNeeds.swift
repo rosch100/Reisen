@@ -31,6 +31,8 @@ public enum DraftEnrichmentNeeds {
             return draft.title == nil
                 || (draft.locationFrom == nil && draft.locationTo == nil)
                 || (draft.locationFrom != nil && draft.locationTo != nil && draft.operatorName == nil)
+        case .train:
+            return false
         case .carRental:
             return draft.operatorName == nil
                 || draft.locationFrom == nil

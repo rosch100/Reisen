@@ -40,7 +40,7 @@ public struct AssignBookingsSheet: View {
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(booking.displayTitle)
+                                    Text(booking.localizedDisplayTitle)
                                         .font(.headline)
                                     Text("\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))")
                                         .font(.caption)

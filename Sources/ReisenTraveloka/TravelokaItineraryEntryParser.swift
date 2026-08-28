@@ -139,7 +139,9 @@ enum TravelokaItineraryEntryParser {
             return vehicleFields(from: context)
         case .flight:
             return flightFields(from: context)
-        case .airportTransport, .flightAncillary, .insurance, .train, .other:
+        case .train, .trainGlobal:
+            return trainFields(from: context)
+        case .airportTransport, .flightAncillary, .insurance, .other:
             var fields = baseFields(from: context)
             fields.title = TravelokaJSON.string(context.common["productName"]) ?? context.product.rawValue
             return fields
@@ -361,6 +363,14 @@ enum TravelokaItineraryEntryParser {
                 ?? (withoutDriver["passengerContact"] as? [String: Any]),
             fallbackName: TravelokaJSON.string(vDetail["travelerName"])
         )
+        return fields
+    }
+
+    /// Ohne TRAIN-Detail-HAR: nur bekannte Common-Felder; Bahnhöfe/Betreiber bleiben leer.
+    /// Keine Flight-Offsets: `itineraryTimestamp*` ist absolute Epoch, kein Wanduhr-Paar.
+    private static func trainFields(from context: EntryContext) -> ProductFields {
+        var fields = baseFields(from: context)
+        fields.title = TravelokaJSON.string(context.common["productName"]) ?? context.product.rawValue
         return fields
     }
 

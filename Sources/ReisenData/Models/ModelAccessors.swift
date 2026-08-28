@@ -31,6 +31,11 @@ public extension SDBooking {
         title ?? bookingType.defaultDisplayTitle
     }
 
+    /// UI-Titel (lokalisiert); Side-Effects/Sync bleiben bei `displayTitle`.
+    var localizedDisplayTitle: String {
+        title ?? bookingType.displayLabel
+    }
+
     var daySpan: BookingDaySpan {
         BookingDaySpan(
             id: id,
