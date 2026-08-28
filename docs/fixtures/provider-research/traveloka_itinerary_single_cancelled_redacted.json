@@ -3,15 +3,15 @@
     "status": "SUCCESS",
     "message": null,
     "itineraryDisplayId": {
-      "bookingId": "1387359999",
-      "itineraryId": "9999999999999999999",
+      "bookingId": "REDACTED_CANCELLED_BOOKING_ID",
+      "itineraryId": "REDACTED_CANCELLED_ITINERARY_ID",
       "itineraryType": "EXPERIENCE"
     },
     "itineraryEntryList": [
       {
-        "bookingId": "1387359999",
-        "itineraryId": "9999999999999999999",
-        "tripId": "1387359999",
+        "bookingId": "REDACTED_CANCELLED_BOOKING_ID",
+        "itineraryId": "REDACTED_CANCELLED_ITINERARY_ID",
+        "tripId": "REDACTED_CANCELLED_BOOKING_ID",
         "itineraryType": "EXPERIENCE",
         "itineraryTags": [
           {
