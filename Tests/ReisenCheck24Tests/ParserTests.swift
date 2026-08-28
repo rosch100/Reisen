@@ -258,6 +258,11 @@ func deepLinkCarRentalSkipsBareIATA() {
     )
     let iataResult = Check24DeepLinkBuilder().suggestions(for: iataOnly)
     #expect(!iataResult.links.contains { $0.category == .carRental })
+    #expect(iataResult.issues.contains(.missingDestinationHint))
+    #expect(
+        ProviderDeepLinks.suggestions(for: iataOnly, allBuilders: [Check24DeepLinkBuilder()])
+            .issues.contains(.missingDestinationHint)
+    )
 
     let mixed = GapContext(
         gapStart: Date(timeIntervalSince1970: 1_800_000_000),
