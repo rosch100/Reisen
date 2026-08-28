@@ -150,9 +150,13 @@ struct BookingDetailIOS: View {
     private func bookingAssignmentSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.tripAssign)) {
             if let trip = bookingTrip {
-                Text(L10n.format(.tripInTrip, trip.title))
-                    .foregroundStyle(.secondary)
-                    .copyableValue(trip.title)
+                CopyableLabeledValue(
+                    label: L10n.string(.tripNameField),
+                    value: trip.title,
+                    kind: .standard,
+                    style: .list,
+                    valueTextStyle: .body
+                )
             } else if let trip = matchingTrip {
                 Button(L10n.string(.actionAssignToTrip)) {
                     do {
