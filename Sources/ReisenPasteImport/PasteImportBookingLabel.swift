@@ -16,7 +16,8 @@ enum PasteImportBookingLabel {
     static var bookingTypeGuide: String {
         "Genau eines von: \(list(BookingType.allCases)). "
             + "Tour/Event/GetYourGuide = activity (nicht hotel). "
-            + "Zug/Bahn/ICE/Trainline = train. Mietwagen/Sixt/Hertz = carRental."
+            + "Zug/Bahn/ICE/Trainline/Bus/FlixBus/Fernbus/Coach = train. "
+            + "Mietwagen/Sixt/Hertz = carRental."
     }
 
     static var statusGuide: String {
@@ -49,6 +50,13 @@ enum PasteImportBookingLabel {
         map["railway"] = .train
         map["rail"] = .train
         map["ice"] = .train
+        map["bus"] = .train
+        map["flixbus"] = .train
+        map["fernbus"] = .train
+        map["coach"] = .train
+        map["omnibus"] = .train
+        map["tgv"] = .train
+        map["sncf"] = .train
         map["tour"] = .activity
         map["event"] = .activity
         map["ereignis"] = .activity

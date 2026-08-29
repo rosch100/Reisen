@@ -52,10 +52,14 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             to: prepared.prompt,
             generating: PasteImportPayloadDTO.self
         )
-        return PasteImportExtractionCompleter.fillingOmittedTravelDates(
-            PasteImportGenerableMapper.extractions(from: response.content),
+        let mapped = PasteImportGenerableMapper.extractions(from: response.content)
+        let coalesced = PasteImportExtractionCoalescer.coalescing(mapped)
+        let typed = PasteImportExtractionTypeHint.applying(coalesced)
+        let dated = PasteImportExtractionCompleter.fillingOmittedTravelDates(
+            typed,
             from: material.text
         )
+        return PasteImportSourceGrounding.keepingGrounded(dated, in: material.text)
     }
 
     private func makeSession() throws -> LanguageModelSession {
@@ -79,11 +83,12 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
     private static func material(for source: PasteImportSource) throws -> PasteImportPromptMaterial {
         switch source {
         case .text(let text):
-            return PasteImportPromptMaterial(text: text)
+            return PasteImportPromptMaterial(text: PasteImportPromptBudget.clipped(text))
         case .image(let data):
             return PasteImportPromptMaterial(images: [data])
         case .pdf(let data):
             // `prepare` garantiert Text oder Seitenbilder, sonst wirft es `unreadableSource`.
+            // Text ist bereits über `PasteImportPromptBudget` begrenzt.
             let content = try PasteImportPDFPreparation.prepare(data)
             return PasteImportPromptMaterial(text: content.text, images: content.pageImages)
         }

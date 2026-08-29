@@ -44,11 +44,12 @@ public enum PasteImportPDFPreparation {
         }
         let focused = PasteImportPDFPageText.focused(pageStrings)
             ?? NonEmpty.string(document.string)
+        let budgeted = focused.map(PasteImportPromptBudget.clipped)
         let images = try pageImages(of: document, indices: textlessIndices)
-        guard focused != nil || !images.isEmpty else {
+        guard budgeted != nil || !images.isEmpty else {
             throw PasteImportAdapterError.unreadableSource
         }
-        return PasteImportPDFContent(text: focused, pageImages: images)
+        return PasteImportPDFContent(text: budgeted, pageImages: images)
     }
 
     private static func pageImages(of document: PDFDocument, indices: [Int]) throws -> [Data] {
