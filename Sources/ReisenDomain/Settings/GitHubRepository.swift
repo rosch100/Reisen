@@ -63,6 +63,34 @@ public enum GitHubRepository {
         apiRepoURL.appending(path: "issues")
     }
 
+    /// GitHub REST: `X-GitHub-Api-Version` (https://docs.github.com/en/rest).
+    public static let restAPIVersion = "2022-11-28"
+    /// GitHub REST: Pflicht-`User-Agent` (Anwendungsname).
+    public static let restUserAgent = "Reisen"
+    /// GitHub-Validierung: `title is too long (maximum is 256 characters)`.
+    public static let issueTitleMaxLength = 256
+    /// Kürzung der Titel-Zusammenfassung (erste Zeile / Betreff) vor dem API-Limit.
+    public static let issueTitleSummaryMaxLength = 80
+    /// GitHub-Validierung: `body is too long (maximum is 65536 characters)` (Issues und Kommentare).
+    public static let issueBodyMaxLength = 65_536
+    /// Markdown-`## `-Abschnitte (Clamp an Heading-Grenzen, App + Gmail-Ingress).
+    public static let issueMarkdownH2Prefix = "## "
+    /// `{email}` wird durch `feedbackEmail` ersetzt (App + Gmail-Ingress).
+    public static let issueBodyTruncationNoticeTemplate = "… (Text gekürzt — GitHub-Issue-Limit. Vollständige Dateien per E-Mail an {email}.)"
+    public static var issueBodyTruncationNotice: String {
+        filledEmail(issueBodyTruncationNoticeTemplate)
+    }
+    public static let issueAttachmentPolicyCellTemplate = "nicht auf GitHub; Dateien per E-Mail an {email}"
+    public static var issueAttachmentPolicyCell: String {
+        filledEmail(issueAttachmentPolicyCellTemplate)
+    }
+
+    private static func filledEmail(_ template: String) -> String {
+        template.replacingOccurrences(of: "{email}", with: feedbackEmail)
+    }
+    /// Search-API: Suchbegriff ohne Operatoren max. 256 Zeichen.
+    public static let issueSearchKeywordMaxLength = 256
+
     public static var issuesListURL: URL {
         webBaseURL.appending(path: "issues")
     }

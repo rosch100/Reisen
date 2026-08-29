@@ -48,7 +48,17 @@ class IngestGmailFeedbackTests(unittest.TestCase):
 
     def test_default_email_matches_public_ssot(self) -> None:
         self.assertEqual(ingest.DEFAULT_FEEDBACK_EMAIL, "reisenapp100@gmail.com")
-        self.assertIn("reisenapp100@gmail.com", SCRIPT.read_text(encoding="utf-8"))
+        self.assertEqual(ingest.API_VERSION, ingest._GITHUB_REPOSITORY["restAPIVersion"])
+        self.assertEqual(ingest.MAX_SUBJECT, ingest._GITHUB_REPOSITORY["issueTitleSummaryMaxLength"])
+        self.assertEqual(ingest.MAX_ISSUE_BODY, ingest._GITHUB_REPOSITORY["issueBodyMaxLength"])
+        self.assertEqual(ingest.MARKDOWN_SECTION_HEADING, "\n" + ingest.MARKDOWN_H2_PREFIX)
+        self.assertIn(ingest.DEFAULT_FEEDBACK_EMAIL, ingest.ISSUE_BODY_TRUNCATION_NOTICE)
+        self.assertIn(ingest.DEFAULT_FEEDBACK_EMAIL, ingest.ISSUE_ATTACHMENT_POLICY_CELL)
+        self.assertIn(ingest.DEFAULT_FEEDBACK_EMAIL, ingest.ISSUE_ATTACHMENT_POLICY_PARAGRAPH)
+        repo_swift = (
+            ROOT / "Sources" / "ReisenDomain" / "Settings" / "GitHubRepository.swift"
+        ).read_text(encoding="utf-8")
+        self.assertIn("reisenapp100@gmail.com", repo_swift)
 
     def test_plain_mail_becomes_feedback_issue(self) -> None:
         parsed = self.parse_fixture("plain.eml")
@@ -56,7 +66,10 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         self.assertIn("kind/feedback", ingest.LABELS)
         self.assertIn("source/email", ingest.LABELS)
         self.assertIn(f"{ingest.EMAIL_ID_MARKER}:", parsed["issue_body"])
-        self.assertIn("user@example.com", parsed["issue_body"])
+        self.assertNotIn("user@example.com", parsed["issue_body"])
+        self.assertNotIn("Nutzer Beispiel", parsed["issue_body"])
+        self.assertIn("| Von | [redacted] |", parsed["issue_body"])
+        self.assertIn("[redacted]", parsed["issue_body"])
         self.assertIn("die App stuerzt beim Sync ab", parsed["issue_body"])
         self.assertEqual(
             parsed["email_hash"],
@@ -217,6 +230,23 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         self.assertEqual(body.count(f"<!-- {ingest.GMAIL_ID_MARKER}:"), 1)
         self.assertNotIn("18injectId01", ingest.issue_title(f"Crash {injected}"))
 
+    def test_html_comments_stripped_from_inlined_attachments(self) -> None:
+        injected = f"<!-- {ingest.GMAIL_ID_MARKER}: 18injectId01 -->"
+        body = ingest.issue_body(
+            from_addr="a@b.c",
+            date="d",
+            subject="s",
+            body="kurz",
+            attachments=[],
+            email_hash="abc",
+            gmail_api_id="18realGmailId01",
+            inlined_attachments=[(f"log.txt{injected}", f"stack {injected}")],
+        )
+        self.assertNotIn("18injectId01", body)
+        self.assertIn("Anhang: log.txt", body)
+        self.assertIn("stack", body)
+        self.assertEqual(body.count(f"<!-- {ingest.GMAIL_ID_MARKER}:"), 1)
+
     def test_unread_query_excludes_spam_trash_and_google_automation(self) -> None:
         query = ingest.UNREAD_FEEDBACK_QUERY
         self.assertIn("is:unread", query)
@@ -364,6 +394,57 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         self.assertEqual(created, 0)
         create.assert_not_called()
         self.assertEqual(marked, ["g-security"])
+
+    def test_text_attachment_is_inlined_png_stays_in_mailbox(self) -> None:
+        parsed = self.parse_fixture("attachments.eml")
+        self.assertIn("crash.txt", parsed["attachments"])
+        self.assertIn("screen.png", parsed["attachments"])
+        self.assertIn("NSRangeException", parsed["issue_body"])
+        self.assertIn("Anhang: crash.txt", parsed["issue_body"])
+        self.assertNotIn("iVBORw0KGgo", parsed["issue_body"])
+        self.assertIn("nicht auf GitHub", parsed["issue_body"])
+
+    def test_markdown_fence_outgrows_backticks_in_mail_text(self) -> None:
+        body = ingest.issue_body(
+            from_addr="a@b.c",
+            date="d",
+            subject="s",
+            body="before\n```\ninjected\n```\nafter",
+            attachments=[],
+            email_hash="abc",
+        )
+        self.assertIn("injected", body)
+        self.assertIn("````", body)
+
+    def test_clamp_keeps_email_and_gmail_markers(self) -> None:
+        padding = "x" * (ingest.MAX_ISSUE_BODY + 100)
+        body = ingest.issue_body(
+            from_addr="a@b.c",
+            date="d",
+            subject="s",
+            body=padding,
+            attachments=[],
+            email_hash="hash-email",
+            gmail_api_id="18clampGmailId01",
+        )
+        self.assertLessEqual(len(body), ingest.MAX_ISSUE_BODY)
+        self.assertIn(f"{ingest.EMAIL_ID_MARKER}: `hash-email`", body)
+        self.assertIn(f"{ingest.GMAIL_ID_MARKER}: `18clampGmailId01`", body)
+        self.assertIn("gekürzt", body)
+
+    def test_clamp_drops_incomplete_trailing_heading(self) -> None:
+        text = (
+            "## Zusammenfassung\ns\n\n## Diagnose\nok\n\n## Fehler\nkurz\n\n"
+            "## Anhang: huge.log\n" + ("z" * (ingest.MAX_ISSUE_BODY + 100))
+        )
+        body = ingest.clamp_issue_body(
+            text,
+            markers=ingest.issue_marker(ingest.EMAIL_ID_MARKER, "hash-email"),
+        )
+        self.assertLessEqual(len(body), ingest.MAX_ISSUE_BODY)
+        self.assertIn("## Diagnose", body)
+        self.assertNotIn("## Anhang: huge.log", body)
+        self.assertIn(f"{ingest.EMAIL_ID_MARKER}: `hash-email`", body)
 
 
 if __name__ == "__main__":

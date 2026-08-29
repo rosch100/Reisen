@@ -19,7 +19,8 @@ package final class SyncIssueReporter {
 
     package func scheduleIfNeeded(
         message: String,
-        providerID: ProviderID?
+        providerID: ProviderID?,
+        technicalDetails: String? = nil
     ) {
         guard GitHubIssueAutoReport.shouldReport(message: message) else { return }
         reset()
@@ -33,7 +34,8 @@ package final class SyncIssueReporter {
                     kind: .error,
                     message: message,
                     providerID: providerID,
-                    reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
+                    reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername(),
+                    technicalDetails: technicalDetails
                 )
                 self.onUpdate(created.htmlURL, created.didPostUpdate, nil)
             } catch is GitHubIssueTokenError {
@@ -49,6 +51,10 @@ package final class SyncIssueReporter {
         providerID: ProviderID?
     ) {
         guard GitHubIssueAutoReport.shouldReport(error: error) else { return }
-        scheduleIfNeeded(message: error.localizedDescription, providerID: providerID)
+        scheduleIfNeeded(
+            message: error.localizedDescription,
+            providerID: providerID,
+            technicalDetails: GitHubIssueErrorText.dump(error)
+        )
     }
 }

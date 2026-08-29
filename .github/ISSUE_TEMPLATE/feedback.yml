@@ -11,8 +11,9 @@ body:
         Sicherheitslücken: [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new).
 
         Feature-Wünsche bitte über das Formular **Feature** melden (Issue-Dev).
-        Screenshots und Archive: [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com)
-        (GitHub-Issues haben keine Dateianhänge; Dateien bleiben in der Mailbox).
+        Uploads in diesem Formular sind **öffentlich**. Sensible Screenshots und Archive:
+        [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (bleiben in der Mailbox).
+        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
   - type: textarea
     id: feedback
     attributes:

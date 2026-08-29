@@ -13,6 +13,15 @@ public final class GitHubIssueAPIClient: GitHubIssueSubmitting, Sendable {
         self.session = session
     }
 
+    static func restHeaders(token: String) -> [String: String] {
+        [
+            "Accept": "application/vnd.github+json",
+            "Authorization": "Bearer \(token)",
+            "X-GitHub-Api-Version": GitHubRepository.restAPIVersion,
+            "User-Agent": GitHubRepository.restUserAgent,
+        ]
+    }
+
     public func searchOpenFingerprint(_ fingerprint: String) async throws -> Int? {
         guard let url = GitHubRepository.searchOpenIssuesURL(fingerprint: fingerprint) else {
             throw GitHubIssueAPIClientError.invalidURL
@@ -45,9 +54,9 @@ public final class GitHubIssueAPIClient: GitHubIssueSubmitting, Sendable {
         let token = try tokenProvider()
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        for (header, value) in Self.restHeaders(token: token) {
+            request.setValue(value, forHTTPHeaderField: header)
+        }
         if let body {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try JSONEncoder().encode(body)

@@ -10,11 +10,6 @@ public enum GitHubIssueNewIssueURL {
     static let minTruncatedBodyCharacters = 200
     static let bodyTruncationStep = 500
 
-    private static let truncationSuffix = """
-
-    … (Text gekürzt — vollständige Meldung steht in der App.)
-    """
-
     public static func compose(
         kind: GitHubIssueKind,
         message: String,
@@ -47,36 +42,23 @@ public enum GitHubIssueNewIssueURL {
         providerID: ProviderID?,
         origin: GitHubIssueReportOrigin
     ) -> String {
-        let redacted = SecretRedactor.redact(message)
-        let snapshot = GitHubIssueDiagnostic.deviceSnapshot(kind: kind, redactedMessage: redacted)
-        let table = GitHubIssueDiagnostic.formTable(
+        let snapshot = GitHubIssueDiagnostic.deviceSnapshot(
             kind: kind,
+            redactedMessage: SecretRedactor.redact(message)
+        )
+        return GitHubIssueDiagnostic.collectedFormFieldContent(
+            kind: kind,
+            message: message,
             providerID: providerID,
             origin: origin,
-            diagnostics: snapshot
+            diagnostics: snapshot,
+            shrinkingWhile: { value in
+                !fitsInIssueURL(kind: kind, title: title, formFieldValue: value)
+                    || value.count > maxBodyCharacterCount
+            },
+            minimumFencedCharacters: minTruncatedBodyCharacters,
+            step: bodyTruncationStep
         )
-        let separatorCount = GitHubIssueDiagnostic.joinFormField(message: "", table: table).count - table.count
-        var maxMessageChars = max(minTruncatedBodyCharacters, maxBodyCharacterCount - table.count - separatorCount)
-        func composed(maxMessage: Int) -> String {
-            GitHubIssueDiagnostic.joinFormField(
-                message: truncated(redacted, maxCharacters: max(0, maxMessage)),
-                table: table
-            )
-        }
-        var value = composed(maxMessage: maxMessageChars)
-        while !fitsInIssueURL(kind: kind, title: title, formFieldValue: value),
-              maxMessageChars > minTruncatedBodyCharacters
-        {
-            maxMessageChars = max(minTruncatedBodyCharacters, maxMessageChars - bodyTruncationStep)
-            value = composed(maxMessage: maxMessageChars)
-        }
-        return value
-    }
-
-    static func truncated(_ body: String, maxCharacters: Int) -> String {
-        guard body.count > maxCharacters else { return body }
-        let keep = max(0, maxCharacters - truncationSuffix.count)
-        return String(body.prefix(keep)) + truncationSuffix
     }
 
     static func fitsInIssueURL(kind: GitHubIssueKind, title: String, formFieldValue: String) -> Bool {

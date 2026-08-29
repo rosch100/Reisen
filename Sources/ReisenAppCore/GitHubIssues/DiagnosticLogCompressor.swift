@@ -1,4 +1,5 @@
 import Foundation
+import ReisenDomain
 
 enum DiagnosticLogCompressorError: Error {
     case invalidBase64
@@ -44,6 +45,16 @@ enum DiagnosticLogAttachment: Equatable, Sendable {
     static let attachMaxRawBytes = 16_384
     static let previewLineCount = 12
     static let commentPreviewLineCount = 5
+    static let missingStatus = "Sync-Log: nicht vorhanden"
+    static let emptyStatus = "Sync-Log: leer"
+    private static let logSectionHeading = GitHubIssueMarkdown.sectionHeading("Sync-Log")
+    private static var previewHeading: String {
+        "### Vorschau (letzte \(previewLineCount) Zeilen, geschwärzt)"
+    }
+
+    static func unreadableStatus(_ detail: String) -> String {
+        "Sync-Log: nicht lesbar\n\(SecretRedactor.redact(detail))"
+    }
 
     static func makeAttached(
         redactedTail: String,
@@ -71,46 +82,62 @@ enum DiagnosticLogAttachment: Equatable, Sendable {
     func markdownSection(includeCompressedLog: Bool) -> String {
         switch self {
         case .missing:
-            return "\n## Sync-Log\nSync-Log: nicht vorhanden\n"
+            return Self.statusSection(Self.missingStatus)
         case .empty:
-            return "\n## Sync-Log\nSync-Log: leer\n"
+            return Self.statusSection(Self.emptyStatus)
         case .unreadable(let detail):
-            return "\n## Sync-Log\nSync-Log: nicht lesbar\n\(SecretRedactor.redact(detail))\n"
+            return Self.statusSection(Self.unreadableStatus(detail))
         case .compressionFailed(let preview):
             return """
 
-            ## Sync-Log
-            ### Vorschau (letzte \(Self.previewLineCount) Zeilen, geschwärzt)
-            ```
-            \(preview)
-            ```
+            \(Self.logSectionHeading)
+            \(Self.previewHeading)
+            \(GitHubIssueMarkdown.fence(preview))
             Kompression fehlgeschlagen
             """
         case .attached(let preview, let blob, let raw, let file, let truncated):
             var text = """
 
-            ## Sync-Log
+            \(Self.logSectionHeading)
             | Feld | Wert |
             | --- | --- |
             | Dateigröße | \(file) B |
             | Anhang roh | \(raw) B |
             | truncated | \(truncated ? "ja" : "nein") |
 
-            ### Vorschau (letzte \(Self.previewLineCount) Zeilen, geschwärzt)
-            ```
-            \(preview)
-            ```
+            \(Self.previewHeading)
+            \(GitHubIssueMarkdown.fence(preview))
             """
             if includeCompressedLog {
                 text += """
 
                 ### zlib+Base64
-                ```
-                \(blob)
-                ```
+                \(GitHubIssueMarkdown.fence(blob))
                 """
             }
             return text
+        }
+    }
+
+    private static func statusSection(_ status: String) -> String {
+        "\n\(logSectionHeading)\n\(status)\n"
+    }
+
+    func commentBlock() -> String {
+        switch self {
+        case .missing:
+            return Self.missingStatus
+        case .empty:
+            return Self.emptyStatus
+        case .unreadable(let detail):
+            return Self.unreadableStatus(detail)
+        case .attached(let preview, _, _, _, _), .compressionFailed(let preview):
+            return GitHubIssueMarkdown.fence(
+                DiagnosticLogCompressor.preview(
+                    from: preview,
+                    lastLineCount: Self.commentPreviewLineCount
+                )
+            )
         }
     }
 }

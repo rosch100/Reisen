@@ -20,14 +20,70 @@ import urllib.request
 from email.header import decode_header, make_header
 from email.message import Message
 from email.utils import parseaddr
+from pathlib import Path
 from typing import Any
 
-# SSOT mit Sources/ReisenDomain/Settings/GitHubRepository.swift feedbackEmail
-DEFAULT_FEEDBACK_EMAIL = "reisenapp100@gmail.com"
-DEFAULT_REPO = "rosch100/Reisen"
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_GITHUB_REPOSITORY_SWIFT = (
+    _REPO_ROOT / "Sources" / "ReisenDomain" / "Settings" / "GitHubRepository.swift"
+)
+_SECRET_REDACTOR_RULES_PATH = (
+    _REPO_ROOT
+    / "Sources"
+    / "ReisenDomain"
+    / "Resources"
+    / "github-issue-secret-redactor.rules.json"
+)
+
+
+def swift_string_constant(source: str, name: str) -> str:
+    match = re.search(rf'static let {re.escape(name)} = "([^"]+)"', source)
+    if match is None:
+        raise RuntimeError(f"GitHubRepository.{name} fehlt")
+    return match.group(1)
+
+
+def swift_int_constant(source: str, name: str) -> int:
+    match = re.search(rf"static let {re.escape(name)} = ([0-9_]+)", source)
+    if match is None:
+        raise RuntimeError(f"GitHubRepository.{name} fehlt")
+    return int(match.group(1).replace("_", ""))
+
+
+def load_github_repository_ssot() -> dict[str, Any]:
+    source = _GITHUB_REPOSITORY_SWIFT.read_text(encoding="utf-8")
+    owner = swift_string_constant(source, "owner")
+    name = swift_string_constant(source, "name")
+    return {
+        "feedbackEmail": swift_string_constant(source, "feedbackEmail"),
+        "repo": f"{owner}/{name}",
+        "restAPIVersion": swift_string_constant(source, "restAPIVersion"),
+        "issueTitleMaxLength": swift_int_constant(source, "issueTitleMaxLength"),
+        "issueTitleSummaryMaxLength": swift_int_constant(
+            source, "issueTitleSummaryMaxLength"
+        ),
+        "issueBodyMaxLength": swift_int_constant(source, "issueBodyMaxLength"),
+        "issueMarkdownH2Prefix": swift_string_constant(source, "issueMarkdownH2Prefix"),
+        "issueBodyTruncationNoticeTemplate": swift_string_constant(
+            source, "issueBodyTruncationNoticeTemplate"
+        ),
+        "issueAttachmentPolicyCellTemplate": swift_string_constant(
+            source, "issueAttachmentPolicyCellTemplate"
+        ),
+    }
+
+
+_GITHUB_REPOSITORY = load_github_repository_ssot()
+DEFAULT_FEEDBACK_EMAIL = str(_GITHUB_REPOSITORY["feedbackEmail"])
+DEFAULT_REPO = str(_GITHUB_REPOSITORY["repo"])
 MAX_MAILS_PER_RUN = 20
 TITLE_PREFIX = "[Feedback]"
-MAX_SUBJECT = 80
+MAX_SUBJECT = int(_GITHUB_REPOSITORY["issueTitleSummaryMaxLength"])
+MAX_ISSUE_TITLE = int(_GITHUB_REPOSITORY["issueTitleMaxLength"])
+MAX_ISSUE_BODY = int(_GITHUB_REPOSITORY["issueBodyMaxLength"])
+MARKDOWN_H2_PREFIX = str(_GITHUB_REPOSITORY["issueMarkdownH2Prefix"])
+MARKDOWN_SECTION_HEADING = "\n" + MARKDOWN_H2_PREFIX
+MAX_TEXT_ATTACHMENT = 20_000
 LABELS = ["kind/feedback", "source/email"]
 GMAIL_ID_MARKER = "issue-dev-gmail-id"
 EMAIL_ID_MARKER = "reisen-email-id"
@@ -40,7 +96,7 @@ OAUTH_ENV = {
 }
 # SSOT mit PasteImportFailedMailDraft.skipIngressMarker
 PASTE_IMPORT_DOCUMENT_MARKER = "reisen-paste-import-document"
-API_VERSION = "2022-11-28"
+API_VERSION = str(_GITHUB_REPOSITORY["restAPIVersion"])
 USER_AGENT = "reisen-gmail-feedback-ingress"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me"
@@ -118,17 +174,125 @@ def part_payload_text(part: Message) -> str:
         return payload.decode("utf-8", errors="replace")
 
 
-def extract_body_and_attachments(message: Message) -> tuple[str, list[str]]:
+def icu_template_to_python(template: str) -> str:
+    return re.sub(r"\$(\d+)", r"\\g<\1>", template)
+
+
+def load_secret_redactor_spec() -> dict[str, Any]:
+    with _SECRET_REDACTOR_RULES_PATH.open(encoding="utf-8") as handle:
+        spec = json.load(handle)
+    if not isinstance(spec, dict):
+        raise RuntimeError("secret redactor rules must be an object")
+    min_length = spec.get("markdownCodeFenceMinLength")
+    rules = spec.get("rules")
+    if not isinstance(min_length, int) or min_length < 3:
+        raise RuntimeError("markdownCodeFenceMinLength ungültig")
+    if not isinstance(rules, list) or not rules:
+        raise RuntimeError("secret redactor rules fehlen")
+    for rule in rules:
+        if not isinstance(rule, dict):
+            raise RuntimeError("secret redactor rule must be an object")
+        if not isinstance(rule.get("pattern"), str) or not isinstance(rule.get("template"), str):
+            raise RuntimeError("secret redactor rule missing pattern/template")
+    return spec
+
+
+_SECRET_REDACTOR_SPEC = load_secret_redactor_spec()
+MARKDOWN_FENCE_MIN = int(_SECRET_REDACTOR_SPEC["markdownCodeFenceMinLength"])
+_REDACT_RULES: tuple[tuple[str, str], ...] = tuple(
+    (str(rule["pattern"]), icu_template_to_python(str(rule["template"])))
+    for rule in _SECRET_REDACTOR_SPEC["rules"]
+)
+
+
+def redact_secrets(text: str) -> str:
+    redacted = text
+    for pattern, replacement in _REDACT_RULES:
+        redacted = re.sub(pattern, replacement, redacted)
+    return redacted
+
+
+def markdown_h2(title: str) -> str:
+    return MARKDOWN_H2_PREFIX + title
+
+
+def markdown_fence(text: str) -> str:
+    longest = max((len(match.group(0)) for match in re.finditer(r"`+", text)), default=0)
+    fence = "`" * max(MARKDOWN_FENCE_MIN, longest + 1)
+    return f"{fence}\n{text}\n{fence}"
+
+
+def fenced_heading(heading: str, text: str) -> str:
+    return f"{markdown_h2(heading)}\n{markdown_fence(text)}"
+
+
+TEXT_ATTACHMENT_TYPES = {
+    "text/plain",
+    "text/csv",
+    "text/markdown",
+    "text/x-log",
+    "text/xml",
+    "application/json",
+    "application/xml",
+}
+TEXT_ATTACHMENT_SUFFIXES = (
+    ".txt",
+    ".log",
+    ".crash",
+    ".json",
+    ".md",
+    ".xml",
+    ".csv",
+    ".ips",
+)
+NON_TEXT_TYPE_PREFIXES = ("image/", "audio/", "video/")
+NON_TEXT_TYPES = {
+    "application/octet-stream",
+    "application/pdf",
+    "application/zip",
+    "application/gzip",
+    "application/x-gzip",
+    "application/x-tar",
+    "application/x-7z-compressed",
+    "application/vnd.rar",
+}
+
+
+def is_non_text_content_type(content_type: str) -> bool:
+    lowered = content_type.lower()
+    return lowered.startswith(NON_TEXT_TYPE_PREFIXES) or lowered in NON_TEXT_TYPES
+
+
+def is_text_attachment(filename: str, content_type: str) -> bool:
+    if is_non_text_content_type(content_type):
+        return False
+    lowered_type = content_type.lower()
+    if lowered_type in TEXT_ATTACHMENT_TYPES:
+        return True
+    lowered_name = filename.casefold()
+    return any(lowered_name.endswith(suffix) for suffix in TEXT_ATTACHMENT_SUFFIXES)
+
+
+def extract_body_and_attachments(
+    message: Message,
+) -> tuple[str, list[str], list[tuple[str, str]]]:
     attachments: list[str] = []
+    inlined: list[tuple[str, str]] = []
     plain_parts: list[str] = []
     html_parts: list[str] = []
 
     if message.is_multipart():
         for part in message.walk():
             disposition = (part.get_content_disposition() or "").lower()
-            filename = part.get_filename()
+            filename = decode_header_value(part.get_filename())
             if disposition == "attachment" or filename:
-                attachments.append(decode_header_value(filename) or "unnamed")
+                name = filename or "unnamed"
+                attachments.append(name)
+                content_type = part.get_content_type()
+                if is_text_attachment(name, content_type):
+                    text = part_payload_text(part).strip()
+                    if text:
+                        inlined.append((name, text))
                 continue
             content_type = part.get_content_type()
             if content_type == "text/plain":
@@ -146,7 +310,7 @@ def extract_body_and_attachments(message: Message) -> tuple[str, list[str]]:
     body = "\n\n".join(part.strip() for part in plain_parts if part.strip())
     if not body:
         body = "\n\n".join(html_to_text(part) for part in html_parts if part.strip())
-    return body.strip(), attachments
+    return body.strip(), attachments, inlined
 
 
 def should_skip_github_issue(body: str) -> bool:
@@ -169,9 +333,35 @@ def sanitized_issue_field(value: str) -> str:
     return HTML_COMMENT_PATTERN.sub("", value).strip()
 
 
+def redacted_issue_field(value: str) -> str:
+    return redact_secrets(sanitized_issue_field(value))
+
+
+def filled_email(template: object) -> str:
+    return str(template).replace("{email}", DEFAULT_FEEDBACK_EMAIL)
+
+
+ISSUE_BODY_TRUNCATION_NOTICE = filled_email(
+    _GITHUB_REPOSITORY["issueBodyTruncationNoticeTemplate"]
+)
+ISSUE_ATTACHMENT_POLICY_CELL = filled_email(
+    _GITHUB_REPOSITORY["issueAttachmentPolicyCellTemplate"]
+)
+ISSUE_ATTACHMENT_POLICY_PARAGRAPH = filled_email(
+    "Die GitHub-Issues-API unterstützt keine Dateianhänge. "
+    "Textanhänge stehen als Text in diesem Issue. "
+    "Binäre Dateien bleiben in der Mailbox ({email}) und werden nicht auf GitHub hochgeladen."
+)
+
+
+def issue_subject_summary(subject: str) -> str:
+    collapsed = re.sub(r"\s+", " ", sanitized_issue_field(subject)).strip() or EMPTY_SUBJECT
+    return redacted_issue_field(collapsed)
+
+
 def issue_title(subject: str) -> str:
-    summary = re.sub(r"\s+", " ", sanitized_issue_field(subject)).strip() or EMPTY_SUBJECT
-    return f"{TITLE_PREFIX} {summary[:MAX_SUBJECT]}"
+    title = f"{TITLE_PREFIX} {issue_subject_summary(subject)[:MAX_SUBJECT]}"
+    return title[:MAX_ISSUE_TITLE]
 
 
 def issue_marker(name: str, value: str) -> str:
@@ -183,8 +373,51 @@ def issue_table_cell(value: str) -> str:
 
 
 def issue_attachment_cell(attachments: list[str]) -> str:
-    names = [name for name in (sanitized_issue_field(name) for name in attachments) if name]
+    names = [name for name in (redacted_issue_field(raw) for raw in attachments) if name]
     return ", ".join(names) if names else EMPTY_CELL
+
+
+def clamp_issue_body(text: str, *, markers: str) -> str:
+    if len(text) + len(markers) <= MAX_ISSUE_BODY:
+        return text + markers
+    notice = "\n\n" + ISSUE_BODY_TRUNCATION_NOTICE
+    keep = max(0, MAX_ISSUE_BODY - len(notice) - len(markers))
+    return trim_to_heading_boundary(text, keep) + notice + markers
+
+
+def trim_to_heading_boundary(text: str, max_characters: int) -> str:
+    if len(text) <= max_characters:
+        return text
+    prefix = text[:max_characters]
+    chunks = text.split(MARKDOWN_SECTION_HEADING)
+    if len(chunks) <= 1:
+        return prefix
+    sections = [chunks[0]] + [MARKDOWN_SECTION_HEADING + chunk for chunk in chunks[1:]]
+    acc = ""
+    for section in sections:
+        if len(acc) + len(section) > max_characters:
+            break
+        acc += section
+    return acc if acc else prefix
+
+
+def issue_from_cell(from_header: str) -> str:
+    return "[redacted]" if sanitized_issue_field(from_header) else EMPTY_CELL
+
+
+def inlined_attachment_sections(inlined: list[tuple[str, str]]) -> str:
+    sections: list[str] = []
+    for name, text in inlined:
+        heading = redacted_issue_field(name) or "unnamed"
+        clipped = redacted_issue_field(text)
+        if not clipped:
+            continue
+        if len(clipped) > MAX_TEXT_ATTACHMENT:
+            clipped = clipped[:MAX_TEXT_ATTACHMENT] + "\n… (Anhang gekürzt)"
+        sections.append(fenced_heading(f"Anhang: {heading}", clipped))
+    if not sections:
+        return ""
+    return "\n\n" + "\n\n".join(sections) + "\n"
 
 
 def issue_body(
@@ -196,29 +429,32 @@ def issue_body(
     attachments: list[str],
     email_hash: str,
     gmail_api_id: str | None = None,
+    inlined_attachments: list[tuple[str, str]] | None = None,
 ) -> str:
-    from_addr = sanitized_issue_field(from_addr)
-    date = sanitized_issue_field(date)
-    subject = sanitized_issue_field(subject)
-    text = sanitized_issue_field(body) or EMPTY_MAIL_TEXT
-    gmail_lines = issue_marker(GMAIL_ID_MARKER, gmail_api_id) if gmail_api_id else ""
-    return (
-        "## Zusammenfassung\n"
-        f"{subject or EMPTY_SUBJECT}\n\n"
-        "## Diagnose\n"
+    from_addr = issue_from_cell(from_addr)
+    date = redacted_issue_field(date)
+    summary = issue_subject_summary(subject)
+    text = redacted_issue_field(body) or EMPTY_MAIL_TEXT
+    inlined = inlined_attachments or []
+    markers = issue_marker(EMAIL_ID_MARKER, email_hash)
+    if gmail_api_id:
+        markers += issue_marker(GMAIL_ID_MARKER, gmail_api_id)
+    return clamp_issue_body(
+        f"{markdown_h2('Zusammenfassung')}\n"
+        f"{summary}\n\n"
+        f"{markdown_h2('Diagnose')}\n"
         "| Feld | Wert |\n"
         "| --- | --- |\n"
         "| Art | feedback |\n"
         "| Meldeweg | E-Mail |\n"
         f"| Von | {issue_table_cell(from_addr)} |\n"
         f"| Datum | {issue_table_cell(date)} |\n"
-        f"| Anhänge | {issue_attachment_cell(attachments)} |\n\n"
-        "## Fehler\n"
-        "```\n"
-        f"{text}\n"
-        "```\n\n"
-        f"{issue_marker(EMAIL_ID_MARKER, email_hash)}"
-        f"{gmail_lines}"
+        f"| Anhänge | {issue_attachment_cell(attachments)} |\n"
+        f"| Dateianhänge | {ISSUE_ATTACHMENT_POLICY_CELL} |\n\n"
+        f"{ISSUE_ATTACHMENT_POLICY_PARAGRAPH}\n\n"
+        f"{fenced_heading('Fehler', text)}\n"
+        f"{inlined_attachment_sections(inlined)}\n",
+        markers=markers,
     )
 
 
@@ -266,7 +502,7 @@ def parsed_from_message(
     if not message_id:
         fallback = fallback_message_id.strip() if isinstance(fallback_message_id, str) else ""
         message_id = fallback or synthetic_message_id(from_addr, date, subject)
-    body, attachments = extract_body_and_attachments(message)
+    body, attachments, inlined = extract_body_and_attachments(message)
     email_hash = email_id_hash(message_id)
     api_id = optional_gmail_api_id(gmail_api_id)
     result: dict[str, Any] = {
@@ -286,6 +522,7 @@ def parsed_from_message(
             attachments=attachments,
             email_hash=email_hash,
             gmail_api_id=api_id,
+            inlined_attachments=inlined,
         ),
     }
     if api_id:

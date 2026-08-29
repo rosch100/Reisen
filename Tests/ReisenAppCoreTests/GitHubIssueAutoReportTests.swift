@@ -109,6 +109,46 @@ private struct PrivacyDenied: Error, PrivacyAccessDenying {
     #expect(stored.contains("/Users/[redacted]/"))
 }
 
+@Test func githubIssueCrashCatcher_messageOmitsUnknownUserInfoKeys() {
+    let exception = NSException(
+        name: NSExceptionName("NSRangeException"),
+        reason: "index out of range",
+        userInfo: [
+            NSLocalizedDescriptionKey: "sichtbar",
+            "sessionToken": "secret-session-value-xyz",
+            "Authorization": "Bearer ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+        ]
+    )
+    let text = GitHubIssueCrashCatcher.message(from: exception)
+    #expect(text.contains("NSRangeException"))
+    #expect(text.contains("index out of range"))
+    #expect(text.contains("sichtbar"))
+    #expect(!text.contains("secret-session-value-xyz"))
+    #expect(!text.contains("ghp_abcdefghijklmnopqrstuvwxyz0123456789"))
+}
+
+@Test func githubIssueCrashCatcher_underlyingErrorOmitsUnknownKeysAndSkipsDumpFormat() {
+    let underlying = NSError(
+        domain: "NSURLErrorDomain",
+        code: -1001,
+        userInfo: [
+            NSLocalizedDescriptionKey: "Zeitüberschreitung",
+            "sessionToken": "secret-session-value-xyz",
+        ]
+    )
+    let exception = NSException(
+        name: NSExceptionName("NSRangeException"),
+        reason: "index out of range",
+        userInfo: [NSUnderlyingErrorKey: underlying]
+    )
+    let text = GitHubIssueCrashCatcher.message(from: exception)
+    #expect(text.contains("NSURLErrorDomain"))
+    #expect(text.contains("-1001"))
+    #expect(text.contains("Zeitüberschreitung"))
+    #expect(!text.contains("secret-session-value-xyz"))
+    #expect(!text.contains("Typ:"))
+}
+
 @Test func githubIssueCrashPending_redactsOnReadForFlush() throws {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("reisen-crash-raw-\(UUID().uuidString).txt")

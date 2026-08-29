@@ -10,8 +10,10 @@ body:
         Bitte **keine** personenbezogenen Daten (Reisen, Passagiere, E-Mail, Adressen) und **keine** Security-Exploit-Details.
         Sicherheitslücken: [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new).
 
-        GitHub-Issues unterstützen **keine Dateianhänge**. Screenshots und Archive bitte an
+        Uploads in diesem Formular oder in Kommentaren sind **öffentlich**.
+        Sensible Screenshots und Archive bitte an
         [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (bleiben in der Mailbox).
+        Issues aus der App und dem Gmail-Ingress (Issues-API) haben keine Dateianhänge.
   - type: textarea
     id: what
     attributes:

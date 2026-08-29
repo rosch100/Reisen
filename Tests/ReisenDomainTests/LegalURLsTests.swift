@@ -239,4 +239,23 @@ private func issueQueryValue(_ url: URL, name: String) -> String? {
     #expect(url?.query?.contains("repo:rosch100/Reisen") == true)
     #expect(url?.query?.contains("abc123") == true)
     #expect(url?.query?.contains("state:open") == true)
+    #expect("abc123".count <= GitHubRepository.issueSearchKeywordMaxLength)
+}
+
+@Test func githubRepository_restContractMatchesGitHubDocs() {
+    #expect(GitHubRepository.restAPIVersion == "2022-11-28")
+    #expect(GitHubRepository.restUserAgent == "Reisen")
+    #expect(GitHubRepository.issueTitleMaxLength == 256)
+    #expect(GitHubRepository.issueBodyMaxLength == 65_536)
+    #expect(GitHubRepository.issueMarkdownH2Prefix == "## ")
+    #expect(GitHubRepository.issueBodyTruncationNotice.contains(GitHubRepository.feedbackEmail))
+    #expect(GitHubRepository.issueAttachmentPolicyCell.contains(GitHubRepository.feedbackEmail))
+    #expect(GitHubRepository.issueSearchKeywordMaxLength == 256)
+    #expect(GitHubRepository.apiIssuesURL.path == "/repos/rosch100/Reisen/issues")
+}
+
+@Test func githubIssueSecretRedactorRules_loadFromDomainBundle() {
+    #expect(GitHubIssueSecretRedactorRules.markdownCodeFenceMinLength == 3)
+    #expect(GitHubIssueSecretRedactorRules.rules.count >= 20)
+    #expect(GitHubIssueSecretRedactorRules.rules.allSatisfy { !$0.pattern.isEmpty && !$0.template.isEmpty })
 }
