@@ -3,8 +3,7 @@ import ReisenDomain
 
 /// Führt zwei komplementäre, jeweils unvollständige **Flug-/Boarding**-Fragmente zusammen.
 ///
-/// Hotel-Code + Flugstrecke aus derselben Quelle werden nicht vermischt — nur wenn mindestens
-/// ein Fragment als Flugnummer oder Boarding-Pass erkennbar ist.
+/// Beide Seiten müssen flugbezogen sein (Typ, Flugnummer oder Boarding-Titel) — kein Hotel-Code + Flug.
 public enum PasteImportExtractionCoalescer {
     public static func coalescing(_ extractions: [PasteImportExtraction]) -> [PasteImportExtraction] {
         guard extractions.count == 2,
@@ -12,7 +11,8 @@ public enum PasteImportExtractionCoalescer {
               let second = extractions.last,
               !isFilterReady(first),
               !isFilterReady(second),
-              looksLikeFlightFragment(first) && looksLikeFlightFragment(second),
+              looksLikeFlightFragment(first),
+              looksLikeFlightFragment(second),
               areComplementary(first, second)
         else {
             return extractions
@@ -25,15 +25,16 @@ public enum PasteImportExtractionCoalescer {
     }
 
     private static func looksLikeFlightFragment(_ extraction: PasteImportExtraction) -> Bool {
-        if extraction.bookingType == .flight { return true }
-        if looksLikeFlightNumber(extraction.title) { return true }
-        return boardingPassTitle(extraction.title)
+        extraction.bookingType == .flight
+            || looksLikeFlightNumber(extraction.title)
+            || boardingPassTitle(extraction.title)
     }
 
     private static func boardingPassTitle(_ title: String?) -> Bool {
-        guard let title = NonEmpty.string(title) else { return false }
-        let key = title.lowercased().filter(\.isLetter)
-        return key.contains("boardingpass") || key.contains("boarding") || key.contains("bordkarte")
+        let tokens = PasteImportTextTokens.tokens(in: title)
+        return tokens.contains("boarding")
+            || tokens.contains("boardingpass")
+            || tokens.contains("bordkarte")
     }
 
     private static func areComplementary(

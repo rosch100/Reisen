@@ -49,13 +49,7 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             generating: PasteImportPayloadDTO.self
         )
         let mapped = PasteImportGenerableMapper.extractions(from: response.content)
-        let coalesced = PasteImportExtractionCoalescer.coalescing(mapped)
-        let typed = PasteImportExtractionTypeHint.applying(coalesced)
-        let dated = PasteImportExtractionCompleter.fillingOmittedTravelDates(
-            typed,
-            from: material.text
-        )
-        return PasteImportSourceGrounding.keepingGrounded(dated, in: material.text)
+        return PasteImportExtractionRefiner.refine(mapped, sourceText: material.text)
     }
 
     private func makeSession() throws -> LanguageModelSession {

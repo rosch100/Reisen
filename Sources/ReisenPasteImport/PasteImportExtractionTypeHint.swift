@@ -1,9 +1,9 @@
 import Foundation
 import ReisenDomain
 
-/// Setzt `bookingType` nur aus belegten Titel-/Operator-**Tokens**, wenn das Modell ihn wegließ.
+/// Setzt `bookingType` aus Titel-/Operator-Tokens über `PasteImportBookingLabel`, wenn das Modell ihn wegließ.
 ///
-/// Keine Substring-Fallen: „Business“, „Busan“, „Touristenhotel“, „preventive“ bleiben unberührt.
+/// Mehrere widersprüchliche Typ-Tokens → kein Hint (kein Raten).
 public enum PasteImportExtractionTypeHint {
     public static func applying(_ extractions: [PasteImportExtraction]) -> [PasteImportExtraction] {
         extractions.map(apply)
@@ -19,39 +19,14 @@ public enum PasteImportExtractionTypeHint {
     }
 
     private static func hint(in raw: String?) -> BookingType? {
-        let tokens = tokens(in: raw)
-        guard !tokens.isEmpty else { return nil }
-        if tokens.contains(where: trainTokens.contains) { return .train }
-        if tokens.contains(where: activityTokens.contains) { return .activity }
-        return nil
+        var found: BookingType?
+        for token in PasteImportTextTokens.tokens(in: raw) {
+            guard let type = PasteImportBookingLabel.bookingType(from: token), type != .other else {
+                continue
+            }
+            if let found, found != type { return nil }
+            found = type
+        }
+        return found
     }
-
-    private static func tokens(in raw: String?) -> Set<String> {
-        guard let raw = NonEmpty.string(raw) else { return [] }
-        let folded = raw
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-            .lowercased()
-        return Set(
-            folded
-                .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-                .map(String.init)
-                .filter { !$0.isEmpty }
-        )
-    }
-
-    private static let trainTokens: Set<String> = [
-        "bus",
-        "flixbus",
-        "fernbus",
-        "coach",
-        "omnibus",
-    ]
-
-    private static let activityTokens: Set<String> = [
-        "tour",
-        "ausflug",
-        "event",
-        "getyourguide",
-        "eventbrite",
-    ]
 }

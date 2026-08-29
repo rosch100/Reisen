@@ -14,7 +14,9 @@ public enum PasteImportPromptBudget {
             .components(separatedBy: "\n\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        let ordered = paragraphs.filter(looksLikeBooking) + paragraphs.filter { !looksLikeBooking($0) }
+        let ordered =
+            paragraphs.filter(PasteImportBookingText.looksLikeBooking)
+            + paragraphs.filter { !PasteImportBookingText.looksLikeBooking($0) }
         var kept: [String] = []
         var used = 0
         for paragraph in ordered {
@@ -49,33 +51,5 @@ public enum PasteImportPromptBudget {
         }
         let trimmed = head.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private static let bookingNeedles = [
-        "pnr",
-        "booking reference",
-        "booking confirmation",
-        "passenger",
-        "itinerary",
-        "departure",
-        "check-in",
-        "check in",
-        "reservation",
-        "auftragsnummer",
-        "buchungscode",
-        "e-ticket",
-        "eticket",
-        "abfahrt",
-        "confirmation number",
-        "reservierungsnummer",
-        "reiseverlauf",
-        "boarding",
-        "flug",
-        "flight",
-    ]
-
-    private static func looksLikeBooking(_ paragraph: String) -> Bool {
-        let hay = paragraph.lowercased()
-        return bookingNeedles.contains { hay.contains($0) }
     }
 }
