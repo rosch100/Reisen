@@ -44,7 +44,7 @@ import Testing
     let data = Data("pdf".utf8)
     _ = try await reporter.report(
         kind: .feature,
-        message: "Paste-Import: Dokument nicht erkannt",
+        message: PasteImportFailedFeatureRequest.unrecognizedDocumentMessage,
         providerID: nil,
         attachments: [GitHubIssueAttachment(fileName: "paste.pdf", mimeType: "application/pdf", data: data)]
     )

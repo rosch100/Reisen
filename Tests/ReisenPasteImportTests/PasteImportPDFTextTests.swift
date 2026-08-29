@@ -27,6 +27,7 @@ import ReisenPasteImport
     let count = PasteImportPDFPreparation.maxRenderedPages + 1
     let content = try PasteImportPDFPreparation.prepare(PDFTestData.blankPages(count: count))
     #expect(content.pageImages.count == PasteImportPDFPreparation.maxRenderedPages)
+    #expect(content.sourceWasTruncated)
 }
 
 @Test func pasteImportPDFText_nonPDFBytesThrowUnreadableSource() {

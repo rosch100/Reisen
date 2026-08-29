@@ -125,7 +125,8 @@ struct ContentView: View {
                 await startPasteImportFromFile()
             }
         }
-        .pasteImportMacDropAndOpen(
+        .pasteImportInboxAndDrop(
+            isSessionActive: pasteImport.isActive,
             onDropped: { startPasteImport(fromDropped: $0) },
             onExternal: consumeExternalFiles
         )
@@ -1057,36 +1058,35 @@ struct ContentView: View {
     }
 
     private func consumeExternalFiles() {
-        startPasteImport(fromDropped: PasteImportExternalFileInbox.take())
+        beginPasteImportDrop(
+            PasteImportDropStartResolver.consumeInbox(isSessionActive: pasteImport.isActive)
+        )
     }
 
     /// Ein Drop bzw. „Öffnen mit“ startet denselben Lauf wie der Dateidialog; das erste gültige File zählt.
     private func startPasteImport(fromDropped urls: [URL]) {
-        let files = PasteImportFileSource.acceptedFiles(in: urls)
-        switch PasteImportDropCoordinator.action(
-            offeredURLCount: urls.count,
-            acceptedFileCount: files.count,
-            isSessionActive: pasteImport.isActive
-        ) {
-        case .ignore:
-            return
-        case .fail:
-            pasteImport.fail(L10n.string(.pasteImportErrorSource))
-        case .start:
-            guard let url = files.first else {
-                pasteImport.fail(L10n.string(.pasteImportErrorSource))
-                return
-            }
-            do {
+        beginPasteImportDrop(
+            PasteImportDropStartResolver.resolve(
+                urls: urls,
+                isSessionActive: pasteImport.isActive
+            )
+        )
+    }
+
+    private func beginPasteImportDrop(_ start: PasteImportDropStart) {
+        if case .ignore = start { return }
+        let entry = pasteImportEntry
+        let existing = existingDomainBookings
+        start.apply(
+            onFail: pasteImport.fail,
+            onSource: { source in
                 pasteImport.start(
-                    source: try PasteImportFileSource.source(from: url),
-                    entry: pasteImportEntry,
-                    existing: existingDomainBookings
+                    source: source,
+                    entry: entry,
+                    existing: existing
                 )
-            } catch {
-                pasteImport.fail(PasteImportFailureMessage.text(for: error))
             }
-        }
+        )
     }
 
     /// Nächster Kandidat aus der Warteschlange in den passenden Editor.
@@ -1101,8 +1101,8 @@ struct ContentView: View {
 
     private func presentNextPasteImportCandidate() {
         guard let candidate = pasteImport.nextCandidate() else { return }
-        if candidate.isErgaenzen {
-            reviewPasteImportEnrich(candidate)
+        if let match = candidate.uniqueMatchedBooking {
+            reviewPasteImportEnrich(candidate, match: match)
         } else {
             reviewPasteImportNew(candidate)
         }
@@ -1110,9 +1110,8 @@ struct ContentView: View {
 
     /// Ergänzen läuft im Inspector, solange die Bestandsbuchung in der Timeline der Reise steht;
     /// sonst zeigt der Inspector nichts an und der Editor kommt als eigenes Sheet.
-    private func reviewPasteImportEnrich(_ candidate: PasteImportCandidate) {
-        guard case .unique(let match) = candidate.match,
-              let booking = allBookings.first(where: { $0.id == match.id }) else {
+    private func reviewPasteImportEnrich(_ candidate: PasteImportCandidate, match: Booking) {
+        guard let booking = allBookings.first(where: { $0.id == match.id }) else {
             // Ohne Bestandsbuchung nicht als „Neu“ weiterlaufen — das legte ein Duplikat an.
             pasteImport.fail(L10n.string(.pasteImportErrorMatchMissing))
             return

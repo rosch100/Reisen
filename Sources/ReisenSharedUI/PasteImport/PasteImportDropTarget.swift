@@ -1,10 +1,51 @@
 import SwiftUI
+import ReisenAppCore
 import ReisenDomain
 
 extension View {
     /// Nimmt PDF, Bild und Text per Drag-and-Drop an — dieselben Typen wie der Dateidialog.
     public func pasteImportDropTarget(onURLs: @escaping ([URL]) -> Void) -> some View {
         modifier(PasteImportDropTargetModifier(onURLs: onURLs))
+    }
+
+    /// Fenster-Drop plus Inbox für Dock/„Öffnen mit“ (Mac und iOS).
+    ///
+    /// `isSessionActive`: wenn die Session wieder idle wird, werden zurückgelegte Inbox-URLs
+    /// erneut angeboten (`onExternal`).
+    public func pasteImportInboxAndDrop(
+        isSessionActive: Bool,
+        onDropped: @escaping ([URL]) -> Void,
+        onExternal: @escaping () -> Void
+    ) -> some View {
+        modifier(
+            PasteImportInboxAndDropModifier(
+                isSessionActive: isSessionActive,
+                onDropped: onDropped,
+                onExternal: onExternal
+            )
+        )
+    }
+}
+
+private struct PasteImportInboxAndDropModifier: ViewModifier {
+    let isSessionActive: Bool
+    let onDropped: ([URL]) -> Void
+    let onExternal: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .pasteImportExternalFilesOffered)) { _ in
+                onExternal()
+            }
+            .onAppear(perform: onExternal)
+            .onChange(of: isSessionActive) { wasActive, nowActive in
+                guard PasteImportDropStartResolver.shouldRetryInbox(
+                    wasActive: wasActive,
+                    isActive: nowActive
+                ) else { return }
+                onExternal()
+            }
+            .pasteImportDropTarget(onURLs: onDropped)
     }
 }
 

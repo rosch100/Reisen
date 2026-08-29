@@ -10,8 +10,8 @@ public enum PasteImportExtractionCoalescer {
         guard extractions.count == 2,
               let first = extractions.first,
               let second = extractions.last,
-              !isFilterReady(first),
-              !isFilterReady(second),
+              !first.isFilterReady,
+              !second.isFilterReady,
               looksLikeFlightFragment(first),
               looksLikeFlightFragment(second),
               areComplementary(first, second),
@@ -20,10 +20,6 @@ public enum PasteImportExtractionCoalescer {
             return extractions
         }
         return [merged(first, second)]
-    }
-
-    private static func isFilterReady(_ extraction: PasteImportExtraction) -> Bool {
-        extraction.bookingType != nil && extraction.startAt != nil
     }
 
     private static func looksLikeFlightFragment(_ extraction: PasteImportExtraction) -> Bool {

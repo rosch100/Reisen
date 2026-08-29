@@ -72,6 +72,40 @@ public struct PasteImportDraft: Equatable, Sendable {
         self.deadlines = deadlines
     }
 
+    /// Typisierte Draft-Form einer filterbereiten Extraction; sonst `nil`.
+    public init?(from extraction: PasteImportExtraction) {
+        guard extraction.isFilterReady,
+              let bookingType = extraction.bookingType,
+              let startAt = extraction.startAt
+        else {
+            return nil
+        }
+        self.init(
+            bookingType: bookingType,
+            startAt: startAt,
+            endAt: extraction.endAt ?? startAt,
+            endAtIsPlaceholder: extraction.endAt == nil,
+            title: NonEmpty.string(extraction.title),
+            confirmationCode: NonEmpty.string(extraction.confirmationCode),
+            externalUrl: NonEmpty.string(extraction.externalUrl),
+            locationFrom: NonEmpty.string(extraction.locationFrom),
+            locationTo: NonEmpty.string(extraction.locationTo),
+            locationFromAddress: NonEmpty.string(extraction.locationFromAddress),
+            locationToAddress: NonEmpty.string(extraction.locationToAddress),
+            operatorName: NonEmpty.string(extraction.operatorName),
+            status: extraction.status ?? .unknown,
+            hotelCheckInMinutes: extraction.hotelCheckInMinutes,
+            hotelCheckOutMinutes: extraction.hotelCheckOutMinutes,
+            hotelOffsetSeconds: extraction.hotelOffsetSeconds,
+            flightDepartureOffsetSeconds: extraction.flightDepartureOffsetSeconds,
+            flightArrivalOffsetSeconds: extraction.flightArrivalOffsetSeconds,
+            passengers: extraction.passengers,
+            guestHints: extraction.guestHints,
+            rateDetails: extraction.rateDetails,
+            deadlines: extraction.deadlines
+        )
+    }
+
     public func asProviderDraft() -> ProviderBookingDraft {
         ProviderBookingDraft(
             provider: .manual,

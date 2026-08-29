@@ -22,8 +22,8 @@ import Testing
 
 @Test func githubIssueTitle_reportTitlePrefixesFeature() {
     #expect(
-        GitHubIssueTitle.reportTitle(kind: .feature, message: "Paste-Import: Dokument nicht erkannt")
-            == "[Feature] Paste-Import: Dokument nicht erkannt"
+        PasteImportFailedFeatureRequest.titleOverride
+            == "[Feature] \(PasteImportFailedFeatureRequest.unrecognizedDocumentMessage)"
     )
 }
 

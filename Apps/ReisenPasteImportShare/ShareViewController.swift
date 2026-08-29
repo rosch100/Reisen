@@ -96,8 +96,7 @@ final class ShareViewController: UIViewController {
     /// Scheitert das Löschen einer eigenen Temp-Kopie, bleibt Buchungsinhalt liegen — deshalb Fehler
     /// statt `try?`, nachdem die Bytes bereits gelesen wurden.
     private static func removeTemporaryCopyIfNeeded(_ url: URL) throws {
-        let temporary = FileManager.default.temporaryDirectory.standardizedFileURL.path
-        guard url.standardizedFileURL.path.hasPrefix(temporary) else { return }
+        guard PasteImportTemporaryPath.contains(url) else { return }
         try FileManager.default.removeItem(at: url)
     }
 

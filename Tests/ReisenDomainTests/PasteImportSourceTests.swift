@@ -21,3 +21,26 @@ import ReisenDomain
         try PasteImportSource.pdf(Data()).validated()
     }
 }
+
+@Test func pasteImportSource_fromHandoffRoundTripsKinds() throws {
+    let text = try PasteImportSource.fromHandoff(kind: .text, payload: Data("PNR".utf8))
+    #expect(text == .text("PNR"))
+    #expect(text.kind == .text)
+    #expect(text.kind.rawValue == "text")
+    #expect(text.fingerprintData == Data("PNR".utf8))
+
+    let imagePayload = Data([0x01, 0x02])
+    let image = try PasteImportSource.fromHandoff(kind: .image, payload: imagePayload)
+    #expect(image == .image(imagePayload))
+
+    let pdfPayload = Data([0x25, 0x50, 0x44, 0x46])
+    let pdf = try PasteImportSource.fromHandoff(kind: .pdf, payload: pdfPayload)
+    #expect(pdf == .pdf(pdfPayload))
+}
+
+@Test func pasteImportSource_fromHandoffRejectsBadTextAndUnknownKind() {
+    #expect(throws: PasteImportSourceError.unreadableHandoff) {
+        try PasteImportSource.fromHandoff(kind: .text, payload: Data([0xFF]))
+    }
+    #expect(PasteImportSource.Kind(rawValue: "video") == nil)
+}
