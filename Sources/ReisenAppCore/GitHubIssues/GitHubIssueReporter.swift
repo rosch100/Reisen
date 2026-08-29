@@ -82,7 +82,8 @@ public final class GitHubIssueReporter {
         titleOverride: String? = nil,
         reporterGitHubUsername: String? = nil,
         attachments: [GitHubIssueAttachment] = [],
-        fingerprintMessage: String? = nil
+        fingerprintMessage: String? = nil,
+        technicalDetails: String? = nil
     ) async throws -> GitHubCreatedIssue {
         lastReportErrorMessage = nil
         if persistedStateCorrupt {
@@ -122,7 +123,8 @@ public final class GitHubIssueReporter {
             origin: .embeddedToken(
                 attributedUsername: GitHubUsername.optionalValid(reporterGitHubUsername)
             ),
-            diagnostics: diagnostics
+            diagnostics: diagnostics,
+            technicalDetails: technicalDetails
         )
         let labels = kind.githubLabels
 
@@ -215,7 +217,10 @@ public final class GitHubIssueReporter {
                 didPostUpdate: false
             )
         }
-        let created = try await client.comment(issueNumber: issueNumber, body: body)
+        let created = try await client.comment(
+            issueNumber: issueNumber,
+            body: GitHubIssueDiagnostic.clampToGitHubAPIBodyLimit(body)
+        )
         state.lastCommentAt[fingerprint] = timestamp
         persist()
         return created
@@ -223,28 +228,10 @@ public final class GitHubIssueReporter {
 
     private func commentBody(kind: GitHubIssueKind, message: String) -> String {
         let env = RuntimeEnvironmentSnapshot.live()
-        let log = SyncLog.recentTail()
-        let logBlock: String
-        switch log {
-        case .attached(let preview, _, _, _, _), .compressionFailed(let preview):
-            let lines = DiagnosticLogCompressor.preview(
-                from: preview,
-                lastLineCount: DiagnosticLogAttachment.commentPreviewLineCount
-            )
-            logBlock = "```\n\(lines)\n```"
-        case .missing:
-            logBlock = "Sync-Log: nicht vorhanden"
-        case .empty:
-            logBlock = "Sync-Log: leer"
-        case .unreadable(let detail):
-            logBlock = "Sync-Log: nicht lesbar\n\(SecretRedactor.redact(detail))"
-        }
         return """
         Erneuter \(kind.repeatReportLabel) (\(ISO8601DateFormatter().string(from: now()))):
 
-        ```
-        \(message)
-        ```
+        \(GitHubIssueMarkdown.fence(message))
 
         | RAM physisch | \(RuntimeEnvironmentSnapshot.mebibytes(env.physicalMemoryBytes)) |
         | Thermal | \(env.thermalState) |
@@ -252,7 +239,7 @@ public final class GitHubIssueReporter {
         | Freier Volume-Platz | \(RuntimeEnvironmentSnapshot.optionalGibibytes(env.volumeAvailableBytes)) |
         | iCloud | \(env.cloudKitEnabled ? "an" : "aus") |
 
-        \(logBlock)
+        \(SyncLog.recentTail().commentBlock())
         """
     }
 

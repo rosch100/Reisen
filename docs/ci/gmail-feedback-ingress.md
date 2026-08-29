@@ -6,7 +6,7 @@ Ablauf: Gmail API (OAuth Refresh-Token) → `Scripts/ingest-gmail-feedback.sh` �
 
 Nicht ingestiert: Spam/Papierkorb (`-in:spam -in:trash`) und automatisierte Google-Mails (`@google.com` / `@*.google.com`, z. B. `no-reply@accounts.google.com` / Sicherheitswarnung). Nutzer-Gmail (`@gmail.com`, `@googlemail.com`) bleibt Feedback. Die Suche filtert das vorab; ein Post-Check markiert Reste als gelesen, ohne Issue.
 
-Labels: `kind/feedback`, `source/email`. Titel: `[Feedback] ` plus Betreff (max. 80 Zeichen). Duplikate: Marker `reisen-email-id` im Issue-Body. Der Grok-Bot lädt Anhänge nicht von GitHub, sondern liest die Mail per Gmail-API: Marker `issue-dev-gmail-id` (Gmail-Message-Id; letzte HTML-Kommentar-Instanz). Der Bot holt die Mail nur, wenn das Issue von `github-actions[bot]` stammt und `source/email` trägt. Ingress entfernt HTML-Kommentare aus Mailfeldern. Siehe [issue-dev.md](issue-dev.md).
+Labels: `kind/feedback`, `source/email`. Titel: `[Feedback]` plus Leerzeichen und Betreff (max. `GitHubRepository.issueTitleSummaryMaxLength`). Duplikate: Marker `reisen-email-id` im Issue-Body. Der Grok-Bot lädt Anhänge nicht von GitHub, sondern liest die Mail per Gmail-API: Marker `issue-dev-gmail-id` (Gmail-Message-Id; letzte HTML-Kommentar-Instanz). Der Bot holt die Mail nur, wenn das Issue von `github-actions[bot]` stammt und `source/email` trägt. Ingress entfernt HTML-Kommentare aus Mailfeldern, schwärzt nach `github-issue-secret-redactor.rules.json` und klemmt den Body auf `issueBodyMaxLength`. Siehe [issue-dev.md](issue-dev.md).
 
 Die Logik liegt nur im Script; der Workflow [gmail-feedback-ingress.yml](../../.github/workflows/gmail-feedback-ingress.yml) ruft das Script auf.
 
@@ -24,7 +24,7 @@ Kein App-Passwort, kein IMAP, kein Google-Konto-Passwort.
 | `REISEN_GMAIL_OAUTH_CLIENT_SECRET` | OAuth-Client-Secret |
 | `REISEN_GMAIL_OAUTH_REFRESH_TOKEN` | Refresh-Token für `reisenapp100@gmail.com` |
 
-Die Adresse ist öffentlich und **kein** Secret. SSOT: `GitHubRepository.feedbackEmail` und `DEFAULT_FEEDBACK_EMAIL` in `Scripts/ingest-gmail-feedback.py`.
+Die Adresse ist öffentlich und **kein** Secret. SSOT: `GitHubRepository` (`feedbackEmail`, REST-Version, Titel-/Body-Limits); Ingress lädt dieselben Werte aus `GitHubRepository.swift`.
 
 GitHub-API: `GITHUB_TOKEN` des Workflows (`issues: write`).
 

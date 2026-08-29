@@ -1,8 +1,19 @@
 name: Feedback
-description: Öffentliches Nutzerfeedback und Feature-Wünsche für Reisen
+description: Öffentliches Nutzerfeedback für Reisen (keine Feature-Requests — dafür „Feature“)
 title: "[Feedback] "
 labels: ["kind/feedback"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Dieses Issue ist **öffentlich** auf GitHub sichtbar.
+        Bitte **keine** personenbezogenen Daten und **keine** Security-Exploit-Details.
+        Sicherheitslücken: [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new).
+
+        Feature-Wünsche bitte über das Formular **Feature** melden (Issue-Dev).
+        Uploads in diesem Formular sind **öffentlich**. Sensible Screenshots und Archive:
+        [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (bleiben in der Mailbox).
+        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
   - type: textarea
     id: feedback
     attributes:
@@ -10,3 +21,10 @@ body:
       description: Der Text ist öffentlich auf GitHub sichtbar.
     validations:
       required: true
+  - type: checkboxes
+    id: privacy_ack
+    attributes:
+      label: Bestätigung
+      options:
+        - label: Ich verstehe, dass dieses Issue öffentlich ist, und habe keine personenbezogenen Daten eingefügt.
+          required: true

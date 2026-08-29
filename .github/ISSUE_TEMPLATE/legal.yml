@@ -1,0 +1,39 @@
+name: Kontakt / Datenschutz
+description: Impressum-Kontakt oder Datenschutzanfrage (ohne Reisedaten im öffentlichen Text)
+title: "[Kontakt] "
+labels: ["kind/feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dieses Issue ist **öffentlich** auf GitHub sichtbar.
+        Bitte **keine** Reisedaten, Passagierdaten, E-Mail-Adressen, Postanschriften oder sonstigen personenbezogenen Angaben schreiben.
+        Wir antworten mit einem privaten Kontaktweg.
+
+        This issue is **public**. Do not include trip, passenger, email, postal, or other personal data.
+        We will reply with a private contact channel.
+
+        Uploads in diesem Formular sind **öffentlich** / Uploads in this form are **public**.
+        Sensible Dateien / sensitive files:
+        [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (Mailbox).
+        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
+
+        Sicherheitslücken bitte über eine [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new) melden — nicht hier.
+  - type: textarea
+    id: notice
+    attributes:
+      label: Anfrage
+      description: Der Text ist öffentlich. Keine personenbezogenen Angaben.
+      value: |-
+        Bitte keine Reisedaten, Passagierdaten, E-Mail-Adressen, Postanschriften oder sonstigen personenbezogenen Angaben in dieses Issue schreiben. Wir antworten mit einem privaten Kontaktweg.
+
+        Please do not include trip, passenger, email, postal, or other personal data in this issue. We will reply with a private contact channel.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy_ack
+    attributes:
+      label: Bestätigung
+      options:
+        - label: Ich verstehe, dass dieses Issue öffentlich ist, und habe keine personenbezogenen Daten eingefügt.
+          required: true

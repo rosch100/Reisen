@@ -43,6 +43,37 @@ enum GitHubIssueCrashCatcher {
         _ = reisen_crash_signal_prepare(url.path, optedIn)
     }
 
+    static func message(from exception: NSException) -> String {
+        let reason = exception.reason ?? ""
+        let stack = exception.callStackSymbols.joined(separator: "\n")
+        var text = "\(exception.name.rawValue): \(reason)\n\(stack)"
+        let dumped = diagnosticUserInfoLines(exception.userInfo)
+        if !dumped.isEmpty {
+            text += "\nuserInfo:\n" + dumped.joined(separator: "\n")
+        }
+        return text
+    }
+
+    private static func diagnosticUserInfoLines(_ info: [AnyHashable: Any]?) -> [String] {
+        guard let info, !info.isEmpty else { return [] }
+        return GitHubIssueErrorText.userInfoKeys.compactMap { key in
+            guard let value = info[key] else { return nil }
+            return diagnosticLine(key: key, value: value)
+        }
+    }
+
+    private static func diagnosticLine(key: String, value: Any) -> String? {
+        if key == NSUnderlyingErrorKey {
+            guard let error = value as? NSError else { return nil }
+            return "Underlying: \(error.domain) \(error.code) \(error.localizedDescription)"
+        }
+        if key == NSURLErrorKey, let url = GitHubIssueErrorText.urlText(value) {
+            return "URL: \(url)"
+        }
+        guard let text = value as? String, !text.isEmpty else { return nil }
+        return "\(key): \(text)"
+    }
+
     static func appendPending(_ message: String) {
         guard let url = pendingURL else { return }
         if writePending(message, to: url, optedIn: GitHubIssueAutoReport.isAutomaticReportingEnabled()) {
@@ -125,8 +156,6 @@ nonisolated(unsafe) private var fatalSignalOptInObserver: (any NSObjectProtocol)
 
 /// C-ABI: `NSSetUncaughtExceptionHandler` akzeptiert keine Closure mit Capture.
 private func reisenUncaughtExceptionHandler(_ exception: NSException) {
-    let reason = exception.reason ?? ""
-    let stack = exception.callStackSymbols.joined(separator: "\n")
-    GitHubIssueCrashCatcher.appendPending("\(exception.name.rawValue): \(reason)\n\(stack)")
+    GitHubIssueCrashCatcher.appendPending(GitHubIssueCrashCatcher.message(from: exception))
     previousUncaughtExceptionHandler?(exception)
 }

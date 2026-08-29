@@ -1,10 +1,19 @@
-# Template: copy to Reisen `.github/ISSUE_TEMPLATE/feature.yml`
-
 name: Feature
 description: Feature-Request für Reisen (nach Freigabe Issue-Dev /feature-dev)
 title: "[Feature] "
 labels: ["kind/feature"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Dieses Issue ist **öffentlich** auf GitHub sichtbar.
+        Bitte **keine** personenbezogenen Daten und **keine** Security-Exploit-Details.
+        Sicherheitslücken: [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new).
+
+        Nach Maintainer-Freigabe kann Issue-Dev (`/feature-dev`) bis zum PR entwickeln — kein Auto-Merge.
+        Uploads in diesem Formular sind **öffentlich**. Sensible Screenshots und Archive:
+        [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (bleiben in der Mailbox).
+        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
   - type: textarea
     id: want
     attributes:
@@ -18,3 +27,10 @@ body:
       label: Warum / Kontext
     validations:
       required: false
+  - type: checkboxes
+    id: privacy_ack
+    attributes:
+      label: Bestätigung
+      options:
+        - label: Ich verstehe, dass dieses Issue öffentlich ist, und habe keine personenbezogenen Daten eingefügt.
+          required: true

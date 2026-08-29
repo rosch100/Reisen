@@ -4,8 +4,10 @@
 
 Wenn du eine Sicherheitslücke oder einen möglichen Missbrauch im Projekt entdeckst:
 
-1. Bitte nutze den **GitHub Security Advisory**-Mechanismus, falls er für das Repo verfügbar ist.
-2. Falls Advisories nicht verfügbar sind, öffne bitte ein **privates Vulnerability-Report/Issue** im GitHub Security-Kontext und kennzeichne das Problem als Sicherheitsvorfall.
+1. Bitte nutze den **privaten GitHub Security Advisory**-Mechanismus:
+   <https://github.com/rosch100/Reisen/security/advisories/new>
+2. Übersicht bestehender Advisories: <https://github.com/rosch100/Reisen/security/advisories>
+3. Falls Advisories nicht verfügbar sind, öffne bitte ein **privates Vulnerability-Report** im GitHub Security-Kontext und kennzeichne das Problem als Sicherheitsvorfall. **Keine** öffentlichen Issues mit Exploit-Details (auch nicht über die Issue-Formulare Fehler/Feedback/Feature).
 
 ## Keine sensiblen Daten posten
 

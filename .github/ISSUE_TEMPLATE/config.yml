@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Sicherheitslücke melden
+    url: https://github.com/rosch100/Reisen/security/advisories/new
+    about: Private Security Advisory — keine öffentlichen Exploit-Details.
+  - name: Support und Feedback (Website)
+    url: https://rosch100.github.io/Reisen/support.html
+    about: Support-Seite mit Hinweisen zu App-, E-Mail- und GitHub-Meldungen.
+  - name: Feedback per E-Mail
+    url: mailto:reisenapp100@gmail.com
+    about: Öffentliches Issue ohne GitHub-Konto; Screenshots und Archive bitte anhängen (bleiben in der Mailbox).

@@ -52,7 +52,7 @@ CodeQL cached nur SPM-/Module-Caches (nicht `.build`): der Tracer braucht ohnehi
 
 ## Dependency Review (Follow-up)
 
-Der Workflow `dependency-review.yml` ist entfernt, solange keine [`Package.resolved`](../../Package.resolved) im Repo liegt. Nach Commit des Lockfiles kann der Workflow wieder ergänzt werden.
+Der Workflow `dependency-review.yml` ist entfernt, solange keine `Package.resolved` im Repo liegt. Nach Commit des Lockfiles kann der Workflow wieder ergänzt werden.
 
 ## Release-Environment (optional)
 

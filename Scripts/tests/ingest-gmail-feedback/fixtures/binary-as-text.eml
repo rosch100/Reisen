@@ -1,0 +1,21 @@
+From: Nutzer Beispiel <user@example.com>
+To: reisenapp100@gmail.com
+Subject: Binary as text
+Message-ID: <binary-as-text@mail.example>
+Date: Thu, 27 Aug 2026 12:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+--BOUNDARY
+Content-Type: text/plain; charset=utf-8
+
+Siehe Anhang.
+
+--BOUNDARY
+Content-Type: text/plain
+Content-Disposition: attachment; filename="payload.bin"
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAP8=
+
+--BOUNDARY--

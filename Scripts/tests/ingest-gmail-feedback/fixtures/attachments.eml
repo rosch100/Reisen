@@ -1,0 +1,28 @@
+From: Nutzer Beispiel <user@example.com>
+To: reisenapp100@gmail.com
+Subject: Crash mit Anhang
+Message-ID: <attachments-fixture@mail.example>
+Date: Thu, 27 Aug 2026 12:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+--BOUNDARY
+Content-Type: text/plain; charset=utf-8
+
+Die App stuerzt ab, siehe Log.
+
+--BOUNDARY
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: attachment; filename="crash.txt"
+
+Exception: NSRangeException
+0  Reisen  GitHubIssueCrashCatcher
+
+--BOUNDARY
+Content-Type: image/png
+Content-Disposition: attachment; filename="screen.png"
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==
+
+--BOUNDARY--

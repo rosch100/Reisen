@@ -52,8 +52,13 @@ Nach PR oder BLOCKED: `Invoke-IssueDevCleanupAttachments.ps1` (gleiches Host/Own
 
 ## Fehleranhänge (P1)
 
-Bei `kind/error` wertet der Diagnoser Anhänge aus, **bevor** die Hypothese steht: GitHub-`user-attachments`-URLs und Gmail-MIME (Marker `issue-dev-gmail-id` plus Ingress-Provenienz). Archive (`.zip`, `.ipa`, `.7z`, EurekaLog `.elf`, `.cpgz`, `.tar.gz`) entpacken, Logs/Crash lesen. Skript-SSOT: Altanis/CI `Invoke-IssueDevExpandAttachments.ps1`.
+Bei `kind/error` wertet der Diagnoser Anhänge aus, **bevor** die Hypothese steht. Quelle:
+
+- **App und Gmail-Ingress (Issues-API):** keine Dateianhänge. Diagnose steht im Issue-Text (Meldung, Gerätefelder, technische Details, Sync-Protokoll-Auszug, geschwärzte inlined Textanhänge). Binäre Dateien (Screenshots, Archive) kommen per E-Mail an `reisenapp100@gmail.com` und bleiben in der Mailbox — nur Dateinamen in der Gmail-Tabelle `| Anhänge | … |` sind **keine** ausgewerteten Bytes. Gmail-MIME nur bei Marker `issue-dev-gmail-id` plus Ingress-Provenienz.
+- **Web-Formulare und Issue-Kommentare:** GitHub erlaubt Uploads (`user-attachments`); sie sind öffentlich. Der Diagnoser folgt diesen URLs.
+
+Wenn der Diagnoser lokale Anhänge hat (Maintainer-Upload, WorkDir, ausgepackte `user-attachments`/Gmail-MIME): vor der Hypothese Archive (`.zip`, `.ipa`, `.7z`, EurekaLog `.elf`, `.cpgz`, `.tar.gz`) entpacken, Logs/Crash lesen, Screenshots nur wenn der Text nicht reicht. Skript-SSOT: Altanis/CI `Invoke-IssueDevExpandAttachments.ps1`. Der Grok-Bot läuft auf **Linux** und braucht `7z` (`p7zip-full`) sowie `gzip`+`cpio` für `.cpgz` (Check: `Invoke-IssueDevAssertHostTools.ps1`). 7z- und EurekaLog-Archive mit dem bekannten Bugreport-Passwort (nicht loggen).
 
 ## Feature-Template
 
-[`.github/ISSUE_TEMPLATE/feature.yml`](../../.github/ISSUE_TEMPLATE/feature.yml) setzt `kind/feature`.
+[`.github/ISSUE_TEMPLATE/feature.yml`](../../.github/ISSUE_TEMPLATE/feature.yml) setzt `kind/feature`. Chooser und weitere Formulare: [`.github/ISSUE_TEMPLATE/`](../../.github/ISSUE_TEMPLATE/), Vertrag mit In-App-Meldung: [github-issues-token.md](github-issues-token.md) (Abschnitt Issue-Formulare und Chooser).

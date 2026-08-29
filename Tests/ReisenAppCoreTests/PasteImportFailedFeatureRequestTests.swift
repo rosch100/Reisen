@@ -24,7 +24,7 @@ import ReisenDomain
     #expect(created.body.contains("Quelle: text"))
     #expect(!created.body.contains("PNR ABC"))
     #expect(created.body.contains("per E-Mail"))
-    #expect(!created.body.contains(GitHubRepository.feedbackEmail))
+    #expect(created.body.contains(GitHubRepository.issueAttachmentPolicyCell))
     #expect(client.commentCount == 0)
     #expect(outcome.mail.to == GitHubRepository.feedbackEmail)
     #expect(outcome.mail.data == Data("PNR ABC".utf8))

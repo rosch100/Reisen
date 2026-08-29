@@ -29,14 +29,9 @@ public enum GitHubRepository {
         case impressumDE = "impressum.html"
         case impressumEN = "en/impressum.html"
 
-        private static let englishDirectoryPrefix = "en/"
-
-        /// GitHub-Pages-Pfad: EN-Inhalte unter `en/`, öffentliche URLs als `*.en.html` am Root.
-        public var pagesPath: String {
-            guard rawValue.hasPrefix(Self.englishDirectoryPrefix) else { return rawValue }
-            return String(rawValue.dropFirst(Self.englishDirectoryPrefix.count))
-                .replacingOccurrences(of: ".html", with: ".en.html")
-        }
+        /// GitHub-Pages-Pfad = Inhaltspfad unter `docs/legal/` (EN unter `en/`).
+        /// Legacy-Stubs `*.en.html` am Site-Root leiten per Meta-Refresh hierher.
+        public var pagesPath: String { rawValue }
     }
 
     public static let privacyRequestPage = "privacy-request.html"
@@ -68,6 +63,34 @@ public enum GitHubRepository {
         apiRepoURL.appending(path: "issues")
     }
 
+    /// GitHub REST: `X-GitHub-Api-Version` (https://docs.github.com/en/rest).
+    public static let restAPIVersion = "2022-11-28"
+    /// GitHub REST: Pflicht-`User-Agent` (Anwendungsname).
+    public static let restUserAgent = "Reisen"
+    /// GitHub-Validierung: `title is too long (maximum is 256 characters)`.
+    public static let issueTitleMaxLength = 256
+    /// Kürzung der Titel-Zusammenfassung (erste Zeile / Betreff) vor dem API-Limit.
+    public static let issueTitleSummaryMaxLength = 80
+    /// GitHub-Validierung: `body is too long (maximum is 65536 characters)` (Issues und Kommentare).
+    public static let issueBodyMaxLength = 65_536
+    /// Markdown-`## `-Abschnitte (Clamp an Heading-Grenzen, App + Gmail-Ingress).
+    public static let issueMarkdownH2Prefix = "## "
+    /// `{email}` wird durch `feedbackEmail` ersetzt (App + Gmail-Ingress).
+    public static let issueBodyTruncationNoticeTemplate = "… (Text gekürzt — GitHub-Issue-Limit. Vollständige Dateien per E-Mail an {email}.)"
+    public static var issueBodyTruncationNotice: String {
+        filledEmail(issueBodyTruncationNoticeTemplate)
+    }
+    public static let issueAttachmentPolicyCellTemplate = "nicht auf GitHub; Dateien per E-Mail an {email}"
+    public static var issueAttachmentPolicyCell: String {
+        filledEmail(issueAttachmentPolicyCellTemplate)
+    }
+
+    private static func filledEmail(_ template: String) -> String {
+        template.replacingOccurrences(of: "{email}", with: feedbackEmail)
+    }
+    /// Search-API: Suchbegriff ohne Operatoren max. 256 Zeichen.
+    public static let issueSearchKeywordMaxLength = 256
+
     public static var issuesListURL: URL {
         webBaseURL.appending(path: "issues")
     }
@@ -85,21 +108,38 @@ public enum GitHubRepository {
         URL(string: pagesBaseURL.absoluteString + "/")!
     }
 
+    /// Private Security Advisory (SSOT mit `SECURITY.md`, `CODE_OF_CONDUCT.md`, Issue-Formulare).
+    public static var securityAdvisoryNewURL: URL {
+        webBaseURL.appending(path: "security/advisories/new")
+    }
+
+    /// Übersicht Security Advisories.
+    public static var securityAdvisoriesURL: URL {
+        webBaseURL.appending(path: "security/advisories")
+    }
+
     /// Vorausgefülltes Issue ohne personenbezogene Angaben im öffentlichen Text.
+    /// SSOT mit `.github/ISSUE_TEMPLATE/legal.yml` Feld `notice` (`value:`).
     public static let publicIssueNoPersonalDataBody = """
         Bitte keine Reisedaten, Passagierdaten, E-Mail-Adressen, Postanschriften oder sonstigen personenbezogenen Angaben in dieses Issue schreiben. Wir antworten mit einem privaten Kontaktweg.
 
         Please do not include trip, passenger, email, postal, or other personal data in this issue. We will reply with a private contact channel.
         """
 
+    /// Issue-Formular für Kontakt-/Datenschutz-Links (SSOT mit `legal.yml`).
+    public static let legalIssueTemplateFileName = "legal.yml"
+    public static let legalIssueFormFieldID = "notice"
+    /// Titelpräfix (SSOT mit `legal.yml` `title:`).
+    public static let legalIssueTitlePrefix = "[Kontakt]"
+
     /// Vorausgefülltes Issue für Impressum-/Kontaktanfragen (Website).
     public static var contactIssueURL: URL {
-        publicIssue(title: "Kontakt Impressum / Legal contact")
+        publicIssue(title: "\(legalIssueTitlePrefix) Impressum / Legal contact")
     }
 
     /// Datenschutzanfrage ohne Reisedaten im öffentlichen Issue-Text.
     public static var privacyRequestIssueURL: URL {
-        publicIssue(title: "Datenschutzanfrage / Privacy request")
+        publicIssue(title: "\(legalIssueTitlePrefix) Datenschutzanfrage / Privacy request")
     }
 
     private static var apiSearchIssuesURL: URL {
@@ -129,6 +169,23 @@ public enum GitHubRepository {
         return url
     }
 
+    /// New-Issue-URL für YAML-Formular mit vorausgefülltem Feld (kein Query-`body`).
+    public static func newIssueURL(
+        templateFileName: String,
+        title: String,
+        formFieldID: String,
+        formFieldValue: String
+    ) -> URL {
+        guard let url = newIssueURL(queryItems: [
+            URLQueryItem(name: "template", value: templateFileName),
+            URLQueryItem(name: "title", value: title),
+            URLQueryItem(name: formFieldID, value: formFieldValue),
+        ]) else {
+            preconditionFailure("GitHub-Issue-URL aus gültiger Formular-URL muss konstruierbar sein.")
+        }
+        return url
+    }
+
     /// `href`/`url=` in statischem HTML (`&` → `&amp;`).
     public static func htmlEncodedURL(_ url: URL) -> String {
         url.absoluteString.replacingOccurrences(of: "&", with: "&amp;")
@@ -149,7 +206,7 @@ public enum GitHubRepository {
     }
 
     public static func pagesLegalURL(_ page: LegalPage) -> URL {
-        pagesBaseURL.appending(path: page.pagesPath)
+        URL(string: "\(pagesBaseURL.absoluteString)/\(page.pagesPath)")!
     }
 
     public static func pagesLegalURL(for document: LegalDocument, locale: Locale = .current) -> URL {
@@ -161,7 +218,12 @@ public enum GitHubRepository {
     }
 
     private static func publicIssue(title: String) -> URL {
-        newIssueURL(title: title, body: publicIssueNoPersonalDataBody)
+        newIssueURL(
+            templateFileName: legalIssueTemplateFileName,
+            title: title,
+            formFieldID: legalIssueFormFieldID,
+            formFieldValue: publicIssueNoPersonalDataBody
+        )
     }
 
     private static func url(from base: URL, queryItems: [URLQueryItem]) -> URL? {

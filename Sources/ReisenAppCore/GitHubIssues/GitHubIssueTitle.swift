@@ -1,8 +1,9 @@
 import Foundation
+import ReisenDomain
 
 public enum GitHubIssueTitle {
-    public static let githubAPIMaxLength = 240
-    public static let maxSummaryLength = 80
+    public static let githubAPIMaxLength = GitHubRepository.issueTitleMaxLength
+    public static let maxSummaryLength = GitHubRepository.issueTitleSummaryMaxLength
 
     public static var storeLoadFailure: String {
         reportTitle(kind: .error, message: "Datenbank konnte nicht geladen werden")
