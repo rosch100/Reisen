@@ -13,7 +13,7 @@ public enum PasteImportConfirmationCode {
     }
 
     private static func isLabel(_ text: String) -> Bool {
-        let key = text.lowercased().filter { $0.isLetter }
+        let key = PasteImportTextTokens.normalize(text).filter(\.isLetter)
         return labels.contains(key)
     }
 

@@ -58,7 +58,7 @@ public enum PasteImportExtractionCoalescer {
         _ right: PasteImportExtraction
     ) -> PasteImportExtraction {
         var result = left
-        result.fillingGaps(from: right)
+        result.mergingMissingFields(from: right)
         result.bookingType = result.bookingType ?? flightHint(left) ?? flightHint(right)
         result.title = preferFlightTitle(left.title, right.title)
         return result

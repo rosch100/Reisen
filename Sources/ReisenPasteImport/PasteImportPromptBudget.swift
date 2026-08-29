@@ -14,9 +14,16 @@ public enum PasteImportPromptBudget {
             .components(separatedBy: "\n\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        let ordered =
-            paragraphs.filter(PasteImportBookingText.looksLikeBooking)
-            + paragraphs.filter { !PasteImportBookingText.looksLikeBooking($0) }
+        var bookingParagraphs: [String] = []
+        var otherParagraphs: [String] = []
+        for paragraph in paragraphs {
+            if PasteImportBookingText.looksLikeBooking(paragraph) {
+                bookingParagraphs.append(paragraph)
+            } else {
+                otherParagraphs.append(paragraph)
+            }
+        }
+        let ordered = bookingParagraphs + otherParagraphs
         var kept: [String] = []
         var used = 0
         for paragraph in ordered {

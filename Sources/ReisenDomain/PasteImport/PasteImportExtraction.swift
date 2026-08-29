@@ -70,7 +70,9 @@ public struct PasteImportExtraction: Equatable, Sendable {
     }
 
     /// Übernimmt nur fehlende optionale Felder aus `other` (bestehende Werte bleiben).
-    public mutating func fillingGaps(from other: PasteImportExtraction) {
+    ///
+    /// Nicht zu verwechseln mit `PasteImportMerger.fillingGaps` (Draft → bestehende Buchung).
+    public mutating func mergingMissingFields(from other: PasteImportExtraction) {
         bookingType = bookingType ?? other.bookingType
         startAt = startAt ?? other.startAt
         endAt = endAt ?? other.endAt

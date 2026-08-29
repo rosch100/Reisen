@@ -43,10 +43,6 @@ public enum PasteImportGenerableMapper {
         )
     }
 
-    private static func date(from raw: String?) -> Date? {
-        PasteImportTicketDate.parse(raw)
-    }
-
     /// Fehlende `passengerNumber` ist die Position im Array (1..n), keine erfundene Zahl.
     private static func passengers(from dtos: [PasteImportPassengerDTO]) -> [BookingPassenger] {
         dtos.enumerated().map { offset, dto in
@@ -58,7 +54,7 @@ public enum PasteImportGenerableMapper {
                 givenName: NonEmpty.string(dto.givenName),
                 familyName: NonEmpty.string(dto.familyName),
                 secondFamilyName: NonEmpty.string(dto.secondFamilyName),
-                birthDate: date(from: dto.birthDateISO8601)
+                birthDate: PasteImportTicketDate.parse(dto.birthDateISO8601)
             )
         }
     }
@@ -95,7 +91,7 @@ public enum PasteImportGenerableMapper {
 
     /// `nil` verwirft die Frist: ohne Datum ist sie weder anzeigbar noch erinnerbar.
     private static func deadline(from dto: PasteImportDeadlineDTO) -> CancellationDeadline? {
-        guard let deadlineAt = date(from: dto.deadlineAtISO8601) else { return nil }
+        guard let deadlineAt = PasteImportTicketDate.parse(dto.deadlineAtISO8601) else { return nil }
         var deadline = CancellationDeadline(
             deadlineAt: deadlineAt,
             policyText: NonEmpty.string(dto.policyText),
