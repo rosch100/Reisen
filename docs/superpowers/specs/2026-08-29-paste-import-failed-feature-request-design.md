@@ -64,9 +64,9 @@ Restrisiko: Base64-Kommentare sind öffentlich und zählen gegen GitHub-Limits. 
 |---|---|
 | **ReisenDomain** | Gate `PasteImportFailedRecognition.shouldOffer`; Grund `noCandidates` \| `model`; `PasteImportFailedDocument` (Dateiname, MIME, Bytes oder Text) aus `PasteImportSource`. Kein GitHub, kein UIKit. |
 | **ReisenAppCore** | `GitHubIssueKind.feature`; Attachment-Codec; `GitHubIssueReporter.report(..., attachments:)`; `PasteImportFailedFeatureRequest.submit`; **Flow** `PasteImportFailedFeatureRequestFlow` (Angebot/Bestätigung/Submit) — eine State-Machine für macOS und iOS. Nicht `GitHubIssueAutoReport`. |
-| **ReisenSharedUI** | Kandidaten-Sheet (bisher in den Apps dupliziert) inkl. Feature-Button; Bestätigungs-Presentation. Kein HTTP, kein `ReisenPasteImport`. |
-| **ReisenPasteImport** | `PasteImportSession` hält Quelle + Flow (macOS und iOS). |
-| **Reisen / ReiseniOS** | Alerts binden `offerFailedFeatureRequest` / `confirmFailedFeatureRequest` / `cancelFailedFeatureRequest`. |
+| **ReisenSharedUI** | `pasteImportFlow` inkl. Feature-Button und Bestätigungs-Presentation. Kein HTTP, kein `ReisenPasteImport`. |
+| **ReisenPasteImport** | `PasteImportSession` hält Quelle + Flow-Zustand (macOS und iOS). |
+| **Reisen / ReiseniOS** | Host/MacUI rufen `pasteImportFlow` auf. |
 
 Datenfluss:
 

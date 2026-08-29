@@ -7,22 +7,11 @@ import ReisenData
 import ReisenDomain
 import ReisenSharedUI
 
-/// Editor für einen Kandidaten: Ergänzen einer Bestandsbuchung oder eine neue Buchung.
-struct PasteImportReview: Identifiable {
-    let id = UUID()
-    let draft: BookingEditorDraft
-    /// `nil` legt eine neue Buchung an.
-    let booking: SDBooking?
-    /// Reise der neuen Buchung; `nil` heißt „offene Buchung“.
-    let trip: SDTrip?
-}
-
-/// Rahmen des Paste-Imports auf iOS: Bestätigung, Lauf, Kandidatenliste, Editor und Share-Übergabe.
+/// Rahmen des Paste-Imports auf iOS: gemeinsamer Flow, Editor und Share-Übergabe.
 ///
-/// Der Lauf liegt in `PasteImportRun`, der Prefill in `PasteImportEditorPrefill`; hier steht nur die
-/// Präsentation. Die Übergabe der Share-Extension wird über `reisen://paste-import` konsumiert und
-/// beim Aktivieren nachgeholt, falls iOS die App nicht direkt geöffnet hat. Datei-Drop und
-/// „Öffnen mit“ nutzen denselben Lauf wie der Dateidialog.
+/// Der Lauf liegt in `PasteImportRun`, der Prefill in `PasteImportEditorPrefill`; hier stehen
+/// Übergabe, Drop/„Öffnen mit“ und die Editor-Warteschlange. Die Share-Extension übergibt über
+/// die Handoff-URL; beim Aktivieren wird nachgeholt, falls iOS die App nicht direkt geöffnet hat.
 struct PasteImportHost<Content: View>: View {
     let session: PasteImportSession
     let entry: () -> PasteImportEntry
@@ -31,6 +20,7 @@ struct PasteImportHost<Content: View>: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var review: PasteImportReview?
+    @State private var reviewQueue = PasteImportReviewQueue()
 
     init(
         session: PasteImportSession,
@@ -44,124 +34,7 @@ struct PasteImportHost<Content: View>: View {
 
     var body: some View {
         content
-            .alert(
-                L10n.string(.pasteImportPccConfirmTitle),
-                isPresented: Binding(
-                    get: { session.isConfirmingPrivateCloudCompute },
-                    set: { if !$0 { session.cancelConfirmation() } }
-                )
-            ) {
-                Button(L10n.string(.pasteImportPccConfirmOk)) {
-                    session.confirmPrivateCloudCompute()
-                }
-                Button(L10n.string(.commonCancel), role: .cancel) {
-                    session.cancelConfirmation()
-                }
-            } message: {
-                Text(L10n.string(.pasteImportPccConfirmMessage))
-            }
-            .sheet(
-                isPresented: Binding(
-                    get: { session.isPresentingSheet },
-                    set: { if !$0 { session.dismissSheet() } }
-                )
-            ) {
-                if let kind = session.runningKind {
-                    PasteImportProgressSheet(kind: kind) { session.cancelRun() }
-                        .reisenSheetDetents()
-                } else if let result = session.choosingResult {
-                    PasteImportCandidateSheet(
-                        result: result,
-                        canOfferFeatureRequest: session.canOfferFeatureRequest,
-                        onCancel: { session.dismissSheet() },
-                        onContinue: {
-                            session.review()
-                            advanceQueue()
-                        },
-                        onRequestFeature: { session.offerFailedFeatureRequest() }
-                    )
-                    .reisenSheetDetents()
-                }
-            }
-            .alert(
-                L10n.string(.pasteImportErrorTitle),
-                isPresented: Binding(
-                    get: { session.errorMessage != nil },
-                    set: { if !$0 { session.dismissError() } }
-                )
-            ) {
-                if session.canOfferFeatureRequest {
-                    Button(PasteImportFailedFeatureRequestPresentation().offerTitle) {
-                        session.offerFailedFeatureRequest()
-                    }
-                }
-                Button(L10n.string(.commonOk), role: .cancel) {
-                    session.dismissError()
-                    advanceQueue()
-                }
-            } message: {
-                if let errorMessage = session.errorMessage {
-                    Text(errorMessage)
-                }
-            }
-            .alert(
-                PasteImportFailedFeatureRequestPresentation().title,
-                isPresented: Binding(
-                    get: { session.isConfirmingFeatureRequest },
-                    set: { if !$0 { session.cancelFailedFeatureRequest() } }
-                )
-            ) {
-                Button(PasteImportFailedFeatureRequestPresentation().sendTitle) {
-                    session.confirmFailedFeatureRequest()
-                }
-                Button(PasteImportFailedFeatureRequestPresentation().cancelTitle, role: .cancel) {
-                    session.cancelFailedFeatureRequest()
-                }
-                .keyboardShortcut(.defaultAction)
-            } message: {
-                Text(PasteImportFailedFeatureRequestPresentation().message)
-            }
-            .sheet(
-                isPresented: Binding(
-                    get: { session.featureRequestSuccessURL != nil },
-                    set: { if !$0 { session.dismissFeatureRequestSuccess() } }
-                )
-            ) {
-                let chrome = PasteImportFailedFeatureRequestPresentation()
-                NavigationStack {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(chrome.doneTitle)
-                        PublicGitHubIssueLink(
-                            url: session.featureRequestSuccessURL,
-                            errorMessage: nil
-                        )
-                    }
-                    .padding()
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button(L10n.string(.commonOk)) {
-                                session.dismissFeatureRequestSuccess()
-                            }
-                        }
-                    }
-                }
-                .reisenSheetDetents()
-            }
-            .alert(
-                L10n.string(.pasteImportErrorTitle),
-                isPresented: Binding(
-                    get: { session.featureRequestSubmitError != nil },
-                    set: { if !$0 { session.dismissFeatureRequestSubmitError() } }
-                )
-            ) {
-                Button(L10n.string(.commonOk), role: .cancel) {
-                    session.dismissFeatureRequestSubmitError()
-                }
-            } message: {
-                if let featureRequestSubmitError = session.featureRequestSubmitError {
-                    Text(featureRequestSubmitError)
-                }
-            }
+            .pasteImportFlow(session: session, onReviewQueue: advanceQueue)
             .sheet(item: $review) { review in
                 PasteImportReviewSheet(review: review) {
                     self.review = nil
@@ -246,9 +119,7 @@ struct PasteImportHost<Content: View>: View {
     /// Erst nach dem laufenden Update-Zyklus, sonst verschluckt ein noch schließendes Sheet
     /// (Kandidatenliste, Fehlerdialog) die neue Präsentation.
     private func advanceQueue() {
-        guard session.hasPendingCandidates else { return }
-        Task { @MainActor in
-            await Task.yield()
+        reviewQueue.advance(ifPending: session.hasPendingCandidates) {
             presentNextCandidate()
         }
     }
@@ -311,69 +182,5 @@ struct PasteImportHost<Content: View>: View {
         return try modelContext.fetch(
             FetchDescriptor<SDTrip>(predicate: #Predicate { $0.id == tripID })
         ).first
-    }
-}
-
-private struct PasteImportProgressSheet: View {
-    let kind: PasteImportModelKind
-    let onCancel: () -> Void
-
-    var body: some View {
-        let presentation = PasteImportProgressPresentation(kind: kind)
-
-        VStack(spacing: 16) {
-            ProgressView()
-            Text(presentation.title)
-            if let modelName = presentation.modelName {
-                Text(modelName)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            Button(L10n.string(.commonCancel), action: onCancel)
-        }
-        .padding(24)
-    }
-}
-
-private struct PasteImportReviewSheet: View {
-    let review: PasteImportReview
-    let onFinished: () -> Void
-
-    @Environment(\.modelContext) private var modelContext
-    @State private var draft: BookingEditorDraft
-
-    init(review: PasteImportReview, onFinished: @escaping () -> Void) {
-        self.review = review
-        self.onFinished = onFinished
-        _draft = State(initialValue: review.draft)
-    }
-
-    private var showsSyncOverwriteHint: Bool {
-        guard let booking = review.booking else { return false }
-        return booking.provider != .manual
-    }
-
-    var body: some View {
-        BookingEditorForm(
-            title: review.booking == nil
-                ? L10n.string(.editorCreateTitle)
-                : L10n.string(.editorEditTitle),
-            showsSyncOverwriteHint: showsSyncOverwriteHint,
-            draft: $draft,
-            providerReadOnly: review.booking != nil,
-            onCancel: onFinished,
-            onSave: {
-                if let booking = review.booking {
-                    try draft.apply(to: booking, in: modelContext)
-                } else {
-                    try BookingEditorDraft.createBooking(
-                        from: draft,
-                        trip: review.trip,
-                        in: modelContext
-                    )
-                }
-                onFinished()
-            }
-        )
     }
 }

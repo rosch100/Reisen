@@ -48,6 +48,7 @@ struct ContentView: View {
     /// Paste-Import: Lauf-Zustand und der Kandidat, der gerade außerhalb des Inspectors geprüft wird.
     @State private var pasteImport = PasteImportSession()
     @State private var pasteReview: PasteImportReview?
+    @State private var pasteImportReviewQueue = PasteImportReviewQueue()
 
     /// HIG: Spalten per dünnem Divider ziehbar (keine sichtbaren Slider-Knöpfe).
     private let sidebarMinWidth: CGFloat = 180
@@ -1041,12 +1042,14 @@ struct ContentView: View {
     }
 
     private func startPasteImportFromFile() async {
+        let entry = pasteImportEntry
+        let existing = existingDomainBookings
         do {
             guard let source = try await PasteImportMacSource.fromOpenPanel() else { return }
             pasteImport.start(
                 source: source,
-                entry: pasteImportEntry,
-                existing: existingDomainBookings
+                entry: entry,
+                existing: existing
             )
         } catch {
             pasteImport.fail(L10n.string(.pasteImportErrorSource))
@@ -1091,9 +1094,7 @@ struct ContentView: View {
     /// Erst nach dem laufenden Update-Zyklus, sonst verschluckt ein noch schließendes Sheet
     /// (Kandidatenliste, Fehlerdialog) die neue Präsentation.
     private func advancePasteImportQueue() {
-        guard pasteImport.hasPendingCandidates else { return }
-        Task { @MainActor in
-            await Task.yield()
+        pasteImportReviewQueue.advance(ifPending: pasteImport.hasPendingCandidates) {
             presentNextPasteImportCandidate()
         }
     }

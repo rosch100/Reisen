@@ -11,7 +11,7 @@ import ReisenDomain
 /// macOS und iOS teilen diese Session; plattformspezifisch sind nur Quelle und UI.
 @MainActor
 @Observable
-public final class PasteImportSession {
+public final class PasteImportSession: PasteImportSessionControlling {
     public enum Phase: Equatable {
         case idle
         case confirmingPrivateCloudCompute

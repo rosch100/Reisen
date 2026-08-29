@@ -65,8 +65,8 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 |---|---|
 | **ReisenDomain** | Quelle, Port `PasteImportExtracting`, Modellstufe, Resolver, Filter, Draft, Match-Tri-State, Merger, Pipeline → Kandidaten. Kein FoundationModels, kein PDFKit, kein UIKit. |
 | **ReisenPasteImport** | Availability, Session, ein `@Generable`/`Codable`-Payload (Felder = Extraction), PDFKit-Text + Seiten-Render, Bild-`Attachment`. Output: `[PasteImportExtraction]`. |
-| **ReisenAppCore** | Orchestrierung eines Laufs: Availability → Resolver → Extract (ein kind) → Pipeline. Bei Extract-Fehler **kein** Retry mit anderem kind. |
-| **ReisenSharedUI** | Aktion (disabled+Begründung), PCC-Sheet-Chrome, Liste, Prefill. Abhängigkeit **nur Domain (+ Data für `SDBooking`)**. Kein `ReisenPasteImport`. Prefill: Neu aus Draft ohne `createDefault`; Ergänzen = `fromExisting` nach Mapping aus `fillingGaps(DomainMapper.booking(from:), draft)`. |
+| **ReisenAppCore** | Orchestrierung eines Laufs: Availability → Resolver → Extract (ein kind) → Pipeline. Bei Extract-Fehler **kein** Retry mit anderem kind. `PasteImportSessionControlling` für SharedUI-Flow ohne Abhängigkeit auf `ReisenPasteImport`. |
+| **ReisenSharedUI** | Aktion (disabled+Begründung), Flow (PCC/Progress/Kandidaten/Fehler), Review-Sheet, Liste, Prefill. Abhängigkeit Domain + Data + AppCore (`PasteImportSessionControlling`). Kein `ReisenPasteImport`. Prefill: Neu aus Draft ohne `createDefault`; Ergänzen = `fromExisting` nach Mapping aus `fillingGaps(DomainMapper.booking(from:), draft)`. |
 | **Reisen / ReiseniOS** | Clipboard, Datei, Drop / „Öffnen mit“, Share / „Senden an“, verdrahten Extractor. |
 | **ReisenData** | `createBooking(trip: SDTrip?)` (`nil` = Offen); Edit weiter `apply`. |
 
@@ -118,7 +118,7 @@ Wie zuvor: unavailable disabled; Modellfehler Dialog ohne Stufenwechsel; leere Q
 ## UI / HIG
 
 - ⌘V System-Paste. macOS „Buchung einfügen…“ ⌘⇧V in Reise **und** Offen. Dateidialog und **Drop** (Fenster, Dock, „Öffnen mit“) teilen Typen PDF/Bild/Text; ein File pro Drop (erstes gültiges). `LSHandlerRank` Alternate, Rolle Viewer — Reisen wird nicht Default-PDF-App.
-- iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. App Group `group.de.reisen.Reisen.pasteimport`. Handoff-URL-Scheme **`reisen://paste-import`** (Info.plist beider iOS-Apps). Consume löscht die Temp-Datei. iPad-Drop, „Öffnen in Reisen“ und **Senden an / Teilen** (Share-Sheet, inkl. `public.file-url` aus der Dateien-App) denselben Datei-Pfad. Datei-URLs aus „Öffnen mit“ landen in `PasteImportExternalFileInbox`, auch bevor Bootstrap `.ready` ist; der Host holt sie nach.
+- iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. Store und Private nutzen **getrennte** App Groups und URL-Schemes (`PasteImportHandoffIdentity`: `reisen` / `reisen-private`). Consume löscht die Temp-Datei. iPad-Drop, „Öffnen in Reisen“ und **Senden an / Teilen** (Share-Sheet, inkl. `public.file-url` aus der Dateien-App) denselben Datei-Pfad. Datei-URLs aus „Öffnen mit“ landen in `PasteImportExternalFileInbox`, auch bevor Bootstrap `.ready` ist; der Host holt sie nach.
 - Badge = L10n-Text (Neu / Ergänzen), nicht nur Farbe; VoiceOver-Label gleich.
 - EN-Badge: **Enrich**, nicht Update.
 - PCC-Sheet vor dem Senden. Progress + Abbrechen.
