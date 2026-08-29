@@ -3,6 +3,15 @@ description: Öffentlicher Fehlerbericht für Reisen
 title: "[Fehler] "
 labels: ["kind/error"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Dieses Issue ist **öffentlich** auf GitHub sichtbar.
+        Bitte **keine** personenbezogenen Daten (Reisen, Passagiere, E-Mail, Adressen) und **keine** Security-Exploit-Details.
+        Sicherheitslücken: [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new).
+
+        GitHub-Issues unterstützen **keine Dateianhänge**. Screenshots und Archive bitte an
+        [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (bleiben in der Mailbox).
   - type: textarea
     id: what
     attributes:
@@ -16,3 +25,39 @@ body:
       label: Erwartetes Verhalten
     validations:
       required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Schritte zur Reproduktion
+      description: Optional — hilft bei der Diagnose.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: false
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plattform
+      options:
+        - iOS
+        - iPadOS
+        - macOS
+    validations:
+      required: false
+  - type: input
+    id: app_version
+    attributes:
+      label: App-Version
+      description: Optional — z. B. aus Einstellungen → Info.
+      placeholder: "1.2.3"
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy_ack
+    attributes:
+      label: Bestätigung
+      options:
+        - label: Ich verstehe, dass dieses Issue öffentlich ist, und habe keine personenbezogenen Daten eingefügt.
+          required: true

@@ -60,8 +60,46 @@ XOR ist Obfuskation, kein Schutz: das PAT ist aus einem Release-Binary rekonstru
 
 Harte Grenze ist GitHub-seitig: fine-grained PAT mit **Issues: Read and write**, nur Repository `rosch100/Reisen`. Die App-Limits sind eine zusätzliche Dämpfung, keine Sicherheitsgrenze.
 
+## GitHub-REST-Vertrag
+
+SSOT der Limits und Header: `GitHubRepository` (`restAPIVersion`, `restUserAgent`, `issueTitleMaxLength`, `issueBodyMaxLength`). Offizielle Referenz: [REST API endpoints for issues](https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28), [Getting started](https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api) (`User-Agent` Pflicht), [Issue comments](https://docs.github.com/en/rest/issues/comments), [Search issues](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests).
+
+| Vorgabe | Reisen |
+| --- | --- |
+| `POST /repos/{owner}/{repo}/issues` | App-Token und Gmail-Ingress |
+| `POST .../issues/{n}/comments` | Duplikat-Fingerprint |
+| `GET /search/issues` mit `is:issue` | offene Fingerprint-Suche; Suchbegriff ≤ 256 Zeichen |
+| `Accept: application/vnd.github+json` | ja |
+| `Authorization: Bearer` | ja |
+| `X-GitHub-Api-Version: 2022-11-28` | ja |
+| `User-Agent` | App `Reisen`; Ingress `reisen-gmail-feedback-ingress` |
+| Titel max. 256 Zeichen | gekürzt |
+| Body/Kommentar max. 65536 Zeichen | gekürzt; kein Datei-Upload in der Issues-API |
+| Labels nur mit Push-Recht, sonst still verworfen | siehe Abschnitt Issue-Labels |
+| New-Issue-URL `template`, `title`, `labels`, Feld-`id` | Safari-Pfad ohne Token |
+
 ## Issue-Labels
 
-Die öffentlichen Issue-Formulare setzen nur `kind/error` bzw. `kind/feedback`. `source/in-app` setzt die App beim Anlegen bzw. in der vorausgefüllten URL — nicht das Web-Formular, damit Browser-Meldungen nicht fälschlich als In-App gelten. Mail-Ingress setzt `kind/feedback` und `source/email` und schreibt `issue-dev-gmail-id` (Gmail-Message-Id) in den Body, damit der Bot die MIME-Anhänge per Gmail-API laden kann. Der Bot holt die Mail nur bei Autor `github-actions[bot]` und Label `source/email`. Die Labels müssen am Repo existieren. Fehlen sie oder darf der Aufrufer keine Labels setzen, kann GitHub das Issue trotzdem anlegen — dann ohne diese Labels. HTTP 422 ist eine allgemeine Validierungs- oder Spam-Antwort, kein fester Fehlcode für fehlende Labels.
+Die öffentlichen Issue-Formulare setzen nur `kind/error`, `kind/feedback` bzw. `kind/feature`. `source/in-app` setzt die App beim Anlegen bzw. in der vorausgefüllten URL — nicht das Web-Formular, damit Browser-Meldungen nicht fälschlich als In-App gelten. Mail-Ingress setzt `kind/feedback` und `source/email` und schreibt `issue-dev-gmail-id` (Gmail-Message-Id) in den Body, damit der Bot die MIME-Anhänge per Gmail-API laden kann. Der Bot holt die Mail nur bei Autor `github-actions[bot]` und Label `source/email`. Die Labels müssen am Repo existieren. Fehlen sie oder darf der Aufrufer keine Labels setzen, kann GitHub das Issue trotzdem anlegen — dann ohne diese Labels. HTTP 422 ist eine allgemeine Validierungs- oder Spam-Antwort, kein fester Fehlcode für fehlende Labels.
 
 Paste-Import kann nach Bestätigung ein Issue `kind/feature` anlegen. Das Originaldokument hängt die App nicht an das Issue; es geht per E-Mail an `reisenapp100@gmail.com`. Dafür reicht dasselbe Issues-PAT; kein Contents-Recht und kein zweites Repository.
+
+## Issue-Formulare und Chooser
+
+SSOT: [`.github/ISSUE_TEMPLATE/`](../../.github/ISSUE_TEMPLATE/).
+
+| Pfad | Formular | Vorausgefülltes Feld |
+|------|----------|----------------------|
+| Safari ohne Token (`GitHubIssueNewIssueURL`) | `bug.yml` / `feedback.yml` | `what` / `feedback` |
+| Kontakt / Datenschutz (Pages) | `legal.yml` | `notice` |
+| Web-Chooser | dieselben YAML-Formulare | manuell |
+
+[`config.yml`](../../.github/ISSUE_TEMPLATE/config.yml) setzt `blank_issues_enabled: false` und `contact_links` (Security Advisory, Support-Seite, Mailto). Leere Issues sind für Maintainer weiterhin möglich; öffentliche Pages-Links nutzen deshalb `legal.yml` statt Query-`body`.
+
+**Deploy:** `config.yml`, `legal.yml` und die Redirects [`docs/legal/contact-request.html`](../legal/contact-request.html) / [`privacy-request.html`](../legal/privacy-request.html) müssen **gemeinsam** auf dem Default-Branch landen (danach Pages-Workflow). Sonst führen die alten `body=`-Redirects bei `blank_issues_enabled: false` in den Chooser statt ins Formular.
+
+Die Issues-API (App-Token, Gmail-Ingress) **füllt keine YAML-Formulare aus**. Sie postet Markdown-Bodies (`## Zusammenfassung`, `## Diagnose`, Fingerprint bzw. `reisen-email-id`) und Labels direkt — siehe `GitHubIssueDiagnostic` und `Scripts/ingest-gmail-feedback.py`. Zusätzliche Pflichtfelder in den Formularen (außer dem Haupt-Textarea und der Datenschutz-Checkbox) würden den Safari-Pfad blockieren; optionale Triage-Felder in `bug.yml` bleiben für den Web-Chooser und werden von der App-URL nicht befüllt.
+
+## Keine Dateianhänge
+
+Die Issues-API mit dem eingebetteten PAT kann **keine Dateien** an Issues hängen. Automatische Fehlerberichte enthalten Diagnose, Fehlertyp/Domain/Code, Underlying-Kette, Crash-Stack und einen geschwärzten Sync-Protokoll-Auszug **als Text**. Zusätzliche Dateien (Screenshots, Archive) per E-Mail an `reisenapp100@gmail.com`; sie bleiben in der Mailbox und werden nicht auf GitHub hochgeladen. Textanhänge aus solchen Mails setzt der Gmail-Ingress geschwärzt in den Issue-Body.

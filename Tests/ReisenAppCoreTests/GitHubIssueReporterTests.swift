@@ -18,11 +18,76 @@ import ReisenDomain
             "\(kind.issueForm.templateFileName) missing kind/\(kind.rawValue)"
         )
         #expect(
+            yaml.contains("id: \(kind.issueForm.fieldID)"),
+            "\(kind.issueForm.templateFileName) missing id: \(kind.issueForm.fieldID)"
+        )
+        #expect(
+            yaml.contains("id: privacy_ack"),
+            "\(kind.issueForm.templateFileName) missing privacy_ack checkbox"
+        )
+        #expect(
             !yaml.contains("source/in-app"),
             "\(kind.issueForm.templateFileName) must not apply source/in-app to web form submissions"
         )
+        #expect(
+            !yaml.contains("source/web"),
+            "\(kind.issueForm.templateFileName) must not set source/web (Safari URL adds source/in-app)"
+        )
         #expect(kind.githubLabels.contains("source/in-app"))
     }
+    #expect(
+        !(try String(
+            contentsOf: repoRoot.appendingPathComponent(".github/ISSUE_TEMPLATE/feature.yml"),
+            encoding: .utf8
+        )).contains("Template: copy to Reisen")
+    )
+
+    let configYAML = try String(
+        contentsOf: repoRoot.appendingPathComponent(".github/ISSUE_TEMPLATE/config.yml"),
+        encoding: .utf8
+    )
+    #expect(configYAML.contains("blank_issues_enabled: false"))
+    #expect(configYAML.contains("contact_links:"))
+    #expect(configYAML.contains("security/advisories/new"))
+    #expect(configYAML.contains(GitHubRepository.feedbackEmail))
+
+    let legalYAML = try String(
+        contentsOf: repoRoot.appendingPathComponent(
+            ".github/ISSUE_TEMPLATE/\(GitHubRepository.legalIssueTemplateFileName)"
+        ),
+        encoding: .utf8
+    )
+    #expect(legalYAML.contains("\"kind/feedback\""))
+    #expect(legalYAML.contains("id: \(GitHubRepository.legalIssueFormFieldID)"))
+    #expect(legalYAML.contains("title: \"\(GitHubRepository.legalIssueTitlePrefix) \""))
+    #expect(legalYAML.contains("value: |-"))
+    #expect(legalYAML.contains("id: privacy_ack"))
+    #expect(!legalYAML.contains("source/in-app"))
+    let notice = try #require(yamlLiteralBlock(after: "value: |-", in: legalYAML))
+    #expect(notice == GitHubRepository.publicIssueNoPersonalDataBody)
+}
+
+/// Dedentiertes Literal nach `marker` (YAML `|` / `|-`), bis zur nächsten nicht eingerückten Zeile.
+private func yamlLiteralBlock(after marker: String, in yaml: String) -> String? {
+    guard let markerRange = yaml.range(of: marker) else { return nil }
+    let rest = yaml[markerRange.upperBound...]
+    var lines: [String] = []
+    var started = false
+    for line in rest.split(separator: "\n", omittingEmptySubsequences: false) {
+        let text = String(line)
+        if text.hasPrefix("        ") {
+            started = true
+            lines.append(String(text.dropFirst(8)))
+        } else if text.isEmpty {
+            if started { lines.append("") }
+        } else if !started {
+            continue
+        } else {
+            break
+        }
+    }
+    while lines.last == "" { lines.removeLast() }
+    return lines.isEmpty ? nil : lines.joined(separator: "\n")
 }
 
 @Test func githubIssueKind_usesGermanDisplayNamesAndTemplates() {
