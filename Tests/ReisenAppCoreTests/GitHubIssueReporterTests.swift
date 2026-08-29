@@ -426,6 +426,7 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
     var createCount = 0
     var searchCount = 0
     var commentCount = 0
+    var commentError: (any Error)?
     var lastCreate: (title: String, body: String, labels: [String])?
     var nextCreated = GitHubCreatedIssue(
         number: 1,
@@ -448,6 +449,9 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
     }
 
     func comment(issueNumber: Int, body: String) async throws -> GitHubCreatedIssue {
+        if let commentError {
+            throw commentError
+        }
         commentCount += 1
         return nextComment
     }
