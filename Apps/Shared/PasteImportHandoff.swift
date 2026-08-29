@@ -79,16 +79,16 @@ enum PasteImportHandoff {
             let meta = try JSONDecoder().decode(Meta.self, from: try Data(contentsOf: metaURL))
             source = try Self.source(kind: meta.kind, payload: try Data(contentsOf: payloadURL))
         } catch {
-            try? FileManager.default.removeItem(at: payloadURL)
-            try? FileManager.default.removeItem(at: metaURL)
+            removeBestEffort(payloadURL)
+            removeBestEffort(metaURL)
             return .lostPayload
         }
         do {
-            try FileManager.default.removeItem(at: payloadURL)
+            try removeIfExists(payloadURL)
         } catch {
             return .lostPayload
         }
-        try? FileManager.default.removeItem(at: metaURL)
+        removeBestEffort(metaURL)
         return .payload(source)
     }
 
@@ -99,6 +99,10 @@ enum PasteImportHandoff {
     private static func removeIfExists(_ url: URL) throws {
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         try FileManager.default.removeItem(at: url)
+    }
+
+    private static func removeBestEffort(_ url: URL) {
+        try? removeIfExists(url)
     }
 
     private static func parts(of source: PasteImportSource) -> (Meta.Kind, Data) {

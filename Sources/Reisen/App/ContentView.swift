@@ -48,8 +48,7 @@ struct ContentView: View {
     /// Paste-Import: Lauf-Zustand und der Kandidat, der gerade außerhalb des Inspectors geprüft wird.
     @State private var pasteImport = PasteImportSession()
     @State private var pasteReview: PasteImportReview?
-    /// Verhindert doppelte `Task.yield`-Starts der Editor-Warteschlange.
-    @State private var isAdvancingPasteImportQueue = false
+    @State private var pasteImportReviewQueue = PasteImportReviewQueue()
 
     /// HIG: Spalten per dünnem Divider ziehbar (keine sichtbaren Slider-Knöpfe).
     private let sidebarMinWidth: CGFloat = 180
@@ -1095,11 +1094,7 @@ struct ContentView: View {
     /// Erst nach dem laufenden Update-Zyklus, sonst verschluckt ein noch schließendes Sheet
     /// (Kandidatenliste, Fehlerdialog) die neue Präsentation.
     private func advancePasteImportQueue() {
-        guard pasteImport.hasPendingCandidates, !isAdvancingPasteImportQueue else { return }
-        isAdvancingPasteImportQueue = true
-        Task { @MainActor in
-            defer { isAdvancingPasteImportQueue = false }
-            await Task.yield()
+        pasteImportReviewQueue.advance(ifPending: pasteImport.hasPendingCandidates) {
             presentNextPasteImportCandidate()
         }
     }

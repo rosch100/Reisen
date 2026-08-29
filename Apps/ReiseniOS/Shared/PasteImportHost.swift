@@ -20,8 +20,7 @@ struct PasteImportHost<Content: View>: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var review: PasteImportReview?
-    /// Verhindert doppelte `Task.yield`-Starts der Editor-Warteschlange.
-    @State private var isAdvancingQueue = false
+    @State private var reviewQueue = PasteImportReviewQueue()
 
     init(
         session: PasteImportSession,
@@ -120,11 +119,7 @@ struct PasteImportHost<Content: View>: View {
     /// Erst nach dem laufenden Update-Zyklus, sonst verschluckt ein noch schließendes Sheet
     /// (Kandidatenliste, Fehlerdialog) die neue Präsentation.
     private func advanceQueue() {
-        guard session.hasPendingCandidates, !isAdvancingQueue else { return }
-        isAdvancingQueue = true
-        Task { @MainActor in
-            defer { isAdvancingQueue = false }
-            await Task.yield()
+        reviewQueue.advance(ifPending: session.hasPendingCandidates) {
             presentNextCandidate()
         }
     }

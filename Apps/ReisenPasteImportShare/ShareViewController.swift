@@ -65,24 +65,30 @@ final class ShareViewController: UIViewController {
             }
         }
         for provider in providers where provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            let url = try await fileURL(from: provider)
-            do {
-                let source = try PasteImportFileSource.source(from: url)
-                do {
-                    try removeTemporaryCopyIfNeeded(url)
-                } catch {
-                    throw PasteImportShareError.handoffFailed
-                }
-                return source
-            } catch let error as PasteImportShareError {
-                try? removeTemporaryCopyIfNeeded(url)
-                throw error
-            } catch {
-                try? removeTemporaryCopyIfNeeded(url)
-                throw PasteImportShareError.unreadableSource
-            }
+            return try await source(fromFileURLProvider: provider)
         }
         throw PasteImportShareError.unreadableSource
+    }
+
+    /// Liest die Datei, räumt eigene Temp-Kopien auf; fehlgeschlagenes Aufräumen → `handoffFailed`.
+    private static func source(fromFileURLProvider provider: NSItemProvider) async throws -> PasteImportSource {
+        let url = try await fileURL(from: provider)
+        let source: PasteImportSource
+        do {
+            source = try PasteImportFileSource.source(from: url)
+        } catch let error as PasteImportShareError {
+            try? removeTemporaryCopyIfNeeded(url)
+            throw error
+        } catch {
+            try? removeTemporaryCopyIfNeeded(url)
+            throw PasteImportShareError.unreadableSource
+        }
+        do {
+            try removeTemporaryCopyIfNeeded(url)
+        } catch {
+            throw PasteImportShareError.handoffFailed
+        }
+        return source
     }
 
     /// Nur eigene Kopien unter `temporaryDirectory` löschen — nicht Security-Scoped URLs des Systems.
