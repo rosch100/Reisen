@@ -1,10 +1,10 @@
 import Foundation
 import ReisenDomain
 
-/// Führt zwei komplementäre, jeweils unvollständige Extrakte zu einem zusammen.
+/// Führt zwei komplementäre, jeweils unvollständige **Flug-/Boarding**-Fragmente zusammen.
 ///
-/// Typisch: Bordkarte, bei der Code und Flug/Datum auf getrennte Modell-Einträge fallen.
-/// Zwei vollständige oder nicht komplementäre Extrakte bleiben unverändert.
+/// Hotel-Code + Flugstrecke aus derselben Quelle werden nicht vermischt — nur wenn mindestens
+/// ein Fragment als Flugnummer oder Boarding-Pass erkennbar ist.
 public enum PasteImportExtractionCoalescer {
     public static func coalescing(_ extractions: [PasteImportExtraction]) -> [PasteImportExtraction] {
         guard extractions.count == 2,
@@ -12,6 +12,7 @@ public enum PasteImportExtractionCoalescer {
               let second = extractions.last,
               !isFilterReady(first),
               !isFilterReady(second),
+              looksLikeFlightFragment(first) && looksLikeFlightFragment(second),
               areComplementary(first, second)
         else {
             return extractions
@@ -21,6 +22,18 @@ public enum PasteImportExtractionCoalescer {
 
     private static func isFilterReady(_ extraction: PasteImportExtraction) -> Bool {
         extraction.bookingType != nil && extraction.startAt != nil
+    }
+
+    private static func looksLikeFlightFragment(_ extraction: PasteImportExtraction) -> Bool {
+        if extraction.bookingType == .flight { return true }
+        if looksLikeFlightNumber(extraction.title) { return true }
+        return boardingPassTitle(extraction.title)
+    }
+
+    private static func boardingPassTitle(_ title: String?) -> Bool {
+        guard let title = NonEmpty.string(title) else { return false }
+        let key = title.lowercased().filter(\.isLetter)
+        return key.contains("boardingpass") || key.contains("boarding") || key.contains("bordkarte")
     }
 
     private static func areComplementary(
@@ -34,9 +47,7 @@ public enum PasteImportExtractionCoalescer {
         let rightHasCode = right.confirmationCode != nil
         let leftHasTravel = left.startAt != nil || hasRoute(left)
         let rightHasTravel = right.startAt != nil || hasRoute(right)
-        let codeSplit = leftHasCode != rightHasCode
-        let travelSplit = leftHasTravel != rightHasTravel
-        return codeSplit && travelSplit
+        return leftHasCode != rightHasCode && leftHasTravel != rightHasTravel
     }
 
     private static func hasRoute(_ extraction: PasteImportExtraction) -> Bool {
@@ -74,14 +85,12 @@ public enum PasteImportExtractionCoalescer {
         return result
     }
 
-    /// Bevorzugt einen Flugnummern-Titel gegenüber generischen Boarding-Pass-Überschriften.
     private static func preferFlightTitle(_ left: String?, _ right: String?) -> String? {
         if looksLikeFlightNumber(left) { return left }
         if looksLikeFlightNumber(right) { return right }
         return left ?? right
     }
 
-    /// Nur wenn der Titel klar eine Flugnummer ist — kein allgemeines Typ-Raten.
     private static func flightHint(_ extraction: PasteImportExtraction) -> BookingType? {
         looksLikeFlightNumber(extraction.title) ? .flight : nil
     }

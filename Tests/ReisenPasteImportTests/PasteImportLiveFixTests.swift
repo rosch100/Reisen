@@ -16,6 +16,17 @@ import ReisenPasteImport
     #expect(clipped.contains("Reiseverlauf"))
 }
 
+@Test func pasteImportPromptBudget_clipsAtLineBoundaryNotMidWord() {
+    var lines = (1...80).map { "Buchungscode EXAM\($0) Zeile mit Inhalt" }
+    lines.insert("Buchungscode: KEEPME\nAbfahrt: 01.01.2027", at: 0)
+    let text = lines.joined(separator: "\n")
+    #expect(text.count > PasteImportPromptBudget.maxMaterialCharacters)
+    let clipped = PasteImportPromptBudget.clipped(text)
+    #expect(clipped.count <= PasteImportPromptBudget.maxMaterialCharacters)
+    #expect(clipped.contains("KEEPME"))
+    #expect(!clipped.hasSuffix("Zeile mit Inh"))
+}
+
 @Test func pasteImportPromptBudget_leavesShortTextUnchanged() {
     let text = "Booking Reference: EXAM01\nFlight LH 400"
     #expect(PasteImportPromptBudget.clipped(text) == text)
@@ -41,6 +52,21 @@ import ReisenPasteImport
     #expect(one.title == "UA 1449")
     let draft = try #require(PasteImportFilter.apply(coalesced).first)
     #expect(draft.bookingType == .flight)
+}
+
+@Test func pasteImportExtractionCoalescer_doesNotMergeHotelCodeWithFlightRoute() {
+    let hotelCode = PasteImportExtraction(
+        title: "Booking.com Confirmation",
+        confirmationCode: "EXAMHOTEL1"
+    )
+    let flightRoute = PasteImportExtraction(
+        startAt: ticketClock(2026, 7, 18, 7, 0),
+        title: "LH 400",
+        locationFrom: "FRA",
+        locationTo: "JFK"
+    )
+    let coalesced = PasteImportExtractionCoalescer.coalescing([hotelCode, flightRoute])
+    #expect(coalesced.count == 2)
 }
 
 @Test func pasteImportExtractionCoalescer_keepsTwoCompleteFlights() {
@@ -127,6 +153,31 @@ import ReisenPasteImport
     #expect(withLabel.first?.startAt != nil)
     let draft = try #require(PasteImportFilter.apply(withLabel).first)
     #expect(draft.bookingType == BookingType.activity)
+}
+
+@Test func pasteImportExtractionTypeHint_ignoresBusinessAndTouristenhotel() {
+    #expect(
+        PasteImportExtractionTypeHint.applying([
+            PasteImportExtraction(title: "Business Class Upgrade")
+        ]).first?.bookingType == nil
+    )
+    #expect(
+        PasteImportExtractionTypeHint.applying([
+            PasteImportExtraction(title: "Touristenhotel am See")
+        ]).first?.bookingType == nil
+    )
+    #expect(
+        PasteImportExtractionTypeHint.applying([
+            PasteImportExtraction(title: "FlixBus 001 Berlin")
+        ]).first?.bookingType == .train
+    )
+}
+
+@Test func pasteImportGenerableMapper_mapsBusAliasesToTrain() {
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "bus")).bookingType == .train)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "FlixBus")).bookingType == .train)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "Fernbus")).bookingType == .train)
+    #expect(PasteImportGenerableMapper.extraction(from: PasteImportBookingDTO(bookingType: "coach")).bookingType == .train)
 }
 
 @Test func pasteImportGenerableMapper_mapsTgvAndSncfToTrain() {
