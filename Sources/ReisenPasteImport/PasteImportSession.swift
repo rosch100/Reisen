@@ -72,7 +72,11 @@ public final class PasteImportSession: PasteImportSessionControlling {
 
     public var featureRequestSubmitError: String? {
         if case .submitFailed(let message) = featureRequestFlow.phase { return message }
-        return nil
+        return featureRequestFlow.mailComposeError
+    }
+
+    public var featureRequestMailDraft: PasteImportFailedMailDraft? {
+        featureRequestFlow.mailDraft
     }
 
     public var canOfferFeatureRequest: Bool {
@@ -179,10 +183,18 @@ public final class PasteImportSession: PasteImportSessionControlling {
     }
 
     public func dismissFeatureRequestSubmitError() {
+        if featureRequestFlow.mailComposeError != nil {
+            featureRequestFlow.finishMailCompose(.completed)
+            return
+        }
         featureRequestFlow.acknowledgeSubmitFailure()
         if let resume = resumeAfterFeatureRequest {
             phase = resume
         }
+    }
+
+    public func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish) {
+        featureRequestFlow.finishMailCompose(finish)
     }
 
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.

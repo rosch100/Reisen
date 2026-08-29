@@ -50,6 +50,8 @@ import ReisenDomain
     #expect(client.createCount == 1)
     #expect(flow.phase == .succeeded(URL(string: "https://github.com/rosch100/Reisen/issues/1")!))
     #expect(!flow.canOffer)
+    #expect(flow.mailDraft?.data == Data("Hallo".utf8))
+    #expect(flow.mailDraft?.body.contains(PasteImportFailedMailDraft.skipIngressMarker) == true)
 }
 
 @Test @MainActor func pasteImportFailedFeatureRequestFlow_cancelOfferBlocksConfirm() async {
@@ -225,6 +227,99 @@ import ReisenDomain
     #expect(!flow.canOffer)
 }
 
+@Test @MainActor func pasteImportFailedFeatureRequestFlow_mailComposeFailedAfterSuccessKeepsURL() async {
+    let flow = await flowAfterSuccessfulFeatureRequest()
+    flow.finishMailCompose(.failed("Mail fehlgeschlagen"))
+    #expect(flow.mailDraft == nil)
+    #expect(flow.mailComposeError == "Mail fehlgeschlagen")
+    #expect(flow.phase == .succeeded(pasteImportFailedIssueURL))
+    flow.finishMailCompose(.completed)
+    #expect(flow.mailComposeError == nil)
+    #expect(flow.phase == .succeeded(pasteImportFailedIssueURL))
+}
+
+@Test @MainActor func pasteImportFailedFeatureRequestFlow_mailComposeCompletedClearsDraft() async {
+    let flow = await flowAfterSuccessfulFeatureRequest()
+    flow.finishMailCompose(.completed)
+    #expect(flow.mailDraft == nil)
+    #expect(flow.mailComposeError == nil)
+    #expect(flow.phase == .succeeded(pasteImportFailedIssueURL))
+}
+
+@Test func pasteImportFailedMailComposeFinish_fromSharingCancellationIsCompleted() {
+    let cancelled = NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError)
+    #expect(PasteImportFailedMailComposeFinish.fromSharingFailure(cancelled) == .completed)
+}
+
+@Test func pasteImportFailedMailComposeFinish_fromSharingErrorIsFailed() {
+    let error = NSError(
+        domain: NSCocoaErrorDomain,
+        code: NSFileWriteNoPermissionError,
+        userInfo: [NSLocalizedDescriptionKey: "keine Berechtigung"]
+    )
+    #expect(PasteImportFailedMailComposeFinish.fromSharingFailure(error) == .failed("keine Berechtigung"))
+}
+
+@Test func pasteImportFailedMailComposeFinish_fromSharingEmptyDescriptionUsesFallback() {
+    let error = NSError(
+        domain: NSCocoaErrorDomain,
+        code: NSFileWriteNoPermissionError,
+        userInfo: [NSLocalizedDescriptionKey: "  "]
+    )
+    #expect(
+        PasteImportFailedMailComposeFinish.fromSharingFailure(error)
+            == .failed(L10n.string(.pasteImportFeatureRequestMailFailed))
+    )
+}
+
+@Test func pasteImportFailedMailComposeFinish_fromComposerFailedUsesFallbackWhenEmpty() {
+    let finish = PasteImportFailedMailComposeFinish.fromComposer(didFail: true, error: nil)
+    #expect(finish == .failed(L10n.string(.pasteImportFeatureRequestMailFailed)))
+}
+
+@Test func pasteImportFailedMailComposeFinish_fromComposerMapsFailAndError() {
+    #expect(PasteImportFailedMailComposeFinish.fromComposer(didFail: false, error: nil) == .completed)
+    let cancelled = NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError)
+    #expect(PasteImportFailedMailComposeFinish.fromComposer(didFail: false, error: cancelled) == .completed)
+}
+
+@Test func pasteImportFailedMailAttachmentFile_writesUniqueDirectoryAndRemovesContainer() throws {
+    let root = FileManager.default.temporaryDirectory.appending(
+        path: UUID().uuidString,
+        directoryHint: .isDirectory
+    )
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+
+    let fileURL = try PasteImportFailedMailAttachmentFile.writeUnique(
+        data: Data("PNR ABC".utf8),
+        fileName: "paste.txt",
+        temporaryDirectory: root
+    )
+    #expect(fileURL.lastPathComponent == "paste.txt")
+    #expect(fileURL.deletingLastPathComponent().lastPathComponent != "paste.txt")
+    #expect(try Data(contentsOf: fileURL) == Data("PNR ABC".utf8))
+    let sibling = root.appending(path: "paste.txt")
+    #expect(fileURL != sibling)
+
+    try PasteImportFailedMailAttachmentFile.removeContainer(of: fileURL)
+    #expect(!FileManager.default.fileExists(atPath: fileURL.path))
+}
+
+@Test func pasteImportFailedMailAttachmentFile_writeFailureDoesNotLeaveDirectory() {
+    let blocker = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    FileManager.default.createFile(atPath: blocker.path, contents: Data())
+    defer { try? FileManager.default.removeItem(at: blocker) }
+
+    #expect(throws: (any Error).self) {
+        try PasteImportFailedMailAttachmentFile.writeUnique(
+            data: Data("x".utf8),
+            fileName: "paste.txt",
+            temporaryDirectory: blocker
+        )
+    }
+}
+
 @Test func pasteImportFailedFeatureRequestPhase_confirmAlertOnlyWhileConfirming() {
     #expect(PasteImportFailedFeatureRequestPhase.confirming.showsConfirmAlert)
     #expect(!PasteImportFailedFeatureRequestPhase.submitting.showsConfirmAlert)
@@ -232,8 +327,28 @@ import ReisenDomain
     #expect(!PasteImportFailedFeatureRequestPhase.idle.showsConfirmAlert)
     #expect(!PasteImportFailedFeatureRequestPhase.submitFailed("x").showsConfirmAlert)
     #expect(
-        !PasteImportFailedFeatureRequestPhase.succeeded(
-            URL(string: "https://github.com/rosch100/Reisen/issues/1")!
-        ).showsConfirmAlert
+        !PasteImportFailedFeatureRequestPhase.succeeded(pasteImportFailedIssueURL).showsConfirmAlert
     )
+}
+
+private let pasteImportFailedIssueURL = URL(string: "https://github.com/rosch100/Reisen/issues/1")!
+
+@MainActor
+private func flowAfterSuccessfulFeatureRequest() async -> PasteImportFailedFeatureRequestFlow {
+    let reporter = GitHubIssueReporter(
+        client: MockGitHubIssues(),
+        tokenProvider: { "token" },
+        now: { Date(timeIntervalSince1970: 1_700_000_000) },
+        persistenceURL: nil
+    )
+    let flow = PasteImportFailedFeatureRequestFlow()
+    flow.noteEmptyCandidates()
+    flow.offer()
+    await flow.confirm(
+        source: .text("Hallo"),
+        reason: .noCandidates,
+        reporter: reporter,
+        reporterGitHubUsername: nil
+    )
+    return flow
 }

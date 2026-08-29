@@ -20,4 +20,20 @@ public enum PasteImportSource: Equatable, Sendable {
             return self
         }
     }
+
+    public var payloadData: Data { mailAttachment.data }
+    public var kindName: String { mailAttachment.kindName }
+    public var attachmentFileName: String { mailAttachment.fileName }
+    public var attachmentMimeType: String { mailAttachment.mimeType }
+
+    private var mailAttachment: (kindName: String, fileName: String, mimeType: String, data: Data) {
+        switch self {
+        case .text(let text):
+            (kindName: "text", fileName: "paste.txt", mimeType: "text/plain", data: Data(text.utf8))
+        case .image(let data):
+            (kindName: "image", fileName: "paste-image.bin", mimeType: "application/octet-stream", data: data)
+        case .pdf(let data):
+            (kindName: "pdf", fileName: "paste.pdf", mimeType: "application/pdf", data: data)
+        }
+    }
 }

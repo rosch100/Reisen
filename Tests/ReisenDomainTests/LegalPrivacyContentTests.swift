@@ -40,6 +40,7 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "Bestätigung",
         "öffentlich",
         "Modellfehler",
+        "per E-Mail",
         "Arbeitsspeicher",
         "Sync-Log",
     ] {
@@ -72,6 +73,7 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "confirmation",
         "public",
         "model error",
+        "by email",
         "memory",
         "sync log",
     ] {

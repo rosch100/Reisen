@@ -7,7 +7,7 @@ Backlog: F06-Erweiterung, kein neues Backlog-ID
 
 ## Ziel
 
-Wenn Paste- oder Datei-Import **keine Buchung erkennt**, kann der Nutzer **nach ausdrücklicher Bestätigung** ein öffentliches GitHub-Issue der Art **Feature-Request** anlegen. Am Issue hängt das **unveränderte Dokument** (Text, Bild oder PDF), damit die Erkennung später verbessert werden kann.
+Wenn Paste- oder Datei-Import **keine Buchung erkennt**, kann der Nutzer **nach ausdrücklicher Bestätigung** ein öffentliches GitHub-Issue der Art **Feature-Request** anlegen. Das **Originaldokument** geht **nicht** an GitHub, sondern **per E-Mail** (Anhang) an die Feedback-Adresse.
 
 Ohne Bestätigung entsteht **kein** Issue. Der bestehende Sync-/Crash-**Auto-Report** gilt hier nicht.
 
@@ -17,12 +17,12 @@ Ohne Bestätigung entsteht **kein** Issue. Der bestehende Sync-/Crash-**Auto-Rep
 |---|---|
 | **Erkennung nicht erfolgreich** | Der Lauf hat eine gültige Quelle, aber (a) 0 `PasteImportCandidate` nach Filter oder (b) der Extract wirft einen **Modellfehler** (`PasteImportFailure.model`). |
 | **Angebot** | UI zeigt die Aktion „Als Feature-Request senden…“, weil das Domain-Gate es erlaubt. |
-| **Bestätigung** | Zweites Alert: öffentlich, Dokument geht mit, Abbrechen oder Senden. Erst Senden ruft den Reporter. |
+| **Bestätigung** | Zweites Alert: Issue ist öffentlich, Dokument geht per E-Mail (nicht an GitHub). Abbrechen oder Senden. Erst Senden ruft den Reporter. |
 | **Feature-Request** | GitHub-Issue mit Label `kind/feature` und `source/in-app`, Titelpräfix `[Feature]`, Formular `feature.yml` / Feld `want`. |
-| **Anhang** | Das Quelldokument dieser Quelle. Text im Issue-Body (redigiert). Bild/PDF als Folge-Kommentare im dokumentierten Envelope (Base64), über die **bestehende** `comment`-API. |
+| **Anhang** | Das Quelldokument dieser Quelle, **nur in der E-Mail** an `GitHubRepository.feedbackEmail`. Nicht im Issue-Body, nicht als GitHub-Kommentar, nicht als Datei-Upload. |
 | **Quelle** | Dieselbe ephemere `PasteImportSource` wie F06; sie bleibt bis Dismiss/Reset erhalten, solange ein Angebot möglich ist. |
 
-**Explizit verworfen:** `GitHubIssueAutoReport` / Settings-Toggle „Fehler automatisch melden“. Stille Übermittlung. PAT-Erweiterung (Contents, Gist, zweites Repo). Undokumentierter `uploads.github.com`-Pfad (Push-Recht, PDF 422). Gmail-Ingress als Träger (legt Dateinamen an, nicht die Datei). Speichern des Dokuments an der Buchung (F05).
+**Explizit verworfen:** `GitHubIssueAutoReport` / Settings-Toggle „Fehler automatisch melden“. Stille Übermittlung. PAT-Erweiterung (Contents, Gist, zweites Repo). Undokumentierter `uploads.github.com`-Pfad. Base64-Kommentare oder Dokumenttext im öffentlichen Issue. Öffentliche Share-Links (iCloud/Drive) im Issue. Gmail-Ingress, der das Beispieldokument erneut als öffentliches Issue anlegt. Speichern des Dokuments an der Buchung (F05).
 
 ## Anforderungen
 
@@ -30,13 +30,12 @@ Ohne Bestätigung entsteht **kein** Issue. Der bestehende Sync-/Crash-**Auto-Rep
 
 - Angebot nur bei **Erkennung nicht erfolgreich** (0 Kandidaten oder Modellfehler), wenn eine Quelle vorliegt.
 - Kein Angebot bei: leerer Quelle, Modellstufe `unavailable`, `imageUnsupported`, Share-Handoff-Fehler, Store-Ladefehler, Nutzer bricht PCC ab, Nutzer bricht den Lauf ab, Kandidatenliste mit ≥1 Eintrag.
-- Bestätigungs-Alert (macOS und iOS) **vor** jedem `GitHubIssueReporter.report`. Text sagt klar: Issue ist **öffentlich**, das Dokument (PNR, Namen, Tickets) wird mitgeschickt.
-- Nach Senden: Issue `kind/feature` + `source/in-app`. Titel `[Feature] Paste-Import: Dokument nicht erkannt`. Body: Grund (`noCandidates` / `model`), Quellart (Text/Bild/PDF), Diagnose wie bestehende Issues, Textquelle im Abschnitt Dokument nach `SecretRedactor`.
-- Bild/PDF: unveränderte Bytes als Anhang-Kommentare. Text nicht zusätzlich als Base64, wenn er bereits im Body steht.
-- Größengrenze **512_000** Bytes Rohdaten. Darüber: **kein** Issue, typisierter Fehler, Quelle bleibt für Retry nach Verkleinerung nicht still ersetzt.
-- Fingerprint = `kind/feature` + SHA256 der Quellbytes (Text UTF-8 oder Bild/PDF-Data). **Nicht** den Erkennungsgrund. Derselbe Anhang nach 0 Kandidaten oder Modellfehler trifft dasselbe offene Issue. Dann **kein** zweites Create, **kein** erneutes Hochladen der Bytes (Kommentar-Throttle wie Reporter).
+- Bestätigungs-Alert (macOS und iOS) **vor** jedem `GitHubIssueReporter.report`. Text sagt klar: Issue ist **öffentlich**, das Dokument geht **per E-Mail**, nicht an GitHub.
+- Nach Senden: Issue `kind/feature` + `source/in-app`. Titel `[Feature] Paste-Import: Dokument nicht erkannt`. Body: Grund (`noCandidates` / `model`), Quellart (Text/Bild/PDF), Diagnose wie bestehende Issues, Hinweis auf E-Mail. **Kein** Buchungstext, **keine** Dateibytes.
+- Nach erfolgreichem Issue: Mail-Composer (Anhang = Original). Marker `reisen-paste-import-document` im Mailtext. Gmail-Ingress legt dafür **kein** zweites Issue an.
+- Fingerprint = `kind/feature` + SHA256 der Quellbytes (Text UTF-8 oder Bild/PDF-Data). **Nicht** den Erkennungsgrund. Derselbe Anhang nach 0 Kandidaten oder Modellfehler trifft dasselbe offene Issue. Dann **kein** zweites Create.
 - Ohne eingebettetes Token: nach Bestätigung **Fehler** (`GitHubIssueTokenError`). Kein `GitHubIssueNewIssueURL`, kein `PublicGitHubIssueReportActions`. Erfolg zeigt nur `PublicGitHubIssueLink` auf die vom Reporter gelieferte URL.
-- Privacy-HTML DE/EN: Feature-Request nach Bestätigung; öffentlich; Dokument geht an GitHub.
+- Privacy-HTML DE/EN: Feature-Request nach Bestätigung; öffentlich ohne Dokument; Dokument per E-Mail.
 - L10n de+en für alle neuen Keys.
 
 ### Nicht in Scope
@@ -50,20 +49,16 @@ Ohne Bestätigung entsteht **kein** Issue. Der bestehende Sync-/Crash-**Auto-Rep
 
 ## Gewählte Alternative
 
-Drei Wege wurden verglichen:
+GitHub hat **keine** dokumentierte Datei-Upload-API für Issues mit dem Issues-only-PAT. Öffentliche Issues dürfen keine Buchungsdokumente oder weltlesbaren Share-Links enthalten.
 
-1. **Undokumentierter User-Attachments-Upload** — braucht Push/Contents, PDF oft 422. Verworfen: Scope-Erweiterung und unsichere API.
-2. **E-Mail an Feedback-Ingress** — Ingress speichert nur Dateinamen, nicht die Bytes. Verworfen: kein echter Anhang am Issue.
-3. **Bestehender Issues-Client: Create + `comment` mit Envelope** (gewählt) — bleibt beim dokumentierten PAT, liefert dem Maintainer das Original, Text und Binär einheitlich über Nachbar-API `GitHubIssueSubmitting`.
-
-Restrisiko: Base64-Kommentare sind öffentlich und zählen gegen GitHub-Limits. Die Bestätigung macht das sichtbar; das Limit **512_000** Bytes hält die Kommentarzahl klein (Budget 60_000 Zeichen/Kommentar).
+Gewählt: **Metadaten-Issue + E-Mail-Anhang.** Das Dokument bleibt im Gmail-Postfach. Der Ingress überspringt Mails mit `reisen-paste-import-document`.
 
 ## Architektur
 
 | Schicht | Verantwortung |
 |---|---|
-| **ReisenDomain** | Gate `PasteImportFailedRecognition.shouldOffer`; Grund `noCandidates` \| `model`; `PasteImportFailedDocument` (Dateiname, MIME, Bytes oder Text) aus `PasteImportSource`. Kein GitHub, kein UIKit. |
-| **ReisenAppCore** | `GitHubIssueKind.feature`; Attachment-Codec; `GitHubIssueReporter.report(..., attachments:)`; `PasteImportFailedFeatureRequest.submit`; **Flow** `PasteImportFailedFeatureRequestFlow` (Angebot/Bestätigung/Submit) — eine State-Machine für macOS und iOS. Nicht `GitHubIssueAutoReport`. |
+| **ReisenDomain** | Gate `PasteImportFailedRecognition.shouldOffer`; Grund `noCandidates` \| `model`; `PasteImportSource` trägt Dateiname, MIME und Bytes für den Mail-Anhang. Kein GitHub, kein UIKit. |
+| **ReisenAppCore** | `GitHubIssueKind.feature`; `PasteImportFailedMailDraft`; `PasteImportFailedFeatureRequest.submit`; **Flow** inkl. Mail-Draft. Nicht `GitHubIssueAutoReport`. Kein Dokument am Issue. |
 | **ReisenSharedUI** | `pasteImportFlow` inkl. Feature-Button und Bestätigungs-Presentation. Kein HTTP, kein `ReisenPasteImport`. |
 | **ReisenPasteImport** | `PasteImportSession` hält Quelle + Flow-Zustand (macOS und iOS). |
 | **Reisen / ReiseniOS** | Host/MacUI rufen `pasteImportFlow` auf. |
@@ -77,12 +72,11 @@ Quelle + Lauf
   → UI Angebot
   → Nutzer bestätigt
   → PasteImportFailedFeatureRequest.submit(source, reason)
-  → GitHubIssueReporter.report(kind: .feature, attachments:)
-  → createIssue | bestehendes Issue
-  → comment-Hülle für Bild/PDF
+  → GitHubIssueReporter.report(kind: .feature)  // ohne attachments
+  → Mail-Composer mit Originalanhang
 ```
 
-Fehler: Token fehlt, Rate-Limit, HTTP, zu groß — UI zeigt `localizedDescription`, kein Dummy-Issue.
+Fehler: Token fehlt, Rate-Limit, HTTP — UI zeigt `localizedDescription`, kein Dummy-Issue.
 
 ## Schnittstellen
 
@@ -92,13 +86,13 @@ Fehler: Token fehlt, Rate-Limit, HTTP, zu groß — UI zeigt `localizedDescripti
 | failed-recognition-ios | entry | dieselben Controls in SharedUI-Sheet + `PasteImportHost` an denselben Flow | Host verdrahtet denselben Flow; iOS-Scheme-Test dass der Feature-Button-Callback `flow.offer` ist |
 | github-issues-pat | capability | Issues read/write, Repo `rosch100/Reisen` | Doku-Assert + Stub leer; kein Contents in diesem Diff |
 | offer-and-confirm-contract | contract | Gate; Reporter nur nach UI-Aufruf | Unit |
-| attachment-envelope | contract | Body-Text / Base64-Kommentare | Codec + Reporter |
-| github-issue-reporter | neighbor | bestehender Reporter + `comment` | Tests am Reporter, kein zweiter Client |
+| mail-document | contract | E-Mail-Anhang, Ingress-Skip-Marker | Mail-Draft + ingest-Test |
+| github-issue-reporter | neighbor | bestehender Reporter ohne Attachments für diesen Pfad | Tests am Reporter, kein zweiter Client |
 | live-github-create | corpus | manuell / env | CI nicht; `open_gaps` |
 
 **port-only:** nein.
 
-**Rauschen:** AGB-Filter der Erkennung bleibt F06. Der Feature-Request sendet das **Original**, kein gefiltertes Modell-Input.
+**Rauschen:** AGB-Filter der Erkennung bleibt F06. Das Original geht per E-Mail, ungefiltert.
 
 ## UI / HIG
 
@@ -111,7 +105,7 @@ Fehler: Token fehlt, Rate-Limit, HTTP, zu groß — UI zeigt `localizedDescripti
 
 ## Privacy
 
-`privacy.html` / `en/privacy.html`: Nach fehlgeschlagener Erkennung kann der Nutzer ein **öffentliches** GitHub-Issue mit dem Dokument erzeugen, **nur nach Bestätigung**. Ohne Bestätigung verlässt das Dokument das Gerät nicht (weiter ephemerer Import). Kein Auto-Report.
+`privacy.html` / `en/privacy.html`: Nach fehlgeschlagener Erkennung kann der Nutzer ein **öffentliches** GitHub-Issue **ohne Dokument** erzeugen, **nur nach Bestätigung**. Das Original geht **per E-Mail**. Ohne Bestätigung verlässt das Dokument das Gerät nicht.
 
 ## Offene Lücken (`open_gaps`)
 
@@ -120,11 +114,11 @@ Fehler: Token fehlt, Rate-Limit, HTTP, zu groß — UI zeigt `localizedDescripti
 ## Tests
 
 - Gate: 0 Kandidaten → anbieten; ≥1 → nicht; `.model` → anbieten; `.source` / `.modelUnavailable` / `.imageUnsupported` → nicht.
-- `PasteImportFailedDocument` aus Text/Bild/PDF (Dateiname + MIME).
+- `PasteImportSource`: Dateiname, MIME und Payload für Text/Bild/PDF.
 - `GitHubIssueKind.feature` ↔ `feature.yml`, Labels `kind/feature,source/in-app`, Titel `[Feature]`.
-- Reporter: Attachments → `create` dann `comment`s; über Limit kein `create`; ohne Token kein HTTP; Auto-Report-Pfad unverändert.
-- Codec: leere Bytes Fehler; Chunk-Grenzen; Marker im Kommentar.
-- L10n alle neuen Keys; Privacy-Needles (öffentlich, Bestätigung, Dokument/GitHub).
+- Reporter: Feature-Request ohne Attachments; Textquelle nicht im Body.
+- Mail-Draft: Anhangbytes, Marker, Feedback-Adresse.
+- L10n alle neuen Keys; Privacy-Needles (öffentlich, Bestätigung, per E-Mail / by email).
 - RED = fachlicher Assert, nicht fehlende Typen.
 
 Kein Live-Modell und kein Live-GitHub in CI.

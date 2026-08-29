@@ -28,6 +28,8 @@ MAX_MAILS_PER_RUN = 20
 TITLE_PREFIX = "[Feedback]"
 MAX_SUBJECT = 80
 LABELS = ["kind/feedback", "source/email"]
+# SSOT mit PasteImportFailedMailDraft.skipIngressMarker
+PASTE_IMPORT_DOCUMENT_MARKER = "reisen-paste-import-document"
 API_VERSION = "2022-11-28"
 USER_AGENT = "reisen-gmail-feedback-ingress"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -92,6 +94,10 @@ def extract_body_and_attachments(message: Message) -> tuple[str, list[str]]:
     if not body:
         body = "\n\n".join(html_to_text(part) for part in html_parts if part.strip())
     return body.strip(), attachments
+
+
+def should_skip_github_issue(body: str) -> bool:
+    return body.lstrip().startswith(PASTE_IMPORT_DOCUMENT_MARKER)
 
 
 def email_id_hash(message_id: str) -> str:
@@ -378,6 +384,10 @@ def ingest_unread(
             log("Gmail-API Message ohne Payload")
             raise RuntimeError("gmail message payload missing")
         parsed = parsed_from_gmail_resource(resource, gmail_message_id=mail_id)
+        if should_skip_github_issue(parsed["body"]):
+            log("Paste-Import-Dokument: kein GitHub-Issue (bleibt in Gmail)")
+            mark_read(access_token, mail_id)
+            continue
         existing = search_existing_issue(token, repo, parsed["email_hash"])
         if existing is not None:
             log(f"Duplikat übersprungen (Issue #{existing})")
