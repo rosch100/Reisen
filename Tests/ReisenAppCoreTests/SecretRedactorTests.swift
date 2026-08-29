@@ -17,10 +17,17 @@ import Testing
     let input = """
     Cookie: session=abc123; other=ok
     https://example.com/callback?code=secretcode&token=abc&session=xyz&password=pw&keep=1
+    https://example.com/oauth?access_token=atk&refresh_token=rtk&id_token=idt&api_key=key1&apikey=key2&client_secret=cs&keep=1
     """
     let redacted = SecretRedactor.redact(input)
     #expect(!redacted.contains("abc123"))
     #expect(!redacted.contains("secretcode"))
+    #expect(!redacted.contains("atk"))
+    #expect(!redacted.contains("rtk"))
+    #expect(!redacted.contains("idt"))
+    #expect(!redacted.contains("key1"))
+    #expect(!redacted.contains("key2"))
+    #expect(!redacted.contains("cs"))
     #expect(redacted.contains("[redacted]"))
     #expect(redacted.contains("keep=1"))
 }

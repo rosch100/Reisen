@@ -22,9 +22,12 @@ enum GitHubIssueMarkdown {
     }
 
     static func truncated(_ text: String, maxCharacters: Int, suffix: String = formFieldTruncationSuffix) -> String {
+        guard maxCharacters > 0 else { return "" }
         guard text.count > maxCharacters else { return text }
-        let keep = max(0, maxCharacters - suffix.count)
-        return String(text.prefix(keep)) + suffix
+        if suffix.count >= maxCharacters {
+            return String(suffix.prefix(maxCharacters))
+        }
+        return String(text.prefix(maxCharacters - suffix.count)) + suffix
     }
 
     static func fenceFitting(_ text: String, maxCharacters: Int) -> String {
@@ -37,7 +40,7 @@ enum GitHubIssueMarkdown {
             inner = truncated(text, maxCharacters: maxInner)
             fenced = fence(inner)
         }
-        return fenced
+        return fenced.count > maxCharacters ? "" : fenced
     }
 
     static func prefixFittingSectionHeadings(_ body: String, maxCharacters: Int) -> String {
