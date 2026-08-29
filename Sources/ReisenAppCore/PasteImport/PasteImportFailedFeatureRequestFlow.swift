@@ -118,15 +118,13 @@ public final class PasteImportFailedFeatureRequestFlow {
         }
     }
 
-    public func confirm(
+    /// Submit nur nach `beginSubmit()` / `startConfirm()` — nicht direkt aus `.confirming`.
+    func confirm(
         source: PasteImportSource,
         reason: PasteImportFailedRecognitionReason,
         reporter: GitHubIssueReporter,
         reporterGitHubUsername: String?
     ) async {
-        if phase == .confirming {
-            phase = .submitting
-        }
         guard phase == .submitting else { return }
         do {
             let created = try await PasteImportFailedFeatureRequest.submit(

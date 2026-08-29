@@ -69,6 +69,11 @@ public struct PasteImportExtraction: Equatable, Sendable {
         self.deadlines = deadlines
     }
 
+    /// Typ und Startzeit gesetzt — bereit für `PasteImportFilter` / kein Fragment-Coalesce.
+    public var isFilterReady: Bool {
+        bookingType != nil && startAt != nil
+    }
+
     /// Übernimmt nur fehlende optionale Felder aus `other` (bestehende Werte bleiben).
     ///
     /// Nicht zu verwechseln mit `PasteImportMerger.fillingGaps` (Draft → bestehende Buchung).

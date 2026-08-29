@@ -17,6 +17,7 @@ public extension View {
 private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & Observable>: ViewModifier {
     @Bindable var session: Session
     let onReviewQueue: () -> Void
+    private let featureRequestChrome = PasteImportFailedFeatureRequestPresentation()
 
     func body(content: Content) -> some View {
         content
@@ -68,7 +69,7 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                 )
             ) {
                 if session.canOfferFeatureRequest {
-                    Button(PasteImportFailedFeatureRequestPresentation().offerTitle) {
+                    Button(featureRequestChrome.offerTitle) {
                         session.offerFailedFeatureRequest()
                     }
                 }
@@ -82,21 +83,21 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                 }
             }
             .alert(
-                PasteImportFailedFeatureRequestPresentation().title,
+                featureRequestChrome.title,
                 isPresented: Binding(
                     get: { session.isConfirmingFeatureRequest },
                     set: { if !$0 { session.cancelFailedFeatureRequest() } }
                 )
             ) {
-                Button(PasteImportFailedFeatureRequestPresentation().sendTitle) {
+                Button(featureRequestChrome.sendTitle) {
                     session.confirmFailedFeatureRequest()
                 }
-                Button(PasteImportFailedFeatureRequestPresentation().cancelTitle, role: .cancel) {
+                Button(featureRequestChrome.cancelTitle, role: .cancel) {
                     session.cancelFailedFeatureRequest()
                 }
                 .keyboardShortcut(.defaultAction)
             } message: {
-                Text(PasteImportFailedFeatureRequestPresentation().message)
+                Text(featureRequestChrome.message)
             }
             .sheet(
                 isPresented: Binding(
@@ -104,13 +105,11 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                     set: { if !$0 { session.dismissFeatureRequestSuccess() } }
                 )
             ) {
-                let chrome = PasteImportFailedFeatureRequestPresentation()
                 #if os(macOS)
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(chrome.doneTitle)
-                    PublicGitHubIssueLink(
-                        url: session.featureRequestSuccessURL,
-                        errorMessage: nil
+                    PasteImportFeatureRequestSuccessBody(
+                        doneTitle: featureRequestChrome.doneTitle,
+                        url: session.featureRequestSuccessURL
                     )
                     Button(L10n.string(.commonOk)) {
                         session.dismissFeatureRequestSuccess()
@@ -121,13 +120,10 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                 .frame(minWidth: 280)
                 #else
                 NavigationStack {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(chrome.doneTitle)
-                        PublicGitHubIssueLink(
-                            url: session.featureRequestSuccessURL,
-                            errorMessage: nil
-                        )
-                    }
+                    PasteImportFeatureRequestSuccessBody(
+                        doneTitle: featureRequestChrome.doneTitle,
+                        url: session.featureRequestSuccessURL
+                    )
                     .padding()
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
@@ -155,6 +151,18 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                     Text(featureRequestSubmitError)
                 }
             }
+    }
+}
+
+private struct PasteImportFeatureRequestSuccessBody: View {
+    let doneTitle: String
+    let url: URL?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(doneTitle)
+            PublicGitHubIssueLink(url: url, errorMessage: nil)
+        }
     }
 }
 

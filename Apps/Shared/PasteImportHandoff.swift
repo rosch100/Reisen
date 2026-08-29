@@ -40,13 +40,7 @@ enum PasteImportHandoff {
 
     /// Art der Bytes in `payload.bin`; die Extension kennt keine Modelltypen der App.
     struct Meta: Codable, Equatable, Sendable {
-        enum Kind: String, Codable, Sendable {
-            case text
-            case image
-            case pdf
-        }
-
-        let kind: Kind
+        let kind: PasteImportSource.Kind
     }
 
     static func isHandoff(_ url: URL) -> Bool {
@@ -58,7 +52,8 @@ enum PasteImportHandoff {
         try withExclusiveLock(in: container) {
             let payloadURL = container.appendingPathComponent(payloadFileName)
             let metaURL = container.appendingPathComponent(metaFileName)
-            let (kind, payload) = parts(of: source)
+            let kind = source.kind
+            let payload = source.fingerprintData
             // Alte Übergabe unsichtbar machen, bevor neue Meta geschrieben wird — sonst droht
             // neue Meta + alte Payload. `payload.bin` ist der Auslöser und kommt zuletzt.
             try removeIfExists(payloadURL)
@@ -147,28 +142,11 @@ enum PasteImportHandoff {
         try? removeIfExists(url)
     }
 
-    private static func parts(of source: PasteImportSource) -> (Meta.Kind, Data) {
-        switch source {
-        case .text(let text):
-            return (.text, Data(text.utf8))
-        case .image(let data):
-            return (.image, data)
-        case .pdf(let data):
-            return (.pdf, data)
-        }
-    }
-
-    private static func source(kind: Meta.Kind, payload: Data) throws -> PasteImportSource {
-        switch kind {
-        case .text:
-            guard let text = String(data: payload, encoding: .utf8) else {
-                throw PasteImportHandoffError.unreadablePayload
-            }
-            return .text(text)
-        case .image:
-            return .image(payload)
-        case .pdf:
-            return .pdf(payload)
+    private static func source(kind: PasteImportSource.Kind, payload: Data) throws -> PasteImportSource {
+        do {
+            return try PasteImportSource.fromHandoff(kind: kind, payload: payload)
+        } catch {
+            throw PasteImportHandoffError.unreadablePayload
         }
     }
 }

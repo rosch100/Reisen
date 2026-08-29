@@ -12,10 +12,13 @@ enum PasteImportTicketDate {
 
     /// `withInternetDateTime` braucht eine Zeitzone; ohne `Z`/Offset bleibt der Wert lokal.
     private static func iso8601(_ text: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        if let date = formatter.date(from: text) { return date }
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: text)
+        if let date = try? Date(text, strategy: Date.ISO8601FormatStyle()) {
+            return date
+        }
+        return try? Date(
+            text,
+            strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+        )
     }
 
     private static func looksAmbiguousSlash(_ text: String) -> Bool {

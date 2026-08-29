@@ -1,14 +1,15 @@
-import CryptoKit
 import Foundation
 import ReisenDomain
 
-@MainActor
 public enum PasteImportFailedFeatureRequest {
+    public static let unrecognizedDocumentMessage = "Paste-Import: Dokument nicht erkannt"
+
     public static let titleOverride = GitHubIssueTitle.reportTitle(
         kind: .feature,
-        message: "Paste-Import: Dokument nicht erkannt"
+        message: unrecognizedDocumentMessage
     )
 
+    @MainActor
     public static func submit(
         source: PasteImportSource,
         reason: PasteImportFailedRecognitionReason,
@@ -16,11 +17,11 @@ public enum PasteImportFailedFeatureRequest {
         reporterGitHubUsername: String?
     ) async throws -> GitHubCreatedIssue {
         let document = PasteImportFailedDocument.from(source)
-        let hash = sha256Hex(of: source)
+        let hash = GitHubIssueFingerprint.sha256Hex(of: source.fingerprintData)
         var lines = [
-            "Paste-Import: Dokument nicht erkannt",
+            unrecognizedDocumentMessage,
             "Grund: \(reasonLabel(reason))",
-            "Quelle: \(sourceKind(source))",
+            "Quelle: \(source.kind.rawValue)",
             "reisen-source-sha256: \(hash)",
         ]
         if let text = document.text {
@@ -63,27 +64,5 @@ public enum PasteImportFailedFeatureRequest {
         case .model:
             "model"
         }
-    }
-
-    private static func sourceKind(_ source: PasteImportSource) -> String {
-        switch source {
-        case .text:
-            "text"
-        case .image:
-            "image"
-        case .pdf:
-            "pdf"
-        }
-    }
-
-    private static func sha256Hex(of source: PasteImportSource) -> String {
-        let data: Data
-        switch source {
-        case .text(let text):
-            data = Data(text.utf8)
-        case .image(let bytes), .pdf(let bytes):
-            data = bytes
-        }
-        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 }

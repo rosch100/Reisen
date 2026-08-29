@@ -48,10 +48,9 @@ public struct PasteImportCandidateList: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if let onRequestFeature {
-                    Button(PasteImportFailedFeatureRequestPresentation().offerTitle, action: onRequestFeature)
-                        .accessibilityLabel(
-                            Text(PasteImportFailedFeatureRequestPresentation().offerTitle)
-                        )
+                    let chrome = PasteImportFailedFeatureRequestPresentation()
+                    Button(chrome.offerTitle, action: onRequestFeature)
+                        .accessibilityLabel(Text(chrome.offerTitle))
                 }
             } else {
                 ForEach(Array(result.candidates.enumerated()), id: \.offset) { _, candidate in

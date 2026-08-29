@@ -52,47 +52,41 @@ struct PasteImportHost<Content: View>: View {
                 handleHandoff(trigger: .activation)
                 consumeExternalFiles()
             }
-            .onAppear {
-                consumeExternalFiles()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .pasteImportExternalFilesOffered)) { _ in
-                consumeExternalFiles()
-            }
-            .pasteImportDropTarget { urls in
-                startFromDroppedFiles(urls)
-            }
+            .pasteImportInboxAndDrop(
+                isSessionActive: session.isActive,
+                onDropped: startFromDroppedFiles,
+                onExternal: consumeExternalFiles
+            )
     }
 
     private func consumeExternalFiles() {
-        startFromDroppedFiles(PasteImportExternalFileInbox.take())
+        beginPasteImportDrop(
+            PasteImportDropStartResolver.consumeInbox(isSessionActive: session.isActive)
+        )
     }
 
     private func startFromDroppedFiles(_ urls: [URL]) {
-        let files = PasteImportFileSource.acceptedFiles(in: urls)
-        switch PasteImportDropCoordinator.action(
-            offeredURLCount: urls.count,
-            acceptedFileCount: files.count,
-            isSessionActive: session.isActive
-        ) {
-        case .ignore:
-            return
-        case .fail:
-            session.fail(L10n.string(.pasteImportErrorSource))
-        case .start:
-            guard let url = files.first else {
-                session.fail(L10n.string(.pasteImportErrorSource))
-                return
-            }
-            do {
+        beginPasteImportDrop(
+            PasteImportDropStartResolver.resolve(
+                urls: urls,
+                isSessionActive: session.isActive
+            )
+        )
+    }
+
+    private func beginPasteImportDrop(_ start: PasteImportDropStart) {
+        if case .ignore = start { return }
+        let entry = entry()
+        start.apply(
+            onFail: session.fail,
+            onSource: { source in
                 session.start(
-                    source: try PasteImportFileSource.source(from: url),
-                    entry: entry(),
+                    source: source,
+                    entry: entry,
                     in: modelContext
                 )
-            } catch {
-                session.fail(PasteImportFailureMessage.text(for: error))
             }
-        }
+        )
     }
 
     /// Beide Auslöser der Übergabe über einen Konsum: `consumePending` ist idempotent, und die
@@ -126,21 +120,17 @@ struct PasteImportHost<Content: View>: View {
 
     private func presentNextCandidate() {
         guard let candidate = session.nextCandidate() else { return }
-        if candidate.isErgaenzen {
-            presentEnrich(candidate)
+        if let match = candidate.uniqueMatchedBooking {
+            presentEnrich(candidate, match: match)
         } else {
             presentNew(candidate)
         }
     }
 
-    private func presentEnrich(_ candidate: PasteImportCandidate) {
-        guard case .unique(let match) = candidate.match else {
-            // Ohne Bestandsbuchung nicht als „Neu“ weiterlaufen — das legte ein Duplikat an.
-            session.fail(L10n.string(.pasteImportErrorMatchMissing))
-            return
-        }
+    private func presentEnrich(_ candidate: PasteImportCandidate, match: Booking) {
         do {
             guard let booking = try booking(id: match.id) else {
+                // Ohne Bestandsbuchung nicht als „Neu“ weiterlaufen — das legte ein Duplikat an.
                 session.fail(L10n.string(.pasteImportErrorMatchMissing))
                 return
             }

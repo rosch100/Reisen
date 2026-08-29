@@ -41,6 +41,7 @@ import ReisenDomain
     let flow = PasteImportFailedFeatureRequestFlow()
     flow.noteEmptyCandidates()
     flow.offer()
+    #expect(flow.beginSubmit())
     await flow.confirm(
         source: .text("Hallo"),
         reason: .noCandidates,
@@ -65,6 +66,7 @@ import ReisenDomain
     flow.offer()
     flow.cancelOffer()
     #expect(flow.phase == .offering)
+    #expect(!flow.beginSubmit())
     await flow.confirm(
         source: .text("Hallo"),
         reason: .noCandidates,
@@ -85,6 +87,7 @@ import ReisenDomain
     let flow = PasteImportFailedFeatureRequestFlow()
     flow.noteEmptyCandidates()
     flow.offer()
+    #expect(flow.beginSubmit())
     await flow.confirm(
         source: .text("Hallo"),
         reason: .noCandidates,
@@ -168,6 +171,7 @@ import ReisenDomain
     let flow = PasteImportFailedFeatureRequestFlow()
     flow.noteEmptyCandidates()
     flow.offer()
+    #expect(flow.beginSubmit())
     await flow.confirm(
         source: .text("Hallo"),
         reason: .noCandidates,

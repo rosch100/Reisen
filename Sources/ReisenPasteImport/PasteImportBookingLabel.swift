@@ -18,28 +18,6 @@ enum PasteImportBookingLabel {
         return statuses[key]
     }
 
-    static var bookingTypeGuide: String {
-        "Genau eines von: \(list(BookingType.allCases)). "
-            + "Tour/Event/GetYourGuide = activity (nicht hotel). "
-            + "Zug/Bahn/ICE/Trainline/Bus/FlixBus/Fernbus/Coach = train. "
-            + "Mietwagen/Sixt/Hertz = carRental."
-    }
-
-    static var statusGuide: String {
-        "Genau eines von: \(list(BookingStatus.allCases)). bestätigt/booked = confirmed."
-    }
-
-    static var startAtGuide: String {
-        "Reisebeginn als ISO8601: Abfahrt, Check-in, Pickup oder Tourstart — nicht das Buchungsdatum. "
-            + "Beispiel 2026-08-28T10:00:00Z. Ohne belegte Zeitzone lokale Uhrzeit ohne Z, "
-            + "z. B. 2026-08-08T07:45:00."
-    }
-
-    private static func list<Label: RawRepresentable>(_ cases: [Label]) -> String
-    where Label.RawValue == String {
-        cases.map(\.rawValue).joined(separator: ", ")
-    }
-
     private static let bookingTypes: [String: BookingType] = {
         var map: [String: BookingType] = [:]
         for type in BookingType.allCases {

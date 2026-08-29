@@ -4,8 +4,11 @@ import CryptoKit
 public enum GitHubIssueFingerprint {
     public static func hex(kind: GitHubIssueKind, message: String) -> String {
         let material = "\(kind.rawValue)\n\(normalizedMessage(message))"
-        let digest = SHA256.hash(data: Data(material.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+        return sha256Hex(of: Data(material.utf8))
+    }
+
+    public static func sha256Hex(of data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     static func normalizedMessage(_ message: String) -> String {

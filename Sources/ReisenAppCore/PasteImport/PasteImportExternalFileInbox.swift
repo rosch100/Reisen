@@ -22,4 +22,10 @@ public enum PasteImportExternalFileInbox {
         urls = []
         return taken
     }
+
+    /// Stellt URLs wieder vorne an, wenn ein Konsum `.ignore` war (Session noch aktiv).
+    public static func restore(_ urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        self.urls = urls + self.urls
+    }
 }

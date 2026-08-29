@@ -187,11 +187,7 @@ public final class PasteImportSession: PasteImportSessionControlling {
 
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     public func fail(_ message: String) {
-        runLifetime.invalidate()
-        source = nil
-        featureRequestFlow.reset()
-        failedRecognitionReason = nil
-        resumeAfterFeatureRequest = nil
+        clearSourceAndFeatureRequest()
         phase = .failed(message)
     }
 
@@ -238,15 +234,19 @@ public final class PasteImportSession: PasteImportSessionControlling {
         }
     }
 
-    private func reset() {
+    private func clearSourceAndFeatureRequest() {
         runLifetime.invalidate()
         source = nil
+        featureRequestFlow.reset()
+        failedRecognitionReason = nil
+        resumeAfterFeatureRequest = nil
+    }
+
+    private func reset() {
+        clearSourceAndFeatureRequest()
         existing = []
         pending = []
         tripID = nil
-        resumeAfterFeatureRequest = nil
-        failedRecognitionReason = nil
-        featureRequestFlow.reset()
         phase = .idle
     }
 }

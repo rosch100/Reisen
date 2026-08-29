@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 public struct PasteImportPDFContent: Equatable, Sendable {
     public var text: String?
     public var pageImages: [Data]
-    /// `true`, wenn eingebetteter Text wegen des Prompt-Budgets gekürzt wurde.
+    /// `true`, wenn Text oder gerenderte Seiten wegen Prompt-/Speicher-Limits gekürzt wurden.
     public var sourceWasTruncated: Bool
 
     public init(text: String? = nil, pageImages: [Data] = [], sourceWasTruncated: Bool = false) {
@@ -48,31 +48,38 @@ public enum PasteImportPDFPreparation {
         let focused = PasteImportPDFPageText.focused(pageStrings)
             ?? NonEmpty.string(document.string)
         let clip = focused.map(PasteImportPromptBudget.clip)
-        let images = try pageImages(of: document, indices: textlessIndices)
-        guard clip != nil || !images.isEmpty else {
+        let preparedImages = try pageImages(of: document, indices: textlessIndices)
+        guard clip != nil || !preparedImages.images.isEmpty else {
             throw PasteImportAdapterError.unreadableSource
         }
         return PasteImportPDFContent(
             text: clip?.text,
-            pageImages: images,
-            sourceWasTruncated: clip?.sourceWasTruncated == true
+            pageImages: preparedImages.images,
+            sourceWasTruncated: clip?.sourceWasTruncated == true || preparedImages.truncated
         )
     }
 
-    private static func pageImages(of document: PDFDocument, indices: [Int]) throws -> [Data] {
-        guard !indices.isEmpty else { return [] }
+    private static func pageImages(
+        of document: PDFDocument,
+        indices: [Int]
+    ) throws -> (images: [Data], truncated: Bool) {
+        guard !indices.isEmpty else { return ([], false) }
         var images: [Data] = []
         var totalBytes = 0
+        var truncated = indices.count > maxRenderedPages
         for index in indices.prefix(maxRenderedPages) {
             guard let page = document.page(at: index)?.pageRef else {
                 throw PasteImportAdapterError.unreadableSource
             }
             let png = try PasteImportImageData.png(from: try render(page))
             totalBytes += png.count
-            guard totalBytes <= maxRenderedBytes else { break }
+            guard totalBytes <= maxRenderedBytes else {
+                truncated = true
+                break
+            }
             images.append(png)
         }
-        return images
+        return (images, truncated)
     }
 
     private static func render(_ page: CGPDFPage) throws -> CGImage {
