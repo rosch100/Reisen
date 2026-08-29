@@ -34,7 +34,8 @@ enum ProcessEntitlements {
         let entitlements = (info as NSDictionary)[kSecCodeInfoEntitlementsDict] as? [String: Any]
         return entitlements?[key] != nil
         #else
-        // SecCodeCopySelf ist macOS-only; iOS-Builds tragen den PCC-Key nicht.
+        // SecCode* und SecTask* fehlen im iOS-Swift-Overlay. Die iOS-Entitlements
+        // (Apps/ReiseniOS/*.entitlements) enthalten den PCC-Key nicht — PCC bleibt aus.
         _ = key
         return false
         #endif

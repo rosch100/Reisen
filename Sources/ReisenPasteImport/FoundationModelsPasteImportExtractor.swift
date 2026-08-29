@@ -43,11 +43,7 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         let session = try makeSession()
         let material = try Self.material(for: try source.validated())
         let prepared = try Self.prompt(for: material)
-        defer {
-            for url in prepared.temporaryImageURLs {
-                try? FileManager.default.removeItem(at: url)
-            }
-        }
+        defer { PasteImportTemporaryPNGs.remove(prepared.temporaryImageURLs) }
         let response = try await session.respond(
             to: prepared.prompt,
             generating: PasteImportPayloadDTO.self
@@ -104,18 +100,14 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             throw PasteImportAdapterError.imageInputUnsupported
         }
         let attachments: [Attachment<ImageAttachmentContent>]
-        var temporaryImageURLs: [URL] = []
+        let temporaryImageURLs: [URL]
         if PasteImportImageAttachments.cgImageInitializerAvailable {
             attachments = try material.images.map { Attachment(try PasteImportImageData.image(from: $0)) }
+            temporaryImageURLs = []
         } else {
-            attachments = try material.images.map { data in
-                let url = FileManager.default.temporaryDirectory
-                    .appendingPathComponent(UUID().uuidString)
-                    .appendingPathExtension("png")
-                try data.write(to: url, options: .atomic)
-                temporaryImageURLs.append(url)
-                return Attachment(imageURL: url)
-            }
+            let urls = try PasteImportTemporaryPNGs.write(material.images)
+            attachments = urls.map { Attachment(imageURL: $0) }
+            temporaryImageURLs = urls
         }
         return PreparedPrompt(
             prompt: Prompt {
@@ -149,4 +141,31 @@ private struct PasteImportPromptMaterial {
 private struct PreparedPrompt {
     var prompt: Prompt
     var temporaryImageURLs: [URL]
+}
+
+/// PNG-Dateien für den URL-Attachment-Fallback. Entfernen nach `respond`, auch wenn das Schreiben abbricht.
+private enum PasteImportTemporaryPNGs {
+    static func write(_ images: [Data]) throws -> [URL] {
+        var urls: [URL] = []
+        do {
+            urls.reserveCapacity(images.count)
+            for data in images {
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension("png")
+                try data.write(to: url, options: .atomic)
+                urls.append(url)
+            }
+            return urls
+        } catch {
+            remove(urls)
+            throw error
+        }
+    }
+
+    static func remove(_ urls: [URL]) {
+        for url in urls {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
 }
