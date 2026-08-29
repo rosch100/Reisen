@@ -74,8 +74,9 @@
           app-group handoff until the app consumes and deletes it.</li>
         <li><strong>No third-party LLM</strong>: the content is not sent to language models of other vendors.</li>
         <li>If recognition finds no booking or fails with a <strong>model error</strong>, you can after
-          <strong>confirmation</strong> create a public GitHub <strong>feature request</strong> with the
-          document. Without confirmation the document does not leave the device.</li>
+          <strong>confirmation</strong> create a public GitHub <strong>feature request</strong>. The original
+          document is <strong>not</strong> sent to GitHub; it goes <strong>by email</strong> to the feedback
+          address as an attachment. Without confirmation the document does not leave the device.</li>
       </ul>
 
       <h3>Trips and bookings (entered or synced by you)</h3>
@@ -134,6 +135,8 @@
         Email to <a href="mailto:reisenapp100@gmail.com">reisenapp100@gmail.com</a> is also filed
         as a public GitHub issue (the sender address appears in the issue). The ingress marks
         processed messages as read; they stay in the Gmail mailbox and are not deleted automatically.
+        Paste-import document emails (original as attachment) are <strong>not</strong> turned into
+        issues; they remain in the mailbox with the attachment until the controller deletes them.
         App Store ratings and TestFlight feedback are processed by Apple; they are not turned into
         GitHub issues automatically.
       </p>
@@ -167,6 +170,7 @@
         <li>Keychain credentials: until you disable the feature or remove them in Keychain / Passwords</li>
         <li>Calendar/reminder items: until you revoke permission or delete them in Calendar/Reminders</li>
         <li>Public GitHub issues: per GitHub’s rules; we can close issues but cannot control third-party copies</li>
+        <li>Paste-import document emails (original as attachment; no GitHub issue): in the feedback Gmail mailbox until the controller deletes them — no automated deletion, no fixed period</li>
       </ul>
 
       <h2>Your rights</h2>

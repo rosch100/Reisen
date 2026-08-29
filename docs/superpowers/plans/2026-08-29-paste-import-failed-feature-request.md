@@ -29,7 +29,7 @@
 | Datei | Verantwortung |
 |---|---|
 | `Sources/ReisenDomain/PasteImport/PasteImportFailedRecognition.swift` | Gate und Grund |
-| `Sources/ReisenDomain/PasteImport/PasteImportFailedDocument.swift` | Dateiname, MIME, Payload aus Quelle |
+| `Sources/ReisenDomain/PasteImport/PasteImportSource.swift` | Dateiname, MIME, Payload für den Mail-Anhang |
 | `Sources/ReisenAppCore/GitHubIssues/GitHubIssuesRepo.swift` | `GitHubIssueKind.feature` |
 | `Sources/ReisenAppCore/GitHubIssues/GitHubIssueAttachmentCodec.swift` | Base64-Kommentare, 512_000-Limit |
 | `Sources/ReisenAppCore/GitHubIssues/GitHubIssueReporter.swift` | `attachments:` nach Create |
@@ -569,12 +569,11 @@ EOF
 - Test: `Tests/ReisenAppCoreTests/PasteImportFailedFeatureRequestTests.swift`
 
 **Interfaces:**
-- Consumes: `PasteImportFailedDocument.from`, `PasteImportFailedRecognitionReason`, `GitHubIssueReporter.report`
-- Produces: `PasteImportFailedFeatureRequest.submit(source:reason:reporter:reporterGitHubUsername:) async throws -> GitHubCreatedIssue`
+- Consumes: `PasteImportSource` (Payload, Dateiname, MIME), `PasteImportFailedRecognitionReason`, `GitHubIssueReporter.report`
+- Produces: `PasteImportFailedFeatureRequest.submit(source:reason:reporter:reporterGitHubUsername:) async throws -> PasteImportFailedFeatureRequestOutcome`
 - Message-Body enthält Grund und Quellart; `titleOverride` = `[Feature] Paste-Import: Dokument nicht erkannt`
 - Fingerprint-stabil: Reporter-Parameter `fingerprintMessage` = `kind/feature` + SHA256 der Quellbytes **ohne** Erkennungsgrund. Body-`message` darf den Grund enthalten. Derselbe Anhang nach `.noCandidates` und `.model` → ein Create.
-- Textquelle: `attachments: []`, Dokument im `message`
-- Bild/PDF: `attachments` ein Element, Message ohne Rohbytes
+- Text/Bild/PDF: `attachments: []`; Original nur im Mail-Draft
 
 - [ ] **Step 1: Stub der `fatalError`/`throw` nicht nutzt — gibt ein Dummy-Issue zurück** (verboten). Stub wirft `GitHubIssueTokenError.notEmbedded` immer — Test erwartet Create. Besser: Stub ruft Reporter mit `kind: .error` (falsch), Test erwartet `.feature` in `lastCreate`.
 

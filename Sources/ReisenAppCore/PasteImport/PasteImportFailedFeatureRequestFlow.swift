@@ -21,6 +21,8 @@ public enum PasteImportFailedFeatureRequestPhase: Equatable, Sendable {
 public final class PasteImportFailedFeatureRequestFlow {
     public private(set) var phase: PasteImportFailedFeatureRequestPhase = .idle
     public private(set) var canOffer = false
+    public private(set) var mailDraft: PasteImportFailedMailDraft?
+    public private(set) var mailComposeError: String?
     private var afterCancel: PasteImportFailedFeatureRequestPhase = .idle
 
     public init() {}
@@ -29,6 +31,8 @@ public final class PasteImportFailedFeatureRequestFlow {
         phase = .idle
         canOffer = false
         afterCancel = .idle
+        mailDraft = nil
+        mailComposeError = nil
     }
 
     public func noteEmptyCandidates() {
@@ -80,6 +84,11 @@ public final class PasteImportFailedFeatureRequestFlow {
         phase = afterCancel
     }
 
+    public func finishMailCompose(_ finish: PasteImportFailedMailComposeFinish) {
+        mailDraft = nil
+        mailComposeError = finish.failureMessage
+    }
+
     public func acknowledgeSubmitFailure() {
         guard case .submitFailed = phase else { return }
         phase = afterCancel
@@ -127,7 +136,7 @@ public final class PasteImportFailedFeatureRequestFlow {
     ) async {
         guard phase == .submitting else { return }
         do {
-            let created = try await PasteImportFailedFeatureRequest.submit(
+            let outcome = try await PasteImportFailedFeatureRequest.submit(
                 source: source,
                 reason: reason,
                 reporter: reporter,
@@ -135,7 +144,8 @@ public final class PasteImportFailedFeatureRequestFlow {
             )
             guard phase == .submitting else { return }
             canOffer = false
-            phase = .succeeded(created.htmlURL)
+            mailDraft = outcome.mail
+            phase = .succeeded(outcome.issue.htmlURL)
         } catch {
             guard phase == .submitting else { return }
             phase = .submitFailed(error.localizedDescription)

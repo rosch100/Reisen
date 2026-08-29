@@ -17,10 +17,42 @@ import ReisenSharedUI
             || presentation.message.localizedCaseInsensitiveContains("public")
     )
     #expect(
-        presentation.message.localizedCaseInsensitiveContains("issue-text")
-            || presentation.message.localizedCaseInsensitiveContains("issue body")
+        presentation.message.localizedCaseInsensitiveContains("e-mail")
+            || presentation.message.localizedCaseInsensitiveContains("email")
     )
-    #expect(presentation.message.localizedCaseInsensitiveContains("base64"))
+    #expect(!presentation.message.localizedCaseInsensitiveContains("base64"))
+}
+
+@Test func pasteImportFailedMailCompose_successSheetWaitsForDraftAndError() {
+    let url = URL(string: "https://github.com/rosch100/Reisen/issues/1")
+    #expect(
+        !PasteImportFailedMailCompose.showsSuccessSheet(
+            successURL: url,
+            hasMailDraft: true,
+            submitError: nil
+        )
+    )
+    #expect(
+        PasteImportFailedMailCompose.showsSuccessSheet(
+            successURL: url,
+            hasMailDraft: false,
+            submitError: nil
+        )
+    )
+    #expect(
+        !PasteImportFailedMailCompose.showsSuccessSheet(
+            successURL: url,
+            hasMailDraft: false,
+            submitError: "Mail fehlgeschlagen"
+        )
+    )
+}
+
+@Test func pasteImportFailedMailCompose_sheetDismissDoesNotCompleteAfterComposerClearedDraft() {
+    #expect(
+        PasteImportFailedMailCompose.finishForDismissedMailSheet(hasDraft: true) == .completed
+    )
+    #expect(PasteImportFailedMailCompose.finishForDismissedMailSheet(hasDraft: false) == nil)
 }
 
 @Test func pasteImportCandidateSheetPresentation_showsFeatureButtonOnlyWhenEmptyAndAllowed() {

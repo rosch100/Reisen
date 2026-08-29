@@ -140,6 +140,28 @@ class IngestGmailFeedbackTests(unittest.TestCase):
     def test_mailbox_match_is_case_insensitive(self) -> None:
         ingest.require_mailbox("ReisenApp100@gmail.com", ingest.DEFAULT_FEEDBACK_EMAIL)
 
+    def test_paste_import_document_mail_skips_github_issue(self) -> None:
+        self.assertTrue(
+            ingest.should_skip_github_issue(
+                "reisen-paste-import-document\nIssue: https://github.com/rosch100/Reisen/issues/1"
+            )
+        )
+        self.assertTrue(
+            ingest.should_skip_github_issue(
+                "  \nreisen-paste-import-document\nIssue: https://github.com/rosch100/Reisen/issues/1"
+            )
+        )
+        self.assertFalse(ingest.should_skip_github_issue("die App stuerzt beim Sync ab"))
+        self.assertFalse(
+            ingest.should_skip_github_issue(
+                "die App stuerzt\nsiehe reisen-paste-import-document in der Doku"
+            )
+        )
+        self.assertFalse(
+            ingest.should_skip_github_issue("reisen-paste-import-documentation\nFeedback")
+        )
+        self.assertFalse(ingest.should_skip_github_issue(""))
+
     def test_script_does_not_use_imap_or_app_password(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertNotIn("imaplib", source)
