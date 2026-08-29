@@ -4225,6 +4225,54 @@
         }
       }
     },
+    "menu.paste_booking": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung einfügen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste Booking…"
+          }
+        }
+      }
+    },
+    "menu.paste_booking_from_file": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung aus Datei einfügen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste Booking from File…"
+          }
+        }
+      }
+    },
+    "menu.paste_booking_from_photo": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung aus Foto einfügen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste Booking from Photo…"
+          }
+        }
+      }
+    },
     "menu.provider_sync": {
       "localizations": {
         "de": {
@@ -4269,6 +4317,406 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sync Current Provider"
+          }
+        }
+      }
+    },
+    "paste_import.ambiguous_hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine eindeutige Zuordnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No unique match"
+          }
+        }
+      }
+    },
+    "paste_import.badge_enrich": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ergänzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enrich"
+          }
+        }
+      }
+    },
+    "paste_import.badge_new": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New"
+          }
+        }
+      }
+    },
+    "paste_import.candidates_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erkannte Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detected bookings"
+          }
+        }
+      }
+    },
+    "paste_import.continue": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "paste_import.empty": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Buchung erkannt. Typ und Beginn müssen sicher sein."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No booking detected. Type and start must be certain."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Feature-Request senden…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send as feature request…"
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feature-Request angelegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feature request created."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub-Issues sind öffentlich. Text wird im Issue-Text veröffentlicht; Bild oder PDF werden als Base64-Kommentare angehängt und können persönliche Daten enthalten. Nur senden, wenn du das akzeptierst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub issues are public. Text is included in the issue body; images and PDFs are attached as Base64 comments and may contain personal data. Send only if you accept that."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_send": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffentlicher Feature-Request"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public feature request"
+          }
+        }
+      }
+    },
+    "paste_import.error_handoff": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die geteilte Datei konnte nicht übernommen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The shared file could not be imported."
+          }
+        }
+      }
+    },
+    "paste_import.error_image_unsupported": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilder und gescannte PDFs brauchen ein neueres Betriebssystem."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images and scanned PDFs require a newer operating system."
+          }
+        }
+      }
+    },
+    "paste_import.error_match_missing": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die zugeordnete Buchung gibt es nicht mehr."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The matched booking no longer exists."
+          }
+        }
+      }
+    },
+    "paste_import.error_model": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Modell hat nicht geantwortet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model did not respond."
+          }
+        }
+      }
+    },
+    "paste_import.error_source": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Quelle enthält keinen lesbaren Inhalt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The source contains no readable content."
+          }
+        }
+      }
+    },
+    "paste_import.error_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einfügen fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste failed"
+          }
+        }
+      }
+    },
+    "paste_import.model_on_device": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-Device"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-Device"
+          }
+        }
+      }
+    },
+    "paste_import.model_pcc": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Private Cloud Compute"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Private Cloud Compute"
+          }
+        }
+      }
+    },
+    "paste_import.pcc_confirm_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der eingefügte Buchungstext verlässt das Gerät und wird von Apple Private Cloud Compute verarbeitet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The pasted booking content leaves this device and is processed by Apple Private Cloud Compute."
+          }
+        }
+      }
+    },
+    "paste_import.pcc_confirm_ok": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        }
+      }
+    },
+    "paste_import.pcc_confirm_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An Private Cloud Compute senden?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send to Private Cloud Compute?"
+          }
+        }
+      }
+    },
+    "paste_import.progress": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchungen erkennen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detecting bookings…"
+          }
+        }
+      }
+    },
+    "paste_import.share_display_name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Reisen öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in Reisen"
+          }
+        }
+      }
+    },
+    "paste_import.unavailable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence ist auf diesem Gerät nicht verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence is not available on this device."
           }
         }
       }
@@ -7153,7 +7601,6 @@
         }
       }
     },
-
     "booking.delete_confirm_message": {
       "localizations": {
         "de": {
@@ -8318,6 +8765,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Car rental"
+          }
+        }
+      }
+    },
+    "paste_import.source_truncated": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelltext gekürzt — fehlende Abschnitte ggf. manuell prüfen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source text truncated — check missing sections manually if needed."
           }
         }
       }

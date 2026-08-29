@@ -4,6 +4,7 @@ import SwiftUI
 import SwiftData
 import ReisenDomain
 import ReisenData
+import ReisenAppCore
 
 /// Stellt sicher, dass die SwiftPM-Executable als normale GUI-App mit Dock-Icon läuft.
 @MainActor
@@ -50,6 +51,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
+    }
+
+    /// Dock- und Finder-Drop („Öffnen mit“) — dieselben Typen wie der Dateidialog.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        PasteImportExternalFileInbox.offer(urls)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func loadBundledAppIcon() -> NSImage? {

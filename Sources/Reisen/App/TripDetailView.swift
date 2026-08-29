@@ -82,7 +82,7 @@ struct TripDetailView: View {
             selectedTimelineID = (removedID == fallbackTimelineID) ? nil : fallbackTimelineID
         }
 
-        if case .edit(let editingID) = bookingEditorSession,
+        if case .edit(let editingID, _) = bookingEditorSession,
            editingID == booking.id {
             bookingEditorSession = nil
         }
@@ -133,7 +133,7 @@ struct TripDetailView: View {
             selectedTimelineID = newSelection
         }
 
-        if case .edit(let editingID) = bookingEditorSession,
+        if case .edit(let editingID, _) = bookingEditorSession,
            editingID == bookingIDToDelete {
             bookingEditorSession = nil
         }
@@ -599,7 +599,7 @@ private struct BookingDetailPanel: View {
             syncDraftFromSession(resetDraft: true)
         }
         .onChange(of: selectedBookingID) { _, newID in
-            guard case .edit(let editingID) = bookingEditorSession else { return }
+            guard case .edit(let editingID, _) = bookingEditorSession else { return }
             guard newID != editingID else { return }
             clearEditor()
         }
@@ -610,17 +610,17 @@ private struct BookingDetailPanel: View {
 
     private func syncDraftFromSession(resetDraft: Bool) {
         switch bookingEditorSession {
-        case .create(let prefillStart, let prefillEnd):
+        case .create(let prefillStart, let prefillEnd, let prefilledDraft):
             guard resetDraft || bookingEditorDraft == nil else { return }
-            bookingEditorDraft = BookingEditorDraft.createDefault(
+            bookingEditorDraft = prefilledDraft ?? BookingEditorDraft.createDefault(
                 tripStartDate: trip.startDate,
                 prefillStart: prefillStart,
                 prefillEnd: prefillEnd
             )
-        case .edit(let bookingID):
+        case .edit(let bookingID, let prefilledDraft):
             guard resetDraft || bookingEditorDraft == nil else { return }
             if let booking = selectedBooking, booking.id == bookingID {
-                bookingEditorDraft = BookingEditorDraft.fromExisting(booking)
+                bookingEditorDraft = prefilledDraft ?? BookingEditorDraft.fromExisting(booking)
             } else {
                 bookingEditorDraft = nil
             }
@@ -631,7 +631,7 @@ private struct BookingDetailPanel: View {
 
     private var editorTitle: String {
         switch bookingEditorSession {
-        case .create(_, _): return L10n.string(.editorCreateTitle)
+        case .create: return L10n.string(.editorCreateTitle)
         case .edit: return L10n.string(.editorEditTitle)
         case nil: return L10n.string(.editorBooking)
         }
@@ -723,7 +723,7 @@ private struct BookingDetailPanel: View {
     private func saveEditor() throws {
         guard let draft = bookingEditorDraft else { return }
         switch bookingEditorSession {
-        case .create(_, _):
+        case .create:
             let newID = try BookingEditorDraft.createBooking(
                 from: draft,
                 trip: trip,

@@ -4,6 +4,7 @@ import ReisenDomain
 public enum GitHubIssueKind: String, Sendable {
     case error
     case feedback
+    case feature
 
     /// Anzeige in der Diagnose-Tabelle (deutsch, konsistent mit Issue-Templates).
     public var displayName: String {
@@ -12,6 +13,8 @@ public enum GitHubIssueKind: String, Sendable {
             "Fehler"
         case .feedback:
             "Feedback"
+        case .feature:
+            "Feature"
         }
     }
 
@@ -23,7 +26,7 @@ public enum GitHubIssueKind: String, Sendable {
         switch self {
         case .error:
             "Fehlerbericht"
-        case .feedback:
+        case .feedback, .feature:
             displayName
         }
     }
@@ -43,6 +46,8 @@ public enum GitHubIssueKind: String, Sendable {
             IssueForm(templateFileName: "bug.yml", fieldID: "what")
         case .feedback:
             IssueForm(templateFileName: "feedback.yml", fieldID: "feedback")
+        case .feature:
+            IssueForm(templateFileName: "feature.yml", fieldID: "want")
         }
     }
 

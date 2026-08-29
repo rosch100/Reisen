@@ -6,6 +6,8 @@ import ReisenDomain
 public enum GitHubIssueReporterError: Error, Equatable, LocalizedError {
     case rateLimited
     case persistedStateCorrupt
+    case attachmentTooLarge(maxBytes: Int)
+    case attachmentEmpty
 
     public var errorDescription: String? {
         switch self {
@@ -13,6 +15,10 @@ public enum GitHubIssueReporterError: Error, Equatable, LocalizedError {
             return "Zu viele neue GitHub-Issues in dieser Stunde"
         case .persistedStateCorrupt:
             return "Gespeicherter Issue-Reporter-Zustand ist ungültig"
+        case .attachmentTooLarge(let maxBytes):
+            return "Dokument ist größer als \(maxBytes) Bytes"
+        case .attachmentEmpty:
+            return "Dokumentanhang ist leer"
         }
     }
 }
@@ -74,7 +80,9 @@ public final class GitHubIssueReporter {
         message: String,
         providerID: ProviderID?,
         titleOverride: String? = nil,
-        reporterGitHubUsername: String? = nil
+        reporterGitHubUsername: String? = nil,
+        attachments: [GitHubIssueAttachment] = [],
+        fingerprintMessage: String? = nil
     ) async throws -> GitHubCreatedIssue {
         lastReportErrorMessage = nil
         if persistedStateCorrupt {
@@ -83,10 +91,28 @@ public final class GitHubIssueReporter {
         }
         _ = try tokenProvider()
 
+        let attachmentComments: [String]
+        do {
+            attachmentComments = try attachments.flatMap { try GitHubIssueAttachmentCodec.comments(for: $0) }
+        } catch GitHubIssueAttachmentCodecError.empty {
+            lastReportErrorMessage = GitHubIssueReporterError.attachmentEmpty.localizedDescription
+            throw GitHubIssueReporterError.attachmentEmpty
+        } catch GitHubIssueAttachmentCodecError.tooLarge(let maxBytes) {
+            lastReportErrorMessage = GitHubIssueReporterError.attachmentTooLarge(maxBytes: maxBytes)
+                .localizedDescription
+            throw GitHubIssueReporterError.attachmentTooLarge(maxBytes: maxBytes)
+        } catch {
+            lastReportErrorMessage = error.localizedDescription
+            throw error
+        }
+
         let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
         let redactedMessage = SecretRedactor.redact(trimmedMessage)
+        let fingerprintSource = SecretRedactor.redact(
+            (fingerprintMessage ?? trimmedMessage).trimmingCharacters(in: .whitespacesAndNewlines)
+        )
         let title = GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage, override: titleOverride)
-        let diagnostics = GitHubIssueDiagnostic.deviceSnapshot(kind: kind, redactedMessage: redactedMessage)
+        let diagnostics = GitHubIssueDiagnostic.deviceSnapshot(kind: kind, redactedMessage: fingerprintSource)
         let fingerprint = diagnostics.fingerprint
         let body = GitHubIssueDiagnostic.body(
             kind: kind,
@@ -101,12 +127,23 @@ public final class GitHubIssueReporter {
         let labels = kind.githubLabels
 
         do {
-            if let existing = try await resolveExistingIssue(fingerprint: fingerprint) {
+            if let localNumber = state.openFingerprints[fingerprint] {
                 return rememberURL(
                     try await commentIfAllowed(
                         fingerprint: fingerprint,
-                        issueNumber: existing,
+                        issueNumber: localNumber,
                         body: commentBody(kind: kind, message: redactedMessage)
+                    )
+                )
+            }
+
+            if let remoteNumber = try await client.searchOpenFingerprint(fingerprint) {
+                return rememberURL(
+                    try await completeExistingIssue(
+                        fingerprint: fingerprint,
+                        issueNumber: remoteNumber,
+                        attachmentComments: attachmentComments,
+                        repeatComment: commentBody(kind: kind, message: redactedMessage)
                     )
                 )
             }
@@ -118,8 +155,8 @@ public final class GitHubIssueReporter {
                 labels: labels
             )
             state.createTimestamps.append(now())
-            state.openFingerprints[fingerprint] = created.number
-            persist()
+            try await postAttachmentComments(issueNumber: created.number, comments: attachmentComments)
+            rememberOpenFingerprint(fingerprint, issueNumber: created.number)
             return rememberURL(created)
         } catch {
             lastReportErrorMessage = error.localizedDescription
@@ -127,16 +164,37 @@ public final class GitHubIssueReporter {
         }
     }
 
-    private func resolveExistingIssue(fingerprint: String) async throws -> Int? {
-        if let local = state.openFingerprints[fingerprint] {
-            return local
+    private func completeExistingIssue(
+        fingerprint: String,
+        issueNumber: Int,
+        attachmentComments: [String],
+        repeatComment: String
+    ) async throws -> GitHubCreatedIssue {
+        if attachmentComments.isEmpty {
+            rememberOpenFingerprint(fingerprint, issueNumber: issueNumber)
+            return try await commentIfAllowed(
+                fingerprint: fingerprint,
+                issueNumber: issueNumber,
+                body: repeatComment
+            )
         }
-        guard let remote = try await client.searchOpenFingerprint(fingerprint) else {
-            return nil
+        try await postAttachmentComments(issueNumber: issueNumber, comments: attachmentComments)
+        rememberOpenFingerprint(fingerprint, issueNumber: issueNumber)
+        return GitHubCreatedIssue(
+            number: issueNumber,
+            htmlURL: GitHubRepository.issueURL(number: issueNumber)
+        )
+    }
+
+    private func postAttachmentComments(issueNumber: Int, comments: [String]) async throws {
+        for comment in comments {
+            _ = try await client.comment(issueNumber: issueNumber, body: comment)
         }
-        state.openFingerprints[fingerprint] = remote
+    }
+
+    private func rememberOpenFingerprint(_ fingerprint: String, issueNumber: Int) {
+        state.openFingerprints[fingerprint] = issueNumber
         persist()
-        return remote
     }
 
     private func rememberURL(_ created: GitHubCreatedIssue) -> GitHubCreatedIssue {

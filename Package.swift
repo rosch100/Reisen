@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "ReisenAppCore", targets: ["ReisenAppCore"]),
         .library(name: "ReisenProviderSync", targets: ["ReisenProviderSync"]),
         .library(name: "ReisenSharedUI", targets: ["ReisenSharedUI"]),
+        .library(name: "ReisenPasteImport", targets: ["ReisenPasteImport"]),
         .library(name: "ReisenCheck24", targets: ["ReisenCheck24"]),
         .library(name: "ReisenOpodo", targets: ["ReisenOpodo"]),
         .library(name: "ReisenBookingCom", targets: ["ReisenBookingCom"]),
@@ -113,6 +114,18 @@ let package = Package(
             ]
         ),
         .target(
+            name: "ReisenPasteImport",
+            dependencies: ["ReisenDomain", "ReisenAppCore"],
+            path: "Sources/ReisenPasteImport",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("PDFKit"),
+                .linkedFramework("Security", .when(platforms: [.macOS])),
+            ]
+        ),
+        .target(
             name: "ReisenCheck24",
             dependencies: ["ReisenDomain", "ReisenProviders"],
             path: "Sources/ReisenCheck24",
@@ -177,6 +190,7 @@ let package = Package(
                 "ReisenAppCore",
                 "ReisenProviderSync",
                 "ReisenSharedUI",
+                "ReisenPasteImport",
             ],
             path: "Sources/Reisen",
             resources: [
@@ -215,6 +229,17 @@ let package = Package(
             name: "ReisenSharedUITests",
             dependencies: ["ReisenSharedUI", "ReisenData", "ReisenDomain"],
             path: "Tests/ReisenSharedUITests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenPasteImportTests",
+            dependencies: ["ReisenPasteImport", "ReisenDomain"],
+            path: "Tests/ReisenPasteImportTests",
+            resources: [
+                .copy("Fixtures"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

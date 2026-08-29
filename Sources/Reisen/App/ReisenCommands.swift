@@ -1,12 +1,19 @@
 import SwiftUI
 import AppKit
 import ReisenDomain
+import ReisenPasteImport
 import ReisenSharedUI
 
 struct ReisenCommands: Commands {
     @FocusedValue(\.openBookingsCommandState) private var openBookingsCommandState
     @FocusedValue(\.bookingPortalOpenCommandState) private var bookingPortalOpenCommandState
     @Environment(\.openURL) private var openURL
+
+    /// Verfügbarkeit entscheidet über beide Einfüge-Einträge im Menü.
+    ///
+    /// Die Notification trägt die Modellstufe nicht mit; `PasteImportSession.start()`
+    /// löst sie über `PasteImportResolvedModel.kind()` erneut auf — dieselbe Quelle, kein zweiter Pfad.
+    private var pasteImportKind: PasteImportModelKind { PasteImportResolvedModel.kind() }
 
     var body: some Commands {
         CommandGroup(replacing: .pasteboard) {
@@ -47,6 +54,17 @@ struct ReisenCommands: Commands {
                 NotificationCenter.default.post(name: .reisenAddBooking, object: nil)
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
+
+            // ⌘V bleibt System-Paste; der Paste-Import liegt auf ⌘⇧V.
+            PasteImportActionControl(kind: pasteImportKind) {
+                NotificationCenter.default.post(name: .reisenPasteBooking, object: nil)
+            }
+            .keyboardShortcut("v", modifiers: [.command, .shift])
+
+            Button(L10n.string(.menuPasteBookingFromFile)) {
+                NotificationCenter.default.post(name: .reisenPasteBookingFromFile, object: nil)
+            }
+            .disabled(pasteImportKind == .unavailable)
 
             Button(L10n.string(.menuAssignBookings)) {
                 NotificationCenter.default.post(name: .reisenAssignBookings, object: nil)

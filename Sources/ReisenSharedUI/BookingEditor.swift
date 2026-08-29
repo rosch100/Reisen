@@ -6,9 +6,12 @@ import ReisenData
 // MARK: - Session
 
 /// Anlegen/Bearbeiten läuft in der Detailspalte (Inspector), nicht als Modal-Sheet.
+///
+/// `prefilledDraft` bringt einen fertigen Entwurf mit (Paste-Import). Ist er gesetzt, baut der
+/// Inspector den Entwurf **nicht** aus `createDefault`/`fromExisting` neu.
 public enum BookingEditorSession: Equatable, Sendable {
-    case create(prefillStart: Date?, prefillEnd: Date?)
-    case edit(bookingID: UUID)
+    case create(prefillStart: Date?, prefillEnd: Date?, prefilledDraft: BookingEditorDraft? = nil)
+    case edit(bookingID: UUID, prefilledDraft: BookingEditorDraft? = nil)
 }
 
 // MARK: - Draft Models
@@ -154,11 +157,16 @@ public struct BookingEditorDraft: Equatable, Sendable {
     }
 
     public static func fromExisting(_ booking: SDBooking) -> BookingEditorDraft {
+        fromDomain(DomainMapper.booking(from: booking))
+    }
+
+    /// Editor-Felder aus einer Domain-Buchung — SSOT für `fromExisting` und Paste-Import-Prefill.
+    public static func fromDomain(_ booking: Booking) -> BookingEditorDraft {
         BookingEditorDraft(
             bookingID: booking.id,
-            provider: ProviderID(rawValue: booking.providerRaw),
-            bookingType: BookingType(rawValue: booking.bookingTypeRaw) ?? .other,
-            status: BookingStatus(rawValue: booking.statusRaw) ?? .unknown,
+            provider: booking.provider,
+            bookingType: booking.bookingType,
+            status: booking.status,
             title: booking.title ?? "",
             confirmationCode: booking.confirmationCode ?? "",
             externalUrl: booking.externalUrl ?? "",
@@ -177,7 +185,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             totalPriceCurrency: booking.rateDetails?.totalPriceCurrency ?? "EUR",
             roomCategory: booking.rateDetails?.roomCategory ?? "",
             operatorName: booking.operatorName ?? "",
-            boardType: BookingBoardType(rawValue: booking.rateDetails?.boardTypeRaw ?? "") ?? .unknown,
+            boardType: booking.rateDetails?.boardType ?? .unknown,
             includedBreakfastState: BookingIncludedBreakfastState.fromBool(booking.rateDetails?.includedBreakfast),
             guestCountText: booking.rateDetails?.guestCount.map { String($0) } ?? "",
             roomCountText: booking.rateDetails?.roomCount.map { String($0) } ?? "",
@@ -185,7 +193,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             passengerCountText: booking.rateDetails?.passengerCount.map { String($0) } ?? "",
             baggageInfoRaw: booking.rateDetails?.baggageInfoRaw ?? "",
             lastParsedAt: booking.rateDetails?.lastParsedAt,
-            cancellationDeadlines: booking.resolvedCancellationDeadlines
+            cancellationDeadlines: booking.cancellationDeadlines
                 .map { deadline in
                     CancellationDeadlineDraft(
                         id: deadline.id,
@@ -198,8 +206,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     )
                 }
                 .sorted { $0.deadlineAt < $1.deadlineAt },
-            passengers: booking.resolvedPassengers.map(DomainMapper.passenger(from:)),
-            guestHints: booking.resolvedGuestHints.map(DomainMapper.guestHint(from:))
+            passengers: booking.passengers,
+            guestHints: booking.guestHints
         )
     }
 
@@ -287,10 +295,12 @@ public struct BookingEditorDraft: Equatable, Sendable {
     }
 
     /// Neue manuelle Buchung anlegen und persistieren.
+    ///
+    /// - Parameter trip: `nil` legt die Buchung ohne Reise an (Offen); es wird keine Ersatzreise gesucht.
     @discardableResult
     public static func createBooking(
         from draft: BookingEditorDraft,
-        trip: SDTrip,
+        trip: SDTrip?,
         in modelContext: ModelContext
     ) throws -> UUID {
         var working = draft
@@ -317,7 +327,9 @@ public struct BookingEditorDraft: Equatable, Sendable {
             hotelCheckInMinutes: parseIntOrNil(working.hotelCheckInMinutesText),
             hotelCheckOutMinutes: parseIntOrNil(working.hotelCheckOutMinutesText)
         )
-        booking.trip = trip
+        if let trip {
+            booking.trip = trip
+        }
         modelContext.insert(booking)
         try working.apply(to: booking, in: modelContext)
         return booking.id

@@ -8,7 +8,7 @@ import ReisenDomain
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-    for kind in [GitHubIssueKind.error, .feedback] {
+    for kind in [GitHubIssueKind.error, .feedback, .feature] {
         let template = repoRoot.appendingPathComponent(
             ".github/ISSUE_TEMPLATE/\(kind.issueForm.templateFileName)"
         )
@@ -32,6 +32,13 @@ import ReisenDomain
     #expect(GitHubIssueKind.feedback.issueForm.templateFileName == "feedback.yml")
     #expect(GitHubIssueKind.error.issueForm.fieldID == "what")
     #expect(GitHubIssueKind.feedback.issueForm.fieldID == "feedback")
+}
+
+@Test func githubIssueKind_featureUsesFeatureTemplate() {
+    #expect(GitHubIssueKind.feature.displayName == "Feature")
+    #expect(GitHubIssueKind.feature.issueForm.templateFileName == "feature.yml")
+    #expect(GitHubIssueKind.feature.issueForm.fieldID == "want")
+    #expect(GitHubIssueKind.feature.githubLabels == ["kind/feature", "source/in-app"])
 }
 
 @Test @MainActor func githubIssueReporter_emptyTokenMakesNoHTTP() async {
@@ -602,6 +609,8 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
     var createCount = 0
     var searchCount = 0
     var commentCount = 0
+    var commentError: (any Error)?
+    var commentBodies: [String] = []
     var lastCommentBody: String?
     var lastCreate: (title: String, body: String, labels: [String])?
     var nextCreated = GitHubCreatedIssue(
@@ -625,7 +634,11 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
     }
 
     func comment(issueNumber: Int, body: String) async throws -> GitHubCreatedIssue {
+        if let commentError {
+            throw commentError
+        }
         commentCount += 1
+        commentBodies.append(body)
         lastCommentBody = body
         return nextComment
     }

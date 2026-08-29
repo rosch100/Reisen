@@ -2,12 +2,14 @@ import SwiftUI
 import SwiftData
 
 import ReisenAppCore
+import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
 
 struct OffenTab: View {
     @Binding var sessionChromeEpoch: Int
+    let pasteImport: PasteImportSession
     var onTripCreated: (UUID) -> Void
     #if REISEN_PROVIDER_SYNC
     var onOpenSync: () -> Void
@@ -53,6 +55,12 @@ struct OffenTab: View {
 
     @ViewBuilder
     private var openBookingsScreen: some View {
+        openBookingsList
+            .pasteImportToolbar(session: pasteImport, entry: .open)
+    }
+
+    @ViewBuilder
+    private var openBookingsList: some View {
         #if REISEN_PROVIDER_SYNC
         OpenBookingsScreen(
             searchText: $searchText,

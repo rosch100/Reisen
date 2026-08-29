@@ -184,16 +184,16 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 | Aspekt | Vorgehen |
 |--------|----------|
-| Plattform | Foundation Models / Apple Intelligence, **nur** auf fähigen Geräten (macOS/iOS 26+) |
-| Ausgabe | `ProviderBookingDraft` mit `ProviderID.manual` |
-| Review | Pflicht im bestehenden `BookingEditor` vor Upsert |
-| Fehler | Unsichere Felder leer oder Abbruch — **kein** Raten, kein Cloud-LLM-Fallback |
-| Deaktiviert | Klare Meldung wenn Intelligence nicht verfügbar |
+| Plattform | Foundation Models; PCC wenn verfügbar, sonst On-Device; sonst disabled |
+| Ausgabe | `ProviderBookingDraft`; Neu = `ProviderID.manual`, Ergänzen = bestehender Provider |
+| Review | Pflicht im bestehenden `BookingEditor` vor Speichern |
+| Fehler | Unsichere Felder leer; PCC-Fehler kein stiller Wechsel auf On-Device |
+| Deaktiviert | Aktion sichtbar, Begründung wenn weder PCC noch On-Device |
 | Abhängigkeit | F01 (`train`) zuerst, sonst ICE in `.other` |
 
-**Out of Scope:** Postfach-Scan, Forward an Parser-Adresse, automatischer Upsert ohne Review.
+**Out of Scope:** Postfach-Scan, Forward an Parser-Adresse, automatischer Upsert ohne Review; Drittanbieter-LLM (v2); Datei persistieren (F05).
 
-**Folge-Spec:** Paste-Import-Spec (Foundation Models + Draft-Review).
+**Spec:** [`docs/superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md)
 
 ---
 
@@ -274,4 +274,4 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 1. [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md) — implementiert
 2. Check-in-Reminder-Spec — noch anzulegen
 3. Attachment-Spec (Schema + Privacy) — noch anzulegen
-4. Paste-Import-Spec — noch anzulegen
+4. [`../superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md) — F06 Spec; Plan: [`../superpowers/plans/2026-08-28-paste-import.md`](../superpowers/plans/2026-08-28-paste-import.md)

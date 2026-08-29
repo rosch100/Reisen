@@ -6,6 +6,7 @@ import ReisenProviders
 import ReisenAppCore
 import ReisenProviderSync
 import ReisenSharedUI
+import ReisenPasteImport
 import AppKit
 import Foundation
 import WebKit
@@ -43,6 +44,11 @@ struct ContentView: View {
     @State private var selectedOpenBookingIDs: Set<UUID> = []
     @State private var tripCreateSeed: TripCreateSeed?
     @State private var showCreateTripFromBookingsFailed = false
+
+    /// Paste-Import: Lauf-Zustand und der Kandidat, der gerade außerhalb des Inspectors geprüft wird.
+    @State private var pasteImport = PasteImportSession()
+    @State private var pasteReview: PasteImportReview?
+    @State private var pasteImportReviewQueue = PasteImportReviewQueue()
 
     /// HIG: Spalten per dünnem Divider ziehbar (keine sichtbaren Slider-Knöpfe).
     private let sidebarMinWidth: CGFloat = 180
@@ -106,6 +112,34 @@ struct ContentView: View {
             guard case .trip(let id) = selection,
                   let trip = trips.first(where: { $0.id == id }) else { return }
             tripToEdit = trip
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .reisenPasteBooking)) { _ in
+            pasteImport.start(
+                source: PasteImportMacSource.fromPasteboard(),
+                entry: pasteImportEntry,
+                existing: existingDomainBookings
+            )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .reisenPasteBookingFromFile)) { _ in
+            Task { @MainActor in
+                await startPasteImportFromFile()
+            }
+        }
+        .pasteImportMacDropAndOpen(
+            onDropped: { startPasteImport(fromDropped: $0) },
+            onExternal: consumeExternalFiles
+        )
+        .pasteImportFlow(session: pasteImport, onReviewQueue: advancePasteImportQueue)
+        .sheet(item: $pasteReview) { review in
+            PasteImportReviewSheet(review: review) {
+                pasteReview = nil
+                advancePasteImportQueue()
+            }
+        }
+        .onChange(of: bookingEditorSession) { _, newSession in
+            // Der Inspector ist fertig (gespeichert oder abgebrochen) — nächster Kandidat.
+            guard newSession == nil else { return }
+            advancePasteImportQueue()
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -989,6 +1023,125 @@ struct ContentView: View {
         applyAfterTripFocus(trip: trip) {
             selectedTimelineID = booking.id.uuidString
             bookingEditorSession = .edit(bookingID: booking.id)
+        }
+    }
+
+    private var existingDomainBookings: [Booking] {
+        allBookings.map(DomainMapper.booking(from:))
+    }
+
+    /// Einstieg des Paste-Imports beim Auslösen — die Auswahl darf danach wechseln.
+    private var pasteImportEntry: PasteImportEntry {
+        selection?.pasteImportEntry ?? .open
+    }
+
+    /// Reise des laufenden Imports, eingefroren beim Einstieg (`PasteImportSession.tripID`).
+    private var pasteImportTrip: SDTrip? {
+        guard let tripID = pasteImport.tripID else { return nil }
+        return trips.first { $0.id == tripID }
+    }
+
+    private func startPasteImportFromFile() async {
+        let entry = pasteImportEntry
+        let existing = existingDomainBookings
+        do {
+            guard let source = try await PasteImportMacSource.fromOpenPanel() else { return }
+            pasteImport.start(
+                source: source,
+                entry: entry,
+                existing: existing
+            )
+        } catch {
+            pasteImport.fail(L10n.string(.pasteImportErrorSource))
+        }
+    }
+
+    private func consumeExternalFiles() {
+        startPasteImport(fromDropped: PasteImportExternalFileInbox.take())
+    }
+
+    /// Ein Drop bzw. „Öffnen mit“ startet denselben Lauf wie der Dateidialog; das erste gültige File zählt.
+    private func startPasteImport(fromDropped urls: [URL]) {
+        let files = PasteImportFileSource.acceptedFiles(in: urls)
+        switch PasteImportDropCoordinator.action(
+            offeredURLCount: urls.count,
+            acceptedFileCount: files.count,
+            isSessionActive: pasteImport.isActive
+        ) {
+        case .ignore:
+            return
+        case .fail:
+            pasteImport.fail(L10n.string(.pasteImportErrorSource))
+        case .start:
+            guard let url = files.first else {
+                pasteImport.fail(L10n.string(.pasteImportErrorSource))
+                return
+            }
+            do {
+                pasteImport.start(
+                    source: try PasteImportFileSource.source(from: url),
+                    entry: pasteImportEntry,
+                    existing: existingDomainBookings
+                )
+            } catch {
+                pasteImport.fail(PasteImportFailureMessage.text(for: error))
+            }
+        }
+    }
+
+    /// Nächster Kandidat aus der Warteschlange in den passenden Editor.
+    ///
+    /// Erst nach dem laufenden Update-Zyklus, sonst verschluckt ein noch schließendes Sheet
+    /// (Kandidatenliste, Fehlerdialog) die neue Präsentation.
+    private func advancePasteImportQueue() {
+        pasteImportReviewQueue.advance(ifPending: pasteImport.hasPendingCandidates) {
+            presentNextPasteImportCandidate()
+        }
+    }
+
+    private func presentNextPasteImportCandidate() {
+        guard let candidate = pasteImport.nextCandidate() else { return }
+        if candidate.isErgaenzen {
+            reviewPasteImportEnrich(candidate)
+        } else {
+            reviewPasteImportNew(candidate)
+        }
+    }
+
+    /// Ergänzen läuft im Inspector, solange die Bestandsbuchung in der Timeline der Reise steht;
+    /// sonst zeigt der Inspector nichts an und der Editor kommt als eigenes Sheet.
+    private func reviewPasteImportEnrich(_ candidate: PasteImportCandidate) {
+        guard case .unique(let match) = candidate.match,
+              let booking = allBookings.first(where: { $0.id == match.id }) else {
+            // Ohne Bestandsbuchung nicht als „Neu“ weiterlaufen — das legte ein Duplikat an.
+            pasteImport.fail(L10n.string(.pasteImportErrorMatchMissing))
+            return
+        }
+        if let trip = pasteImportTrip, selection?.tripID == trip.id,
+           futureBookings(for: trip).contains(where: { $0.id == booking.id }) {
+            selectedTimelineID = booking.id.uuidString
+            bookingEditorSession = .edit(
+                bookingID: booking.id,
+                prefilledDraft: PasteImportEditorPrefill.draft(for: candidate, existing: booking)
+            )
+        } else {
+            pasteReview = .enriching(candidate: candidate, booking: booking)
+        }
+    }
+
+    /// Ohne Reise-Kontext entsteht eine offene Buchung (`trip: nil`), keine Ersatzreise.
+    ///
+    /// Der Inspector legt immer in der gerade ausgewählten Reise an; steht dort inzwischen eine
+    /// andere, geht der Editor als eigenes Sheet mit der Reise des Einstiegs auf.
+    private func reviewPasteImportNew(_ candidate: PasteImportCandidate) {
+        if let trip = pasteImportTrip, selection?.tripID == trip.id {
+            bookingEditorSession = .create(
+                prefillStart: nil,
+                prefillEnd: nil,
+                prefilledDraft: PasteImportEditorPrefill.draft(for: candidate, existing: nil)
+            )
+        } else {
+            pasteReview = .creating(candidate: candidate, trip: pasteImportTrip)
         }
     }
 

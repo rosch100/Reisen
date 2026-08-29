@@ -5,6 +5,7 @@ import WebKit
 #endif
 
 import ReisenAppCore
+import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
@@ -20,6 +21,7 @@ struct RootTabView: View {
     @State private var providerEnableEpoch = 0
     @State private var selectedTab: AppTab = .reisen
     @State private var selectedTripID: UUID?
+    @State private var pasteImport = PasteImportSession()
     #if REISEN_PROVIDER_SYNC
     @State private var installedProviderIDs: Set<ProviderID> = []
     #endif
@@ -41,6 +43,13 @@ struct RootTabView: View {
 
     @ViewBuilder
     var body: some View {
+        PasteImportHost(session: pasteImport, entry: { pasteImportEntry }) {
+            tabsWithSessionProbe
+        }
+    }
+
+    @ViewBuilder
+    private var tabsWithSessionProbe: some View {
         ZStack {
             tabs
                 .tabViewStyle(.sidebarAdaptable)
@@ -86,12 +95,29 @@ struct RootTabView: View {
         selectedTab = .reisen
     }
 
+    /// Drop und „Öffnen mit“ nutzen den sichtbaren Tab, nicht einen anderen Reise-Kontext.
+    private var pasteImportEntry: PasteImportEntry {
+        switch selectedTab {
+        case .reisen:
+            return .trip(selectedTripID)
+        case .offen:
+            return .open
+        #if REISEN_PROVIDER_SYNC
+        case .sync:
+            return .open
+        #endif
+        case .mehr:
+            return .open
+        }
+    }
+
     private var tabs: some View {
         TabView(selection: $selectedTab) {
             #if REISEN_PROVIDER_SYNC
             ReisenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
                 selectedTripID: $selectedTripID,
+                pasteImport: pasteImport,
                 onOpenSync: { selectedTab = .sync }
             )
             .tabItem { Label(L10n.string(.tabTrips), systemImage: "airplane") }
@@ -99,7 +125,8 @@ struct RootTabView: View {
             #else
             ReisenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
-                selectedTripID: $selectedTripID
+                selectedTripID: $selectedTripID,
+                pasteImport: pasteImport
             )
             .tabItem { Label(L10n.string(.tabTrips), systemImage: "airplane") }
             .tag(AppTab.reisen)
@@ -108,6 +135,7 @@ struct RootTabView: View {
             #if REISEN_PROVIDER_SYNC
             OffenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                pasteImport: pasteImport,
                 onTripCreated: focusCreatedTrip,
                 onOpenSync: { selectedTab = .sync }
             )
@@ -116,6 +144,7 @@ struct RootTabView: View {
             #else
             OffenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                pasteImport: pasteImport,
                 onTripCreated: focusCreatedTrip
             )
             .tabItem { Label(L10n.string(.tabOpen), systemImage: "list.bullet.rectangle") }

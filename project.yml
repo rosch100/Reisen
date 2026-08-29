@@ -18,12 +18,36 @@ settings:
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: 4N6AJL9EX5
 
+# Eine Implementierung der Share-Extension; pro Host-App nur eine eigene Bundle-ID.
+targetTemplates:
+  PasteImportShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Apps/ReisenPasteImportShare
+        excludes:
+          - "**/*.plist"
+          - "**/*.entitlements"
+      - path: Apps/Shared
+    settings:
+      base:
+        PRODUCT_NAME: ${target_name}
+        INFOPLIST_FILE: Apps/ReisenPasteImportShare/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: 0.2.1
+        CODE_SIGN_ENTITLEMENTS: Apps/ReisenPasteImportShare/ReisenPasteImportShare.entitlements
+    dependencies:
+      - package: Reisen
+        product: ReisenDomain
+
 targets:
   ReiseniOS:
     type: application
     platform: iOS
     sources:
       - path: Apps/ReiseniOS/Shared
+      - path: Apps/Shared
       - path: Apps/ReiseniOS/Assets.xcassets
     resources:
       - path: Apps/ReiseniOS/PrivacyInfo.xcprivacy
@@ -46,6 +70,9 @@ targets:
         product: ReisenAppCore
       - package: Reisen
         product: ReisenSharedUI
+      - package: Reisen
+        product: ReisenPasteImport
+      - target: ReisenPasteImportShare
     scheme:
       testTargets:
         - ReiseniOSTests
@@ -56,6 +83,7 @@ targets:
     sources:
       - path: Apps/ReiseniOS/Shared
       - path: Apps/ReiseniOS/ProviderSync
+      - path: Apps/Shared
       - path: Apps/ReiseniOS/Assets.xcassets
     resources:
       - path: Apps/ReiseniOSPrivate/PrivacyInfo.xcprivacy
@@ -68,7 +96,7 @@ targets:
         CURRENT_PROJECT_VERSION: 3
         MARKETING_VERSION: 0.2.1
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC REISEN_IOS_PRIVATE
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: Apps/ReiseniOSPrivate/ReiseniOSPrivate.entitlements
@@ -81,9 +109,30 @@ targets:
         product: ReisenSharedUI
       - package: Reisen
         product: ReisenProviderSync
+      - package: Reisen
+        product: ReisenPasteImport
+      - target: ReisenPasteImportSharePrivate
     scheme:
       testTargets:
         - ReiseniOSPrivateTests
+
+  # Store-App: Bundle-ID muss mit der der Host-App beginnen (iOS-Embedding-Regel).
+  ReisenPasteImportShare:
+    templates:
+      - PasteImportShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios.share
+
+  # Private-App: eigenes Target wegen Bundle-ID, App Group und URL-Scheme.
+  ReisenPasteImportSharePrivate:
+    templates:
+      - PasteImportShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios.private.share
+        CODE_SIGN_ENTITLEMENTS: Apps/ReisenPasteImportShare/ReisenPasteImportSharePrivate.entitlements
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_IOS_PRIVATE
 
   ReiseniOSPrivateTests:
     type: bundle.unit-test
@@ -144,6 +193,8 @@ targets:
         product: ReisenProviders
       - package: Reisen
         product: ReisenDomain
+      - package: Reisen
+        product: ReisenPasteImport
 
 schemes:
   ReisenMac:

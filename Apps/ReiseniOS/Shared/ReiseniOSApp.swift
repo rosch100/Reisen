@@ -58,6 +58,11 @@ struct ReiseniOSApp: App {
                     }
                 }
             }
+            .onOpenURL { url in
+                // Handoff bleibt am Host; Dateien puffern, solange der Store noch lädt.
+                guard url.isFileURL else { return }
+                PasteImportExternalFileInbox.offer([url])
+            }
         }
     }
 }
