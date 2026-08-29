@@ -41,10 +41,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>de.reisen.Reisen.pasteimport</string>
+			<string>de.reisen.Reisen.private.pasteimport</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>reisen</string>
+				<string>reisen-private</string>
 			</array>
 		</dict>
 	</array>

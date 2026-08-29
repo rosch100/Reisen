@@ -66,12 +66,21 @@ final class ShareViewController: UIViewController {
         }
         for provider in providers where provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
             do {
-                return try PasteImportFileSource.source(from: try await fileURL(from: provider))
+                let url = try await fileURL(from: provider)
+                defer { removeTemporaryCopyIfNeeded(url) }
+                return try PasteImportFileSource.source(from: url)
             } catch {
                 throw PasteImportShareError.unreadableSource
             }
         }
         throw PasteImportShareError.unreadableSource
+    }
+
+    /// Nur eigene Kopien unter `temporaryDirectory` löschen — nicht Security-Scoped URLs des Systems.
+    private static func removeTemporaryCopyIfNeeded(_ url: URL) {
+        let temporary = FileManager.default.temporaryDirectory.standardizedFileURL.path
+        guard url.standardizedFileURL.path.hasPrefix(temporary) else { return }
+        try? FileManager.default.removeItem(at: url)
     }
 
     private static func firstSource(

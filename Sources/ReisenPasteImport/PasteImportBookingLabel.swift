@@ -8,6 +8,11 @@ enum PasteImportBookingLabel {
         return bookingTypes[key]
     }
 
+    /// Enge Titel-Hints ohne Modellkontext (Bus/Tour/GYG) — nicht die breite Generable-Map.
+    static func typeHint(fromToken token: String) -> BookingType? {
+        typeHintAliases[token]
+    }
+
     static func status(from raw: String) -> BookingStatus? {
         guard let key = normalize(raw) else { return nil }
         return statuses[key]
@@ -16,7 +21,8 @@ enum PasteImportBookingLabel {
     static var bookingTypeGuide: String {
         "Genau eines von: \(list(BookingType.allCases)). "
             + "Tour/Event/GetYourGuide = activity (nicht hotel). "
-            + "Zug/Bahn/ICE/Trainline = train. Mietwagen/Sixt/Hertz = carRental."
+            + "Zug/Bahn/ICE/Trainline/Bus/FlixBus/Fernbus/Coach = train. "
+            + "Mietwagen/Sixt/Hertz = carRental."
     }
 
     static var statusGuide: String {
@@ -49,10 +55,11 @@ enum PasteImportBookingLabel {
         map["railway"] = .train
         map["rail"] = .train
         map["ice"] = .train
-        map["tour"] = .activity
+        map.merge(typeHintAliases) { _, new in new }
+        map["tgv"] = .train
+        map["sncf"] = .train
         map["event"] = .activity
         map["ereignis"] = .activity
-        map["ausflug"] = .activity
         map["aktivitat"] = .activity
         map["aktivitaet"] = .activity
         map["unterkunft"] = .hotel
@@ -66,6 +73,18 @@ enum PasteImportBookingLabel {
         map["faehre"] = .ferry
         return map
     }()
+
+    /// Whitelist für `typeHint(fromToken:)` — SSOT auch in `bookingTypes` eingebunden.
+    private static let typeHintAliases: [String: BookingType] = [
+        "bus": .train,
+        "flixbus": .train,
+        "fernbus": .train,
+        "coach": .train,
+        "omnibus": .train,
+        "tour": .activity,
+        "getyourguide": .activity,
+        "ausflug": .activity,
+    ]
 
     private static let statuses: [String: BookingStatus] = {
         var map: [String: BookingStatus] = [:]
@@ -83,8 +102,7 @@ enum PasteImportBookingLabel {
 
     private static func normalize(_ raw: String) -> String? {
         guard let trimmed = NonEmpty.string(raw) else { return nil }
-        let folded = trimmed.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        let squeezed = folded.filter { $0.isLetter || $0.isNumber }
-        return NonEmpty.string(squeezed.lowercased())
+        let folded = PasteImportTextTokens.normalize(trimmed)
+        return NonEmpty.string(folded.filter { $0.isLetter || $0.isNumber })
     }
 }

@@ -21,11 +21,11 @@ public struct PasteImportCandidatePresentation: Equatable, Sendable {
 
 /// Übersicht der erkannten Buchungen vor dem Editor-Durchlauf.
 public struct PasteImportCandidateList: View {
-    private let candidates: [PasteImportCandidate]
+    private let result: PasteImportRunResult
     private let onRequestFeature: (() -> Void)?
 
-    public init(candidates: [PasteImportCandidate], onRequestFeature: (() -> Void)? = nil) {
-        self.candidates = candidates
+    public init(result: PasteImportRunResult, onRequestFeature: (() -> Void)? = nil) {
+        self.result = result
         self.onRequestFeature = onRequestFeature
     }
 
@@ -34,7 +34,16 @@ public struct PasteImportCandidateList: View {
             Text(L10n.string(.pasteImportCandidatesTitle))
                 .font(.headline)
 
-            if candidates.isEmpty {
+            if result.sourceWasTruncated {
+                Label(
+                    L10n.string(.pasteImportSourceTruncated),
+                    systemImage: "exclamationmark.triangle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            if result.candidates.isEmpty {
                 Text(L10n.string(.pasteImportEmpty))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -45,7 +54,7 @@ public struct PasteImportCandidateList: View {
                         )
                 }
             } else {
-                ForEach(Array(candidates.enumerated()), id: \.offset) { _, candidate in
+                ForEach(Array(result.candidates.enumerated()), id: \.offset) { _, candidate in
                     PasteImportCandidateRow(
                         presentation: PasteImportCandidatePresentation(candidate: candidate)
                     )

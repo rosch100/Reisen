@@ -8,13 +8,6 @@ import ReisenDomain
 import ReisenPasteImport
 import ReisenSharedUI
 
-/// Modellstufe für Menü und Lauf — eine Auflösung, kein zweiter Pfad.
-enum PasteImportModel {
-    static func kind() -> PasteImportModelKind {
-        PasteImportModelResolver.resolve(FoundationModelsPasteImportAvailability().availability())
-    }
-}
-
 /// Quellen des macOS-Einstiegs: Zwischenablage und Dateiauswahl.
 enum PasteImportMacSource {
     /// `nil`, wenn die Zwischenablage nichts Verwertbares enthält — kein Ersatzinhalt.
@@ -53,7 +46,7 @@ final class PasteImportMacSession {
         case idle
         case confirmingPrivateCloudCompute
         case running(PasteImportModelKind)
-        case choosing([PasteImportCandidate])
+        case choosing(PasteImportRunResult)
         case failed(String)
     }
 
@@ -65,7 +58,7 @@ final class PasteImportMacSession {
 
     private var source: PasteImportSource?
     private var existing: [Booking] = []
-    private var task: Task<Void, Never>?
+    private let runLifetime = PasteImportRunLifetime()
     let featureRequestFlow = PasteImportFailedFeatureRequestFlow()
     private var resumeAfterFeatureRequest: Phase?
     private var failedRecognitionReason: PasteImportFailedRecognitionReason?
@@ -88,9 +81,9 @@ final class PasteImportMacSession {
     /// Fortschritt und Kandidatenliste teilen sich ein Sheet: SwiftUI zeigt pro View nur eines.
     var isPresentingSheet: Bool { isRunning || isChoosing }
 
-    var candidates: [PasteImportCandidate] {
-        if case .choosing(let candidates) = phase { return candidates }
-        return []
+    var choosingResult: PasteImportRunResult? {
+        if case .choosing(let result) = phase { return result }
+        return nil
     }
 
     var errorMessage: String? {
@@ -125,7 +118,7 @@ final class PasteImportMacSession {
             phase = .failed(L10n.string(.pasteImportErrorSource))
             return
         }
-        let kind = PasteImportModel.kind()
+        let kind = PasteImportResolvedModel.kind()
         guard kind != .unavailable else {
             phase = .failed(L10n.string(.pasteImportUnavailable))
             return
@@ -156,9 +149,9 @@ final class PasteImportMacSession {
 
     /// Übernimmt die Kandidaten in die Editor-Warteschlange.
     func review() {
-        guard case .choosing(let candidates) = phase else { return }
+        guard case .choosing(let result) = phase else { return }
         phase = .idle
-        pending = candidates
+        pending = result.candidates
     }
 
     /// Schließt das Lauf-Sheet. Nach `review()` ist die Phase bereits gewechselt und nichts zu tun.
@@ -215,8 +208,7 @@ final class PasteImportMacSession {
 
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
-        task?.cancel()
-        task = nil
+        runLifetime.invalidate()
         source = nil
         featureRequestFlow.reset()
         failedRecognitionReason = nil
@@ -242,41 +234,43 @@ final class PasteImportMacSession {
         }
         let existing = existing
         phase = .running(kind)
-        task = Task { [weak self] in
+        runLifetime.begin { [weak self] id in
+            guard let self else { return }
             do {
-                let candidates = try await PasteImportRun.run(
+                let result = try await PasteImportRun.run(
                     source: source,
                     kind: kind,
                     extractor: FoundationModelsPasteImportExtractor(kind: kind),
                     existing: existing
                 )
-                guard !Task.isCancelled else { return }
-                if candidates.isEmpty {
-                    self?.failedRecognitionReason = .noCandidates
-                    self?.featureRequestFlow.noteEmptyCandidates()
-                } else {
-                    self?.failedRecognitionReason = nil
-                    self?.featureRequestFlow.reset()
+                self.runLifetime.complete(ifCurrent: id) {
+                    if result.candidates.isEmpty {
+                        self.failedRecognitionReason = .noCandidates
+                        self.featureRequestFlow.noteEmptyCandidates()
+                    } else {
+                        self.failedRecognitionReason = nil
+                        self.featureRequestFlow.reset()
+                    }
+                    self.phase = .choosing(result)
                 }
-                self?.phase = .choosing(candidates)
             } catch {
-                guard !Task.isCancelled else { return }
-                let failure = PasteImportFailureMessage.failure(for: error)
-                if PasteImportFailedRecognition.shouldOffer(failure: failure) {
-                    self?.failedRecognitionReason = .model
-                    self?.featureRequestFlow.noteModelFailure()
-                } else {
-                    self?.failedRecognitionReason = nil
-                    self?.featureRequestFlow.reset()
+                self.runLifetime.complete(ifCurrent: id) {
+                    let failure = PasteImportFailureMessage.failure(for: error)
+                    if PasteImportFailedRecognition.shouldOffer(failure: failure) {
+                        self.failedRecognitionReason = .model
+                        self.featureRequestFlow.noteModelFailure()
+                    } else {
+                        self.failedRecognitionReason = nil
+                        self.featureRequestFlow.reset()
+                    }
+                    self.phase = .failed(PasteImportFailureMessage.text(for: error))
                 }
-                self?.phase = .failed(PasteImportFailureMessage.text(for: error))
             }
         }
     }
 
     private func reset() {
-        task?.cancel()
-        task = nil
+        runLifetime.invalidate()
         source = nil
         existing = []
         pending = []
@@ -352,9 +346,9 @@ private struct PasteImportFlowModifier: ViewModifier {
             ) {
                 if let kind = session.runningKind {
                     PasteImportProgressSheet(kind: kind) { session.cancelRun() }
-                } else {
+                } else if let result = session.choosingResult {
                     PasteImportCandidateSheet(
-                        candidates: session.candidates,
+                        result: result,
                         canOfferFeatureRequest: session.canOfferFeatureRequest,
                         onCancel: { session.dismissSheet() },
                         onContinue: {

@@ -7601,7 +7601,6 @@
         }
       }
     },
-
     "booking.delete_confirm_message": {
       "localizations": {
         "de": {
@@ -8766,6 +8765,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Car rental"
+          }
+        }
+      }
+    },
+    "paste_import.source_truncated": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelltext gekürzt — fehlende Abschnitte ggf. manuell prüfen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source text truncated — check missing sections manually if needed."
           }
         }
       }

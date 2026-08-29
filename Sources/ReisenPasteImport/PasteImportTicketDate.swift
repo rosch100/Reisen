@@ -53,6 +53,8 @@ enum PasteImportTicketDate {
             ("dd.MM.yyyy HH:mm", Locale(identifier: "de_DE")),
             ("d.MM.yyyy HH:mm", Locale(identifier: "de_DE")),
             ("dd.MM.yyyy", Locale(identifier: "de_DE")),
+            ("EEE d. MMMM yyyy HH:mm", Locale(identifier: "de_DE")),
+            ("EEE d. MMMM yyyy", Locale(identifier: "de_DE")),
             ("d. MMMM yyyy HH:mm", Locale(identifier: "de_DE")),
             ("d. MMMM yyyy", Locale(identifier: "de_DE")),
         ]

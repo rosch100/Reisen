@@ -9,7 +9,7 @@ public enum PasteImportExtractionInstructions {
         Gib nur zurück, was das Material belegt. Nichts ergänzen, nichts schätzen.
 
         - Unsichere Felder weglassen statt raten.
-        - bookingType nur aus: \(labels(BookingType.allCases)). Tour, Event, GetYourGuide, Ausflug = activity (nicht hotel). Zug, Bahn, ICE, Trainline = train. Mietwagen, Sixt, Hertz = carRental.
+        - bookingType nur aus: \(labels(BookingType.allCases)). Tour, Event, GetYourGuide, Ausflug = activity (nicht hotel). Zug, Bahn, ICE, Trainline, Bus, FlixBus, Fernbus, Coach = train (nicht flight). Mietwagen, Sixt, Hertz = carRental.
         - status nur aus: \(labels(BookingStatus.allCases)). bestätigt/booked = confirmed.
         - travellerType nur aus: \(labels(TravellerType.allCases)).
         - boardType nur aus: \(labels(BookingBoardType.allCases)).
@@ -17,8 +17,9 @@ public enum PasteImportExtractionInstructions {
         - Zeitpunkte als ISO8601. Zeitzone nur wenn das Material sie nennt (Z oder Offset). Sonst lokale Uhrzeit ohne Z, z. B. 2026-08-08T07:45:00.
         - confirmationCode = PNR, Booking reference, Auftragsnummer oder Reservierungsnummer. Der Wert neben dem Label, nicht das Label selbst (nicht „Booking reference“, nicht Initialen). Nicht der Preis. Nicht die 13-stellige Ticketnummer, wenn ein 6-stelliger PNR dasteht.
         - Steht Abfahrt, Departure Date, Check-in oder Pickup im Material, muss startAt gesetzt sein (Datum reicht, Uhrzeit 00:00 wenn keine Uhr da ist).
-        - Die Beispiele zeigen nur das Format. Werte ausschließlich aus dem aktuellen Material. Keine Codes, Orte oder Zeiten aus den Beispielen übernehmen.
-        - Jedes Flugsegment mit eigener Abflugzeit wird ein eigener Eintrag; derselbe PNR darf mehrfach vorkommen.
+        - Die Beispiele zeigen nur das Format. Werte ausschließlich aus dem aktuellen Material. Keine Codes, Orte, Titel oder Zeiten aus den Beispielen übernehmen. Keine zweite Buchung erfinden.
+        - Ein Boarding-Pass oder ein Beleg ohne mehrere Abflugzeiten = genau ein Eintrag; Code und Flug nicht auf zwei Buchungen splitten.
+        - Jedes Flugsegment mit eigener Abflugzeit wird ein eigener Eintrag; derselbe PNR darf mehrfach vorkommen. Pro Segment startAt setzen.
         - AGB, Fare Rules, Important Notes, Baggage policy, Catatan Penting ignorieren.
         - Jede Buchung im Material wird ein eigener Eintrag in bookings.
 
@@ -362,19 +363,19 @@ public enum PasteImportExtractionExamples {
             material: """
                 Your reservation is confirmed
                 Confirmation code: EXAM0D
-                Loft near the canal
+                EXAM Canal Loft
                 Check-in: 3 Sep 2027 after 15:00
                 Checkout: 7 Sep 2027 before 11:00
-                Amsterdam
+                EXAMCITY
                 """,
             expected: [
                 PasteImportBookingDTO(
                     bookingType: "hotel",
                     startAtISO8601: "2027-09-03T15:00:00",
                     endAtISO8601: "2027-09-07T11:00:00",
-                    title: "Loft near the canal",
+                    title: "EXAM Canal Loft",
                     confirmationCode: "EXAM0D",
-                    locationTo: "Amsterdam",
+                    locationTo: "EXAMCITY",
                     operatorName: "Airbnb",
                     status: "confirmed",
                     hotelCheckInMinutes: 900,

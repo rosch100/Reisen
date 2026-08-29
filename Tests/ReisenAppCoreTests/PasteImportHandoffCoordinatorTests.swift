@@ -22,6 +22,24 @@ private let sharedSource = PasteImportSource.text("ICE 123 Berlin")
     )
 }
 
+/// Laufender Import hat Vorrang — neue Share-Übergabe darf Session/Queue nicht überschreiben.
+@Test func pasteImportHandoff_ignoresPayloadWhileSessionIsActive() {
+    #expect(
+        PasteImportHandoffCoordinator.action(
+            trigger: .url,
+            outcome: .payload(sharedSource),
+            isSessionActive: true
+        ) == .ignore
+    )
+    #expect(
+        PasteImportHandoffCoordinator.action(
+            trigger: .activation,
+            outcome: .payload(sharedSource),
+            isSessionActive: true
+        ) == .ignore
+    )
+}
+
 @Test func pasteImportHandoff_reportsMissingPayloadOnlyForURLWithoutRun() {
     #expect(
         PasteImportHandoffCoordinator.action(

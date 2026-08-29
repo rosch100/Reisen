@@ -65,10 +65,14 @@
         Buchungsdaten aus und zeigt sie dir zur Prüfung an, bevor du sie übernimmst.
       </p>
       <ul>
-        <li>Die Auswertung läuft <strong>auf dem Gerät</strong> oder — nur nach deiner ausdrücklichen Bestätigung für
-          den jeweiligen Import — über <strong>Apple Private Cloud Compute</strong>.</li>
+        <li>Die Auswertung läuft <strong>auf dem Gerät</strong>. Sofern ein Build das entsprechende
+          Apple-Entitlement enthält und das Gerät Private Cloud Compute anbietet, kann die Auswertung —
+          nur nach deiner ausdrücklichen Bestätigung für den jeweiligen Import — über
+          <strong>Apple Private Cloud Compute</strong> erfolgen. Ohne dieses Entitlement bleibt die
+          Auswertung ausschließlich lokal.</li>
         <li>Der eingefügte Inhalt wird <strong>ephemer</strong> verarbeitet: nur für die Auswertung, und er wird
-          <strong>nicht</strong> an der Buchung gespeichert.</li>
+          <strong>nicht</strong> an der Buchung gespeichert. Bei Share-/„Öffnen mit“ kann er kurz in einer
+          App-Group-Übergabe liegen, bis die App ihn übernimmt und löscht.</li>
         <li><strong>Kein Drittanbieter-LLM</strong>: Die Inhalte werden nicht an Sprachmodelle anderer Anbieter
           übermittelt.</li>
         <li>Wenn die Erkennung keine Buchung findet, kannst du nach <strong>Bestätigung</strong> einen

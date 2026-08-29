@@ -16,7 +16,7 @@ public struct PasteImportPayloadDTO: Equatable, Sendable, Codable {
 /// Bewusst ohne Domain-Typen, damit `@Generable` hier im Adapter liegt.
 @Generable(description: "Eine Buchung aus dem eingefügten Material.")
 public struct PasteImportBookingDTO: Equatable, Sendable, Codable {
-    @Guide(description: "Art der Buchung, genau eines von: flight, hotel, ferry, train, activity, carRental, other. Tour/Event = activity, Zug = train, Mietwagen = carRental.")
+    @Guide(description: "Art der Buchung, genau eines von: flight, hotel, ferry, train, activity, carRental, other. Tour/Event = activity, Zug/Bus/FlixBus/Coach = train, Mietwagen = carRental.")
     public var bookingType: String?
     @Guide(description: "Reisebeginn als ISO8601: Abfahrt/Check-in/Pickup/Tourstart, nicht das Buchungsdatum. Ohne Zeitzone lokale Uhrzeit ohne Z, z. B. 2026-08-08T07:45:00.")
     public var startAtISO8601: String?

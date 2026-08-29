@@ -38,23 +38,21 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         self.kind = kind
     }
 
-    public func extract(from source: PasteImportSource) async throws -> [PasteImportExtraction] {
+    public func extract(from source: PasteImportSource) async throws -> PasteImportExtractionResult {
         // Zuerst die Stufe: ohne Modell wird die Quelle gar nicht aufbereitet.
         let session = try makeSession()
         let material = try Self.material(for: try source.validated())
         let prepared = try Self.prompt(for: material)
-        defer {
-            for url in prepared.temporaryImageURLs {
-                try? FileManager.default.removeItem(at: url)
-            }
-        }
+        defer { PasteImportTemporaryPNGs.remove(prepared.temporaryImageURLs) }
         let response = try await session.respond(
             to: prepared.prompt,
             generating: PasteImportPayloadDTO.self
         )
-        return PasteImportExtractionCompleter.fillingOmittedTravelDates(
-            PasteImportGenerableMapper.extractions(from: response.content),
-            from: material.text
+        let mapped = PasteImportGenerableMapper.extractions(from: response.content)
+        let refined = PasteImportExtractionRefiner.refine(mapped, sourceText: material.text)
+        return PasteImportExtractionResult(
+            extractions: refined,
+            sourceWasTruncated: material.sourceWasTruncated
         )
     }
 
@@ -79,13 +77,18 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
     private static func material(for source: PasteImportSource) throws -> PasteImportPromptMaterial {
         switch source {
         case .text(let text):
-            return PasteImportPromptMaterial(text: text)
+            return PasteImportPromptMaterial(clip: PasteImportPromptBudget.clip(text))
         case .image(let data):
             return PasteImportPromptMaterial(images: [data])
         case .pdf(let data):
             // `prepare` garantiert Text oder Seitenbilder, sonst wirft es `unreadableSource`.
+            // Text ist bereits über `PasteImportPromptBudget` begrenzt.
             let content = try PasteImportPDFPreparation.prepare(data)
-            return PasteImportPromptMaterial(text: content.text, images: content.pageImages)
+            return PasteImportPromptMaterial(
+                text: content.text,
+                images: content.pageImages,
+                sourceWasTruncated: content.sourceWasTruncated
+            )
         }
     }
 
@@ -99,18 +102,14 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             throw PasteImportAdapterError.imageInputUnsupported
         }
         let attachments: [Attachment<ImageAttachmentContent>]
-        var temporaryImageURLs: [URL] = []
+        let temporaryImageURLs: [URL]
         if PasteImportImageAttachments.cgImageInitializerAvailable {
             attachments = try material.images.map { Attachment(try PasteImportImageData.image(from: $0)) }
+            temporaryImageURLs = []
         } else {
-            attachments = try material.images.map { data in
-                let url = FileManager.default.temporaryDirectory
-                    .appendingPathComponent(UUID().uuidString)
-                    .appendingPathExtension("png")
-                try data.write(to: url, options: .atomic)
-                temporaryImageURLs.append(url)
-                return Attachment(imageURL: url)
-            }
+            let urls = try PasteImportTemporaryPNGs.write(material.images)
+            attachments = urls.map { Attachment(imageURL: $0) }
+            temporaryImageURLs = urls
         }
         return PreparedPrompt(
             prompt: Prompt {
@@ -139,6 +138,21 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
 private struct PasteImportPromptMaterial {
     var text: String?
     var images: [Data] = []
+    var sourceWasTruncated: Bool = false
+
+    init(text: String? = nil, images: [Data] = [], sourceWasTruncated: Bool = false) {
+        self.text = text
+        self.images = images
+        self.sourceWasTruncated = sourceWasTruncated
+    }
+
+    init(clip: PasteImportPromptBudget.ClipResult, images: [Data] = []) {
+        self.init(
+            text: clip.text,
+            images: images,
+            sourceWasTruncated: clip.sourceWasTruncated
+        )
+    }
 }
 
 private struct PreparedPrompt {

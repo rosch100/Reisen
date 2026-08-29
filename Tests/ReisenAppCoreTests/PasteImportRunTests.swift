@@ -22,10 +22,10 @@ private actor CountingExtractor: PasteImportExtracting {
         self.failure = failure
     }
 
-    func extract(from source: PasteImportSource) async throws -> [PasteImportExtraction] {
+    func extract(from source: PasteImportSource) async throws -> PasteImportExtractionResult {
         extractCallCount += 1
         if let failure { throw failure }
-        return extractions
+        return PasteImportExtractionResult(extractions: extractions)
     }
 }
 
@@ -69,7 +69,7 @@ private func hotelBooking(code: String) -> Booking {
 @Test func pasteImportRun_buildsCandidatesFromOneExtract() async throws {
     let extractor = CountingExtractor(extractions: [hotelExtraction(code: "X")])
 
-    let candidates = try await PasteImportRun.run(
+    let result = try await PasteImportRun.run(
         source: .text("Hotel Lissabon"),
         kind: .onDevice,
         extractor: extractor,
@@ -77,9 +77,10 @@ private func hotelBooking(code: String) -> Booking {
         calendar: runCalendar
     )
 
-    let candidate = try #require(candidates.first)
-    #expect(candidates.count == 1)
+    let candidate = try #require(result.candidates.first)
+    #expect(result.candidates.count == 1)
     #expect(candidate.isErgaenzen)
+    #expect(result.sourceWasTruncated == false)
     let extractCallCount = await extractor.extractCallCount
     #expect(extractCallCount == 1)
 }

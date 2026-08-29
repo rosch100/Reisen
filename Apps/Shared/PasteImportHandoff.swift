@@ -11,13 +11,20 @@ enum PasteImportHandoffError: Error, Equatable, Sendable {
 
 /// Übergabe einer geteilten Quelle von der Share-Extension an die App über die App Group.
 ///
-/// Die Extension schreibt `meta.json` und `payload.bin` und bittet das System, `reisen://paste-import`
+/// Die Extension schreibt `meta.json` und `payload.bin` und bittet das System, die Handoff-URL
 /// zu öffnen. iOS erlaubt Share-Extensions den App-Start nicht garantiert; darum holt die App eine
 /// liegengebliebene Übergabe beim nächsten Aktivieren nach. Der Konsum löscht beide Dateien.
+///
+/// Store und Private: Konstanten in `PasteImportHandoffIdentity`, Auswahl per `REISEN_IOS_PRIVATE`.
 enum PasteImportHandoff {
-    static let appGroupIdentifier = "group.de.reisen.Reisen.pasteimport"
-    static let urlScheme = "reisen"
-    static let urlHost = "paste-import"
+    #if REISEN_IOS_PRIVATE
+    static let appGroupIdentifier = PasteImportHandoffIdentity.privateAppGroup
+    static let urlScheme = PasteImportHandoffIdentity.privateURLScheme
+    #else
+    static let appGroupIdentifier = PasteImportHandoffIdentity.storeAppGroup
+    static let urlScheme = PasteImportHandoffIdentity.storeURLScheme
+    #endif
+    static let urlHost = PasteImportHandoffIdentity.urlHost
 
     static let url = URL(string: "\(urlScheme)://\(urlHost)")!
 
@@ -52,23 +59,21 @@ enum PasteImportHandoff {
     ///
     /// Der einzige Konsum-Pfad und damit idempotent: URL-Öffnen und Aktivieren können beide
     /// feuern, der zweite Aufruf findet nichts mehr. Eine fehlende App Group ist hier kein
-    /// Verlust, sondern `.noPayload` — dort kann nie etwas gelegen haben, und die App aktiviert
-    /// sich ständig ohne jede Übergabe. Erst ein bereitliegender Payload, der sich nicht mehr
-    /// lesen lässt, ist `.lostPayload`. Ob daraus eine Meldung wird, entscheidet der
-    /// `PasteImportHandoffCoordinator` anhand des Auslösers.
+    /// Verlust, sondern `.noPayload`. Löschen muss gelingen, bevor `.payload` zurückkommt.
     static func consumePending() -> PasteImportHandoffOutcome {
         guard let container = containerURL() else { return .noPayload }
         let payloadURL = container.appendingPathComponent(payloadFileName)
         let metaURL = container.appendingPathComponent(metaFileName)
         guard FileManager.default.fileExists(atPath: payloadURL.path) else { return .noPayload }
-        defer {
-            try? FileManager.default.removeItem(at: payloadURL)
-            try? FileManager.default.removeItem(at: metaURL)
-        }
         do {
             let meta = try JSONDecoder().decode(Meta.self, from: try Data(contentsOf: metaURL))
-            return .payload(try source(kind: meta.kind, payload: try Data(contentsOf: payloadURL)))
+            let source = try source(kind: meta.kind, payload: try Data(contentsOf: payloadURL))
+            try FileManager.default.removeItem(at: payloadURL)
+            try FileManager.default.removeItem(at: metaURL)
+            return .payload(source)
         } catch {
+            try? FileManager.default.removeItem(at: payloadURL)
+            try? FileManager.default.removeItem(at: metaURL)
             return .lostPayload
         }
     }

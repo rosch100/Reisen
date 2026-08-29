@@ -65,10 +65,13 @@
         details from it and shows them for your review before you accept them.
       </p>
       <ul>
-        <li>Processing runs <strong>on device</strong> or — only after your explicit confirmation for that
-          individual import — via <strong>Apple Private Cloud Compute</strong>.</li>
+        <li>Processing runs <strong>on device</strong>. If a build includes the corresponding Apple entitlement
+          and the device offers Private Cloud Compute, processing may — only after your explicit confirmation
+          for that individual import — use <strong>Apple Private Cloud Compute</strong>. Without that
+          entitlement, processing stays on device only.</li>
         <li>The pasted content is <strong>ephemeral</strong>: it is used only for the extraction and is
-          <strong>not</strong> stored on the booking.</li>
+          <strong>not</strong> stored on the booking. For Share / “Open with”, it may briefly sit in an
+          app-group handoff until the app consumes and deletes it.</li>
         <li><strong>No third-party LLM</strong>: the content is not sent to language models of other vendors.</li>
         <li>If recognition finds no booking, you can after <strong>confirmation</strong> create a public GitHub
           <strong>feature request</strong> with the document. Without confirmation the document does not leave

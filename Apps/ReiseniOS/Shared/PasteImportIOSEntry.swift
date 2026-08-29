@@ -4,6 +4,7 @@ import SwiftUI
 
 import ReisenAppCore
 import ReisenDomain
+import ReisenPasteImport
 import ReisenSharedUI
 
 /// Quellen des iOS-Einstiegs: Dateiauswahl und Fotos.
@@ -44,7 +45,7 @@ private struct PasteImportToolbarModifier: ViewModifier {
         content
             .toolbar {
                 ToolbarItem(placement: .secondaryAction) {
-                    PasteImportActionControl(kind: PasteImportModel.kind()) {
+                    PasteImportActionControl(kind: PasteImportResolvedModel.kind()) {
                         isChoosingSource = true
                     }
                 }

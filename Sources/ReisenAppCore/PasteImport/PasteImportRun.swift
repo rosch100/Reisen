@@ -23,15 +23,18 @@ public enum PasteImportRun {
         existing: [Booking],
         calendar: Calendar = .current,
         normalizer: BookingTimeNormalizer = BookingTimeNormalizer()
-    ) async throws -> [PasteImportCandidate] {
+    ) async throws -> PasteImportRunResult {
         guard kind != .unavailable else { throw PasteImportRunError.modelUnavailable }
         let validated = try source.validated()
-        let extractions = try await extractor.extract(from: validated)
-        return PasteImportPipeline.candidates(
-            from: extractions,
-            existing: existing,
-            calendar: calendar,
-            normalizer: normalizer
+        let outcome = try await extractor.extract(from: validated)
+        return PasteImportRunResult(
+            candidates: PasteImportPipeline.candidates(
+                from: outcome.extractions,
+                existing: existing,
+                calendar: calendar,
+                normalizer: normalizer
+            ),
+            sourceWasTruncated: outcome.sourceWasTruncated
         )
     }
 }

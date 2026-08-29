@@ -68,9 +68,9 @@ struct PasteImportHost<Content: View>: View {
                 if let kind = session.runningKind {
                     PasteImportProgressSheet(kind: kind) { session.cancelRun() }
                         .reisenSheetDetents()
-                } else {
+                } else if let result = session.choosingResult {
                     PasteImportCandidateSheet(
-                        candidates: session.candidates,
+                        result: result,
                         canOfferFeatureRequest: session.canOfferFeatureRequest,
                         onCancel: { session.dismissSheet() },
                         onContinue: {

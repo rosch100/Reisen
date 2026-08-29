@@ -12,10 +12,13 @@ import UniformTypeIdentifiers
 public struct PasteImportPDFContent: Equatable, Sendable {
     public var text: String?
     public var pageImages: [Data]
+    /// `true`, wenn eingebetteter Text wegen des Prompt-Budgets gekürzt wurde.
+    public var sourceWasTruncated: Bool
 
-    public init(text: String? = nil, pageImages: [Data] = []) {
+    public init(text: String? = nil, pageImages: [Data] = [], sourceWasTruncated: Bool = false) {
         self.text = text
         self.pageImages = pageImages
+        self.sourceWasTruncated = sourceWasTruncated
     }
 }
 
@@ -44,11 +47,16 @@ public enum PasteImportPDFPreparation {
         }
         let focused = PasteImportPDFPageText.focused(pageStrings)
             ?? NonEmpty.string(document.string)
+        let clip = focused.map(PasteImportPromptBudget.clip)
         let images = try pageImages(of: document, indices: textlessIndices)
-        guard focused != nil || !images.isEmpty else {
+        guard clip != nil || !images.isEmpty else {
             throw PasteImportAdapterError.unreadableSource
         }
-        return PasteImportPDFContent(text: focused, pageImages: images)
+        return PasteImportPDFContent(
+            text: clip?.text,
+            pageImages: images,
+            sourceWasTruncated: clip?.sourceWasTruncated == true
+        )
     }
 
     private static func pageImages(of document: PDFDocument, indices: [Int]) throws -> [Data] {
@@ -123,57 +131,12 @@ public enum PasteImportPDFPageText {
         var kept: [String] = []
         for (index, page) in trimmed.enumerated() {
             let dropBoilerplate = index > 0
-                && isBoilerplate(page)
-                && kept.contains(where: looksLikeBooking)
+                && PasteImportBookingText.isBoilerplate(page)
+                && kept.contains(where: PasteImportBookingText.looksLikeBooking)
             if dropBoilerplate { continue }
             kept.append(page)
         }
         return NonEmpty.string(kept.joined(separator: "\n"))
-    }
-
-    private static let boilerplateNeedles = [
-        "fare rules",
-        "important notes",
-        "catatan penting",
-        "free baggage allowance",
-        "terms and condition",
-        "terms & conditions",
-        "term and condition",
-        "dilarang memasukkan",
-        "wheelchair services",
-        "baggage weight rounding",
-    ]
-
-    private static let bookingNeedles = [
-        "pnr",
-        "booking reference",
-        "booking confirmation",
-        "passenger",
-        "itinerary",
-        "departure",
-        "check-in",
-        "check in",
-        "reservation",
-        "auftragsnummer",
-        "buchungscode",
-        "e-ticket",
-        "eticket",
-        "abfahrt",
-        "confirmation number",
-        "reservierungsnummer",
-    ]
-
-    private static func isBoilerplate(_ page: String) -> Bool {
-        contains(needles: boilerplateNeedles, in: page)
-    }
-
-    private static func looksLikeBooking(_ page: String) -> Bool {
-        contains(needles: bookingNeedles, in: page)
-    }
-
-    private static func contains(needles: [String], in page: String) -> Bool {
-        let hay = page.lowercased()
-        return needles.contains { hay.contains($0) }
     }
 }
 

@@ -3,20 +3,20 @@ import ReisenDomain
 
 /// Kandidatenliste vor dem Editor — macOS und iOS teilen Inhalt und Feature-Button.
 public struct PasteImportCandidateSheet: View {
-    private let candidates: [PasteImportCandidate]
+    private let result: PasteImportRunResult
     private let canOfferFeatureRequest: Bool
     private let onCancel: () -> Void
     private let onContinue: () -> Void
     private let onRequestFeature: () -> Void
 
     public init(
-        candidates: [PasteImportCandidate],
+        result: PasteImportRunResult,
         canOfferFeatureRequest: Bool,
         onCancel: @escaping () -> Void,
         onContinue: @escaping () -> Void,
         onRequestFeature: @escaping () -> Void
     ) {
-        self.candidates = candidates
+        self.result = result
         self.canOfferFeatureRequest = canOfferFeatureRequest
         self.onCancel = onCancel
         self.onContinue = onContinue
@@ -25,7 +25,7 @@ public struct PasteImportCandidateSheet: View {
 
     private var presentation: PasteImportCandidateSheetPresentation {
         PasteImportCandidateSheetPresentation(
-            candidateCount: candidates.count,
+            candidateCount: result.candidates.count,
             canOfferFeatureRequest: canOfferFeatureRequest
         )
     }
@@ -40,7 +40,7 @@ public struct PasteImportCandidateSheet: View {
 
     private var list: some View {
         PasteImportCandidateList(
-            candidates: candidates,
+            result: result,
             onRequestFeature: presentation.showsFeatureRequestButton ? onRequestFeature : nil
         )
     }

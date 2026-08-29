@@ -32,6 +32,8 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 ### In Scope (v1)
 
 - Eingabe: Zwischenablage-Text, Bilder, PDF (ephemer), inkl. Dateidialog, Drop und iOS „Senden an“/Teilen. Text-PDF über PDFKit-Text; **gescannte Seiten als Bilder** an das Modell (wie Foto), kein OCR-Workaround.
+- **Grounding** gegen Quelltext (Few-Shot-Leakage): nur wenn Text vorliegt. Bild-only ohne OCR → kein Token-Grounding; Schutz über Instructions/Few-Shots.
+- Store- und Private-iOS: **getrennte** App Groups und URL-Schemes für Share-Handoff (`reisen` vs. `reisen-private`).
 - Mehrere Kandidaten: Auswahlliste, Nutzer wählt 0..n, danach Editor nacheinander.
 - Einstieg: geöffnete Reise oder Offen-Tab; iOS zusätzlich Share-Sheet.
 - Alle `BookingType`-Fälle.
@@ -43,7 +45,7 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 - Create ohne Reise: `BookingEditorDraft.createBooking(..., trip: SDTrip?)` mit `trip == nil` für Offen (kein Dummy-Trip).
 - Modell: PCC wenn verfügbar, sonst On-Device, sonst disabled. Lauf-Fehler: Dialog, **kein** zweiten Extract mit der anderen Stufe.
 - Privacy-HTML: PCC und Paste-Import.
-- Erkennung: Few-Shot-Beispiele DE/EN (Flug inkl. LCC/Screenshot/PNR-unter-Label, Bahn DB/ÖBB/Trainline, Hotel Booking.com/Airbnb, Mietwagen Sixt/Hertz, Event GetYourGuide/Eventbrite, Fähre) in `PasteImportExtractionInstructions`; Typ-Aliase und Ticket-Datenformate im Mapper; AGB-Seiten im PDF-Text weglassen; `confirmationCode` ohne Labels/Preise/Initialen; fehlendes `startAt` aus Abfahrt/Check-in im Quelltext, wenn genau eine Buchung betroffen ist. Unbekanntes Typ-Label bleibt `nil`. Gescannte Bilder nur, wenn die Runtime `Attachment` exportiert — sonst `imageInputUnsupported`, kein Crash.
+- Erkennung: Few-Shot-Beispiele DE/EN (Flug inkl. LCC/Screenshot/PNR-unter-Label, Bahn DB/ÖBB/Trainline, Bus/FlixBus/TGV→`train`, Hotel Booking.com/Airbnb, Mietwagen Sixt/Hertz, Event GetYourGuide/Eventbrite, Fähre) in `PasteImportExtractionInstructions`; Typ-Aliase und Ticket-Datenformate im Mapper; Titel-/Operator-**Tokens** (`PasteImportExtractionTypeHint`, kein Substring in „Business“/„Touristenhotel“); AGB-Seiten im PDF-Text weglassen; Material-Zeichenbudget (`PasteImportPromptBudget`, Schnitt an Zeilenenden) vor dem Modellaufruf; `confirmationCode` ohne Labels/Preise/Initialen; fehlendes `startAt` aus Abfahrt/Check-in/Itinerar-Routenzeilen im Quelltext (eine Buchung oder 1:1 bei gleicher Anzahl); komplementäre **Flug-/Boarding**-Fragmente zusammenführen (`PasteImportExtractionCoalescer`, kein Hotel+Flug-Mix); Extrakte ohne Beleg-Tokens im Quelltext verwerfen (`PasteImportSourceGrounding`); Boarding-Pass ohne mehrere Abflüge = ein Eintrag. Unbekanntes Typ-Label bleibt `nil`. Gescannte Bilder nur, wenn die Runtime `Attachment` exportiert — sonst `imageInputUnsupported`, kein Crash.
 
 ### Nicht in Scope
 

@@ -40,14 +40,14 @@ public enum PasteImportFileSource {
         defer {
             if didStartAccess { url.stopAccessingSecurityScopedResource() }
         }
+        guard let type = contentType(of: url) else {
+            throw PasteImportFileSourceError.unsupportedType
+        }
         let data: Data
         do {
             data = try Data(contentsOf: url)
         } catch {
             throw PasteImportFileSourceError.unreadable
-        }
-        guard let type = contentType(of: url) else {
-            throw PasteImportFileSourceError.unsupportedType
         }
         if type.conforms(to: .pdf) { return .pdf(data) }
         if type.conforms(to: .image) { return .image(data) }

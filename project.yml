@@ -96,7 +96,7 @@ targets:
         CURRENT_PROJECT_VERSION: 3
         MARKETING_VERSION: 0.2.1
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC REISEN_IOS_PRIVATE
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: Apps/ReiseniOSPrivate/ReiseniOSPrivate.entitlements
@@ -124,13 +124,15 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios.share
 
-  # Private-App: eigenes Target nur wegen der Bundle-ID, identische Implementierung.
+  # Private-App: eigenes Target wegen Bundle-ID, App Group und URL-Scheme.
   ReisenPasteImportSharePrivate:
     templates:
       - PasteImportShareExtension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.ios.private.share
+        CODE_SIGN_ENTITLEMENTS: Apps/ReisenPasteImportShare/ReisenPasteImportSharePrivate.entitlements
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_IOS_PRIVATE
 
   ReiseniOSPrivateTests:
     type: bundle.unit-test
