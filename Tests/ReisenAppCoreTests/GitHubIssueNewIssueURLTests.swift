@@ -129,6 +129,20 @@ private func titleWhereBodyFitsOnlyAtMinimum() -> String? {
     return nil
 }
 
+@Test func githubIssueNewIssueURL_featureUsesWantField() throws {
+    let url = try #require(
+        GitHubIssueNewIssueURL.compose(
+            kind: .feature,
+            message: "Dokument nicht erkannt",
+            providerID: nil
+        )
+    )
+    let query = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems)
+    #expect(query.first { $0.name == "template" }?.value == "feature.yml")
+    #expect(query.first { $0.name == "labels" }?.value == "kind/feature,source/in-app")
+    #expect(query.contains { $0.name == "want" })
+}
+
 @Test func githubIssueToken_isNotEmbeddedInStubBuild() {
     #expect(GitHubIssueToken.isEmbedded == false)
 }

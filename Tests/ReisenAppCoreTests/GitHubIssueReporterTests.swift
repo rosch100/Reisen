@@ -8,7 +8,7 @@ import ReisenDomain
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-    for kind in [GitHubIssueKind.error, .feedback] {
+    for kind in [GitHubIssueKind.error, .feedback, .feature] {
         let template = repoRoot.appendingPathComponent(
             ".github/ISSUE_TEMPLATE/\(kind.issueForm.templateFileName)"
         )
@@ -32,6 +32,13 @@ import ReisenDomain
     #expect(GitHubIssueKind.feedback.issueForm.templateFileName == "feedback.yml")
     #expect(GitHubIssueKind.error.issueForm.fieldID == "what")
     #expect(GitHubIssueKind.feedback.issueForm.fieldID == "feedback")
+}
+
+@Test func githubIssueKind_featureUsesFeatureTemplate() {
+    #expect(GitHubIssueKind.feature.displayName == "Feature")
+    #expect(GitHubIssueKind.feature.issueForm.templateFileName == "feature.yml")
+    #expect(GitHubIssueKind.feature.issueForm.fieldID == "want")
+    #expect(GitHubIssueKind.feature.githubLabels == ["kind/feature", "source/in-app"])
 }
 
 @Test @MainActor func githubIssueReporter_emptyTokenMakesNoHTTP() async {

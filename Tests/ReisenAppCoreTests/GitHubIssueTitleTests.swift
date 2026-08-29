@@ -20,6 +20,13 @@ import Testing
     #expect(GitHubIssueTitle.reportTitle(kind: .feedback, message: "Wunsch") == "[Feedback] Wunsch")
 }
 
+@Test func githubIssueTitle_reportTitlePrefixesFeature() {
+    #expect(
+        GitHubIssueTitle.reportTitle(kind: .feature, message: "Paste-Import: Dokument nicht erkannt")
+            == "[Feature] Paste-Import: Dokument nicht erkannt"
+    )
+}
+
 @Test func githubIssueTitle_overrideReplacesGeneratedTitle() {
     #expect(
         GitHubIssueTitle.reportTitle(kind: .error, message: "ignoriert", override: "Fest") == "Fest"
