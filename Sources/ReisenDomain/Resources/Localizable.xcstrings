@@ -4454,13 +4454,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "GitHub-Issues sind öffentlich. Das Dokument (Text, Bild oder PDF) wird angehängt und kann persönliche Daten enthalten. Nur senden, wenn du das akzeptierst."
+            "value": "GitHub-Issues sind öffentlich. Text wird im Issue-Text veröffentlicht; Bild oder PDF werden als Base64-Kommentare angehängt und können persönliche Daten enthalten. Nur senden, wenn du das akzeptierst."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "GitHub issues are public. The document (text, image, or PDF) will be attached and may contain personal data. Send only if you accept that."
+            "value": "GitHub issues are public. Text is included in the issue body; images and PDFs are attached as Base64 comments and may contain personal data. Send only if you accept that."
           }
         }
       }

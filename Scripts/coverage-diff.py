@@ -45,10 +45,13 @@ def main() -> int:
     rows = load_files(export_path)
     hotspots: list[tuple[float, int, str, dict]] = []
     print("file\tlines%\tregions\tregions%")
+    missing_gated: list[str] = []
     for rel in sources:
         row = match_row(rel, rows)
         if row is None:
             print(f"{rel}\t(not in llvm-cov)\t-\t-")
+            if is_gated_unit(rel):
+                missing_gated.append(rel)
             continue
         print(
             f"{rel}\t{row['lines_percent']:.1f}\t{row['regions_count']}\t{row['regions_percent']:.1f}"
@@ -58,6 +61,11 @@ def main() -> int:
     print("CRAP-proxy hotspots (low lines% then high regions.count):")
     for lines_percent, neg_regions, rel, row in hotspots[:30]:
         print(f"  {rel}: lines {row['lines_percent']:.1f}% regions {row['regions_count']}")
+    if missing_gated:
+        print(f"FAIL: {len(missing_gated)} gated diff file(s) missing from llvm-cov")
+        for rel in missing_gated:
+            print(f"  {rel}: not in llvm-cov")
+        return 1
     failed = [
         (rel, row)
         for _, _, rel, row in hotspots

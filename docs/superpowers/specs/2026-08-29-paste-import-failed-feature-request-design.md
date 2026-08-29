@@ -56,7 +56,7 @@ Drei Wege wurden verglichen:
 2. **E-Mail an Feedback-Ingress** — Ingress speichert nur Dateinamen, nicht die Bytes. Verworfen: kein echter Anhang am Issue.
 3. **Bestehender Issues-Client: Create + `comment` mit Envelope** (gewählt) — bleibt beim dokumentierten PAT, liefert dem Maintainer das Original, Text und Binär einheitlich über Nachbar-API `GitHubIssueSubmitting`.
 
-Restrisiko: Base64-Kommentare sind öffentlich und zählen gegen GitHub-Limits. Die Bestätigung macht das sichtbar; das Limit 512 KiB hält die Kommentarzahl klein (Budget 60_000 Zeichen/Kommentar).
+Restrisiko: Base64-Kommentare sind öffentlich und zählen gegen GitHub-Limits. Die Bestätigung macht das sichtbar; das Limit **512_000** Bytes hält die Kommentarzahl klein (Budget 60_000 Zeichen/Kommentar).
 
 ## Architektur
 

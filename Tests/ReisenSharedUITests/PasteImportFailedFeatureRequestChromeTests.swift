@@ -16,6 +16,11 @@ import ReisenSharedUI
         presentation.message.localizedCaseInsensitiveContains("öffentlich")
             || presentation.message.localizedCaseInsensitiveContains("public")
     )
+    #expect(
+        presentation.message.localizedCaseInsensitiveContains("issue-text")
+            || presentation.message.localizedCaseInsensitiveContains("issue body")
+    )
+    #expect(presentation.message.localizedCaseInsensitiveContains("base64"))
 }
 
 @Test func pasteImportCandidateSheetPresentation_showsFeatureButtonOnlyWhenEmptyAndAllowed() {
