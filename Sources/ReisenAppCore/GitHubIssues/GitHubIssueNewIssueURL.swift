@@ -47,19 +47,28 @@ public enum GitHubIssueNewIssueURL {
         providerID: ProviderID?,
         origin: GitHubIssueReportOrigin
     ) -> String {
-        let fullValue = GitHubIssueDiagnostic.collectedFormFieldContent(
+        let redacted = SecretRedactor.redact(message)
+        let snapshot = GitHubIssueDiagnostic.deviceSnapshot(kind: kind, redactedMessage: redacted)
+        let table = GitHubIssueDiagnostic.formTable(
             kind: kind,
-            message: message,
             providerID: providerID,
-            origin: origin
+            origin: origin,
+            diagnostics: snapshot
         )
-        var maxChars = maxBodyCharacterCount
-        var value = truncated(fullValue, maxCharacters: maxChars)
+        let separatorCount = GitHubIssueDiagnostic.joinFormField(message: "", table: table).count - table.count
+        var maxMessageChars = max(minTruncatedBodyCharacters, maxBodyCharacterCount - table.count - separatorCount)
+        func composed(maxMessage: Int) -> String {
+            GitHubIssueDiagnostic.joinFormField(
+                message: truncated(redacted, maxCharacters: max(0, maxMessage)),
+                table: table
+            )
+        }
+        var value = composed(maxMessage: maxMessageChars)
         while !fitsInIssueURL(kind: kind, title: title, formFieldValue: value),
-              maxChars > minTruncatedBodyCharacters
+              maxMessageChars > minTruncatedBodyCharacters
         {
-            maxChars = max(minTruncatedBodyCharacters, maxChars - bodyTruncationStep)
-            value = truncated(fullValue, maxCharacters: maxChars)
+            maxMessageChars = max(minTruncatedBodyCharacters, maxMessageChars - bodyTruncationStep)
+            value = composed(maxMessage: maxMessageChars)
         }
         return value
     }

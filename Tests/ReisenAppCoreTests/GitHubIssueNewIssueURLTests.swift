@@ -48,6 +48,8 @@ import ReisenDomain
     #expect(what.contains("| Art | Fehler |"))
     #expect(what.contains("| Meldeweg | GitHub-Konto |"))
     #expect(what.contains("| GitHub-Nutzer | @rosch100 |"))
+    #expect(what.contains("| Architektur |"))
+    #expect(!what.contains("zlib+Base64"))
 }
 
 @Test func githubIssueNewIssueURL_truncatesLongFormField() {
@@ -61,6 +63,9 @@ import ReisenDomain
     )
     #expect(value.count <= GitHubIssueNewIssueURL.maxBodyCharacterCount)
     #expect(value.contains("gekürzt"))
+    #expect(value.contains("| Architektur |"))
+    #expect(value.contains("| Betriebssystem |"))
+    #expect(!value.contains("zlib+Base64"))
     #expect(
         GitHubIssueNewIssueURL.fitsInIssueURL(
             kind: .error,
