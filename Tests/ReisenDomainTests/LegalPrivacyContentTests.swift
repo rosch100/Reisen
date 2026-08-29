@@ -33,6 +33,8 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "Subprozessoren",
         "Cookie-Banner",
         "Standardvertragsklauseln",
+        "Arbeitsspeicher",
+        "Sync-Log",
     ] {
         #expect(html.localizedCaseInsensitiveContains(needle), "privacy.html missing \(needle)")
     }
@@ -56,6 +58,8 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "subprocessors",
         "cookie banner",
         "Standard Contractual Clauses",
+        "memory",
+        "sync log",
     ] {
         #expect(html.localizedCaseInsensitiveContains(needle), "en/privacy.html missing \(needle)")
     }
