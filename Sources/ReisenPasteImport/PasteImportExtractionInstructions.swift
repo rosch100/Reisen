@@ -300,7 +300,6 @@ public enum PasteImportExtractionExamples {
                     bookingType: "activity",
                     startAtISO8601: "2026-08-15T00:00:00",
                     title: "4D3N Trip LBJ Elona",
-                    locationTo: "Labuan Bajo",
                     operatorName: "Komodo Tour Indonesia",
                     status: "confirmed"
                 )

@@ -89,6 +89,8 @@ import ReisenDomain
     #expect(client.lastCreate?.body.contains("| Provider | Check24 |") == true)
     #expect(client.lastCreate?.body.contains("| Meldeweg | App-Token |") == true)
     #expect(client.lastCreate?.body.contains("reisen-fingerprint:") == true)
+    #expect(client.lastCreate?.body.contains("| Architektur |") == true)
+    #expect(client.lastCreate?.body.contains("## Sync-Log") == true)
 }
 
 @Test @MainActor func githubIssueReporter_embeddedTokenWithAttributedUsername() async throws {
@@ -139,6 +141,25 @@ import ReisenDomain
     #expect(result.number == 4)
     #expect(client.createCount == 0)
     #expect(client.commentCount == 1)
+}
+
+@Test @MainActor func githubIssueReporter_repeatCommentOmitsZlibBlob() async throws {
+    let fingerprint = GitHubIssueFingerprint.hex(kind: .error, message: "gleiche meldung")
+    let client = MockGitHubIssues()
+    client.openFingerprints[fingerprint] = 7
+    client.nextComment = GitHubCreatedIssue(
+        number: 7,
+        htmlURL: URL(string: "https://github.com/rosch100/Reisen/issues/7")!
+    )
+    let reporter = GitHubIssueReporter(
+        client: client,
+        tokenProvider: { "tok" },
+        persistenceURL: nil
+    )
+    _ = try await reporter.report(kind: .error, message: "gleiche meldung", providerID: nil)
+    let comment = try #require(client.lastCommentBody)
+    #expect(!comment.contains("zlib+Base64"))
+    #expect(comment.contains("| RAM physisch |"))
 }
 
 @Test @MainActor func githubIssueReporter_rateLimitThrowsWithoutSilentDrop() async {
@@ -206,8 +227,142 @@ import ReisenDomain
     #expect(body.contains("1.2.3"))
     #expect(body.contains("iOS 26.0"))
     #expect(body.contains("reisen-fingerprint: `abc`"))
-    #expect(!body.contains("Sync-Log"))
-    #expect(!body.contains("logTail"))
+    #expect(body.contains("| Architektur | arm64 |"))
+    #expect(body.contains("Sync-Log: nicht vorhanden"))
+}
+
+@Test func githubIssueDiagnostic_includesRuntimeEnvironmentRows() {
+    let body = diagnosticBody()
+    #expect(body.contains("| Architektur | arm64 |"))
+    #expect(body.contains("| RAM physisch | 16384 MiB |"))
+    #expect(body.contains("| Prozess-Fußabdruck | 200 MiB |"))
+    #expect(body.contains("| Freier Prozessspeicher | 800 MiB |"))
+    #expect(body.contains("| Freier Volume-Platz | 20.0 GiB |"))
+    #expect(body.contains("| Thermal | nominal |"))
+    #expect(body.contains("| Energiesparmodus | nein |"))
+    #expect(body.contains("| Prozessoren | 8/10 |"))
+    #expect(body.contains("| System-Uptime | 3600 s |"))
+    #expect(body.contains("| iCloud | an |"))
+}
+
+@Test func githubIssueDiagnostic_marksMissingOptionalEnvironmentAsUnavailable() {
+    let body = diagnosticBody(
+        environment: diagnosticTestEnvironment(
+            processFootprintBytes: nil,
+            availableMemoryBytes: nil,
+            volumeAvailableBytes: nil,
+            cloudKitEnabled: false,
+            thermalState: "nicht verfügbar"
+        )
+    )
+    #expect(body.contains("| Prozess-Fußabdruck | nicht verfügbar |"))
+    #expect(body.contains("| Freier Prozessspeicher | nicht verfügbar |"))
+    #expect(body.contains("| Freier Volume-Platz | nicht verfügbar |"))
+    #expect(body.contains("| iCloud | aus |"))
+    #expect(!body.contains("| Prozess-Fußabdruck | 0 MiB |"))
+}
+
+@Test func githubIssueDiagnostic_includesRedactedCompressedSyncLog() {
+    let tail = "ok line\nsecret gast@domain.de\n"
+    let attachment = DiagnosticLogAttachment.makeAttached(
+        redactedTail: SecretRedactor.redact(tail),
+        fileByteCount: 80,
+        truncated: false
+    )
+    let body = diagnosticBody(logAttachment: attachment, includeCompressedLog: true)
+    #expect(body.contains("## Sync-Log"))
+    #expect(body.contains("| truncated | nein |"))
+    #expect(body.contains("ok line"))
+    #expect(!body.contains("gast@domain.de"))
+    #expect(body.contains("[redacted]"))
+    #expect(body.contains("zlib+Base64"))
+}
+
+@Test func githubIssueDiagnostic_compressionFailedKeepsPreview() {
+    let body = diagnosticBody(
+        logAttachment: .compressionFailed(preview: "last-line"),
+        includeCompressedLog: true
+    )
+    #expect(body.contains("last-line"))
+    #expect(body.contains("Kompression fehlgeschlagen"))
+    #expect(!body.contains("zlib+Base64"))
+}
+
+@Test func githubIssueDiagnostic_urlFormOmitsZlibBlob() {
+    let attachment = DiagnosticLogAttachment.makeAttached(
+        redactedTail: "only-preview\n",
+        fileByteCount: 12,
+        truncated: false
+    )
+    let field = GitHubIssueDiagnostic.collectedFormFieldContent(
+        kind: .error,
+        message: "Timeout",
+        providerID: nil,
+        origin: .embeddedToken(attributedUsername: nil),
+        diagnostics: GitHubIssueDiagnostic.DeviceDiagnostics(
+            fingerprint: "abc",
+            appVersion: "1",
+            build: "2",
+            os: "macOS",
+            device: "Mac",
+            locale: "de_DE",
+            timeZone: "Europe/Berlin",
+            environment: diagnosticTestEnvironment(),
+            logAttachment: attachment
+        )
+    )
+    #expect(field.contains("| Architektur |"))
+    #expect(!field.contains("zlib+Base64"))
+    #expect(!field.contains("## Sync-Log"))
+}
+
+@Test func githubIssueDiagnostic_payloadIsSeparateFromBannerMessage() {
+    struct TimeoutError: LocalizedError {
+        var errorDescription: String? { "Provider timeout konkret" }
+    }
+    let banner = SyncStore.bannerMessage(from: TimeoutError())
+    #expect(banner == "Provider timeout konkret")
+    #expect(!banner.contains("Sync-Log"))
+    #expect(!banner.contains("MiB"))
+    let payload = diagnosticBody(
+        message: banner,
+        logAttachment: DiagnosticLogAttachment.makeAttached(
+            redactedTail: "log-line\n",
+            fileByteCount: 8,
+            truncated: false
+        )
+    )
+    #expect(payload.contains("## Sync-Log"))
+    #expect(payload.contains("| RAM physisch |"))
+    #expect(banner != payload)
+}
+
+@Test func githubIssueDiagnostic_fingerprintIgnoresEnvironmentAndLog() {
+    let message = "Provider timeout konkret"
+    let fp = GitHubIssueFingerprint.hex(kind: .error, message: message)
+    let low = diagnosticBody(
+        message: message,
+        fingerprint: fp,
+        environment: diagnosticTestEnvironment(
+            processFootprintBytes: nil,
+            volumeAvailableBytes: nil
+        ),
+        logAttachment: .missing
+    )
+    let high = diagnosticBody(
+        message: message,
+        fingerprint: fp,
+        environment: diagnosticTestEnvironment(),
+        logAttachment: DiagnosticLogAttachment.makeAttached(
+            redactedTail: "log-line\n",
+            fileByteCount: 8,
+            truncated: false
+        )
+    )
+    #expect(low.contains("reisen-fingerprint: `\(fp)`"))
+    #expect(high.contains("reisen-fingerprint: `\(fp)`"))
+    #expect(low.contains("nicht verfügbar"))
+    #expect(high.contains("zlib+Base64"))
 }
 
 @Test func githubIssueDiagnostic_redactsEmailInErrorMessage() {
@@ -389,6 +544,28 @@ import ReisenDomain
     #expect(leftover.contains("{not-json"))
 }
 
+private func diagnosticTestEnvironment(
+    processFootprintBytes: UInt64? = 200 * 1024 * 1024,
+    availableMemoryBytes: UInt64? = 800 * 1024 * 1024,
+    volumeAvailableBytes: Int64? = 20 * 1024 * 1024 * 1024,
+    cloudKitEnabled: Bool = true,
+    thermalState: String = "nominal"
+) -> RuntimeEnvironmentSnapshot {
+    RuntimeEnvironmentSnapshot(
+        architecture: "arm64",
+        physicalMemoryBytes: 16 * 1024 * 1024 * 1024,
+        processFootprintBytes: processFootprintBytes,
+        availableMemoryBytes: availableMemoryBytes,
+        volumeAvailableBytes: volumeAvailableBytes,
+        thermalState: thermalState,
+        lowPowerMode: false,
+        processorCount: 10,
+        activeProcessorCount: 8,
+        systemUptimeSeconds: 3600,
+        cloudKitEnabled: cloudKitEnabled
+    )
+}
+
 private func diagnosticBody(
     kind: GitHubIssueKind = .error,
     title: String = "T",
@@ -401,7 +578,10 @@ private func diagnosticBody(
     device: String = "Mac",
     locale: String = "de_DE",
     timeZone: String = "Europe/Berlin",
-    fingerprint: String = "abc"
+    fingerprint: String = "abc",
+    environment: RuntimeEnvironmentSnapshot = diagnosticTestEnvironment(),
+    logAttachment: DiagnosticLogAttachment = .missing,
+    includeCompressedLog: Bool = true
 ) -> String {
     GitHubIssueDiagnostic.body(
         kind: kind,
@@ -416,8 +596,11 @@ private func diagnosticBody(
             os: os,
             device: device,
             locale: locale,
-            timeZone: timeZone
-        )
+            timeZone: timeZone,
+            environment: environment,
+            logAttachment: logAttachment
+        ),
+        includeCompressedLog: includeCompressedLog
     )
 }
 
@@ -428,6 +611,7 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
     var commentCount = 0
     var commentError: (any Error)?
     var commentBodies: [String] = []
+    var lastCommentBody: String?
     var lastCreate: (title: String, body: String, labels: [String])?
     var nextCreated = GitHubCreatedIssue(
         number: 1,
@@ -455,6 +639,7 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
         }
         commentCount += 1
         commentBodies.append(body)
+        lastCommentBody = body
         return nextComment
     }
 }

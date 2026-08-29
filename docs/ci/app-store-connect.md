@@ -45,7 +45,7 @@ Abgleich mit `Apps/ReiseniOS/PrivacyInfo.xcprivacy` (Store-Variante **ohne** Pro
 | Nutzerinhalte (`OtherUserContent`: Buchungen, Kalendertexte) | Ja | Nein | App-Funktionalität |
 | Kundensupport (Feedback-Issues) | Ja | Nein | App-Funktionalität |
 | Crash-Daten (Opt-in Auto-Report) | Ja | Nein | App-Funktionalität |
-| Sonstige Diagnosedaten (OS, Gerät, Locale, Zeitzone) | Ja | Nein | App-Funktionalität |
+| Sonstige Diagnosedaten (OS, Gerät, Locale, Zeitzone, RAM/Disk/Thermal, Sync-Log-Auszug) | Ja | Nein | App-Funktionalität |
 
 Nicht als „Collected“ angeben (verlassen das Gerät nicht bzw. fehlen in der Store-App):
 

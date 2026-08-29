@@ -30,7 +30,7 @@
   - TDD: zuerst kompilierende Stubs, dann Test, RED = Assert-Fail.
   - Ein Payload-Typ (`PasteImportPayloadDTO`), Felder = `PasteImportExtraction`; Session nutzt `@Generable` auf **diesem** Typ oder einem 1:1-Zwilling gleichen Namenspräfixes, Mapper eine Quelle.
   - Bool: `isErgaenzen` / `showsAmbiguousHint`. EN-Badge: Enrich.
-  - Share: Scheme `reisen://paste-import`; eine Extension in Store- und Private-App; App Group `group.de.reisen.Reisen.pasteimport`.
+  - Share: Store und Private mit **getrennten** Handoff-Identitäten (`PasteImportHandoffIdentity`): App Groups `group.de.reisen.Reisen.pasteimport` / `group.de.reisen.Reisen.private.pasteimport`, URL-Schemes `reisen` / `reisen-private`, Host `paste-import`. Zwei Extension-Targets, eine Implementierung unter `Apps/ReisenPasteImportShare/`.
   - Extract-Fehler: ein Lauf, kein Retry. Test mit Fake-Extractor.
   - `validated()` ohne `now:`. Fehlendes status = `.unknown` mit Test.
 
@@ -824,14 +824,17 @@ Flow macOS: PCC-Alert nur bei kind PCC; Progress; 0 Kandidaten Leerzustand; Queu
 ### Task 11: iOS-Einstieg + Share-Extension
 
 **Files:**
-- Modify: `project.yml` — **ein** Target `ReisenPasteImportShare` (`type: app-extension`), bundle `de.reisen.Reisen.ios.share`, eingebettet in `ReiseniOS` **und** `ReiseniOSPrivate`.
-- Create: `Apps/ReisenPasteImportShare/ShareViewController.swift` — `NSExtensionItem` → App Group `group.de.reisen.Reisen.pasteimport` Dateien `payload.bin` + `meta.json`; öffnet `reisen://paste-import`. Kein SwiftData.
-- Modify: `Apps/ReiseniOS/Info.plist` und `Apps/ReiseniOSPrivate/Info.plist` — URL-Scheme `reisen`.
-- Modify: `ReiseniOSApp.swift` — `onOpenURL`: wenn `reisen://paste-import`, Consume + Delete; Fehler `paste_import.error_handoff`.
-- Entitlements beider Apps + Extension: App Group.
+- Modify: `project.yml` — **zwei** Extension-Targets mit gemeinsamer Source unter `Apps/ReisenPasteImportShare/`:
+  - `ReisenPasteImportShare` — Bundle `de.reisen.Reisen.ios.share`, Entitlements `ReisenPasteImportShare.entitlements` (Store-App-Group), eingebettet in `ReiseniOS`.
+  - `ReisenPasteImportSharePrivate` — Bundle `de.reisen.Reisen.ios.private.share`, Entitlements `ReisenPasteImportSharePrivate.entitlements` (Private-App-Group), eingebettet in `ReiseniOSPrivate`; Compile-Flag `REISEN_IOS_PRIVATE`.
+- Create: `Apps/ReisenPasteImportShare/ShareViewController.swift` — `NSExtensionItem` → App Group Dateien `payload.bin` + `meta.json`; öffnet Handoff-URL laut `PasteImportHandoff` (`reisen://paste-import` bzw. `reisen-private://paste-import`). Kein SwiftData.
+- Create: `Apps/Shared/PasteImportHandoff.swift` — Write/Consume mit App-Group-Lock; Identitäten aus `PasteImportHandoffIdentity`.
+- Modify: `Apps/ReiseniOS/Info.plist` — URL-Scheme `reisen`; `Apps/ReiseniOSPrivate/Info.plist` — URL-Scheme `reisen-private`.
+- Modify: Host-Apps — `onOpenURL` / Aktivierung: Handoff konsumieren; Fehler `paste_import.error_handoff`.
+- Entitlements der jeweiligen Host-App + Extension: passende App Group (Store bzw. Private, nicht geteilt).
 - iOS Toolbar: gleicher L10n-Key; `fileImporter`/`PhotosPicker` → `PasteImportRun` (kein Flow-Duplikat in SharedUI, das den Adapter importiert).
 
-- [ ] **Step 1:** Scheme + Extension + App Group, eine Implementierung.
+- [ ] **Step 1:** Schemes + beide Extension-Targets + getrennte App Groups, eine Implementierung.
 - [ ] **Step 2:** `bash ./Scripts/generate-ios-project.sh` Exit 0 (`.xcodeproj` nicht committen).
 - [ ] **Step 3: Commit** `feat: add iOS paste-import entry and share extension`
 
@@ -869,7 +872,7 @@ Text: Nutzer kann Text/Bild/PDF einfügen; Verarbeitung on-device oder nach Best
 | SharedUI ohne Adapter; Prefill über Merger | 9 |
 | `createBooking(trip: nil)` Offen | 10 |
 | PDF-Seiten als Bilder; Attachment für Fotos | 8 |
-| macOS ⌘⇧V; iOS Scheme `reisen://paste-import` | 10, 11 |
+| macOS ⌘⇧V; iOS Store/Private Handoff (`reisen` / `reisen-private`) | 10, 11 |
 | Privacy PCC + ephemer | 12 |
 | Unknown type nicht `.other` | 7 |
 

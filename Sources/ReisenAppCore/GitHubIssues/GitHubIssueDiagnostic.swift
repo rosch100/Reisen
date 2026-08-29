@@ -11,6 +11,8 @@ public enum GitHubIssueDiagnostic {
         let device: String
         let locale: String
         let timeZone: String
+        let environment: RuntimeEnvironmentSnapshot
+        let logAttachment: DiagnosticLogAttachment
     }
 
     static func body(
@@ -19,7 +21,8 @@ public enum GitHubIssueDiagnostic {
         message: String,
         providerID: ProviderID?,
         origin: GitHubIssueReportOrigin,
-        diagnostics: DeviceDiagnostics
+        diagnostics: DeviceDiagnostics,
+        includeCompressedLog: Bool = true
     ) -> String {
         """
         ## Zusammenfassung
@@ -31,6 +34,7 @@ public enum GitHubIssueDiagnostic {
         ```
         \(SecretRedactor.redact(message))
         ```
+        \(diagnostics.logAttachment.markdownSection(includeCompressedLog: includeCompressedLog))
         """
     }
 
@@ -39,21 +43,22 @@ public enum GitHubIssueDiagnostic {
         kind: GitHubIssueKind,
         message: String,
         providerID: ProviderID?,
-        origin: GitHubIssueReportOrigin
+        origin: GitHubIssueReportOrigin,
+        diagnostics: DeviceDiagnostics? = nil
     ) -> String {
         let redactedMessage = SecretRedactor.redact(message)
-        return """
-        \(redactedMessage)
-
-        ---
-
-        \(diagnosticTable(
+        let snapshot = diagnostics ?? deviceSnapshot(kind: kind, redactedMessage: redactedMessage)
+        let table = formTable(
             kind: kind,
             providerID: providerID,
             origin: origin,
-            diagnostics: deviceSnapshot(kind: kind, redactedMessage: redactedMessage)
-        ))
-        """
+            diagnostics: snapshot
+        )
+        let separator = "\n\n---\n\n"
+        let budget = GitHubIssueNewIssueURL.maxBodyCharacterCount
+        let maxMessage = max(0, budget - table.count - separator.count)
+        let messagePart = GitHubIssueNewIssueURL.truncated(redactedMessage, maxCharacters: maxMessage)
+        return joinFormField(message: messagePart, table: table)
     }
 
     static func deviceSnapshot(kind: GitHubIssueKind, redactedMessage: String) -> DeviceDiagnostics {
@@ -65,8 +70,23 @@ public enum GitHubIssueDiagnostic {
             os: ProcessInfo.processInfo.operatingSystemVersionString,
             device: deviceModel(),
             locale: Locale.current.identifier,
-            timeZone: TimeZone.current.identifier
+            timeZone: TimeZone.current.identifier,
+            environment: .live(),
+            logAttachment: SyncLog.recentTail()
         )
+    }
+
+    static func formTable(
+        kind: GitHubIssueKind,
+        providerID: ProviderID?,
+        origin: GitHubIssueReportOrigin,
+        diagnostics: DeviceDiagnostics
+    ) -> String {
+        diagnosticTable(kind: kind, providerID: providerID, origin: origin, diagnostics: diagnostics)
+    }
+
+    static func joinFormField(message: String, table: String) -> String {
+        message + "\n\n---\n\n" + table
     }
 
     private static func diagnosticTable(
@@ -89,6 +109,7 @@ public enum GitHubIssueDiagnostic {
         | Gerät | \(diagnostics.device) |
         | Sprache | \(diagnostics.locale) |
         | Zeitzone | \(diagnostics.timeZone) |
+        \(diagnostics.environment.tableRows().trimmingCharacters(in: .newlines))
         | Provider | \(provider) |
 
         reisen-fingerprint: `\(diagnostics.fingerprint)`

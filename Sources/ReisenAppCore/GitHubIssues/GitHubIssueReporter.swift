@@ -222,12 +222,37 @@ public final class GitHubIssueReporter {
     }
 
     private func commentBody(kind: GitHubIssueKind, message: String) -> String {
-        """
+        let env = RuntimeEnvironmentSnapshot.live()
+        let log = SyncLog.recentTail()
+        let logBlock: String
+        switch log {
+        case .attached(let preview, _, _, _, _), .compressionFailed(let preview):
+            let lines = DiagnosticLogCompressor.preview(
+                from: preview,
+                lastLineCount: DiagnosticLogAttachment.commentPreviewLineCount
+            )
+            logBlock = "```\n\(lines)\n```"
+        case .missing:
+            logBlock = "Sync-Log: nicht vorhanden"
+        case .empty:
+            logBlock = "Sync-Log: leer"
+        case .unreadable(let detail):
+            logBlock = "Sync-Log: nicht lesbar\n\(SecretRedactor.redact(detail))"
+        }
+        return """
         Erneuter \(kind.repeatReportLabel) (\(ISO8601DateFormatter().string(from: now()))):
 
         ```
         \(message)
         ```
+
+        | RAM physisch | \(RuntimeEnvironmentSnapshot.mebibytes(env.physicalMemoryBytes)) |
+        | Thermal | \(env.thermalState) |
+        | Energiesparmodus | \(env.lowPowerMode ? "ja" : "nein") |
+        | Freier Volume-Platz | \(RuntimeEnvironmentSnapshot.optionalGibibytes(env.volumeAvailableBytes)) |
+        | iCloud | \(env.cloudKitEnabled ? "an" : "aus") |
+
+        \(logBlock)
         """
     }
 

@@ -61,20 +61,15 @@ public enum PasteImportPDFPreparation {
 
     private static func pageImages(of document: PDFDocument, indices: [Int]) throws -> [Data] {
         guard !indices.isEmpty else { return [] }
-        guard indices.count <= maxRenderedPages else {
-            throw PasteImportAdapterError.unreadableSource
-        }
         var images: [Data] = []
         var totalBytes = 0
-        for index in indices {
+        for index in indices.prefix(maxRenderedPages) {
             guard let page = document.page(at: index)?.pageRef else {
                 throw PasteImportAdapterError.unreadableSource
             }
             let png = try PasteImportImageData.png(from: try render(page))
             totalBytes += png.count
-            guard totalBytes <= maxRenderedBytes else {
-                throw PasteImportAdapterError.unreadableSource
-            }
+            guard totalBytes <= maxRenderedBytes else { break }
             images.append(png)
         }
         return images
