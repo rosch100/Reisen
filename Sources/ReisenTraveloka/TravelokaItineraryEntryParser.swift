@@ -41,7 +41,7 @@ enum TravelokaItineraryEntryParser {
               let endAt = TravelokaJSON.dateFromMillis(common["itineraryTimestampEnd"]) else {
             return nil
         }
-        let fields = productFields(
+        var fields = productFields(
             from: EntryContext(
                 entry: entry,
                 product: product,
@@ -53,6 +53,10 @@ enum TravelokaItineraryEntryParser {
                 startAt: startAt,
                 endAt: endAt
             )
+        )
+        fields.rateDetails = BookingRateDetails.merging(
+            existing: fields.rateDetails,
+            incoming: TravelokaJSON.bookingRateDetails(from: entry)
         )
 
         let externalUrl = TravelokaAPI.detailURL(

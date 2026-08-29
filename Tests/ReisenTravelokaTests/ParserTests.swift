@@ -48,6 +48,7 @@ private enum TravelokaFixtureLoader {
     #expect(activity.isAllDay == true)
     #expect(activity.status == .confirmed)
     #expect(activity.externalUrl?.contains("type=EXPERIENCE") == true)
+    expectTravelokaPrice(activity.rateDetails, amount: 3.62)
 
     let hotel = try #require(byType[.hotel])
     #expect(hotel.confirmationCode == TravelokaFixtureLoader.redactedHotelBookingId)
@@ -56,6 +57,7 @@ private enum TravelokaFixtureLoader {
     #expect(hotel.locationToAddress?.contains("Cilandak") == true)
     #expect(hotel.rateDetails?.roomCategory == "Standard Double")
     #expect(hotel.rateDetails?.boardType == .roomOnly)
+    expectTravelokaPrice(hotel.rateDetails, amount: 125.0)
     #expect(hotel.hotelCheckInMinutes == 14 * 60)
     #expect(hotel.deadlines.contains { $0.isFreeCancellation } == true)
     #expect(hotel.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 } == true)
@@ -72,11 +74,13 @@ private enum TravelokaFixtureLoader {
     #expect(vehicle.locationFrom?.contains("Bandara") == true)
     #expect(vehicle.locationFromAddress?.contains("Jakarta") == true)
     #expect(vehicle.rateDetails?.roomCategory == "Automatic")
+    expectTravelokaPrice(vehicle.rateDetails, amount: 89.0)
     #expect(vehicle.deadlines.contains { $0.isFreeCancellation } == true)
 
     let flight = try #require(catalog.bookings.first { $0.bookingType == .flight })
     #expect(flight.confirmationCode == TravelokaFixtureLoader.redactedFlightBookingId)
     #expect(flight.title?.contains("Jakarta") == true)
+    expectTravelokaPrice(flight.rateDetails, amount: 450.0)
     #expect(flight.hotelOffsetSeconds == nil)
 }
 
@@ -170,6 +174,32 @@ private func travelokaCatalogHotelEntry(
         ],
         "cardDetailInfo": [:] as [String: Any],
     ]
+}
+
+private func travelokaPaymentInfo(
+    amount: String,
+    currency: String = "EUR",
+    decimalPoint: String = "2",
+    isTotalPriceHidden: Bool = false,
+    totalPriceHidden: Bool = false
+) -> [String: Any] {
+    [
+        "expectedAmount": [
+            "currencyValue": ["currency": currency, "amount": amount],
+            "numOfDecimalPoint": decimalPoint,
+        ],
+        "isTotalPriceHidden": isTotalPriceHidden,
+        "totalPriceHidden": totalPriceHidden,
+    ]
+}
+
+private func expectTravelokaPrice(
+    _ rate: BookingRateDetails?,
+    amount: Double,
+    currency: String = "EUR"
+) {
+    #expect(rate?.totalPriceAmount == amount)
+    #expect(rate?.totalPriceCurrency == currency)
 }
 
 @Test func travelokaHotelDeadlinesFromCancellationPoliciesArray() throws {
@@ -382,6 +412,77 @@ private func travelokaCatalogHotelEntry(
     #expect(enrichment.passengers?.first?.travellerType == .child)
     #expect(enrichment.deadlines.count == 1)
     #expect(enrichment.deadlines.first?.isFreeCancellation == true)
+    expectTravelokaPrice(enrichment.rateDetails, amount: 3.62)
+    #expect(enrichment.rateDetails?.roomCategory == "(Nighttime) Bus Pass Around Hanoi")
+    #expect(enrichment.rateDetails?.guestCount == 1)
+}
+
+@Test func travelokaPaymentInfoExpectedAmountMapsToRateDetails() throws {
+    var entry = travelokaCatalogHotelEntry(bookingId: "priced", timestamps: true)
+    entry["paymentInfo"] = travelokaPaymentInfo(amount: "12500")
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    expectTravelokaPrice(draft.rateDetails, amount: 125.0)
+}
+
+@Test func travelokaPaymentInfoHiddenFlagsLeavePriceNil() throws {
+    let cases: [(String, [String: Any])] = [
+        ("is", travelokaPaymentInfo(amount: "12500", isTotalPriceHidden: true)),
+        ("total", travelokaPaymentInfo(amount: "12500", totalPriceHidden: true)),
+    ]
+    for (suffix, payment) in cases {
+        var entry = travelokaCatalogHotelEntry(bookingId: "hidden-\(suffix)", timestamps: true)
+        entry["paymentInfo"] = payment
+        let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+        #expect(draft.rateDetails?.totalPriceAmount == nil)
+        #expect(draft.rateDetails?.totalPriceCurrency == nil)
+    }
+}
+
+@Test func travelokaHotelWithoutExpectedAmountDoesNotUseCancellationFeeAsPrice() throws {
+    let entry: [String: Any] = [
+        "bookingId": "1",
+        "itineraryId": "2",
+        "itineraryType": "HOTEL",
+        "paymentInfo": [
+            "userTripStatus": "ETICKET_PUBLISHED",
+        ],
+        "bookingInfo": [
+            "hotelBookingInfo": [
+                "hotelName": "Fee Only Hotel",
+                "cancellationPolicyInfos": [
+                    [
+                        "appliedEndDate": [
+                            "hourMinute": ["hour": "12", "minute": "59"],
+                            "monthDayYear": ["day": "1", "month": "9", "year": "2026"],
+                        ],
+                        "policyInfoDetail": [
+                            "description": "Cancellation fee",
+                            "fee": [
+                                "currencyValue": ["amount": "437", "currency": "EUR"],
+                                "numOfDecimalPoint": "2",
+                            ],
+                            "type": "FULL_CHARGE",
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryTimestampBegin": 1_700_000_000_000,
+                "itineraryTimestampEnd": 1_700_086_400_000,
+                "ianaTimezoneBegin": "Asia/Jakarta",
+            ],
+            "hotelSummary": [
+                "hotelName": "Fee Only Hotel",
+                "roomName": "Standard",
+            ],
+        ],
+        "cardDetailInfo": [:] as [String: Any],
+    ]
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    #expect(draft.rateDetails?.totalPriceAmount == nil)
+    #expect(draft.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 })
 }
 
 @Test func travelokaEnrichmentHotelFromVoucherInfo() throws {
@@ -395,6 +496,7 @@ private func travelokaCatalogHotelEntry(
     #expect(enrichment.rateDetails?.roomCategory == "Standard Double")
     #expect(enrichment.rateDetails?.guestCount == 2)
     #expect(enrichment.rateDetails?.includedBreakfast == false)
+    expectTravelokaPrice(enrichment.rateDetails, amount: 125.0)
     #expect(enrichment.deadlines.count == 2)
     #expect(enrichment.deadlines.contains { $0.isFreeCancellation } == true)
     let fee = try #require(enrichment.deadlines.first { !$0.isFreeCancellation })
@@ -429,6 +531,7 @@ private func travelokaCatalogHotelEntry(
     #expect(enrichment.locationFromAddress?.contains("Jakarta") == true)
     #expect(enrichment.locationToAddress?.contains("Jakarta") == true)
     #expect(enrichment.rateDetails?.roomCategory == "Automatic")
+    expectTravelokaPrice(enrichment.rateDetails, amount: 89.0)
     #expect(enrichment.passengers?.first?.givenName == "REDACTED")
     #expect(enrichment.deadlines.count == 1)
     #expect(enrichment.deadlines.first?.isFreeCancellation == true)
@@ -443,6 +546,7 @@ private func travelokaCatalogHotelEntry(
     let enrichment = try TravelokaEnrichmentParser.parse(from: text)
     #expect(enrichment.title?.contains("Jakarta") == true)
     #expect(enrichment.rateDetails?.airline == "AirAsia")
+    expectTravelokaPrice(enrichment.rateDetails, amount: 450.0)
     #expect(enrichment.deadlines.isEmpty)
     #expect(enrichment.flightDepartureOffsetSeconds != nil)
     #expect(enrichment.passengers?.count == 1)
@@ -536,6 +640,7 @@ private func travelokaCatalogHotelEntry(
     #expect(enrichment.passengers?.count == 2)
     #expect(enrichment.passengers?.contains { $0.travellerType == .child } == true)
     #expect(enrichment.rateDetails?.passengerCount == 2)
+    expectTravelokaPrice(enrichment.rateDetails, amount: 380.0)
 }
 
 @Test func travelokaWhoAmIProbeTV() throws {
@@ -568,6 +673,7 @@ private func travelokaCatalogHotelEntry(
     let enrichment = try TravelokaEnrichmentParser.parse(from: text)
     #expect(enrichment.status == .cancelled)
     #expect(enrichment.title?.contains("Cancelled Sample") == true)
+    expectTravelokaPrice(enrichment.rateDetails, amount: 199.0)
 }
 
 @Test func travelokaRefundPresubmissionParsesFreeDeadline() throws {

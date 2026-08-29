@@ -69,6 +69,7 @@ Status-SSOT: Tag/Text `Voucher issued` / `E-ticket issued` / `userTripStatus: ET
 
 Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 
+- **Preis (alle Produkttypen):** `paymentInfo.expectedAmount` → `rateDetails.totalPriceAmount` / `totalPriceCurrency` via `TravelokaJSON.bookingMoney` / `money` (`amount` + `numOfDecimalPoint`, z. B. `362`+`2` → `3.62`). Overlay in `facts(from:)` nach produkt-spezifischen Rate-Feldern (`BookingRateDetails.merging`). Bei `isTotalPriceHidden` / `totalPriceHidden` == true → kein Preis (`nil`, UI „k. A.“). **Nicht** Storno-`FULL_CHARGE`-Fee als Buchungspreis.
 - Experience: `operatorInfo.name` → `operatorName`; `timeSlotId == all_day_pass` / „All Day“ → `isAllDay`
 - Hotel: Live-API `hotelDetail.voucherInfo` + `localeAwareInfos` (kein `hotelSummary`); Ort `bookingInfo.hotelBookingInfo.hotelGeoDisplayName`; Free+Fee-Fristen primär aus `cancellationPolicyInfos` (`FREE_CANCELLATION` / `FULL_CHARGE`, Betrag = `amount` / `10^numOfDecimalPoint`); Fallback Policy-String; Check-in/out aus Voucher-Zeiten; **Stay-Hints** aus `importantNoticeDisplay.importantNoticePolicies`, `propertyPolicy` (Hausregeln), optional `checkInInstruction` nur bei `BookingGuestHintPrepKeywords` — **nicht** `specialRequests`
 - Flight: Live-E-Ticket liest `bookingInfo.flightBookingInfo.bookingDetail` (Segmente `segments`, sonst `routes` / `flightRouteGroups`; Airports `sourceAirport`/`destinationAirport` oder Search-Shape `departureCity`/`arrivalCityCode`) plus `flightTicketInfo.eTicketDetailMap` / `eTicketButtonInfo`. Kein `flightSummary`. Keine Free-Deadline erfinden; Fee nur mit echter Deadline (`refundFeeAmount` + `refundDeadlineLocal` bzw. Refund-HTML)
@@ -88,8 +89,8 @@ Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 
 ## Tests
 
-- `traveloka_itinerary_single_*_redacted.json` → Enrichment pro Product-Type (inkl. Fee-Flug)
-- `traveloka_itineraries_fetch_redacted.json` → Catalog-Drafts (Experience + Hotel + Vehicle + Flight)
+- `traveloka_itinerary_single_*_redacted.json` → Enrichment pro Product-Type (inkl. Fee-Flug + Cancelled; alle mit `paymentInfo.expectedAmount`)
+- `traveloka_itineraries_fetch_redacted.json` → Catalog-Drafts (Experience + Hotel + Vehicle + Flight; Preise aus `expectedAmount`)
 - `traveloka_whoami_redacted.json` / `traveloka_whoami_apple_redacted.json` → Session-Probe (`TV` / `AP`)
 - `traveloka_whoami_anonymous_redacted.json` → nicht eingeloggt ohne `loginMethod`
 - Keine echten Tokens/PII in Assertions
@@ -113,7 +114,8 @@ Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 ### Konformitätsprotokoll
 
 - Facts → `DraftAssembler` (`guestHints` über `ProviderBookingFacts`); kein zweites Draft-Init
-- no-fallbacks: fehlende Stay-Felder → leeres Array; keine geratenen TRAIN-Station-Keys; TRAIN nicht in Whitelist ohne Entries
-- SSOT: Typ-Mapping `TravelokaProductType`; Prep-Keywords Domain; Catalog-Types unverändert
-- Traveloka `needsDraftEnrichment`: Hotel mit leeren `guestHints` → `single` (Catalog-Karten oft ohne Policies; Sync überschreibt Hints aus dem Draft)
+- no-fallbacks: fehlende Stay-Felder → leeres Array; keine geratenen TRAIN-Station-Keys; TRAIN nicht in Whitelist ohne Entries; fehlender/versteckter Preis → `nil` (kein Storno-Fee als Total)
+- SSOT: Typ-Mapping `TravelokaProductType`; Prep-Keywords Domain; Catalog-Types unverändert; Geldwerte `TravelokaJSON.money` / `bookingMoney` / `bookingRateDetails` / `moneyAmount`
+- Preis: `paymentInfo.expectedAmount` in Catalog und Single (gleicher Entry-Parser); wie GYG/Booking/Opodo/Check24/Airbnb/BM auf `BookingRateDetails.totalPriceAmount`
+- Traveloka `needsDraftEnrichment`: Hotel mit leeren `guestHints` → `single` (Catalog-Karten oft ohne Policies; Sync überschreibt Hints aus dem Draft); **nicht** wegen fehlendem Preis (Catalog liefert denselben Payment-Pfad)
 - Doc-Drift A.4 TRAIN → `.train` korrigiert

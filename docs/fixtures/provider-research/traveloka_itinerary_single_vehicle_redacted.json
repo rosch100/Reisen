@@ -13,7 +13,13 @@
           }
         ],
         "paymentInfo": {
-          "userTripStatus": "ETICKET_PUBLISHED"
+          "userTripStatus": "ETICKET_PUBLISHED",
+          "expectedAmount": {
+            "currencyValue": { "currency": "EUR", "amount": "8900", "nullOrEmpty": false },
+            "numOfDecimalPoint": "2"
+          },
+          "isTotalPriceHidden": false,
+          "totalPriceHidden": false
         },
         "cardSummaryInfo": {
           "commonSummary": {
