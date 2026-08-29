@@ -4,13 +4,13 @@ Ungelesene Mails an **reisenapp100@gmail.com** (`GitHubRepository.feedbackEmail`
 
 Ablauf: Gmail API (OAuth Refresh-Token) → `Scripts/ingest-gmail-feedback.sh` → `POST /repos/rosch100/Reisen/issues` als `github-actions[bot]`.
 
-Labels: `kind/feedback`, `source/email`. Titel: `[Feedback] ` plus Betreff (max. 80 Zeichen). Duplikate: Marker `reisen-email-id` im Issue-Body.
+Labels: `kind/feedback`, `source/email`. Titel: `[Feedback] ` plus Betreff (max. 80 Zeichen). Duplikate: Marker `reisen-email-id` im Issue-Body. Der Grok-Bot lädt Anhänge nicht von GitHub, sondern liest die Mail per Gmail-API: Marker `issue-dev-gmail-id` (Gmail-Message-Id; letzte HTML-Kommentar-Instanz). Der Bot holt die Mail nur, wenn das Issue von `github-actions[bot]` stammt und `source/email` trägt. Ingress entfernt HTML-Kommentare aus Mailfeldern. Siehe [issue-dev.md](issue-dev.md).
 
 Die Logik liegt nur im Script; der Workflow [gmail-feedback-ingress.yml](../../.github/workflows/gmail-feedback-ingress.yml) ruft das Script auf.
 
 Mails, deren **erste nichtleere Zeile genau** `reisen-paste-import-document` ist (Paste-Import-Beispieldokument nach fehlgeschlagener Erkennung), werden **nicht** zu GitHub-Issues. Ein Präfix wie `reisen-paste-import-documentation` und ein Zitat des Markers mitten in einer normalen Feedback-Mail zählen nicht. Der Ingress markiert passende Mails als gelesen; der Anhang bleibt im Gmail-Postfach. So landet das Dokument nicht öffentlich auf GitHub.
 
-Nach erfolgreichem Issue-Create feuert GitHub `issues: opened` → [issue-dev-wake.yml](../../.github/workflows/issue-dev-wake.yml) (kein IMAP im Grok-Bot). Siehe [issue-dev.md](issue-dev.md).
+Nach erfolgreichem Issue-Create feuert GitHub `issues: opened` → [issue-dev-wake.yml](../../.github/workflows/issue-dev-wake.yml). Der Bot nutzt **kein IMAP**; er holt dieselbe Mail per Gmail-API (OAuth, `issue-dev-gmail-id`). Siehe [issue-dev.md](issue-dev.md).
 
 Kein App-Passwort, kein IMAP, kein Google-Konto-Passwort.
 
