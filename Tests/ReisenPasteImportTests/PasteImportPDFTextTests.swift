@@ -23,11 +23,10 @@ import ReisenPasteImport
     #expect(content.pageImages.count == 1)
 }
 
-@Test func pasteImportPDFText_tooManyTextlessPagesThrowUnreadableSource() {
+@Test func pasteImportPDFText_capsRenderedTextlessPagesAtMax() throws {
     let count = PasteImportPDFPreparation.maxRenderedPages + 1
-    #expect(throws: PasteImportAdapterError.unreadableSource) {
-        try PasteImportPDFPreparation.prepare(PDFTestData.blankPages(count: count))
-    }
+    let content = try PasteImportPDFPreparation.prepare(PDFTestData.blankPages(count: count))
+    #expect(content.pageImages.count == PasteImportPDFPreparation.maxRenderedPages)
 }
 
 @Test func pasteImportPDFText_nonPDFBytesThrowUnreadableSource() {

@@ -27,6 +27,7 @@ import ReisenPasteImport
     }
     let extractor = FoundationModelsPasteImportExtractor(kind: kind)
 
+    var extractionFailures: [String] = []
     for file in files {
         print("\n==== \(file.lastPathComponent) ====")
         do {
@@ -56,7 +57,13 @@ import ReisenPasteImport
             }
         } catch {
             print("ERROR \(error)")
+            extractionFailures.append("\(file.lastPathComponent): \(error)")
         }
+    }
+    if !extractionFailures.isEmpty {
+        Issue.record(
+            "Live-Extract fehlgeschlagen:\n\(extractionFailures.joined(separator: "\n"))"
+        )
     }
 }
 

@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import ReisenDomain
 
@@ -7,6 +8,8 @@ enum PasteImportHandoffError: Error, Equatable, Sendable {
     case appGroupUnavailable
     /// Die Bytes passen nicht zur gemeldeten Art (z. B. Text ohne UTF-8).
     case unreadablePayload
+    /// Writer und Consumer konnten die Übergabe nicht exklusiv sperren.
+    case lockUnavailable
 }
 
 /// Übergabe einer geteilten Quelle von der Share-Extension an die App über die App Group.
@@ -14,6 +17,9 @@ enum PasteImportHandoffError: Error, Equatable, Sendable {
 /// Die Extension schreibt `meta.json` und `payload.bin` und bittet das System, die Handoff-URL
 /// zu öffnen. iOS erlaubt Share-Extensions den App-Start nicht garantiert; darum holt die App eine
 /// liegengebliebene Übergabe beim nächsten Aktivieren nach. Der Konsum löscht beide Dateien.
+///
+/// Write und Consume laufen unter einem App-Group-`flock`, damit kein Prozess eine halb
+/// geschriebene oder gemischte Meta/Payload-Übergabe sieht.
 ///
 /// Store und Private: Konstanten in `PasteImportHandoffIdentity`, Auswahl per `REISEN_IOS_PRIVATE`.
 enum PasteImportHandoff {
@@ -30,6 +36,7 @@ enum PasteImportHandoff {
 
     private static let metaFileName = "meta.json"
     private static let payloadFileName = "payload.bin"
+    private static let lockFileName = "handoff.lock"
 
     /// Art der Bytes in `payload.bin`; die Extension kennt keine Modelltypen der App.
     struct Meta: Codable, Equatable, Sendable {
@@ -48,16 +55,18 @@ enum PasteImportHandoff {
 
     static func write(_ source: PasteImportSource) throws {
         guard let container = containerURL() else { throw PasteImportHandoffError.appGroupUnavailable }
-        let payloadURL = container.appendingPathComponent(payloadFileName)
-        let metaURL = container.appendingPathComponent(metaFileName)
-        let (kind, payload) = parts(of: source)
-        // Alte Übergabe unsichtbar machen, bevor neue Meta geschrieben wird — sonst droht
-        // neue Meta + alte Payload. `payload.bin` ist der Auslöser und kommt zuletzt.
-        try removeIfExists(payloadURL)
-        try removeIfExists(metaURL)
-        try JSONEncoder().encode(Meta(kind: kind))
-            .write(to: metaURL, options: .atomic)
-        try payload.write(to: payloadURL, options: .atomic)
+        try withExclusiveLock(in: container) {
+            let payloadURL = container.appendingPathComponent(payloadFileName)
+            let metaURL = container.appendingPathComponent(metaFileName)
+            let (kind, payload) = parts(of: source)
+            // Alte Übergabe unsichtbar machen, bevor neue Meta geschrieben wird — sonst droht
+            // neue Meta + alte Payload. `payload.bin` ist der Auslöser und kommt zuletzt.
+            try removeIfExists(payloadURL)
+            try removeIfExists(metaURL)
+            try JSONEncoder().encode(Meta(kind: kind))
+                .write(to: metaURL, options: .atomic)
+            try payload.write(to: payloadURL, options: .atomic)
+        }
     }
 
     /// Konsumiert eine liegende Übergabe.
@@ -71,29 +80,62 @@ enum PasteImportHandoff {
     /// Scheitert das Payload-Löschen, bleiben die Dateien für einen späteren Versuch.
     static func consumePending() -> PasteImportHandoffOutcome {
         guard let container = containerURL() else { return .noPayload }
-        let payloadURL = container.appendingPathComponent(payloadFileName)
-        let metaURL = container.appendingPathComponent(metaFileName)
-        guard FileManager.default.fileExists(atPath: payloadURL.path) else { return .noPayload }
-        let source: PasteImportSource
         do {
-            let meta = try JSONDecoder().decode(Meta.self, from: try Data(contentsOf: metaURL))
-            source = try Self.source(kind: meta.kind, payload: try Data(contentsOf: payloadURL))
+            return try withExclusiveLock(in: container) {
+                let payloadURL = container.appendingPathComponent(payloadFileName)
+                let metaURL = container.appendingPathComponent(metaFileName)
+                guard FileManager.default.fileExists(atPath: payloadURL.path) else {
+                    return .noPayload
+                }
+                let source: PasteImportSource
+                do {
+                    let meta = try JSONDecoder().decode(
+                        Meta.self,
+                        from: try Data(contentsOf: metaURL)
+                    )
+                    source = try Self.source(
+                        kind: meta.kind,
+                        payload: try Data(contentsOf: payloadURL)
+                    )
+                } catch {
+                    removeBestEffort(payloadURL)
+                    removeBestEffort(metaURL)
+                    return .lostPayload
+                }
+                do {
+                    try removeIfExists(payloadURL)
+                } catch {
+                    return .lostPayload
+                }
+                removeBestEffort(metaURL)
+                return .payload(source)
+            }
         } catch {
-            removeBestEffort(payloadURL)
-            removeBestEffort(metaURL)
             return .lostPayload
         }
-        do {
-            try removeIfExists(payloadURL)
-        } catch {
-            return .lostPayload
-        }
-        removeBestEffort(metaURL)
-        return .payload(source)
     }
 
     private static func containerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
+    }
+
+    /// Exklusives `flock` über Extension und Host — deckt die gesamte Remove/Write- bzw. Consume-Sequenz.
+    private static func withExclusiveLock<T>(
+        in container: URL,
+        _ body: () throws -> T
+    ) throws -> T {
+        let lockURL = container.appendingPathComponent(lockFileName)
+        if !FileManager.default.fileExists(atPath: lockURL.path) {
+            guard FileManager.default.createFile(atPath: lockURL.path, contents: nil) else {
+                throw PasteImportHandoffError.lockUnavailable
+            }
+        }
+        let fd = open(lockURL.path, O_RDWR)
+        guard fd >= 0 else { throw PasteImportHandoffError.lockUnavailable }
+        defer { close(fd) }
+        guard flock(fd, LOCK_EX) == 0 else { throw PasteImportHandoffError.lockUnavailable }
+        defer { _ = flock(fd, LOCK_UN) }
+        return try body()
     }
 
     private static func removeIfExists(_ url: URL) throws {
