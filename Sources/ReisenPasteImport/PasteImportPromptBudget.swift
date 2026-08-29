@@ -23,13 +23,7 @@ public enum PasteImportPromptBudget {
         guard text.count > maxMaterialCharacters else {
             return ClipResult(text: text, didClip: false)
         }
-        let clipped = clippedBody(text)
-        return ClipResult(text: clipped, didClip: true)
-    }
-
-    /// Nur der gekürzte Text — für Stellen, die `didClip` nicht brauchen.
-    public static func clipped(_ text: String) -> String {
-        clip(text).text
+        return ClipResult(text: clippedBody(text), didClip: true)
     }
 
     private static func clippedBody(_ text: String) -> String {

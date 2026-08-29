@@ -21,12 +21,17 @@ public struct PasteImportCandidatePresentation: Equatable, Sendable {
 
 /// Übersicht der erkannten Buchungen vor dem Editor-Durchlauf.
 public struct PasteImportCandidateList: View {
-    private let candidates: [PasteImportCandidate]
-    private let sourceWasTruncated: Bool
+    private let result: PasteImportRunResult
+
+    public init(result: PasteImportRunResult) {
+        self.result = result
+    }
 
     public init(candidates: [PasteImportCandidate], sourceWasTruncated: Bool = false) {
-        self.candidates = candidates
-        self.sourceWasTruncated = sourceWasTruncated
+        self.result = PasteImportRunResult(
+            candidates: candidates,
+            sourceWasTruncated: sourceWasTruncated
+        )
     }
 
     public var body: some View {
@@ -34,7 +39,7 @@ public struct PasteImportCandidateList: View {
             Text(L10n.string(.pasteImportCandidatesTitle))
                 .font(.headline)
 
-            if sourceWasTruncated {
+            if result.sourceWasTruncated {
                 Label(
                     L10n.string(.pasteImportSourceTruncated),
                     systemImage: "exclamationmark.triangle"
@@ -43,12 +48,12 @@ public struct PasteImportCandidateList: View {
                 .foregroundStyle(.secondary)
             }
 
-            if candidates.isEmpty {
+            if result.candidates.isEmpty {
                 Text(L10n.string(.pasteImportEmpty))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(Array(candidates.enumerated()), id: \.offset) { _, candidate in
+                ForEach(Array(result.candidates.enumerated()), id: \.offset) { _, candidate in
                     PasteImportCandidateRow(
                         presentation: PasteImportCandidatePresentation(candidate: candidate)
                     )

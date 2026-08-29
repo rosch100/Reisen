@@ -88,7 +88,7 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             return PasteImportPromptMaterial(
                 text: content.text,
                 images: content.pageImages,
-                sourceWasTruncated: content.textWasTruncated
+                sourceWasTruncated: content.sourceWasTruncated
             )
         }
     }

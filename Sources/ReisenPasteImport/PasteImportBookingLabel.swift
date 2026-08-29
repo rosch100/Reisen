@@ -8,6 +8,11 @@ enum PasteImportBookingLabel {
         return bookingTypes[key]
     }
 
+    /// Enge Titel-Hints ohne Modellkontext (Bus/Tour/GYG) — nicht die breite Generable-Map.
+    static func typeHint(fromToken token: String) -> BookingType? {
+        typeHintAliases[token]
+    }
+
     static func status(from raw: String) -> BookingStatus? {
         guard let key = normalize(raw) else { return nil }
         return statuses[key]
@@ -50,17 +55,13 @@ enum PasteImportBookingLabel {
         map["railway"] = .train
         map["rail"] = .train
         map["ice"] = .train
-        map["bus"] = .train
-        map["flixbus"] = .train
-        map["fernbus"] = .train
-        map["coach"] = .train
-        map["omnibus"] = .train
+        for (key, type) in typeHintAliases {
+            map[key] = type
+        }
         map["tgv"] = .train
         map["sncf"] = .train
-        map["tour"] = .activity
         map["event"] = .activity
         map["ereignis"] = .activity
-        map["ausflug"] = .activity
         map["aktivitat"] = .activity
         map["aktivitaet"] = .activity
         map["unterkunft"] = .hotel
@@ -74,6 +75,18 @@ enum PasteImportBookingLabel {
         map["faehre"] = .ferry
         return map
     }()
+
+    /// Whitelist für `typeHint(fromToken:)` — SSOT auch in `bookingTypes` eingebunden.
+    private static let typeHintAliases: [String: BookingType] = [
+        "bus": .train,
+        "flixbus": .train,
+        "fernbus": .train,
+        "coach": .train,
+        "omnibus": .train,
+        "tour": .activity,
+        "getyourguide": .activity,
+        "ausflug": .activity,
+    ]
 
     private static let statuses: [String: BookingStatus] = {
         var map: [String: BookingStatus] = [:]

@@ -85,14 +85,9 @@ final class PasteImportMacSession {
     /// Fortschritt und Kandidatenliste teilen sich ein Sheet: SwiftUI zeigt pro View nur eines.
     var isPresentingSheet: Bool { isRunning || isChoosing }
 
-    var candidates: [PasteImportCandidate] {
-        if case .choosing(let result) = phase { return result.candidates }
-        return []
-    }
-
-    var sourceWasTruncated: Bool {
-        if case .choosing(let result) = phase { return result.sourceWasTruncated }
-        return false
+    var choosingResult: PasteImportRunResult? {
+        if case .choosing(let result) = phase { return result }
+        return nil
     }
 
     var errorMessage: String? {
@@ -280,10 +275,9 @@ private struct PasteImportFlowModifier: ViewModifier {
             ) {
                 if let kind = session.runningKind {
                     PasteImportProgressSheet(kind: kind) { session.cancelRun() }
-                } else {
+                } else if let result = session.choosingResult {
                     PasteImportCandidateSheet(
-                        candidates: session.candidates,
-                        sourceWasTruncated: session.sourceWasTruncated,
+                        result: result,
                         onCancel: { session.dismissSheet() },
                         onContinue: {
                             session.review()
@@ -335,18 +329,14 @@ private struct PasteImportProgressSheet: View {
 }
 
 private struct PasteImportCandidateSheet: View {
-    let candidates: [PasteImportCandidate]
-    let sourceWasTruncated: Bool
+    let result: PasteImportRunResult
     let onCancel: () -> Void
     let onContinue: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScrollView {
-                PasteImportCandidateList(
-                    candidates: candidates,
-                    sourceWasTruncated: sourceWasTruncated
-                )
+                PasteImportCandidateList(result: result)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -356,7 +346,7 @@ private struct PasteImportCandidateSheet: View {
                 Spacer()
                 Button(L10n.string(.pasteImportContinue), action: onContinue)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(candidates.isEmpty)
+                    .disabled(result.candidates.isEmpty)
             }
         }
         .padding(20)

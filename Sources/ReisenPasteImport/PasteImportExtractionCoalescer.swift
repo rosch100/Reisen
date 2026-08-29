@@ -28,7 +28,7 @@ public enum PasteImportExtractionCoalescer {
 
     private static func looksLikeFlightFragment(_ extraction: PasteImportExtraction) -> Bool {
         extraction.bookingType == .flight
-            || flightNumberKey(extraction.title) != nil
+            || PasteImportFlightNumber.key(in: extraction.title) != nil
             || boardingPassTitle(extraction.title)
     }
 
@@ -56,8 +56,8 @@ public enum PasteImportExtractionCoalescer {
         _ left: PasteImportExtraction,
         _ right: PasteImportExtraction
     ) -> Bool {
-        guard let leftKey = flightNumberKey(left.title),
-              let rightKey = flightNumberKey(right.title)
+        guard let leftKey = PasteImportFlightNumber.key(in: left.title),
+              let rightKey = PasteImportFlightNumber.key(in: right.title)
         else {
             return true
         }
@@ -74,36 +74,20 @@ public enum PasteImportExtractionCoalescer {
     ) -> PasteImportExtraction {
         var result = left
         result.mergingMissingFields(from: right)
-        result.bookingType = result.bookingType ?? flightHint(left) ?? flightHint(right)
+        result.bookingType = result.bookingType
+            ?? flightHint(left.title)
+            ?? flightHint(right.title)
         result.title = preferFlightTitle(left.title, right.title)
         return result
     }
 
     private static func preferFlightTitle(_ left: String?, _ right: String?) -> String? {
-        if flightNumberKey(left) != nil { return left }
-        if flightNumberKey(right) != nil { return right }
+        if PasteImportFlightNumber.key(in: left) != nil { return left }
+        if PasteImportFlightNumber.key(in: right) != nil { return right }
         return left ?? right
     }
 
-    private static func flightHint(_ extraction: PasteImportExtraction) -> BookingType? {
-        flightNumberKey(extraction.title) != nil ? .flight : nil
-    }
-
-    /// Normalisierte Flugnummer (`"ua1449"`) oder `nil`, wenn der Titel keine ist.
-    private static func flightNumberKey(_ title: String?) -> String? {
-        guard let title = NonEmpty.string(title) else { return nil }
-        let folded = title.uppercased().filter { $0.isLetter || $0.isNumber || $0.isWhitespace }
-        let parts = folded.split(whereSeparator: \.isWhitespace)
-        guard parts.count == 2,
-              let airline = parts.first,
-              let number = parts.last,
-              (2...3).contains(airline.count),
-              airline.allSatisfy(\.isLetter),
-              (1...4).contains(number.count),
-              number.allSatisfy(\.isNumber)
-        else {
-            return nil
-        }
-        return PasteImportTextTokens.normalize("\(airline)\(number)")
+    private static func flightHint(_ title: String?) -> BookingType? {
+        PasteImportFlightNumber.key(in: title) != nil ? .flight : nil
     }
 }

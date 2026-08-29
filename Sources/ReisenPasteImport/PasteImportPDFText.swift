@@ -13,12 +13,12 @@ public struct PasteImportPDFContent: Equatable, Sendable {
     public var text: String?
     public var pageImages: [Data]
     /// `true`, wenn eingebetteter Text wegen des Prompt-Budgets gekürzt wurde.
-    public var textWasTruncated: Bool
+    public var sourceWasTruncated: Bool
 
-    public init(text: String? = nil, pageImages: [Data] = [], textWasTruncated: Bool = false) {
+    public init(text: String? = nil, pageImages: [Data] = [], sourceWasTruncated: Bool = false) {
         self.text = text
         self.pageImages = pageImages
-        self.textWasTruncated = textWasTruncated
+        self.sourceWasTruncated = sourceWasTruncated
     }
 }
 
@@ -55,7 +55,7 @@ public enum PasteImportPDFPreparation {
         return PasteImportPDFContent(
             text: clip?.text,
             pageImages: images,
-            textWasTruncated: clip?.didClip == true
+            sourceWasTruncated: clip?.didClip == true
         )
     }
 
