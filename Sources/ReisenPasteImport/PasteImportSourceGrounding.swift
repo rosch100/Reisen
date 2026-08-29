@@ -3,8 +3,8 @@ import ReisenDomain
 
 /// Verwirft oder bereinigt Extrakte, die nicht im Quelltext vorkommen (Few-Shot-Leakage).
 ///
-/// Titel- und Ortstokens müssen als eigene Tokens im Quelltext vorkommen — kein Substring in
-/// längeren Wörtern (z. B. „main“ in „domain“).
+/// Titel-, Orts- und Code-Tokens müssen als eigene Tokens im Quelltext vorkommen — kein Substring
+/// in längeren Wörtern (z. B. „main“ in „domain“).
 public enum PasteImportSourceGrounding {
     public static func keepingGrounded(
         _ extractions: [PasteImportExtraction],
@@ -12,20 +12,15 @@ public enum PasteImportSourceGrounding {
     ) -> [PasteImportExtraction] {
         guard let text, !text.isEmpty else { return extractions }
         let hayTokens = PasteImportTextTokens.tokens(in: text)
-        let hayJoined = PasteImportTextTokens.normalize(text)
-        return extractions.compactMap { grounded($0, hayTokens: hayTokens, hayJoined: hayJoined) }
+        return extractions.compactMap { grounded($0, hayTokens: hayTokens) }
     }
 
     private static func grounded(
         _ extraction: PasteImportExtraction,
-        hayTokens: Set<String>,
-        hayJoined: String
+        hayTokens: Set<String>
     ) -> PasteImportExtraction? {
         if let code = extraction.confirmationCode {
-            let codeKey = PasteImportTextTokens.normalize(code)
-            guard hayJoined.contains(codeKey) || hayTokens.contains(codeKey) else {
-                return nil
-            }
+            guard codeGrounded(code, hayTokens: hayTokens) else { return nil }
         }
         if let title = extraction.title {
             let titleTokens = PasteImportTextTokens.significant(in: title)
@@ -45,5 +40,13 @@ public enum PasteImportSourceGrounding {
             result.locationTo = nil
         }
         return result
+    }
+
+    /// Code als ganzes Token oder alle Segmente (z. B. `EXAM-UA-88` → exam, ua, 88) im Quelltext.
+    private static func codeGrounded(_ code: String, hayTokens: Set<String>) -> Bool {
+        let codeKey = PasteImportTextTokens.normalize(code)
+        if hayTokens.contains(codeKey) { return true }
+        let segments = PasteImportTextTokens.tokens(in: code)
+        return !segments.isEmpty && segments.isSubset(of: hayTokens)
     }
 }

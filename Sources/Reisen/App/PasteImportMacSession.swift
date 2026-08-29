@@ -53,7 +53,7 @@ final class PasteImportMacSession {
         case idle
         case confirmingPrivateCloudCompute
         case running(PasteImportModelKind)
-        case choosing([PasteImportCandidate])
+        case choosing(PasteImportRunResult)
         case failed(String)
     }
 
@@ -86,8 +86,13 @@ final class PasteImportMacSession {
     var isPresentingSheet: Bool { isRunning || isChoosing }
 
     var candidates: [PasteImportCandidate] {
-        if case .choosing(let candidates) = phase { return candidates }
+        if case .choosing(let result) = phase { return result.candidates }
         return []
+    }
+
+    var sourceWasTruncated: Bool {
+        if case .choosing(let result) = phase { return result.sourceWasTruncated }
+        return false
     }
 
     var errorMessage: String? {
@@ -137,9 +142,9 @@ final class PasteImportMacSession {
 
     /// Übernimmt die Kandidaten in die Editor-Warteschlange.
     func review() {
-        guard case .choosing(let candidates) = phase else { return }
+        guard case .choosing(let result) = phase else { return }
         phase = .idle
-        pending = candidates
+        pending = result.candidates
     }
 
     /// Schließt das Lauf-Sheet. Nach `review()` ist die Phase bereits gewechselt und nichts zu tun.
@@ -185,14 +190,14 @@ final class PasteImportMacSession {
         phase = .running(kind)
         task = Task { [weak self] in
             do {
-                let candidates = try await PasteImportRun.run(
+                let result = try await PasteImportRun.run(
                     source: source,
                     kind: kind,
                     extractor: FoundationModelsPasteImportExtractor(kind: kind),
                     existing: existing
                 )
                 guard !Task.isCancelled else { return }
-                self?.phase = .choosing(candidates)
+                self?.phase = .choosing(result)
             } catch {
                 guard !Task.isCancelled else { return }
                 self?.phase = .failed(PasteImportFailureMessage.text(for: error))
@@ -278,6 +283,7 @@ private struct PasteImportFlowModifier: ViewModifier {
                 } else {
                     PasteImportCandidateSheet(
                         candidates: session.candidates,
+                        sourceWasTruncated: session.sourceWasTruncated,
                         onCancel: { session.dismissSheet() },
                         onContinue: {
                             session.review()
@@ -330,13 +336,17 @@ private struct PasteImportProgressSheet: View {
 
 private struct PasteImportCandidateSheet: View {
     let candidates: [PasteImportCandidate]
+    let sourceWasTruncated: Bool
     let onCancel: () -> Void
     let onContinue: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScrollView {
-                PasteImportCandidateList(candidates: candidates)
+                PasteImportCandidateList(
+                    candidates: candidates,
+                    sourceWasTruncated: sourceWasTruncated
+                )
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 

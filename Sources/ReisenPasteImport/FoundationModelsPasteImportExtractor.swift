@@ -38,7 +38,7 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         self.kind = kind
     }
 
-    public func extract(from source: PasteImportSource) async throws -> [PasteImportExtraction] {
+    public func extract(from source: PasteImportSource) async throws -> PasteImportExtractionResult {
         // Zuerst die Stufe: ohne Modell wird die Quelle gar nicht aufbereitet.
         let session = try makeSession()
         let material = try Self.material(for: try source.validated())
@@ -49,7 +49,11 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
             generating: PasteImportPayloadDTO.self
         )
         let mapped = PasteImportGenerableMapper.extractions(from: response.content)
-        return PasteImportExtractionRefiner.refine(mapped, sourceText: material.text)
+        let refined = PasteImportExtractionRefiner.refine(mapped, sourceText: material.text)
+        return PasteImportExtractionResult(
+            extractions: refined,
+            sourceWasTruncated: material.sourceWasTruncated
+        )
     }
 
     private func makeSession() throws -> LanguageModelSession {
@@ -73,14 +77,19 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
     private static func material(for source: PasteImportSource) throws -> PasteImportPromptMaterial {
         switch source {
         case .text(let text):
-            return PasteImportPromptMaterial(text: PasteImportPromptBudget.clipped(text))
+            let clip = PasteImportPromptBudget.clip(text)
+            return PasteImportPromptMaterial(text: clip.text, sourceWasTruncated: clip.didClip)
         case .image(let data):
             return PasteImportPromptMaterial(images: [data])
         case .pdf(let data):
             // `prepare` garantiert Text oder Seitenbilder, sonst wirft es `unreadableSource`.
             // Text ist bereits über `PasteImportPromptBudget` begrenzt.
             let content = try PasteImportPDFPreparation.prepare(data)
-            return PasteImportPromptMaterial(text: content.text, images: content.pageImages)
+            return PasteImportPromptMaterial(
+                text: content.text,
+                images: content.pageImages,
+                sourceWasTruncated: content.textWasTruncated
+            )
         }
     }
 
@@ -130,6 +139,7 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
 private struct PasteImportPromptMaterial {
     var text: String?
     var images: [Data] = []
+    var sourceWasTruncated: Bool = false
 }
 
 private struct PreparedPrompt {

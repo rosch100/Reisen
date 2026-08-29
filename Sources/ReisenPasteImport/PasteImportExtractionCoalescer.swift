@@ -4,6 +4,7 @@ import ReisenDomain
 /// Führt zwei komplementäre, jeweils unvollständige **Flug-/Boarding**-Fragmente zusammen.
 ///
 /// Beide Seiten müssen flugbezogen sein (Typ, Flugnummer oder Boarding-Titel) — kein Hotel-Code + Flug.
+/// Widersprüchliche Flugnummern verhindern den Merge.
 public enum PasteImportExtractionCoalescer {
     public static func coalescing(_ extractions: [PasteImportExtraction]) -> [PasteImportExtraction] {
         guard extractions.count == 2,
@@ -13,7 +14,8 @@ public enum PasteImportExtractionCoalescer {
               !isFilterReady(second),
               looksLikeFlightFragment(first),
               looksLikeFlightFragment(second),
-              areComplementary(first, second)
+              areComplementary(first, second),
+              compatibleFlightNumbers(first, second)
         else {
             return extractions
         }
@@ -26,7 +28,7 @@ public enum PasteImportExtractionCoalescer {
 
     private static func looksLikeFlightFragment(_ extraction: PasteImportExtraction) -> Bool {
         extraction.bookingType == .flight
-            || looksLikeFlightNumber(extraction.title)
+            || flightNumberKey(extraction.title) != nil
             || boardingPassTitle(extraction.title)
     }
 
@@ -49,6 +51,19 @@ public enum PasteImportExtractionCoalescer {
         return leftHasCode != rightHasCode && leftHasTravel != rightHasTravel
     }
 
+    /// Zwei erkannte, unterschiedliche Flugnummern gehören nicht zusammen.
+    private static func compatibleFlightNumbers(
+        _ left: PasteImportExtraction,
+        _ right: PasteImportExtraction
+    ) -> Bool {
+        guard let leftKey = flightNumberKey(left.title),
+              let rightKey = flightNumberKey(right.title)
+        else {
+            return true
+        }
+        return leftKey == rightKey
+    }
+
     private static func hasRoute(_ extraction: PasteImportExtraction) -> Bool {
         extraction.locationFrom != nil || extraction.locationTo != nil
     }
@@ -65,17 +80,18 @@ public enum PasteImportExtractionCoalescer {
     }
 
     private static func preferFlightTitle(_ left: String?, _ right: String?) -> String? {
-        if looksLikeFlightNumber(left) { return left }
-        if looksLikeFlightNumber(right) { return right }
+        if flightNumberKey(left) != nil { return left }
+        if flightNumberKey(right) != nil { return right }
         return left ?? right
     }
 
     private static func flightHint(_ extraction: PasteImportExtraction) -> BookingType? {
-        looksLikeFlightNumber(extraction.title) ? .flight : nil
+        flightNumberKey(extraction.title) != nil ? .flight : nil
     }
 
-    private static func looksLikeFlightNumber(_ title: String?) -> Bool {
-        guard let title = NonEmpty.string(title) else { return false }
+    /// Normalisierte Flugnummer (`"ua1449"`) oder `nil`, wenn der Titel keine ist.
+    private static func flightNumberKey(_ title: String?) -> String? {
+        guard let title = NonEmpty.string(title) else { return nil }
         let folded = title.uppercased().filter { $0.isLetter || $0.isNumber || $0.isWhitespace }
         let parts = folded.split(whereSeparator: \.isWhitespace)
         guard parts.count == 2,
@@ -86,8 +102,8 @@ public enum PasteImportExtractionCoalescer {
               (1...4).contains(number.count),
               number.allSatisfy(\.isNumber)
         else {
-            return false
+            return nil
         }
-        return true
+        return PasteImportTextTokens.normalize("\(airline)\(number)")
     }
 }

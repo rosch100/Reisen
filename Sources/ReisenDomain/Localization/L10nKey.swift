@@ -582,6 +582,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case pasteImportBadgeNew = "paste_import.badge_new"
     case pasteImportBadgeEnrich = "paste_import.badge_enrich"
     case pasteImportAmbiguousHint = "paste_import.ambiguous_hint"
+    case pasteImportSourceTruncated = "paste_import.source_truncated"
     case pasteImportErrorTitle = "paste_import.error_title"
     case pasteImportErrorModel = "paste_import.error_model"
     case pasteImportErrorHandoff = "paste_import.error_handoff"

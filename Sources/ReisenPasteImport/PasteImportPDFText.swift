@@ -12,10 +12,13 @@ import UniformTypeIdentifiers
 public struct PasteImportPDFContent: Equatable, Sendable {
     public var text: String?
     public var pageImages: [Data]
+    /// `true`, wenn eingebetteter Text wegen des Prompt-Budgets gekürzt wurde.
+    public var textWasTruncated: Bool
 
-    public init(text: String? = nil, pageImages: [Data] = []) {
+    public init(text: String? = nil, pageImages: [Data] = [], textWasTruncated: Bool = false) {
         self.text = text
         self.pageImages = pageImages
+        self.textWasTruncated = textWasTruncated
     }
 }
 
@@ -44,12 +47,16 @@ public enum PasteImportPDFPreparation {
         }
         let focused = PasteImportPDFPageText.focused(pageStrings)
             ?? NonEmpty.string(document.string)
-        let budgeted = focused.map(PasteImportPromptBudget.clipped)
+        let clip = focused.map(PasteImportPromptBudget.clip)
         let images = try pageImages(of: document, indices: textlessIndices)
-        guard budgeted != nil || !images.isEmpty else {
+        guard clip != nil || !images.isEmpty else {
             throw PasteImportAdapterError.unreadableSource
         }
-        return PasteImportPDFContent(text: budgeted, pageImages: images)
+        return PasteImportPDFContent(
+            text: clip?.text,
+            pageImages: images,
+            textWasTruncated: clip?.didClip == true
+        )
     }
 
     private static func pageImages(of document: PDFDocument, indices: [Int]) throws -> [Data] {

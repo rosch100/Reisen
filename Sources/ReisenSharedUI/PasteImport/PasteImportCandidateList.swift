@@ -22,15 +22,26 @@ public struct PasteImportCandidatePresentation: Equatable, Sendable {
 /// Übersicht der erkannten Buchungen vor dem Editor-Durchlauf.
 public struct PasteImportCandidateList: View {
     private let candidates: [PasteImportCandidate]
+    private let sourceWasTruncated: Bool
 
-    public init(candidates: [PasteImportCandidate]) {
+    public init(candidates: [PasteImportCandidate], sourceWasTruncated: Bool = false) {
         self.candidates = candidates
+        self.sourceWasTruncated = sourceWasTruncated
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L10n.string(.pasteImportCandidatesTitle))
                 .font(.headline)
+
+            if sourceWasTruncated {
+                Label(
+                    L10n.string(.pasteImportSourceTruncated),
+                    systemImage: "exclamationmark.triangle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
 
             if candidates.isEmpty {
                 Text(L10n.string(.pasteImportEmpty))

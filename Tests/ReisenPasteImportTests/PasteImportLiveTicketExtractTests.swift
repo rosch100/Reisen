@@ -38,9 +38,12 @@ import ReisenPasteImport
                     "prepare textChars=\(content.text?.count ?? 0) pageImages=\(content.pageImages.count)"
                 )
             }
-            let extractions = try await extractor.extract(from: prepared)
+            let outcome = try await extractor.extract(from: prepared)
+            let extractions = outcome.extractions
             let drafts = PasteImportFilter.apply(extractions)
-            print("extractions=\(extractions.count) kept=\(drafts.count)")
+            print(
+                "extractions=\(extractions.count) kept=\(drafts.count) truncated=\(outcome.sourceWasTruncated)"
+            )
             for (index, extraction) in extractions.enumerated() {
                 print(
                     "  raw[\(index)] type=\(label(extraction.bookingType)) start=\(iso(extraction.startAt)) title=\(extraction.title ?? "-") code=\(extraction.confirmationCode ?? "-") from=\(extraction.locationFrom ?? "-") to=\(extraction.locationTo ?? "-")"

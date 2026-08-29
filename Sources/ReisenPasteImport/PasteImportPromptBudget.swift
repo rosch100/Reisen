@@ -7,9 +7,32 @@ public enum PasteImportPromptBudget {
     /// Maximale Zeichen des Nutzer-Materials (PDF-Focus oder Paste-Text).
     public static let maxMaterialCharacters = 2_200
 
+    /// Ergebnis einer Budget-Kürzung — `didClip` steuert den UI-Hinweis.
+    public struct ClipResult: Equatable, Sendable {
+        public var text: String
+        public var didClip: Bool
+
+        public init(text: String, didClip: Bool) {
+            self.text = text
+            self.didClip = didClip
+        }
+    }
+
     /// Kürzt Text auf das Budget. Buchungsähnliche Absätze zuerst; Schnitte an Zeilenenden.
+    public static func clip(_ text: String) -> ClipResult {
+        guard text.count > maxMaterialCharacters else {
+            return ClipResult(text: text, didClip: false)
+        }
+        let clipped = clippedBody(text)
+        return ClipResult(text: clipped, didClip: true)
+    }
+
+    /// Nur der gekürzte Text — für Stellen, die `didClip` nicht brauchen.
     public static func clipped(_ text: String) -> String {
-        guard text.count > maxMaterialCharacters else { return text }
+        clip(text).text
+    }
+
+    private static func clippedBody(_ text: String) -> String {
         let paragraphs = text
             .components(separatedBy: "\n\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }

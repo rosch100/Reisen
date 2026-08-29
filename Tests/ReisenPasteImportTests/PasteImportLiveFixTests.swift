@@ -10,10 +10,11 @@ import ReisenPasteImport
         Fr. 18. Dezember 2020: Hamburg – Frankfurt/Main
         """
     let filler = String(repeating: "AGB und Tarifbedingungen ohne Buchungsbezug. ", count: 200)
-    let clipped = PasteImportPromptBudget.clipped(booking + "\n\n" + filler)
-    #expect(clipped.count <= PasteImportPromptBudget.maxMaterialCharacters)
-    #expect(clipped.contains("ABC123"))
-    #expect(clipped.contains("Reiseverlauf"))
+    let clip = PasteImportPromptBudget.clip(booking + "\n\n" + filler)
+    #expect(clip.didClip)
+    #expect(clip.text.count <= PasteImportPromptBudget.maxMaterialCharacters)
+    #expect(clip.text.contains("ABC123"))
+    #expect(clip.text.contains("Reiseverlauf"))
 }
 
 @Test func pasteImportPromptBudget_clipsAtLineBoundaryNotMidWord() {
@@ -21,15 +22,18 @@ import ReisenPasteImport
     lines.insert("Buchungscode: KEEPME\nAbfahrt: 01.01.2027", at: 0)
     let text = lines.joined(separator: "\n")
     #expect(text.count > PasteImportPromptBudget.maxMaterialCharacters)
-    let clipped = PasteImportPromptBudget.clipped(text)
-    #expect(clipped.count <= PasteImportPromptBudget.maxMaterialCharacters)
-    #expect(clipped.contains("KEEPME"))
-    #expect(!clipped.hasSuffix("Zeile mit Inh"))
+    let clip = PasteImportPromptBudget.clip(text)
+    #expect(clip.didClip)
+    #expect(clip.text.count <= PasteImportPromptBudget.maxMaterialCharacters)
+    #expect(clip.text.contains("KEEPME"))
+    #expect(!clip.text.hasSuffix("Zeile mit Inh"))
 }
 
 @Test func pasteImportPromptBudget_leavesShortTextUnchanged() {
     let text = "Booking Reference: EXAM01\nFlight LH 400"
-    #expect(PasteImportPromptBudget.clipped(text) == text)
+    let clip = PasteImportPromptBudget.clip(text)
+    #expect(clip.didClip == false)
+    #expect(clip.text == text)
 }
 
 @Test func pasteImportExtractionCoalescer_mergesComplementaryBoardingFragments() throws {
@@ -66,6 +70,21 @@ import ReisenPasteImport
         locationTo: "JFK"
     )
     let coalesced = PasteImportExtractionCoalescer.coalescing([hotelCode, flightRoute])
+    #expect(coalesced.count == 2)
+}
+
+@Test func pasteImportExtractionCoalescer_doesNotMergeConflictingFlightNumbers() {
+    let codeSide = PasteImportExtraction(
+        title: "LH 400",
+        confirmationCode: "EXAMPNR1"
+    )
+    let otherFlight = PasteImportExtraction(
+        startAt: ticketClock(2026, 7, 18, 7, 0),
+        title: "UA 1449",
+        locationFrom: "YVR",
+        locationTo: "SFO"
+    )
+    let coalesced = PasteImportExtractionCoalescer.coalescing([codeSide, otherFlight])
     #expect(coalesced.count == 2)
 }
 
@@ -139,6 +158,30 @@ import ReisenPasteImport
     #expect(kept.first?.title == "Apartment am Spreeufer")
 }
 
+@Test func pasteImportSourceGrounding_rejectsCodeAsSubstringOnly() {
+    let extraction = PasteImportExtraction(
+        bookingType: .hotel,
+        startAt: ticketClock(2026, 10, 2, 15, 0),
+        title: "Apartment",
+        confirmationCode: "MAIN"
+    )
+    let text = "domain booking without matching confirmation token"
+    let kept = PasteImportSourceGrounding.keepingGrounded([extraction], in: text)
+    #expect(kept.isEmpty)
+}
+
+@Test func pasteImportSourceGrounding_acceptsSegmentedConfirmationCode() {
+    let extraction = PasteImportExtraction(
+        bookingType: .flight,
+        startAt: ticketClock(2026, 7, 18, 7, 0),
+        title: "Boarding pass",
+        confirmationCode: "EXAM-UA-88"
+    )
+    let text = "Boarding pass EXAM UA 88 Vancouver to San Francisco"
+    let kept = PasteImportSourceGrounding.keepingGrounded([extraction], in: text)
+    #expect(kept.count == 1)
+}
+
 @Test func pasteImportExtractionTypeHint_setsActivityFromTourTitle() throws {
     let extraction = PasteImportExtraction(
         title: "Schloss Neuschwanstein geführte Tour",
@@ -170,6 +213,19 @@ import ReisenPasteImport
         PasteImportExtractionTypeHint.applying([
             PasteImportExtraction(title: "FlixBus 001 Berlin")
         ]).first?.bookingType == .train
+    )
+}
+
+@Test func pasteImportExtractionTypeHint_ignoresBroadLabelsLikeEventAndIce() {
+    #expect(
+        PasteImportExtractionTypeHint.applying([
+            PasteImportExtraction(title: "Event Ticket Gate A")
+        ]).first?.bookingType == nil
+    )
+    #expect(
+        PasteImportExtractionTypeHint.applying([
+            PasteImportExtraction(title: "ICE 701 Hamburg")
+        ]).first?.bookingType == nil
     )
 }
 
