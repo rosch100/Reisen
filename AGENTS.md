@@ -21,7 +21,7 @@ Dieses Repo nutzt Cursor-Agents primär für saubere CI-/Review-Workflows. Die �
 ### AI-Assistenz (Human-in-the-loop)
 - Ziel: AI nur als Hilfswerkzeug nutzen; jede Änderung muss vom Menschen verstanden und geprüft werden.
 - Regel: Keine autonomen ungeprüften PR-Inhalte oder Kommentare; AI-Empfehlungen sind Hinweise, keine Gate-Kriterien.
-- **Issue-Dev:** Nach expliziter Issue-Freigabe (`/approve` / `issue-dev/approved`) darf das Grok-Bot-Team einen PR öffnen; Merge bleibt menschlich. Labels/Webhooks per Ensure (SSOT Altanis/CI `config/issue-dev/`). Siehe `docs/ci/issue-dev.md`.
+- **Issue-Dev:** Bugs (`kind/error`) starten ohne `/approve` bis zum PR; Feature-Requests erst nach `/approve` / `issue-dev/approved`. Merge bleibt menschlich. Labels/Webhooks per Ensure (SSOT Altanis/CI `config/issue-dev/`). Siehe `docs/ci/issue-dev.md`.
 - Zielpfade: `AI_POLICY.md`, `.github/copilot-instructions.md` (für Code-Review-Kommentare), `PULL_REQUEST_TEMPLATE.md` (für Kontext/Checklisten).
 - Hinweis: Der Beitragende bleibt für Korrektheit und Verständlichkeit verantwortlich.
 

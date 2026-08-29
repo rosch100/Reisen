@@ -6,7 +6,7 @@ Dieses Repo ist öffentlich. Wir erlauben AI (LLMs) als Hilfswerkzeug beim Erste
 
 1. **Human-in-the-loop**
    - Keine autonomen PRs/Issues oder Kommentare „auf Zuruf“ durch AI ohne menschliche inhaltliche Prüfung.
-   - **Ausnahme Issue-Dev (explizite Freigabe):** Nach Maintainer-`/approve` (oder Label `issue-dev/approved`) auf einem Issue darf das Grok-Bot-Team laut Pipeline einen **Pull Request** öffnen. **Merge bleibt immer menschlich.** Bot-Kommentare sind Status/Kurzfassung, keine Essays.
+   - **Ausnahme Issue-Dev:** Bei **Bugs** (`kind/error`) darf das Grok-Bot-Team **ohne** `/approve` einen **Pull Request** öffnen. Bei **Feature-Requests** (`kind/feature`) erst nach Maintainer-`/approve` (oder Label `issue-dev/approved`). **Merge bleibt immer menschlich.** Bot-Kommentare sind Status/Kurzfassung, keine Essays.
    - AI-Ausgaben (z. B. Review-Notizen) sind Hinweise, nicht die einzige Wahrheit.
 
 2. **Keine unreviewten Inhalte**
@@ -24,7 +24,7 @@ Dieses Repo ist öffentlich. Wir erlauben AI (LLMs) als Hilfswerkzeug beim Erste
 
 - AI beim Schreiben/Umformulieren helfen lassen (z. B. Grammatik, Klarheit, Struktur).
 - AI beim Finden möglicher Fehlerbilder/Unsicherheiten helfen lassen — solange der Mensch die Vorschläge prüft.
-- Issue-Dev nach Freigabe: Diagnose/Spec-Vorschlag und Implementierungs-PR (siehe `docs/ci/issue-dev.md`).
+- Issue-Dev: Bugs sofort bis zum PR; Feature-Requests nach `/approve` (siehe `docs/ci/issue-dev.md`).
 
 ## Was nicht erlaubt ist
 
