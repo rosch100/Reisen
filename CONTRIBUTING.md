@@ -24,6 +24,10 @@ Insbesondere:
 - AI ist ein Hilfswerkzeug; der Beitragende muss Änderungen verstehen und verifizieren.
 - Reviews/Kommentare aus AI-Tools sind Hinweise und keine Wahrheit.
 
+## Verhaltensregeln
+
+Bitte beachte den [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Lizenzhinweis
 
 Bitte beachte, dass das Projekt **CC BY-NC 4.0** nutzt (nicht-kommerziell).
