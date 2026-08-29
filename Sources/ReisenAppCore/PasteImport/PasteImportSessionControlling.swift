@@ -15,6 +15,7 @@ public protocol PasteImportSessionControlling: AnyObject {
     var isConfirmingFeatureRequest: Bool { get }
     var featureRequestSuccessURL: URL? { get }
     var featureRequestSubmitError: String? { get }
+    var featureRequestMailDraft: PasteImportFailedMailDraft? { get }
 
     func confirmPrivateCloudCompute()
     func cancelConfirmation()
@@ -27,4 +28,5 @@ public protocol PasteImportSessionControlling: AnyObject {
     func confirmFailedFeatureRequest()
     func dismissFeatureRequestSuccess()
     func dismissFeatureRequestSubmitError()
+    func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish)
 }

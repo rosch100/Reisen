@@ -4454,13 +4454,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "GitHub-Issues sind öffentlich. Text wird im Issue-Text veröffentlicht; Bild oder PDF werden als Base64-Kommentare angehängt und können persönliche Daten enthalten. Nur senden, wenn du das akzeptierst."
+            "value": "GitHub-Issues sind öffentlich. Das Originaldokument wird nicht an GitHub gesendet. Nach dem Senden öffnet sich eine E-Mail an die Feedback-Adresse mit dem Dokument als Anhang."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "GitHub issues are public. Text is included in the issue body; images and PDFs are attached as Base64 comments and may contain personal data. Send only if you accept that."
+            "value": "GitHub issues are public. The original document is not sent to GitHub. After you send, an email opens to the feedback address with the document attached."
           }
         }
       }
@@ -8781,6 +8781,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Source text truncated — check missing sections manually if needed."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_mail_body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Originaldokument ist angehängt. Bitte nicht in ein öffentliches GitHub-Issue kopieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original document is attached. Please do not copy it into a public GitHub issue."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_mail_unavailable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail ist nicht eingerichtet. Sende die Originaldatei selbst an %@ und hänge sie an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail is not set up. Send the original file yourself to %@ and attach it."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_mail_failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die E-Mail mit dem Dokument konnte nicht geöffnet oder gesendet werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The email with the document could not be opened or sent."
           }
         }
       }

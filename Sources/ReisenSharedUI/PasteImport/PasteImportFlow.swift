@@ -101,14 +101,14 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
             }
             .sheet(
                 isPresented: Binding(
-                    get: { session.featureRequestSuccessURL != nil },
+                    get: { PasteImportFailedMailCompose.showsSuccessSheet(session) },
                     set: { if !$0 { session.dismissFeatureRequestSuccess() } }
                 )
             ) {
                 #if os(macOS)
                 VStack(alignment: .leading, spacing: 12) {
-                    PasteImportFeatureRequestSuccessBody(
-                        doneTitle: featureRequestChrome.doneTitle,
+                    PasteImportFailedFeatureRequestSuccessBody(
+                        chrome: featureRequestChrome,
                         url: session.featureRequestSuccessURL
                     )
                     Button(L10n.string(.commonOk)) {
@@ -120,8 +120,8 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                 .frame(minWidth: 280)
                 #else
                 NavigationStack {
-                    PasteImportFeatureRequestSuccessBody(
-                        doneTitle: featureRequestChrome.doneTitle,
+                    PasteImportFailedFeatureRequestSuccessBody(
+                        chrome: featureRequestChrome,
                         url: session.featureRequestSuccessURL
                     )
                     .padding()
@@ -135,6 +135,25 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                 }
                 .reisenSheetDetents()
                 #endif
+            }
+            #if os(iOS)
+            .sheet(item: Binding(
+                get: {
+                    PasteImportFailedMailCompose.canSend ? session.featureRequestMailDraft : nil
+                },
+                set: { newValue in
+                    guard newValue == nil else { return }
+                    PasteImportFailedMailCompose.finishDismissedMailSheet(session)
+                }
+            )) { draft in
+                PasteImportFailedMailComposeView(draft: draft) { finish in
+                    session.finishFeatureRequestMail(finish)
+                }
+            }
+            #endif
+            .onChange(of: session.featureRequestMailDraft?.id) { _, newID in
+                guard newID != nil else { return }
+                PasteImportFailedMailCompose.handleAppearingDraft(session: session)
             }
             .alert(
                 L10n.string(.pasteImportErrorTitle),
@@ -154,13 +173,16 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
     }
 }
 
-private struct PasteImportFeatureRequestSuccessBody: View {
-    let doneTitle: String
+private struct PasteImportFailedFeatureRequestSuccessBody: View {
+    let chrome: PasteImportFailedFeatureRequestPresentation
     let url: URL?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(doneTitle)
+            Text(chrome.doneTitle)
+            if !PasteImportFailedMailCompose.canSend {
+                Text(chrome.mailUnavailableMessage)
+            }
             PublicGitHubIssueLink(url: url, errorMessage: nil)
         }
     }

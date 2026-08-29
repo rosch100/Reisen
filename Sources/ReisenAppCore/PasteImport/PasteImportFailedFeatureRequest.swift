@@ -15,45 +15,26 @@ public enum PasteImportFailedFeatureRequest {
         reason: PasteImportFailedRecognitionReason,
         reporter: GitHubIssueReporter,
         reporterGitHubUsername: String?
-    ) async throws -> GitHubCreatedIssue {
-        let document = PasteImportFailedDocument.from(source)
+    ) async throws -> PasteImportFailedFeatureRequestOutcome {
         let hash = GitHubIssueFingerprint.sha256Hex(of: source.fingerprintData)
-        var lines = [
+        let lines = [
             unrecognizedDocumentMessage,
             "Grund: \(reasonLabel(reason))",
             "Quelle: \(source.kind.rawValue)",
             "reisen-source-sha256: \(hash)",
+            "Dokument: per E-Mail (nicht an GitHub).",
         ]
-        if let text = document.text {
-            let rawCount = text.utf8.count
-            guard rawCount <= GitHubIssueAttachmentCodec.maxSourceBytes else {
-                throw GitHubIssueReporterError.attachmentTooLarge(
-                    maxBytes: GitHubIssueAttachmentCodec.maxSourceBytes
-                )
-            }
-            lines.append("")
-            lines.append(text)
-        }
-        let attachments: [GitHubIssueAttachment]
-        if let binary = document.binary {
-            attachments = [
-                GitHubIssueAttachment(
-                    fileName: document.fileName,
-                    mimeType: document.mimeType,
-                    data: binary
-                )
-            ]
-        } else {
-            attachments = []
-        }
-        return try await reporter.report(
+        let issue = try await reporter.report(
             kind: .feature,
             message: lines.joined(separator: "\n"),
             providerID: nil,
             titleOverride: titleOverride,
             reporterGitHubUsername: reporterGitHubUsername,
-            attachments: attachments,
             fingerprintMessage: "paste-import-failed\n\(hash)"
+        )
+        return PasteImportFailedFeatureRequestOutcome(
+            issue: issue,
+            mail: PasteImportFailedMailDraft.make(source: source, issueURL: issue.htmlURL)
         )
     }
 
