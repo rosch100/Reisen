@@ -113,6 +113,8 @@ private struct GitHubIssueCommentFailed: Error {}
     )
     #expect(client.createCount == 1)
     #expect(client.commentCount >= 1)
+    #expect(client.commentBodies.contains { $0.contains(GitHubIssueAttachmentCodec.marker) })
+    #expect(!client.commentBodies.contains { $0.contains("Erneuter") })
 }
 
 @Test @MainActor func githubIssueReporter_attachmentsWithoutTokenMakeNoHTTP() async {

@@ -427,6 +427,7 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
     var searchCount = 0
     var commentCount = 0
     var commentError: (any Error)?
+    var commentBodies: [String] = []
     var lastCreate: (title: String, body: String, labels: [String])?
     var nextCreated = GitHubCreatedIssue(
         number: 1,
@@ -453,6 +454,7 @@ final class MockGitHubIssues: GitHubIssueSubmitting, @unchecked Sendable {
             throw commentError
         }
         commentCount += 1
+        commentBodies.append(body)
         return nextComment
     }
 }
