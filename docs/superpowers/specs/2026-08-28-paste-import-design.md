@@ -32,6 +32,8 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 ### In Scope (v1)
 
 - Eingabe: Zwischenablage-Text, Bilder, PDF (ephemer), inkl. Dateidialog, Drop und iOS „Senden an“/Teilen. Text-PDF über PDFKit-Text; **gescannte Seiten als Bilder** an das Modell (wie Foto), kein OCR-Workaround.
+- **Grounding** gegen Quelltext (Few-Shot-Leakage): nur wenn Text vorliegt. Bild-only ohne OCR → kein Token-Grounding; Schutz über Instructions/Few-Shots.
+- Store- und Private-iOS: **getrennte** App Groups und URL-Schemes für Share-Handoff (`reisen` vs. `reisen-private`).
 - Mehrere Kandidaten: Auswahlliste, Nutzer wählt 0..n, danach Editor nacheinander.
 - Einstieg: geöffnete Reise oder Offen-Tab; iOS zusätzlich Share-Sheet.
 - Alle `BookingType`-Fälle.

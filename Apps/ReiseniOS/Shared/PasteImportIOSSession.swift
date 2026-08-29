@@ -33,7 +33,7 @@ final class PasteImportIOSSession {
         case idle
         case confirmingPrivateCloudCompute
         case running(PasteImportModelKind)
-        case choosing([PasteImportCandidate])
+        case choosing(PasteImportRunResult)
         case failed(String)
     }
 
@@ -46,6 +46,8 @@ final class PasteImportIOSSession {
     private var source: PasteImportSource?
     private var existing: [Booking] = []
     private var task: Task<Void, Never>?
+    /// Ungültig nach Cancel/`reset`/`fail` — verhindert späte Phase-Schreibvorgänge.
+    private var runID = UUID()
 
     var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
 
@@ -65,9 +67,9 @@ final class PasteImportIOSSession {
     /// Fortschritt und Kandidatenliste teilen sich ein Sheet: SwiftUI zeigt pro View nur eines.
     var isPresentingSheet: Bool { isRunning || isChoosing }
 
-    var candidates: [PasteImportCandidate] {
-        if case .choosing(let candidates) = phase { return candidates }
-        return []
+    var choosingResult: PasteImportRunResult? {
+        if case .choosing(let result) = phase { return result }
+        return nil
     }
 
     var errorMessage: String? {
@@ -129,9 +131,9 @@ final class PasteImportIOSSession {
 
     /// Übernimmt die Kandidaten in die Editor-Warteschlange.
     func review() {
-        guard case .choosing(let candidates) = phase else { return }
+        guard case .choosing(let result) = phase else { return }
         phase = .idle
-        pending = candidates
+        pending = result.candidates
     }
 
     /// Schließt das Lauf-Sheet. Nach `review()` ist die Phase bereits gewechselt und nichts zu tun.
@@ -152,8 +154,7 @@ final class PasteImportIOSSession {
 
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
-        task?.cancel()
-        task = nil
+        invalidateRun()
         source = nil
         phase = .failed(message)
     }
@@ -169,27 +170,43 @@ final class PasteImportIOSSession {
             return
         }
         let existing = existing
+        let id = UUID()
+        runID = id
         phase = .running(kind)
-        task = Task { [weak self] in
+        task = Task { @MainActor [weak self] in
             do {
-                let candidates = try await PasteImportRun.run(
+                let result = try await PasteImportRun.run(
                     source: source,
                     kind: kind,
                     extractor: FoundationModelsPasteImportExtractor(kind: kind),
                     existing: existing
                 )
-                guard !Task.isCancelled else { return }
-                self?.phase = .choosing(candidates)
+                self?.finishRun(id: id, outcome: .success(result))
             } catch {
-                guard !Task.isCancelled else { return }
-                self?.phase = .failed(PasteImportFailureMessage.text(for: error))
+                self?.finishRun(id: id, outcome: .failure(error))
             }
         }
     }
 
-    private func reset() {
+    private func finishRun(id: UUID, outcome: Result<PasteImportRunResult, Error>) {
+        guard runID == id else { return }
+        task = nil
+        switch outcome {
+        case .success(let result):
+            phase = .choosing(result)
+        case .failure(let error):
+            phase = .failed(PasteImportFailureMessage.text(for: error))
+        }
+    }
+
+    private func invalidateRun() {
+        runID = UUID()
         task?.cancel()
         task = nil
+    }
+
+    private func reset() {
+        invalidateRun()
         source = nil
         existing = []
         pending = []

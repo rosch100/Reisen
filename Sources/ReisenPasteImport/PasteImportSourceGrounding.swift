@@ -5,6 +5,9 @@ import ReisenDomain
 ///
 /// Titel-, Orts- und Code-Tokens müssen als eigene Tokens im Quelltext vorkommen — kein Substring
 /// in längeren Wörtern (z. B. „main“ in „domain“).
+///
+/// **Bild-only:** Ohne eingebetteten Quelltext (`text == nil`) greift Grounding nicht — Tokens lassen
+/// sich aus dem Bild nicht ohne OCR ableiten. Leakage-Schutz liegt dann nur bei Instructions/Few-Shots.
 public enum PasteImportSourceGrounding {
     public static func keepingGrounded(
         _ extractions: [PasteImportExtraction],

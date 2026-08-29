@@ -68,9 +68,9 @@ struct PasteImportHost<Content: View>: View {
                 if let kind = session.runningKind {
                     PasteImportProgressSheet(kind: kind) { session.cancelRun() }
                         .reisenSheetDetents()
-                } else {
+                } else if let result = session.choosingResult {
                     PasteImportCandidateSheet(
-                        candidates: session.candidates,
+                        result: result,
                         onCancel: { session.dismissSheet() },
                         onContinue: {
                             session.review()
@@ -270,14 +270,14 @@ private struct PasteImportProgressSheet: View {
 }
 
 private struct PasteImportCandidateSheet: View {
-    let candidates: [PasteImportCandidate]
+    let result: PasteImportRunResult
     let onCancel: () -> Void
     let onContinue: () -> Void
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                PasteImportCandidateList(candidates: candidates)
+                PasteImportCandidateList(result: result)
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -287,7 +287,7 @@ private struct PasteImportCandidateSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L10n.string(.pasteImportContinue), action: onContinue)
-                        .disabled(candidates.isEmpty)
+                        .disabled(result.candidates.isEmpty)
                 }
             }
         }

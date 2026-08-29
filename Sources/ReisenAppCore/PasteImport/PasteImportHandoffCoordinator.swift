@@ -36,7 +36,8 @@ public enum PasteImportHandoffCoordinator {
     ) -> PasteImportHandoffAction {
         switch outcome {
         case .payload(let source):
-            return .start(source)
+            // Laufender Import / Editor-Warteschlange hat Vorrang vor einer neuen Share-Übergabe.
+            return isSessionActive ? .ignore : .start(source)
         case .noPayload:
             return missingPayloadAction(trigger: trigger, isSessionActive: isSessionActive)
         case .lostPayload:

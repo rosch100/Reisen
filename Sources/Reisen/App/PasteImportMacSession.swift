@@ -66,6 +66,8 @@ final class PasteImportMacSession {
     private var source: PasteImportSource?
     private var existing: [Booking] = []
     private var task: Task<Void, Never>?
+    /// Ungültig nach Cancel/`reset`/`fail` — verhindert späte Phase-Schreibvorgänge.
+    private var runID = UUID()
 
     var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
 
@@ -160,8 +162,7 @@ final class PasteImportMacSession {
 
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
-        task?.cancel()
-        task = nil
+        invalidateRun()
         source = nil
         phase = .failed(message)
     }
@@ -182,8 +183,10 @@ final class PasteImportMacSession {
             return
         }
         let existing = existing
+        let id = UUID()
+        runID = id
         phase = .running(kind)
-        task = Task { [weak self] in
+        task = Task { @MainActor [weak self] in
             do {
                 let result = try await PasteImportRun.run(
                     source: source,
@@ -191,18 +194,32 @@ final class PasteImportMacSession {
                     extractor: FoundationModelsPasteImportExtractor(kind: kind),
                     existing: existing
                 )
-                guard !Task.isCancelled else { return }
-                self?.phase = .choosing(result)
+                self?.finishRun(id: id, outcome: .success(result))
             } catch {
-                guard !Task.isCancelled else { return }
-                self?.phase = .failed(PasteImportFailureMessage.text(for: error))
+                self?.finishRun(id: id, outcome: .failure(error))
             }
         }
     }
 
-    private func reset() {
+    private func finishRun(id: UUID, outcome: Result<PasteImportRunResult, Error>) {
+        guard runID == id else { return }
+        task = nil
+        switch outcome {
+        case .success(let result):
+            phase = .choosing(result)
+        case .failure(let error):
+            phase = .failed(PasteImportFailureMessage.text(for: error))
+        }
+    }
+
+    private func invalidateRun() {
+        runID = UUID()
         task?.cancel()
         task = nil
+    }
+
+    private func reset() {
+        invalidateRun()
         source = nil
         existing = []
         pending = []

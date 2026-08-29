@@ -11,12 +11,19 @@ enum PasteImportHandoffError: Error, Equatable, Sendable {
 
 /// Übergabe einer geteilten Quelle von der Share-Extension an die App über die App Group.
 ///
-/// Die Extension schreibt `meta.json` und `payload.bin` und bittet das System, `reisen://paste-import`
+/// Die Extension schreibt `meta.json` und `payload.bin` und bittet das System, die Handoff-URL
 /// zu öffnen. iOS erlaubt Share-Extensions den App-Start nicht garantiert; darum holt die App eine
 /// liegengebliebene Übergabe beim nächsten Aktivieren nach. Der Konsum löscht beide Dateien.
+///
+/// Store und Private nutzen **getrennte** App Groups und URL-Schemes (`REISEN_IOS_PRIVATE`).
 enum PasteImportHandoff {
+    #if REISEN_IOS_PRIVATE
+    static let appGroupIdentifier = "group.de.reisen.Reisen.private.pasteimport"
+    static let urlScheme = "reisen-private"
+    #else
     static let appGroupIdentifier = "group.de.reisen.Reisen.pasteimport"
     static let urlScheme = "reisen"
+    #endif
     static let urlHost = "paste-import"
 
     static let url = URL(string: "\(urlScheme)://\(urlHost)")!
@@ -56,19 +63,22 @@ enum PasteImportHandoff {
     /// sich ständig ohne jede Übergabe. Erst ein bereitliegender Payload, der sich nicht mehr
     /// lesen lässt, ist `.lostPayload`. Ob daraus eine Meldung wird, entscheidet der
     /// `PasteImportHandoffCoordinator` anhand des Auslösers.
+    ///
+    /// Löschen muss gelingen, bevor `.payload` zurückkommt — sonst droht Doppel-Import.
     static func consumePending() -> PasteImportHandoffOutcome {
         guard let container = containerURL() else { return .noPayload }
         let payloadURL = container.appendingPathComponent(payloadFileName)
         let metaURL = container.appendingPathComponent(metaFileName)
         guard FileManager.default.fileExists(atPath: payloadURL.path) else { return .noPayload }
-        defer {
-            try? FileManager.default.removeItem(at: payloadURL)
-            try? FileManager.default.removeItem(at: metaURL)
-        }
         do {
             let meta = try JSONDecoder().decode(Meta.self, from: try Data(contentsOf: metaURL))
-            return .payload(try source(kind: meta.kind, payload: try Data(contentsOf: payloadURL)))
+            let source = try source(kind: meta.kind, payload: try Data(contentsOf: payloadURL))
+            try FileManager.default.removeItem(at: payloadURL)
+            try FileManager.default.removeItem(at: metaURL)
+            return .payload(source)
         } catch {
+            try? FileManager.default.removeItem(at: payloadURL)
+            try? FileManager.default.removeItem(at: metaURL)
             return .lostPayload
         }
     }
