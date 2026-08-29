@@ -46,37 +46,42 @@ final class ShareViewController: UIViewController {
         }
     }
 
+    /// PDF vor Bild vor Text vor Datei-URL — über **alle** Anhänge, nicht nur den ersten Provider.
     private static func source(from items: [Any]) async throws -> PasteImportSource {
-        for case let item as NSExtensionItem in items {
-            for provider in item.attachments ?? [] {
-                if let source = try await source(from: provider) { return source }
+        let providers = items.compactMap { $0 as? NSExtensionItem }.flatMap { $0.attachments ?? [] }
+        if let source = try await firstSource(in: providers, conformingTo: .pdf, as: { .pdf($0) }) {
+            return source
+        }
+        if let source = try await firstSource(in: providers, conformingTo: .image, as: { .image($0) }) {
+            return source
+        }
+        for provider in providers {
+            if let identifier = identifier(in: provider, conformingTo: .plainText) {
+                let payload = try await data(from: provider, typeIdentifier: identifier)
+                guard let text = String(data: payload, encoding: .utf8) else {
+                    throw PasteImportShareError.unreadableSource
+                }
+                return .text(text)
+            }
+        }
+        for provider in providers where provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            do {
+                return try PasteImportFileSource.source(from: try await fileURL(from: provider))
+            } catch {
+                throw PasteImportShareError.unreadableSource
             }
         }
         throw PasteImportShareError.unreadableSource
     }
 
-    /// PDF vor Bild vor Text vor Datei-URL — dieselbe Reihenfolge wie der macOS-Einstieg.
-    ///
-    /// Die Dateien-App registriert beim „Senden an“ oft nur `public.file-url`, keinen Inhalts-UTI.
-    private static func source(from provider: NSItemProvider) async throws -> PasteImportSource? {
-        if let identifier = identifier(in: provider, conformingTo: .pdf) {
-            return .pdf(try await data(from: provider, typeIdentifier: identifier))
-        }
-        if let identifier = identifier(in: provider, conformingTo: .image) {
-            return .image(try await data(from: provider, typeIdentifier: identifier))
-        }
-        if let identifier = identifier(in: provider, conformingTo: .plainText) {
-            let payload = try await data(from: provider, typeIdentifier: identifier)
-            guard let text = String(data: payload, encoding: .utf8) else {
-                throw PasteImportShareError.unreadableSource
-            }
-            return .text(text)
-        }
-        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            do {
-                return try PasteImportFileSource.source(from: try await fileURL(from: provider))
-            } catch {
-                throw PasteImportShareError.unreadableSource
+    private static func firstSource(
+        in providers: [NSItemProvider],
+        conformingTo type: UTType,
+        as wrap: (Data) -> PasteImportSource
+    ) async throws -> PasteImportSource? {
+        for provider in providers {
+            if let identifier = identifier(in: provider, conformingTo: type) {
+                return wrap(try await data(from: provider, typeIdentifier: identifier))
             }
         }
         return nil

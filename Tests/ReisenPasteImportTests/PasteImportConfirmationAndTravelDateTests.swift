@@ -79,6 +79,24 @@ import ReisenPasteImport
     #expect(filled.first?.startAt == start)
 }
 
+@Test func pasteImportExtractionCompleter_skipsWhenMultipleBookingsPresent() {
+    let complete = PasteImportExtraction(
+        bookingType: .flight,
+        startAt: ticketWallClock(2026, 8, 8, 7, 45),
+        title: "Leg 1"
+    )
+    let missing = PasteImportExtraction(bookingType: .flight, title: "Leg 2")
+    let filled = PasteImportExtractionCompleter.fillingOmittedTravelDates(
+        [complete, missing],
+        from: "Departure Date\n15 August 2026"
+    )
+    #expect(filled[1].startAt == nil)
+}
+
+@Test func pasteImportTravelDateFromText_ignoresDateOfIssue() {
+    #expect(PasteImportTravelDateFromText.startAt(in: "Date of issue\n15 August 2026") == nil)
+}
+
 private func ticketWallClock(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
     var parts = DateComponents()
     parts.year = year

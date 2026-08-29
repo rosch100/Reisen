@@ -7,7 +7,8 @@ import UniformTypeIdentifiers
 
 /// Was ein PDF für das Modell hergibt: eingebetteter Text und/oder gerenderte Seiten.
 ///
-/// Beides darf gesetzt sein; gescannte PDFs liefern nur Seitenbilder.
+/// Beides darf gesetzt sein; gescannte PDFs liefern nur Seitenbilder. Hybrid-PDFs liefern Text
+/// plus Bilder der Seiten ohne eingebetteten Text.
 public struct PasteImportPDFContent: Equatable, Sendable {
     public var text: String?
     public var pageImages: [Data]
@@ -23,29 +24,52 @@ public enum PasteImportPDFPreparation {
     /// Lange Kante der gerenderten Seite in Pixeln. Gescanntes bei Originalgröße ist zu grob,
     /// deutlich größer sprengt nur den Prompt.
     private static let renderedLongEdge: CGFloat = 1600
+    /// Maximale Anzahl gerenderter Seiten — große Scans würden sonst Speicher und Prompt sprengen.
+    public static let maxRenderedPages = 8
+    /// Obergrenze der PNG-Bytes aller gerenderten Seiten zusammen.
+    public static let maxRenderedBytes = 12 * 1024 * 1024
 
     public static func prepare(_ data: Data) throws -> PasteImportPDFContent {
         guard let document = PDFDocument(data: data), document.pageCount > 0 else {
             throw PasteImportAdapterError.unreadableSource
         }
-        let pageStrings = (0..<document.pageCount).compactMap { index in
-            NonEmpty.string(document.page(at: index)?.string)
+        var pageStrings: [String] = []
+        var textlessIndices: [Int] = []
+        for index in 0..<document.pageCount {
+            if let text = NonEmpty.string(document.page(at: index)?.string) {
+                pageStrings.append(text)
+            } else {
+                textlessIndices.append(index)
+            }
         }
-        if let text = PasteImportPDFPageText.focused(pageStrings)
+        let focused = PasteImportPDFPageText.focused(pageStrings)
             ?? NonEmpty.string(document.string)
-        {
-            return PasteImportPDFContent(text: text)
+        let images = try pageImages(of: document, indices: textlessIndices)
+        guard focused != nil || !images.isEmpty else {
+            throw PasteImportAdapterError.unreadableSource
         }
-        return PasteImportPDFContent(pageImages: try pageImages(of: document))
+        return PasteImportPDFContent(text: focused, pageImages: images)
     }
 
-    private static func pageImages(of document: PDFDocument) throws -> [Data] {
-        try (0..<document.pageCount).map { index in
+    private static func pageImages(of document: PDFDocument, indices: [Int]) throws -> [Data] {
+        guard !indices.isEmpty else { return [] }
+        guard indices.count <= maxRenderedPages else {
+            throw PasteImportAdapterError.unreadableSource
+        }
+        var images: [Data] = []
+        var totalBytes = 0
+        for index in indices {
             guard let page = document.page(at: index)?.pageRef else {
                 throw PasteImportAdapterError.unreadableSource
             }
-            return try PasteImportImageData.png(from: try render(page))
+            let png = try PasteImportImageData.png(from: try render(page))
+            totalBytes += png.count
+            guard totalBytes <= maxRenderedBytes else {
+                throw PasteImportAdapterError.unreadableSource
+            }
+            images.append(png)
         }
+        return images
     }
 
     private static func render(_ page: CGPDFPage) throws -> CGImage {

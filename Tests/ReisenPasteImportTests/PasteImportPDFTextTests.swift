@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import PDFKit
 import Testing
 import ReisenPasteImport
 
@@ -14,6 +15,19 @@ import ReisenPasteImport
     #expect(content.text == nil)
     #expect(content.pageImages.count == 2)
     #expect(try #require(content.pageImages.first).count > 0)
+}
+
+@Test func pasteImportPDFText_hybridKeepsTextAndRendersTextlessPages() throws {
+    let content = try PasteImportPDFPreparation.prepare(try PDFTestData.helloThenBlankPage())
+    #expect(try #require(content.text).contains("ICE 123"))
+    #expect(content.pageImages.count == 1)
+}
+
+@Test func pasteImportPDFText_tooManyTextlessPagesThrowUnreadableSource() {
+    let count = PasteImportPDFPreparation.maxRenderedPages + 1
+    #expect(throws: PasteImportAdapterError.unreadableSource) {
+        try PasteImportPDFPreparation.prepare(PDFTestData.blankPages(count: count))
+    }
 }
 
 @Test func pasteImportPDFText_nonPDFBytesThrowUnreadableSource() {
@@ -52,6 +66,21 @@ private enum PDFTestData {
             throw Error.missingFixture("hello.pdf")
         }
         return try Data(contentsOf: url)
+    }
+
+    /// Text-Fixture plus eine textlose Folgeseite — Hybrid für Text und Scan im selben Prompt.
+    static func helloThenBlankPage() throws -> Data {
+        guard let document = PDFDocument(data: try helloFixture()) else {
+            throw Error.missingFixture("hello.pdf")
+        }
+        guard let blank = PDFDocument(data: blankPages(count: 1))?.page(at: 0) else {
+            preconditionFailure("Leere PDF-Seite nicht erzeugbar")
+        }
+        document.insert(blank, at: document.pageCount)
+        guard let data = document.dataRepresentation() else {
+            preconditionFailure("Hybrid-PDF nicht serialisierbar")
+        }
+        return data
     }
 
     /// Seiten mit gefüllter Fläche und ohne Textobjekte — das Gegenstück zum gescannten PDF.

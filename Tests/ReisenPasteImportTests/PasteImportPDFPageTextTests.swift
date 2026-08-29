@@ -4,7 +4,7 @@ import ReisenPasteImport
 @Test func pasteImportPDFPageText_dropsFareRulesAfterItinerary() throws {
     let itinerary = """
         Lion Air eTicket
-        Booking Reference (PNR): HIFRGJ
+        Booking Reference (PNR): EXAM07
         IU 723 Labuan Bajo Jakarta 21 Aug 2026 17:05
         """
     let rules = """
@@ -14,7 +14,7 @@ import ReisenPasteImport
         Free Baggage Allowance
         """
     let focused = try #require(PasteImportPDFPageText.focused([itinerary, rules]))
-    #expect(focused.contains("HIFRGJ"))
+    #expect(focused.contains("EXAM07"))
     #expect(!focused.contains("Free Baggage Allowance"))
 }
 
