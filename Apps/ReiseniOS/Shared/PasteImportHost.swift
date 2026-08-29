@@ -71,11 +71,13 @@ struct PasteImportHost<Content: View>: View {
                 } else {
                     PasteImportCandidateSheet(
                         candidates: session.candidates,
+                        canOfferFeatureRequest: session.canOfferFeatureRequest,
                         onCancel: { session.dismissSheet() },
                         onContinue: {
                             session.review()
                             advanceQueue()
-                        }
+                        },
+                        onRequestFeature: { session.offerFailedFeatureRequest() }
                     )
                     .reisenSheetDetents()
                 }
@@ -87,6 +89,11 @@ struct PasteImportHost<Content: View>: View {
                     set: { if !$0 { session.dismissError() } }
                 )
             ) {
+                if session.canOfferFeatureRequest {
+                    Button(PasteImportFailedFeatureRequestPresentation().offerTitle) {
+                        session.offerFailedFeatureRequest()
+                    }
+                }
                 Button(L10n.string(.commonOk), role: .cancel) {
                     session.dismissError()
                     advanceQueue()
@@ -94,6 +101,64 @@ struct PasteImportHost<Content: View>: View {
             } message: {
                 if let errorMessage = session.errorMessage {
                     Text(errorMessage)
+                }
+            }
+            .alert(
+                PasteImportFailedFeatureRequestPresentation().title,
+                isPresented: Binding(
+                    get: { session.isConfirmingFeatureRequest },
+                    set: { if !$0 { session.cancelFailedFeatureRequest() } }
+                )
+            ) {
+                Button(PasteImportFailedFeatureRequestPresentation().sendTitle) {
+                    session.confirmFailedFeatureRequest()
+                }
+                Button(PasteImportFailedFeatureRequestPresentation().cancelTitle, role: .cancel) {
+                    session.cancelFailedFeatureRequest()
+                }
+                .keyboardShortcut(.defaultAction)
+            } message: {
+                Text(PasteImportFailedFeatureRequestPresentation().message)
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { session.featureRequestSuccessURL != nil },
+                    set: { if !$0 { session.dismissFeatureRequestSuccess() } }
+                )
+            ) {
+                let chrome = PasteImportFailedFeatureRequestPresentation()
+                NavigationStack {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(chrome.doneTitle)
+                        PublicGitHubIssueLink(
+                            url: session.featureRequestSuccessURL,
+                            errorMessage: nil
+                        )
+                    }
+                    .padding()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(L10n.string(.commonOk)) {
+                                session.dismissFeatureRequestSuccess()
+                            }
+                        }
+                    }
+                }
+                .reisenSheetDetents()
+            }
+            .alert(
+                L10n.string(.pasteImportErrorTitle),
+                isPresented: Binding(
+                    get: { session.featureRequestSubmitError != nil },
+                    set: { if !$0 { session.dismissFeatureRequestSubmitError() } }
+                )
+            ) {
+                Button(L10n.string(.commonOk), role: .cancel) {
+                    session.dismissFeatureRequestSubmitError()
+                }
+            } message: {
+                if let featureRequestSubmitError = session.featureRequestSubmitError {
+                    Text(featureRequestSubmitError)
                 }
             }
             .sheet(item: $review) { review in
@@ -266,31 +331,6 @@ private struct PasteImportProgressSheet: View {
             Button(L10n.string(.commonCancel), action: onCancel)
         }
         .padding(24)
-    }
-}
-
-private struct PasteImportCandidateSheet: View {
-    let candidates: [PasteImportCandidate]
-    let onCancel: () -> Void
-    let onContinue: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                PasteImportCandidateList(candidates: candidates)
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(L10n.string(.commonCancel), action: onCancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.string(.pasteImportContinue), action: onContinue)
-                        .disabled(candidates.isEmpty)
-                }
-            }
-        }
     }
 }
 

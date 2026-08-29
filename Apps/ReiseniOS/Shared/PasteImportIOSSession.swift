@@ -46,6 +46,9 @@ final class PasteImportIOSSession {
     private var source: PasteImportSource?
     private var existing: [Booking] = []
     private var task: Task<Void, Never>?
+    let featureRequestFlow = PasteImportFailedFeatureRequestFlow()
+    private var resumeAfterFeatureRequest: Phase?
+    private var failedRecognitionReason: PasteImportFailedRecognitionReason?
 
     var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
 
@@ -75,12 +78,37 @@ final class PasteImportIOSSession {
         return nil
     }
 
+    var isConfirmingFeatureRequest: Bool {
+        switch featureRequestFlow.phase {
+        case .confirming, .submitting:
+            true
+        case .idle, .offering, .succeeded, .submitFailed:
+            false
+        }
+    }
+
+    var featureRequestSuccessURL: URL? {
+        if case .succeeded(let url) = featureRequestFlow.phase { return url }
+        return nil
+    }
+
+    var featureRequestSubmitError: String? {
+        if case .submitFailed(let message) = featureRequestFlow.phase { return message }
+        return nil
+    }
+
+    var canOfferFeatureRequest: Bool {
+        source != nil && featureRequestFlow.canOffer
+    }
+
     var hasPendingCandidates: Bool { !pending.isEmpty }
 
-    /// Bestätigung, Lauf, Kandidatenliste, Meldung oder Editor-Warteschlange ist offen.
+    /// Bestätigung, Lauf, Kandidatenliste, Meldung, Feature-Request oder Editor-Warteschlange ist offen.
     ///
     /// Ein zweiter Auslöser der Übergabe darf das nicht überschreiben.
-    var isActive: Bool { phase != .idle || hasPendingCandidates }
+    var isActive: Bool {
+        phase != .idle || hasPendingCandidates || featureRequestFlow.phase != .idle
+    }
 
     /// - Parameters:
     ///   - source: `nil` heißt „keine verwertbare Quelle“ und endet als Fehler.
@@ -150,11 +178,51 @@ final class PasteImportIOSSession {
         phase = .idle
     }
 
+    func offerFailedFeatureRequest() {
+        guard canOfferFeatureRequest else { return }
+        resumeAfterFeatureRequest = phase
+        featureRequestFlow.offer()
+        phase = .idle
+    }
+
+    func cancelFailedFeatureRequest() {
+        featureRequestFlow.cancelOffer()
+        if let resume = resumeAfterFeatureRequest {
+            phase = resume
+            resumeAfterFeatureRequest = nil
+        }
+    }
+
+    func confirmFailedFeatureRequest() {
+        guard let document = source, let reason = failedRecognitionReason else { return }
+        Task { @MainActor in
+            await featureRequestFlow.confirm(
+                source: document,
+                reason: reason,
+                reporter: GitHubIssueReporter.shared,
+                reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
+            )
+        }
+    }
+
+    func dismissFeatureRequestSuccess() {
+        reset()
+    }
+
+    func dismissFeatureRequestSubmitError() {
+        featureRequestFlow.acknowledgeSubmitFailure()
+        if let resume = resumeAfterFeatureRequest {
+            phase = resume
+        }
+    }
+
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
         task?.cancel()
         task = nil
         source = nil
+        featureRequestFlow.reset()
+        failedRecognitionReason = nil
         phase = .failed(message)
     }
 
@@ -179,9 +247,24 @@ final class PasteImportIOSSession {
                     existing: existing
                 )
                 guard !Task.isCancelled else { return }
+                if candidates.isEmpty {
+                    self?.failedRecognitionReason = .noCandidates
+                    self?.featureRequestFlow.noteEmptyCandidates()
+                } else {
+                    self?.failedRecognitionReason = nil
+                    self?.featureRequestFlow.reset()
+                }
                 self?.phase = .choosing(candidates)
             } catch {
                 guard !Task.isCancelled else { return }
+                let failure = PasteImportFailureMessage.failure(for: error)
+                if PasteImportFailedRecognition.shouldOffer(failure: failure) {
+                    self?.failedRecognitionReason = .model
+                    self?.featureRequestFlow.noteModelFailure()
+                } else {
+                    self?.failedRecognitionReason = nil
+                    self?.featureRequestFlow.reset()
+                }
                 self?.phase = .failed(PasteImportFailureMessage.text(for: error))
             }
         }
@@ -194,6 +277,9 @@ final class PasteImportIOSSession {
         existing = []
         pending = []
         tripID = nil
+        resumeAfterFeatureRequest = nil
+        failedRecognitionReason = nil
+        featureRequestFlow.reset()
         phase = .idle
     }
 }

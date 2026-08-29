@@ -4417,6 +4417,86 @@
         }
       }
     },
+    "paste_import.feature_request": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Feature-Request senden…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send as feature request…"
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feature-Request angelegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feature request created."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub-Issues sind öffentlich. Das Dokument (Text, Bild oder PDF) wird angehängt und kann persönliche Daten enthalten. Nur senden, wenn du das akzeptierst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub issues are public. The document (text, image, or PDF) will be attached and may contain personal data. Send only if you accept that."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_send": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffentlicher Feature-Request"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public feature request"
+          }
+        }
+      }
+    },
     "paste_import.error_handoff": {
       "localizations": {
         "de": {

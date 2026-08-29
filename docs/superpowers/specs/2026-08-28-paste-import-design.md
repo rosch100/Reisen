@@ -111,7 +111,7 @@ Je Schritt: 1 Treffer → unique (fertig); >1 → ambiguous (fertig); 0 → näc
 
 ## Fehler
 
-Wie zuvor: unavailable disabled; Modellfehler Dialog ohne Stufenwechsel; leere Quelle Fehler; 0 Kandidaten Leerzustand; Share-Handoff Fehler. Gescannte PDF ohne Text: Seiten als Bilder, nicht `unreadableSource`, sofern Seiten existieren. PDF ohne Seiten: `unreadableSource`.
+Wie zuvor: unavailable disabled; Modellfehler Dialog ohne Stufenwechsel; leere Quelle Fehler; 0 Kandidaten Leerzustand; Share-Handoff Fehler. Gescannte PDF ohne Text: Seiten als Bilder, nicht `unreadableSource`, sofern Seiten existieren. PDF ohne Seiten: `unreadableSource`. Nach 0 Kandidaten oder Modellfehler kann der Nutzer nach Bestätigung einen öffentlichen Feature-Request mit dem Dokument anlegen — Spec: [`2026-08-29-paste-import-failed-feature-request-design.md`](2026-08-29-paste-import-failed-feature-request-design.md).
 
 ## UI / HIG
 

@@ -36,6 +36,9 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "Paste-Import",
         "Private Cloud Compute",
         "ephemer",
+        "Feature-Request",
+        "Bestätigung",
+        "öffentlich",
     ] {
         #expect(html.localizedCaseInsensitiveContains(needle), "privacy.html missing \(needle)")
     }
@@ -62,6 +65,9 @@ private func htmlContainsURL(_ html: String, _ url: URL) -> Bool {
         "Paste import",
         "Private Cloud Compute",
         "ephemeral",
+        "feature request",
+        "confirmation",
+        "public",
     ] {
         #expect(html.localizedCaseInsensitiveContains(needle), "en/privacy.html missing \(needle)")
     }

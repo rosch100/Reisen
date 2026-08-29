@@ -66,6 +66,9 @@ final class PasteImportMacSession {
     private var source: PasteImportSource?
     private var existing: [Booking] = []
     private var task: Task<Void, Never>?
+    let featureRequestFlow = PasteImportFailedFeatureRequestFlow()
+    private var resumeAfterFeatureRequest: Phase?
+    private var failedRecognitionReason: PasteImportFailedRecognitionReason?
 
     var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
 
@@ -93,6 +96,29 @@ final class PasteImportMacSession {
     var errorMessage: String? {
         if case .failed(let message) = phase { return message }
         return nil
+    }
+
+    var isConfirmingFeatureRequest: Bool {
+        switch featureRequestFlow.phase {
+        case .confirming, .submitting:
+            true
+        case .idle, .offering, .succeeded, .submitFailed:
+            false
+        }
+    }
+
+    var featureRequestSuccessURL: URL? {
+        if case .succeeded(let url) = featureRequestFlow.phase { return url }
+        return nil
+    }
+
+    var featureRequestSubmitError: String? {
+        if case .submitFailed(let message) = featureRequestFlow.phase { return message }
+        return nil
+    }
+
+    var canOfferFeatureRequest: Bool {
+        source != nil && featureRequestFlow.canOffer
     }
 
     /// - Parameters:
@@ -158,18 +184,60 @@ final class PasteImportMacSession {
         phase = .idle
     }
 
+    func offerFailedFeatureRequest() {
+        guard canOfferFeatureRequest else { return }
+        resumeAfterFeatureRequest = phase
+        featureRequestFlow.offer()
+        phase = .idle
+    }
+
+    func cancelFailedFeatureRequest() {
+        featureRequestFlow.cancelOffer()
+        if let resume = resumeAfterFeatureRequest {
+            phase = resume
+            resumeAfterFeatureRequest = nil
+        }
+    }
+
+    func confirmFailedFeatureRequest() {
+        guard let document = source, let reason = failedRecognitionReason else { return }
+        Task { @MainActor in
+            await featureRequestFlow.confirm(
+                source: document,
+                reason: reason,
+                reporter: GitHubIssueReporter.shared,
+                reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
+            )
+        }
+    }
+
+    func dismissFeatureRequestSuccess() {
+        reset()
+    }
+
+    func dismissFeatureRequestSubmitError() {
+        featureRequestFlow.acknowledgeSubmitFailure()
+        if let resume = resumeAfterFeatureRequest {
+            phase = resume
+        }
+    }
+
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
         task?.cancel()
         task = nil
         source = nil
+        featureRequestFlow.reset()
+        failedRecognitionReason = nil
         phase = .failed(message)
     }
 
     var hasPendingCandidates: Bool { !pending.isEmpty }
 
-    /// Bestätigung, Lauf, Kandidatenliste, Meldung oder Editor-Warteschlange ist offen.
-    var isActive: Bool { phase != .idle || hasPendingCandidates }
+    /// Bestätigung, Lauf, Kandidatenliste, Meldung, Feature-Request oder Editor-Warteschlange ist offen.
+    var isActive: Bool {
+        phase != .idle || hasPendingCandidates || featureRequestFlow.phase != .idle
+    }
 
     func nextCandidate() -> PasteImportCandidate? {
         guard !pending.isEmpty else { return nil }
@@ -192,9 +260,24 @@ final class PasteImportMacSession {
                     existing: existing
                 )
                 guard !Task.isCancelled else { return }
+                if candidates.isEmpty {
+                    self?.failedRecognitionReason = .noCandidates
+                    self?.featureRequestFlow.noteEmptyCandidates()
+                } else {
+                    self?.failedRecognitionReason = nil
+                    self?.featureRequestFlow.reset()
+                }
                 self?.phase = .choosing(candidates)
             } catch {
                 guard !Task.isCancelled else { return }
+                let failure = PasteImportFailureMessage.failure(for: error)
+                if PasteImportFailedRecognition.shouldOffer(failure: failure) {
+                    self?.failedRecognitionReason = .model
+                    self?.featureRequestFlow.noteModelFailure()
+                } else {
+                    self?.failedRecognitionReason = nil
+                    self?.featureRequestFlow.reset()
+                }
                 self?.phase = .failed(PasteImportFailureMessage.text(for: error))
             }
         }
@@ -207,6 +290,9 @@ final class PasteImportMacSession {
         existing = []
         pending = []
         tripID = nil
+        resumeAfterFeatureRequest = nil
+        failedRecognitionReason = nil
+        featureRequestFlow.reset()
         phase = .idle
     }
 }
@@ -278,11 +364,13 @@ private struct PasteImportFlowModifier: ViewModifier {
                 } else {
                     PasteImportCandidateSheet(
                         candidates: session.candidates,
+                        canOfferFeatureRequest: session.canOfferFeatureRequest,
                         onCancel: { session.dismissSheet() },
                         onContinue: {
                             session.review()
                             onReviewQueue()
-                        }
+                        },
+                        onRequestFeature: { session.offerFailedFeatureRequest() }
                     )
                 }
             }
@@ -293,6 +381,11 @@ private struct PasteImportFlowModifier: ViewModifier {
                     set: { if !$0 { session.dismissError() } }
                 )
             ) {
+                if session.canOfferFeatureRequest {
+                    Button(PasteImportFailedFeatureRequestPresentation().offerTitle) {
+                        session.offerFailedFeatureRequest()
+                    }
+                }
                 Button(L10n.string(.commonOk), role: .cancel) {
                     session.dismissError()
                     onReviewQueue()
@@ -300,6 +393,59 @@ private struct PasteImportFlowModifier: ViewModifier {
             } message: {
                 if let errorMessage = session.errorMessage {
                     Text(errorMessage)
+                }
+            }
+            .alert(
+                PasteImportFailedFeatureRequestPresentation().title,
+                isPresented: Binding(
+                    get: { session.isConfirmingFeatureRequest },
+                    set: { if !$0 { session.cancelFailedFeatureRequest() } }
+                )
+            ) {
+                Button(PasteImportFailedFeatureRequestPresentation().sendTitle) {
+                    session.confirmFailedFeatureRequest()
+                }
+                Button(PasteImportFailedFeatureRequestPresentation().cancelTitle, role: .cancel) {
+                    session.cancelFailedFeatureRequest()
+                }
+                .keyboardShortcut(.defaultAction)
+            } message: {
+                Text(PasteImportFailedFeatureRequestPresentation().message)
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { session.featureRequestSuccessURL != nil },
+                    set: { if !$0 { session.dismissFeatureRequestSuccess() } }
+                )
+            ) {
+                let chrome = PasteImportFailedFeatureRequestPresentation()
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(chrome.doneTitle)
+                    PublicGitHubIssueLink(
+                        url: session.featureRequestSuccessURL,
+                        errorMessage: nil
+                    )
+                    Button(L10n.string(.commonOk)) {
+                        session.dismissFeatureRequestSuccess()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
+                .padding(24)
+                .frame(minWidth: 280)
+            }
+            .alert(
+                L10n.string(.pasteImportErrorTitle),
+                isPresented: Binding(
+                    get: { session.featureRequestSubmitError != nil },
+                    set: { if !$0 { session.dismissFeatureRequestSubmitError() } }
+                )
+            ) {
+                Button(L10n.string(.commonOk), role: .cancel) {
+                    session.dismissFeatureRequestSubmitError()
+                }
+            } message: {
+                if let featureRequestSubmitError = session.featureRequestSubmitError {
+                    Text(featureRequestSubmitError)
                 }
             }
     }
@@ -325,32 +471,6 @@ private struct PasteImportProgressSheet: View {
         }
         .padding(24)
         .frame(minWidth: 280)
-    }
-}
-
-private struct PasteImportCandidateSheet: View {
-    let candidates: [PasteImportCandidate]
-    let onCancel: () -> Void
-    let onContinue: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ScrollView {
-                PasteImportCandidateList(candidates: candidates)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            HStack {
-                Button(L10n.string(.commonCancel), action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                Button(L10n.string(.pasteImportContinue), action: onContinue)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(candidates.isEmpty)
-            }
-        }
-        .padding(20)
-        .frame(minWidth: 420, minHeight: 320)
     }
 }
 
