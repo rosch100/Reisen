@@ -231,25 +231,14 @@ final class PasteImportIOSSession {
                     existing: existing
                 )
                 self.runLifetime.complete(ifCurrent: id) {
-                    if result.candidates.isEmpty {
-                        self.failedRecognitionReason = .noCandidates
-                        self.featureRequestFlow.noteEmptyCandidates()
-                    } else {
-                        self.failedRecognitionReason = nil
-                        self.featureRequestFlow.reset()
-                    }
+                    self.failedRecognitionReason = self.featureRequestFlow.applyRunResult(result)
                     self.phase = .choosing(result)
                 }
             } catch {
                 self.runLifetime.complete(ifCurrent: id) {
-                    let failure = PasteImportFailureMessage.failure(for: error)
-                    if PasteImportFailedRecognition.shouldOffer(failure: failure) {
-                        self.failedRecognitionReason = .model
-                        self.featureRequestFlow.noteModelFailure()
-                    } else {
-                        self.failedRecognitionReason = nil
-                        self.featureRequestFlow.reset()
-                    }
+                    self.failedRecognitionReason = self.featureRequestFlow.applyRunFailure(
+                        PasteImportFailureMessage.failure(for: error)
+                    )
                     self.phase = .failed(PasteImportFailureMessage.text(for: error))
                 }
             }

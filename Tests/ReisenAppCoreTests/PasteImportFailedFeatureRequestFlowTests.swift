@@ -190,6 +190,41 @@ import ReisenDomain
     #expect(flow.phase == .confirming)
 }
 
+@Test @MainActor func pasteImportFailedFeatureRequestFlow_applyRunResultOffersOnlyWhenEmpty() {
+    let flow = PasteImportFailedFeatureRequestFlow()
+    let empty = flow.applyRunResult(PasteImportRunResult(candidates: []))
+    #expect(empty == .noCandidates)
+    #expect(flow.canOffer)
+    #expect(flow.phase == .offering)
+
+    let candidate = PasteImportCandidate(
+        draft: PasteImportDraft(
+            bookingType: .hotel,
+            startAt: Date(timeIntervalSince1970: 1),
+            endAt: Date(timeIntervalSince1970: 2),
+            endAtIsPlaceholder: false,
+            title: "Hotel",
+            status: .unknown
+        ),
+        match: .none
+    )
+    let filled = flow.applyRunResult(PasteImportRunResult(candidates: [candidate]))
+    #expect(filled == nil)
+    #expect(!flow.canOffer)
+    #expect(flow.phase == .idle)
+}
+
+@Test @MainActor func pasteImportFailedFeatureRequestFlow_applyRunFailureOffersOnlyModel() {
+    let flow = PasteImportFailedFeatureRequestFlow()
+    #expect(flow.applyRunFailure(.model) == .model)
+    #expect(flow.canOffer)
+    #expect(flow.phase == .idle)
+    #expect(flow.applyRunFailure(.source) == nil)
+    #expect(!flow.canOffer)
+    #expect(flow.applyRunFailure(.imageUnsupported) == nil)
+    #expect(!flow.canOffer)
+}
+
 @Test func pasteImportFailedFeatureRequestPhase_confirmAlertOnlyWhileConfirming() {
     #expect(PasteImportFailedFeatureRequestPhase.confirming.showsConfirmAlert)
     #expect(!PasteImportFailedFeatureRequestPhase.submitting.showsConfirmAlert)

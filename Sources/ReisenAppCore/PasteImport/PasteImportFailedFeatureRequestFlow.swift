@@ -43,6 +43,28 @@ public final class PasteImportFailedFeatureRequestFlow {
         afterCancel = .idle
     }
 
+    /// Angebot nach dem Lauf: 0 Kandidaten → `noCandidates`, sonst kein Angebot.
+    @discardableResult
+    public func applyRunResult(_ result: PasteImportRunResult) -> PasteImportFailedRecognitionReason? {
+        if PasteImportFailedRecognition.shouldOffer(candidateCount: result.candidates.count) {
+            noteEmptyCandidates()
+            return .noCandidates
+        }
+        reset()
+        return nil
+    }
+
+    /// Angebot nach einem Lauf-Fehler: nur `PasteImportFailure.model`.
+    @discardableResult
+    public func applyRunFailure(_ failure: PasteImportFailure) -> PasteImportFailedRecognitionReason? {
+        if PasteImportFailedRecognition.shouldOffer(failure: failure) {
+            noteModelFailure()
+            return .model
+        }
+        reset()
+        return nil
+    }
+
     public func offer() {
         guard canOffer else { return }
         switch phase {
