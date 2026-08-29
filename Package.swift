@@ -115,7 +115,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenPasteImport",
-            dependencies: ["ReisenDomain"],
+            dependencies: ["ReisenDomain", "ReisenAppCore"],
             path: "Sources/ReisenPasteImport",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

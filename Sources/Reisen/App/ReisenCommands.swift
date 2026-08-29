@@ -11,7 +11,7 @@ struct ReisenCommands: Commands {
 
     /// Verfügbarkeit entscheidet über beide Einfüge-Einträge im Menü.
     ///
-    /// Die Notification trägt die Modellstufe nicht mit; `PasteImportMacSession.start()`
+    /// Die Notification trägt die Modellstufe nicht mit; `PasteImportSession.start()`
     /// löst sie über `PasteImportResolvedModel.kind()` erneut auf — dieselbe Quelle, kein zweiter Pfad.
     private var pasteImportKind: PasteImportModelKind { PasteImportResolvedModel.kind() }
 

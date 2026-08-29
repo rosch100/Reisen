@@ -6,6 +6,7 @@ import ReisenProviders
 import ReisenAppCore
 import ReisenProviderSync
 import ReisenSharedUI
+import ReisenPasteImport
 import AppKit
 import Foundation
 import WebKit
@@ -45,7 +46,7 @@ struct ContentView: View {
     @State private var showCreateTripFromBookingsFailed = false
 
     /// Paste-Import: Lauf-Zustand und der Kandidat, der gerade außerhalb des Inspectors geprüft wird.
-    @State private var pasteImport = PasteImportMacSession()
+    @State private var pasteImport = PasteImportSession()
     @State private var pasteReview: PasteImportReview?
 
     /// HIG: Spalten per dünnem Divider ziehbar (keine sichtbaren Slider-Knöpfe).
@@ -1033,7 +1034,7 @@ struct ContentView: View {
         selection?.pasteImportEntry ?? .open
     }
 
-    /// Reise des laufenden Imports, eingefroren beim Einstieg (`PasteImportMacSession.tripID`).
+    /// Reise des laufenden Imports, eingefroren beim Einstieg (`PasteImportSession.tripID`).
     private var pasteImportTrip: SDTrip? {
         guard let tripID = pasteImport.tripID else { return nil }
         return trips.first { $0.id == tripID }

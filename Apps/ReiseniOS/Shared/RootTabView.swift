@@ -5,6 +5,7 @@ import WebKit
 #endif
 
 import ReisenAppCore
+import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
@@ -20,7 +21,7 @@ struct RootTabView: View {
     @State private var providerEnableEpoch = 0
     @State private var selectedTab: AppTab = .reisen
     @State private var selectedTripID: UUID?
-    @State private var pasteImport = PasteImportIOSSession()
+    @State private var pasteImport = PasteImportSession()
     #if REISEN_PROVIDER_SYNC
     @State private var installedProviderIDs: Set<ProviderID> = []
     #endif
