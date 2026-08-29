@@ -69,6 +69,33 @@ public final class PasteImportFailedFeatureRequestFlow {
         return true
     }
 
+    /// `true`, wenn das Host-UI das Angebot wiederherstellen soll.
+    public func cancelConfirmAlert() -> Bool {
+        guard phase.showsConfirmAlert else { return false }
+        cancelOffer()
+        return true
+    }
+
+    @discardableResult
+    public func startConfirm(
+        source: PasteImportSource,
+        reason: PasteImportFailedRecognitionReason,
+        reporter: GitHubIssueReporter,
+        reporterGitHubUsername: String?
+    ) -> Task<Void, Never> {
+        guard beginSubmit() else {
+            return Task { @MainActor in }
+        }
+        return Task { @MainActor in
+            await confirm(
+                source: source,
+                reason: reason,
+                reporter: reporter,
+                reporterGitHubUsername: reporterGitHubUsername
+            )
+        }
+    }
+
     public func confirm(
         source: PasteImportSource,
         reason: PasteImportFailedRecognitionReason,

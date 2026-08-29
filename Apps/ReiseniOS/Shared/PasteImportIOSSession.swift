@@ -179,8 +179,7 @@ final class PasteImportIOSSession {
     }
 
     func cancelFailedFeatureRequest() {
-        guard featureRequestFlow.phase.showsConfirmAlert else { return }
-        featureRequestFlow.cancelOffer()
+        guard featureRequestFlow.cancelConfirmAlert() else { return }
         if let resume = resumeAfterFeatureRequest {
             phase = resume
             resumeAfterFeatureRequest = nil
@@ -189,15 +188,12 @@ final class PasteImportIOSSession {
 
     func confirmFailedFeatureRequest() {
         guard let document = source, let reason = failedRecognitionReason else { return }
-        guard featureRequestFlow.beginSubmit() else { return }
-        Task { @MainActor in
-            await featureRequestFlow.confirm(
-                source: document,
-                reason: reason,
-                reporter: GitHubIssueReporter.shared,
-                reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
-            )
-        }
+        featureRequestFlow.startConfirm(
+            source: document,
+            reason: reason,
+            reporter: GitHubIssueReporter.shared,
+            reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
+        )
     }
 
     func dismissFeatureRequestSuccess() {
