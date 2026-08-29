@@ -91,8 +91,7 @@ enum PasteImportBookingLabel {
 
     private static func normalize(_ raw: String) -> String? {
         guard let trimmed = NonEmpty.string(raw) else { return nil }
-        let folded = trimmed.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        let squeezed = folded.filter { $0.isLetter || $0.isNumber }
-        return NonEmpty.string(squeezed.lowercased())
+        let folded = PasteImportTextTokens.normalize(trimmed)
+        return NonEmpty.string(folded.filter { $0.isLetter || $0.isNumber })
     }
 }

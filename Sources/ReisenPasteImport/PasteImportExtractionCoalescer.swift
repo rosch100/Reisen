@@ -32,9 +32,7 @@ public enum PasteImportExtractionCoalescer {
 
     private static func boardingPassTitle(_ title: String?) -> Bool {
         let tokens = PasteImportTextTokens.tokens(in: title)
-        return tokens.contains("boarding")
-            || tokens.contains("boardingpass")
-            || tokens.contains("bordkarte")
+        return tokens.contains("boarding") || tokens.contains("bordkarte")
     }
 
     private static func areComplementary(
@@ -60,29 +58,9 @@ public enum PasteImportExtractionCoalescer {
         _ right: PasteImportExtraction
     ) -> PasteImportExtraction {
         var result = left
-        result.bookingType = left.bookingType ?? right.bookingType ?? flightHint(left) ?? flightHint(right)
-        result.startAt = left.startAt ?? right.startAt
-        result.endAt = left.endAt ?? right.endAt
+        result.fillingGaps(from: right)
+        result.bookingType = result.bookingType ?? flightHint(left) ?? flightHint(right)
         result.title = preferFlightTitle(left.title, right.title)
-        result.confirmationCode = left.confirmationCode ?? right.confirmationCode
-        result.externalUrl = left.externalUrl ?? right.externalUrl
-        result.locationFrom = left.locationFrom ?? right.locationFrom
-        result.locationTo = left.locationTo ?? right.locationTo
-        result.locationFromAddress = left.locationFromAddress ?? right.locationFromAddress
-        result.locationToAddress = left.locationToAddress ?? right.locationToAddress
-        result.operatorName = left.operatorName ?? right.operatorName
-        result.status = left.status ?? right.status
-        result.hotelCheckInMinutes = left.hotelCheckInMinutes ?? right.hotelCheckInMinutes
-        result.hotelCheckOutMinutes = left.hotelCheckOutMinutes ?? right.hotelCheckOutMinutes
-        result.hotelOffsetSeconds = left.hotelOffsetSeconds ?? right.hotelOffsetSeconds
-        result.flightDepartureOffsetSeconds =
-            left.flightDepartureOffsetSeconds ?? right.flightDepartureOffsetSeconds
-        result.flightArrivalOffsetSeconds =
-            left.flightArrivalOffsetSeconds ?? right.flightArrivalOffsetSeconds
-        if result.passengers.isEmpty { result.passengers = right.passengers }
-        if result.guestHints.isEmpty { result.guestHints = right.guestHints }
-        result.rateDetails = left.rateDetails ?? right.rateDetails
-        if result.deadlines.isEmpty { result.deadlines = right.deadlines }
         return result
     }
 

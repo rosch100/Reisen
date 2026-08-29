@@ -68,4 +68,31 @@ public struct PasteImportExtraction: Equatable, Sendable {
         self.rateDetails = rateDetails
         self.deadlines = deadlines
     }
+
+    /// Übernimmt nur fehlende optionale Felder aus `other` (bestehende Werte bleiben).
+    public mutating func fillingGaps(from other: PasteImportExtraction) {
+        bookingType = bookingType ?? other.bookingType
+        startAt = startAt ?? other.startAt
+        endAt = endAt ?? other.endAt
+        title = title ?? other.title
+        confirmationCode = confirmationCode ?? other.confirmationCode
+        externalUrl = externalUrl ?? other.externalUrl
+        locationFrom = locationFrom ?? other.locationFrom
+        locationTo = locationTo ?? other.locationTo
+        locationFromAddress = locationFromAddress ?? other.locationFromAddress
+        locationToAddress = locationToAddress ?? other.locationToAddress
+        operatorName = operatorName ?? other.operatorName
+        status = status ?? other.status
+        hotelCheckInMinutes = hotelCheckInMinutes ?? other.hotelCheckInMinutes
+        hotelCheckOutMinutes = hotelCheckOutMinutes ?? other.hotelCheckOutMinutes
+        hotelOffsetSeconds = hotelOffsetSeconds ?? other.hotelOffsetSeconds
+        flightDepartureOffsetSeconds =
+            flightDepartureOffsetSeconds ?? other.flightDepartureOffsetSeconds
+        flightArrivalOffsetSeconds =
+            flightArrivalOffsetSeconds ?? other.flightArrivalOffsetSeconds
+        if passengers.isEmpty { passengers = other.passengers }
+        if guestHints.isEmpty { guestHints = other.guestHints }
+        rateDetails = rateDetails ?? other.rateDetails
+        if deadlines.isEmpty { deadlines = other.deadlines }
+    }
 }

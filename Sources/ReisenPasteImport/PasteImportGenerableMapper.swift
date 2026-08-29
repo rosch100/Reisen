@@ -30,7 +30,7 @@ public enum PasteImportGenerableMapper {
             locationFromAddress: NonEmpty.string(dto.locationFromAddress),
             locationToAddress: NonEmpty.string(dto.locationToAddress),
             operatorName: NonEmpty.string(dto.operatorName),
-            status: dto.status.flatMap(status(from:)),
+            status: dto.status.flatMap(PasteImportBookingLabel.status(from:)),
             hotelCheckInMinutes: dto.hotelCheckInMinutes,
             hotelCheckOutMinutes: dto.hotelCheckOutMinutes,
             hotelOffsetSeconds: dto.hotelOffsetSeconds,
@@ -41,10 +41,6 @@ public enum PasteImportGenerableMapper {
             rateDetails: dto.rateDetails.map(rateDetails(from:)),
             deadlines: dto.deadlines.compactMap(deadline(from:))
         )
-    }
-
-    private static func status(from raw: String) -> BookingStatus? {
-        PasteImportBookingLabel.status(from: raw)
     }
 
     private static func date(from raw: String?) -> Date? {
