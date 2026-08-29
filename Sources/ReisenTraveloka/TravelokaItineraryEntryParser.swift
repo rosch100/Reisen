@@ -54,9 +54,15 @@ enum TravelokaItineraryEntryParser {
                 endAt: endAt
             )
         )
+        let bookingPrice = TravelokaJSON.bookingMoney(from: entry).map {
+            BookingRateDetails(
+                totalPriceAmount: $0.amount,
+                totalPriceCurrency: $0.currency
+            )
+        }
         fields.rateDetails = BookingRateDetails.merging(
             existing: fields.rateDetails,
-            incoming: TravelokaJSON.bookingRateDetails(from: entry)
+            incoming: bookingPrice
         )
 
         let externalUrl = TravelokaAPI.detailURL(

@@ -115,7 +115,7 @@ Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 
 - Facts → `DraftAssembler` (`guestHints` über `ProviderBookingFacts`); kein zweites Draft-Init
 - no-fallbacks: fehlende Stay-Felder → leeres Array; keine geratenen TRAIN-Station-Keys; TRAIN nicht in Whitelist ohne Entries; fehlender/versteckter Preis → `nil` (kein Storno-Fee als Total)
-- SSOT: Typ-Mapping `TravelokaProductType`; Prep-Keywords Domain; Catalog-Types unverändert; Geldwerte `TravelokaJSON.money` / `bookingMoney` / `bookingRateDetails` / `moneyAmount`
+- SSOT: Typ-Mapping `TravelokaProductType`; Prep-Keywords Domain; Catalog-Types unverändert; Geldwerte `TravelokaJSON.money` / `bookingMoney` / `moneyAmount`; `BookingRateDetails` im Entry-Parser
 - Preis: `paymentInfo.expectedAmount` in Catalog und Single (gleicher Entry-Parser); wie GYG/Booking/Opodo/Check24/Airbnb/BM auf `BookingRateDetails.totalPriceAmount`
 - Traveloka `needsDraftEnrichment`: Hotel mit leeren `guestHints` → `single` (Catalog-Karten oft ohne Policies; Sync überschreibt Hints aus dem Draft); **nicht** wegen fehlendem Preis (Catalog liefert denselben Payment-Pfad)
 - Doc-Drift A.4 TRAIN → `.train` korrigiert

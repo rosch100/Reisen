@@ -263,14 +263,6 @@ enum TravelokaJSON {
         return money(from: dictionary(payment["expectedAmount"]))
     }
 
-    static func bookingRateDetails(from entry: [String: Any]) -> BookingRateDetails? {
-        guard let money = bookingMoney(from: entry) else { return nil }
-        return BookingRateDetails(
-            totalPriceAmount: money.amount,
-            totalPriceCurrency: money.currency
-        )
-    }
-
     static func dateFromApplied(_ value: Any?, timeZone: TimeZone) -> Date? {
         let dict = dictionary(value)
         guard let day = dayComponents(dict["monthDayYear"]) else { return nil }
