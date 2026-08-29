@@ -404,6 +404,14 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         self.assertNotIn("iVBORw0KGgo", parsed["issue_body"])
         self.assertIn("nicht auf GitHub", parsed["issue_body"])
 
+    def test_binary_declared_as_text_plain_is_not_inlined(self) -> None:
+        parsed = self.parse_fixture("binary-as-text.eml")
+        self.assertIn("payload.bin", parsed["attachments"])
+        self.assertNotIn("Anhang: payload.bin", parsed["issue_body"])
+        self.assertNotIn("PNG", parsed["issue_body"])
+        self.assertNotIn("iVBORw0KGgo", parsed["issue_body"])
+        self.assertIn("Siehe Anhang.", parsed["issue_body"])
+
     def test_markdown_fence_outgrows_backticks_in_mail_text(self) -> None:
         body = ingest.issue_body(
             from_addr="a@b.c",

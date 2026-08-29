@@ -13,6 +13,24 @@ import Testing
     #expect(redacted.contains("[redacted]"))
 }
 
+@Test func secretRedactor_redactsAuthorizationSchemesAndGithubAppTokens() {
+    let input = """
+    Authorization: Basic dXNlcjpwYXNzd29ydA==
+    gho_abcdefghijklmnopqrstuvwxyz0123456789
+    ghu_abcdefghijklmnopqrstuvwxyz0123456789
+    ghs_abcdefghijklmnopqrstuvwxyz0123456789
+    ghr_abcdefghijklmnopqrstuvwxyz0123456789
+    """
+    let redacted = SecretRedactor.redact(input)
+    #expect(!redacted.contains("dXNlcjpwYXNzd29ydA=="))
+    #expect(!redacted.contains("gho_abcdefghijklmnopqrstuvwxyz0123456789"))
+    #expect(!redacted.contains("ghu_abcdefghijklmnopqrstuvwxyz0123456789"))
+    #expect(!redacted.contains("ghs_abcdefghijklmnopqrstuvwxyz0123456789"))
+    #expect(!redacted.contains("ghr_abcdefghijklmnopqrstuvwxyz0123456789"))
+    #expect(redacted.contains("Authorization: Basic [redacted]"))
+    #expect(redacted.contains("[redacted]"))
+}
+
 @Test func secretRedactor_redactsCookieAndQuerySecrets() {
     let input = """
     Cookie: session=abc123; other=ok

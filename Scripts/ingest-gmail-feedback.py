@@ -163,15 +163,32 @@ def html_to_text(value: str) -> str:
     return html.unescape(re.sub(r"[ \t]+\n", "\n", stripped)).strip()
 
 
-def part_payload_text(part: Message) -> str:
+def part_payload_bytes(part: Message) -> bytes | None:
     payload = part.get_payload(decode=True)
     if not isinstance(payload, (bytes, bytearray)):
+        return None
+    return bytes(payload)
+
+
+def part_payload_text(part: Message) -> str:
+    payload = part_payload_bytes(part)
+    if payload is None:
         return ""
     charset = part.get_content_charset() or "utf-8"
     try:
         return payload.decode(charset, errors="replace")
     except LookupError:
         return payload.decode("utf-8", errors="replace")
+
+
+def is_textual_payload(data: bytes) -> bool:
+    if not data or b"\x00" in data:
+        return False
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    return True
 
 
 def icu_template_to_python(template: str) -> str:
@@ -289,8 +306,13 @@ def extract_body_and_attachments(
                 name = filename or "unnamed"
                 attachments.append(name)
                 content_type = part.get_content_type()
-                if is_text_attachment(name, content_type):
-                    text = part_payload_text(part).strip()
+                payload = part_payload_bytes(part)
+                if (
+                    payload is not None
+                    and is_text_attachment(name, content_type)
+                    and is_textual_payload(payload)
+                ):
+                    text = payload.decode("utf-8").strip()
                     if text:
                         inlined.append((name, text))
                 continue
