@@ -62,6 +62,6 @@ Harte Grenze ist GitHub-seitig: fine-grained PAT mit **Issues: Read and write**,
 
 ## Issue-Labels
 
-Die öffentlichen Issue-Formulare setzen nur `kind/error` bzw. `kind/feedback`. `source/in-app` setzt die App beim Anlegen bzw. in der vorausgefüllten URL — nicht das Web-Formular, damit Browser-Meldungen nicht fälschlich als In-App gelten. Mail-Ingress setzt `kind/feedback` und `source/email`. Die Labels müssen am Repo existieren. Fehlen sie oder darf der Aufrufer keine Labels setzen, kann GitHub das Issue trotzdem anlegen — dann ohne diese Labels. HTTP 422 ist eine allgemeine Validierungs- oder Spam-Antwort, kein fester Fehlcode für fehlende Labels.
+Die öffentlichen Issue-Formulare setzen nur `kind/error` bzw. `kind/feedback`. `source/in-app` setzt die App beim Anlegen bzw. in der vorausgefüllten URL — nicht das Web-Formular, damit Browser-Meldungen nicht fälschlich als In-App gelten. Mail-Ingress setzt `kind/feedback` und `source/email` und schreibt `issue-dev-gmail-id` (Gmail-Message-Id) in den Body, damit der Bot die MIME-Anhänge per Gmail-API laden kann. Die Labels müssen am Repo existieren. Fehlen sie oder darf der Aufrufer keine Labels setzen, kann GitHub das Issue trotzdem anlegen — dann ohne diese Labels. HTTP 422 ist eine allgemeine Validierungs- oder Spam-Antwort, kein fester Fehlcode für fehlende Labels.
 
 Paste-Import kann nach Bestätigung ein Issue `kind/feature` anlegen und das Dokument als Issue-Kommentar anhängen. Dafür reicht dasselbe Issues-PAT; kein Contents-Recht und kein zweites Repository.
