@@ -40,7 +40,12 @@ public enum PasteImportFileSource {
         defer {
             if didStartAccess { url.stopAccessingSecurityScopedResource() }
         }
-        let data = try Data(contentsOf: url)
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            throw PasteImportFileSourceError.unreadable
+        }
         guard let type = contentType(of: url) else {
             throw PasteImportFileSourceError.unsupportedType
         }

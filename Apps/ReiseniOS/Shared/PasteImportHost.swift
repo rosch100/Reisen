@@ -106,8 +106,6 @@ struct PasteImportHost<Content: View>: View {
             .onOpenURL { url in
                 if PasteImportHandoff.isHandoff(url) {
                     handleHandoff(trigger: .url)
-                } else if url.isFileURL {
-                    startFromDroppedFiles([url])
                 }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -132,20 +130,29 @@ struct PasteImportHost<Content: View>: View {
 
     private func startFromDroppedFiles(_ urls: [URL]) {
         let files = PasteImportFileSource.acceptedFiles(in: urls)
-        guard let url = files.first else {
-            if !urls.isEmpty {
-                session.fail(L10n.string(.pasteImportErrorSource))
-            }
+        switch PasteImportDropCoordinator.action(
+            offeredURLCount: urls.count,
+            acceptedFileCount: files.count,
+            isSessionActive: session.isActive
+        ) {
+        case .ignore:
             return
-        }
-        do {
-            session.start(
-                source: try PasteImportFileSource.source(from: url),
-                entry: entry(),
-                in: modelContext
-            )
-        } catch {
-            session.fail(PasteImportFailureMessage.text(for: error))
+        case .fail:
+            session.fail(L10n.string(.pasteImportErrorSource))
+        case .start:
+            guard let url = files.first else {
+                session.fail(L10n.string(.pasteImportErrorSource))
+                return
+            }
+            do {
+                session.start(
+                    source: try PasteImportFileSource.source(from: url),
+                    entry: entry(),
+                    in: modelContext
+                )
+            } catch {
+                session.fail(PasteImportFailureMessage.text(for: error))
+            }
         }
     }
 

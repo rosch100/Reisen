@@ -58,6 +58,14 @@ import ReisenDomain
     }
 }
 
+@Test func pasteImportFileSource_missingFileThrowsUnreadableNotCocoaError() {
+    let missing = FileManager.default.temporaryDirectory
+        .appendingPathComponent("PasteImport-missing-\(UUID().uuidString).txt")
+    #expect(throws: PasteImportFileSourceError.unreadable) {
+        try PasteImportFileSource.source(from: missing)
+    }
+}
+
 @Test func pasteImportFileSource_shareIdentifiersAcceptFileURLAndContentTypes() {
     #expect(PasteImportFileSource.acceptsShareIdentifiers(["public.file-url"]))
     #expect(PasteImportFileSource.acceptsShareIdentifiers(["com.adobe.pdf"]))

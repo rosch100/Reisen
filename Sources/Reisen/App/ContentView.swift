@@ -1059,20 +1059,29 @@ struct ContentView: View {
     /// Ein Drop bzw. „Öffnen mit“ startet denselben Lauf wie der Dateidialog; das erste gültige File zählt.
     private func startPasteImport(fromDropped urls: [URL]) {
         let files = PasteImportFileSource.acceptedFiles(in: urls)
-        guard let url = files.first else {
-            if !urls.isEmpty {
-                pasteImport.fail(L10n.string(.pasteImportErrorSource))
-            }
+        switch PasteImportDropCoordinator.action(
+            offeredURLCount: urls.count,
+            acceptedFileCount: files.count,
+            isSessionActive: pasteImport.isActive
+        ) {
+        case .ignore:
             return
-        }
-        do {
-            pasteImport.start(
-                source: try PasteImportFileSource.source(from: url),
-                entry: pasteImportEntry,
-                existing: existingDomainBookings
-            )
-        } catch {
-            pasteImport.fail(PasteImportFailureMessage.text(for: error))
+        case .fail:
+            pasteImport.fail(L10n.string(.pasteImportErrorSource))
+        case .start:
+            guard let url = files.first else {
+                pasteImport.fail(L10n.string(.pasteImportErrorSource))
+                return
+            }
+            do {
+                pasteImport.start(
+                    source: try PasteImportFileSource.source(from: url),
+                    entry: pasteImportEntry,
+                    existing: existingDomainBookings
+                )
+            } catch {
+                pasteImport.fail(PasteImportFailureMessage.text(for: error))
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 import Foundation
+#if os(macOS)
 import Security
+#endif
 
 /// Entitlements des laufenden Prozesses, wie sie in der Code-Signatur stehen.
 enum ProcessEntitlements {
@@ -10,6 +12,7 @@ enum ProcessEntitlements {
     static let privateCloudCompute = "com.apple.developer.private-cloud-compute"
 
     static func contains(_ key: String) -> Bool {
+        #if os(macOS)
         var code: SecCode?
         guard SecCodeCopySelf(SecCSFlags(), &code) == errSecSuccess, let code else {
             return false
@@ -30,5 +33,10 @@ enum ProcessEntitlements {
         }
         let entitlements = (info as NSDictionary)[kSecCodeInfoEntitlementsDict] as? [String: Any]
         return entitlements?[key] != nil
+        #else
+        // SecCodeCopySelf ist macOS-only; iOS-Builds tragen den PCC-Key nicht.
+        _ = key
+        return false
+        #endif
     }
 }

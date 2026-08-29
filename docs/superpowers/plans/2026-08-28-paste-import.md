@@ -69,9 +69,27 @@
 - Consumes: nichts
 - Produces: `PasteImportSource` mit `validated() throws`
 
-TDD: Datei zuerst mit `public enum PasteImportSource { case text(String); public func validated() throws -> PasteImportSource { self } }` anlegen, **dann** Tests. RED = `#expect(throws:)` schlägt fehl weil empty akzeptiert wird, nicht weil der Typ fehlt.
+TDD: Zuerst kompilierenden Stub anlegen (`PasteImportSource` + `PasteImportSourceError` mit akzeptierendem `validated()`), **dann** Tests. RED = `#expect(throws:)` schlägt fehl, weil empty noch akzeptiert wird — nicht weil der Typ fehlt.
 
-- [ ] **Step 1: Failing test**
+- [ ] **Step 1: Kompilierender Stub**
+
+```swift
+import Foundation
+
+public enum PasteImportSourceError: Error, Equatable, Sendable {
+    case empty
+}
+
+public enum PasteImportSource: Equatable, Sendable {
+    case text(String)
+    case image(Data)
+    case pdf(Data)
+
+    public func validated() throws -> PasteImportSource { self }
+}
+```
+
+- [ ] **Step 2: Failing test**
 
 ```swift
 import Foundation
@@ -99,12 +117,12 @@ import ReisenDomain
 }
 ```
 
-- [ ] **Step 2: Run RED**
+- [ ] **Step 3: Run RED**
 
 Run: `swift test --filter PasteImportSource`
-Expected: FAIL (`PasteImportSource` / `PasteImportSourceError` missing)
+Expected: FAIL (Assert: empty wird noch akzeptiert)
 
-- [ ] **Step 3: Minimal implementation**
+- [ ] **Step 4: Minimal implementation**
 
 ```swift
 import Foundation
@@ -132,12 +150,12 @@ public enum PasteImportSource: Equatable, Sendable {
 }
 ```
 
-- [ ] **Step 4: Run GREEN**
+- [ ] **Step 5: Run GREEN**
 
 Run: `swift test --filter PasteImportSource`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add Sources/ReisenDomain/PasteImport/PasteImportSource.swift Tests/ReisenDomainTests/PasteImportSourceTests.swift
@@ -345,6 +363,7 @@ private func hotel(id: UUID = UUID(), code: String?, provider: ProviderID = .che
     ])[0]
     let result = PasteImportMatching.match(
         draft: draft,
+        existing: [existing],
         index: index,
         calendar: calendar,
         normalizer: BookingTimeNormalizer()
@@ -361,6 +380,7 @@ private func hotel(id: UUID = UUID(), code: String?, provider: ProviderID = .che
     ])[0]
     let result = PasteImportMatching.match(
         draft: draft,
+        existing: [a, b],
         index: index,
         calendar: calendar,
         normalizer: BookingTimeNormalizer()
@@ -633,7 +653,7 @@ xcstrings-Eintrag analog `menu.add_booking` (state `translated`, de+en).
 
 Ein Typ `PasteImportPayloadDTO` / `PasteImportBookingDTO` (eine Datei). Felder von `PasteImportBookingDTO` = optionale Felder von `PasteImportExtraction` (ISO8601-Strings für Daten; `bookingType` als String-rawValue; Ints/Strings optional; Arrays default leer). `@Generable` in Task 8 auf **diesen** Typen (FoundationModels-Import nur in der Extractor-Datei via Extension oder gleiche Types dort mit `@Generable`). Mapper: eine Funktion `extraction(from: PasteImportBookingDTO)`. Unbekannter Typ-String → `bookingType == nil`.
 
-Mapper: unbekannter `bookingType`-String → Extraction mit `bookingType == nil` (Filter droppt). Kein Map auf `.other` bei unbekanntem String. ISO8601 über `ISO8601DateFormatter`. Leere Strings → nil.
+Mapper: unbekannter `bookingType`-String → Extraction mit `bookingType == nil` (Filter droppt). Kein Map auf `.other` bei unbekanntem String. Datumsstrings über `PasteImportTicketDate` (ISO8601 mit/ohne `Z`/Offset sowie Ticket-Formate DE/EN). Leere Strings → nil.
 
 - [ ] **Step 1: Test**
 
@@ -707,9 +727,15 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
 }
 ```
 
-`availability()`: PCC `true` nur wenn `PrivateCloudComputeLanguageModel()` (bzw. aktuelle SDK-API) available; On-Device nur wenn `SystemLanguageModel.default` available. Exakte API aus dem lokalen SDK übernehmen (WWDC26: `model.availability == .available`). Kein `true` raten.
+`availability()`: PCC `true` nur wenn **managed Entitlement** `com.apple.developer.private-cloud-compute` **und** `PrivateCloudComputeLanguageModel()` (bzw. aktuelle SDK-API) available; On-Device nur wenn `SystemLanguageModel.default` available. Exakte API aus dem lokalen SDK übernehmen (WWDC26: `model.availability == .available`). Kein `true` raten. Entitlement-Lesen per `SecCode*` nur auf macOS; iOS ohne PCC-Entitlement → PCC false.
 
-`extract`: wenn `kind == .unavailable` → throw `PasteImportAdapterError.unavailable`. Sonst Session mit genau dem Modell zu `kind`. Structured Output auf `PasteImportPayloadDTO` (`@Generable` in dieser Datei/Extension). Prompt: nur sichere Felder.
+**Ownership der Modellwahl (kein Umzug von Foundation Models nach AppCore):**
+- Availability-Reader (`PasteImportAvailabilityReading`) im Adapter `ReisenPasteImport`.
+- Resolver (`PasteImportModelResolver`) in Domain — reine Flags → kind.
+- Apps rufen Availability → Resolver auf und übergeben `kind` an `PasteImportRun` / Extractor.
+- SharedUI enthält **keinen** zweiten Resolver und hängt nicht an `ReisenPasteImport`.
+
+`extract`: wenn `kind == .unavailable` → throw `PasteImportAdapterError.unavailable`. Sonst Session mit genau dem Modell zu `kind`. Structured Output auf `PasteImportPayloadDTO` (`@Generable` in dieser Datei/Extension). Prompt: nur sichere Felder; Session-Instructions = `PasteImportExtractionInstructions.text`.
 
 Bild: `Attachment` in den Prompt. Fehlt die API im lokalen SDK: Task **BLOCKED**.
 

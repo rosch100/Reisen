@@ -116,7 +116,7 @@ Wie zuvor: unavailable disabled; Modellfehler Dialog ohne Stufenwechsel; leere Q
 ## UI / HIG
 
 - ⌘V System-Paste. macOS „Buchung einfügen…“ ⌘⇧V in Reise **und** Offen. Dateidialog und **Drop** (Fenster, Dock, „Öffnen mit“) teilen Typen PDF/Bild/Text; ein File pro Drop (erstes gültiges). `LSHandlerRank` Alternate, Rolle Viewer — Reisen wird nicht Default-PDF-App.
-- iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. App Group `group.de.reisen.Reisen.pasteimport`. Handoff-URL-Scheme **`reisen://paste-import`** (Info.plist beider iOS-Apps). Consume löscht die Temp-Datei. iPad-Drop, „Öffnen in Reisen“ und **Senden an / Teilen** (Share-Sheet, inkl. `public.file-url` aus der Dateien-App) denselben Datei-Pfad.
+- iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. App Group `group.de.reisen.Reisen.pasteimport`. Handoff-URL-Scheme **`reisen://paste-import`** (Info.plist beider iOS-Apps). Consume löscht die Temp-Datei. iPad-Drop, „Öffnen in Reisen“ und **Senden an / Teilen** (Share-Sheet, inkl. `public.file-url` aus der Dateien-App) denselben Datei-Pfad. Datei-URLs aus „Öffnen mit“ landen in `PasteImportExternalFileInbox`, auch bevor Bootstrap `.ready` ist; der Host holt sie nach.
 - Badge = L10n-Text (Neu / Ergänzen), nicht nur Farbe; VoiceOver-Label gleich.
 - EN-Badge: **Enrich**, nicht Update.
 - PCC-Sheet vor dem Senden. Progress + Abbrechen.

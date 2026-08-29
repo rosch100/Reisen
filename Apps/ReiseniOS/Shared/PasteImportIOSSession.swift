@@ -150,7 +150,11 @@ final class PasteImportIOSSession {
         phase = .idle
     }
 
+    /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
+        task?.cancel()
+        task = nil
+        source = nil
         phase = .failed(message)
     }
 

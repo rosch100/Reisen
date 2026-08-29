@@ -42,8 +42,14 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         // Zuerst die Stufe: ohne Modell wird die Quelle gar nicht aufbereitet.
         let session = try makeSession()
         let material = try Self.material(for: try source.validated())
+        let prepared = try Self.prompt(for: material)
+        defer {
+            for url in prepared.temporaryImageURLs {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
         let response = try await session.respond(
-            to: try Self.prompt(for: material),
+            to: prepared.prompt,
             generating: PasteImportPayloadDTO.self
         )
         return PasteImportExtractionCompleter.fillingOmittedTravelDates(
@@ -83,14 +89,17 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         }
     }
 
-    private static func prompt(for material: PasteImportPromptMaterial) throws -> Prompt {
+    private static func prompt(for material: PasteImportPromptMaterial) throws -> PreparedPrompt {
         let request = request(for: material)
-        guard !material.images.isEmpty else { return Prompt(request) }
+        guard !material.images.isEmpty else {
+            return PreparedPrompt(prompt: Prompt(request), temporaryImageURLs: [])
+        }
         try PasteImportImageAttachments.requireSupport()
         guard #available(macOS 27.0, iOS 27.0, visionOS 27.0, *) else {
             throw PasteImportAdapterError.imageInputUnsupported
         }
         let attachments: [Attachment<ImageAttachmentContent>]
+        var temporaryImageURLs: [URL] = []
         if PasteImportImageAttachments.cgImageInitializerAvailable {
             attachments = try material.images.map { Attachment(try PasteImportImageData.image(from: $0)) }
         } else {
@@ -99,13 +108,17 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
                     .appendingPathComponent(UUID().uuidString)
                     .appendingPathExtension("png")
                 try data.write(to: url, options: .atomic)
+                temporaryImageURLs.append(url)
                 return Attachment(imageURL: url)
             }
         }
-        return Prompt {
-            request
-            attachments
-        }
+        return PreparedPrompt(
+            prompt: Prompt {
+                request
+                attachments
+            },
+            temporaryImageURLs: temporaryImageURLs
+        )
     }
 
     private static func request(for material: PasteImportPromptMaterial) -> String {
@@ -126,4 +139,9 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
 private struct PasteImportPromptMaterial {
     var text: String?
     var images: [Data] = []
+}
+
+private struct PreparedPrompt {
+    var prompt: Prompt
+    var temporaryImageURLs: [URL]
 }

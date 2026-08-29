@@ -122,6 +122,7 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("PDFKit"),
+                .linkedFramework("Security", .when(platforms: [.macOS])),
             ]
         ),
         .target(

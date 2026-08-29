@@ -82,10 +82,44 @@ final class ShareViewController: UIViewController {
         return nil
     }
 
+    /// Zuerst File-Representation (Kopie im Callback lesen), dann `URL`/`Data`-Objekt.
     private static func fileURL(from provider: NSItemProvider) async throws -> URL {
+        if let url = try? await fileURLFromRepresentation(provider) {
+            return url
+        }
+        return try await fileURLFromObject(provider)
+    }
+
+    private static func fileURLFromRepresentation(_ provider: NSItemProvider) async throws -> URL {
+        try await withCheckedThrowingContinuation { continuation in
+            _ = provider.loadFileRepresentation(forTypeIdentifier: UTType.fileURL.identifier) {
+                url,
+                error in
+                guard let url else {
+                    continuation.resume(throwing: error ?? PasteImportShareError.unreadableSource)
+                    return
+                }
+                // Apple löscht die Temp-Kopie nach dem Callback — Bytes sofort lesen und lokal halten.
+                let local = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension(url.pathExtension.isEmpty ? "bin" : url.pathExtension)
+                do {
+                    if FileManager.default.fileExists(atPath: local.path) {
+                        try FileManager.default.removeItem(at: local)
+                    }
+                    try FileManager.default.copyItem(at: url, to: local)
+                    continuation.resume(returning: local)
+                } catch {
+                    continuation.resume(throwing: PasteImportShareError.unreadableSource)
+                }
+            }
+        }
+    }
+
+    private static func fileURLFromObject(_ provider: NSItemProvider) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
             _ = provider.loadObject(ofClass: URL.self) { object, error in
-                if let url = object as? URL {
+                if let url = PasteImportLoadedFileURL.url(fromLoadedItem: object) {
                     continuation.resume(returning: url)
                 } else {
                     continuation.resume(throwing: error ?? PasteImportShareError.unreadableSource)

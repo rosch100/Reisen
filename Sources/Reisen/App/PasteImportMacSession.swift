@@ -158,11 +158,18 @@ final class PasteImportMacSession {
         phase = .idle
     }
 
+    /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
+        task?.cancel()
+        task = nil
+        source = nil
         phase = .failed(message)
     }
 
     var hasPendingCandidates: Bool { !pending.isEmpty }
+
+    /// Bestätigung, Lauf, Kandidatenliste, Meldung oder Editor-Warteschlange ist offen.
+    var isActive: Bool { phase != .idle || hasPendingCandidates }
 
     func nextCandidate() -> PasteImportCandidate? {
         guard !pending.isEmpty else { return nil }

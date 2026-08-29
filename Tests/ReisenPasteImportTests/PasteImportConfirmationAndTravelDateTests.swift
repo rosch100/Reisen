@@ -17,9 +17,9 @@ import ReisenPasteImport
 }
 
 @Test func pasteImportConfirmationCode_keepsPNRAndOrderNumbers() {
-    #expect(PasteImportConfirmationCode.sanitize("HIFRGJ") == "HIFRGJ")
-    #expect(PasteImportConfirmationCode.sanitize("WQL95GY") == "WQL95GY")
-    #expect(PasteImportConfirmationCode.sanitize(" RJLPIM ") == "RJLPIM")
+    #expect(PasteImportConfirmationCode.sanitize("EXAM04") == "EXAM04")
+    #expect(PasteImportConfirmationCode.sanitize("EXAM05A") == "EXAM05A")
+    #expect(PasteImportConfirmationCode.sanitize(" EXAM06 ") == "EXAM06")
     #expect(PasteImportConfirmationCode.sanitize("EXAM03") == "EXAM03")
 }
 
@@ -41,6 +41,17 @@ import ReisenPasteImport
         """
     let start = try #require(PasteImportTravelDateFromText.startAt(in: text))
     #expect(start == ticketWallClock(2026, 8, 15, 0, 0))
+}
+
+@Test func pasteImportTravelDateFromText_parsesDateOnSameLabelLine() throws {
+    let start = try #require(
+        PasteImportTravelDateFromText.startAt(in: "Departure Date: 15 August 2026")
+    )
+    #expect(start == ticketWallClock(2026, 8, 15, 0, 0))
+}
+
+@Test func pasteImportTravelDateFromText_ignoresDatePaidPrefix() {
+    #expect(PasteImportTravelDateFromText.startAt(in: "Date paid\n15 August 2026") == nil)
 }
 
 @Test func pasteImportTravelDateFromText_ignoresBookingDateAlone() {
