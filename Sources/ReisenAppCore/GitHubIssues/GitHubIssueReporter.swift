@@ -127,12 +127,23 @@ public final class GitHubIssueReporter {
         let labels = kind.githubLabels
 
         do {
-            if let existing = try await resolveExistingIssue(fingerprint: fingerprint) {
+            if let localNumber = state.openFingerprints[fingerprint] {
                 return rememberURL(
                     try await commentIfAllowed(
                         fingerprint: fingerprint,
-                        issueNumber: existing,
+                        issueNumber: localNumber,
                         body: commentBody(kind: kind, message: redactedMessage)
+                    )
+                )
+            }
+
+            if let remoteNumber = try await client.searchOpenFingerprint(fingerprint) {
+                return rememberURL(
+                    try await completeExistingIssue(
+                        fingerprint: fingerprint,
+                        issueNumber: remoteNumber,
+                        attachmentComments: attachmentComments,
+                        repeatComment: commentBody(kind: kind, message: redactedMessage)
                     )
                 )
             }
@@ -144,11 +155,8 @@ public final class GitHubIssueReporter {
                 labels: labels
             )
             state.createTimestamps.append(now())
-            state.openFingerprints[fingerprint] = created.number
-            persist()
-            for comment in attachmentComments {
-                _ = try await client.comment(issueNumber: created.number, body: comment)
-            }
+            try await postAttachmentComments(issueNumber: created.number, comments: attachmentComments)
+            rememberOpenFingerprint(fingerprint, issueNumber: created.number)
             return rememberURL(created)
         } catch {
             lastReportErrorMessage = error.localizedDescription
@@ -156,16 +164,37 @@ public final class GitHubIssueReporter {
         }
     }
 
-    private func resolveExistingIssue(fingerprint: String) async throws -> Int? {
-        if let local = state.openFingerprints[fingerprint] {
-            return local
+    private func completeExistingIssue(
+        fingerprint: String,
+        issueNumber: Int,
+        attachmentComments: [String],
+        repeatComment: String
+    ) async throws -> GitHubCreatedIssue {
+        if attachmentComments.isEmpty {
+            rememberOpenFingerprint(fingerprint, issueNumber: issueNumber)
+            return try await commentIfAllowed(
+                fingerprint: fingerprint,
+                issueNumber: issueNumber,
+                body: repeatComment
+            )
         }
-        guard let remote = try await client.searchOpenFingerprint(fingerprint) else {
-            return nil
+        try await postAttachmentComments(issueNumber: issueNumber, comments: attachmentComments)
+        rememberOpenFingerprint(fingerprint, issueNumber: issueNumber)
+        return GitHubCreatedIssue(
+            number: issueNumber,
+            htmlURL: GitHubRepository.issueURL(number: issueNumber)
+        )
+    }
+
+    private func postAttachmentComments(issueNumber: Int, comments: [String]) async throws {
+        for comment in comments {
+            _ = try await client.comment(issueNumber: issueNumber, body: comment)
         }
-        state.openFingerprints[fingerprint] = remote
+    }
+
+    private func rememberOpenFingerprint(_ fingerprint: String, issueNumber: Int) {
+        state.openFingerprints[fingerprint] = issueNumber
         persist()
-        return remote
     }
 
     private func rememberURL(_ created: GitHubCreatedIssue) -> GitHubCreatedIssue {
