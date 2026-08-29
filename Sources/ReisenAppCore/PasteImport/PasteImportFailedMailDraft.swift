@@ -41,7 +41,7 @@ public struct PasteImportFailedMailDraft: Equatable, Sendable, Identifiable {
         }
         return PasteImportFailedMailDraft(
             to: GitHubRepository.feedbackEmail,
-            subject: PasteImportFailedFeatureRequestCopy.issueTitle,
+            subject: PasteImportFailedFeatureRequest.titleOverride,
             body: lines.joined(separator: "\n"),
             fileName: source.attachmentFileName,
             mimeType: source.attachmentMimeType,

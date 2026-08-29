@@ -1,10 +1,6 @@
 import AppKit
 import Foundation
-import SwiftUI
-import ReisenAppCore
 import ReisenDomain
-import ReisenPasteImport
-import ReisenSharedUI
 
 /// Quellen des macOS-Einstiegs: Zwischenablage und Dateiauswahl.
 enum PasteImportMacSource {
@@ -30,29 +26,5 @@ enum PasteImportMacSource {
         let response = await panel.begin()
         guard response == .OK, let url = panel.url else { return nil }
         return try PasteImportFileSource.source(from: url)
-    }
-}
-
-extension View {
-    /// Fenster-Drop und Inbox für Dock/„Öffnen mit“.
-    func pasteImportMacDropAndOpen(
-        onDropped: @escaping ([URL]) -> Void,
-        onExternal: @escaping () -> Void
-    ) -> some View {
-        modifier(PasteImportMacDropAndOpenModifier(onDropped: onDropped, onExternal: onExternal))
-    }
-}
-
-private struct PasteImportMacDropAndOpenModifier: ViewModifier {
-    let onDropped: ([URL]) -> Void
-    let onExternal: () -> Void
-
-    func body(content: Content) -> some View {
-        content
-            .onReceive(NotificationCenter.default.publisher(for: .pasteImportExternalFilesOffered)) { _ in
-                onExternal()
-            }
-            .onAppear(perform: onExternal)
-            .pasteImportDropTarget(onURLs: onDropped)
     }
 }

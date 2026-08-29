@@ -17,10 +17,7 @@ public extension View {
 private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & Observable>: ViewModifier {
     @Bindable var session: Session
     let onReviewQueue: () -> Void
-
-    private var featureRequestChrome: PasteImportFailedFeatureRequestPresentation {
-        PasteImportFailedFeatureRequestPresentation()
-    }
+    private let featureRequestChrome = PasteImportFailedFeatureRequestPresentation()
 
     func body(content: Content) -> some View {
         content

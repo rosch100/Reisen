@@ -1,28 +1,26 @@
-import CryptoKit
 import Foundation
 import ReisenDomain
 
-enum PasteImportFailedFeatureRequestCopy {
-    static let titleMessage = "Paste-Import: Dokument nicht erkannt"
-
-    static var issueTitle: String {
-        GitHubIssueTitle.reportTitle(kind: .feature, message: titleMessage)
-    }
-}
-
-@MainActor
 public enum PasteImportFailedFeatureRequest {
+    public static let unrecognizedDocumentMessage = "Paste-Import: Dokument nicht erkannt"
+
+    public static let titleOverride = GitHubIssueTitle.reportTitle(
+        kind: .feature,
+        message: unrecognizedDocumentMessage
+    )
+
+    @MainActor
     public static func submit(
         source: PasteImportSource,
         reason: PasteImportFailedRecognitionReason,
         reporter: GitHubIssueReporter,
         reporterGitHubUsername: String?
     ) async throws -> PasteImportFailedFeatureRequestOutcome {
-        let hash = sha256Hex(of: source)
+        let hash = GitHubIssueFingerprint.sha256Hex(of: source.fingerprintData)
         let lines = [
-            PasteImportFailedFeatureRequestCopy.titleMessage,
-            "Grund: \(reason)",
-            "Quelle: \(source.kindName)",
+            unrecognizedDocumentMessage,
+            "Grund: \(reasonLabel(reason))",
+            "Quelle: \(source.kind.rawValue)",
             "reisen-source-sha256: \(hash)",
             "Dokument: per E-Mail (nicht an GitHub).",
         ]
@@ -30,7 +28,7 @@ public enum PasteImportFailedFeatureRequest {
             kind: .feature,
             message: lines.joined(separator: "\n"),
             providerID: nil,
-            titleOverride: PasteImportFailedFeatureRequestCopy.issueTitle,
+            titleOverride: titleOverride,
             reporterGitHubUsername: reporterGitHubUsername,
             fingerprintMessage: "paste-import-failed\n\(hash)"
         )
@@ -40,7 +38,12 @@ public enum PasteImportFailedFeatureRequest {
         )
     }
 
-    private static func sha256Hex(of source: PasteImportSource) -> String {
-        SHA256.hash(data: source.payloadData).map { String(format: "%02x", $0) }.joined()
+    private static func reasonLabel(_ reason: PasteImportFailedRecognitionReason) -> String {
+        switch reason {
+        case .noCandidates:
+            "noCandidates"
+        case .model:
+            "model"
+        }
     }
 }

@@ -5,8 +5,13 @@ public struct PasteImportCandidate: Equatable, Sendable {
 
     /// Genau ein Bestandstreffer: die Buchung wird ergänzt statt neu angelegt.
     public var isErgaenzen: Bool {
-        if case .unique = match { return true }
-        return false
+        uniqueMatchedBooking != nil
+    }
+
+    /// Bestandsbuchung bei eindeutigem Match — sonst `nil` (kein Ergänzen).
+    public var uniqueMatchedBooking: Booking? {
+        if case .unique(let booking) = match { return booking }
+        return nil
     }
 
     /// Mehrere Bestandstreffer: die Zuordnung ist offen und braucht einen Hinweis in der UI.
