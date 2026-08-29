@@ -35,7 +35,7 @@ Secrets (Werte nicht im Git):
 - `ISSUE_DEV_WEBHOOK_SECRET` (HMAC, optional wenn nur Actions-Pfad)
 - `ISSUE_DEV_GROK_WEBHOOK_URL` / `ISSUE_DEV_GROK_WEBHOOK_KEY` (Desktop-Routine-Panel)
 
-Gmail-Ingress legt Issues an → GitHub `issues: opened` triggert denselben Wake. **Kein IMAP.** Der Diagnoser lädt Anhänge mit `Invoke-IssueDevExpandAttachments.ps1` über die Gmail-API, sobald der Issue-Body `<!-- issue-dev-gmail-id: … -->` enthält (Gmail-Message-Id, nicht RFC-Message-ID; **letzte** HTML-Kommentar-Instanz, nicht Kommentare, auch nicht bei leerem Body). Ingress entfernt HTML-Kommentare aus Von/Datum/Betreff/Text/Dateinamen.
+Gmail-Ingress legt Issues an → GitHub `issues: opened` triggert denselben Wake. **Kein IMAP.** Der Diagnoser lädt Anhänge mit `Invoke-IssueDevExpandAttachments.ps1` über die Gmail-API nur, wenn der Issue-Body `<!-- issue-dev-gmail-id: … -->` enthält **und** das Issue vom Ingress stammt: Autor `github-actions[bot]` und Label `source/email` (Ingress setzt zusätzlich `kind/feedback`; nach Reklassifizierung zu `kind/error` darf `kind/feedback` fehlen). Ein von Nutzer:innen angelegtes `kind/error` mit kopiertem Marker löst **keinen** Gmail-Request aus. Marker: Gmail-Message-Id, nicht RFC-Message-ID; **letzte** HTML-Kommentar-Instanz, nicht Kommentare, auch nicht bei leerem Body. Ingress entfernt HTML-Kommentare aus Von/Datum/Betreff/Text/Dateinamen.
 
 Auf dem **Grok-Bot-Rechner** dieselben OAuth-Werte wie der Ingress, plus erwartete Mailbox:
 
@@ -52,7 +52,7 @@ Nach PR oder BLOCKED: `Invoke-IssueDevCleanupAttachments.ps1` (gleiches Host/Own
 
 ## Fehleranhänge (P1)
 
-Bei `kind/error` wertet der Diagnoser Anhänge aus, **bevor** die Hypothese steht: GitHub-`user-attachments`-URLs und Gmail-MIME (Marker `issue-dev-gmail-id`). Archive (`.zip`, `.ipa`, `.7z`, EurekaLog `.elf`, `.cpgz`, `.tar.gz`) entpacken, Logs/Crash lesen. Skript-SSOT: Altanis/CI `Invoke-IssueDevExpandAttachments.ps1`.
+Bei `kind/error` wertet der Diagnoser Anhänge aus, **bevor** die Hypothese steht: GitHub-`user-attachments`-URLs und Gmail-MIME (Marker `issue-dev-gmail-id` plus Ingress-Provenienz). Archive (`.zip`, `.ipa`, `.7z`, EurekaLog `.elf`, `.cpgz`, `.tar.gz`) entpacken, Logs/Crash lesen. Skript-SSOT: Altanis/CI `Invoke-IssueDevExpandAttachments.ps1`.
 
 ## Feature-Template
 

@@ -4,7 +4,7 @@ Ungelesene Mails an **reisenapp100@gmail.com** (`GitHubRepository.feedbackEmail`
 
 Ablauf: Gmail API (OAuth Refresh-Token) → `Scripts/ingest-gmail-feedback.sh` → `POST /repos/rosch100/Reisen/issues` als `github-actions[bot]`.
 
-Labels: `kind/feedback`, `source/email`. Titel: `[Feedback] ` plus Betreff (max. 80 Zeichen). Duplikate: Marker `reisen-email-id` im Issue-Body. Der Grok-Bot lädt Anhänge nicht von GitHub, sondern liest die Mail per Gmail-API: Marker `issue-dev-gmail-id` (Gmail-Message-Id; letzte HTML-Kommentar-Instanz). Ingress entfernt HTML-Kommentare aus Mailfeldern. Siehe [issue-dev.md](issue-dev.md).
+Labels: `kind/feedback`, `source/email`. Titel: `[Feedback] ` plus Betreff (max. 80 Zeichen). Duplikate: Marker `reisen-email-id` im Issue-Body. Der Grok-Bot lädt Anhänge nicht von GitHub, sondern liest die Mail per Gmail-API: Marker `issue-dev-gmail-id` (Gmail-Message-Id; letzte HTML-Kommentar-Instanz). Der Bot holt die Mail nur, wenn das Issue von `github-actions[bot]` stammt und `source/email` trägt. Ingress entfernt HTML-Kommentare aus Mailfeldern. Siehe [issue-dev.md](issue-dev.md).
 
 Die Logik liegt nur im Script; der Workflow [gmail-feedback-ingress.yml](../../.github/workflows/gmail-feedback-ingress.yml) ruft das Script auf.
 
