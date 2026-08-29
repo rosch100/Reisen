@@ -144,14 +144,7 @@ struct PasteImportHost<Content: View>: View {
                 session.fail(L10n.string(.pasteImportErrorMatchMissing))
                 return
             }
-            review = PasteImportReview(
-                draft: PasteImportEditorPrefill.draft(
-                    for: candidate,
-                    existing: booking
-                ),
-                booking: booking,
-                trip: nil
-            )
+            review = PasteImportReview.enriching(candidate: candidate, booking: booking)
         } catch {
             session.fail(L10n.string(.storeLoadFailed))
         }
@@ -159,14 +152,7 @@ struct PasteImportHost<Content: View>: View {
 
     private func presentNew(_ candidate: PasteImportCandidate) {
         do {
-            review = PasteImportReview(
-                draft: PasteImportEditorPrefill.draft(
-                    for: candidate,
-                    existing: nil
-                ),
-                booking: nil,
-                trip: try selectedTrip()
-            )
+            review = PasteImportReview.creating(candidate: candidate, trip: try selectedTrip())
         } catch {
             session.fail(L10n.string(.storeLoadFailed))
         }

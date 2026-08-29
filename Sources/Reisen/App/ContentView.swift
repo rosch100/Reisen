@@ -1117,16 +1117,15 @@ struct ContentView: View {
             pasteImport.fail(L10n.string(.pasteImportErrorMatchMissing))
             return
         }
-        let draft = PasteImportEditorPrefill.draft(
-            for: candidate,
-            existing: booking
-        )
         if let trip = pasteImportTrip, selection?.tripID == trip.id,
            futureBookings(for: trip).contains(where: { $0.id == booking.id }) {
             selectedTimelineID = booking.id.uuidString
-            bookingEditorSession = .edit(bookingID: booking.id, prefilledDraft: draft)
+            bookingEditorSession = .edit(
+                bookingID: booking.id,
+                prefilledDraft: PasteImportEditorPrefill.draft(for: candidate, existing: booking)
+            )
         } else {
-            pasteReview = PasteImportReview(draft: draft, booking: booking, trip: nil)
+            pasteReview = .enriching(candidate: candidate, booking: booking)
         }
     }
 
@@ -1135,14 +1134,14 @@ struct ContentView: View {
     /// Der Inspector legt immer in der gerade ausgewählten Reise an; steht dort inzwischen eine
     /// andere, geht der Editor als eigenes Sheet mit der Reise des Einstiegs auf.
     private func reviewPasteImportNew(_ candidate: PasteImportCandidate) {
-        let draft = PasteImportEditorPrefill.draft(
-            for: candidate,
-            existing: nil
-        )
         if let trip = pasteImportTrip, selection?.tripID == trip.id {
-            bookingEditorSession = .create(prefillStart: nil, prefillEnd: nil, prefilledDraft: draft)
+            bookingEditorSession = .create(
+                prefillStart: nil,
+                prefillEnd: nil,
+                prefilledDraft: PasteImportEditorPrefill.draft(for: candidate, existing: nil)
+            )
         } else {
-            pasteReview = PasteImportReview(draft: draft, booking: nil, trip: pasteImportTrip)
+            pasteReview = .creating(candidate: candidate, trip: pasteImportTrip)
         }
     }
 

@@ -17,6 +17,30 @@ public struct PasteImportReview: Identifiable {
         self.booking = booking
         self.trip = trip
     }
+
+    /// Ergänzen einer eindeutigen Bestandsbuchung (ohne Reisewechsel).
+    public static func enriching(
+        candidate: PasteImportCandidate,
+        booking: SDBooking
+    ) -> PasteImportReview {
+        PasteImportReview(
+            draft: PasteImportEditorPrefill.draft(for: candidate, existing: booking),
+            booking: booking,
+            trip: nil
+        )
+    }
+
+    /// Neue Buchung aus dem Kandidaten; `trip == nil` heißt offene Buchung.
+    public static func creating(
+        candidate: PasteImportCandidate,
+        trip: SDTrip?
+    ) -> PasteImportReview {
+        PasteImportReview(
+            draft: PasteImportEditorPrefill.draft(for: candidate, existing: nil),
+            booking: nil,
+            trip: trip
+        )
+    }
 }
 
 public struct PasteImportReviewSheet: View {

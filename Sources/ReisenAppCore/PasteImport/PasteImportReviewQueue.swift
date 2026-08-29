@@ -10,7 +10,7 @@ public final class PasteImportReviewQueue {
 
     public init() {}
 
-    /// Plant genau eine Präsentation, sobald `hasPending` wahr ist und kein Lauf offen ist.
+    /// Plant genau eine Präsentation, solange noch Kandidaten warten und kein Advance läuft.
     public func advance(
         ifPending hasPending: Bool,
         present: @escaping @MainActor () -> Void
