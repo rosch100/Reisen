@@ -1,6 +1,6 @@
 # Issue-Dev (Grok Bot) — Reisen
 
-Eingehende Issues (`kind/error`, `kind/feature`, `kind/feedback`) können nach **Maintainer-Freigabe** vom Grok-Bot-Team mit `/bugfix` bzw. `/feature-dev` bis zum **PR** entwickelt werden. **Kein Auto-Merge.**
+Bei **Bugs** (Label `kind/error`) startet das Grok-Bot-Team **sofort** bis zum **PR**. Kommentar `/bugfix` ist kein Gate. **Feature-Requests** (`kind/feature`) brauchen erst Maintainer-`/approve`. Feedback wird triagiert. **Kein Auto-Merge.**
 
 Pipeline-SSOT liegt in **Altanis/CI** (`config/issue-dev/`, `docs/issue-dev-grok-bot.md`). Dieses Repo ist der erste GitHub-Consumer.
 
@@ -18,9 +18,13 @@ pwsh -NoProfile -File scripts/ci/Invoke-IssueDevEnsureConfig.ps1 -OnlyRepo rosch
 
 ## Freigabe
 
-1. Bot postet Kurzfassung + Status `await-human-confirm` (Marker `<!-- issue-dev -->`).
-2. Maintainer: `/approve` (nach `/adjust` erneut `/approve`), oder Label `issue-dev/approved`.
-3. Delivery öffnet PR; Mensch reviewed und merged.
+| Art | Ablauf |
+|-----|--------|
+| Bug / Fehler (`kind/error`) | Kein `/approve`. Auto-Start nur über das **Label**, nicht durch Kommentar `/bugfix`. Dispatcher startet Bugfix-Delivery sofort (`in-progress`). |
+| Feature-Request (`kind/feature`) | 1. Bot postet Kurzfassung + Status `await-human-confirm` (Marker `<!-- issue-dev -->`). 2. Maintainer: `/approve` (nach `/adjust` erneut `/approve`), oder Label `issue-dev/approved`. 3. Feature-Delivery. |
+| Feedback (`kind/feedback`) | Triage; Delivery erst nach Klassifizierung. |
+
+Delivery öffnet PR; Mensch reviewed und merged.
 
 ## Wake
 
