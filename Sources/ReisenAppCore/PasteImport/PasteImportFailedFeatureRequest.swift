@@ -24,6 +24,12 @@ public enum PasteImportFailedFeatureRequest {
             "reisen-source-sha256: \(hash)",
         ]
         if let text = document.text {
+            let rawCount = text.utf8.count
+            guard rawCount <= GitHubIssueAttachmentCodec.maxSourceBytes else {
+                throw GitHubIssueReporterError.attachmentTooLarge(
+                    maxBytes: GitHubIssueAttachmentCodec.maxSourceBytes
+                )
+            }
             lines.append("")
             lines.append(text)
         }

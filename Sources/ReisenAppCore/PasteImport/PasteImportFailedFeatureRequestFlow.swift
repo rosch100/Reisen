@@ -9,6 +9,11 @@ public enum PasteImportFailedFeatureRequestPhase: Equatable, Sendable {
     case submitting
     case succeeded(URL)
     case submitFailed(String)
+
+    /// Bestätigungs-Alert nur vor dem Submit — nicht währenddessen, nicht nach Erfolg/Fehler.
+    public var showsConfirmAlert: Bool {
+        self == .confirming
+    }
 }
 
 @MainActor
@@ -58,14 +63,22 @@ public final class PasteImportFailedFeatureRequestFlow {
         phase = afterCancel
     }
 
+    public func beginSubmit() -> Bool {
+        guard phase == .confirming else { return false }
+        phase = .submitting
+        return true
+    }
+
     public func confirm(
         source: PasteImportSource,
         reason: PasteImportFailedRecognitionReason,
         reporter: GitHubIssueReporter,
         reporterGitHubUsername: String?
     ) async {
-        guard phase == .confirming else { return }
-        phase = .submitting
+        if phase == .confirming {
+            phase = .submitting
+        }
+        guard phase == .submitting else { return }
         do {
             let created = try await PasteImportFailedFeatureRequest.submit(
                 source: source,

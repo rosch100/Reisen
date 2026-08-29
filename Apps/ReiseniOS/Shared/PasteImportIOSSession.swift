@@ -78,14 +78,7 @@ final class PasteImportIOSSession {
         return nil
     }
 
-    var isConfirmingFeatureRequest: Bool {
-        switch featureRequestFlow.phase {
-        case .confirming, .submitting:
-            true
-        case .idle, .offering, .succeeded, .submitFailed:
-            false
-        }
-    }
+    var isConfirmingFeatureRequest: Bool { featureRequestFlow.phase.showsConfirmAlert }
 
     var featureRequestSuccessURL: URL? {
         if case .succeeded(let url) = featureRequestFlow.phase { return url }
@@ -186,6 +179,7 @@ final class PasteImportIOSSession {
     }
 
     func cancelFailedFeatureRequest() {
+        guard featureRequestFlow.phase.showsConfirmAlert else { return }
         featureRequestFlow.cancelOffer()
         if let resume = resumeAfterFeatureRequest {
             phase = resume
@@ -195,6 +189,7 @@ final class PasteImportIOSSession {
 
     func confirmFailedFeatureRequest() {
         guard let document = source, let reason = failedRecognitionReason else { return }
+        guard featureRequestFlow.beginSubmit() else { return }
         Task { @MainActor in
             await featureRequestFlow.confirm(
                 source: document,

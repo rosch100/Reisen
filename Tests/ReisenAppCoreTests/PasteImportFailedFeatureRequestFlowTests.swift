@@ -97,3 +97,28 @@ import ReisenDomain
     flow.acknowledgeSubmitFailure()
     #expect(flow.phase == .offering)
 }
+
+@Test @MainActor func pasteImportFailedFeatureRequestFlow_beginSubmitHidesConfirmAlert() {
+    let flow = PasteImportFailedFeatureRequestFlow()
+    flow.noteEmptyCandidates()
+    flow.offer()
+    #expect(flow.phase.showsConfirmAlert)
+    #expect(flow.beginSubmit())
+    #expect(flow.phase == .submitting)
+    #expect(!flow.phase.showsConfirmAlert)
+    flow.cancelOffer()
+    #expect(flow.phase == .submitting)
+}
+
+@Test func pasteImportFailedFeatureRequestPhase_confirmAlertOnlyWhileConfirming() {
+    #expect(PasteImportFailedFeatureRequestPhase.confirming.showsConfirmAlert)
+    #expect(!PasteImportFailedFeatureRequestPhase.submitting.showsConfirmAlert)
+    #expect(!PasteImportFailedFeatureRequestPhase.offering.showsConfirmAlert)
+    #expect(!PasteImportFailedFeatureRequestPhase.idle.showsConfirmAlert)
+    #expect(!PasteImportFailedFeatureRequestPhase.submitFailed("x").showsConfirmAlert)
+    #expect(
+        !PasteImportFailedFeatureRequestPhase.succeeded(
+            URL(string: "https://github.com/rosch100/Reisen/issues/1")!
+        ).showsConfirmAlert
+    )
+}

@@ -67,3 +67,23 @@ import ReisenDomain
     )
     #expect(client.createCount == 1)
 }
+
+@Test @MainActor func pasteImportFailedFeatureRequest_oversizedTextDoesNotCreateIssue() async {
+    let client = MockGitHubIssues()
+    let reporter = GitHubIssueReporter(
+        client: client,
+        tokenProvider: { "token" },
+        now: { Date(timeIntervalSince1970: 1_700_000_000) },
+        persistenceURL: nil
+    )
+    let oversized = String(repeating: "a", count: GitHubIssueAttachmentCodec.maxSourceBytes + 1)
+    await #expect(throws: GitHubIssueReporterError.attachmentTooLarge(maxBytes: GitHubIssueAttachmentCodec.maxSourceBytes)) {
+        try await PasteImportFailedFeatureRequest.submit(
+            source: .text(oversized),
+            reason: .noCandidates,
+            reporter: reporter,
+            reporterGitHubUsername: nil
+        )
+    }
+    #expect(client.createCount == 0)
+}
