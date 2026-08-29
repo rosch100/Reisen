@@ -6,6 +6,7 @@ import email
 import importlib.util
 import os
 import unittest
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 
@@ -215,6 +216,154 @@ class IngestGmailFeedbackTests(unittest.TestCase):
         self.assertIn(f"<!-- {ingest.GMAIL_ID_MARKER}: 18realGmailId01 -->", body)
         self.assertEqual(body.count(f"<!-- {ingest.GMAIL_ID_MARKER}:"), 1)
         self.assertNotIn("18injectId01", ingest.issue_title(f"Crash {injected}"))
+
+    def test_unread_query_excludes_spam_trash_and_google_automation(self) -> None:
+        query = ingest.UNREAD_FEEDBACK_QUERY
+        self.assertIn("is:unread", query)
+        self.assertIn("in:inbox", query)
+        self.assertIn("-in:spam", query)
+        self.assertIn("-in:trash", query)
+        self.assertIn("-from:accounts.google.com", query)
+        self.assertIn("-from:google.com", query)
+
+    def test_skip_reason_for_google_accounts_noreply(self) -> None:
+        parsed = self.parse_fixture("google-security-alert.eml")
+        self.assertEqual(
+            ingest.skip_ingest_reason(
+                from_header=parsed["from"],
+                label_ids=["INBOX", "UNREAD"],
+            ),
+            "automated-google",
+        )
+        self.assertEqual(
+            ingest.skip_ingest_reason(
+                from_header="Google <no-reply@accounts.google.com>",
+                label_ids=None,
+            ),
+            "automated-google",
+        )
+        self.assertEqual(
+            ingest.skip_ingest_reason(
+                from_header="Drive <drive-noreply@google.com>",
+                label_ids=[],
+            ),
+            "automated-google",
+        )
+
+    def test_skip_reason_none_for_consumer_gmail_and_feedback(self) -> None:
+        self.assertIsNone(
+            ingest.skip_ingest_reason(
+                from_header="Nutzer Beispiel <user@gmail.com>",
+                label_ids=["INBOX", "UNREAD"],
+            )
+        )
+        self.assertIsNone(
+            ingest.skip_ingest_reason(
+                from_header="Nutzer Beispiel <user@googlemail.com>",
+                label_ids=["INBOX", "UNREAD"],
+            )
+        )
+        parsed = self.parse_fixture("plain.eml")
+        self.assertIsNone(
+            ingest.skip_ingest_reason(
+                from_header=parsed["from"],
+                label_ids=["INBOX", "UNREAD"],
+            )
+        )
+
+    def test_skip_reason_for_spam_and_trash_labels(self) -> None:
+        self.assertEqual(
+            ingest.skip_ingest_reason(
+                from_header="spammer@example.com",
+                label_ids=["INBOX", "UNREAD", "SPAM"],
+            ),
+            "spam",
+        )
+        self.assertEqual(
+            ingest.skip_ingest_reason(
+                from_header="user@example.com",
+                label_ids=["TRASH"],
+            ),
+            "trash",
+        )
+
+    def test_ingest_unread_search_uses_exclusion_query(self) -> None:
+        urls: list[str] = []
+
+        def fake_gmail_get(access_token: str, url: str) -> dict:
+            urls.append(url)
+            if url.endswith("/profile"):
+                return {"emailAddress": ingest.DEFAULT_FEEDBACK_EMAIL}
+            if "messages?" in url:
+                return {"messages": []}
+            raise AssertionError(url)
+
+        with mock.patch.object(ingest, "refresh_access_token", return_value="atok"):
+            with mock.patch.object(ingest, "gmail_get", side_effect=fake_gmail_get):
+                created = ingest.ingest_unread(
+                    creds={
+                        "client_id": "id",
+                        "client_secret": "secret",
+                        "refresh_token": "refresh",
+                    },
+                    expected_address=ingest.DEFAULT_FEEDBACK_EMAIL,
+                    token="gh",
+                    repo="rosch100/Reisen",
+                )
+        self.assertEqual(created, 0)
+        listed = next(url for url in urls if "messages?" in url)
+        expected = urllib.parse.urlencode(
+            {
+                "q": ingest.UNREAD_FEEDBACK_QUERY,
+                "maxResults": ingest.MAX_MAILS_PER_RUN,
+            }
+        )
+        self.assertIn(expected, listed)
+
+    def test_ingest_unread_skips_google_security_alert_without_issue(self) -> None:
+        resource = gmail_raw_resource("google-security-alert.eml", "g-security")
+        resource["labelIds"] = ["INBOX", "UNREAD"]
+        marked: list[str] = []
+
+        def fake_gmail_get(access_token: str, url: str) -> dict:
+            if url.endswith("/profile"):
+                return {"emailAddress": ingest.DEFAULT_FEEDBACK_EMAIL}
+            if "messages?" in url:
+                return {"messages": [{"id": "g-security"}]}
+            if "format=raw" in url:
+                return resource
+            raise AssertionError(url)
+
+        def fake_gmail_request(
+            access_token: str,
+            method: str,
+            url: str,
+            payload: dict | None = None,
+        ) -> dict:
+            if url.endswith("/modify"):
+                marked.append("g-security")
+                return {}
+            raise AssertionError(url)
+
+        with mock.patch.object(ingest, "refresh_access_token", return_value="atok"):
+            with mock.patch.object(ingest, "gmail_get", side_effect=fake_gmail_get):
+                with mock.patch.object(
+                    ingest, "gmail_request", side_effect=fake_gmail_request
+                ):
+                    with mock.patch.object(ingest, "create_issue") as create:
+                        created = ingest.ingest_unread(
+                            creds={
+                                "client_id": "id",
+                                "client_secret": "secret",
+                                "refresh_token": "refresh",
+                            },
+                            expected_address=ingest.DEFAULT_FEEDBACK_EMAIL,
+                            token="gh",
+                            repo="rosch100/Reisen",
+                        )
+        self.assertEqual(created, 0)
+        create.assert_not_called()
+        self.assertEqual(marked, ["g-security"])
 
 
 if __name__ == "__main__":
