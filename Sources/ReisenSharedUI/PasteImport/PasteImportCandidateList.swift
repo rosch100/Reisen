@@ -27,13 +27,6 @@ public struct PasteImportCandidateList: View {
         self.result = result
     }
 
-    public init(candidates: [PasteImportCandidate], sourceWasTruncated: Bool = false) {
-        self.result = PasteImportRunResult(
-            candidates: candidates,
-            sourceWasTruncated: sourceWasTruncated
-        )
-    }
-
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L10n.string(.pasteImportCandidatesTitle))

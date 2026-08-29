@@ -55,7 +55,7 @@ public enum PasteImportPDFPreparation {
         return PasteImportPDFContent(
             text: clip?.text,
             pageImages: images,
-            sourceWasTruncated: clip?.didClip == true
+            sourceWasTruncated: clip?.sourceWasTruncated == true
         )
     }
 

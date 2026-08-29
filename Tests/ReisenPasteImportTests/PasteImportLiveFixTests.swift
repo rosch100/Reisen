@@ -11,7 +11,7 @@ import ReisenPasteImport
         """
     let filler = String(repeating: "AGB und Tarifbedingungen ohne Buchungsbezug. ", count: 200)
     let clip = PasteImportPromptBudget.clip(booking + "\n\n" + filler)
-    #expect(clip.didClip)
+    #expect(clip.sourceWasTruncated)
     #expect(clip.text.count <= PasteImportPromptBudget.maxMaterialCharacters)
     #expect(clip.text.contains("ABC123"))
     #expect(clip.text.contains("Reiseverlauf"))
@@ -23,7 +23,7 @@ import ReisenPasteImport
     let text = lines.joined(separator: "\n")
     #expect(text.count > PasteImportPromptBudget.maxMaterialCharacters)
     let clip = PasteImportPromptBudget.clip(text)
-    #expect(clip.didClip)
+    #expect(clip.sourceWasTruncated)
     #expect(clip.text.count <= PasteImportPromptBudget.maxMaterialCharacters)
     #expect(clip.text.contains("KEEPME"))
     #expect(!clip.text.hasSuffix("Zeile mit Inh"))
@@ -32,7 +32,7 @@ import ReisenPasteImport
 @Test func pasteImportPromptBudget_leavesShortTextUnchanged() {
     let text = "Booking Reference: EXAM01\nFlight LH 400"
     let clip = PasteImportPromptBudget.clip(text)
-    #expect(clip.didClip == false)
+    #expect(clip.sourceWasTruncated == false)
     #expect(clip.text == text)
 }
 

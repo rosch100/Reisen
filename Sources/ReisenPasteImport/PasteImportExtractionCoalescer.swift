@@ -15,7 +15,7 @@ public enum PasteImportExtractionCoalescer {
               looksLikeFlightFragment(first),
               looksLikeFlightFragment(second),
               areComplementary(first, second),
-              compatibleFlightNumbers(first, second)
+              PasteImportFlightNumber.areCompatible(first.title, second.title)
         else {
             return extractions
         }
@@ -29,12 +29,7 @@ public enum PasteImportExtractionCoalescer {
     private static func looksLikeFlightFragment(_ extraction: PasteImportExtraction) -> Bool {
         extraction.bookingType == .flight
             || PasteImportFlightNumber.key(in: extraction.title) != nil
-            || boardingPassTitle(extraction.title)
-    }
-
-    private static func boardingPassTitle(_ title: String?) -> Bool {
-        let tokens = PasteImportTextTokens.tokens(in: title)
-        return tokens.contains("boarding") || tokens.contains("bordkarte")
+            || PasteImportBookingText.looksLikeBoardingPassTitle(extraction.title)
     }
 
     private static func areComplementary(
@@ -51,19 +46,6 @@ public enum PasteImportExtractionCoalescer {
         return leftHasCode != rightHasCode && leftHasTravel != rightHasTravel
     }
 
-    /// Zwei erkannte, unterschiedliche Flugnummern gehören nicht zusammen.
-    private static func compatibleFlightNumbers(
-        _ left: PasteImportExtraction,
-        _ right: PasteImportExtraction
-    ) -> Bool {
-        guard let leftKey = PasteImportFlightNumber.key(in: left.title),
-              let rightKey = PasteImportFlightNumber.key(in: right.title)
-        else {
-            return true
-        }
-        return leftKey == rightKey
-    }
-
     private static func hasRoute(_ extraction: PasteImportExtraction) -> Bool {
         extraction.locationFrom != nil || extraction.locationTo != nil
     }
@@ -74,20 +56,13 @@ public enum PasteImportExtractionCoalescer {
     ) -> PasteImportExtraction {
         var result = left
         result.mergingMissingFields(from: right)
-        result.bookingType = result.bookingType
-            ?? flightHint(left.title)
-            ?? flightHint(right.title)
-        result.title = preferFlightTitle(left.title, right.title)
+        if result.bookingType == nil,
+           PasteImportFlightNumber.key(in: left.title) != nil
+            || PasteImportFlightNumber.key(in: right.title) != nil
+        {
+            result.bookingType = .flight
+        }
+        result.title = PasteImportFlightNumber.preferredTitle(left.title, right.title)
         return result
-    }
-
-    private static func preferFlightTitle(_ left: String?, _ right: String?) -> String? {
-        if PasteImportFlightNumber.key(in: left) != nil { return left }
-        if PasteImportFlightNumber.key(in: right) != nil { return right }
-        return left ?? right
-    }
-
-    private static func flightHint(_ title: String?) -> BookingType? {
-        PasteImportFlightNumber.key(in: title) != nil ? .flight : nil
     }
 }

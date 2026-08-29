@@ -55,9 +55,7 @@ enum PasteImportBookingLabel {
         map["railway"] = .train
         map["rail"] = .train
         map["ice"] = .train
-        for (key, type) in typeHintAliases {
-            map[key] = type
-        }
+        map.merge(typeHintAliases) { _, new in new }
         map["tgv"] = .train
         map["sncf"] = .train
         map["event"] = .activity

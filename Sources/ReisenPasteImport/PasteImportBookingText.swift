@@ -25,6 +25,12 @@ enum PasteImportBookingText {
         "flight",
     ]
 
+    /// Titel-Tokens, die ein Boardingpass-Fragment kennzeichnen (Coalescer).
+    static let boardingTitleTokens: Set<String> = [
+        "boarding",
+        "bordkarte",
+    ]
+
     static let boilerplateNeedles = [
         "fare rules",
         "important notes",
@@ -40,6 +46,10 @@ enum PasteImportBookingText {
 
     static func looksLikeBooking(_ text: String) -> Bool {
         contains(needles: bookingNeedles, in: text)
+    }
+
+    static func looksLikeBoardingPassTitle(_ title: String?) -> Bool {
+        !PasteImportTextTokens.tokens(in: title).isDisjoint(with: boardingTitleTokens)
     }
 
     static func isBoilerplate(_ text: String) -> Bool {

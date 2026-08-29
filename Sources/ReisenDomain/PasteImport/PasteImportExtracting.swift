@@ -10,17 +10,6 @@ public struct PasteImportExtractionResult: Equatable, Sendable {
     }
 }
 
-/// Ergebnis eines Paste-Import-Laufs: Kandidaten und Truncation-Hinweis für die UI.
-public struct PasteImportRunResult: Equatable, Sendable {
-    public var candidates: [PasteImportCandidate]
-    public var sourceWasTruncated: Bool
-
-    public init(candidates: [PasteImportCandidate], sourceWasTruncated: Bool = false) {
-        self.candidates = candidates
-        self.sourceWasTruncated = sourceWasTruncated
-    }
-}
-
 /// Port für die Extraktion von Buchungsdaten aus einer eingefügten Quelle.
 public protocol PasteImportExtracting: Sendable {
     func extract(from source: PasteImportSource) async throws -> PasteImportExtractionResult

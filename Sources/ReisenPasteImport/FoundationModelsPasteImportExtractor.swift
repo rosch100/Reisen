@@ -78,7 +78,10 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         switch source {
         case .text(let text):
             let clip = PasteImportPromptBudget.clip(text)
-            return PasteImportPromptMaterial(text: clip.text, sourceWasTruncated: clip.didClip)
+            return PasteImportPromptMaterial(
+                text: clip.text,
+                sourceWasTruncated: clip.sourceWasTruncated
+            )
         case .image(let data):
             return PasteImportPromptMaterial(images: [data])
         case .pdf(let data):
