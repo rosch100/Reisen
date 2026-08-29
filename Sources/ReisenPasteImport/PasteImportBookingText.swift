@@ -2,7 +2,13 @@ import Foundation
 
 /// Needle-Listen für „sieht nach Buchung aus“ vs. AGB — SSOT für PDF-Focus und Prompt-Budget.
 enum PasteImportBookingText {
-    static let bookingNeedles = [
+    /// Titel-Tokens, die ein Boardingpass-Fragment kennzeichnen (Coalescer + Booking-Needles).
+    static let boardingTitleTokens: Set<String> = [
+        "boarding",
+        "bordkarte",
+    ]
+
+    static let bookingNeedles: [String] = [
         "pnr",
         "booking reference",
         "booking confirmation",
@@ -20,16 +26,9 @@ enum PasteImportBookingText {
         "confirmation number",
         "reservierungsnummer",
         "reiseverlauf",
-        "boarding",
         "flug",
         "flight",
-    ]
-
-    /// Titel-Tokens, die ein Boardingpass-Fragment kennzeichnen (Coalescer).
-    static let boardingTitleTokens: Set<String> = [
-        "boarding",
-        "bordkarte",
-    ]
+    ] + boardingTitleTokens.sorted()
 
     static let boilerplateNeedles = [
         "fare rules",

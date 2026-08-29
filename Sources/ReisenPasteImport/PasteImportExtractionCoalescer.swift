@@ -28,7 +28,7 @@ public enum PasteImportExtractionCoalescer {
 
     private static func looksLikeFlightFragment(_ extraction: PasteImportExtraction) -> Bool {
         extraction.bookingType == .flight
-            || PasteImportFlightNumber.key(in: extraction.title) != nil
+            || PasteImportFlightNumber.isPresent(in: extraction.title)
             || PasteImportBookingText.looksLikeBoardingPassTitle(extraction.title)
     }
 
@@ -57,8 +57,8 @@ public enum PasteImportExtractionCoalescer {
         var result = left
         result.mergingMissingFields(from: right)
         if result.bookingType == nil,
-           PasteImportFlightNumber.key(in: left.title) != nil
-            || PasteImportFlightNumber.key(in: right.title) != nil
+           PasteImportFlightNumber.isPresent(in: left.title)
+            || PasteImportFlightNumber.isPresent(in: right.title)
         {
             result.bookingType = .flight
         }

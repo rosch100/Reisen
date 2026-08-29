@@ -21,6 +21,10 @@ enum PasteImportFlightNumber {
         return PasteImportTextTokens.normalize("\(airline)\(number)")
     }
 
+    static func isPresent(in title: String?) -> Bool {
+        key(in: title) != nil
+    }
+
     /// Zwei erkannte, unterschiedliche Flugnummern gehören nicht zusammen.
     static func areCompatible(_ leftTitle: String?, _ rightTitle: String?) -> Bool {
         guard let left = key(in: leftTitle), let right = key(in: rightTitle) else {
@@ -31,8 +35,8 @@ enum PasteImportFlightNumber {
 
     /// Bevorzugt einen Titel, der eine Flugnummer ist.
     static func preferredTitle(_ left: String?, _ right: String?) -> String? {
-        if key(in: left) != nil { return left }
-        if key(in: right) != nil { return right }
+        if isPresent(in: left) { return left }
+        if isPresent(in: right) { return right }
         return left ?? right
     }
 }
