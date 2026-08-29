@@ -18,6 +18,9 @@ struct TripDetailIOS: View {
     @State private var tripToEdit: SDTrip?
     @State private var showAssignBookings = false
     @State private var showDeleteConfirm = false
+    @State private var persistErrorMessage: String?
+    @State private var pendingDeleteBooking: SDBooking?
+    @State private var showBookingDeleteConfirm = false
 
     var trip: SDTrip? {
         trips.first(where: { $0.id == tripID })
@@ -82,6 +85,10 @@ struct TripDetailIOS: View {
                                 )
                                 CopyLinkMenuItem(url: url)
                             }
+                            Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
+                                pendingDeleteBooking = booking
+                                showBookingDeleteConfirm = true
+                            }
                         }
                     }
                 }
@@ -108,26 +115,43 @@ struct TripDetailIOS: View {
                 .sheet(isPresented: $showAssignBookings) {
                     AssignBookingsSheet(trip: trip, candidates: assignCandidates(for: trip))
                 }
-                .confirmationDialog(
-                    L10n.string(.actionDeleteTripConfirm),
+                .tripDeleteConfirmDialog(
                     isPresented: $showDeleteConfirm,
-                    titleVisibility: .visible
-                ) {
-                    Button(L10n.string(.commonDelete), role: .destructive) {
-                        deleteTrip(trip)
-                    }
-                    Button(L10n.string(.commonCancel), role: .cancel) {}
-                } message: {
-                    Text(TripDeletion.confirmationMessage)
-                }
+                    tripTitle: trip.title,
+                    bookingCount: trip.resolvedBookings.count,
+                    onKeepBookings: { deleteTrip(trip, bookings: .keepAsOpen) },
+                    onDeleteBookings: { deleteTrip(trip, bookings: .deleteContained) }
+                )
+                .bookingDeleteConfirmAlert(
+                    isPresented: $showBookingDeleteConfirm,
+                    bookingTitle: pendingDeleteBooking?.presentationTitle ?? L10n.string(.editorBooking),
+                    showsSyncRestoreWarning: pendingDeleteBooking.map { $0.provider != .manual } ?? false,
+                    onConfirm: deletePendingBooking,
+                    onCancel: { pendingDeleteBooking = nil }
+                )
+                .persistFailureAlert(message: $persistErrorMessage)
             } else {
                 ContentUnavailableView(L10n.string(.tripTripMissing), systemImage: "magnifyingglass")
             }
         }
     }
 
-    private func deleteTrip(_ trip: SDTrip) {
-        try? TripDeletion.perform(trip: trip, in: modelContext)
-        dismiss()
+    private func deletePendingBooking() {
+        guard let booking = pendingDeleteBooking else { return }
+        do {
+            try BookingDeletion.perform(booking: booking, in: modelContext)
+            pendingDeleteBooking = nil
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func deleteTrip(_ trip: SDTrip, bookings policy: TripDeletionBookingPolicy) {
+        do {
+            try TripDeletion.perform(trip: trip, in: modelContext, bookings: policy)
+            dismiss()
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
     }
 }

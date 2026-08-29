@@ -1,93 +1,29 @@
 import SwiftUI
 import ReisenDomain
 
-/// Texte und Confirm-Dialoge für Buchung löschen / von Reise entfernen.
+/// Texte für Buchung löschen / von Reise entfernen / Reise löschen.
 public enum BookingTripActions {
-    public static var deleteTitle: String { L10n.string(.actionDeleteEllipsis) }
     public static var removeFromTripTitle: String { L10n.string(.actionRemoveFromTrip) }
     public static var removeFromTripMessage: String { L10n.string(.tripRemoveFromTripHelp) }
-}
 
-public struct BookingTripConfirmDialogs: ViewModifier {
-    @Binding var showDeleteConfirmation: Bool
-    @Binding var showRemoveFromTripConfirmation: Bool
-    let onConfirmDelete: () -> Void
-    let onConfirmRemove: () -> Void
-    let onCancelDelete: () -> Void
-    let onCancelRemove: () -> Void
-
-    public init(
-        showDeleteConfirmation: Binding<Bool>,
-        showRemoveFromTripConfirmation: Binding<Bool>,
-        onConfirmDelete: @escaping () -> Void,
-        onConfirmRemove: @escaping () -> Void,
-        onCancelDelete: @escaping () -> Void = {},
-        onCancelRemove: @escaping () -> Void = {}
-    ) {
-        _showDeleteConfirmation = showDeleteConfirmation
-        _showRemoveFromTripConfirmation = showRemoveFromTripConfirmation
-        self.onConfirmDelete = onConfirmDelete
-        self.onConfirmRemove = onConfirmRemove
-        self.onCancelDelete = onCancelDelete
-        self.onCancelRemove = onCancelRemove
+    public static func bookingDeleteTitle(named title: String) -> String {
+        L10n.format(.bookingDeleteConfirmTitleNamed, title)
     }
 
-    public func body(content: Content) -> some View {
-        content
-            .confirmationDialog(
-                BookingTripActions.deleteTitle,
-                isPresented: $showDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(L10n.string(.commonDelete), role: .destructive, action: onConfirmDelete)
-                Button(L10n.string(.commonCancel), role: .cancel, action: onCancelDelete)
-            }
-            .confirmationDialog(
-                BookingTripActions.removeFromTripTitle,
-                isPresented: $showRemoveFromTripConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(L10n.string(.commonRemove), role: .destructive, action: onConfirmRemove)
-                Button(L10n.string(.commonCancel), role: .cancel, action: onCancelRemove)
-            } message: {
-                Text(BookingTripActions.removeFromTripMessage)
-            }
+    public static func bookingDeleteMessage(showsSyncRestoreWarning: Bool) -> String {
+        L10n.string(showsSyncRestoreWarning ? .bookingDeleteConfirmMessageSynced : .bookingDeleteConfirmMessage)
     }
-}
 
-public extension View {
-    func bookingDeleteConfirmDialog(
-        showDeleteConfirmation: Binding<Bool>,
-        onConfirmDelete: @escaping () -> Void,
-        onCancelDelete: @escaping () -> Void = {}
-    ) -> some View {
-        confirmationDialog(
-            BookingTripActions.deleteTitle,
-            isPresented: showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.string(.commonDelete), role: .destructive, action: onConfirmDelete)
-            Button(L10n.string(.commonCancel), role: .cancel, action: onCancelDelete)
+    public static func tripDeleteTitle(named title: String?) -> String {
+        guard let title, !title.isEmpty else {
+            return L10n.string(.actionDeleteTripConfirm)
         }
+        return L10n.format(.tripDeleteConfirmTitleNamed, title)
     }
 
-    func bookingTripConfirmDialogs(
-        showDeleteConfirmation: Binding<Bool>,
-        showRemoveFromTripConfirmation: Binding<Bool>,
-        onConfirmDelete: @escaping () -> Void,
-        onConfirmRemove: @escaping () -> Void,
-        onCancelDelete: @escaping () -> Void = {},
-        onCancelRemove: @escaping () -> Void = {}
-    ) -> some View {
-        modifier(
-            BookingTripConfirmDialogs(
-                showDeleteConfirmation: showDeleteConfirmation,
-                showRemoveFromTripConfirmation: showRemoveFromTripConfirmation,
-                onConfirmDelete: onConfirmDelete,
-                onConfirmRemove: onConfirmRemove,
-                onCancelDelete: onCancelDelete,
-                onCancelRemove: onCancelRemove
-            )
-        )
+    public static func tripDeleteMessage(bookingCount: Int) -> String {
+        bookingCount == 0
+            ? L10n.string(.tripDeleteConfirmMessageEmpty)
+            : L10n.string(.tripDeleteConfirmMessageWithBookings)
     }
 }
