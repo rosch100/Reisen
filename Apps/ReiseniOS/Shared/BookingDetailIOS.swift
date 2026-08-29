@@ -12,11 +12,13 @@ struct BookingDetailIOS: View {
     var onTripCreated: ((UUID) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query private var bookings: [SDBooking]
     @Query private var trips: [SDTrip]
 
     @State private var assignErrorMessage: String?
     @State private var showAssignError = false
+    @State private var persistErrorMessage: String?
     @State private var tripCreateSeed: TripCreateSeed?
     @State private var showCreateTripFromBookingsFailed = false
 
@@ -70,9 +72,14 @@ struct BookingDetailIOS: View {
     private func deletePendingBooking() {
         guard let bookingID = pendingDeleteBookingID,
               let bookingToDelete = bookings.first(where: { $0.id == bookingID }) else { return }
-        modelContext.delete(bookingToDelete)
-        try? modelContext.save()
-        pendingDeleteBookingID = nil
+        do {
+            try BookingDeletion.perform(booking: bookingToDelete, in: modelContext)
+            pendingDeleteBookingID = nil
+            dismiss()
+        } catch {
+            persistErrorMessage = error.localizedDescription
+            pendingDeleteBookingID = nil
+        }
     }
 
     private func removePendingBookingFromTrip() {
@@ -94,15 +101,13 @@ struct BookingDetailIOS: View {
             }
             .help(L10n.string(.tripEditBookingHelp))
 
-            if booking.provider == .manual {
-                Button(role: .destructive) {
-                    pendingDeleteBookingID = booking.id
-                    showDeleteConfirmation = true
-                } label: {
-                    Text(L10n.string(.actionDeleteEllipsis))
-                }
-                .help(L10n.string(.tripDeleteManualHelp))
+            Button(role: .destructive) {
+                pendingDeleteBookingID = booking.id
+                showDeleteConfirmation = true
+            } label: {
+                Text(L10n.string(.actionDeleteEllipsis))
             }
+            .help(L10n.string(.bookingDeleteHelp))
 
             if booking.trip != nil {
                 Button(role: .destructive) {
@@ -318,9 +323,12 @@ struct BookingDetailIOS: View {
                 Text(message)
             }
         }
+        .persistFailureAlert(message: $persistErrorMessage)
         .bookingTripConfirmDialogs(
             showDeleteConfirmation: $showDeleteConfirmation,
             showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
+            bookingTitle: booking?.presentationTitle ?? L10n.string(.editorBooking),
+            showsSyncRestoreWarning: booking.map { $0.provider != .manual } ?? false,
             onConfirmDelete: deletePendingBooking,
             onConfirmRemove: removePendingBookingFromTrip,
             onCancelDelete: { pendingDeleteBookingID = nil },

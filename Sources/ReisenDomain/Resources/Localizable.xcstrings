@@ -3841,6 +3841,22 @@
         }
       }
     },
+    "error.persist_failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save failed"
+          }
+        }
+      }
+    },
     "gap.amount_eur": {
       "localizations": {
         "de": {
@@ -5302,13 +5318,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Per E-Mail an reisenapp100@gmail.com wird daraus ebenfalls ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Automatische Fehler-Issues nur mit dem Schalter oben und sind öffentlich. Repo: github.com/%1$@."
+            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Per E-Mail an reisenapp100@gmail.com wird daraus ebenfalls ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Automatische Fehler-Issues (inkl. Abstürze) nur mit dem Schalter oben und sind öffentlich. Repo: github.com/%1$@."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optional GitHub username is used only for attribution in the issue text; submission uses the embedded token (no GitHub sign-in). Email to reisenapp100@gmail.com also becomes a public issue. App Store ratings and TestFlight feedback are received but are not filed on GitHub automatically. Automatic error issues require the toggle above and are public. Repo: github.com/%1$@."
+            "value": "Optional GitHub username is used only for attribution in the issue text; submission uses the embedded token (no GitHub sign-in). Email to reisenapp100@gmail.com also becomes a public issue. App Store ratings and TestFlight feedback are received but are not filed on GitHub automatically. Automatic error issues (including crashes) require the toggle above and are public. Repo: github.com/%1$@."
           }
         }
       }
@@ -7506,18 +7522,98 @@
       }
     },
 
-    "trip.delete_confirm_message": {
+    "booking.delete_confirm_message": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Reise wird gelöscht. Zugeordnete Buchungen bleiben als offene Buchungen erhalten."
+            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The trip will be deleted. Assigned bookings remain as open bookings."
+            "value": "The booking will be permanently removed from Reisen."
+          }
+        }
+      }
+    },
+    "booking.delete_confirm_message_synced": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt. Nach dem nächsten Provider-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The booking will be permanently removed from Reisen. After the next provider sync it may reappear if it still exists at the provider."
+          }
+        }
+      }
+    },
+    "booking.delete_confirm_title_named": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung „%1$@“ löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete booking “%1$@”?"
+          }
+        }
+      }
+    },
+    "booking.delete_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Buchung unwiderruflich löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete this booking"
+          }
+        }
+      }
+    },
+    "trip.delete_confirm_message_empty": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Reise und zugeordnete Lücken werden gelöscht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The trip and its gaps will be deleted."
+          }
+        }
+      }
+    },
+    "trip.delete_confirm_message_with_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Nur Reise löschen“ belässt die Buchungen unter Offene Buchungen. „Reise und Buchungen löschen“ entfernt die enthaltenen Buchungen dauerhaft. Anbieter-Buchungen können beim nächsten Sync wieder erscheinen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Delete trip only” keeps the bookings as open bookings. “Delete trip and bookings” permanently removes the contained bookings. Provider bookings may reappear after the next sync."
           }
         }
       }
@@ -7538,18 +7634,34 @@
         }
       }
     },
-    "trip.delete_manual_help": {
+    "trip.delete_keep_bookings": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese manuelle Buchung unwiderruflich löschen"
+            "value": "Nur Reise löschen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Permanently delete this manual booking"
+            "value": "Delete trip only"
+          }
+        }
+      }
+    },
+    "trip.delete_with_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reise und Buchungen löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete trip and bookings"
           }
         }
       }

@@ -29,6 +29,7 @@ struct ContentView: View {
     @State private var tripToEdit: SDTrip?
     @State private var tripPendingDelete: SDTrip?
     @State private var showTripDeleteConfirmation = false
+    @State private var persistErrorMessage: String?
 
     /// Selektion der mittleren Buchungsliste → rechte Detailspalte.
     @State private var selectedTimelineID: String? = nil
@@ -215,27 +216,15 @@ struct ContentView: View {
                 }
             )
         }
-        .confirmationDialog(
-            tripPendingDelete.map { L10n.format(.tripDeleteConfirmTitleNamed, $0.title) }
-                ?? L10n.string(.actionDeleteTripConfirm),
+        .tripDeleteConfirmDialog(
             isPresented: $showTripDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.string(.commonDelete), role: .destructive) {
-                guard let trip = tripPendingDelete else { return }
-                if selection == .trip(trip.id) {
-                    selection = trips.first(where: { $0.id != trip.id }).map { .trip($0.id) }
-                        ?? .providerSync(enabledProviderIDs.first ?? .check24)
-                }
-                try? TripDeletion.perform(trip: trip, in: modelContext)
-                tripPendingDelete = nil
-            }
-            Button(L10n.string(.commonCancel), role: .cancel) {
-                tripPendingDelete = nil
-            }
-        } message: {
-            Text(L10n.string(.tripDeleteConfirmMessage))
-        }
+            tripTitle: tripPendingDelete?.title ?? "",
+            bookingCount: tripPendingDelete?.resolvedBookings.count ?? 0,
+            onKeepBookings: { performPendingTripDeletion(.keepAsOpen) },
+            onDeleteBookings: { performPendingTripDeletion(.deleteContained) },
+            onCancel: { tripPendingDelete = nil }
+        )
+        .persistFailureAlert(message: $persistErrorMessage)
         .focusedSceneValue(
             \.openBookingsCommandState,
             selection == .openBookings && !selectedOpenBookingIDs.isEmpty
@@ -246,6 +235,21 @@ struct ContentView: View {
             \.bookingPortalOpenCommandState,
             BookingPortalOpenCommandState(url: selectedBookingPortalURL)
         )
+    }
+
+    private func performPendingTripDeletion(_ policy: TripDeletionBookingPolicy) {
+        guard let trip = tripPendingDelete else { return }
+        do {
+            try TripDeletion.perform(trip: trip, in: modelContext, bookings: policy)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+            return
+        }
+        if selection == .trip(trip.id) {
+            selection = trips.first(where: { $0.id != trip.id }).map { .trip($0.id) }
+                ?? .providerSync(enabledProviderIDs.first ?? .check24)
+        }
+        tripPendingDelete = nil
     }
 
     /// Aktuell selektierte Buchung mit öffentlicher Portal-URL (Menü/Command).
@@ -600,18 +604,16 @@ struct ContentView: View {
                                         } label: {
                                             Text(L10n.string(.actionRemoveFromTrip))
                                         }
-                                        if booking.provider == .manual {
-                                            Button(role: .destructive) {
-                                                applyAfterTripFocus(trip: trip) {
-                                                    selectedTimelineID = booking.id.uuidString
-                                                    NotificationCenter.default.post(
-                                                        name: .reisenRequestDeleteManualBooking,
-                                                        object: booking.id
-                                                    )
-                                                }
-                                            } label: {
-                                                Text(L10n.string(.actionDeleteEllipsis))
+                                        Button(role: .destructive) {
+                                            applyAfterTripFocus(trip: trip) {
+                                                selectedTimelineID = booking.id.uuidString
+                                                NotificationCenter.default.post(
+                                                    name: .reisenRequestDeleteBooking,
+                                                    object: booking.id
+                                                )
                                             }
+                                        } label: {
+                                            Text(L10n.string(.actionDeleteEllipsis))
                                         }
                                     }
                                 }
@@ -850,6 +852,7 @@ struct ContentView: View {
         @Environment(\.modelContext) private var modelContext
         @State private var assignErrorMessage: String?
         @State private var showAssignError = false
+        @State private var persistErrorMessage: String?
         @State private var isEditing = false
         @State private var bookingEditorDraft: BookingEditorDraft?
         @State private var pendingDeleteBookingID: UUID?
@@ -895,10 +898,13 @@ struct ContentView: View {
                     Text(assignErrorMessage)
                 }
             }
-            .bookingDeleteConfirmDialog(
-                showDeleteConfirmation: $showDeleteConfirmation,
-                onConfirmDelete: deletePendingBooking,
-                onCancelDelete: { pendingDeleteBookingID = nil }
+            .persistFailureAlert(message: $persistErrorMessage)
+            .bookingDeleteConfirmAlert(
+                isPresented: $showDeleteConfirmation,
+                bookingTitle: booking.presentationTitle,
+                showsSyncRestoreWarning: booking.provider != .manual,
+                onConfirm: deletePendingBooking,
+                onCancel: { pendingDeleteBookingID = nil }
             )
             .onChange(of: booking.id) { _, _ in
                 isEditing = false
@@ -920,7 +926,7 @@ struct ContentView: View {
                                     isEditing = true
                                     bookingEditorDraft = BookingEditorDraft.fromExisting(booking)
                                 },
-                                onRequestManualDeleteBooking: { bookingID in
+                                onRequestDeleteBooking: { bookingID in
                                     pendingDeleteBookingID = bookingID
                                     showDeleteConfirmation = true
                                 }
@@ -946,13 +952,10 @@ struct ContentView: View {
         private func deletePendingBooking() {
             guard let bookingID = pendingDeleteBookingID else { return }
             guard booking.id == bookingID else { return }
-            modelContext.delete(booking)
             do {
-                try modelContext.save()
+                try BookingDeletion.perform(booking: booking, in: modelContext)
             } catch {
-                assignErrorMessage = error.localizedDescription
-                showAssignError = true
-                modelContext.rollback()
+                persistErrorMessage = error.localizedDescription
             }
             pendingDeleteBookingID = nil
         }
