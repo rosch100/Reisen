@@ -4,11 +4,6 @@ import ReisenDomain
 
 /// Konfiguration der Share-Übergabe: URL-Scheme, App Group und Anzeigename der Extension.
 private enum PasteImportShareConfig {
-    static let storeAppGroup = PasteImportHandoffIdentity.storeAppGroup
-    static let privateAppGroup = PasteImportHandoffIdentity.privateAppGroup
-    static let storeURLScheme = PasteImportHandoffIdentity.storeURLScheme
-    static let privateURLScheme = PasteImportHandoffIdentity.privateURLScheme
-
     static let storeEntitlements = [
         "Apps/ReiseniOS/ReiseniOS.entitlements",
         "Apps/ReiseniOS/ReiseniOS-Release.entitlements",
@@ -89,25 +84,25 @@ private enum PasteImportShareConfig {
     let plist = try PasteImportShareConfig.plist("Apps/ReiseniOS/Info.plist")
     let urlTypes = plist["CFBundleURLTypes"] as? [[String: Any]] ?? []
     let schemes = urlTypes.flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
-    #expect(schemes.contains(PasteImportShareConfig.storeURLScheme))
-    #expect(!schemes.contains(PasteImportShareConfig.privateURLScheme))
+    #expect(schemes.contains(PasteImportHandoffIdentity.storeURLScheme))
+    #expect(!schemes.contains(PasteImportHandoffIdentity.privateURLScheme))
 }
 
 @Test func pasteImportShare_privateAppDeclaresPrivateHandoffURLScheme() throws {
     let plist = try PasteImportShareConfig.plist("Apps/ReiseniOSPrivate/Info.plist")
     let urlTypes = plist["CFBundleURLTypes"] as? [[String: Any]] ?? []
     let schemes = urlTypes.flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
-    #expect(schemes.contains(PasteImportShareConfig.privateURLScheme))
-    #expect(!schemes.contains(PasteImportShareConfig.storeURLScheme))
+    #expect(schemes.contains(PasteImportHandoffIdentity.privateURLScheme))
+    #expect(!schemes.contains(PasteImportHandoffIdentity.storeURLScheme))
 }
 
 @Test func pasteImportShare_storeAppsUseStoreAppGroup() throws {
     for path in PasteImportShareConfig.storeEntitlements {
         let plist = try PasteImportShareConfig.plist(path)
         let groups = plist["com.apple.security.application-groups"] as? [String] ?? []
-        #expect(groups.contains(PasteImportShareConfig.storeAppGroup), "\(path) ohne Store-App-Group")
+        #expect(groups.contains(PasteImportHandoffIdentity.storeAppGroup), "\(path) ohne Store-App-Group")
         #expect(
-            !groups.contains(PasteImportShareConfig.privateAppGroup),
+            !groups.contains(PasteImportHandoffIdentity.privateAppGroup),
             "\(path) darf keine Private-App-Group teilen"
         )
     }
@@ -117,9 +112,9 @@ private enum PasteImportShareConfig {
     for path in PasteImportShareConfig.privateEntitlements {
         let plist = try PasteImportShareConfig.plist(path)
         let groups = plist["com.apple.security.application-groups"] as? [String] ?? []
-        #expect(groups.contains(PasteImportShareConfig.privateAppGroup), "\(path) ohne Private-App-Group")
+        #expect(groups.contains(PasteImportHandoffIdentity.privateAppGroup), "\(path) ohne Private-App-Group")
         #expect(
-            !groups.contains(PasteImportShareConfig.storeAppGroup),
+            !groups.contains(PasteImportHandoffIdentity.storeAppGroup),
             "\(path) darf keine Store-App-Group teilen"
         )
     }

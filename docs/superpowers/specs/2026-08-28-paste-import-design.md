@@ -65,8 +65,8 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 |---|---|
 | **ReisenDomain** | Quelle, Port `PasteImportExtracting`, Modellstufe, Resolver, Filter, Draft, Match-Tri-State, Merger, Pipeline → Kandidaten. Kein FoundationModels, kein PDFKit, kein UIKit. |
 | **ReisenPasteImport** | Availability, Session, ein `@Generable`/`Codable`-Payload (Felder = Extraction), PDFKit-Text + Seiten-Render, Bild-`Attachment`. Output: `[PasteImportExtraction]`. |
-| **ReisenAppCore** | Orchestrierung eines Laufs: Availability → Resolver → Extract (ein kind) → Pipeline. Bei Extract-Fehler **kein** Retry mit anderem kind. |
-| **ReisenSharedUI** | Aktion (disabled+Begründung), PCC-Sheet-Chrome, Liste, Prefill. Abhängigkeit **nur Domain (+ Data für `SDBooking`)**. Kein `ReisenPasteImport`. Prefill: Neu aus Draft ohne `createDefault`; Ergänzen = `fromExisting` nach Mapping aus `fillingGaps(DomainMapper.booking(from:), draft)`. |
+| **ReisenAppCore** | Orchestrierung eines Laufs: Availability → Resolver → Extract (ein kind) → Pipeline. Bei Extract-Fehler **kein** Retry mit anderem kind. `PasteImportSessionControlling` für SharedUI-Flow ohne Abhängigkeit auf `ReisenPasteImport`. |
+| **ReisenSharedUI** | Aktion (disabled+Begründung), Flow (PCC/Progress/Kandidaten/Fehler), Review-Sheet, Liste, Prefill. Abhängigkeit Domain + Data + AppCore (`PasteImportSessionControlling`). Kein `ReisenPasteImport`. Prefill: Neu aus Draft ohne `createDefault`; Ergänzen = `fromExisting` nach Mapping aus `fillingGaps(DomainMapper.booking(from:), draft)`. |
 | **Reisen / ReiseniOS** | Clipboard, Datei, Drop / „Öffnen mit“, Share / „Senden an“, verdrahten Extractor. |
 | **ReisenData** | `createBooking(trip: SDTrip?)` (`nil` = Offen); Edit weiter `apply`. |
 
