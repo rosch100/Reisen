@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 import ReisenAppCore
+import ReisenPasteImport
 import ReisenData
 import ReisenDomain
 import ReisenSharedUI
@@ -23,7 +24,7 @@ struct PasteImportReview: Identifiable {
 /// beim Aktivieren nachgeholt, falls iOS die App nicht direkt geöffnet hat. Datei-Drop und
 /// „Öffnen mit“ nutzen denselben Lauf wie der Dateidialog.
 struct PasteImportHost<Content: View>: View {
-    let session: PasteImportIOSSession
+    let session: PasteImportSession
     let entry: () -> PasteImportEntry
     @ViewBuilder let content: Content
 
@@ -32,7 +33,7 @@ struct PasteImportHost<Content: View>: View {
     @State private var review: PasteImportReview?
 
     init(
-        session: PasteImportIOSSession,
+        session: PasteImportSession,
         entry: @escaping () -> PasteImportEntry,
         @ViewBuilder content: () -> Content
     ) {

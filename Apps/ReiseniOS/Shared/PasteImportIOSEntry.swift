@@ -26,13 +26,13 @@ extension View {
     ///
     /// - Parameter entry: Reise-Kontext dieses Einstiegs; er entscheidet über die Reise neuer
     ///   Buchungen und wird beim Auslösen mitgegeben, nicht aus einem anderen Tab gelesen.
-    func pasteImportToolbar(session: PasteImportIOSSession, entry: PasteImportEntry) -> some View {
+    func pasteImportToolbar(session: PasteImportSession, entry: PasteImportEntry) -> some View {
         modifier(PasteImportToolbarModifier(session: session, entry: entry))
     }
 }
 
 private struct PasteImportToolbarModifier: ViewModifier {
-    let session: PasteImportIOSSession
+    let session: PasteImportSession
     let entry: PasteImportEntry
 
     @Environment(\.modelContext) private var modelContext

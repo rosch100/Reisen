@@ -2,13 +2,14 @@ import SwiftUI
 import SwiftData
 
 import ReisenAppCore
+import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
 
 struct OffenTab: View {
     @Binding var sessionChromeEpoch: Int
-    let pasteImport: PasteImportIOSSession
+    let pasteImport: PasteImportSession
     var onTripCreated: (UUID) -> Void
     #if REISEN_PROVIDER_SYNC
     var onOpenSync: () -> Void
