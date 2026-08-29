@@ -80,6 +80,16 @@ public enum GitHubRepository {
         URL(string: pagesBaseURL.absoluteString + "/")!
     }
 
+    /// Private Security Advisory (SSOT mit `SECURITY.md`, `CODE_OF_CONDUCT.md`, Issue-Formulare).
+    public static var securityAdvisoryNewURL: URL {
+        webBaseURL.appending(path: "security/advisories/new")
+    }
+
+    /// Übersicht Security Advisories.
+    public static var securityAdvisoriesURL: URL {
+        webBaseURL.appending(path: "security/advisories")
+    }
+
     /// Vorausgefülltes Issue ohne personenbezogene Angaben im öffentlichen Text.
     /// SSOT mit `.github/ISSUE_TEMPLATE/legal.yml` Feld `notice` (`value:`).
     public static let publicIssueNoPersonalDataBody = """

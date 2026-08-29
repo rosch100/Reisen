@@ -193,6 +193,45 @@ private func issueQueryValue(_ url: URL, name: String) -> String? {
     #expect(GitHubRepository.apiIssuesURL.absoluteString == "https://api.github.com/repos/rosch100/Reisen/issues")
 }
 
+@Test func githubRepository_securityAdvisoryURLsMatchPolicyAndTemplates() throws {
+    let advisory = GitHubRepository.securityAdvisoryNewURL.absoluteString
+    #expect(advisory == "https://github.com/rosch100/Reisen/security/advisories/new")
+    #expect(
+        GitHubRepository.securityAdvisoriesURL.absoluteString
+            == "https://github.com/rosch100/Reisen/security/advisories"
+    )
+
+    let repoRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let security = try String(contentsOf: repoRoot.appendingPathComponent("SECURITY.md"), encoding: .utf8)
+    #expect(security.contains(advisory))
+    #expect(security.contains(GitHubRepository.securityAdvisoriesURL.absoluteString))
+
+    let codeOfConduct = try String(
+        contentsOf: repoRoot.appendingPathComponent("CODE_OF_CONDUCT.md"),
+        encoding: .utf8
+    )
+    #expect(codeOfConduct.contains(advisory))
+
+    let config = try String(
+        contentsOf: repoRoot.appendingPathComponent(".github/ISSUE_TEMPLATE/config.yml"),
+        encoding: .utf8
+    )
+    #expect(config.contains(advisory))
+    #expect(config.contains(GitHubRepository.pagesLegalURL(.supportDE).absoluteString))
+    #expect(config.contains("mailto:\(GitHubRepository.feedbackEmail)"))
+
+    for name in ["bug.yml", "feedback.yml", "feature.yml", "legal.yml"] {
+        let yaml = try String(
+            contentsOf: repoRoot.appendingPathComponent(".github/ISSUE_TEMPLATE/\(name)"),
+            encoding: .utf8
+        )
+        #expect(yaml.contains(advisory), "\(name) must link private Security Advisory")
+    }
+}
+
 @Test func githubRepository_searchOpenIssuesURL() {
     let url = GitHubRepository.searchOpenIssuesURL(fingerprint: "abc123")
     #expect(url?.host == "api.github.com")

@@ -94,9 +94,9 @@ SSOT: [`.github/ISSUE_TEMPLATE/`](../../.github/ISSUE_TEMPLATE/).
 | Kontakt / Datenschutz (Pages) | `legal.yml` | `notice` |
 | Web-Chooser | dieselben YAML-Formulare | manuell |
 
-[`config.yml`](../../.github/ISSUE_TEMPLATE/config.yml) setzt `blank_issues_enabled: false` und `contact_links` (Security Advisory, Support-Seite, Mailto). Leere Issues sind für Maintainer weiterhin möglich; öffentliche Pages-Links nutzen deshalb `legal.yml` statt Query-`body`.
+[`config.yml`](../../.github/ISSUE_TEMPLATE/config.yml) setzt `blank_issues_enabled: false` und `contact_links` (Security Advisory, Support-Seite, Mailto). Leere Issues sind für Maintainer weiterhin möglich; öffentliche Pages-Links nutzen deshalb `legal.yml` statt Query-`body`. Die Advisory-URL ist SSOT in `GitHubRepository.securityAdvisoryNewURL` und muss mit [`SECURITY.md`](../../SECURITY.md), [`CODE_OF_CONDUCT.md`](../../CODE_OF_CONDUCT.md) und den Formular-Markdowns übereinstimmen (Test: `githubRepository_securityAdvisoryURLsMatchPolicyAndTemplates`).
 
-**Deploy:** `config.yml`, `legal.yml` und die Redirects [`docs/legal/contact-request.html`](../legal/contact-request.html) / [`privacy-request.html`](../legal/privacy-request.html) müssen **gemeinsam** auf dem Default-Branch landen (danach Pages-Workflow). Sonst führen die alten `body=`-Redirects bei `blank_issues_enabled: false` in den Chooser statt ins Formular.
+**Deploy:** `config.yml`, `legal.yml` und die Redirects [`docs/legal/contact-request.html`](../legal/contact-request.html) / [`privacy-request.html`](../legal/privacy-request.html) müssen **gemeinsam** auf dem Default-Branch landen (danach Pages-Workflow). Sonst führen die alten `body=`-Redirects bei `blank_issues_enabled: false` in den Chooser statt ins Formular. PR dafür: gemeinsamer Merge (nicht Templates ohne Redirects).
 
 Die Issues-API (App-Token, Gmail-Ingress) **füllt keine YAML-Formulare aus**. Sie postet Markdown-Bodies (`## Zusammenfassung`, `## Diagnose`, Fingerprint bzw. `reisen-email-id`) und Labels direkt — siehe `GitHubIssueDiagnostic` und `Scripts/ingest-gmail-feedback.py`. Zusätzliche Pflichtfelder in den Formularen (außer dem Haupt-Textarea und der Datenschutz-Checkbox) würden den Safari-Pfad blockieren; optionale Triage-Felder in `bug.yml` bleiben für den Web-Chooser und werden von der App-URL nicht befüllt.
 

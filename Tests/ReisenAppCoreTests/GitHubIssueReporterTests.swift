@@ -48,7 +48,8 @@ import ReisenDomain
     )
     #expect(configYAML.contains("blank_issues_enabled: false"))
     #expect(configYAML.contains("contact_links:"))
-    #expect(configYAML.contains("security/advisories/new"))
+    #expect(configYAML.contains(GitHubRepository.securityAdvisoryNewURL.absoluteString))
+    #expect(configYAML.contains(GitHubRepository.pagesLegalURL(.supportDE).absoluteString))
     #expect(configYAML.contains(GitHubRepository.feedbackEmail))
 
     let legalYAML = try String(
