@@ -13,6 +13,11 @@ body:
         This issue is **public**. Do not include trip, passenger, email, postal, or other personal data.
         We will reply with a private contact channel.
 
+        Uploads in diesem Formular sind **öffentlich** / Uploads in this form are **public**.
+        Sensible Dateien / sensitive files:
+        [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (Mailbox).
+        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
+
         Sicherheitslücken bitte über eine [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new) melden — nicht hier.
   - type: textarea
     id: notice

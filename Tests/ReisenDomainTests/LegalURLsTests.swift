@@ -229,6 +229,10 @@ private func issueQueryValue(_ url: URL, name: String) -> String? {
             encoding: .utf8
         )
         #expect(yaml.contains(advisory), "\(name) must link private Security Advisory")
+        #expect(
+            yaml.contains("Uploads") && yaml.contains(GitHubRepository.feedbackEmail),
+            "\(name) must warn that form uploads are public and point to feedback email"
+        )
     }
 }
 
