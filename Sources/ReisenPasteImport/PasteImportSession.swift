@@ -29,6 +29,9 @@ public final class PasteImportSession: PasteImportSessionControlling {
     private var source: PasteImportSource?
     private var existing: [Booking] = []
     private let runLifetime = PasteImportRunLifetime()
+    private let featureRequestFlow = PasteImportFailedFeatureRequestFlow()
+    private var resumeAfterFeatureRequest: Phase?
+    private var failedRecognitionReason: PasteImportFailedRecognitionReason?
 
     public init() {}
 
@@ -60,10 +63,28 @@ public final class PasteImportSession: PasteImportSessionControlling {
         return nil
     }
 
+    public var isConfirmingFeatureRequest: Bool { featureRequestFlow.phase.showsConfirmAlert }
+
+    public var featureRequestSuccessURL: URL? {
+        if case .succeeded(let url) = featureRequestFlow.phase { return url }
+        return nil
+    }
+
+    public var featureRequestSubmitError: String? {
+        if case .submitFailed(let message) = featureRequestFlow.phase { return message }
+        return nil
+    }
+
+    public var canOfferFeatureRequest: Bool {
+        source != nil && featureRequestFlow.canOffer
+    }
+
     public var hasPendingCandidates: Bool { !pending.isEmpty }
 
-    /// Bestätigung, Lauf, Kandidatenliste, Meldung oder Editor-Warteschlange ist offen.
-    public var isActive: Bool { phase != .idle || hasPendingCandidates }
+    /// Bestätigung, Lauf, Kandidatenliste, Meldung, Feature-Request oder Editor-Warteschlange ist offen.
+    public var isActive: Bool {
+        phase != .idle || hasPendingCandidates || featureRequestFlow.phase != .idle
+    }
 
     /// - Parameters:
     ///   - source: `nil` heißt „keine verwertbare Quelle“ und endet als Fehler.
@@ -128,10 +149,49 @@ public final class PasteImportSession: PasteImportSessionControlling {
         phase = .idle
     }
 
+    public func offerFailedFeatureRequest() {
+        guard canOfferFeatureRequest else { return }
+        resumeAfterFeatureRequest = phase
+        featureRequestFlow.offer()
+        phase = .idle
+    }
+
+    public func cancelFailedFeatureRequest() {
+        guard featureRequestFlow.cancelConfirmAlert() else { return }
+        if let resume = resumeAfterFeatureRequest {
+            phase = resume
+            resumeAfterFeatureRequest = nil
+        }
+    }
+
+    public func confirmFailedFeatureRequest() {
+        guard let document = source, let reason = failedRecognitionReason else { return }
+        featureRequestFlow.startConfirm(
+            source: document,
+            reason: reason,
+            reporter: GitHubIssueReporter.shared,
+            reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
+        )
+    }
+
+    public func dismissFeatureRequestSuccess() {
+        reset()
+    }
+
+    public func dismissFeatureRequestSubmitError() {
+        featureRequestFlow.acknowledgeSubmitFailure()
+        if let resume = resumeAfterFeatureRequest {
+            phase = resume
+        }
+    }
+
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     public func fail(_ message: String) {
         runLifetime.invalidate()
         source = nil
+        featureRequestFlow.reset()
+        failedRecognitionReason = nil
+        resumeAfterFeatureRequest = nil
         phase = .failed(message)
     }
 
@@ -164,10 +224,14 @@ public final class PasteImportSession: PasteImportSessionControlling {
                     existing: existing
                 )
                 self.runLifetime.complete(ifCurrent: id) {
+                    self.failedRecognitionReason = self.featureRequestFlow.applyRunResult(result)
                     self.phase = .choosing(result)
                 }
             } catch {
                 self.runLifetime.complete(ifCurrent: id) {
+                    self.failedRecognitionReason = self.featureRequestFlow.applyRunFailure(
+                        PasteImportFailureMessage.failure(for: error)
+                    )
                     self.phase = .failed(PasteImportFailureMessage.text(for: error))
                 }
             }
@@ -180,6 +244,9 @@ public final class PasteImportSession: PasteImportSessionControlling {
         existing = []
         pending = []
         tripID = nil
+        resumeAfterFeatureRequest = nil
+        failedRecognitionReason = nil
+        featureRequestFlow.reset()
         phase = .idle
     }
 }

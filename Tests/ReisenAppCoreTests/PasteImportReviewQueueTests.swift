@@ -6,14 +6,14 @@ import ReisenAppCore
 func pasteImportReviewQueue_secondAdvanceWhilePendingIsIgnored() async {
     let queue = PasteImportReviewQueue()
     var presentations = 0
-    queue.advance(ifPending: true) {
+    let first = queue.advance(ifPending: true) {
         presentations += 1
     }
-    queue.advance(ifPending: true) {
+    let second = queue.advance(ifPending: true) {
         presentations += 1
     }
-    await Task.yield()
-    await Task.yield()
+    #expect(second == nil)
+    await first?.value
     #expect(presentations == 1)
 }
 
@@ -21,9 +21,9 @@ func pasteImportReviewQueue_secondAdvanceWhilePendingIsIgnored() async {
 func pasteImportReviewQueue_skipsWhenNothingPending() async {
     let queue = PasteImportReviewQueue()
     var presentations = 0
-    queue.advance(ifPending: false) {
+    let task = queue.advance(ifPending: false) {
         presentations += 1
     }
-    await Task.yield()
+    #expect(task == nil)
     #expect(presentations == 0)
 }

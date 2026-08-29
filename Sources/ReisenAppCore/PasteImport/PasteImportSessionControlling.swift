@@ -11,6 +11,10 @@ public protocol PasteImportSessionControlling: AnyObject {
     var runningKind: PasteImportModelKind? { get }
     var choosingResult: PasteImportRunResult? { get }
     var errorMessage: String? { get }
+    var canOfferFeatureRequest: Bool { get }
+    var isConfirmingFeatureRequest: Bool { get }
+    var featureRequestSuccessURL: URL? { get }
+    var featureRequestSubmitError: String? { get }
 
     func confirmPrivateCloudCompute()
     func cancelConfirmation()
@@ -18,4 +22,9 @@ public protocol PasteImportSessionControlling: AnyObject {
     func dismissSheet()
     func review()
     func dismissError()
+    func offerFailedFeatureRequest()
+    func cancelFailedFeatureRequest()
+    func confirmFailedFeatureRequest()
+    func dismissFeatureRequestSuccess()
+    func dismissFeatureRequestSubmitError()
 }

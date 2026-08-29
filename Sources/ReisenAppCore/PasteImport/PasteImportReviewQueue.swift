@@ -11,13 +11,14 @@ public final class PasteImportReviewQueue {
     public init() {}
 
     /// Plant genau eine Präsentation, solange noch Kandidaten warten und kein Advance läuft.
+    @discardableResult
     public func advance(
         ifPending hasPending: Bool,
         present: @escaping @MainActor () -> Void
-    ) {
-        guard hasPending, !isAdvancing else { return }
+    ) -> Task<Void, Never>? {
+        guard hasPending, !isAdvancing else { return nil }
         isAdvancing = true
-        Task {
+        return Task {
             defer { isAdvancing = false }
             await Task.yield()
             present()

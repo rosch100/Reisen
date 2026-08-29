@@ -1,11 +1,9 @@
-import SwiftData
 import SwiftUI
 import ReisenAppCore
-import ReisenData
 import ReisenDomain
 
 public extension View {
-    /// Bestätigung, Fortschritt, Kandidatenliste und Fehlermeldung eines Paste-Import-Laufs.
+    /// Bestätigung, Fortschritt, Kandidatenliste, Fehlermeldung und Feature-Request eines Paste-Import-Laufs.
     ///
     /// - Parameter onReviewQueue: läuft, sobald der nächste Kandidat in den Editor darf.
     func pasteImportFlow<Session: PasteImportSessionControlling & Observable>(
@@ -49,12 +47,17 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                 } else if let result = session.choosingResult {
                     PasteImportCandidateSheet(
                         result: result,
+                        canOfferFeatureRequest: session.canOfferFeatureRequest,
                         onCancel: { session.dismissSheet() },
                         onContinue: {
                             session.review()
                             onReviewQueue()
-                        }
+                        },
+                        onRequestFeature: { session.offerFailedFeatureRequest() }
                     )
+                    #if !os(macOS)
+                    .reisenSheetDetents()
+                    #endif
                 }
             }
             .alert(
@@ -64,6 +67,11 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                     set: { if !$0 { session.dismissError() } }
                 )
             ) {
+                if session.canOfferFeatureRequest {
+                    Button(PasteImportFailedFeatureRequestPresentation().offerTitle) {
+                        session.offerFailedFeatureRequest()
+                    }
+                }
                 Button(L10n.string(.commonOk), role: .cancel) {
                     session.dismissError()
                     onReviewQueue()
@@ -71,6 +79,80 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
             } message: {
                 if let errorMessage = session.errorMessage {
                     Text(errorMessage)
+                }
+            }
+            .alert(
+                PasteImportFailedFeatureRequestPresentation().title,
+                isPresented: Binding(
+                    get: { session.isConfirmingFeatureRequest },
+                    set: { if !$0 { session.cancelFailedFeatureRequest() } }
+                )
+            ) {
+                Button(PasteImportFailedFeatureRequestPresentation().sendTitle) {
+                    session.confirmFailedFeatureRequest()
+                }
+                Button(PasteImportFailedFeatureRequestPresentation().cancelTitle, role: .cancel) {
+                    session.cancelFailedFeatureRequest()
+                }
+                .keyboardShortcut(.defaultAction)
+            } message: {
+                Text(PasteImportFailedFeatureRequestPresentation().message)
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { session.featureRequestSuccessURL != nil },
+                    set: { if !$0 { session.dismissFeatureRequestSuccess() } }
+                )
+            ) {
+                let chrome = PasteImportFailedFeatureRequestPresentation()
+                #if os(macOS)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(chrome.doneTitle)
+                    PublicGitHubIssueLink(
+                        url: session.featureRequestSuccessURL,
+                        errorMessage: nil
+                    )
+                    Button(L10n.string(.commonOk)) {
+                        session.dismissFeatureRequestSuccess()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
+                .padding(24)
+                .frame(minWidth: 280)
+                #else
+                NavigationStack {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(chrome.doneTitle)
+                        PublicGitHubIssueLink(
+                            url: session.featureRequestSuccessURL,
+                            errorMessage: nil
+                        )
+                    }
+                    .padding()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(L10n.string(.commonOk)) {
+                                session.dismissFeatureRequestSuccess()
+                            }
+                        }
+                    }
+                }
+                .reisenSheetDetents()
+                #endif
+            }
+            .alert(
+                L10n.string(.pasteImportErrorTitle),
+                isPresented: Binding(
+                    get: { session.featureRequestSubmitError != nil },
+                    set: { if !$0 { session.dismissFeatureRequestSubmitError() } }
+                )
+            ) {
+                Button(L10n.string(.commonOk), role: .cancel) {
+                    session.dismissFeatureRequestSubmitError()
+                }
+            } message: {
+                if let featureRequestSubmitError = session.featureRequestSubmitError {
+                    Text(featureRequestSubmitError)
                 }
             }
     }
@@ -100,52 +182,6 @@ struct PasteImportProgressSheet: View {
         #if os(macOS)
         .frame(minWidth: 280)
         #else
-        .reisenSheetDetents()
-        #endif
-    }
-}
-
-struct PasteImportCandidateSheet: View {
-    let result: PasteImportRunResult
-    let onCancel: () -> Void
-    let onContinue: () -> Void
-
-    var body: some View {
-        #if os(macOS)
-        VStack(alignment: .leading, spacing: 16) {
-            ScrollView {
-                PasteImportCandidateList(result: result)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            HStack {
-                Button(L10n.string(.commonCancel), action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                Button(L10n.string(.pasteImportContinue), action: onContinue)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(result.candidates.isEmpty)
-            }
-        }
-        .padding(20)
-        .frame(minWidth: 420, minHeight: 320)
-        #else
-        NavigationStack {
-            ScrollView {
-                PasteImportCandidateList(result: result)
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(L10n.string(.commonCancel), action: onCancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.string(.pasteImportContinue), action: onContinue)
-                        .disabled(result.candidates.isEmpty)
-                }
-            }
-        }
         .reisenSheetDetents()
         #endif
     }

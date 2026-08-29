@@ -6,6 +6,8 @@ import ReisenDomain
 public enum GitHubIssueReporterError: Error, Equatable, LocalizedError {
     case rateLimited
     case persistedStateCorrupt
+    case attachmentTooLarge(maxBytes: Int)
+    case attachmentEmpty
 
     public var errorDescription: String? {
         switch self {
@@ -13,6 +15,10 @@ public enum GitHubIssueReporterError: Error, Equatable, LocalizedError {
             return "Zu viele neue GitHub-Issues in dieser Stunde"
         case .persistedStateCorrupt:
             return "Gespeicherter Issue-Reporter-Zustand ist ungültig"
+        case .attachmentTooLarge(let maxBytes):
+            return "Dokument ist größer als \(maxBytes) Bytes"
+        case .attachmentEmpty:
+            return "Dokumentanhang ist leer"
         }
     }
 }
@@ -74,7 +80,9 @@ public final class GitHubIssueReporter {
         message: String,
         providerID: ProviderID?,
         titleOverride: String? = nil,
-        reporterGitHubUsername: String? = nil
+        reporterGitHubUsername: String? = nil,
+        attachments: [GitHubIssueAttachment] = [],
+        fingerprintMessage: String? = nil
     ) async throws -> GitHubCreatedIssue {
         lastReportErrorMessage = nil
         if persistedStateCorrupt {
@@ -83,10 +91,28 @@ public final class GitHubIssueReporter {
         }
         _ = try tokenProvider()
 
+        let attachmentComments: [String]
+        do {
+            attachmentComments = try attachments.flatMap { try GitHubIssueAttachmentCodec.comments(for: $0) }
+        } catch GitHubIssueAttachmentCodecError.empty {
+            lastReportErrorMessage = GitHubIssueReporterError.attachmentEmpty.localizedDescription
+            throw GitHubIssueReporterError.attachmentEmpty
+        } catch GitHubIssueAttachmentCodecError.tooLarge(let maxBytes) {
+            lastReportErrorMessage = GitHubIssueReporterError.attachmentTooLarge(maxBytes: maxBytes)
+                .localizedDescription
+            throw GitHubIssueReporterError.attachmentTooLarge(maxBytes: maxBytes)
+        } catch {
+            lastReportErrorMessage = error.localizedDescription
+            throw error
+        }
+
         let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
         let redactedMessage = SecretRedactor.redact(trimmedMessage)
+        let fingerprintSource = SecretRedactor.redact(
+            (fingerprintMessage ?? trimmedMessage).trimmingCharacters(in: .whitespacesAndNewlines)
+        )
         let title = GitHubIssueTitle.reportTitle(kind: kind, message: trimmedMessage, override: titleOverride)
-        let diagnostics = GitHubIssueDiagnostic.deviceSnapshot(kind: kind, redactedMessage: redactedMessage)
+        let diagnostics = GitHubIssueDiagnostic.deviceSnapshot(kind: kind, redactedMessage: fingerprintSource)
         let fingerprint = diagnostics.fingerprint
         let body = GitHubIssueDiagnostic.body(
             kind: kind,
@@ -120,6 +146,9 @@ public final class GitHubIssueReporter {
             state.createTimestamps.append(now())
             state.openFingerprints[fingerprint] = created.number
             persist()
+            for comment in attachmentComments {
+                _ = try await client.comment(issueNumber: created.number, body: comment)
+            }
             return rememberURL(created)
         } catch {
             lastReportErrorMessage = error.localizedDescription
