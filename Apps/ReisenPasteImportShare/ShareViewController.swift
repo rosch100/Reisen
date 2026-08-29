@@ -65,11 +65,20 @@ final class ShareViewController: UIViewController {
             }
         }
         for provider in providers where provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            let url = try await fileURL(from: provider)
             do {
-                let url = try await fileURL(from: provider)
-                defer { removeTemporaryCopyIfNeeded(url) }
-                return try PasteImportFileSource.source(from: url)
+                let source = try PasteImportFileSource.source(from: url)
+                do {
+                    try removeTemporaryCopyIfNeeded(url)
+                } catch {
+                    throw PasteImportShareError.handoffFailed
+                }
+                return source
+            } catch let error as PasteImportShareError {
+                try? removeTemporaryCopyIfNeeded(url)
+                throw error
             } catch {
+                try? removeTemporaryCopyIfNeeded(url)
                 throw PasteImportShareError.unreadableSource
             }
         }
@@ -77,10 +86,13 @@ final class ShareViewController: UIViewController {
     }
 
     /// Nur eigene Kopien unter `temporaryDirectory` löschen — nicht Security-Scoped URLs des Systems.
-    private static func removeTemporaryCopyIfNeeded(_ url: URL) {
+    ///
+    /// Scheitert das Löschen einer eigenen Temp-Kopie, bleibt Buchungsinhalt liegen — deshalb Fehler
+    /// statt `try?`, nachdem die Bytes bereits gelesen wurden.
+    private static func removeTemporaryCopyIfNeeded(_ url: URL) throws {
         let temporary = FileManager.default.temporaryDirectory.standardizedFileURL.path
         guard url.standardizedFileURL.path.hasPrefix(temporary) else { return }
-        try? FileManager.default.removeItem(at: url)
+        try FileManager.default.removeItem(at: url)
     }
 
     private static func firstSource(
