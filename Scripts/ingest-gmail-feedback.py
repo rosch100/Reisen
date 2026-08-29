@@ -97,7 +97,8 @@ def extract_body_and_attachments(message: Message) -> tuple[str, list[str]]:
 
 
 def should_skip_github_issue(body: str) -> bool:
-    return body.lstrip().startswith(PASTE_IMPORT_DOCUMENT_MARKER)
+    lines = body.lstrip().splitlines()
+    return bool(lines) and lines[0] == PASTE_IMPORT_DOCUMENT_MARKER
 
 
 def email_id_hash(message_id: str) -> str:

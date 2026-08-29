@@ -157,6 +157,10 @@ class IngestGmailFeedbackTests(unittest.TestCase):
                 "die App stuerzt\nsiehe reisen-paste-import-document in der Doku"
             )
         )
+        self.assertFalse(
+            ingest.should_skip_github_issue("reisen-paste-import-documentation\nFeedback")
+        )
+        self.assertFalse(ingest.should_skip_github_issue(""))
 
     def test_script_does_not_use_imap_or_app_password(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")

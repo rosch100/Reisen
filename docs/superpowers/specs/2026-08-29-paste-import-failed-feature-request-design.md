@@ -109,7 +109,7 @@ Fehler: Token fehlt, Rate-Limit, HTTP — UI zeigt `localizedDescription`, kein 
 
 ## Offene Lücken (`open_gaps`)
 
-- Live-Create eines GitHub-Issues mit Anhang: nicht in CI (kein Token, keine Seitenwirkung aufs öffentliche Repo). Judge akzeptiert bewusst offen.
+- Live-Create des Metadaten-Issues und Mail-Draft mit Anhang: nicht in CI (kein Token, keine Seitenwirkung aufs öffentliche Repo). Judge akzeptiert bewusst offen.
 
 ## Tests
 
