@@ -21,7 +21,13 @@
         ],
         "paymentInfo": {
           "userTripStatus": "CANCELLED",
-          "latestPaymentStatus": "REFUNDED"
+          "latestPaymentStatus": "REFUNDED",
+          "expectedAmount": {
+            "currencyValue": { "currency": "EUR", "amount": "19900", "nullOrEmpty": false },
+            "numOfDecimalPoint": "2"
+          },
+          "isTotalPriceHidden": false,
+          "totalPriceHidden": false
         },
         "cardSummaryInfo": {
           "commonSummary": {

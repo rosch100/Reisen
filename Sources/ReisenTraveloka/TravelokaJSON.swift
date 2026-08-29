@@ -235,13 +235,32 @@ enum TravelokaJSON {
         return raw / pow(10.0, Double(decimals))
     }
 
-    static func moneyAmount(from fee: [String: Any]?) -> Double? {
-        guard let fee else { return nil }
-        let currencyValue = dictionary(fee["currencyValue"])
-        return scaledAmount(
-            amount: currencyValue["amount"] ?? fee["amount"],
-            decimalPoint: fee["numOfDecimalPoint"] ?? currencyValue["numOfDecimalPoint"]
-        )
+    /// SSOT für Fee- und `expectedAmount`-Objekte (`currencyValue` + `numOfDecimalPoint`).
+    static func money(from value: [String: Any]?) -> (amount: Double, currency: String?)? {
+        guard let value, !value.isEmpty else { return nil }
+        let currencyValue = dictionary(value["currencyValue"])
+        guard let amount = scaledAmount(
+            amount: currencyValue["amount"] ?? value["amount"],
+            decimalPoint: value["numOfDecimalPoint"] ?? currencyValue["numOfDecimalPoint"]
+        ) else {
+            return nil
+        }
+        return (amount, string(currencyValue["currency"] ?? value["currency"]))
+    }
+
+    static func moneyAmount(from value: [String: Any]?) -> Double? {
+        money(from: value)?.amount
+    }
+
+    /// Buchungspreis aus `paymentInfo.expectedAmount`; `nil` wenn versteckt oder fehlend.
+    static func bookingMoney(from entry: [String: Any]) -> (amount: Double, currency: String?)? {
+        let payment = dictionary(entry["paymentInfo"])
+        if bool(payment["isTotalPriceHidden"]) == true
+            || bool(payment["totalPriceHidden"]) == true
+        {
+            return nil
+        }
+        return money(from: dictionary(payment["expectedAmount"]))
     }
 
     static func dateFromApplied(_ value: Any?, timeZone: TimeZone) -> Date? {

@@ -21,7 +21,13 @@
         ],
         "paymentInfo": {
           "userTripStatus": "ETICKET_PUBLISHED",
-          "latestPaymentStatus": "PAID"
+          "latestPaymentStatus": "PAID",
+          "expectedAmount": {
+            "currencyValue": { "currency": "EUR", "amount": "12500", "nullOrEmpty": false },
+            "numOfDecimalPoint": "2"
+          },
+          "isTotalPriceHidden": false,
+          "totalPriceHidden": false
         },
         "bookingInfo": {
             "hotelBookingInfo": {
