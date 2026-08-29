@@ -19,6 +19,7 @@ import urllib.parse
 import urllib.request
 from email.header import decode_header, make_header
 from email.message import Message
+from email.utils import parseaddr
 from typing import Any
 
 # SSOT mit Sources/ReisenDomain/Settings/GitHubRepository.swift feedbackEmail
@@ -48,10 +49,48 @@ HTTP_TIMEOUT_SEC = 60
 EMPTY_SUBJECT = "(kein Betreff)"
 EMPTY_CELL = "—"
 EMPTY_MAIL_TEXT = "(leerer Mailtext)"
+UNREAD_FEEDBACK_QUERY = (
+    "is:unread in:inbox -in:spam -in:trash "
+    "-from:accounts.google.com -from:google.com"
+)
+CONSUMER_GOOGLE_MAIL_DOMAINS = frozenset({"gmail.com", "googlemail.com"})
 
 
 def log(message: str) -> None:
     print(message, file=sys.stderr)
+
+
+def sender_email_address(from_header: str) -> str:
+    _, addr = parseaddr(from_header)
+    return addr.strip().casefold()
+
+
+def is_automated_google_sender(from_header: str) -> bool:
+    addr = sender_email_address(from_header)
+    if "@" not in addr:
+        return False
+    _, _, domain = addr.rpartition("@")
+    if domain in CONSUMER_GOOGLE_MAIL_DOMAINS:
+        return False
+    return domain == "google.com" or domain.endswith(".google.com")
+
+
+def gmail_label_ids(resource: dict[str, Any]) -> list[str]:
+    raw = resource.get("labelIds")
+    if not isinstance(raw, list):
+        return []
+    return [label for label in raw if isinstance(label, str)]
+
+
+def skip_ingest_reason(*, from_header: str, label_ids: list[str] | None) -> str | None:
+    labels = {label.casefold() for label in (label_ids or [])}
+    if "spam" in labels:
+        return "spam"
+    if "trash" in labels:
+        return "trash"
+    if is_automated_google_sender(from_header):
+        return "automated-google"
+    return None
 
 
 def decode_header_value(raw: str | None) -> str:
@@ -450,7 +489,7 @@ def ingest_unread(
         access_token,
         f"{GMAIL_API}/messages?"
         + urllib.parse.urlencode(
-            {"q": "is:unread in:inbox", "maxResults": MAX_MAILS_PER_RUN}
+            {"q": UNREAD_FEEDBACK_QUERY, "maxResults": MAX_MAILS_PER_RUN}
         ),
     )
     messages = listed.get("messages") if isinstance(listed, dict) else None
@@ -471,6 +510,14 @@ def ingest_unread(
             log("Gmail-API Message ohne Payload")
             raise RuntimeError("gmail message payload missing")
         parsed = parsed_from_gmail_resource(resource, gmail_message_id=mail_id)
+        skipped = skip_ingest_reason(
+            from_header=parsed["from"],
+            label_ids=gmail_label_ids(resource),
+        )
+        if skipped is not None:
+            log(f"Mail übersprungen ({skipped})")
+            mark_read(access_token, mail_id)
+            continue
         if should_skip_github_issue(parsed["body"]):
             log("Paste-Import-Dokument: kein GitHub-Issue (bleibt in Gmail)")
             mark_read(access_token, mail_id)
