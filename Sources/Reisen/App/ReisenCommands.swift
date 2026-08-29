@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ReisenDomain
+import ReisenPasteImport
 import ReisenSharedUI
 
 struct ReisenCommands: Commands {
@@ -11,8 +12,8 @@ struct ReisenCommands: Commands {
     /// Verfügbarkeit entscheidet über beide Einfüge-Einträge im Menü.
     ///
     /// Die Notification trägt die Modellstufe nicht mit; `PasteImportMacSession.start()`
-    /// löst sie über `PasteImportModel.kind()` erneut auf — dieselbe Quelle, kein zweiter Pfad.
-    private var pasteImportKind: PasteImportModelKind { PasteImportModel.kind() }
+    /// löst sie über `PasteImportResolvedModel.kind()` erneut auf — dieselbe Quelle, kein zweiter Pfad.
+    private var pasteImportKind: PasteImportModelKind { PasteImportResolvedModel.kind() }
 
     var body: some Commands {
         CommandGroup(replacing: .pasteboard) {

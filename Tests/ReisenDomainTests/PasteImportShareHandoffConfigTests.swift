@@ -4,10 +4,10 @@ import ReisenDomain
 
 /// Konfiguration der Share-Übergabe: URL-Scheme, App Group und Anzeigename der Extension.
 private enum PasteImportShareConfig {
-    static let storeAppGroup = "group.de.reisen.Reisen.pasteimport"
-    static let privateAppGroup = "group.de.reisen.Reisen.private.pasteimport"
-    static let storeURLScheme = "reisen"
-    static let privateURLScheme = "reisen-private"
+    static let storeAppGroup = PasteImportHandoffIdentity.storeAppGroup
+    static let privateAppGroup = PasteImportHandoffIdentity.privateAppGroup
+    static let storeURLScheme = PasteImportHandoffIdentity.storeURLScheme
+    static let privateURLScheme = PasteImportHandoffIdentity.privateURLScheme
 
     static let storeEntitlements = [
         "Apps/ReiseniOS/ReiseniOS.entitlements",

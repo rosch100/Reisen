@@ -3,7 +3,7 @@ import ReisenDomain
 
 /// Auslöser der Übergabe aus der Share-Extension.
 public enum PasteImportHandoffTrigger: Equatable, Sendable {
-    /// Die App wurde über `reisen://paste-import` geöffnet.
+    /// Die App wurde über die Paste-Import-Handoff-URL geöffnet.
     case url
     /// Die App ist aktiv geworden und holt eine liegengebliebene Übergabe nach.
     case activation
@@ -20,7 +20,7 @@ public enum PasteImportHandoffAction: Equatable, Sendable {
 
 /// Entscheidet, was ein Auslöser der Übergabe bewirkt.
 ///
-/// Beide Auslöser können für dieselbe Übergabe feuern: iOS liefert `reisen://paste-import` und
+/// Beide Auslöser können für dieselbe Übergabe feuern: iOS liefert die Handoff-URL und
 /// `scenePhase == .active` praktisch gleichzeitig. Wer zuerst kommt, konsumiert die Dateien; der
 /// zweite findet nichts mehr. Er darf den bereits laufenden Import dann nicht mit
 /// „Übergabe fehlgeschlagen“ überschreiben — deshalb ist das Ergebnis des Konsums allein nicht

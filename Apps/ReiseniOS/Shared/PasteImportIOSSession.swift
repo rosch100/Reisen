@@ -6,13 +6,6 @@ import ReisenData
 import ReisenDomain
 import ReisenPasteImport
 
-/// Modellstufe für Toolbar und Lauf — eine Auflösung, kein zweiter Pfad.
-enum PasteImportModel {
-    static func kind() -> PasteImportModelKind {
-        PasteImportModelResolver.resolve(FoundationModelsPasteImportAvailability().availability())
-    }
-}
-
 /// Die gewählte Datei liegt vor, ist aber nicht als Text, Bild oder PDF lesbar.
 enum PasteImportIOSSourceError: Error, Equatable, Sendable {
     case unreadableFile
@@ -45,9 +38,7 @@ final class PasteImportIOSSession {
 
     private var source: PasteImportSource?
     private var existing: [Booking] = []
-    private var task: Task<Void, Never>?
-    /// Ungültig nach Cancel/`reset`/`fail` — verhindert späte Phase-Schreibvorgänge.
-    private var runID = UUID()
+    private let runLifetime = PasteImportRunLifetime()
 
     var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
 
@@ -94,7 +85,7 @@ final class PasteImportIOSSession {
             phase = .failed(L10n.string(.pasteImportErrorSource))
             return
         }
-        let kind = PasteImportModel.kind()
+        let kind = PasteImportResolvedModel.kind()
         guard kind != .unavailable else {
             phase = .failed(L10n.string(.pasteImportUnavailable))
             return
@@ -154,7 +145,7 @@ final class PasteImportIOSSession {
 
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
     func fail(_ message: String) {
-        invalidateRun()
+        runLifetime.invalidate()
         source = nil
         phase = .failed(message)
     }
@@ -170,10 +161,9 @@ final class PasteImportIOSSession {
             return
         }
         let existing = existing
-        let id = UUID()
-        runID = id
         phase = .running(kind)
-        task = Task { @MainActor [weak self] in
+        runLifetime.begin { [weak self] id in
+            guard let self else { return }
             do {
                 let result = try await PasteImportRun.run(
                     source: source,
@@ -181,32 +171,19 @@ final class PasteImportIOSSession {
                     extractor: FoundationModelsPasteImportExtractor(kind: kind),
                     existing: existing
                 )
-                self?.finishRun(id: id, outcome: .success(result))
+                self.runLifetime.complete(ifCurrent: id) {
+                    self.phase = .choosing(result)
+                }
             } catch {
-                self?.finishRun(id: id, outcome: .failure(error))
+                self.runLifetime.complete(ifCurrent: id) {
+                    self.phase = .failed(PasteImportFailureMessage.text(for: error))
+                }
             }
         }
     }
 
-    private func finishRun(id: UUID, outcome: Result<PasteImportRunResult, Error>) {
-        guard runID == id else { return }
-        task = nil
-        switch outcome {
-        case .success(let result):
-            phase = .choosing(result)
-        case .failure(let error):
-            phase = .failed(PasteImportFailureMessage.text(for: error))
-        }
-    }
-
-    private func invalidateRun() {
-        runID = UUID()
-        task?.cancel()
-        task = nil
-    }
-
     private func reset() {
-        invalidateRun()
+        runLifetime.invalidate()
         source = nil
         existing = []
         pending = []
