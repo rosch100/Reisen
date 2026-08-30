@@ -102,13 +102,31 @@ struct BookingDetailContent: View {
                 BookingGuestHintsView(booking: booking, style: .inspector)
             }
 
-            if let url = booking.browserURL {
+            let shown = BookingPortalActions.visible(
+                open: booking.browserURL,
+                cancellation: booking.cancellationBrowserURL,
+                status: booking.status
+            )
+            if shown.open != nil || shown.cancel != nil {
                 Divider()
-                BookingPortalOpenLink(browserURL: url)
-                    .font(.caption)
-                    .contextMenu {
-                        CopyLinkMenuItem(url: url)
+                BookingPortalActionBar(
+                    openURL: booking.browserURL,
+                    cancellationURL: booking.cancellationBrowserURL,
+                    status: booking.status,
+                    openTitle: BookingPortalOpenTitle.short,
+                    openHelp: BookingPortalOpenTitle.openInBrowserHelp,
+                    openButtonStyle: .bordered
+                )
+                .font(.caption)
+                .contextMenu {
+                    if let url = shown.open { CopyLinkMenuItem(url: url) }
+                    if let url = shown.cancel {
+                        CopyLinkMenuItem(
+                            url: url,
+                            title: L10n.string(.actionCopyCancellationLink)
+                        )
                     }
+                }
             }
 
             if let onEditBooking {

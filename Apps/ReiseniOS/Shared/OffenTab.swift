@@ -257,6 +257,11 @@ struct OpenBookingsScreen: View {
                             )
                             CopyLinkMenuItem(url: url)
                         }
+                        BookingPortalCancelMenuItems(
+                            cancellationURL: booking.cancellationBrowserURL,
+                            openURL: booking.browserURL,
+                            status: booking.status
+                        )
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         if !usesSplit {

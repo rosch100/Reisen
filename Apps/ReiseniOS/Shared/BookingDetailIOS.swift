@@ -45,14 +45,6 @@ struct BookingDetailIOS: View {
         return trips.first { OpenBookingMatching.isCandidate(booking, for: $0) }
     }
 
-    #if REISEN_PROVIDER_SYNC
-    @Environment(\.providerNativeAppPresence) private var nativeAppPresence
-    #endif
-
-    private var externalURL: URL? {
-        booking?.browserURL
-    }
-
     private var hotelTimeZone: TimeZone {
         booking?.resolvedHotelTimeZone ?? TimeZone(secondsFromGMT: 0) ?? .current
     }
@@ -186,19 +178,28 @@ struct BookingDetailIOS: View {
     @ViewBuilder
     private func bookingLinksSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.bookingDetailLinksSection)) {
-            if let externalURL {
-                #if REISEN_PROVIDER_SYNC
-                let installed = nativeAppPresence.isInstalled(booking.provider)
-                #else
-                let installed = false
-                #endif
-                BookingPortalOpenLink(
-                    bookingURL: externalURL,
-                    providerID: booking.provider,
-                    isNativeAppInstalled: installed
+            let shown = BookingPortalActions.visible(
+                open: booking.browserURL,
+                cancellation: booking.cancellationBrowserURL,
+                status: booking.status
+            )
+            if shown.open != nil || shown.cancel != nil {
+                BookingPortalActionBar(
+                    openURL: booking.browserURL,
+                    cancellationURL: booking.cancellationBrowserURL,
+                    status: booking.status,
+                    openTitle: BookingPortalOpenTitle.short,
+                    openHelp: BookingPortalOpenTitle.openInBrowserHelp,
+                    openButtonStyle: .prominent
                 )
                 .contextMenu {
-                    CopyLinkMenuItem(url: externalURL)
+                    if let url = shown.open { CopyLinkMenuItem(url: url) }
+                    if let url = shown.cancel {
+                        CopyLinkMenuItem(
+                            url: url,
+                            title: L10n.string(.actionCopyCancellationLink)
+                        )
+                    }
                 }
             } else {
                 Text(L10n.string(.bookingDetailNoBrowserLink))

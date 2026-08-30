@@ -229,7 +229,7 @@ struct ContentView: View {
         )
         .focusedSceneValue(
             \.bookingPortalOpenCommandState,
-            BookingPortalOpenCommandState(url: selectedBookingPortalURL)
+            selectedBookingPortalCommandState
         )
     }
 
@@ -248,27 +248,36 @@ struct ContentView: View {
         tripPendingDelete = nil
     }
 
-    /// Aktuell selektierte Buchung mit öffentlicher Portal-URL (Menü/Command).
-    private var selectedBookingPortalURL: URL? {
+    /// Aktuell selektierte Buchung für Portal-Menü/Command (Open + Storno).
+    private var selectedPortalBooking: SDBooking? {
         switch selection {
         case .openBookings:
             guard selectedOpenBookingIDs.count == 1,
-                  let id = selectedOpenBookingIDs.first,
-                  let booking = openBookings.first(where: { $0.id == id }) else {
+                  let id = selectedOpenBookingIDs.first else {
                 return nil
             }
-            return booking.browserURL
+            return openBookings.first(where: { $0.id == id })
         case .trip(let tripID):
             guard let trip = trips.first(where: { $0.id == tripID }),
                   let timelineID = selectedTimelineID,
-                  let bookingUUID = UUID(uuidString: timelineID),
-                  let booking = trip.resolvedBookings.first(where: { $0.id == bookingUUID }) else {
+                  let bookingUUID = UUID(uuidString: timelineID) else {
                 return nil
             }
-            return booking.browserURL
+            return trip.resolvedBookings.first(where: { $0.id == bookingUUID })
         default:
             return nil
         }
+    }
+
+    private var selectedBookingPortalCommandState: BookingPortalOpenCommandState {
+        guard let booking = selectedPortalBooking else {
+            return BookingPortalOpenCommandState()
+        }
+        return BookingPortalOpenCommandState(
+            url: booking.browserURL,
+            cancellationURL: booking.cancellationBrowserURL,
+            status: booking.status
+        )
     }
 
     @ViewBuilder
@@ -592,6 +601,11 @@ struct ContentView: View {
                                             BookingPortalOpenButton(browserURL: url)
                                             CopyLinkMenuItem(url: url)
                                         }
+                                        BookingPortalCancelMenuItems(
+                                            cancellationURL: booking.cancellationBrowserURL,
+                                            openURL: booking.browserURL,
+                                            status: booking.status
+                                        )
                                         Button(role: .destructive) {
                                             applyAfterTripFocus(trip: trip) {
                                                 selectedTimelineID = booking.id.uuidString
@@ -705,6 +719,11 @@ struct ContentView: View {
                             BookingPortalOpenButton(browserURL: url)
                             CopyLinkMenuItem(url: url)
                         }
+                        BookingPortalCancelMenuItems(
+                            cancellationURL: booking.cancellationBrowserURL,
+                            openURL: booking.browserURL,
+                            status: booking.status
+                        )
                         if let trip = matchingTrip(for: booking) {
                             Button(L10n.string(.actionAssignToTrip)) {
                                 applyAfterTripFocus(trip: trip) {
