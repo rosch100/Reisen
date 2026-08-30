@@ -4,38 +4,18 @@ import Foundation
 public enum L10n {
     public static let bundle: Bundle = .module
 
-    /// Test-Override; Produktivcode nutzt `.current`.
-    private nonisolated(unsafe) static var _locale: Locale = .current
-    private static let localeLock = NSRecursiveLock()
-    public static var locale: Locale {
-        get {
-            localeLock.lock()
-            defer { localeLock.unlock() }
-            return _locale
-        }
-        set {
-            localeLock.lock()
-            _locale = newValue
-            localeLock.unlock()
-        }
-    }
+    /// Test-Override pro Task; Produktivcode sieht `nil` und nutzt `.current`.
+    @TaskLocal static var taskLocale: Locale?
 
-    /// Hält die Locale für den gesamten Block (Tests: erwarteter und tatsächlicher String).
+    public static var locale: Locale { taskLocale ?? .current }
+
+    /// Hält die Locale für den gesamten Block (parallel-sicher, kein Prozess-Global).
     public static func withLocale<T>(_ locale: Locale, _ operation: () throws -> T) rethrows -> T {
-        localeLock.lock()
-        let previous = _locale
-        _locale = locale
-        defer {
-            _locale = previous
-            localeLock.unlock()
-        }
-        return try operation()
+        try $taskLocale.withValue(locale, operation: operation)
     }
 
     public static func string(_ key: L10nKey) -> String {
-        localeLock.lock()
-        defer { localeLock.unlock() }
-        if let language = _locale.language.languageCode?.identifier,
+        if let language = locale.language.languageCode?.identifier,
            let path = bundle.path(forResource: language, ofType: "lproj"),
            let localizedBundle = Bundle(path: path) {
             let value = localizedBundle.localizedString(
@@ -47,13 +27,11 @@ public enum L10n {
                 return value
             }
         }
-        return String(localized: String.LocalizationValue(key.rawValue), bundle: bundle, locale: _locale)
+        return String(localized: String.LocalizationValue(key.rawValue), bundle: bundle, locale: locale)
     }
 
     public static func format(_ key: L10nKey, _ arguments: any CVarArg...) -> String {
-        localeLock.lock()
-        defer { localeLock.unlock() }
-        return String(format: string(key), locale: _locale, arguments: arguments)
+        String(format: string(key), locale: locale, arguments: arguments)
     }
 
     public static func yesNo(_ value: Bool) -> String {

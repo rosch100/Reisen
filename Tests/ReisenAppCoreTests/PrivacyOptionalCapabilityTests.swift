@@ -40,8 +40,7 @@ import ReisenDomain
 }
 
 @Test func privacyOptionalCapability_statusHintNamesSkippedCapabilities() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     #expect(PrivacyOptionalCapability.statusHint(skipped: []) == nil)
     #expect(
@@ -55,6 +54,7 @@ import ReisenDomain
                 [L10n.string(.privacyCalendars), L10n.string(.privacyReminders)].joined(separator: ", ")
             )
     )
+    }
 }
 
 @Test func privacyOptionalCapability_runSkipsDenialAndRethrowsOtherErrors() async throws {

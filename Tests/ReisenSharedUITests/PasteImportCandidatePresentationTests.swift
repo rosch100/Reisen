@@ -22,8 +22,7 @@ private func candidate(match: PasteImportMatch) -> PasteImportCandidate {
 
 @MainActor
 @Test func pasteImportCandidatePresentation_badgeTextDistinguishesNewFromEnrich() {
-    L10n.locale = presentationLocale
-    defer { L10n.locale = .current }
+    L10n.withLocale(presentationLocale) {
 
     let existing = Booking(
         provider: .check24,
@@ -40,12 +39,12 @@ private func candidate(match: PasteImportMatch) -> PasteImportCandidate {
     #expect(new.badgeText != enrich.badgeText)
     #expect(new.accessibilityLabel == new.badgeText)
     #expect(enrich.accessibilityLabel == enrich.badgeText)
+    }
 }
 
 @MainActor
 @Test func pasteImportCandidatePresentation_ambiguousAddsHintOnly() {
-    L10n.locale = presentationLocale
-    defer { L10n.locale = .current }
+    L10n.withLocale(presentationLocale) {
 
     let ambiguous = PasteImportCandidatePresentation(candidate: candidate(match: .ambiguous))
     let new = PasteImportCandidatePresentation(candidate: candidate(match: .none))
@@ -53,24 +52,24 @@ private func candidate(match: PasteImportMatch) -> PasteImportCandidate {
     #expect(ambiguous.badgeText == L10n.string(.pasteImportBadgeNew))
     #expect(ambiguous.ambiguousHint == L10n.string(.pasteImportAmbiguousHint))
     #expect(new.ambiguousHint == nil)
+    }
 }
 
 @MainActor
 @Test func pasteImportCandidatePresentation_titleFallsBackToBookingType() {
-    L10n.locale = presentationLocale
-    defer { L10n.locale = .current }
+    L10n.withLocale(presentationLocale) {
 
     var untitled = candidate(match: .none)
     untitled.draft.title = nil
 
     #expect(PasteImportCandidatePresentation(candidate: untitled).title == BookingType.hotel.defaultDisplayTitle)
     #expect(PasteImportCandidatePresentation(candidate: candidate(match: .none)).title == "Hotel Lissabon")
+    }
 }
 
 @MainActor
 @Test func pasteImportCandidatePresentation_actionDisabledOnlyWhenModelUnavailable() {
-    L10n.locale = presentationLocale
-    defer { L10n.locale = .current }
+    L10n.withLocale(presentationLocale) {
 
     let unavailable = PasteImportActionPresentation(kind: .unavailable)
     let onDevice = PasteImportActionPresentation(kind: .onDevice)
@@ -84,13 +83,13 @@ private func candidate(match: PasteImportMatch) -> PasteImportCandidate {
     #expect(onDevice.accessibilityLabel == L10n.string(.menuPasteBooking))
     #expect(unavailable.accessibilityLabel.contains(L10n.string(.menuPasteBooking)))
     #expect(unavailable.accessibilityLabel.contains(L10n.string(.pasteImportUnavailable)))
+    }
 }
 
 /// Während des Laufs muss sichtbar sein, ob das Material das Gerät verlässt.
 @MainActor
 @Test func pasteImportProgressPresentation_namesTheRunningModelKind() {
-    L10n.locale = presentationLocale
-    defer { L10n.locale = .current }
+    L10n.withLocale(presentationLocale) {
 
     let onDevice = PasteImportProgressPresentation(kind: .onDevice)
     let pcc = PasteImportProgressPresentation(kind: .privateCloudCompute)
@@ -99,4 +98,5 @@ private func candidate(match: PasteImportMatch) -> PasteImportCandidate {
     #expect(onDevice.modelName == L10n.string(.pasteImportModelOnDevice))
     #expect(pcc.modelName == L10n.string(.pasteImportModelPcc))
     #expect(PasteImportProgressPresentation(kind: .unavailable).modelName == nil)
+    }
 }
