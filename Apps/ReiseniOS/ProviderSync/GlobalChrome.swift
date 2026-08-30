@@ -75,8 +75,6 @@ struct SyncBackgroundSessionProbe: View {
     @Environment(\.providerRegistry) private var providerRegistry
     @Environment(\.providerSessionHub) private var sessionHub
 
-    @State private var webViewsByProvider: [ProviderID: WKWebView?] = [:]
-
     private var enabledProviderIDs: [ProviderID] {
         _ = providerEnableEpoch
         return providerRegistry?.enabledSyncProviderIDs() ?? []
@@ -90,8 +88,8 @@ struct SyncBackgroundSessionProbe: View {
 
     private func webViewBinding(for providerID: ProviderID) -> Binding<WKWebView?> {
         Binding(
-            get: { webViewsByProvider[providerID] ?? nil },
-            set: { webViewsByProvider[providerID] = $0 }
+            get: { sessionHub?.webView(for: providerID) },
+            set: { sessionHub?.updateWebView(providerID, webView: $0) }
         )
     }
 
@@ -121,6 +119,7 @@ struct SyncBackgroundSessionProbe: View {
                     loginURL: loginURL(for: id),
                     providerID: id,
                     webView: webViewBinding(for: id),
+                    allowsEmbed: sessionHub?.allowsEmbed(on: .probe) ?? false,
                     onDidFinish: { finishedWebView in
                         handleWebNavigationDidFinish(providerID: id, finishedWebView)
                     }

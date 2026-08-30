@@ -4,6 +4,7 @@ import ReisenDomain
 import ReisenData
 import ReisenSharedUI
 import ReisenProviders
+import ReisenAppCore
 import AppKit
 import Foundation
 
@@ -20,7 +21,10 @@ struct TripDetailView: View {
     @Binding var bookingEditorSession: BookingEditorSession?
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.openURL) private var openURL
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
+    @State private var cancelRequest: BookingPortalCancelRequest?
     @Query(sort: \SDGap.gapStart, order: .forward) private var allGaps: [SDGap]
 
     private var sortedBookings: [SDBooking] {
@@ -284,6 +288,18 @@ struct TripDetailView: View {
                     onRequestRemoveFromTrip: { bookingID in
                         guard let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
                         requestRemoveBookingFromTrip(booking)
+                    },
+                    hasSessionWebView: { booking in
+                        sessionHub?.hasSessionWebView(for: booking.provider) == true
+                    },
+                    onPresentCancel: { booking, presentation, url in
+                        BookingPortalCancelRequest.handle(
+                            presentation,
+                            url: url,
+                            providerID: booking.provider,
+                            openURL: { openURL($0) },
+                            presentSheet: { cancelRequest = $0 }
+                        )
                     }
             )
             .navigationTitle(trip.title)
@@ -320,6 +336,7 @@ struct TripDetailView: View {
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
         )
         .persistFailureAlert(message: $persistErrorMessage)
+        .bookingPortalCancelSheet($cancelRequest)
     }
 
     @ViewBuilder
@@ -376,7 +393,18 @@ struct TripDetailView: View {
                                 BookingPortalCancelMenuItems(
                                     cancellationURL: booking.cancellationBrowserURL,
                                     openURL: booking.browserURL,
-                                    status: booking.status
+                                    status: booking.status,
+                                    deadlines: booking.domainCancellationDeadlines,
+                                    hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                                    onPresentCancel: { presentation, url in
+                                        BookingPortalCancelRequest.handle(
+                                            presentation,
+                                            url: url,
+                                            providerID: booking.provider,
+                                            openURL: { openURL($0) },
+                                            presentSheet: { cancelRequest = $0 }
+                                        )
+                                    }
                                 )
                                 Button(role: .destructive) {
                                     requestRemoveBookingFromTrip(booking)
@@ -569,6 +597,8 @@ private struct BookingDetailPanel: View {
     let gapPresentation: (ComputedGap) -> GapPresentation
     let onRequestDeleteBooking: (UUID) -> Void
     let onRequestRemoveFromTrip: (UUID) -> Void
+    var hasSessionWebView: (SDBooking) -> Bool
+    var onPresentCancel: (SDBooking, BookingPortalCancelPresentation, URL) -> Void
     var onContentHeightChange: ((CGFloat) -> Void)? = nil
 
     @Environment(\.modelContext) private var modelContext
@@ -689,7 +719,11 @@ private struct BookingDetailPanel: View {
                                 overlapCount: overlapCountsByBookingID[booking.id] ?? 0,
                                 onEditBooking: { bookingEditorSession = .edit(bookingID: booking.id) },
                                 onRequestDeleteBooking: onRequestDeleteBooking,
-                                onRequestRemoveFromTrip: onRequestRemoveFromTrip
+                                onRequestRemoveFromTrip: onRequestRemoveFromTrip,
+                                hasSessionWebView: hasSessionWebView(booking),
+                                onPresentCancel: { presentation, url in
+                                    onPresentCancel(booking, presentation, url)
+                                }
                             )
                         case .gap(let gap):
                             let presentation = gapPresentation(gap)

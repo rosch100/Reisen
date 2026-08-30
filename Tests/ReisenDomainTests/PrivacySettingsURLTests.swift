@@ -46,8 +46,7 @@ import ReisenDomain
 }
 
 @Test func privacySettingPane_denialMessages_nameThePane() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     #if os(iOS)
     let privacyRootPath = L10n.format(.settingsPathPrivacy, L10n.string(.settingsAppIos))
@@ -60,22 +59,23 @@ import ReisenDomain
     #expect(PrivacySettingPane.calendars.denialMessage == L10n.format(.privacyDenialCalendars, privacyRootPath))
     #expect(PrivacySettingPane.reminders.denialMessage == L10n.format(.privacyDenialReminders, privacyRootPath))
     #expect(PrivacySettingPane.notifications.denialMessage == L10n.format(.privacyDenialNotifications, notificationsPath))
+    }
 }
 
 @Test func privacySettingPane_openButtonTitle_isStable() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     #expect(PrivacySettingPane.calendars.openButtonTitle == L10n.string(.privacyOpenSettings))
     #expect(PrivacySettingPane.reminders.openButtonTitle == L10n.string(.privacyOpenSettings))
     #expect(PrivacySettingPane.notifications.openButtonTitle == L10n.string(.privacyOpenSettings))
+    }
 }
 
 @Test func privacySettingPane_restrictedCapabilityLabels_areStable() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     #expect(PrivacySettingPane.calendars.restrictedCapabilityLabel == L10n.string(.privacyCalendars))
     #expect(PrivacySettingPane.reminders.restrictedCapabilityLabel == L10n.string(.privacyReminders))
     #expect(PrivacySettingPane.notifications.restrictedCapabilityLabel == L10n.string(.privacyNotifications))
+    }
 }

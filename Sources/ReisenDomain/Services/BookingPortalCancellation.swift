@@ -1,13 +1,41 @@
 import Foundation
 
+public enum BookingPortalCancelPresentation: Equatable, Sendable {
+    case sheet
+    case safari
+    case hidden
+}
+
 public enum BookingPortalCancellation {
     public static func isActionable(
         cancellation: URL?,
-        open: URL?,
-        status: BookingStatus
+        open _: URL?,
+        status: BookingStatus,
+        deadlines: [CancellationDeadline],
+        now: Date
     ) -> Bool {
-        guard status != .cancelled, let cancellation else { return false }
-        return cancellation != open
+        guard status != .cancelled, cancellation != nil else { return false }
+        return !CancellationDeadlineDisplayFilter.deadlinesForDisplay(deadlines, now: now).isEmpty
+    }
+
+    public static func presentation(
+        cancellation: URL?,
+        open: URL?,
+        status: BookingStatus,
+        deadlines: [CancellationDeadline],
+        now: Date,
+        hasSessionWebView: Bool
+    ) -> BookingPortalCancelPresentation {
+        guard isActionable(
+            cancellation: cancellation,
+            open: open,
+            status: status,
+            deadlines: deadlines,
+            now: now
+        ) else { return .hidden }
+        if hasSessionWebView { return .sheet }
+        if cancellation != open { return .safari }
+        return .hidden
     }
 }
 
@@ -20,15 +48,25 @@ public enum BookingPortalActions {
     public static func visible(
         open: URL?,
         cancellation: URL?,
-        status: BookingStatus
+        status: BookingStatus,
+        deadlines: [CancellationDeadline],
+        now: Date,
+        hasSessionWebView: Bool
     ) -> Visible {
-        Visible(
+        let shown: URL?
+        switch BookingPortalCancellation.presentation(
+            cancellation: cancellation,
             open: open,
-            cancel: BookingPortalCancellation.isActionable(
-                cancellation: cancellation,
-                open: open,
-                status: status
-            ) ? cancellation : nil
-        )
+            status: status,
+            deadlines: deadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView
+        ) {
+        case .sheet, .safari:
+            shown = cancellation
+        case .hidden:
+            shown = nil
+        }
+        return Visible(open: open, cancel: shown)
     }
 }

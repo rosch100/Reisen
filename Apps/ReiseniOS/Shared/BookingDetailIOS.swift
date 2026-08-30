@@ -13,6 +13,8 @@ struct BookingDetailIOS: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.openURL) private var openURL
     @Query private var bookings: [SDBooking]
     @Query private var trips: [SDTrip]
 
@@ -30,6 +32,7 @@ struct BookingDetailIOS: View {
 
     @State private var pendingRemoveFromTripBookingID: UUID?
     @State private var showRemoveFromTripConfirmation = false
+    @State private var cancelRequest: BookingPortalCancelRequest?
 
     private var booking: SDBooking? {
         bookings.first(where: { $0.id == bookingID })
@@ -181,7 +184,10 @@ struct BookingDetailIOS: View {
             if BookingPortalActionBar.isVisible(
                 open: booking.browserURL,
                 cancellation: booking.cancellationBrowserURL,
-                status: booking.status
+                status: booking.status,
+                deadlines: booking.domainCancellationDeadlines,
+                now: Date(),
+                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true
             ) {
                 BookingPortalActionBar(
                     openURL: booking.browserURL,
@@ -190,7 +196,18 @@ struct BookingDetailIOS: View {
                     openTitle: BookingPortalOpenTitle.short,
                     openHelp: BookingPortalOpenTitle.openInBrowserHelp,
                     openButtonStyle: .prominent,
-                    showsCopyMenu: true
+                    showsCopyMenu: true,
+                    deadlines: booking.domainCancellationDeadlines,
+                    hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                    onPresentCancel: { presentation, url in
+                        BookingPortalCancelRequest.handle(
+                            presentation,
+                            url: url,
+                            providerID: booking.provider,
+                            openURL: { openURL($0) },
+                            presentSheet: { cancelRequest = $0 }
+                        )
+                    }
                 )
             } else {
                 Text(L10n.string(.bookingDetailNoBrowserLink))
@@ -327,6 +344,7 @@ struct BookingDetailIOS: View {
             onCancelDelete: { pendingDeleteBookingID = nil },
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
         )
+        .bookingPortalCancelSheet($cancelRequest)
         .createTripFromBookingsPresentation(
             seed: $tripCreateSeed,
             showFailed: $showCreateTripFromBookingsFailed,

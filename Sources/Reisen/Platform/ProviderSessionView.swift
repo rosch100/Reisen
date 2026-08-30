@@ -15,6 +15,7 @@ struct ProviderSessionView: View {
     let autofillCredentials: ProviderCredentials?
     let onCapturedCredentials: ((ProviderCredentials) -> Void)?
     let onNavigationBlocked: (() -> Void)?
+    let allowsEmbed: Bool
 
     init(
         loginURL: URL?,
@@ -23,7 +24,8 @@ struct ProviderSessionView: View {
         webView: Binding<WKWebView?>,
         autofillCredentials: ProviderCredentials? = nil,
         onCapturedCredentials: ((ProviderCredentials) -> Void)? = nil,
-        onNavigationBlocked: (() -> Void)? = nil
+        onNavigationBlocked: (() -> Void)? = nil,
+        allowsEmbed: Bool
     ) {
         self.loginURL = loginURL
         self._sessionStatus = sessionStatus
@@ -32,6 +34,7 @@ struct ProviderSessionView: View {
         self.autofillCredentials = autofillCredentials
         self.onCapturedCredentials = onCapturedCredentials
         self.onNavigationBlocked = onNavigationBlocked
+        self.allowsEmbed = allowsEmbed
     }
 
     var body: some View {
@@ -42,7 +45,8 @@ struct ProviderSessionView: View {
             webViewRef: $webView,
             autofillCredentials: autofillCredentials,
             onCapturedCredentials: onCapturedCredentials,
-            onNavigationBlocked: onNavigationBlocked
+            onNavigationBlocked: onNavigationBlocked,
+            allowsEmbed: allowsEmbed
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -160,6 +164,7 @@ private struct ProviderWebView: NSViewRepresentable {
     let autofillCredentials: ProviderCredentials?
     let onCapturedCredentials: ((ProviderCredentials) -> Void)?
     let onNavigationBlocked: (() -> Void)?
+    let allowsEmbed: Bool
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
@@ -173,6 +178,7 @@ private struct ProviderWebView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> WebViewHostView {
         let host = WebViewHostView(frame: .zero)
+        guard allowsEmbed else { return host }
         let webView = resolveWebView(context: context)
         host.embed(webView)
         context.coordinator.observeWindowActivation(for: webView)
@@ -201,6 +207,8 @@ private struct ProviderWebView: NSViewRepresentable {
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked
         )
+
+        guard allowsEmbed else { return }
 
         let webView = resolveWebView(context: context)
         // Auch neu einbinden, wenn die Property noch gesetzt ist, der WebView aber

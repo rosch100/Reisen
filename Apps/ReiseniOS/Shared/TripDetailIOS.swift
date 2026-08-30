@@ -13,6 +13,8 @@ struct TripDetailIOS: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.providerNativeAppPresence) private var nativeAppPresence
+    @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.openURL) private var openURL
     @Query private var trips: [SDTrip]
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
 
@@ -23,6 +25,7 @@ struct TripDetailIOS: View {
     @State private var pendingDeleteBooking: SDBooking?
     @State private var showBookingDeleteConfirm = false
     @State private var presentedBookingID: PresentedBookingID?
+    @State private var cancelRequest: BookingPortalCancelRequest?
 
     init(tripID: UUID, focusBookingID: Binding<UUID?> = .constant(nil)) {
         self.tripID = tripID
@@ -99,7 +102,18 @@ struct TripDetailIOS: View {
                             BookingPortalCancelMenuItems(
                                 cancellationURL: booking.cancellationBrowserURL,
                                 openURL: booking.browserURL,
-                                status: booking.status
+                                status: booking.status,
+                                deadlines: booking.domainCancellationDeadlines,
+                                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                                onPresentCancel: { presentation, url in
+                                    BookingPortalCancelRequest.handle(
+                                        presentation,
+                                        url: url,
+                                        providerID: booking.provider,
+                                        openURL: { openURL($0) },
+                                        presentSheet: { cancelRequest = $0 }
+                                    )
+                                }
                             )
                             Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
                                 pendingDeleteBooking = booking
@@ -158,6 +172,7 @@ struct TripDetailIOS: View {
                     onCancel: { pendingDeleteBooking = nil }
                 )
                 .persistFailureAlert(message: $persistErrorMessage)
+                .bookingPortalCancelSheet($cancelRequest)
             } else {
                 ContentUnavailableView(L10n.string(.tripTripMissing), systemImage: "magnifyingglass")
             }

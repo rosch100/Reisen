@@ -30,8 +30,7 @@ final class SpyStringPasteboard: StringPasteboard {
 
 @MainActor
 @Test func bookingScheduleFields_confirmationIsIdentifierCopyKind() throws {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    try L10n.withLocale(Locale(identifier: "de")) {
 
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
@@ -61,12 +60,12 @@ final class SpyStringPasteboard: StringPasteboard {
         $0.label == BookingType.hotel.locationToLabel
     })
     #expect(location.copyKind == .standard)
+    }
 }
 
 @MainActor
 @Test func bookingRateFields_priceIsStandardCopyKind() throws {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    try L10n.withLocale(Locale(identifier: "de")) {
 
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
@@ -91,4 +90,5 @@ final class SpyStringPasteboard: StringPasteboard {
     let fields = BookingRateFields.make(rate: rate, booking: booking)
     let price = try #require(fields.first { $0.label == BookingDetailLabels.price })
     #expect(price.copyKind == .standard)
+    }
 }

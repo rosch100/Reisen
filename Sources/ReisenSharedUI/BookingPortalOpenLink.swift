@@ -98,6 +98,10 @@ public struct BookingPortalActionBar: View {
     var openHelp: String?
     var openButtonStyle: BookingPortalOpenButtonStyle
     var showsCopyMenu: Bool
+    var deadlines: [CancellationDeadline]
+    var now: Date
+    var hasSessionWebView: Bool
+    var onPresentCancel: (BookingPortalCancelPresentation, URL) -> Void
 
     public enum BookingPortalOpenButtonStyle {
         case bordered
@@ -111,7 +115,11 @@ public struct BookingPortalActionBar: View {
         openTitle: String,
         openHelp: String? = nil,
         openButtonStyle: BookingPortalOpenButtonStyle,
-        showsCopyMenu: Bool = false
+        showsCopyMenu: Bool = false,
+        deadlines: [CancellationDeadline],
+        now: Date = Date(),
+        hasSessionWebView: Bool,
+        onPresentCancel: @escaping (BookingPortalCancelPresentation, URL) -> Void
     ) {
         self.openURL = openURL
         self.cancellationURL = cancellationURL
@@ -120,13 +128,27 @@ public struct BookingPortalActionBar: View {
         self.openHelp = openHelp
         self.openButtonStyle = openButtonStyle
         self.showsCopyMenu = showsCopyMenu
+        self.deadlines = deadlines
+        self.now = now
+        self.hasSessionWebView = hasSessionWebView
+        self.onPresentCancel = onPresentCancel
     }
 
-    public static func isVisible(open: URL?, cancellation: URL?, status: BookingStatus) -> Bool {
+    public static func isVisible(
+        open: URL?,
+        cancellation: URL?,
+        status: BookingStatus,
+        deadlines: [CancellationDeadline],
+        now: Date,
+        hasSessionWebView: Bool
+    ) -> Bool {
         let shown = BookingPortalActions.visible(
             open: open,
             cancellation: cancellation,
-            status: status
+            status: status,
+            deadlines: deadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView
         )
         return shown.open != nil || shown.cancel != nil
     }
@@ -135,7 +157,10 @@ public struct BookingPortalActionBar: View {
         let shown = BookingPortalActions.visible(
             open: openURL,
             cancellation: cancellationURL,
-            status: status
+            status: status,
+            deadlines: deadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView
         )
         let bar = HStack(spacing: 8) {
             if let open = shown.open {
@@ -146,8 +171,18 @@ public struct BookingPortalActionBar: View {
                 .help(openHelp ?? openTitle)
             }
             if let cancel = shown.cancel {
-                Link(destination: cancel) {
-                    Label(BookingPortalCancelTitle.button, systemImage: BookingPortalOpenChrome.systemImage)
+                Button(role: BookingPortalCancelChrome.usesDestructiveRole ? .destructive : nil) {
+                    let presentation = BookingPortalCancellation.presentation(
+                        cancellation: cancel,
+                        open: openURL,
+                        status: status,
+                        deadlines: deadlines,
+                        now: now,
+                        hasSessionWebView: hasSessionWebView
+                    )
+                    onPresentCancel(presentation, cancel)
+                } label: {
+                    Label(BookingPortalCancelTitle.button, systemImage: BookingPortalCancelChrome.systemImage)
                 }
                 .buttonStyle(.bordered)
                 .help(BookingPortalCancelTitle.help)
@@ -187,39 +222,72 @@ private struct BookingPortalOpenStyle: ViewModifier {
 /// Kontextmenü: Storno-Seite im Portal öffnen.
 public struct BookingPortalCancelMenuButton: View {
     let url: URL
-    @Environment(\.openURL) private var openURL
+    let presentation: BookingPortalCancelPresentation
+    var onPresentCancel: (BookingPortalCancelPresentation, URL) -> Void
 
-    public init(url: URL) { self.url = url }
+    public init(
+        url: URL,
+        presentation: BookingPortalCancelPresentation,
+        onPresentCancel: @escaping (BookingPortalCancelPresentation, URL) -> Void
+    ) {
+        self.url = url
+        self.presentation = presentation
+        self.onPresentCancel = onPresentCancel
+    }
 
     public var body: some View {
-        Button {
-            openURL(url)
+        Button(role: BookingPortalCancelChrome.usesDestructiveRole ? .destructive : nil) {
+            onPresentCancel(presentation, url)
         } label: {
-            Label(BookingPortalCancelTitle.menu, systemImage: BookingPortalOpenChrome.systemImage)
+            Label(BookingPortalCancelTitle.menu, systemImage: BookingPortalCancelChrome.systemImage)
         }
         .help(BookingPortalCancelTitle.help)
     }
 }
 
-/// Kontextmenü-Storno, nur wenn `isActionable`.
+/// Kontextmenü-Storno, nur wenn Presentation nicht hidden.
 public struct BookingPortalCancelMenuItems: View {
     let cancellationURL: URL?
     let openURL: URL?
     var status: BookingStatus
+    var deadlines: [CancellationDeadline]
+    var now: Date
+    var hasSessionWebView: Bool
+    var onPresentCancel: (BookingPortalCancelPresentation, URL) -> Void
 
-    public init(cancellationURL: URL?, openURL: URL?, status: BookingStatus) {
+    public init(
+        cancellationURL: URL?,
+        openURL: URL?,
+        status: BookingStatus,
+        deadlines: [CancellationDeadline],
+        now: Date = Date(),
+        hasSessionWebView: Bool,
+        onPresentCancel: @escaping (BookingPortalCancelPresentation, URL) -> Void
+    ) {
         self.cancellationURL = cancellationURL
         self.openURL = openURL
         self.status = status
+        self.deadlines = deadlines
+        self.now = now
+        self.hasSessionWebView = hasSessionWebView
+        self.onPresentCancel = onPresentCancel
     }
 
     public var body: some View {
-        if BookingPortalCancellation.isActionable(
+        let presentation = BookingPortalCancellation.presentation(
             cancellation: cancellationURL,
             open: openURL,
-            status: status
-        ), let cancelURL = cancellationURL {
-            BookingPortalCancelMenuButton(url: cancelURL)
+            status: status,
+            deadlines: deadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView
+        )
+        if presentation != .hidden, let cancelURL = cancellationURL {
+            BookingPortalCancelMenuButton(
+                url: cancelURL,
+                presentation: presentation,
+                onPresentCancel: onPresentCancel
+            )
         }
     }
 }

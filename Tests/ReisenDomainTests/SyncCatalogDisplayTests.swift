@@ -78,8 +78,7 @@ private let sampleEnd = Date(timeIntervalSince1970: 1_700_086_400)
 }
 
 @Test func syncProviderBookingsResult_persistedSyncStatusLine() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     let stats = SyncProviderBookingsResult(bookingsPersisted: 3, deadlinesPersisted: 2)
 
@@ -87,6 +86,7 @@ private let sampleEnd = Date(timeIntervalSince1970: 1_700_086_400)
         == L10n.format(.syncResultCompleted, 3, 2))
     #expect(stats.persistedSyncStatusLine(missingDeadlinesHint: true)
         == L10n.format(.syncResultCompletedMissingDeadlines, 3))
+    }
 }
 
 @Test func booking_displayTitle_andLookup() {

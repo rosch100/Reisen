@@ -31,8 +31,17 @@ public final class ProviderSessionHub {
     private(set) public var slots: [ProviderID: Slot] = [:]
     /// Einmalige Cookie-/Session-Probe beim App-Start abgeschlossen.
     private(set) public var didCompleteStartupProbe = false
+    public private(set) var webViewDisplayOwner: ProviderWebViewDisplayOwner = .syncHost
 
     public init() {}
+
+    public func setWebViewDisplayOwner(_ owner: ProviderWebViewDisplayOwner) {
+        webViewDisplayOwner = owner
+    }
+
+    public func allowsEmbed(on host: ProviderWebViewHostRole) -> Bool {
+        ProviderWebViewDisplayPolicy.allowsEmbed(owner: webViewDisplayOwner, host: host)
+    }
 
     public func markStartupProbeCompleted() {
         didCompleteStartupProbe = true
@@ -72,6 +81,10 @@ public final class ProviderSessionHub {
 
     public func webView(for providerID: ProviderID) -> WKWebView? {
         slots[providerID]?.webView
+    }
+
+    public func hasSessionWebView(for providerID: ProviderID) -> Bool {
+        webView(for: providerID) != nil
     }
 
     public func status(for providerID: ProviderID) -> ProviderSessionStatus? {

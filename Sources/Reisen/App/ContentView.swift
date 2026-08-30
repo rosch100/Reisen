@@ -24,6 +24,7 @@ struct ContentView: View {
     @Environment(\.syncStore) private var store
     @Environment(\.providerSessionHub) private var sessionHub
     @Environment(\.providerRegistry) private var providerRegistry
+    @Environment(\.openURL) private var openURL
 
     @State private var providerEnableEpoch = 0
     @State private var showCreateTrip = false
@@ -31,6 +32,7 @@ struct ContentView: View {
     @State private var tripPendingDelete: SDTrip?
     @State private var showTripDeleteConfirmation = false
     @State private var persistErrorMessage: String?
+    @State private var cancelRequest: BookingPortalCancelRequest?
 
     /// Selektion der mittleren Buchungsliste → rechte Detailspalte.
     @State private var selectedTimelineID: String? = nil
@@ -112,6 +114,22 @@ struct ContentView: View {
             guard case .trip(let id) = selection,
                   let trip = trips.first(where: { $0.id == id }) else { return }
             tripToEdit = trip
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .reisenPresentBookingCancel)) { _ in
+            guard let booking = selectedPortalBooking,
+                  let url = booking.cancellationBrowserURL else { return }
+            presentPortalCancel(
+                BookingPortalCancellation.presentation(
+                    cancellation: url,
+                    open: booking.browserURL,
+                    status: booking.status,
+                    deadlines: booking.domainCancellationDeadlines,
+                    now: Date(),
+                    hasSessionWebView: hasSessionWebView(for: booking)
+                ),
+                url: url,
+                providerID: booking.provider
+            )
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenPasteBooking)) { _ in
             pasteImport.start(
@@ -213,6 +231,7 @@ struct ContentView: View {
                 }
             )
         }
+        .bookingPortalCancelSheet($cancelRequest)
         .tripDeleteConfirmDialog(
             isPresented: $showTripDeleteConfirmation,
             tripTitle: tripPendingDelete?.title ?? "",
@@ -283,7 +302,27 @@ struct ContentView: View {
         return BookingPortalOpenCommandState(
             url: booking.browserURL,
             cancellationURL: booking.cancellationBrowserURL,
-            status: booking.status
+            status: booking.status,
+            deadlines: booking.domainCancellationDeadlines,
+            hasSessionWebView: hasSessionWebView(for: booking)
+        )
+    }
+
+    private func hasSessionWebView(for booking: SDBooking) -> Bool {
+        sessionHub?.hasSessionWebView(for: booking.provider) == true
+    }
+
+    private func presentPortalCancel(
+        _ presentation: BookingPortalCancelPresentation,
+        url: URL,
+        providerID: ProviderID
+    ) {
+        BookingPortalCancelRequest.handle(
+            presentation,
+            url: url,
+            providerID: providerID,
+            openURL: { openURL($0) },
+            presentSheet: { cancelRequest = $0 }
         )
     }
 
@@ -617,7 +656,16 @@ struct ContentView: View {
                                         BookingPortalCancelMenuItems(
                                             cancellationURL: booking.cancellationBrowserURL,
                                             openURL: booking.browserURL,
-                                            status: booking.status
+                                            status: booking.status,
+                                            deadlines: booking.domainCancellationDeadlines,
+                                            hasSessionWebView: hasSessionWebView(for: booking),
+                                            onPresentCancel: { presentation, url in
+                                                presentPortalCancel(
+                                                    presentation,
+                                                    url: url,
+                                                    providerID: booking.provider
+                                                )
+                                            }
                                         )
                                         Button(role: .destructive) {
                                             applyAfterTripFocus(trip: trip) {
@@ -810,7 +858,16 @@ struct ContentView: View {
                         BookingPortalCancelMenuItems(
                             cancellationURL: booking.cancellationBrowserURL,
                             openURL: booking.browserURL,
-                            status: booking.status
+                            status: booking.status,
+                            deadlines: booking.domainCancellationDeadlines,
+                            hasSessionWebView: hasSessionWebView(for: booking),
+                            onPresentCancel: { presentation, url in
+                                presentPortalCancel(
+                                    presentation,
+                                    url: url,
+                                    providerID: booking.provider
+                                )
+                            }
                         )
                         if let trip = matchingTrip(for: booking) {
                             Button(L10n.string(.actionAssignToTrip)) {
@@ -1017,6 +1074,9 @@ struct ContentView: View {
         var onCreateTrip: () -> Void
 
         @Environment(\.modelContext) private var modelContext
+        @Environment(\.providerSessionHub) private var sessionHub
+        @Environment(\.openURL) private var openURL
+        @State private var cancelRequest: BookingPortalCancelRequest?
         @State private var assignErrorMessage: String?
         @State private var showAssignError = false
         @State private var persistErrorMessage: String?
@@ -1066,6 +1126,7 @@ struct ContentView: View {
                 }
             }
             .persistFailureAlert(message: $persistErrorMessage)
+            .bookingPortalCancelSheet($cancelRequest)
             .bookingDeleteConfirmAlert(
                 isPresented: $showDeleteConfirmation,
                 bookingTitle: booking.presentationTitle,
@@ -1096,6 +1157,16 @@ struct ContentView: View {
                                 onRequestDeleteBooking: { bookingID in
                                     pendingDeleteBookingID = bookingID
                                     showDeleteConfirmation = true
+                                },
+                                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                                onPresentCancel: { presentation, url in
+                                    BookingPortalCancelRequest.handle(
+                                        presentation,
+                                        url: url,
+                                        providerID: booking.provider,
+                                        openURL: { openURL($0) },
+                                        presentSheet: { cancelRequest = $0 }
+                                    )
                                 }
                             )
 

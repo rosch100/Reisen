@@ -15,6 +15,7 @@ extension Notification.Name {
     static let reisenSyncCurrentProvider = Notification.Name("reisenSyncCurrentProvider")
     static let reisenRequestRemoveBookingFromTrip = Notification.Name("reisenRequestRemoveBookingFromTrip")
     static let reisenRequestDeleteBooking = Notification.Name("reisenRequestDeleteBooking")
+    static let reisenPresentBookingCancel = Notification.Name("reisenPresentBookingCancel")
 }
 
 enum SidebarSelection: Hashable, Identifiable {

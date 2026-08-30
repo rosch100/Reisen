@@ -8,8 +8,7 @@ private let germanLocale = Locale(identifier: "de")
 
 @MainActor
 @Test func bookingScheduleFields_includesConfirmationIndependentOfTripAssignment() throws {
-    L10n.locale = germanLocale
-    defer { L10n.locale = .current }
+    try L10n.withLocale(germanLocale) {
 
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
@@ -54,6 +53,7 @@ private let germanLocale = Locale(identifier: "de")
                 && $0.copyKind == .identifier
         })
     )
+    }
 }
 
 @Test func bookingScheduleRangeText_includesTimeForFlightLikeTypes() {
@@ -181,8 +181,7 @@ private let germanLocale = Locale(identifier: "de")
 
 @MainActor
 @Test func bookingScheduleFields_train_usesStationAndDepartureLabels() throws {
-    L10n.locale = germanLocale
-    defer { L10n.locale = .current }
+    try L10n.withLocale(germanLocale) {
 
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
@@ -212,6 +211,7 @@ private let germanLocale = Locale(identifier: "de")
     #expect(labels.contains(L10n.string(.bookingFieldScheduleEndTrain)))
     #expect(labels.contains(L10n.string(.bookingFieldOperatorTrain)))
     #expect(!labels.contains(L10n.string(.bookingFieldScheduleStartHotel)))
+    }
 }
 
 @MainActor
@@ -266,8 +266,7 @@ private let germanLocale = Locale(identifier: "de")
 
 @MainActor
 @Test func bookingRateFields_identicalWhetherOpenOrAssigned() throws {
-    L10n.locale = germanLocale
-    defer { L10n.locale = .current }
+    try L10n.withLocale(germanLocale) {
 
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
@@ -313,4 +312,5 @@ private let germanLocale = Locale(identifier: "de")
         BookingRateFields.make(rate: openRate, booking: openBooking)
             == BookingRateFields.make(rate: assignedRate, booking: assignedBooking)
     )
+    }
 }

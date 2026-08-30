@@ -62,8 +62,7 @@ func displayFilterHidesExpiredAndFullPricePaid() {
 
 @Test("Summary: Fix-Zeile wird gesetzt, wenn es keine zukünftige Free-Cancellation gibt (paid partial trotzdem)")
 func summaryAddsFixWithoutFutureFree() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     let service = CancellationDeadlineDisplayService()
     let tz = TimeZone(secondsFromGMT: 0)!
@@ -104,6 +103,7 @@ func summaryAddsFixWithoutFutureFree() {
 
     #expect(lines.contains(where: { $0.kind == .paid && $0.id == paidPartial.id }))
     #expect(!lines.contains(where: { $0.kind == .paid && $0.id == paidFull.id }))
+    }
 }
 
 @Test("Urgenz: Schwellenwerte critical/warning/ok")
@@ -158,8 +158,7 @@ func urgencyThresholds() throws {
 
 @Test("Summary-Textformat: Free-Cancellation nutzt geplantes Datumsformat")
 func summaryTextFormatsDateTime() throws {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    try L10n.withLocale(Locale(identifier: "de")) {
 
     let service = CancellationDeadlineDisplayService()
     let tz = TimeZone(secondsFromGMT: 0)!
@@ -198,5 +197,6 @@ func summaryTextFormatsDateTime() throws {
     let line = try #require(lines.first(where: { $0.kind == .free }))
     let expectedDate = deDateTimeString(deadlineAt, timeZone: tz)
     #expect(line.text == L10n.cancellationFreeUntilText(deadlineAt: expectedDate))
+    }
 }
 

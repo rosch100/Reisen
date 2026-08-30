@@ -9,10 +9,7 @@ private let catalogLanguages = ["de", "en"]
 @Suite(.serialized)
 struct BookingTripDeleteCopyTests {
     private func withCatalogLanguage(_ language: String, _ body: () -> Void) {
-        let previous = L10n.locale
-        L10n.locale = Locale(identifier: language)
-        defer { L10n.locale = previous }
-        body()
+        L10n.withLocale(Locale(identifier: language), body)
     }
 
     @Test(arguments: catalogLanguages, [false, true])

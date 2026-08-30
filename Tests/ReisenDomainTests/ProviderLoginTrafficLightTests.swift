@@ -21,10 +21,10 @@ import ReisenDomain
 }
 
 @Test func trafficLight_displayLabels_areStable() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     #expect(ProviderLoginTrafficLight.green.displayLabel == L10n.string(.loginStatusGreen))
     #expect(ProviderLoginTrafficLight.red.displayLabel == L10n.string(.loginStatusRed))
     #expect(ProviderLoginTrafficLight.gray.displayLabel == L10n.string(.loginStatusGray))
+    }
 }

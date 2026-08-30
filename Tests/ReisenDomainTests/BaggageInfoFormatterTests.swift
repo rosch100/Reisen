@@ -3,8 +3,7 @@ import Foundation
 import ReisenDomain
 
 @Test func baggageInfoFormatterAggregatesWhenAllPassengersIdentical() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
+    L10n.withLocale(Locale(identifier: "de")) {
 
     let passengers = [
         BookingPassenger(
@@ -47,6 +46,7 @@ import ReisenDomain
     #expect(baggage.contains("10KG") == true)
     #expect(baggage.contains("5KG") == true)
     #expect(baggage.contains("Pax") == false)
+    }
 }
 
 @Test func baggageInfoFormatterKeepsPaxLinesWhenPassengersDiffer() {

@@ -170,7 +170,8 @@ struct SyncView: View {
                         },
                         onNavigationBlocked: {
                             navigationWasBlocked = true
-                        }
+                        },
+                        allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false
                     )
                     .frame(
                         maxWidth: .infinity,

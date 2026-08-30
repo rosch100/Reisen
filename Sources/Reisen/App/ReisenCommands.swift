@@ -106,9 +106,7 @@ struct ReisenCommands: Commands {
             )
 
             Button(BookingPortalCancelTitle.menu) {
-                if let url = bookingPortalOpenCommandState?.cancellationURL {
-                    openURL(url)
-                }
+                NotificationCenter.default.post(name: .reisenPresentBookingCancel, object: nil)
             }
             .disabled(bookingPortalOpenCommandState?.canCancel != true)
             .help(
