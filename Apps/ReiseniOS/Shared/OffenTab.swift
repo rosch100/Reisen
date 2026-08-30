@@ -288,7 +288,9 @@ struct OpenBookingsScreen: View {
                         BookingPortalCancelMenuItems(
                             cancellationURL: booking.cancellationBrowserURL,
                             openURL: booking.browserURL,
-                            status: booking.status
+                            status: booking.status,
+                            deadlines: booking.domainCancellationDeadlines,
+                            hasSessionWebView: false
                         )
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {

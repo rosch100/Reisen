@@ -98,6 +98,9 @@ public struct BookingPortalActionBar: View {
     var openHelp: String?
     var openButtonStyle: BookingPortalOpenButtonStyle
     var showsCopyMenu: Bool
+    var deadlines: [CancellationDeadline]
+    var now: Date
+    var hasSessionWebView: Bool
 
     public enum BookingPortalOpenButtonStyle {
         case bordered
@@ -111,7 +114,10 @@ public struct BookingPortalActionBar: View {
         openTitle: String,
         openHelp: String? = nil,
         openButtonStyle: BookingPortalOpenButtonStyle,
-        showsCopyMenu: Bool = false
+        showsCopyMenu: Bool = false,
+        deadlines: [CancellationDeadline],
+        now: Date = Date(),
+        hasSessionWebView: Bool
     ) {
         self.openURL = openURL
         self.cancellationURL = cancellationURL
@@ -120,13 +126,26 @@ public struct BookingPortalActionBar: View {
         self.openHelp = openHelp
         self.openButtonStyle = openButtonStyle
         self.showsCopyMenu = showsCopyMenu
+        self.deadlines = deadlines
+        self.now = now
+        self.hasSessionWebView = hasSessionWebView
     }
 
-    public static func isVisible(open: URL?, cancellation: URL?, status: BookingStatus) -> Bool {
+    public static func isVisible(
+        open: URL?,
+        cancellation: URL?,
+        status: BookingStatus,
+        deadlines: [CancellationDeadline],
+        now: Date,
+        hasSessionWebView: Bool
+    ) -> Bool {
         let shown = BookingPortalActions.visible(
             open: open,
             cancellation: cancellation,
-            status: status
+            status: status,
+            deadlines: deadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView
         )
         return shown.open != nil || shown.cancel != nil
     }
@@ -135,7 +154,10 @@ public struct BookingPortalActionBar: View {
         let shown = BookingPortalActions.visible(
             open: openURL,
             cancellation: cancellationURL,
-            status: status
+            status: status,
+            deadlines: deadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView
         )
         let bar = HStack(spacing: 8) {
             if let open = shown.open {
@@ -206,19 +228,35 @@ public struct BookingPortalCancelMenuItems: View {
     let cancellationURL: URL?
     let openURL: URL?
     var status: BookingStatus
+    var deadlines: [CancellationDeadline]
+    var now: Date
+    var hasSessionWebView: Bool
 
-    public init(cancellationURL: URL?, openURL: URL?, status: BookingStatus) {
+    public init(
+        cancellationURL: URL?,
+        openURL: URL?,
+        status: BookingStatus,
+        deadlines: [CancellationDeadline],
+        now: Date = Date(),
+        hasSessionWebView: Bool
+    ) {
         self.cancellationURL = cancellationURL
         self.openURL = openURL
         self.status = status
+        self.deadlines = deadlines
+        self.now = now
+        self.hasSessionWebView = hasSessionWebView
     }
 
     public var body: some View {
-        if BookingPortalCancellation.isActionable(
+        if BookingPortalCancellation.presentation(
             cancellation: cancellationURL,
             open: openURL,
-            status: status
-        ), let cancelURL = cancellationURL {
+            status: status,
+            deadlines: deadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView
+        ) != .hidden, let cancelURL = cancellationURL {
             BookingPortalCancelMenuButton(url: cancelURL)
         }
     }

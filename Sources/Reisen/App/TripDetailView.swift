@@ -373,7 +373,9 @@ struct TripDetailView: View {
                                 BookingPortalCancelMenuItems(
                                     cancellationURL: booking.cancellationBrowserURL,
                                     openURL: booking.browserURL,
-                                    status: booking.status
+                                    status: booking.status,
+                                    deadlines: booking.domainCancellationDeadlines,
+                                    hasSessionWebView: false
                                 )
                                 Button(role: .destructive) {
                                     requestRemoveBookingFromTrip(booking)
@@ -678,7 +680,8 @@ private struct BookingDetailPanel: View {
                                 overlapCount: overlapCountsByBookingID[booking.id] ?? 0,
                                 onEditBooking: { bookingEditorSession = .edit(bookingID: booking.id) },
                                 onRequestDeleteBooking: onRequestDeleteBooking,
-                                onRequestRemoveFromTrip: onRequestRemoveFromTrip
+                                onRequestRemoveFromTrip: onRequestRemoveFromTrip,
+                                hasSessionWebView: false
                             )
                         case .gap(let gap):
                             let presentation = gapPresentation(gap)

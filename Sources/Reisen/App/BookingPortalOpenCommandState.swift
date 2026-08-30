@@ -6,14 +6,19 @@ struct BookingPortalOpenCommandState {
     var url: URL?
     var cancellationURL: URL?
     var status: BookingStatus = .unknown
+    var deadlines: [CancellationDeadline] = []
+    var hasSessionWebView: Bool = false
 
     var canOpen: Bool { url != nil }
     var canCancel: Bool {
-        BookingPortalCancellation.isActionable(
+        BookingPortalCancellation.presentation(
             cancellation: cancellationURL,
             open: url,
-            status: status
-        )
+            status: status,
+            deadlines: deadlines,
+            now: Date(),
+            hasSessionWebView: hasSessionWebView
+        ) != .hidden
     }
 }
 

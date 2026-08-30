@@ -99,7 +99,9 @@ struct TripDetailIOS: View {
                             BookingPortalCancelMenuItems(
                                 cancellationURL: booking.cancellationBrowserURL,
                                 openURL: booking.browserURL,
-                                status: booking.status
+                                status: booking.status,
+                                deadlines: booking.domainCancellationDeadlines,
+                                hasSessionWebView: false
                             )
                             Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
                                 pendingDeleteBooking = booking

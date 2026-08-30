@@ -282,7 +282,9 @@ struct ContentView: View {
         return BookingPortalOpenCommandState(
             url: booking.browserURL,
             cancellationURL: booking.cancellationBrowserURL,
-            status: booking.status
+            status: booking.status,
+            deadlines: booking.domainCancellationDeadlines,
+            hasSessionWebView: false
         )
     }
 
@@ -612,7 +614,9 @@ struct ContentView: View {
                                         BookingPortalCancelMenuItems(
                                             cancellationURL: booking.cancellationBrowserURL,
                                             openURL: booking.browserURL,
-                                            status: booking.status
+                                            status: booking.status,
+                                            deadlines: booking.domainCancellationDeadlines,
+                                            hasSessionWebView: false
                                         )
                                         Button(role: .destructive) {
                                             applyAfterTripFocus(trip: trip) {
@@ -794,7 +798,9 @@ struct ContentView: View {
                         BookingPortalCancelMenuItems(
                             cancellationURL: booking.cancellationBrowserURL,
                             openURL: booking.browserURL,
-                            status: booking.status
+                            status: booking.status,
+                            deadlines: booking.domainCancellationDeadlines,
+                            hasSessionWebView: false
                         )
                         if let trip = matchingTrip(for: booking) {
                             Button(L10n.string(.actionAssignToTrip)) {
@@ -1080,7 +1086,8 @@ struct ContentView: View {
                                 onRequestDeleteBooking: { bookingID in
                                     pendingDeleteBookingID = bookingID
                                     showDeleteConfirmation = true
-                                }
+                                },
+                                hasSessionWebView: false
                             )
 
                             openBookingAssignmentSection

@@ -181,7 +181,10 @@ struct BookingDetailIOS: View {
             if BookingPortalActionBar.isVisible(
                 open: booking.browserURL,
                 cancellation: booking.cancellationBrowserURL,
-                status: booking.status
+                status: booking.status,
+                deadlines: booking.domainCancellationDeadlines,
+                now: Date(),
+                hasSessionWebView: false
             ) {
                 BookingPortalActionBar(
                     openURL: booking.browserURL,
@@ -190,7 +193,9 @@ struct BookingDetailIOS: View {
                     openTitle: BookingPortalOpenTitle.short,
                     openHelp: BookingPortalOpenTitle.openInBrowserHelp,
                     openButtonStyle: .prominent,
-                    showsCopyMenu: true
+                    showsCopyMenu: true,
+                    deadlines: booking.domainCancellationDeadlines,
+                    hasSessionWebView: false
                 )
             } else {
                 Text(L10n.string(.bookingDetailNoBrowserLink))
