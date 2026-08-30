@@ -676,19 +676,9 @@ public struct BookingEditorForm: View {
                     }
                     TextField(L10n.string(.editorConfirmationCode), text: $draft.confirmationCode)
                     TextField(L10n.string(.editorUrlOptional), text: $draft.externalUrl)
-                        .textContentType(.URL)
-                        #if os(iOS)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        #endif
+                        .modifier(BookingEditorURLFieldChrome())
                     TextField(L10n.string(.editorCancellationUrlOptional), text: $draft.cancellationUrl)
-                        .textContentType(.URL)
-                        #if os(iOS)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        #endif
+                        .modifier(BookingEditorURLFieldChrome())
                     DatePicker(
                         draft.bookingType.scheduleStartLabel,
                         selection: $draft.startAt,
@@ -901,6 +891,18 @@ public struct BookingEditorForm: View {
 
     private func localizedBoardType(_ type: BookingBoardType) -> String {
         type.displayLabel
+    }
+}
+
+private struct BookingEditorURLFieldChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .textContentType(.URL)
+            #if os(iOS)
+            .keyboardType(.URL)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            #endif
     }
 }
 
