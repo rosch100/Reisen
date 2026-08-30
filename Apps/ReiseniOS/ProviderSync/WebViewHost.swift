@@ -38,6 +38,7 @@ struct WebViewHost: View {
     let loginURL: URL?
     let providerID: ProviderID
     @Binding var webView: WKWebView?
+    var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
     var onCapturedCredentials: ((ProviderCredentials) -> Void)?
     var onNavigationBlocked: (() -> Void)?
@@ -45,7 +46,9 @@ struct WebViewHost: View {
     var body: some View {
         ProviderSessionWebView(
             loginURL: loginURL,
+            providerID: providerID,
             webView: $webView,
+            allowsEmbed: allowsEmbed,
             onDidFinish: onDidFinish,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked
@@ -57,10 +60,13 @@ struct WebViewHost: View {
 
 struct ProviderSessionWebView: UIViewRepresentable {
     let loginURL: URL?
+    let providerID: ProviderID
     @Binding var webView: WKWebView?
+    var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
     var onCapturedCredentials: ((ProviderCredentials) -> Void)?
     var onNavigationBlocked: (() -> Void)?
+    @Environment(\.providerSessionHub) private var sessionHub
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
@@ -80,22 +86,45 @@ struct ProviderSessionWebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WebViewHostUIView {
         let host = WebViewHostUIView()
-        let view = makeWebView(context: context)
-        host.embed(view)
+        let view = resolveWebView(context: context)
+        if allowsEmbed {
+            host.embed(view)
+        }
         context.coordinator.loadedLoginURL = loginURL
         DispatchQueue.main.async {
             webView = view
         }
-        if let loginURL { view.load(URLRequest(url: loginURL)) }
+        if allowsEmbed, let loginURL { view.load(URLRequest(url: loginURL)) }
         return host
     }
 
     func updateUIView(_ uiView: WebViewHostUIView, context: Context) {
-        guard let loginURL else { return }
+        let view = resolveWebView(context: context)
+        if allowsEmbed {
+            if uiView.webView !== view || view.superview !== uiView {
+                uiView.embed(view)
+            }
+        }
+        if webView !== view {
+            DispatchQueue.main.async {
+                webView = view
+            }
+        }
+        guard allowsEmbed, let loginURL else { return }
         if context.coordinator.loadedLoginURL != loginURL {
             context.coordinator.loadedLoginURL = loginURL
-            uiView.webView?.load(URLRequest(url: loginURL))
+            view.load(URLRequest(url: loginURL))
         }
+    }
+
+    private func resolveWebView(context: Context) -> InteractiveWKWebView {
+        if let existing = webView as? InteractiveWKWebView {
+            return existing
+        }
+        if let hubView = sessionHub?.webView(for: providerID) as? InteractiveWKWebView {
+            return hubView
+        }
+        return makeWebView(context: context)
     }
 
     private func makeWebView(context: Context) -> InteractiveWKWebView {

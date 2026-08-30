@@ -12,6 +12,7 @@ struct BookingDetailContent: View {
     var onRequestDeleteBooking: ((UUID) -> Void)?
     var onRequestRemoveFromTrip: ((UUID) -> Void)?
     var hasSessionWebView: Bool
+    var onPresentCancel: (BookingPortalCancelPresentation, URL) -> Void
 
     private var priceText: String {
         let details = booking.rateDetails
@@ -121,7 +122,8 @@ struct BookingDetailContent: View {
                     openButtonStyle: .bordered,
                     showsCopyMenu: true,
                     deadlines: booking.domainCancellationDeadlines,
-                    hasSessionWebView: hasSessionWebView
+                    hasSessionWebView: hasSessionWebView,
+                    onPresentCancel: onPresentCancel
                 )
                 .font(.caption)
             } else {

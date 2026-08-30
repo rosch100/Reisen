@@ -34,7 +34,8 @@ struct ProviderSessionProbeHost: View {
                     sessionStatus: backgroundSessionStatusBinding(for: backgroundProviderID),
                     lastURLString: backgroundLastURLBinding(for: backgroundProviderID),
                     webView: backgroundWebViewBinding(for: backgroundProviderID),
-                    autofillCredentials: nil
+                    autofillCredentials: nil,
+                    allowsEmbed: hub?.allowsEmbed(on: .probe) ?? false
                 )
                 .frame(width: 1, height: 1)
             }

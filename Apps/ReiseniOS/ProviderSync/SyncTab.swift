@@ -150,7 +150,8 @@ struct SyncTab: View {
             WebViewHost(
                 loginURL: loginURLForSelectedProvider(),
                 providerID: selectedProviderID,
-                webView: $webView,
+                webView: webViewBinding,
+                allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false,
                 onDidFinish: { finishedWebView in
                     handleWebDidFinish(finishedWebView)
                 },
@@ -230,6 +231,16 @@ struct SyncTab: View {
 
     private func providerName(for id: ProviderID) -> String {
         providerRegistry?.provider(id: id)?.displayName ?? id.displayName
+    }
+
+    private var webViewBinding: Binding<WKWebView?> {
+        Binding(
+            get: { webView ?? sessionHub?.webView(for: selectedProviderID) },
+            set: { newValue in
+                webView = newValue
+                sessionHub?.updateWebView(selectedProviderID, webView: newValue)
+            }
+        )
     }
 
     private var sessionStatus: ProviderSessionStatus {

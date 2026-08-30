@@ -107,6 +107,9 @@ struct OpenBookingsScreen: View {
 
     @Environment(\.adaptiveUsesSplitNavigation) private var usesSplit
     @Environment(\.providerNativeAppPresence) private var nativeAppPresence
+    @Environment(\.providerSessionHub) private var sessionHub
+    @Environment(\.openURL) private var openURL
+    @State private var cancelRequest: BookingPortalCancelRequest?
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
 
@@ -232,6 +235,11 @@ struct OpenBookingsScreen: View {
         .modifier(CompactUUIDDestination(enabled: !usesSplit && !isSelectingForTripCreate) { bookingID in
             BookingDetailIOS(bookingID: bookingID, onTripCreated: onTripCreated)
         })
+        .sheet(item: $cancelRequest) { request in
+            BookingPortalCancelSheetHostIOS(request: request) {
+                cancelRequest = nil
+            }
+        }
     }
 
     @ViewBuilder
@@ -290,7 +298,16 @@ struct OpenBookingsScreen: View {
                             openURL: booking.browserURL,
                             status: booking.status,
                             deadlines: booking.domainCancellationDeadlines,
-                            hasSessionWebView: false
+                            hasSessionWebView: sessionHub?.webView(for: booking.provider) != nil,
+                            onPresentCancel: { presentation, url in
+                                BookingPortalCancelRequest.handle(
+                                    presentation,
+                                    url: url,
+                                    providerID: booking.provider,
+                                    openURL: { openURL($0) },
+                                    presentSheet: { cancelRequest = $0 }
+                                )
+                            }
                         )
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
