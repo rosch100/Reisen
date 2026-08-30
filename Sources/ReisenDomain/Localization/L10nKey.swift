@@ -142,6 +142,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     // MARK: - Copy / timeline extras
 
     case bookingCopyPriceLine = "booking.copy.price_line"
+    case bookingElapsed = "booking.elapsed"
     case bookingOverlap = "booking.overlap"
     case bookingOverlapWithCount = "booking.overlap.with_count"
 

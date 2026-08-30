@@ -465,16 +465,19 @@ struct ContentView: View {
                     .tag(SidebarSelection.openBookings)
                     .buttonStyle(.plain)
                     .contextMenu {
-                        Button {
-                            selection = .openBookings
-                            selectedOpenBookingIDs = Set(openBookings.map(\.id))
-                            OpenBookingCreateTripAction.assignSeedFromAll(
-                                in: allBookings,
-                                seed: $tripCreateSeed,
-                                showFailed: $showCreateTripFromBookingsFailed
-                            )
-                        } label: {
-                            CreateTripFromAllOpenBookingsLabel(count: openBookings.count)
+                        let fromAll = OpenBookingMatching.openUnassigned(in: allBookings)
+                        if !fromAll.isEmpty {
+                            Button {
+                                selection = .openBookings
+                                selectedOpenBookingIDs = Set(fromAll.map(\.id))
+                                OpenBookingCreateTripAction.assignSeedFromAll(
+                                    in: allBookings,
+                                    seed: $tripCreateSeed,
+                                    showFailed: $showCreateTripFromBookingsFailed
+                                )
+                            } label: {
+                                CreateTripFromAllOpenBookingsLabel(count: fromAll.count)
+                            }
                         }
                     }
                 }
@@ -635,7 +638,7 @@ struct ContentView: View {
     }
 
     private var openBookings: [SDBooking] {
-        OpenBookingMatching.openUnassigned(in: allBookings)
+        OpenBookingMatching.listedUnassigned(in: allBookings)
     }
 
     private var selectedOpenBookings: [SDBooking] {

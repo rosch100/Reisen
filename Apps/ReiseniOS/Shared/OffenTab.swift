@@ -111,7 +111,7 @@ struct OpenBookingsScreen: View {
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
 
     private var openBookings: [SDBooking] {
-        OpenBookingMatching.openUnassigned(in: allBookings)
+        OpenBookingMatching.listedUnassigned(in: allBookings)
     }
 
     private var filtered: [SDBooking] {
@@ -169,11 +169,12 @@ struct OpenBookingsScreen: View {
         )
         .navigationBarTitleDisplayMode(.inline)
         .toolbarTitleMenu {
-            if !isSelectingForTripCreate, !openBookings.isEmpty {
+            let fromAll = OpenBookingMatching.openUnassigned(in: allBookings)
+            if !isSelectingForTripCreate, !fromAll.isEmpty {
                 Button {
                     presentCreateTripFromAllOpen()
                 } label: {
-                    CreateTripFromAllOpenBookingsLabel(count: openBookings.count)
+                    CreateTripFromAllOpenBookingsLabel(count: fromAll.count)
                 }
             }
         }

@@ -39,6 +39,7 @@ struct BookingDetailContent: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
+                    BookingElapsedLabel(for: booking)
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 2) {

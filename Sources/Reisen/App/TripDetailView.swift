@@ -1197,6 +1197,7 @@ private struct BookingRow: View {
                             .font(.caption2)
                             .foregroundStyle(.orange)
                     }
+                    BookingElapsedLabel(for: booking)
                 }
 
                 Text(bookingSummaryDateRangeText())

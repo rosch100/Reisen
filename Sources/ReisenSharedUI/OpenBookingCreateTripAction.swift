@@ -8,10 +8,16 @@ public enum OpenBookingCreateTripAction {
         fromIDs bookingIDs: Set<UUID>,
         in bookings: [SDBooking],
         locale: Locale = .current,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        now: Date = Date()
     ) -> TripCreateSeed? {
-        seed(
-            from: bookings.filter { bookingIDs.contains($0.id) },
+        let selected = bookings.filter { bookingIDs.contains($0.id) }
+        return makeSeed(
+            from: OpenBookingMatching.listedUnassigned(
+                in: selected,
+                calendar: calendar,
+                now: now
+            ),
             locale: locale,
             calendar: calendar
         )
@@ -20,12 +26,15 @@ public enum OpenBookingCreateTripAction {
     public static func seed(
         from bookings: [SDBooking],
         locale: Locale = .current,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        now: Date = Date()
     ) -> TripCreateSeed? {
-        let openUnassigned = OpenBookingMatching.openUnassigned(in: bookings, calendar: calendar)
-        guard !openUnassigned.isEmpty else { return nil }
-        return makeSeed(
-            from: domainBookings(from: openUnassigned),
+        makeSeed(
+            from: OpenBookingMatching.openUnassigned(
+                in: bookings,
+                calendar: calendar,
+                now: now
+            ),
             locale: locale,
             calendar: calendar
         )
@@ -41,23 +50,20 @@ public enum OpenBookingCreateTripAction {
         )
     }
 
-    /// Sets `seed` from every open unassigned booking in `bookings`.
+    /// Sets `seed` from every upcoming unassigned booking (`openUnassigned`).
     @discardableResult
     public static func assignSeedFromAll(
         in bookings: [SDBooking],
         seed seedBinding: Binding<TripCreateSeed?>,
         showFailed: Binding<Bool>,
         locale: Locale = .current,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        now: Date = Date()
     ) -> Bool {
-        let openUnassigned = OpenBookingMatching.openUnassigned(in: bookings, calendar: calendar)
-        return assignSeed(
-            fromIDs: Set(openUnassigned.map(\.id)),
-            in: bookings,
-            seed: seedBinding,
-            showFailed: showFailed,
-            locale: locale,
-            calendar: calendar
+        assign(
+            seed(from: bookings, locale: locale, calendar: calendar, now: now),
+            to: seedBinding,
+            showFailed: showFailed
         )
     }
 
@@ -69,14 +75,28 @@ public enum OpenBookingCreateTripAction {
         seed seedBinding: Binding<TripCreateSeed?>,
         showFailed: Binding<Bool>,
         locale: Locale = .current,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        now: Date = Date()
     ) -> Bool {
-        guard let newSeed = seed(
-            fromIDs: bookingIDs,
-            in: bookings,
-            locale: locale,
-            calendar: calendar
-        ) else {
+        assign(
+            seed(
+                fromIDs: bookingIDs,
+                in: bookings,
+                locale: locale,
+                calendar: calendar,
+                now: now
+            ),
+            to: seedBinding,
+            showFailed: showFailed
+        )
+    }
+
+    private static func assign(
+        _ newSeed: TripCreateSeed?,
+        to seedBinding: Binding<TripCreateSeed?>,
+        showFailed: Binding<Bool>
+    ) -> Bool {
+        guard let newSeed else {
             showFailed.wrappedValue = true
             return false
         }
@@ -86,6 +106,14 @@ public enum OpenBookingCreateTripAction {
 
     private static func domainBookings(from bookings: [SDBooking]) -> [Booking] {
         bookings.map(DomainMapper.booking(from:))
+    }
+
+    private static func makeSeed(
+        from bookings: [SDBooking],
+        locale: Locale,
+        calendar: Calendar
+    ) -> TripCreateSeed? {
+        makeSeed(from: domainBookings(from: bookings), locale: locale, calendar: calendar)
     }
 
     private static func makeSeed(

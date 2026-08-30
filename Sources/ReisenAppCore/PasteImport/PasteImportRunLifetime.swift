@@ -19,7 +19,7 @@ public final class PasteImportRunLifetime {
         invalidate()
         let id = UUID()
         runID = id
-        task = Task { [weak self] in
+        task = Task.detached { [weak self] in
             let outcome: Result<Success, Error>
             do {
                 outcome = .success(try await work())
