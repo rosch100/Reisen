@@ -83,6 +83,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
     public var title: String
     public var confirmationCode: String
     public var externalUrl: String
+    public var cancellationUrl: String
     public var startAt: Date
     public var endAt: Date
     public var locationFrom: String
@@ -127,6 +128,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             title: "",
             confirmationCode: "",
             externalUrl: "",
+            cancellationUrl: "",
             startAt: start,
             endAt: end,
             locationFrom: "",
@@ -170,6 +172,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             title: booking.title ?? "",
             confirmationCode: booking.confirmationCode ?? "",
             externalUrl: booking.externalUrl ?? "",
+            cancellationUrl: booking.cancellationUrl ?? "",
             startAt: booking.startAt,
             endAt: booking.endAt,
             locationFrom: booking.locationFrom ?? "",
@@ -257,6 +260,9 @@ public struct BookingEditorDraft: Equatable, Sendable {
         if !externalUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             guard URL(string: externalUrl) != nil else { throw ValidationError.invalidUrl }
         }
+        if !cancellationUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            guard URL(string: cancellationUrl) != nil else { throw ValidationError.invalidUrl }
+        }
 
         try ensureOptionalInt(L10n.string(.editorFieldHotelOffset), hotelOffsetSecondsText)
         try ensureOptionalInt(L10n.string(.editorFieldDepartureOffset), flightDepartureOffsetSecondsText)
@@ -316,6 +322,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             title: working.title.trimmingCharacters(in: .whitespacesAndNewlines),
             confirmationCode: normalizeOptionalString(working.confirmationCode),
             externalUrl: normalizeOptionalString(working.externalUrl),
+            cancellationUrl: normalizeOptionalString(working.cancellationUrl),
             startAt: working.startAt,
             endAt: working.endAt,
             locationFrom: normalizeOptionalString(working.locationFrom),
@@ -341,6 +348,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
         booking.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         booking.confirmationCode = Self.normalizeOptionalString(confirmationCode)
         booking.externalUrl = Self.normalizeOptionalString(externalUrl)
+        booking.cancellationUrl = Self.normalizeOptionalString(cancellationUrl)
         booking.locationFrom = Self.normalizeOptionalString(locationFrom)
         booking.locationTo = Self.normalizeOptionalString(locationTo)
         booking.locationFromAddress = Self.normalizeOptionalString(locationFromAddress)
@@ -668,6 +676,13 @@ public struct BookingEditorForm: View {
                     }
                     TextField(L10n.string(.editorConfirmationCode), text: $draft.confirmationCode)
                     TextField(L10n.string(.editorUrlOptional), text: $draft.externalUrl)
+                        .textContentType(.URL)
+                        #if os(iOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        #endif
+                    TextField(L10n.string(.editorCancellationUrlOptional), text: $draft.cancellationUrl)
                         .textContentType(.URL)
                         #if os(iOS)
                         .keyboardType(.URL)
