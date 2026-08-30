@@ -3,9 +3,7 @@ import Foundation
 import ReisenDomain
 
 private func withGermanL10n(_ body: () throws -> Void) rethrows {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
-    try body()
+    try L10n.withLocale(Locale(identifier: "de"), body)
 }
 
 @Test func syncAllSummary_statusLine_countsSuccessAndFailure() throws {

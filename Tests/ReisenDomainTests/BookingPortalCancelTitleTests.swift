@@ -27,18 +27,18 @@ struct BookingPortalCancelTitleTests {
 }
 
 @Test func bookingPortalCancelTitle_buttonIsStornierenInGerman() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
-    #expect(L10n.string(.actionCancelInPortal) == "Stornieren")
-    #expect(BookingPortalCancelTitle.button == "Stornieren")
+    L10n.withLocale(Locale(identifier: "de")) {
+        #expect(L10n.string(.actionCancelInPortal) == "Stornieren")
+        #expect(BookingPortalCancelTitle.button == "Stornieren")
+    }
 }
 
 @Test func bookingPortalCancelLoadFailed_keyResolves() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
-    let value = L10n.string(.bookingPortalCancelLoadFailed)
-    #expect(value != L10nKey.bookingPortalCancelLoadFailed.rawValue)
-    #expect(!value.isEmpty)
-    #expect(value == "Die Stornoseite konnte nicht geladen werden.")
+    L10n.withLocale(Locale(identifier: "de")) {
+        let value = L10n.string(.bookingPortalCancelLoadFailed)
+        #expect(value != L10nKey.bookingPortalCancelLoadFailed.rawValue)
+        #expect(!value.isEmpty)
+        #expect(value == "Die Stornoseite konnte nicht geladen werden.")
+    }
 }
 }
