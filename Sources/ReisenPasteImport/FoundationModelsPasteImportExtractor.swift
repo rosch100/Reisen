@@ -68,6 +68,9 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         guard !material.images.isEmpty else {
             return PreparedPrompt(prompt: Prompt(request), temporaryImageURLs: [])
         }
+        guard #available(macOS 27.0, iOS 27.0, visionOS 27.0, *) else {
+            throw PasteImportAdapterError.imageInputUnsupported
+        }
         let prepared = try PasteImportImagePrompt.make(request: request, images: material.images)
         return PreparedPrompt(prompt: prepared.prompt, temporaryImageURLs: prepared.temporaryImageURLs)
     }
