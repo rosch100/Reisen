@@ -20,13 +20,15 @@ public struct BookingCopyConfirmationMenuItems: View {
 /// Kontextmenüeintrag „Link kopieren“.
 public struct CopyLinkMenuItem: View {
     let url: URL
+    let title: String
 
-    public init(url: URL) {
+    public init(url: URL, title: String = L10n.string(.actionCopyLink)) {
         self.url = url
+        self.title = title
     }
 
     public var body: some View {
-        PasteboardCopyMenuButton(title: L10n.string(.actionCopyLink), text: url.absoluteString)
+        PasteboardCopyMenuButton(title: title, text: url.absoluteString)
     }
 }
 
