@@ -9,6 +9,7 @@ extension SwiftDataBookingFieldApply {
         model.title = booking.title
         model.confirmationCode = booking.confirmationCode
         model.externalUrl = booking.externalUrl
+        model.cancellationUrl = booking.cancellationUrl
     }
 
     static func applyTimes(_ booking: Booking, to model: SDBooking) {

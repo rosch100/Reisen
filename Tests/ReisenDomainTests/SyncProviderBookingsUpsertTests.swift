@@ -243,6 +243,7 @@ final class SyncProviderBookingsUpsertTests {
                 title: "Bleibt",
                 confirmationCode: "K1",
                 externalUrl: "https://example/opodo/keep",
+                cancellationUrl: "https://example/opodo/cancel",
                 startAt: keptStart,
                 endAt: keptEnd,
                 status: .confirmed,
@@ -261,6 +262,7 @@ final class SyncProviderBookingsUpsertTests {
         #expect(result.bookingsPersisted == 1)
         #expect(repo.all.count == 1)
         #expect(repo.all.first?.externalUrl == "https://example/opodo/keep")
+        #expect(repo.all.first?.cancellationUrl == "https://example/opodo/cancel")
     }
 
     @Test func cancelledDraftsDoNotRequireDeadlines() throws {

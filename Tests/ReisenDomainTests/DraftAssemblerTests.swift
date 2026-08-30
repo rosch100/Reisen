@@ -921,6 +921,57 @@ import ReisenDomain
     #expect(merged.roomCount == 1)
 }
 
+@Test func draftAssembler_copiesCancellationUrl() throws {
+    let facts = ProviderBookingFacts(
+        provider: .traveloka,
+        bookingType: .hotel,
+        start: .instant(Date(timeIntervalSince1970: 10)),
+        end: .instant(Date(timeIntervalSince1970: 20)),
+        externalUrl: "https://www.traveloka.com/en-en/item/details/b?type=HOTEL&id=i",
+        cancellationUrl: "https://www.traveloka.com/en-en/refund/presubmission/HOTEL/b/i"
+    )
+    let draft = try #require(DraftAssembler.draft(from: facts))
+    #expect(draft.cancellationUrl == facts.cancellationUrl)
+}
+
+@Test func draftEnrichment_assignNonEmptyCancellationUrl_doesNotClearCatalog() {
+    var draft = ProviderBookingDraft(
+        provider: .traveloka,
+        bookingType: .hotel,
+        externalUrl: "https://example.com/open",
+        cancellationUrl: "https://example.com/cancel",
+        startAt: Date(timeIntervalSince1970: 10),
+        endAt: Date(timeIntervalSince1970: 20)
+    )
+    draft.apply(ProviderBookingEnrichment())
+    #expect(draft.cancellationUrl == "https://example.com/cancel")
+    draft.apply(ProviderBookingEnrichment(cancellationUrl: "https://example.com/cancel2"))
+    #expect(draft.cancellationUrl == "https://example.com/cancel2")
+}
+
+@Test func syncDraftCopy_nilCancellationUrlDoesNotWipeExisting() {
+    var booking = Booking(
+        provider: .opodo,
+        bookingType: .hotel,
+        cancellationUrl: "https://example.com/cancel",
+        startAt: Date(timeIntervalSince1970: 10),
+        endAt: Date(timeIntervalSince1970: 20)
+    )
+    let draft = ProviderBookingDraft(
+        provider: .opodo,
+        bookingType: .hotel,
+        externalUrl: "https://example.com/open",
+        startAt: Date(timeIntervalSince1970: 10),
+        endAt: Date(timeIntervalSince1970: 20)
+    )
+    SyncBookingDraftFieldCopy.applyCoreFields(
+        from: draft,
+        onto: &booking,
+        now: Date(timeIntervalSince1970: 30)
+    )
+    #expect(booking.cancellationUrl == "https://example.com/cancel")
+}
+
 private func catalogHotelDraft(provider: ProviderID, externalUrl: String?) -> ProviderBookingDraft {
     ProviderBookingDraft(
         provider: provider,

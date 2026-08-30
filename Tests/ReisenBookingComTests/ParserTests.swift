@@ -20,6 +20,7 @@ func bookingComParsesHotels() throws {
     let typesByUrl = Dictionary(bookings.map { ($0.externalUrl, $0.bookingType) }, uniquingKeysWith: { $1 })
     #expect(typesByUrl["https://www.booking.com/hotel/de/hotelname.de.html"] == .hotel)
     #expect(typesByUrl["https://www.booking.com/flight/de/flightname.html"] == .flight)
+    #expect(bookings.allSatisfy { $0.cancellationUrl == nil })
 }
 
 @Test("BookingComActivityListParser wirft bei fehlenden Bookings")

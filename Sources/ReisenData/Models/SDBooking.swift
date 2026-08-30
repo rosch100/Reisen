@@ -9,6 +9,7 @@ public final class SDBooking {
     public var title: String?
     public var confirmationCode: String?
     public var externalUrl: String?
+    public var cancellationUrl: String?
     public var startAt: Date = Date(timeIntervalSince1970: 0)
     public var endAt: Date = Date(timeIntervalSince1970: 0)
     public var hotelOffsetSeconds: Int?
@@ -55,6 +56,7 @@ public final class SDBooking {
         title: String? = nil,
         confirmationCode: String? = nil,
         externalUrl: String? = nil,
+        cancellationUrl: String? = nil,
         startAt: Date,
         endAt: Date,
         locationFrom: String? = nil,
@@ -85,6 +87,7 @@ public final class SDBooking {
         self.title = title
         self.confirmationCode = confirmationCode
         self.externalUrl = externalUrl
+        self.cancellationUrl = cancellationUrl
         self.startAt = startAt
         self.endAt = endAt
         self.locationFrom = locationFrom

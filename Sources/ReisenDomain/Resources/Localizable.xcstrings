@@ -65,6 +65,54 @@
         }
       }
     },
+    "action.cancel_in_portal": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storno"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel in portal"
+          }
+        }
+      }
+    },
+    "action.cancel_in_portal_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet die Stornoseite beim Anbieter. Storniert die Buchung nicht in Reisen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the provider’s cancellation page. Does not cancel the booking in Reisen."
+          }
+        }
+      }
+    },
+    "action.cancel_in_portal_menu": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stornieren im Portal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel in portal"
+          }
+        }
+      }
+    },
     "action.check_provider_sessions": {
       "localizations": {
         "de": {
@@ -109,6 +157,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wipe iCloud and local"
+          }
+        }
+      }
+    },
+    "action.copy_cancellation_link": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storno-Link kopieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy cancellation link"
           }
         }
       }
@@ -397,6 +461,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open provider sync"
+          }
+        }
+      }
+    },
+    "action.open_short": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
           }
         }
       }
@@ -3085,6 +3165,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel until"
+          }
+        }
+      }
+    },
+    "editor.cancellation_url_optional": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storno-URL (optional)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancellation URL (optional)"
           }
         }
       }

@@ -175,9 +175,11 @@ private struct TripListPane: View {
                     #endif
                 }
             } else {
+                let currentTrips = filteredTrips.filter { !$0.isElapsed() }
+                let elapsedTrips = filteredTrips.filter { $0.isElapsed() }
                 let gapBadges = SDTrip.listGapBadgeCounts(for: filteredTrips)
                 List(selection: $selectedTripID) {
-                    ForEach(filteredTrips) { trip in
+                    ForEach(currentTrips) { trip in
                         tripRow(trip, gapCount: gapBadges[trip.id])
                             .tag(trip.id)
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -185,6 +187,19 @@ private struct TripListPane: View {
                                     onRequestDelete(trip)
                                 }
                             }
+                    }
+                    if !elapsedTrips.isEmpty {
+                        Section(L10n.string(.bookingElapsed)) {
+                            ForEach(elapsedTrips) { trip in
+                                tripRow(trip, gapCount: gapBadges[trip.id])
+                                    .tag(trip.id)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(L10n.string(.commonDelete), role: .destructive) {
+                                            onRequestDelete(trip)
+                                        }
+                                    }
+                            }
+                        }
                     }
                 }
                 .searchable(text: $searchText, prompt: L10n.string(.tripSearchTrips))
