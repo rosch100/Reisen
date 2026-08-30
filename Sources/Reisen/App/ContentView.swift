@@ -258,6 +258,13 @@ struct ContentView: View {
                 return nil
             }
             return booking.browserURL
+        case .elapsedOpenBookings:
+            guard selectedOpenBookingIDs.count == 1,
+                  let id = selectedOpenBookingIDs.first,
+                  let booking = elapsedOpenBookings.first(where: { $0.id == id }) else {
+                return nil
+            }
+            return booking.browserURL
         case .trip(let tripID):
             guard let trip = trips.first(where: { $0.id == tripID }),
                   let timelineID = selectedTimelineID,
@@ -292,7 +299,7 @@ struct ContentView: View {
             switch selection {
             case .providerSync:
                 ProviderSyncContainer(selectedProviderID: providerSyncSelectionBinding)
-            case .trip, .openBookings:
+            case .trip, .openBookings, .elapsedOpenBookings:
                 PersistentHorizontalSplitView(
                     leftWidth: $bookingListColumnWidth,
                     leftMinWidth: bookingListMinWidth,
@@ -484,12 +491,14 @@ struct ContentView: View {
             }
 
             Section {
-                if trips.isEmpty {
-                    Text(L10n.string(.tripNoTripsYet))
-                        .foregroundStyle(.secondary)
+                if currentTrips.isEmpty {
+                    if elapsedTrips.isEmpty {
+                        Text(L10n.string(.tripNoTripsYet))
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
-                    let gapBadges = SDTrip.listGapBadgeCounts(for: trips)
-                    ForEach(trips) { trip in
+                    let gapBadges = SDTrip.listGapBadgeCounts(for: currentTrips)
+                    ForEach(currentTrips) { trip in
                         let tripBookings = futureBookings(for: trip)
                         let isExpanded = expandedTripIDs.contains(trip.id)
                         VStack(alignment: .leading, spacing: 0) {
@@ -632,13 +641,77 @@ struct ContentView: View {
                     .help(L10n.string(.actionCreateTrip))
                 }
             }
+            if !elapsedTrips.isEmpty || !elapsedOpenBookings.isEmpty {
+                Section(L10n.string(.bookingElapsed)) {
+                    if !elapsedOpenBookings.isEmpty {
+                        Button {
+                            selection = .elapsedOpenBookings
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(L10n.string(.tripOpenBookings))
+                                    Text(L10n.format(.tripOpenEntries, elapsedOpenBookings.count))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: "calendar.badge.clock")
+                            }
+                        }
+                        .tag(SidebarSelection.elapsedOpenBookings)
+                        .buttonStyle(.plain)
+                    }
+                    ForEach(elapsedTrips) { trip in
+                        Button {
+                            selection = .trip(trip.id)
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(trip.title)
+                                    Text(dateRange(trip))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: "airplane")
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .tag(SidebarSelection.trip(trip.id))
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button(L10n.string(.commonEdit)) {
+                                tripToEdit = trip
+                            }
+                            Button(role: .destructive) {
+                                tripPendingDelete = trip
+                                showTripDeleteConfirmation = true
+                            } label: {
+                                Text(L10n.string(.actionDeleteTrip))
+                            }
+                        }
+                    }
+                }
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle(L10n.string(.tripTrips))
     }
 
     private var openBookings: [SDBooking] {
-        OpenBookingMatching.listedUnassigned(in: allBookings)
+        OpenBookingMatching.currentUnassigned(in: allBookings)
+    }
+
+    private var elapsedOpenBookings: [SDBooking] {
+        OpenBookingMatching.elapsedUnassigned(in: allBookings)
+    }
+
+    private var currentTrips: [SDTrip] {
+        trips.filter { !$0.isElapsed() }
+    }
+
+    private var elapsedTrips: [SDTrip] {
+        trips.filter { $0.isElapsed() }
     }
 
     private var selectedOpenBookings: [SDBooking] {
@@ -743,6 +816,28 @@ struct ContentView: View {
                     }
                 }
             }
+        case .elapsedOpenBookings:
+            if elapsedOpenBookings.isEmpty {
+                ContentUnavailableView {
+                    Label(L10n.string(.tripNoOpenBookings), systemImage: "calendar")
+                } description: {
+                    Text(L10n.string(.bookingElapsed))
+                }
+            } else {
+                List(selection: $selectedOpenBookingIDs) {
+                    ForEach(elapsedOpenBookings) { booking in
+                        OpenBookingRow(booking: booking, fillCaption: nil)
+                            .tag(booking.id)
+                    }
+                }
+                .listStyle(.inset(alternatesRowBackgrounds: true))
+                .navigationTitle(L10n.string(.bookingElapsed))
+                .onAppear {
+                    if selectedOpenBookingIDs.isEmpty, let first = elapsedOpenBookings.first?.id {
+                        selectedOpenBookingIDs = [first]
+                    }
+                }
+            }
         case .none, .trips:
             ContentUnavailableView(
                 L10n.string(.tripSelectTrip),
@@ -821,6 +916,45 @@ struct ContentView: View {
                     L10n.string(.tripNoOpenBookings),
                     systemImage: "calendar",
                     description: Text(L10n.string(.tripNoOpenBookingsCurrent))
+                )
+            }
+        case .elapsedOpenBookings:
+            if let bookingID = selectedOpenBookingIDs.first,
+               let booking = elapsedOpenBookings.first(where: { $0.id == bookingID }) {
+                OpenBookingDetailView(
+                    booking: booking,
+                    matchingTrip: matchingTrip(for: booking),
+                    onCreateTrip: {
+                        OpenBookingCreateTripAction.assignSeed(
+                            fromIDs: [booking.id],
+                            in: elapsedOpenBookings,
+                            seed: $tripCreateSeed,
+                            showFailed: $showCreateTripFromBookingsFailed
+                        )
+                    }
+                )
+                .id(booking.id)
+                .navigationTitle(booking.presentationTitle)
+            } else if let first = elapsedOpenBookings.first {
+                OpenBookingDetailView(
+                    booking: first,
+                    matchingTrip: matchingTrip(for: first),
+                    onCreateTrip: {
+                        OpenBookingCreateTripAction.assignSeed(
+                            fromIDs: [first.id],
+                            in: elapsedOpenBookings,
+                            seed: $tripCreateSeed,
+                            showFailed: $showCreateTripFromBookingsFailed
+                        )
+                    }
+                )
+                .id(first.id)
+                .navigationTitle(first.presentationTitle)
+            } else {
+                ContentUnavailableView(
+                    L10n.string(.tripNoOpenBookings),
+                    systemImage: "calendar",
+                    description: Text(L10n.string(.bookingElapsed))
                 )
             }
         case .trip(let id):
@@ -1139,6 +1273,8 @@ struct ContentView: View {
             .creating(
                 candidate: candidate,
                 tripID: pasteImport.tripID,
+                tripStart: pasteImportTrip?.startDate,
+                tripEnd: pasteImportTrip?.endDate,
                 index: index,
                 total: total
             )
@@ -1152,13 +1288,19 @@ struct ContentView: View {
     }
 
     private func selectPasteImportBooking(_ id: UUID) {
-        if let booking = allBookings.first(where: { $0.id == id }),
-           let trip = booking.trip {
+        guard let booking = allBookings.first(where: { $0.id == id }) else {
+            selection = .openBookings
+            selectedOpenBookingIDs = [id]
+            return
+        }
+        if let trip = booking.trip {
             selection = .trip(trip.id)
             selectedTimelineID = id.uuidString
             return
         }
-        selection = .openBookings
+        selection = OpenBookingMatching.unassignedList(endAt: booking.endAt) == .elapsed
+            ? .elapsedOpenBookings
+            : .openBookings
         selectedOpenBookingIDs = [id]
     }
 

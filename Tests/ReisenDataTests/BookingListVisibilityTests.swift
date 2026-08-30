@@ -95,6 +95,58 @@ private func persist(
 }
 
 @MainActor
+@Test func currentUnassigned_excludesElapsedManual() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let pastManual = makeBooking(start: pastManualAt, provider: .manual)
+    let upcoming = makeBooking(start: upcomingAt, provider: .manual)
+    try persist(container.mainContext, pastManual, upcoming)
+
+    let current = OpenBookingMatching.currentUnassigned(
+        in: [pastManual, upcoming],
+        now: now
+    )
+    #expect(current.map(\.id) == [upcoming.id])
+}
+
+@MainActor
+@Test func unassignedList_pastEnd_selectsElapsedMailbox() {
+    let pastEnd = Date(timeIntervalSince1970: pastManualAt)
+    let upcomingEnd = Date(timeIntervalSince1970: upcomingAt)
+    #expect(OpenBookingMatching.unassignedList(endAt: pastEnd, now: now) == .elapsed)
+    #expect(OpenBookingMatching.unassignedList(endAt: upcomingEnd, now: now) == .current)
+}
+
+@MainActor
+@Test func elapsedUnassigned_keepsPastManualImport() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let pastManual = makeBooking(start: pastManualAt, provider: .manual)
+    let upcoming = makeBooking(start: upcomingAt, provider: .manual)
+    try persist(container.mainContext, pastManual, upcoming)
+
+    let elapsed = OpenBookingMatching.elapsedUnassigned(
+        in: [pastManual, upcoming],
+        now: now
+    )
+    #expect(elapsed.map(\.id) == [pastManual.id])
+}
+
+@MainActor
+@Test func trip_isElapsedWhenEndBeforeToday() {
+    let trip = SDTrip(
+        title: "P",
+        startDate: Date(timeIntervalSince1970: 0),
+        endDate: Date(timeIntervalSince1970: pastManualAt)
+    )
+    #expect(trip.isElapsed(now: now))
+    let current = SDTrip(
+        title: "C",
+        startDate: Date(timeIntervalSince1970: upcomingAt),
+        endDate: Date(timeIntervalSince1970: upcomingAt + day)
+    )
+    #expect(!current.isElapsed(now: now))
+}
+
+@MainActor
 @Test func fillOpportunity_pastManualDoesNotFillGappyTrip() throws {
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let trip = makeTrip()
