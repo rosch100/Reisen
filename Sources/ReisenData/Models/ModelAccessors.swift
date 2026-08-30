@@ -27,6 +27,10 @@ public extension SDBooking {
         BookingExternalURL.browserURL(from: externalUrl)
     }
 
+    var cancellationBrowserURL: URL? {
+        BookingExternalURL.browserURL(from: cancellationUrl)
+    }
+
     var displayTitle: String {
         title ?? bookingType.defaultDisplayTitle
     }

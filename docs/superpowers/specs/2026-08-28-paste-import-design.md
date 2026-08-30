@@ -108,7 +108,7 @@ Je Schritt: 1 Treffer → unique (fertig); >1 → ambiguous (fertig); 0 → näc
 | Match | Badge | Speichern |
 |---|---|---|
 | unique | **Ergänzen** | Edit; Merger; Trip unverändert |
-| none | **Neu** | Create `.manual`; `trip` = aktuelle Reise oder `nil` (Offen) |
+| none | **Neu** | Create `.manual`; `trip` nur wenn erkanntes Datum im Reisezeitraum (`TripBookingDateWindow.contains`); sonst `nil` (Offen, ggf. Kategorie Abgelaufen) |
 | ambiguous | **Neu** + „keine eindeutige Zuordnung“ | wie Neu |
 
 ## Fehler

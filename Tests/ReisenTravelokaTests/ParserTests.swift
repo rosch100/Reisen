@@ -48,6 +48,8 @@ private enum TravelokaFixtureLoader {
     #expect(activity.isAllDay == true)
     #expect(activity.status == .confirmed)
     #expect(activity.externalUrl?.contains("type=EXPERIENCE") == true)
+    #expect(activity.cancellationUrl?.contains("/refund/presubmission/EXPERIENCE/") == true)
+    #expect(activity.cancellationUrl != activity.externalUrl)
     expectTravelokaPrice(activity.rateDetails, amount: 3.62)
 
     let hotel = try #require(byType[.hotel])
@@ -61,6 +63,8 @@ private enum TravelokaFixtureLoader {
     #expect(hotel.hotelCheckInMinutes == 14 * 60)
     #expect(hotel.deadlines.contains { $0.isFreeCancellation } == true)
     #expect(hotel.deadlines.contains { !$0.isFreeCancellation && $0.cancellationFeeAmount == 4.37 } == true)
+    #expect(hotel.cancellationUrl?.contains("/refund/presubmission/") == true)
+    #expect(hotel.cancellationUrl != hotel.externalUrl)
     // Catalog card often omits stay policies; Traveloka still enriches hotels with empty hints.
     #expect(hotel.guestHints.isEmpty)
     #expect(
@@ -76,12 +80,16 @@ private enum TravelokaFixtureLoader {
     #expect(vehicle.rateDetails?.roomCategory == "Automatic")
     expectTravelokaPrice(vehicle.rateDetails, amount: 89.0)
     #expect(vehicle.deadlines.contains { $0.isFreeCancellation } == true)
+    #expect(vehicle.cancellationUrl?.contains("/refund/presubmission/") == true)
+    #expect(vehicle.cancellationUrl != vehicle.externalUrl)
 
     let flight = try #require(catalog.bookings.first { $0.bookingType == .flight })
     #expect(flight.confirmationCode == TravelokaFixtureLoader.redactedFlightBookingId)
     #expect(flight.title?.contains("Jakarta") == true)
     expectTravelokaPrice(flight.rateDetails, amount: 450.0)
     #expect(flight.hotelOffsetSeconds == nil)
+    #expect(flight.cancellationUrl?.contains("/refund/presubmission/") == true)
+    #expect(flight.cancellationUrl != flight.externalUrl)
 }
 
 @Test func travelokaCatalogUsesCanonicalRoutePrefixInDetailURL() throws {

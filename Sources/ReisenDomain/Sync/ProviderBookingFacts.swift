@@ -9,6 +9,7 @@ public struct ProviderBookingFacts: Equatable, Sendable {
     public var title: String?
     public var confirmationCode: String?
     public var externalUrl: String?
+    public var cancellationUrl: String?
     public var locationFrom: String?
     public var locationTo: String?
     public var locationFromAddress: String?
@@ -35,6 +36,7 @@ public struct ProviderBookingFacts: Equatable, Sendable {
         title: String? = nil,
         confirmationCode: String? = nil,
         externalUrl: String? = nil,
+        cancellationUrl: String? = nil,
         locationFrom: String? = nil,
         locationTo: String? = nil,
         locationFromAddress: String? = nil,
@@ -60,6 +62,7 @@ public struct ProviderBookingFacts: Equatable, Sendable {
         self.title = title
         self.confirmationCode = confirmationCode
         self.externalUrl = externalUrl
+        self.cancellationUrl = cancellationUrl
         self.locationFrom = locationFrom
         self.locationTo = locationTo
         self.locationFromAddress = locationFromAddress

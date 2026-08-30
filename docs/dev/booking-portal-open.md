@@ -9,6 +9,8 @@ Zwei getrennte HTTPS-Pfade:
 
 Keine Custom-Scheme-Buchungs-URLs. iOS folgt Universal Links (AASA); sonst Safari. macOS immer Standard-Browser.
 
+Storno ist ein zweiter HTTPS-Pfad, nicht `externalUrl`.
+
 App-Store-iOS: keine Provider-Registry → keine Gap-Suche; Buchungs-Open über iCloud-`externalUrl` weiterhin möglich. `LSApplicationQueriesSchemes` nur Private-iOS.
 
 ## Buchungs-Open (Provider × URL-Form × iOS-App)
@@ -27,6 +29,23 @@ App-Store-iOS: keine Provider-Registry → keine Gap-Suche; Buchungs-Open über 
 | Manual | `reisen://manual/{uuid}` | kein Open | kein Open |
 
 GYG ohne `bookingHash`: kein Katalog-Draft. Airbnb ohne ableitbare Portal-URL: Draft bleibt (`externalUrl` nil). Open-UI nur bei `browserURL`.
+
+## Buchungs-Storno (Provider × Storno-URL × Button)
+
+Persistiertes `Booking.cancellationUrl` → `BookingExternalURL.browserURL` → `BookingPortalActions.visible` → SwiftUI `Link` / Menü / Command. Filter identisch zu Open. Guard: `BookingPortalCancellation.isActionable` (kein Button bei `status == .cancelled`, fehlender URL, oder URL identisch zur Open-URL). Der Button storniert nicht in Reisen.
+
+| Provider | Storno-URL-Form | Button |
+|----------|-----------------|--------|
+| Traveloka | `…/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | ja, wenn ≠ Open-URL |
+| Check24 | unbelegt in Fixtures | nein |
+| Booking.com | unbelegt in Fixtures | nein |
+| Airbnb | unbelegt in Fixtures | nein |
+| GetYourGuide | unbelegt in Fixtures | nein |
+| Opodo | unbelegt in Fixtures | nein |
+| billiger-mietwagen.de | unbelegt in Fixtures | nein |
+| Manual | Editor-Feld `cancellationUrl` | ja, wenn belegte HTTPS-URL und actionable |
+
+Nur-Storno (ohne Open-URL) ist erlaubt, z. B. nach Editor-Nachtrag.
 
 ## Gap-Suche (Kategorie × Provider)
 

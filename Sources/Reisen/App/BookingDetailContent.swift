@@ -39,6 +39,7 @@ struct BookingDetailContent: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
+                    BookingElapsedLabel(for: booking)
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 2) {
@@ -101,13 +102,26 @@ struct BookingDetailContent: View {
                 BookingGuestHintsView(booking: booking, style: .inspector)
             }
 
-            if let url = booking.browserURL {
-                Divider()
-                BookingPortalOpenLink(browserURL: url)
+            Divider()
+            if BookingPortalActionBar.isVisible(
+                open: booking.browserURL,
+                cancellation: booking.cancellationBrowserURL,
+                status: booking.status
+            ) {
+                BookingPortalActionBar(
+                    openURL: booking.browserURL,
+                    cancellationURL: booking.cancellationBrowserURL,
+                    status: booking.status,
+                    openTitle: BookingPortalOpenTitle.short,
+                    openHelp: BookingPortalOpenTitle.openInBrowserHelp,
+                    openButtonStyle: .bordered,
+                    showsCopyMenu: true
+                )
+                .font(.caption)
+            } else {
+                Text(L10n.string(.bookingDetailNoBrowserLink))
                     .font(.caption)
-                    .contextMenu {
-                        CopyLinkMenuItem(url: url)
-                    }
+                    .foregroundStyle(.secondary)
             }
 
             if let onEditBooking {

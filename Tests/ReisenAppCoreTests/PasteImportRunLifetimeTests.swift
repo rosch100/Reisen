@@ -1,6 +1,30 @@
 import Foundation
+import Darwin
 import Testing
 @testable import ReisenAppCore
+
+@Test @MainActor
+func pasteImportRunLifetime_workStartsOffMainActor() async {
+    let lifetime = PasteImportRunLifetime()
+    let box = WaitBox()
+    let flag = ThreadFlag()
+
+    lifetime.begin(
+        work: {
+            flag.value = pthread_main_np() != 0
+            return 1
+        },
+        onSuccess: { _ in
+            box.complete()
+        },
+        onFailure: { _ in
+            box.complete()
+        }
+    )
+
+    await box.wait()
+    #expect(!flag.value)
+}
 
 @Test @MainActor
 func pasteImportRunLifetime_successCompletesOnMainAndDeliversValue() async {
@@ -76,6 +100,10 @@ func pasteImportRunLifetime_failureCompletesOnMain() async {
     await box.wait()
     #expect(sawFailure)
     #expect(completedOnMain)
+}
+
+private final class ThreadFlag: @unchecked Sendable {
+    var value = true
 }
 
 @MainActor
