@@ -8,6 +8,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case commonNo = "common.no"
     case commonUnknown = "common.unknown"
     case commonNotAvailable = "common.not_available"
+    case splitColumnResize = "split.column_resize"
 
     // MARK: - Booking detail fields
 

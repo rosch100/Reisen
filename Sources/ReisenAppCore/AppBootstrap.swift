@@ -44,6 +44,12 @@ public final class AppBootstrap {
         do {
             stopCloudSideEffectObserverIfReady()
 
+            // UI-Tests laufen nur In-Memory: keine Disk-SQLite löschen, nur Ready-State neu aufbauen.
+            if UITestingMode.fromProcess.skipsSideEffects {
+                try activateReadyState()
+                return
+            }
+
             if wipeCloudDataBeforeReset {
                 try await wipeCloudThenResetLocal()
             } else {
@@ -57,6 +63,11 @@ public final class AppBootstrap {
 
     /// Cloud wipe works from `.ready` (delete+export) or `.failed` (reopen → import → delete → export).
     private func wipeCloudThenResetLocal() async throws {
+        if UITestingMode.fromProcess.skipsSideEffects {
+            try activateReadyState()
+            return
+        }
+
         if case .ready(let container, _, _, _) = state {
             try await wipeCloud(from: container.mainContext)
             try PersistenceBootstrap.resetStoreFiles()
@@ -96,6 +107,7 @@ public final class AppBootstrap {
     }
 
     private func startCloudSideEffectObserverIfReady() {
+        guard !UITestingMode.fromProcess.skipsSideEffects else { return }
         if case .ready(_, _, let syncStore, _) = state {
             syncStore.startObservingCloudSideEffects()
         }
@@ -107,8 +119,19 @@ public final class AppBootstrap {
         }
     }
 
-    public static func makeReadyState(registry: ProviderRegistry = .empty) throws -> State {
-        let container = try PersistenceBootstrap.makeContainer()
+    public static func makeReadyState(
+        registry: ProviderRegistry = .empty,
+        uiTesting: UITestingMode = .fromProcess
+    ) throws -> State {
+        let container: ModelContainer
+        if uiTesting.skipsSideEffects {
+            container = try PersistenceBootstrap.makeInMemoryContainer()
+            if uiTesting == .populated {
+                try UITestingSeed.insertPopulated(into: container.mainContext)
+            }
+        } else {
+            container = try PersistenceBootstrap.makeContainer()
+        }
         let syncStore = SyncStore(modelContext: container.mainContext, registry: registry)
         let sessionHub = ProviderSessionHub()
         return .ready(container, registry, syncStore, sessionHub)

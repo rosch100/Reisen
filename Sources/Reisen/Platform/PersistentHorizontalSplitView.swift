@@ -1,5 +1,7 @@
 import AppKit
 import SwiftUI
+import ReisenDomain
+import ReisenSharedUI
 
 /// Horizontaler Split im Stil von macOS Mail: Spalten stoßen aneinander, kein reservierter
 /// Slider-Streifen. Die Hit-Area liegt unsichtbar über der Naht (`resizeLeftRight`).
@@ -89,6 +91,9 @@ final class HorizontalSplitNSView: NSView {
 
         wantsLayer = true
         clipsToBounds = true
+        setAccessibilityElement(false)
+        leftHost.setAccessibilityElement(false)
+        rightHost.setAccessibilityElement(false)
         leftHost.sizingOptions = []
         rightHost.sizingOptions = []
         leftHost.clipsToBounds = true
@@ -228,6 +233,10 @@ private final class HorizontalSplitDividerView: NSView {
         layer?.backgroundColor = NSColor.clear.cgColor
         hairline.backgroundColor = NSColor.separatorColor.cgColor
         layer?.addSublayer(hairline)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.splitter)
+        setAccessibilityIdentifier(UITestingIdentifiers.splitDivider)
+        setAccessibilityLabel(L10n.string(.splitColumnResize))
     }
 
     @available(*, unavailable)

@@ -270,6 +270,7 @@ public struct SettingsView: View {
         .padding()
         .frame(width: 520, height: 620)
 #endif
+        .accessibilityIdentifier(UITestingIdentifiers.settings)
         .confirmationDialog(
             L10n.string(.settingsResetLocalConfirmTitle),
             isPresented: $showLocalResetConfirm,

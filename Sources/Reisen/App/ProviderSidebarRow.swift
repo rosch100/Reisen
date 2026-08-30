@@ -81,6 +81,7 @@ struct ProviderSidebarRow: View {
             .accessibilityAddTraits(isEnabled ? .isSelected : [])
             .help(isEnabled ? L10n.string(.providerDeactivateHelp) : L10n.string(.providerActivateHelp))
         }
+        .accessibilityIdentifier(UITestingIdentifiers.providerRow(providerID.rawValue))
         .contextMenu {
             Button(isEnabled ? L10n.string(.providerDeactivate) : L10n.string(.providerActivate)) {
                 isEnabled.toggle()

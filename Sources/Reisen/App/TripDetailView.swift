@@ -203,6 +203,7 @@ struct TripDetailView: View {
                     bookingsList(timelineItems: timelineItems, fallbackTimelineID: firstBookingTimelineID)
                 }
             }
+            .accessibilityIdentifier(UITestingIdentifiers.detail)
             .navigationTitle(trip.title)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -219,6 +220,7 @@ struct TripDetailView: View {
                         startCreateBooking(prefillStart: nil, prefillEnd: nil, selectID: nil)
                     }
                     .help(L10n.string(.tripAddBookingHelp))
+                    .accessibilityIdentifier(UITestingIdentifiers.addBooking)
                 }
             }
             .sheet(isPresented: $showAssignBookings) {
@@ -371,6 +373,7 @@ struct TripDetailView: View {
                         }
                         .buttonStyle(.plain)
                         .id(item.id)
+                        .accessibilityIdentifier(timelineItemIdentifier(item))
                         .contextMenu {
                             switch item {
                             case .booking(let booking):
@@ -458,6 +461,13 @@ struct TripDetailView: View {
 
     private func timelineItems(gaps: [ComputedGap], bookings: [SDBooking]) -> [TripTimelineItem] {
         TripTimelineItem.sorted(bookings: bookings, gaps: gaps)
+    }
+
+    private func timelineItemIdentifier(_ item: TripTimelineItem) -> String {
+        if case .booking(let booking) = item {
+            return UITestingIdentifiers.bookingRow(booking.id)
+        }
+        return "reisen.gap.\(item.id)"
     }
 
     private func gapPresentation(for gap: ComputedGap) -> GapPresentation {
@@ -629,6 +639,7 @@ private struct BookingDetailPanel: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityIdentifier(UITestingIdentifiers.inspector)
         .onAppear { syncDraftFromSession(resetDraft: false) }
         .onChange(of: bookingEditorSession) { _, _ in
             syncDraftFromSession(resetDraft: true)
