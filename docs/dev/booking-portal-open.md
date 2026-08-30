@@ -39,7 +39,8 @@ Persistiertes `Booking.cancellationUrl` → `BookingExternalURL.browserURL` → 
 | Traveloka | `…/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | ja, wenn ≠ Open-URL |
 | Check24 | unbelegt in Fixtures | nein |
 | Booking.com | unbelegt in Fixtures | nein |
-| Airbnb | unbelegt in Fixtures | nein |
+| Airbnb Experience | `…/experience_alteration/{confirmationCode}?flow=oneCancel&productType=experience` | ja, wenn ≠ Open-URL |
+| Airbnb Stay | unbelegt (kein Cancel-HAR; `/reservation/cancel/{code}` 404) | nein |
 | GetYourGuide | unbelegt in Fixtures | nein |
 | Opodo | unbelegt in Fixtures | nein |
 | billiger-mietwagen.de | unbelegt in Fixtures | nein |

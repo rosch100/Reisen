@@ -113,20 +113,21 @@ Optionales String-Attribut auf `SDBooking`. Hybrid-Store bleibt `Schema(ReisenSc
 
 Belegpflicht: Template oder Extract **nur** mit Fixture- oder HAR-String. Lokale gitignored HARs dürfen das Muster liefern; ins Repo kommt eine redigierte Assertion, nicht die HAR.
 
-| Provider | Storno-URL v1 | Quelle |
-|----------|----------------|--------|
-| Traveloka | `…/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | `TravelokaAPI.refundPresubmissionURL` (bereits Fetch-Ziel) |
-| Check24 | nur wenn Fixture/HTML ein Storno-/Cancel-href oder dokumentierten Kundenbereich-Storno-Pfad enthält | Extract oder Web-SSOT + Test |
-| Booking.com | nur wenn Confirmation-/Order-Payload oder HTML ein Cancel-/Refund-href enthält | Extract + Test |
-| Airbnb | nur wenn GraphQL/HTML ein Cancel-Action-URL enthält | Extract + Test |
-| GetYourGuide | nur wenn Booking-Payload ein Cancel-href enthält | Extract + Test |
-| Opodo | nur wenn Trip-Detail/GraphQL ein Cancel-/Refund-URL-Feld enthält | Extract + Test |
-| billiger-mietwagen.de | nur wenn Booking-JSON/HTML ein Cancel-href enthält | Extract + Test |
-| Manual | Nutzerfeld im Editor; leer = kein Button | kein Sync |
+| Provider | Storno-URL | Quelle |
+|----------|------------|--------|
+| Traveloka | `…/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | `TravelokaAPI.refundPresubmissionURL` |
+| Airbnb Experience | `…/experience_alteration/{confirmationCode}?flow=oneCancel&productType=experience` | HAR `skinny_row.cancel_reservation.app_url` (Host = `AirbnbAPI.baseURL`); Browser: Pfad ist Storno-UI, nicht 404 |
+| Airbnb Stay | unbelegt | HAR ohne Stay-Cancel-Click; geratener Pfad `/reservation/cancel/{code}` ist 404 |
+| Check24 | unbelegt | bestehende Fixtures/HARs ohne Storno-href; Capture: Kundenbereich-Buchung → Storno klicken |
+| Booking.com | unbelegt | Capture: Confirmation → „Cancel your booking“ |
+| GetYourGuide | unbelegt | HAR: Cancel ist In-Page-Modal auf Open-URL (verboten als Storno-URL). Capture: nach Klick auf Cancel, ob eigene HTTPS-URL entsteht |
+| Opodo | unbelegt | Capture: My Trips → Manage booking → Cancel my trip |
+| billiger-mietwagen.de | unbelegt | Capture: Meine Buchungen → Buchung stornieren |
+| Manual | Editor-Feld | kein Sync |
 
-Fehlt der Beleg: `nil`, Impl-Spec des Providers um eine Zeile „Storno-URL unbelegt“ ergänzen. Catalog-Test assertet `cancellationUrl == nil` für das vorhandene Fixture (kein Raten). Das ist kein v1-Bug, sondern `open_gaps` pro Provider.
+Fehlt der Beleg: `nil` + Catalog-Test `cancellationUrl == nil` (kein Raten, kein Open-URL-Kopie). Capture-HAR lokal `HAR/` (gitignored); ins Repo nur redigierte Assertion.
 
-**Traveloka ist die Pflicht-Erfüllung mit belegter URL.** Die übrigen Provider werden alle angefasst (Draft-Feld setzen oder bewusst nil + Test). „Alle Provider“ = Pipeline existiert überall, Button nur bei belegter, **anderer** URL als Öffnen.
+**Pflicht mit belegter URL:** Traveloka (alle Produkttypen mit IDs) und Airbnb **Experience**. Übrige Sync-Provider: Pipeline + nil-Test bis HAR/Browser den **buchungsspezifischen** Pfad belegt.
 
 ## HIG
 
@@ -180,6 +181,7 @@ Nicht port-only. Profil `unstructured_input` / `live_app` nicht geladen.
 - Paste-Import setzt `cancellationUrl` nicht.
 - AASA für Storno-Pfade unbelegt (Safari-Fallback ok).
 - Provider ohne Fixture-/HAR-Beleg: `nil` bis ein Beleg existiert.
+- HAR-Capture (Safari/Firefox, eingeloggt, eine Buchung, **Storno/Cancel klicken**, HAR speichern nach `HAR/`): Check24, Booking.com, Airbnb Stay, GYG (nur wenn nach Klick eine **andere** URL als `/booking/{hash}`), Opodo, billiger-mietwagen.de.
 
 ## Akzeptanz
 
