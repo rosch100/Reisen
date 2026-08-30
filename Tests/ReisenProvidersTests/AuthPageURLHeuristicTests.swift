@@ -30,9 +30,12 @@ import ReisenProviders
 }
 
 @Test func opodoSecureIsSessionReadyNotLogin() {
+    // `#91: /travel/secure/` ist nicht blind sessionReady — GraphQL-Probe.
     let url = "https://www.opodo.de/travel/secure/"
-    #expect(AuthPageURLHeuristic.looksLikeAccountPage(url))
     #expect(!AuthPageURLHeuristic.looksLikeLoginPage(url))
+    let classified = ProviderSessionStatusResolver.classify(URL(string: url)!)
+    #expect(classified != .sessionReady)
+    #expect(classified == .shouldProbeOpodo)
 }
 
 @Test func bookingMyTripsIsSessionReadyNotLogin() {

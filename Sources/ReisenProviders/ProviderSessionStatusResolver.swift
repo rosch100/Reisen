@@ -28,12 +28,15 @@ public enum ProviderSessionStatusResolver {
             return .shouldProbeBilligerMietwagen
         }
 
+        // Opodo: /travel/secure/ sieht aus wie Account, Session nur per GraphQL.
+        if OpodoSessionProbe.applies(to: url) {
+            return .shouldProbeOpodo
+        }
+
         if looksLikeAccount && !looksLikeLogin {
             return .sessionReady
         } else if looksLikeLogin {
             return .needsLogin
-        } else if OpodoSessionProbe.applies(to: url) {
-            return .shouldProbeOpodo
         } else if TravelokaSessionProbe.applies(to: url) {
             return .shouldProbeTraveloka
         } else {
