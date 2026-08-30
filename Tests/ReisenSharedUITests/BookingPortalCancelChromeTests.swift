@@ -4,9 +4,7 @@ import ReisenDomain
 @testable import ReisenSharedUI
 
 @Test func bookingPortalCancelChrome_destructiveUsesStornierenTitle() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
-    #expect(BookingPortalCancelTitle.button == "Stornieren")
+    #expect(BookingPortalCancelTitle.button == L10n.string(.actionCancelInPortal))
     #expect(BookingPortalCancelChrome.systemImage == "arrow.up.right.square")
     #expect(BookingPortalCancelChrome.usesDestructiveRole)
 }
