@@ -56,6 +56,7 @@ import ReisenPasteImport
     #expect(one.title == "UA 1449")
     let draft = try #require(PasteImportFilter.apply(coalesced).first)
     #expect(draft.bookingType == .flight)
+    #expect(draft.title == PlaceLabel.route(from: "Vancouver YVR", to: "San Francisco SFO"))
 }
 
 @Test func pasteImportExtractionCoalescer_doesNotMergeHotelCodeWithFlightRoute() {
