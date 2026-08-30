@@ -28,6 +28,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case bookingDetailRateSection = "booking.detail.rate_section"
     case bookingDetailCancellationSection = "booking.detail.cancellation_section"
     case bookingDetailLinksSection = "booking.detail.links_section"
+    case bookingPortalCancelLoadFailed = "booking.portal_cancel_load_failed"
     case bookingDetailNoBrowserLink = "booking.detail.no_browser_link"
     case bookingDetailStrictDeadline = "booking.detail.strict_deadline"
     case bookingDetailSyncStatusSection = "booking.detail.sync_status_section"

@@ -70,7 +70,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Storno"
+            "value": "Stornieren"
           }
         },
         "en": {
@@ -8989,6 +8989,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "The email with the document could not be opened or sent."
+          }
+        }
+      }
+    },
+    "booking.portal_cancel_load_failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Stornoseite konnte nicht geladen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The cancellation page could not be loaded."
           }
         }
       }

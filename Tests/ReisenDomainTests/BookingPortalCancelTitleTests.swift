@@ -2,6 +2,8 @@ import Testing
 import Foundation
 @testable import ReisenDomain
 
+@Suite(.serialized)
+struct BookingPortalCancelTitleTests {
 @Test func bookingPortalCancelTitle_keysResolveInCatalog() {
     for key in [
         L10nKey.actionOpenShort,
@@ -22,4 +24,21 @@ import Foundation
 @Test func bookingPortalOpenTitle_shortKeyResolves() {
     #expect(BookingPortalOpenTitle.short != L10nKey.actionOpenShort.rawValue)
     #expect(!BookingPortalOpenTitle.short.isEmpty)
+}
+
+@Test func bookingPortalCancelTitle_buttonIsStornierenInGerman() {
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+    #expect(L10n.string(.actionCancelInPortal) == "Stornieren")
+    #expect(BookingPortalCancelTitle.button == "Stornieren")
+}
+
+@Test func bookingPortalCancelLoadFailed_keyResolves() {
+    L10n.locale = Locale(identifier: "de")
+    defer { L10n.locale = .current }
+    let value = L10n.string(.bookingPortalCancelLoadFailed)
+    #expect(value != L10nKey.bookingPortalCancelLoadFailed.rawValue)
+    #expect(!value.isEmpty)
+    #expect(value == "Die Stornoseite konnte nicht geladen werden.")
+}
 }
