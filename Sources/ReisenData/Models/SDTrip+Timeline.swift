@@ -4,14 +4,13 @@ public extension SDTrip {
     var resolvedBookings: [SDBooking] { bookings ?? [] }
     var resolvedGaps: [SDGap] { gaps ?? [] }
 
-    /// Aktive Timeline-Buchungen: ab heute, nicht storniert, nach Start sortiert.
+    /// Timeline: ab heute, nicht storniert; manuell importierte Buchungen auch in der Vergangenheit.
     func timelineBookings(
-        asOf now: Date = Date(),
+        now: Date = Date(),
         calendar: Calendar = .current
     ) -> [SDBooking] {
-        let startOfToday = calendar.startOfDay(for: now)
         return resolvedBookings
-            .filter { $0.startAt >= startOfToday && $0.status != .cancelled }
+            .filter { $0.appearsInList(now: now, calendar: calendar) }
             .sorted { $0.startAt < $1.startAt }
     }
 }

@@ -23,6 +23,7 @@ import ReisenDomain
         bookingType: .hotel,
         title: "Hotel A",
         externalUrl: "https://example.com/b1",
+        cancellationUrl: "https://example.com/cancel",
         startAt: Date(timeIntervalSince1970: 1_700_000_000),
         endAt: Date(timeIntervalSince1970: 1_700_100_000),
         status: .confirmed,
@@ -62,6 +63,9 @@ import ReisenDomain
 
     try repo.upsert(first)
     try repo.save()
+
+    let storedAfterFirstUpsert = try #require(try repo.fetch(id: bookingID))
+    #expect(storedAfterFirstUpsert.cancellationUrl == "https://example.com/cancel")
 
     let second = Booking(
         id: UUID(), // different id — match via externalUrl

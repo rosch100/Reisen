@@ -8,6 +8,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
     public var title: String?
     public var confirmationCode: String?
     public var externalUrl: String?
+    public var cancellationUrl: String?
     public var startAt: Date
     public var endAt: Date
     /// Stay-/Lokal-Offset (historischer Name; Hotel und Mietwagen-Pickup). Persistiert unter diesem Key.
@@ -42,6 +43,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
         title: String? = nil,
         confirmationCode: String? = nil,
         externalUrl: String? = nil,
+        cancellationUrl: String? = nil,
         startAt: Date,
         endAt: Date,
         hotelOffsetSeconds: Int? = nil,
@@ -72,6 +74,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
         self.title = title
         self.confirmationCode = confirmationCode
         self.externalUrl = externalUrl
+        self.cancellationUrl = cancellationUrl
         self.startAt = startAt
         self.endAt = endAt
         self.hotelOffsetSeconds = hotelOffsetSeconds
@@ -108,5 +111,10 @@ public struct Booking: Identifiable, Equatable, Sendable {
     /// Browser-öffentliche URL (ohne `reisen://manual/…`).
     public var browserURL: URL? {
         BookingExternalURL.browserURL(from: externalUrl)
+    }
+
+    /// Browser-öffentliche Storno-URL (derselbe Filter wie `browserURL`).
+    public var cancellationBrowserURL: URL? {
+        BookingExternalURL.browserURL(from: cancellationUrl)
     }
 }

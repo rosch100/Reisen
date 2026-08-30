@@ -110,14 +110,30 @@ struct OpenBookingsScreen: View {
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
 
+    private var currentOpenBookings: [SDBooking] {
+        OpenBookingMatching.currentUnassigned(in: allBookings)
+    }
+
+    private var elapsedOpenBookings: [SDBooking] {
+        OpenBookingMatching.elapsedUnassigned(in: allBookings)
+    }
+
     private var openBookings: [SDBooking] {
-        OpenBookingMatching.openUnassigned(in: allBookings)
+        currentOpenBookings
     }
 
     private var filtered: [SDBooking] {
+        matching(openBookings)
+    }
+
+    private var filteredElapsed: [SDBooking] {
+        matching(elapsedOpenBookings)
+    }
+
+    private func matching(_ bookings: [SDBooking]) -> [SDBooking] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { return openBookings }
-        return openBookings.filter {
+        guard !q.isEmpty else { return bookings }
+        return bookings.filter {
             ($0.title ?? "").localizedCaseInsensitiveContains(q)
                 || ($0.confirmationCode ?? "").localizedCaseInsensitiveContains(q)
                 || $0.providerRaw.localizedCaseInsensitiveContains(q)
@@ -126,7 +142,7 @@ struct OpenBookingsScreen: View {
 
     var body: some View {
         Group {
-            if openBookings.isEmpty {
+            if currentOpenBookings.isEmpty && elapsedOpenBookings.isEmpty {
                 ContentUnavailableView {
                     Label(L10n.string(.tripNoOpenBookings), systemImage: "calendar")
                 } description: {
@@ -144,19 +160,15 @@ struct OpenBookingsScreen: View {
                         #endif
                 }
             } else {
-                let partition = OpenBookingMatching.partitionByFillOpportunity(
-                    bookings: filtered,
-                    trips: trips
-                )
                 if isSelectingForTripCreate {
                     List(selection: $multiSelection) {
-                        openBookingSections(partition: partition, interactive: false)
+                        openBookingListContent(interactive: false)
                     }
                     .environment(\.editMode, .constant(.active))
                     .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
                 } else {
                     List(selection: $selectedBookingID) {
-                        openBookingSections(partition: partition, interactive: true)
+                        openBookingListContent(interactive: true)
                     }
                     .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
                 }
@@ -169,11 +181,12 @@ struct OpenBookingsScreen: View {
         )
         .navigationBarTitleDisplayMode(.inline)
         .toolbarTitleMenu {
-            if !isSelectingForTripCreate, !openBookings.isEmpty {
+            let fromAll = OpenBookingMatching.openUnassigned(in: allBookings)
+            if !isSelectingForTripCreate, !fromAll.isEmpty {
                 Button {
                     presentCreateTripFromAllOpen()
                 } label: {
-                    CreateTripFromAllOpenBookingsLabel(count: openBookings.count)
+                    CreateTripFromAllOpenBookingsLabel(count: fromAll.count)
                 }
             }
         }
@@ -222,6 +235,22 @@ struct OpenBookingsScreen: View {
     }
 
     @ViewBuilder
+    private func openBookingListContent(interactive: Bool) -> some View {
+        let partition = OpenBookingMatching.partitionByFillOpportunity(
+            bookings: filtered,
+            trips: trips
+        )
+        openBookingSections(partition: partition, interactive: interactive)
+        if !filteredElapsed.isEmpty {
+            Section(L10n.string(.bookingElapsed)) {
+                ForEach(filteredElapsed, id: \.id) { booking in
+                    openBookingListRow(booking, fillCaption: nil, interactive: interactive)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
     private func openBookingSections(
         partition: OpenBookingFillPartition,
         interactive: Bool
@@ -256,6 +285,11 @@ struct OpenBookingsScreen: View {
                             )
                             CopyLinkMenuItem(url: url)
                         }
+                        BookingPortalCancelMenuItems(
+                            cancellationURL: booking.cancellationBrowserURL,
+                            openURL: booking.browserURL,
+                            status: booking.status
+                        )
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         if !usesSplit {

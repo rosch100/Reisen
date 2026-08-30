@@ -373,6 +373,11 @@ struct TripDetailView: View {
                                     BookingPortalOpenButton(browserURL: url)
                                     CopyLinkMenuItem(url: url)
                                 }
+                                BookingPortalCancelMenuItems(
+                                    cancellationURL: booking.cancellationBrowserURL,
+                                    openURL: booking.browserURL,
+                                    status: booking.status
+                                )
                                 Button(role: .destructive) {
                                     requestRemoveBookingFromTrip(booking)
                                 } label: {
@@ -930,6 +935,9 @@ private struct BookingRow: View {
         if isOverlapping {
             parts.append(L10n.overlapLabel(extraCount: overlapCount))
         }
+        if let elapsed = BookingElapsedText.string(for: booking, now: now) {
+            parts.append(elapsed)
+        }
 
         parts.append(bookingTimeCopyText())
 
@@ -949,14 +957,14 @@ private struct BookingRow: View {
 
     private func bookingAttributedDisplayText(now: Date) -> AttributedString {
         let ns = NSMutableAttributedString()
-        appendHeaderAttributed(to: ns)
+        appendHeaderAttributed(to: ns, now: now)
         appendTimeBlockAttributed(to: ns)
         appendCancellationBlockAttributed(to: ns, now: now)
         trimFinalNewline(from: ns)
         return AttributedString(ns)
     }
 
-    private func appendHeaderAttributed(to ns: NSMutableAttributedString) {
+    private func appendHeaderAttributed(to ns: NSMutableAttributedString, now: Date) {
         let headlineFont = NSFont.preferredFont(forTextStyle: .headline)
         let caption2Font = NSFont.preferredFont(forTextStyle: .caption2)
 
@@ -972,6 +980,12 @@ private struct BookingRow: View {
         if isOverlapping {
             let overlapText = L10n.overlapLabel(extraCount: overlapCount)
             ns.append(NSAttributedString(string: "  \(overlapText)", attributes: [
+                .font: caption2Font,
+                .foregroundColor: orange
+            ]))
+        }
+        if let elapsed = BookingElapsedText.string(for: booking, now: now) {
+            ns.append(NSAttributedString(string: "  \(elapsed)", attributes: [
                 .font: caption2Font,
                 .foregroundColor: orange
             ]))
@@ -1182,18 +1196,19 @@ private struct BookingRow: View {
 
     var body: some View {
         // Summary: reines SwiftUI (kein NSTextView/onTapGesture — sonst verzögerte Listen-Klicks).
-        Group {
-            if displayMode == .summary {
-                bookingSummaryBody
-            } else {
-                bookingDetailsBody
+        TimelineView(CalendarDayTimelineSchedule()) { context in
+            Group {
+                if displayMode == .summary {
+                    bookingSummaryBody(now: context.date)
+                } else {
+                    bookingDetailsBody(now: context.date)
+                }
             }
         }
         .padding(.vertical, 2)
     }
 
-    private var bookingSummaryBody: some View {
-        let now = Date()
+    private func bookingSummaryBody(now: Date) -> some View {
         let stornoLines = BookingStornoSummary.lines(for: booking, now: now)
 
         return HStack(alignment: .top, spacing: 12) {
@@ -1208,6 +1223,7 @@ private struct BookingRow: View {
                             .font(.caption2)
                             .foregroundStyle(.orange)
                     }
+                    BookingElapsedLabel(for: booking, now: now)
                 }
 
                 Text(bookingSummaryDateRangeText())
@@ -1239,9 +1255,8 @@ private struct BookingRow: View {
         }
     }
 
-    private var bookingDetailsBody: some View {
-        let now = Date()
-        return VStack(alignment: .leading, spacing: 6) {
+    private func bookingDetailsBody(now: Date) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 12) {
                 SelectableBookingTextView(
                     attributedString: bookingAttributedDisplayText(now: now),

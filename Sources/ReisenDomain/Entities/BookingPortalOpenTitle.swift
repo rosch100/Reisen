@@ -7,6 +7,11 @@ public enum BookingPortalOpenTitle {
         L10n.string(.actionOpenInBrowser)
     }
 
+    /// Kurztitel für die Action-Bar (HIG: knappe Button-Labels).
+    public static var short: String {
+        L10n.string(.actionOpenShort)
+    }
+
     public static var openInBrowserHelp: String {
         L10n.string(.actionOpenInBrowserHelp)
     }
