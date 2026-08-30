@@ -55,6 +55,11 @@ import ReisenPasteImport
                 "Beispiel \(sample.name) braucht bookingType und startAt"
             )
             #expect(draft.bookingType == extraction.bookingType)
+            if draft.bookingType.usesFlightLikeSchedule,
+               let route = PlaceLabel.route(from: draft.locationFrom, to: draft.locationTo)
+            {
+                #expect(draft.title == route, "Beispiel \(sample.name) braucht sprechenden Routentitel")
+            }
         }
     }
 }

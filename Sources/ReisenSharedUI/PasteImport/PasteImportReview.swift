@@ -9,10 +9,12 @@ import ReisenDomain
 public struct PasteImportReviewPayload: Equatable, Sendable, Identifiable {
     public let id: UUID
     public let draft: BookingEditorDraft
-    /// `nil` = offene Buchung.
+    /// Persistierte Zuordnung nach Datumsfenster; `nil` = offene Buchung.
     public let tripID: UUID?
     /// Gesetzt bei Ergänzen einer Bestandsbuchung.
     public let bookingID: UUID?
+    /// Einstiegs-Reise des Neu-Imports (ungefiltert); `save` prüft das Fenster gegen den Editor-Draft.
+    public let entryTripID: UUID?
     public let index: Int
     public let total: Int
 
@@ -21,6 +23,7 @@ public struct PasteImportReviewPayload: Equatable, Sendable, Identifiable {
         draft: BookingEditorDraft,
         tripID: UUID?,
         bookingID: UUID?,
+        entryTripID: UUID? = nil,
         index: Int = 1,
         total: Int = 1
     ) {
@@ -28,6 +31,7 @@ public struct PasteImportReviewPayload: Equatable, Sendable, Identifiable {
         self.draft = draft
         self.tripID = tripID
         self.bookingID = bookingID
+        self.entryTripID = entryTripID
         self.index = index
         self.total = total
     }
@@ -52,13 +56,25 @@ public struct PasteImportReviewPayload: Equatable, Sendable, Identifiable {
     public static func creating(
         candidate: PasteImportCandidate,
         tripID: UUID?,
+        tripStart: Date?,
+        tripEnd: Date?,
+        calendar: Calendar = .current,
         index: Int = 1,
         total: Int = 1
     ) -> PasteImportReviewPayload {
-        PasteImportReviewPayload(
-            draft: PasteImportEditorPrefill.draft(for: candidate, existing: nil),
-            tripID: tripID,
+        let draft = PasteImportEditorPrefill.draft(for: candidate, existing: nil)
+        return PasteImportReviewPayload(
+            draft: draft,
+            tripID: TripBookingDateWindow.assignedTripID(
+                entryTripID: tripID,
+                bookingStart: draft.startAt,
+                bookingEnd: draft.endAt,
+                tripStart: tripStart,
+                tripEnd: tripEnd,
+                calendar: calendar
+            ),
             bookingID: nil,
+            entryTripID: tripID,
             index: index,
             total: total
         )
@@ -220,7 +236,15 @@ public struct PasteImportReviewSheet: View {
             onSaved(booking.id)
             return
         }
-        let trip = try fetchTrip(id: payload.tripID)
+        let entryTrip = try fetchTrip(id: payload.entryTripID)
+        let assignedID = TripBookingDateWindow.assignedTripID(
+            entryTripID: payload.entryTripID,
+            bookingStart: draft.startAt,
+            bookingEnd: draft.endAt,
+            tripStart: entryTrip?.startDate,
+            tripEnd: entryTrip?.endDate
+        )
+        let trip = assignedID == nil ? nil : entryTrip
         let createdID = try BookingEditorDraft.createBooking(
             from: draft,
             trip: trip,

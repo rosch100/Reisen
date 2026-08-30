@@ -78,6 +78,7 @@ public enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, S
 public enum BookingEditorField: Hashable, Sendable {
     case title
     case externalUrl
+    case cancellationUrl
     case end
     case hotelOffset
     case departureOffset
@@ -100,6 +101,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
     public var title: String
     public var confirmationCode: String
     public var externalUrl: String
+    public var cancellationUrl: String
     public var startAt: Date
     public var endAt: Date
     public var locationFrom: String
@@ -144,6 +146,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             title: "",
             confirmationCode: "",
             externalUrl: "",
+            cancellationUrl: "",
             startAt: start,
             endAt: end,
             locationFrom: "",
@@ -187,6 +190,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             title: booking.title ?? "",
             confirmationCode: booking.confirmationCode ?? "",
             externalUrl: booking.externalUrl ?? "",
+            cancellationUrl: booking.cancellationUrl ?? "",
             startAt: booking.startAt,
             endAt: booking.endAt,
             locationFrom: booking.locationFrom ?? "",
@@ -232,7 +236,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
         case emptyTitle
         case endBeforeStart
         case invalidNumber(field: String, focusField: BookingEditorField)
-        case invalidUrl
+        case invalidUrl(focusField: BookingEditorField)
 
         public var errorDescription: String? {
             switch self {
@@ -251,8 +255,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
                 return .end
             case .invalidNumber(_, let focusField):
                 return focusField
-            case .invalidUrl:
-                return .externalUrl
+            case .invalidUrl(let focusField):
+                return focusField
             }
         }
     }
@@ -285,7 +289,14 @@ public struct BookingEditorDraft: Equatable, Sendable {
         guard endAt >= startAt else { throw ValidationError.endBeforeStart }
 
         if !externalUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            guard URL(string: externalUrl) != nil else { throw ValidationError.invalidUrl }
+            guard URL(string: externalUrl) != nil else {
+                throw ValidationError.invalidUrl(focusField: .externalUrl)
+            }
+        }
+        if !cancellationUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            guard URL(string: cancellationUrl) != nil else {
+                throw ValidationError.invalidUrl(focusField: .cancellationUrl)
+            }
         }
 
         try ensureOptionalInt(L10n.string(.editorFieldHotelOffset), hotelOffsetSecondsText, focusField: .hotelOffset)
@@ -356,6 +367,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             title: working.title.trimmingCharacters(in: .whitespacesAndNewlines),
             confirmationCode: normalizeOptionalString(working.confirmationCode),
             externalUrl: normalizeOptionalString(working.externalUrl),
+            cancellationUrl: normalizeOptionalString(working.cancellationUrl),
             startAt: working.startAt,
             endAt: working.endAt,
             locationFrom: normalizeOptionalString(working.locationFrom),
@@ -381,6 +393,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
         booking.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         booking.confirmationCode = Self.normalizeOptionalString(confirmationCode)
         booking.externalUrl = Self.normalizeOptionalString(externalUrl)
+        booking.cancellationUrl = Self.normalizeOptionalString(cancellationUrl)
         booking.locationFrom = Self.normalizeOptionalString(locationFrom)
         booking.locationTo = Self.normalizeOptionalString(locationTo)
         booking.locationFromAddress = Self.normalizeOptionalString(locationFromAddress)
@@ -712,12 +725,10 @@ public struct BookingEditorForm: View {
                     TextField(L10n.string(.editorConfirmationCode), text: $draft.confirmationCode)
                     TextField(L10n.string(.editorUrlOptional), text: $draft.externalUrl)
                         .editorFocus(.externalUrl, $focusedField)
-                        .textContentType(.URL)
-                        #if os(iOS)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        #endif
+                        .modifier(BookingEditorURLFieldChrome())
+                    TextField(L10n.string(.editorCancellationUrlOptional), text: $draft.cancellationUrl)
+                        .editorFocus(.cancellationUrl, $focusedField)
+                        .modifier(BookingEditorURLFieldChrome())
                     DatePicker(
                         draft.bookingType.scheduleStartLabel,
                         selection: $draft.startAt,
@@ -976,6 +987,18 @@ public struct BookingEditorForm: View {
 private extension View {
     func editorFocus(_ field: BookingEditorField, _ focused: FocusState<BookingEditorField?>.Binding) -> some View {
         self.focused(focused, equals: field).id(field)
+    }
+}
+
+private struct BookingEditorURLFieldChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .textContentType(.URL)
+            #if os(iOS)
+            .keyboardType(.URL)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            #endif
     }
 }
 

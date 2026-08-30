@@ -39,6 +39,7 @@ public enum DraftAssembler {
             title: facts.title,
             confirmationCode: facts.confirmationCode,
             externalUrl: facts.externalUrl,
+            cancellationUrl: facts.cancellationUrl,
             startAt: window.startAt,
             endAt: window.endAt,
             locationFrom: facts.locationFrom,
@@ -83,7 +84,8 @@ public enum DraftAssembler {
             locationFromAddress: facts.locationFromAddress,
             locationToAddress: facts.locationToAddress,
             operatorName: facts.operatorName,
-            isAllDay: facts.isAllDay
+            isAllDay: facts.isAllDay,
+            cancellationUrl: facts.cancellationUrl
         )
     }
 

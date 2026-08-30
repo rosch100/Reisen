@@ -104,6 +104,18 @@ struct ReisenCommands: Commands {
                     ? BookingPortalOpenTitle.openInBrowserHelp
                     : L10n.string(.bookingDetailNoBrowserLink)
             )
+
+            Button(BookingPortalCancelTitle.menu) {
+                if let url = bookingPortalOpenCommandState?.cancellationURL {
+                    openURL(url)
+                }
+            }
+            .disabled(bookingPortalOpenCommandState?.canCancel != true)
+            .help(
+                bookingPortalOpenCommandState?.canCancel == true
+                    ? BookingPortalCancelTitle.help
+                    : L10n.string(.bookingDetailNoBrowserLink)
+            )
         }
     }
 }

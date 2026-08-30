@@ -85,7 +85,13 @@ public struct PasteImportDraft: Equatable, Sendable {
             startAt: startAt,
             endAt: extraction.endAt ?? startAt,
             endAtIsPlaceholder: extraction.endAt == nil,
-            title: NonEmpty.string(extraction.title),
+            title: BookingSpeakingTitle.make(
+                bookingType: bookingType,
+                title: extraction.title,
+                locationFrom: extraction.locationFrom,
+                locationTo: extraction.locationTo,
+                operatorName: extraction.operatorName
+            ),
             confirmationCode: NonEmpty.string(extraction.confirmationCode),
             externalUrl: NonEmpty.string(extraction.externalUrl),
             locationFrom: NonEmpty.string(extraction.locationFrom),

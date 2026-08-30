@@ -33,6 +33,7 @@ func bmBookingsParsesActiveCarRentalDraft() throws {
         draft.externalUrl
             == BilligerMietwagenWebConstants.bookingPageURL(id: "<REDACTED-UUID>")
     )
+    #expect(draft.cancellationUrl == nil)
     #expect(draft.startAt == iso8601("2026-09-15T10:00:00+02:00"))
     #expect(draft.endAt == iso8601("2026-09-20T10:00:00+02:00"))
     #expect(draft.locationFrom == "Berlin")

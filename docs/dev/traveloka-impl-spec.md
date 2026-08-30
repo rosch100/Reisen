@@ -17,7 +17,7 @@ Neuer Provider `ReisenTraveloka` / `ProviderID.traveloka`: persönliche Buchunge
 | Session-Probe | `POST /api/v2/user/whoami` | `data.loginMethod` ∈ {`TV`,`AP`,…}; kein `revoked` |
 | Catalog | `POST /api/v2/tripitinerary/itineraries/v2/fetch` (+ optional `transactions/number`) | Itinerary-Entries / Gruppen `ACTIVE_BOOKING`; Phase **`UPCOMING` only** (Live 2026-08-28: `PAST` → HTTP 400 Illegal argument) |
 | Enrich | `POST /api/v2/tripitinerary/itineraries/v2/single` | `cardSummaryInfo` + `cardDetailInfo` |
-| Refund (wenn Detail ohne **Fee**-Deadline) | `GET /en-en/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | `__NEXT_DATA__` Deadline-Locals; **mergen** (Itinerary-Free behalten, Fee ergänzen) |
+| Refund (wenn Detail ohne **Fee**-Deadline) | `GET /en-en/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | `__NEXT_DATA__` Deadline-Locals; **mergen** (Itinerary-Free behalten, Fee ergänzen). Dieselbe URL wird als persistierte `cancellationUrl` gesetzt (Storno-Button), unabhängig vom Refund-HTML-Fetch. |
 | Detail-Deep-Link | `/en-en/item/details/{bookingId}?type={PRODUCT}&id={itineraryId}` | `externalUrl` |
 
 ## API-Header (SSOT aus HAR)
