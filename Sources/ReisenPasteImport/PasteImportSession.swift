@@ -50,8 +50,13 @@ public final class PasteImportSession: PasteImportSessionControlling {
         return false
     }
 
-    /// Fortschritt und Kandidatenliste teilen sich ein Sheet: SwiftUI zeigt pro View nur eines.
-    public var isPresentingSheet: Bool { isRunning || isChoosing }
+    /// Kandidatenliste (0 Treffer / Feature-Request). Lauf-Progress ist nicht modal.
+    public var isPresentingSheet: Bool {
+        if case .choosing(let result) = phase {
+            return result.candidates.isEmpty
+        }
+        return false
+    }
 
     public var choosingResult: PasteImportRunResult? {
         if case .choosing(let result) = phase { return result }
@@ -85,9 +90,26 @@ public final class PasteImportSession: PasteImportSessionControlling {
 
     public var hasPendingCandidates: Bool { !pending.isEmpty }
 
-    /// Bestätigung, Lauf, Kandidatenliste, Meldung, Feature-Request oder Editor-Warteschlange ist offen.
+    /// Letzter Lauf wurde abgebrochen (für Accessibility-Ende-Ansage); `reset`/`start` löschen das.
+    public private(set) var runWasCancelled = false
+
+    /// Review-Fenster/Sheet ist offen (auch wenn `pending` schon geleert wurde).
+    public private(set) var isReviewing = false
+
+    /// Bestätigung, Lauf, Kandidatenliste, Meldung, Feature-Request, Review oder Warteschlange ist offen.
     public var isActive: Bool {
-        phase != .idle || hasPendingCandidates || featureRequestFlow.phase != .idle
+        phase != .idle
+            || hasPendingCandidates
+            || isReviewing
+            || featureRequestFlow.phase != .idle
+    }
+
+    public func beginReview() {
+        isReviewing = true
+    }
+
+    public func endReview() {
+        isReviewing = false
     }
 
     /// - Parameters:
@@ -128,6 +150,7 @@ public final class PasteImportSession: PasteImportSessionControlling {
     public func cancelRun() {
         guard case .running = phase else { return }
         reset()
+        runWasCancelled = true
     }
 
     /// Übernimmt die Kandidaten in die Editor-Warteschlange.
@@ -193,8 +216,16 @@ public final class PasteImportSession: PasteImportSessionControlling {
         }
     }
 
-    public func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish) {
+    public func finishFeatureRequestMail(
+        _ finish: PasteImportFailedMailComposeFinish,
+        closesSessionOnCompleted: Bool = true
+    ) {
         featureRequestFlow.finishMailCompose(finish)
+        // Nach Mailer-Handoff: kein GitHub-Link-Sheet — Session schließen.
+        // Bei Mail unavailable Draft verwerfen, Issue-Link behalten.
+        if case .completed = finish, closesSessionOnCompleted {
+            reset()
+        }
     }
 
     /// Beendet den laufenden Extract-Task, behält aber die Editor-Warteschlange.
@@ -221,29 +252,35 @@ public final class PasteImportSession: PasteImportSessionControlling {
             return
         }
         let existing = existing
+        let extractor = FoundationModelsPasteImportExtractor(kind: kind)
         phase = .running(kind)
-        runLifetime.begin { [weak self] id in
-            guard let self else { return }
-            do {
-                let result = try await PasteImportRun.run(
+        runLifetime.begin(
+            work: {
+                try await PasteImportRun.run(
                     source: source,
                     kind: kind,
-                    extractor: FoundationModelsPasteImportExtractor(kind: kind),
+                    extractor: extractor,
                     existing: existing
                 )
-                self.runLifetime.complete(ifCurrent: id) {
-                    self.failedRecognitionReason = self.featureRequestFlow.applyRunResult(result)
+            },
+            onSuccess: { [weak self] result in
+                guard let self else { return }
+                self.failedRecognitionReason = self.featureRequestFlow.applyRunResult(result)
+                if result.candidates.isEmpty {
                     self.phase = .choosing(result)
+                } else {
+                    self.pending = result.candidates
+                    self.phase = .idle
                 }
-            } catch {
-                self.runLifetime.complete(ifCurrent: id) {
-                    self.failedRecognitionReason = self.featureRequestFlow.applyRunFailure(
-                        PasteImportFailureMessage.failure(for: error)
-                    )
-                    self.phase = .failed(PasteImportFailureMessage.text(for: error))
-                }
+            },
+            onFailure: { [weak self] error in
+                guard let self else { return }
+                self.failedRecognitionReason = self.featureRequestFlow.applyRunFailure(
+                    PasteImportFailureMessage.failure(for: error)
+                )
+                self.phase = .failed(PasteImportFailureMessage.text(for: error))
             }
-        }
+        )
     }
 
     private func clearSourceAndFeatureRequest() {
@@ -259,6 +296,8 @@ public final class PasteImportSession: PasteImportSessionControlling {
         existing = []
         pending = []
         tripID = nil
+        isReviewing = false
+        runWasCancelled = false
         phase = .idle
     }
 }

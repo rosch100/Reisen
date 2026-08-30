@@ -75,8 +75,11 @@
         <li><strong>No third-party LLM</strong>: the content is not sent to language models of other vendors.</li>
         <li>If recognition finds no booking or fails with a <strong>model error</strong>, you can after
           <strong>confirmation</strong> create a public GitHub <strong>feature request</strong>. The original
-          document is <strong>not</strong> sent to GitHub; it goes <strong>by email</strong> to the feedback
-          address as an attachment. Without confirmation the document does not leave the device.</li>
+          document is <strong>not</strong> sent to GitHub. When Mail is set up, the app opens an email draft
+          with the document as an attachment to the feedback address; the document leaves the device only
+          after you send that draft. If Mail is unavailable, the document remains on the device; only the
+          public issue link (metadata, no attachment) is offered. Without confirmation the document does
+          not leave the device.</li>
       </ul>
 
       <h3>Trips and bookings (entered or synced by you)</h3>
@@ -127,9 +130,10 @@
         “Send errors automatically as a public issue” (consent, off by default). You do <strong>not</strong>
         need a GitHub account; the app uses an embedded issues-only token. Anyone can read the issue at
         <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
-        Obvious secrets and personal data in report text (email, names, phone numbers,
-        addresses, dates of birth, booking references, IBANs) are redacted before sending;
-        still do not include passenger data in feedback.
+        Obvious secrets and typical personal data in structured fields and labels
+        (email, first/last name fields, phone numbers, addresses, dates of birth,
+        booking references, IBANs) are redacted before sending;
+        still do not include passenger data in feedback and do not rely on free-text name detection.
       </p>
       <p>
         Email to <a href="mailto:reisenapp100@gmail.com">reisenapp100@gmail.com</a> is also filed

@@ -77,8 +77,11 @@
           übermittelt.</li>
         <li>Wenn die Erkennung keine Buchung findet oder mit einem <strong>Modellfehler</strong> endet, kannst
           du nach <strong>Bestätigung</strong> einen öffentlichen GitHub-<strong>Feature-Request</strong>
-          anlegen. Das Originaldokument geht <strong>nicht</strong> an GitHub, sondern <strong>per E-Mail</strong>
-          an die Feedback-Adresse (Anhang). Ohne Bestätigung verlässt das Dokument das Gerät nicht.</li>
+          anlegen. Das Originaldokument geht <strong>nicht</strong> an GitHub. Ist Mail eingerichtet, öffnet
+          die App einen E-Mail-Entwurf mit dem Dokument als Anhang an die Feedback-Adresse; das Dokument
+          verlässt das Gerät erst, wenn du den Entwurf absendest. Ist Mail nicht verfügbar, bleibt das
+          Dokument auf dem Gerät; angeboten wird dann nur der öffentliche Issue-Link (Metadaten, ohne Anhang).
+          Ohne Bestätigung verlässt das Dokument das Gerät nicht.</li>
       </ul>
 
       <h3>Buchungen und Reisen (von dir erfasst oder synchronisiert)</h3>
@@ -132,9 +135,10 @@
         (Einwilligung, Standard aus). Dafür brauchst du <strong>kein</strong> GitHub-Konto; die App nutzt
         ein eingebettetes, auf Issues beschränktes Token. Der Inhalt ist für jeden lesbar unter
         <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
-            Offensichtliche Geheimnisse sowie Personenbezüge in Meldungstexten (E-Mail, Namen,
-            Telefon, Adressen, Geburtsdaten, Buchungsnummern, IBAN) werden vor dem Versand geschwärzt;
-        schreibe trotzdem keine Passagierdaten in Feedback.
+            Offensichtliche Geheimnisse sowie typische Personenbezüge in strukturierten
+            Feldern und Labels (E-Mail, Vorname:/Nachname:, Telefon, Adressen, Geburtsdaten,
+            Buchungsnummern, IBAN) werden vor dem Versand geschwärzt;
+        schreibe trotzdem keine Passagierdaten in Feedback und rechne nicht mit Freitext-Namenserkennung.
       </p>
       <p>
         E-Mails an <a href="mailto:reisenapp100@gmail.com">reisenapp100@gmail.com</a> werden ebenfalls

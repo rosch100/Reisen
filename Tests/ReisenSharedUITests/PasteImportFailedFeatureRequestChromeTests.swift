@@ -23,27 +23,38 @@ import ReisenSharedUI
     #expect(!presentation.message.localizedCaseInsensitiveContains("base64"))
 }
 
-@Test func pasteImportFailedMailCompose_successSheetWaitsForDraftAndError() {
+@Test func pasteImportFailedMailCompose_successSheetOnlyWhenMailUnavailable() {
     let url = URL(string: "https://github.com/rosch100/Reisen/issues/1")
     #expect(
         !PasteImportFailedMailCompose.showsSuccessSheet(
             successURL: url,
             hasMailDraft: true,
-            submitError: nil
+            submitError: nil,
+            mailCanSend: false
         )
     )
     #expect(
         PasteImportFailedMailCompose.showsSuccessSheet(
             successURL: url,
             hasMailDraft: false,
-            submitError: nil
+            submitError: nil,
+            mailCanSend: false
         )
     )
     #expect(
         !PasteImportFailedMailCompose.showsSuccessSheet(
             successURL: url,
             hasMailDraft: false,
-            submitError: "Mail fehlgeschlagen"
+            submitError: nil,
+            mailCanSend: true
+        )
+    )
+    #expect(
+        !PasteImportFailedMailCompose.showsSuccessSheet(
+            successURL: url,
+            hasMailDraft: false,
+            submitError: "Mail fehlgeschlagen",
+            mailCanSend: false
         )
     )
 }

@@ -6,6 +6,7 @@ import ReisenDomain
 import MessageUI
 #elseif os(macOS)
 import AppKit
+import UniformTypeIdentifiers
 #endif
 
 enum PasteImportFailedMailComposeError: LocalizedError {
@@ -18,12 +19,14 @@ enum PasteImportFailedMailComposeError: LocalizedError {
 
 @MainActor
 public enum PasteImportFailedMailCompose {
+    /// Erfolg-Sheet nur wenn Mail nicht eingerichtet ist — nach dem Composer kein GitHub-Link mehr.
     nonisolated public static func showsSuccessSheet(
         successURL: URL?,
         hasMailDraft: Bool,
-        submitError: String?
+        submitError: String?,
+        mailCanSend: Bool
     ) -> Bool {
-        successURL != nil && !hasMailDraft && submitError == nil
+        successURL != nil && !hasMailDraft && submitError == nil && !mailCanSend
     }
 
     /// Nur `.completed`, solange der Draft noch da ist — sonst würde ein Composer-Fehler überschrieben.
@@ -37,7 +40,8 @@ public enum PasteImportFailedMailCompose {
         showsSuccessSheet(
             successURL: session.featureRequestSuccessURL,
             hasMailDraft: session.featureRequestMailDraft != nil,
-            submitError: session.featureRequestSubmitError
+            submitError: session.featureRequestSubmitError,
+            mailCanSend: canSend
         )
     }
 
@@ -45,15 +49,16 @@ public enum PasteImportFailedMailCompose {
         guard let finish = finishForDismissedMailSheet(
             hasDraft: session.featureRequestMailDraft != nil
         ) else { return }
-        session.finishFeatureRequestMail(finish)
+        // Mail unavailable / Sheet-Dismiss ohne Composer: Issue-Link behalten.
+        session.finishFeatureRequestMail(finish, closesSessionOnCompleted: false)
     }
 
+    /// iOS: MessageUI. macOS: `mailto:` **und** Handler für `.eml` (nicht nur mailto).
     static var canSend: Bool {
         #if os(iOS)
         MFMailComposeViewController.canSendMail()
         #elseif os(macOS)
-        guard let service = composeEmailService, hasMailToHandler else { return false }
-        return service.canPerform(withItems: mailAvailabilityItems)
+        hasMailtoHandler && hasEmlHandler
         #else
         false
         #endif
@@ -67,105 +72,91 @@ public enum PasteImportFailedMailCompose {
         }
         #if os(macOS)
         do {
-            try present(draft) { session.finishFeatureRequestMail($0) }
+            try present(draft) { session.finishFeatureRequestMail($0, closesSessionOnCompleted: true) }
         } catch {
             session.finishFeatureRequestMail(
-                PasteImportFailedMailComposeFinish.fromSharingFailure(error)
+                PasteImportFailedMailComposeFinish.fromSharingFailure(error),
+                closesSessionOnCompleted: true
             )
         }
         #endif
     }
 
     #if os(macOS)
-    private static let mailAvailabilityItems: [Any] = [""]
-
-    private static var composeEmailService: NSSharingService? {
-        NSSharingService(named: .composeEmail)
-    }
-
-    private static var hasMailToHandler: Bool {
+    private static var hasMailtoHandler: Bool {
         guard let mailto = URL(string: "mailto:") else { return false }
         return NSWorkspace.shared.urlForApplication(toOpen: mailto) != nil
     }
 
-    fileprivate static var shareLifetime: MailShareLifetime?
+    /// Launch-Services-Handler für RFC822/`.eml` — unabhängig von `mailto:`.
+    private static var hasEmlHandler: Bool {
+        guard let emlType = UTType(filenameExtension: "eml") else { return false }
+        return NSWorkspace.shared.urlForApplication(toOpen: emlType) != nil
+    }
+
+    /// Completion-Callbacks pro `.eml`-URL — parallele `present`-Aufrufe überschreiben einander nicht.
+    fileprivate static var openCallbacks: [URL: @MainActor (PasteImportFailedMailComposeFinish) -> Void] = [:]
+    /// Hält die Datei, bis der Mailer sie gelesen hat (Cleanup verzögert).
+    fileprivate static var pendingFileURLs: Set<URL> = []
+    private static let mailerReadGraceNanoseconds: UInt64 = 60_000_000_000
 
     static func present(
         _ draft: PasteImportFailedMailDraft,
         onFinished: @escaping @MainActor (PasteImportFailedMailComposeFinish) -> Void
     ) throws {
-        guard let service = composeEmailService else {
-            throw PasteImportFailedMailComposeError.failed
-        }
         let fileURL = try PasteImportFailedMailAttachmentFile.writeUnique(
-            data: draft.data,
-            fileName: draft.fileName
+            data: draft.rfc822Data(),
+            fileName: "reisen-paste-import.eml"
         )
-        let items: [Any] = [draft.body, fileURL]
-        guard service.canPerform(withItems: items) else {
-            PasteImportFailedMailAttachmentFile.removeContainerIfPresent(of: fileURL)
-            throw PasteImportFailedMailComposeError.failed
+        openCallbacks[fileURL] = onFinished
+        pendingFileURLs.insert(fileURL)
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.open(fileURL, configuration: configuration) { app, error in
+            Task { @MainActor in
+                let finish = finishForOpenResult(app: app, error: error)
+                completeOpen(fileURL: fileURL, finish: finish)
+            }
         }
-        let lifetime = MailShareLifetime(fileURL: fileURL, onFinished: onFinished)
-        shareLifetime = lifetime
-        service.delegate = lifetime
-        service.recipients = [draft.to]
-        service.subject = draft.subject
-        service.perform(withItems: items)
     }
 
-    fileprivate static func completeShare(
+    /// Nur `.completed`, wenn die öffnende App der `mailto:`-Default ist — sonst Fallback/Fehler.
+    public static func finishForOpenResult(
+        app: NSRunningApplication?,
+        error: Error?
+    ) -> PasteImportFailedMailComposeFinish {
+        if let error {
+            return PasteImportFailedMailComposeFinish.fromSharingFailure(error)
+        }
+        guard let app, isMailtoDefaultApplication(app) else {
+            return .failed(L10n.string(.pasteImportFeatureRequestMailFailed))
+        }
+        return .completed
+    }
+
+    private static func isMailtoDefaultApplication(_ app: NSRunningApplication) -> Bool {
+        guard let mailto = URL(string: "mailto:") else { return false }
+        guard let mailAppURL = NSWorkspace.shared.urlForApplication(toOpen: mailto) else {
+            return false
+        }
+        guard let opened = app.bundleURL else { return false }
+        return opened.standardizedFileURL == mailAppURL.standardizedFileURL
+    }
+
+    fileprivate static func completeOpen(
         fileURL: URL,
-        finish: PasteImportFailedMailComposeFinish,
-        onFinished: @MainActor @escaping (PasteImportFailedMailComposeFinish) -> Void
+        finish: PasteImportFailedMailComposeFinish
     ) {
-        guard shareLifetime != nil else { return }
-        shareLifetime = nil
-        PasteImportFailedMailAttachmentFile.removeContainerIfPresent(of: fileURL)
+        guard let onFinished = openCallbacks.removeValue(forKey: fileURL) else { return }
         onFinished(finish)
+        // Mailer liest die Datei oft erst nach dem Open-Callback — Cleanup verzögern.
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: mailerReadGraceNanoseconds)
+            pendingFileURLs.remove(fileURL)
+            PasteImportFailedMailAttachmentFile.removeContainerIfPresent(of: fileURL)
+        }
     }
     #endif
 }
-
-#if os(macOS)
-private final class MailShareLifetime: NSObject, NSSharingServiceDelegate {
-    private let fileURL: URL
-    private let onFinished: @MainActor (PasteImportFailedMailComposeFinish) -> Void
-
-    init(
-        fileURL: URL,
-        onFinished: @escaping @MainActor (PasteImportFailedMailComposeFinish) -> Void
-    ) {
-        self.fileURL = fileURL
-        self.onFinished = onFinished
-    }
-
-    func sharingService(_ sharingService: NSSharingService, didShareItems items: [Any]) {
-        complete(.completed)
-    }
-
-    func sharingService(
-        _ sharingService: NSSharingService,
-        didFailToShareItems items: [Any],
-        error: Error
-    ) {
-        complete(PasteImportFailedMailComposeFinish.fromSharingFailure(error))
-    }
-
-    private func complete(_ finish: PasteImportFailedMailComposeFinish) {
-        let fileURL = self.fileURL
-        let onFinished = self.onFinished
-        Task { @MainActor in
-            PasteImportFailedMailCompose.completeShare(
-                fileURL: fileURL,
-                finish: finish,
-                onFinished: onFinished
-            )
-        }
-    }
-}
-
-#endif
 
 #if os(iOS)
 struct PasteImportFailedMailComposeView: UIViewControllerRepresentable {

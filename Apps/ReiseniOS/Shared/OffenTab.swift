@@ -9,6 +9,8 @@ import ReisenData
 
 struct OffenTab: View {
     @Binding var sessionChromeEpoch: Int
+    @Binding var selectedBookingID: UUID?
+    @Binding var compactPushBookingID: UUID?
     let pasteImport: PasteImportSession
     var onTripCreated: (UUID) -> Void
     #if REISEN_PROVIDER_SYNC
@@ -18,7 +20,6 @@ struct OffenTab: View {
     @State private var showCreateTrip = false
     @State private var tripCreateSeed: TripCreateSeed?
     @State private var showCreateTripFromBookingsFailed = false
-    @State private var selectedBookingID: UUID?
     @State private var multiSelection = Set<UUID>()
     @State private var isSelectingForTripCreate = false
     @State private var searchText = ""
@@ -26,6 +27,7 @@ struct OffenTab: View {
     var body: some View {
         AdaptiveListDetail(
             selection: $selectedBookingID,
+            compactPush: $compactPushBookingID,
             list: { openBookingsScreen },
             detail: { bookingID in
                 BookingDetailIOS(bookingID: bookingID, onTripCreated: onTripCreated)

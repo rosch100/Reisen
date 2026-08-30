@@ -1,4 +1,6 @@
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 
 public enum PasteImportSourceError: Error, Equatable, Sendable {
     case empty
@@ -75,10 +77,61 @@ public enum PasteImportSource: Equatable, Sendable {
         switch self {
         case .text:
             (fileName: "paste.txt", mimeType: "text/plain")
-        case .image:
-            (fileName: "paste-image.bin", mimeType: "application/octet-stream")
+        case .image(let data):
+            Self.imageMailAttachment(for: data)
         case .pdf:
             (fileName: "paste.pdf", mimeType: "application/pdf")
         }
+    }
+
+    /// Magic-Bytes zuerst, sonst ImageIO/UTType — kein generisches `.bin` für bekannte Formate.
+    static func imageMailAttachment(for data: Data) -> (fileName: String, mimeType: String) {
+        if matches(data, prefix: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+            return (fileName: "paste-image.png", mimeType: "image/png")
+        }
+        if matches(data, prefix: [0xFF, 0xD8, 0xFF]) {
+            return (fileName: "paste-image.jpg", mimeType: "image/jpeg")
+        }
+        if matches(data, prefix: [0x47, 0x49, 0x46, 0x38]) {
+            return (fileName: "paste-image.gif", mimeType: "image/gif")
+        }
+        if isWebP(data) {
+            return (fileName: "paste-image.webp", mimeType: "image/webp")
+        }
+        if isHEICFamily(data) {
+            return (fileName: "paste-image.heic", mimeType: "image/heic")
+        }
+        if let type = imageContentType(for: data),
+           let mime = type.preferredMIMEType,
+           let ext = type.preferredFilenameExtension {
+            return (fileName: "paste-image.\(ext)", mimeType: mime)
+        }
+        return (fileName: "paste-image.bin", mimeType: "application/octet-stream")
+    }
+
+    private static func matches(_ data: Data, prefix: [UInt8]) -> Bool {
+        guard data.count >= prefix.count else { return false }
+        return data.prefix(prefix.count).elementsEqual(prefix)
+    }
+
+    private static func isWebP(_ data: Data) -> Bool {
+        guard data.count >= 12 else { return false }
+        return data[0..<4] == Data([0x52, 0x49, 0x46, 0x46])
+            && data[8..<12] == Data([0x57, 0x45, 0x42, 0x50])
+    }
+
+    private static func isHEICFamily(_ data: Data) -> Bool {
+        guard data.count >= 12, data[4..<8] == Data("ftyp".utf8) else { return false }
+        let brand = String(data: data[8..<12], encoding: .ascii) ?? ""
+        let brands = ["heic", "heix", "hevc", "hevx", "mif1", "msf1"]
+        return brands.contains(where: { brand.hasPrefix($0) })
+    }
+
+    private static func imageContentType(for data: Data) -> UTType? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let typeID = CGImageSourceGetType(source) as String? else {
+            return nil
+        }
+        return UTType(typeID)
     }
 }

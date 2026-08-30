@@ -4401,6 +4401,22 @@
         }
       }
     },
+    "paste_import.review_discard_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungen verwerfen? Die Buchung wird nicht angelegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes? The booking will not be created."
+          }
+        }
+      }
+    },
     "paste_import.empty": {
       "localizations": {
         "de": {
@@ -4685,6 +4701,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Detecting bookings…"
+          }
+        }
+      }
+    },
+    "paste_import.cancelled": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erkennung abgebrochen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detection cancelled."
+          }
+        }
+      }
+    },
+    "paste_import.review_ready": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchungen prüfen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review bookings…"
           }
         }
       }

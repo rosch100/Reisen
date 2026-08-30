@@ -54,6 +54,18 @@ struct ReisenApp: App {
             ReisenCommands()
         }
 
+        Window(L10n.string(.editorCreateTitle), id: PasteImportReviewPresenter.windowID) {
+            if case .ready(let container, _, _, _) = bootstrap.state {
+                PasteImportReviewWindowView(presenter: PasteImportReviewPresenter.shared)
+                    .modelContainer(container)
+            } else {
+                Text(L10n.string(.appSettingsUnavailable))
+                    .padding()
+            }
+        }
+        .defaultSize(width: 560, height: 720)
+        .windowResizability(.contentSize)
+
         Settings {
             if case .ready(let container, let registry, let syncStore, _) = bootstrap.state {
                 ReisenSharedUI.SettingsView(

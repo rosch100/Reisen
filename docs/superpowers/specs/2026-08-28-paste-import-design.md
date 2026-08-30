@@ -34,14 +34,14 @@ Der Nutzer fügt Bestätigungsmaterial (Text, Bild, PDF) ein. Die App extrahiert
 - Eingabe: Zwischenablage-Text, Bilder, PDF (ephemer), inkl. Dateidialog, Drop und iOS „Senden an“/Teilen. Text-PDF über PDFKit-Text; **gescannte Seiten als Bilder** an das Modell (wie Foto), kein OCR-Workaround.
 - **Grounding** gegen Quelltext (Few-Shot-Leakage): nur wenn Text vorliegt. Bild-only ohne OCR → kein Token-Grounding; Schutz über Instructions/Few-Shots.
 - Store- und Private-iOS: **getrennte** App Groups und URL-Schemes für Share-Handoff (`reisen` vs. `reisen-private`).
-- Mehrere Kandidaten: Auswahlliste, Nutzer wählt 0..n, danach Editor nacheinander.
+- Kandidaten: **0 Treffer** → Leer-Sheet mit Feature-Request-Aktion (kein Review). **≥1 Treffer** → Review direkt öffnen (macOS-Fenster / iOS-Compose-Sheet), **keine** Kandidaten-Auswahlliste. Mehrere Treffer: Review nacheinander (Queue).
 - Einstieg: geöffnete Reise oder Offen-Tab; iOS zusätzlich Share-Sheet.
 - Alle `BookingType`-Fälle.
 - Kandidat nur mit sicherem `bookingType` und `startAt`.
 - Unsichere Felder weglassen. Fehlendes `status` → `.unknown` (kein `.confirmed`).
 - Fehlendes `endAt`: `endAt = startAt`, `endAtIsPlaceholder = true`.
 - Match store-weit; URL/Code/Fingerprint jeweils 0 → none, 1 → unique, >1 → ambiguous. Fingerprint nur wenn `endAtIsPlaceholder == false`.
-- Review Pflicht im `BookingEditor`.
+- Review Pflicht im `BookingEditor` vor Persistenz (macOS: eigenes Window; iOS: Compose-Sheet).
 - Create ohne Reise: `BookingEditorDraft.createBooking(..., trip: SDTrip?)` mit `trip == nil` für Offen (kein Dummy-Trip).
 - Modell: PCC wenn verfügbar, sonst On-Device, sonst disabled. Lauf-Fehler: Dialog, **kein** zweiten Extract mit der anderen Stufe.
 - Privacy-HTML: PCC und Paste-Import.
@@ -121,7 +121,10 @@ Wie zuvor: unavailable disabled; Modellfehler Dialog ohne Stufenwechsel; leere Q
 - iOS Toolbar plus **eine** Share-Extension, eingebettet in Store-App **und** Private-App. Store und Private nutzen **getrennte** App Groups und URL-Schemes (`PasteImportHandoffIdentity`: `reisen` / `reisen-private`). Consume löscht die Temp-Datei. iPad-Drop, „Öffnen in Reisen“ und **Senden an / Teilen** (Share-Sheet, inkl. `public.file-url` aus der Dateien-App) denselben Datei-Pfad. Datei-URLs aus „Öffnen mit“ landen in `PasteImportExternalFileInbox`, auch bevor Bootstrap `.ready` ist; der Host holt sie nach.
 - Badge = L10n-Text (Neu / Ergänzen), nicht nur Farbe; VoiceOver-Label gleich.
 - EN-Badge: **Enrich**, nicht Update.
-- PCC-Sheet vor dem Senden. Progress + Abbrechen.
+- PCC-Sheet vor dem Senden (modal, Einwilligung).
+- Extract-Fortschritt **nicht modal**: Statusleiste / Toolbar-Spinner + Abbrechen; UI bleibt bedienbar. Selektion während Extract unverändert.
+- Review **vor Speichern**: macOS eigenes `Window` (Draft + IDs); iOS Compose-Sheet (large / form, Nav Cancel/`commonSave`). Persistenz erst bei Sichern; Ampel/Wischen = Abbrechen. Kein Inspector-`.create` über der alten Timeline-Auswahl.
+- ≥1 Kandidat: Review öffnen, Kandidatenliste überspringen. 0 Treffer: Leer-Sheet + Feature-Request.
 
 ## Tests
 

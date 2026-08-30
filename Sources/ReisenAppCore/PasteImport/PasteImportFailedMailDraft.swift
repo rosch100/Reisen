@@ -48,6 +48,83 @@ public struct PasteImportFailedMailDraft: Equatable, Sendable, Identifiable {
             data: source.payloadData
         )
     }
+
+    /// RFC822 mit Textteil und Base64-Anhang — SSOT für macOS-`NSWorkspace`-Öffnen und Unit-Tests.
+    public func rfc822Data() -> Data {
+        let boundary = "ReisenPasteImport_\(id.uuidString.replacingOccurrences(of: "-", with: ""))"
+        let safeFileName = Self.mimeSafeFileName(fileName)
+        let safeMimeType = Self.mimeSafeType(mimeType)
+        let encodedFileName = Self.rfc2047Encoded(safeFileName)
+        let encodedSubject = Self.rfc2047Encoded(subject)
+        let foldedAttachment = Self.base64Folded(data)
+        let bodyCRLF = body
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\n", with: "\r\n")
+        let parts: [String] = [
+            "To: \(to)",
+            "Subject: \(encodedSubject)",
+            "MIME-Version: 1.0",
+            "Content-Type: multipart/mixed; boundary=\"\(boundary)\"",
+            "",
+            "--\(boundary)",
+            "Content-Type: text/plain; charset=utf-8",
+            "Content-Transfer-Encoding: 8bit",
+            "",
+            bodyCRLF,
+            "--\(boundary)",
+            "Content-Type: \(safeMimeType); name=\"\(encodedFileName)\"",
+            "Content-Transfer-Encoding: base64",
+            "Content-Disposition: attachment; filename=\"\(encodedFileName)\"",
+            "",
+            foldedAttachment,
+            "--\(boundary)--",
+            "",
+        ]
+        return Data(parts.joined(separator: "\r\n").utf8)
+    }
+
+    /// Keine CR/LF/Quotes in MIME-Parametern — sonst Header-Injection.
+    static func mimeSafeFileName(_ value: String) -> String {
+        let stripped = value
+            .replacingOccurrences(of: "\r", with: "")
+            .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: "\"", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return stripped.isEmpty ? "attachment.bin" : stripped
+    }
+
+    static func mimeSafeType(_ value: String) -> String {
+        let stripped = value
+            .replacingOccurrences(of: "\r", with: "")
+            .replacingOccurrences(of: "\n", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let token = "[A-Za-z0-9!#$&^_.+-]+"
+        guard stripped.range(of: "^\(token)/\(token)$", options: .regularExpression) != nil else {
+            return "application/octet-stream"
+        }
+        return stripped
+    }
+
+    private static func rfc2047Encoded(_ value: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " ._-+"))
+        if value.unicodeScalars.allSatisfy({ allowed.contains($0) }) {
+            return value
+        }
+        let encoded = Data(value.utf8).base64EncodedString()
+        return "=?UTF-8?B?\(encoded)?="
+    }
+
+    private static func base64Folded(_ data: Data) -> String {
+        let raw = data.base64EncodedString()
+        var lines: [String] = []
+        var index = raw.startIndex
+        while index < raw.endIndex {
+            let end = raw.index(index, offsetBy: 76, limitedBy: raw.endIndex) ?? raw.endIndex
+            lines.append(String(raw[index..<end]))
+            index = end
+        }
+        return lines.joined(separator: "\r\n")
+    }
 }
 
 public struct PasteImportFailedFeatureRequestOutcome: Equatable, Sendable {

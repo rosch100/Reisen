@@ -9,6 +9,7 @@ public protocol PasteImportSessionControlling: AnyObject {
     var isConfirmingPrivateCloudCompute: Bool { get }
     var isPresentingSheet: Bool { get }
     var runningKind: PasteImportModelKind? { get }
+    var isRunning: Bool { get }
     var choosingResult: PasteImportRunResult? { get }
     var errorMessage: String? { get }
     var canOfferFeatureRequest: Bool { get }
@@ -16,6 +17,9 @@ public protocol PasteImportSessionControlling: AnyObject {
     var featureRequestSuccessURL: URL? { get }
     var featureRequestSubmitError: String? { get }
     var featureRequestMailDraft: PasteImportFailedMailDraft? { get }
+    var hasPendingCandidates: Bool { get }
+    /// `true`, wenn der letzte Lauf per Abbrechen beendet wurde (bis zum nächsten Start).
+    var runWasCancelled: Bool { get }
 
     func confirmPrivateCloudCompute()
     func cancelConfirmation()
@@ -28,5 +32,16 @@ public protocol PasteImportSessionControlling: AnyObject {
     func confirmFailedFeatureRequest()
     func dismissFeatureRequestSuccess()
     func dismissFeatureRequestSubmitError()
-    func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish)
+    /// - Parameter closesSessionOnCompleted: bei `.completed` Session schließen (Mailer-Handoff);
+    ///   `false`, wenn nur der Draft verworfen wird und das Issue-Link-Sheet bleiben soll.
+    func finishFeatureRequestMail(
+        _ finish: PasteImportFailedMailComposeFinish,
+        closesSessionOnCompleted: Bool
+    )
+}
+
+public extension PasteImportSessionControlling {
+    func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish) {
+        finishFeatureRequestMail(finish, closesSessionOnCompleted: true)
+    }
 }

@@ -13,7 +13,9 @@ body:
         Feature-Wünsche bitte über das Formular **Feature** melden (Issue-Dev).
         Uploads in diesem Formular sind **öffentlich**. Sensible Screenshots und Archive:
         [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (bleiben in der Mailbox).
-        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
+        Issues aus App und Gmail-Ingress haben **keine Datei-Uploads** über die Issues-API.
+        Textanhänge aus dem Gmail-Ingress erscheinen als Text im Issue (geschwärzt wo möglich);
+        Binärdateien bleiben in der Mailbox.
   - type: textarea
     id: feedback
     attributes:

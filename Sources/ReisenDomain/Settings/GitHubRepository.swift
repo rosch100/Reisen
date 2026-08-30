@@ -80,7 +80,7 @@ public enum GitHubRepository {
     public static var issueBodyTruncationNotice: String {
         filledEmail(issueBodyTruncationNoticeTemplate)
     }
-    public static let issueAttachmentPolicyCellTemplate = "nicht auf GitHub; Dateien per E-Mail an {email}"
+    public static let issueAttachmentPolicyCellTemplate = "keine Datei-Uploads; Text/Base64-Kommentare möglich; Binärdateien per E-Mail an {email}"
     public static var issueAttachmentPolicyCell: String {
         filledEmail(issueAttachmentPolicyCellTemplate)
     }
