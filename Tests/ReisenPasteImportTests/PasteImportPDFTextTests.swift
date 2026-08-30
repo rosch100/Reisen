@@ -51,10 +51,7 @@ import Testing
 @Test func pasteImportPDFText_scannedPageImagesPassImageAttachmentGate() throws {
     let content = try PasteImportPDFPreparation.prepare(PDFTestData.blankPages(count: 1))
     #expect(content.pageImages.count == 1)
-    #expect(PasteImportImageAttachments.isSupported)
-    #expect(throws: Never.self) {
-        try PasteImportImageAttachments.requireSupport()
-    }
+    PasteImportImageAttachmentGate.expectMatchesRuntime()
 }
 
 /// PDF-Bytes für die Tests: Fixture mit Text, generierte Seiten ohne Text.
