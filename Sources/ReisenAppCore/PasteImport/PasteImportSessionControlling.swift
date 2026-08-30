@@ -32,5 +32,16 @@ public protocol PasteImportSessionControlling: AnyObject {
     func confirmFailedFeatureRequest()
     func dismissFeatureRequestSuccess()
     func dismissFeatureRequestSubmitError()
-    func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish)
+    /// - Parameter closesSessionOnCompleted: bei `.completed` Session schließen (Mailer-Handoff);
+    ///   `false`, wenn nur der Draft verworfen wird und das Issue-Link-Sheet bleiben soll.
+    func finishFeatureRequestMail(
+        _ finish: PasteImportFailedMailComposeFinish,
+        closesSessionOnCompleted: Bool
+    )
+}
+
+public extension PasteImportSessionControlling {
+    func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish) {
+        finishFeatureRequestMail(finish, closesSessionOnCompleted: true)
+    }
 }

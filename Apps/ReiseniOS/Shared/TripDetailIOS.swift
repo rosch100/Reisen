@@ -111,10 +111,11 @@ struct TripDetailIOS: View {
                 .navigationDestination(item: $presentedBookingID) { token in
                     BookingDetailIOS(bookingID: token.id)
                 }
-                .onChange(of: focusBookingID) { _, bookingID in
-                    guard let bookingID else { return }
-                    presentedBookingID = PresentedBookingID(id: bookingID)
-                    focusBookingID = nil
+                .onAppear {
+                    applyFocusBookingIfNeeded()
+                }
+                .onChange(of: focusBookingID) { _, _ in
+                    applyFocusBookingIfNeeded()
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -156,6 +157,12 @@ struct TripDetailIOS: View {
                 ContentUnavailableView(L10n.string(.tripTripMissing), systemImage: "magnifyingglass")
             }
         }
+    }
+
+    private func applyFocusBookingIfNeeded() {
+        guard let bookingID = focusBookingID else { return }
+        presentedBookingID = PresentedBookingID(id: bookingID)
+        focusBookingID = nil
     }
 
     private func deletePendingBooking() {

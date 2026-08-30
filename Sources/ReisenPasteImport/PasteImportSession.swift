@@ -216,10 +216,14 @@ public final class PasteImportSession: PasteImportSessionControlling {
         }
     }
 
-    public func finishFeatureRequestMail(_ finish: PasteImportFailedMailComposeFinish) {
+    public func finishFeatureRequestMail(
+        _ finish: PasteImportFailedMailComposeFinish,
+        closesSessionOnCompleted: Bool = true
+    ) {
         featureRequestFlow.finishMailCompose(finish)
-        // Nach erfolgreichem Mail-Composer: kein GitHub-Link-Sheet — Session schließen.
-        if case .completed = finish {
+        // Nach Mailer-Handoff: kein GitHub-Link-Sheet — Session schließen.
+        // Bei Mail unavailable Draft verwerfen, Issue-Link behalten.
+        if case .completed = finish, closesSessionOnCompleted {
             reset()
         }
     }

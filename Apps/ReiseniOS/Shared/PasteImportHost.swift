@@ -38,17 +38,19 @@ struct PasteImportHost<Content: View>: View {
     var body: some View {
         content
             .pasteImportFlow(session: session, onReviewQueue: advanceQueue)
-            .sheet(item: $reviewPayload) { payload in
+            .sheet(item: $reviewPayload, onDismiss: {
+                // Swipe-Dismiss ruft onCancel nicht auf — Queue nur hier voranbringen.
+                guard session.isReviewing else { return }
+                advanceQueue()
+            }) { payload in
                 PasteImportReviewSheet(
                     payload: payload,
                     onCancel: {
                         reviewPayload = nil
-                        advanceQueue()
                     },
                     onSaved: { bookingID in
                         onSelectSavedBooking(bookingID)
                         reviewPayload = nil
-                        advanceQueue()
                     }
                 )
                 .id(payload.id)

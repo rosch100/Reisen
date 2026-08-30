@@ -40,7 +40,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 | X06 | Öffentlicher iCal-Feed-URL | abgelehnt | — | — |
 | X07 | Eigener Live-Flugstatus / Gate | abgelehnt | — | — |
 
-**Empfohlene Implementierungsreihenfolge:** F02 → F04 → F05 → F06 → F07–F08.
+**Empfohlene Implementierungsreihenfolge:** F02 → F04 → F05 → F07–F08.
 
 ---
 
