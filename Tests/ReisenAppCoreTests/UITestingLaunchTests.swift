@@ -13,6 +13,14 @@ import ReisenAppCore
     #expect(UITestingMode.from(arguments: ["-UITesting"]) == .populated)
     #expect(UITestingMode.from(arguments: ["-UITestingEmpty"]) == .empty)
     #expect(UITestingMode.from(arguments: []).skipsSideEffects == false)
+    #expect(
+        UITestingMode.from(arguments: [], environment: [UITestingLaunch.environmentKey: UITestingLaunch.environmentPopulated])
+            == .populated
+    )
+    #expect(
+        UITestingMode.from(arguments: [], environment: [UITestingLaunch.environmentKey: UITestingLaunch.environmentEmpty])
+            == .empty
+    )
 }
 
 @Test func uiTestingLaunch_isolatedSuiteIsNotStandard() {

@@ -17,6 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.applicationIconImage = icon
         }
         NSApp.activate(ignoringOtherApps: true)
+        if UITestingLaunch.isActive {
+            placeWindowsOnPrimaryScreen(NSApp.windows)
+        }
 
         // macOS 26+: SwiftUI-WindowGroup nutzt oft fullSizeContentView.
         // Dann landet Sidebar-/Detail-Inhalt unter der Titlebar (Traffic-Lights-Overlap)
@@ -30,6 +33,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let window = note.object as? NSWindow else { return }
             Task { @MainActor in
                 self?.normalizeTitlebar(for: [window])
+                if UITestingLaunch.isActive {
+                    self?.placeWindowsOnPrimaryScreen([window])
+                }
             }
         }
     }
@@ -37,6 +43,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         if let windowObserver {
             NotificationCenter.default.removeObserver(windowObserver)
+        }
+    }
+
+    /// XCUI-Audit und Klicks brauchen ein Fenster auf dem Haupt-Display (nicht y < 0).
+    private func placeWindowsOnPrimaryScreen(_ windows: [NSWindow]) {
+        guard let screen = NSScreen.screens.first else { return }
+        let visible = screen.visibleFrame
+        for window in windows where window.styleMask.contains(.titled) {
+            var frame = window.frame
+            frame.origin.x = visible.minX + 60
+            frame.origin.y = visible.minY + 60
+            if frame.maxX > visible.maxX {
+                frame.origin.x = max(visible.minX, visible.maxX - frame.width)
+            }
+            if frame.maxY > visible.maxY {
+                frame.origin.y = max(visible.minY, visible.maxY - frame.height)
+            }
+            window.setFrame(frame, display: true)
         }
     }
 

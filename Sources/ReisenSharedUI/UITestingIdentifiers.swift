@@ -12,6 +12,7 @@ public enum UITestingIdentifiers {
     public static let emptyState = "reisen.empty-state"
     public static let addBooking = "reisen.action.add-booking"
     public static let deleteTripMenu = "reisen.action.delete-trip"
+    public static let splitDivider = "reisen.split.divider"
     public static let tripDeleteDialog = "reisen.dialog.delete-trip"
 
     public static func tripRow(_ id: UUID) -> String {

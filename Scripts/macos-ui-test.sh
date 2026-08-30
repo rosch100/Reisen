@@ -1,8 +1,56 @@
 #!/usr/bin/env bash
 # macOS XCUI-Smokes (SSOT). Host: XcodeGen-Scheme ReisenMac.
+# bash 3.2 + set -u: niemals ein leeres Array via "${arr[@]}" expandieren.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+reisen_macos_ui_xcodebuild_args() {
+  local project="$1"
+  local scheme="$2"
+  local destination="$3"
+  local derived="$4"
+  local result="$5"
+  shift 5
+  local -a args
+  args=(
+    -project "$project"
+    -scheme "$scheme"
+    -destination "$destination"
+    -derivedDataPath "$derived"
+    -configuration Debug
+    -only-testing:ReisenMacUITests
+    -resultBundlePath "$result"
+  )
+  if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    args+=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO)
+  fi
+  if (($#)); then
+    args+=("$@")
+  fi
+  args+=(test)
+  printf '%s\n' "${args[@]}"
+}
+
+if [[ "${1:-}" == "--self-test" ]]; then
+  unset CI GITHUB_ACTIONS
+  local_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult)"
+  printf '%s\n' "$local_out" | grep -qx -- -project
+  printf '%s\n' "$local_out" | grep -qx test
+  if printf '%s\n' "$local_out" | grep -q CODE_SIGNING_ALLOWED=NO; then
+    echo "self-test: lokales Signing-Flag ohne CI" >&2
+    exit 1
+  fi
+  CI=true
+  ci_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult)"
+  printf '%s\n' "$ci_out" | grep -qx CODE_SIGNING_ALLOWED=NO
+  printf '%s\n' "$ci_out" | grep -qx CODE_SIGNING_REQUIRED=NO
+  extra_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult CODE_SIGN_IDENTITY=-)"
+  printf '%s\n' "$extra_out" | grep -qx CODE_SIGN_IDENTITY=-
+  echo "macos-ui-test.sh self-test: OK" >&2
+  exit 0
+fi
+
 cd "$ROOT"
 
 export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
@@ -20,24 +68,12 @@ DESTINATION="${REISEN_MAC_DESTINATION:-platform=macOS}"
 mkdir -p "$DERIVED"
 rm -rf "$RESULT" "$LOG"
 
-XCODEBUILD_SIGN_ARGS=()
-if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
-  XCODEBUILD_SIGN_ARGS+=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO)
-fi
-
 run_ui_tests() {
-  local extra_sign=("$@")
-  xcodebuild \
-    -project "$PROJECT" \
-    -scheme "$SCHEME" \
-    -destination "$DESTINATION" \
-    -derivedDataPath "$DERIVED" \
-    -configuration Debug \
-    -only-testing:ReisenMacUITests \
-    -resultBundlePath "$RESULT" \
-    "${XCODEBUILD_SIGN_ARGS[@]}" \
-    "${extra_sign[@]}" \
-    test
+  local -a args
+  while IFS= read -r line; do
+    args+=("$line")
+  done < <(reisen_macos_ui_xcodebuild_args "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" "$@")
+  xcodebuild "${args[@]}"
 }
 
 echo "macOS-UI-Tests: ${SCHEME} (${DESTINATION}) …" >&2

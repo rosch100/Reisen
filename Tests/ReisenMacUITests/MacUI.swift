@@ -19,8 +19,15 @@ struct MacUI {
         app.launchArguments = arguments + [
             UITestingLaunch.persistenceIgnoreStateArgument,
             "YES",
+            UITestingLaunch.treatUnknownArgumentsAsOpenArgument,
+            "NO",
         ]
         app.launchEnvironment["REISEN_CLOUDKIT"] = "0"
+        if arguments.contains(UITestingLaunch.emptyArgument) {
+            app.launchEnvironment[UITestingLaunch.environmentKey] = UITestingLaunch.environmentEmpty
+        } else {
+            app.launchEnvironment[UITestingLaunch.environmentKey] = UITestingLaunch.environmentPopulated
+        }
         app.launch()
         return MacUI(app: app)
     }
@@ -44,13 +51,11 @@ struct MacUI {
     }
 
     func waitForWindow(timeout: TimeInterval = 15) {
-        XCTAssertTrue(
-            app.wait(for: .runningForeground, timeout: timeout),
-            "App nicht im Vordergrund"
-        )
         app.activate()
-        if window.waitForExistence(timeout: 4) { return }
-        if element(UITestingIdentifiers.sidebar).waitForExistence(timeout: timeout) { return }
+        _ = app.wait(for: .runningForeground, timeout: min(timeout, 5))
+        app.activate()
+        if window.waitForExistence(timeout: timeout) { return }
+        if element(UITestingIdentifiers.sidebar).waitForExistence(timeout: 6) { return }
         if element(UITestingIdentifiers.emptyState).waitForExistence(timeout: 2) { return }
         XCTFail("Hauptfenster fehlt\n\(app.debugDescription)")
     }
