@@ -10,6 +10,7 @@ extension DomainMapper {
             title: model.title,
             confirmationCode: model.confirmationCode,
             externalUrl: model.externalUrl,
+            cancellationUrl: model.cancellationUrl,
             startAt: model.startAt,
             endAt: model.endAt,
             hotelOffsetSeconds: model.hotelOffsetSeconds,
