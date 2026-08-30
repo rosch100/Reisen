@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "coderabbit": {
+      "enabled": true
+    }
+  }
+}
