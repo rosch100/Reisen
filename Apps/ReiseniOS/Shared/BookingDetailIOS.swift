@@ -178,29 +178,20 @@ struct BookingDetailIOS: View {
     @ViewBuilder
     private func bookingLinksSection(for booking: SDBooking) -> some View {
         Section(L10n.string(.bookingDetailLinksSection)) {
-            let shown = BookingPortalActions.visible(
+            if BookingPortalActionBar.isVisible(
                 open: booking.browserURL,
                 cancellation: booking.cancellationBrowserURL,
                 status: booking.status
-            )
-            if shown.open != nil || shown.cancel != nil {
+            ) {
                 BookingPortalActionBar(
                     openURL: booking.browserURL,
                     cancellationURL: booking.cancellationBrowserURL,
                     status: booking.status,
                     openTitle: BookingPortalOpenTitle.short,
                     openHelp: BookingPortalOpenTitle.openInBrowserHelp,
-                    openButtonStyle: .prominent
+                    openButtonStyle: .prominent,
+                    showsCopyMenu: true
                 )
-                .contextMenu {
-                    if let url = shown.open { CopyLinkMenuItem(url: url) }
-                    if let url = shown.cancel {
-                        CopyLinkMenuItem(
-                            url: url,
-                            title: L10n.string(.actionCopyCancellationLink)
-                        )
-                    }
-                }
             } else {
                 Text(L10n.string(.bookingDetailNoBrowserLink))
                     .foregroundStyle(.secondary)

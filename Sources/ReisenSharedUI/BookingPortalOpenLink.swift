@@ -97,6 +97,7 @@ public struct BookingPortalActionBar: View {
     var openTitle: String
     var openHelp: String?
     var openButtonStyle: BookingPortalOpenButtonStyle
+    var showsCopyMenu: Bool
 
     public enum BookingPortalOpenButtonStyle {
         case bordered
@@ -109,7 +110,8 @@ public struct BookingPortalActionBar: View {
         status: BookingStatus,
         openTitle: String,
         openHelp: String? = nil,
-        openButtonStyle: BookingPortalOpenButtonStyle
+        openButtonStyle: BookingPortalOpenButtonStyle,
+        showsCopyMenu: Bool = false
     ) {
         self.openURL = openURL
         self.cancellationURL = cancellationURL
@@ -117,6 +119,16 @@ public struct BookingPortalActionBar: View {
         self.openTitle = openTitle
         self.openHelp = openHelp
         self.openButtonStyle = openButtonStyle
+        self.showsCopyMenu = showsCopyMenu
+    }
+
+    public static func isVisible(open: URL?, cancellation: URL?, status: BookingStatus) -> Bool {
+        let shown = BookingPortalActions.visible(
+            open: open,
+            cancellation: cancellation,
+            status: status
+        )
+        return shown.open != nil || shown.cancel != nil
     }
 
     public var body: some View {
@@ -125,7 +137,7 @@ public struct BookingPortalActionBar: View {
             cancellation: cancellationURL,
             status: status
         )
-        HStack(spacing: 8) {
+        let bar = HStack(spacing: 8) {
             if let open = shown.open {
                 Link(destination: open) {
                     Label(openTitle, systemImage: BookingPortalOpenChrome.systemImage)
@@ -140,6 +152,19 @@ public struct BookingPortalActionBar: View {
                 .buttonStyle(.bordered)
                 .help(BookingPortalCancelTitle.help)
             }
+        }
+        if showsCopyMenu {
+            bar.contextMenu {
+                if let url = shown.open { CopyLinkMenuItem(url: url) }
+                if let url = shown.cancel {
+                    CopyLinkMenuItem(
+                        url: url,
+                        title: L10n.string(.actionCopyCancellationLink)
+                    )
+                }
+            }
+        } else {
+            bar
         }
     }
 }
