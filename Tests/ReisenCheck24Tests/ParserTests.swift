@@ -40,6 +40,27 @@ func activityListExcludesCancelledAndPast() throws {
     let parsed = try ActivityListParser().parseActivityListHTML(json)
     #expect(parsed.bookings.count == 1)
     #expect(parsed.bookings[0].title == "Zukunft Hotel")
+
+    let parsedBooking = parsed.bookings[0]
+    let times = TemporalFact.pair(
+        bookingType: parsedBooking.type,
+        start: parsedBooking.startAt,
+        end: parsedBooking.endAt
+    )
+    let draft = try #require(
+        DraftAssembler.draft(
+            from: ProviderBookingFacts(
+                provider: .check24,
+                bookingType: parsedBooking.type,
+                start: times.start,
+                end: times.end,
+                title: parsedBooking.title,
+                confirmationCode: parsedBooking.confirmationCode,
+                externalUrl: parsedBooking.externalUrl
+            )
+        )
+    )
+    #expect(draft.cancellationUrl == nil)
 }
 
 @Test("ActivityListParser parst Hotel-ISO mit Offset-Suffix über Datumspräfix")
