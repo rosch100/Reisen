@@ -100,6 +100,7 @@ struct SyncTab: View {
             }
             .onChange(of: selectedProviderID) { _, newProviderID in
                 navigationWasBlocked = false
+                webView = sessionHub?.webView(for: newProviderID)
                 guard enabledProviderIDs.contains(newProviderID) else { return }
                 guard let sessionHub else { return }
                 if sessionHub.status(for: newProviderID) != .sessionReady {
@@ -233,9 +234,13 @@ struct SyncTab: View {
         providerRegistry?.provider(id: id)?.displayName ?? id.displayName
     }
 
+    private var selectedSessionWebView: WKWebView? {
+        sessionHub?.webView(for: selectedProviderID)
+    }
+
     private var webViewBinding: Binding<WKWebView?> {
         Binding(
-            get: { webView ?? sessionHub?.webView(for: selectedProviderID) },
+            get: { selectedSessionWebView },
             set: { newValue in
                 webView = newValue
                 sessionHub?.updateWebView(selectedProviderID, webView: newValue)
@@ -255,7 +260,7 @@ struct SyncTab: View {
 
     private var canStartSync: Bool {
         guard let syncStore else { return false }
-        let targetWebView = webView ?? sessionHub?.webView(for: selectedProviderID)
+        let targetWebView = selectedSessionWebView
         guard targetWebView != nil else { return false }
         guard syncStore.isSyncing != true else { return false }
         return sessionStatus == .sessionReady
@@ -360,7 +365,7 @@ struct SyncTab: View {
 
                 Button {
                     guard let syncStore else { return }
-                    let targetWebView = webView ?? sessionHub?.webView(for: selectedProviderID)
+                    let targetWebView = selectedSessionWebView
                     guard let targetWebView else { return }
                     Task {
                         await syncStore.sync(
@@ -554,7 +559,7 @@ struct SyncTab: View {
                     && sessionStatus == .needsLogin
                     && selectedKeychainAccount != nil
             },
-            webView: { webView ?? sessionHub?.webView(for: selectedProviderID) },
+            webView: { selectedSessionWebView },
             action: { insertKeychainCredentials(in: $0) }
         )
     }
@@ -562,7 +567,7 @@ struct SyncTab: View {
     @MainActor
     private func insertKeychainCredentials(in targetWebView: WKWebView? = nil) {
         guard let account = selectedKeychainAccount else { return }
-        guard let webView = targetWebView ?? webView ?? sessionHub?.webView(for: selectedProviderID) else { return }
+        guard let webView = targetWebView ?? selectedSessionWebView else { return }
         do {
             try KeychainAutoFill.applyAccount(account, in: webView)
         } catch {
