@@ -121,7 +121,11 @@ func airbnbTripListMapsExperienceToActivity() throws {
     #expect(draft.startAt == iso8601("2026-08-10T11:00:00.000Z"))
     #expect(draft.endAt == iso8601("2026-08-10T14:00:00.000Z"))
     #expect(draft.externalUrl?.contains("EXPERIENCE_RESERVATION") == true)
-    #expect(draft.cancellationUrl == nil)
+    #expect(
+        draft.cancellationUrl
+            == "https://www.airbnb.de/experience_alteration/<REDACTED>?flow=oneCancel&productType=experience"
+    )
+    #expect(draft.cancellationUrl != draft.externalUrl)
 }
 
 @Test("AirbnbActivityReservationDetailsParser parst Marquee, Treffpunkt, Gäste, Preis und Storno")
@@ -325,4 +329,5 @@ func airbnbTripListKeepsDraftWithoutPortalURL() throws {
     let draft = try #require(catalog.bookings.first)
     #expect(draft.confirmationCode == "ABC123")
     #expect(draft.externalUrl == nil)
+    #expect(draft.cancellationUrl == nil)
 }
