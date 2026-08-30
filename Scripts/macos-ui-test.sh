@@ -19,7 +19,7 @@ reisen_macos_ui_xcodebuild_args() {
     -destination "$destination"
     -derivedDataPath "$derived"
     -configuration Debug
-    -only-testing:ReisenMacUITests
+    -only-testing:ReisenMacUITests/MacUISmokeTests
     -resultBundlePath "$result"
   )
   if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then

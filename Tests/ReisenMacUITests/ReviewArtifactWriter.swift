@@ -5,41 +5,60 @@ enum ReviewArtifactWriter {
     static let schemaVersion = 1
 
     static func makeDirectory() throws -> URL {
-        let root = ProcessInfo.processInfo.environment["REISEN_UI_REVIEW_DIR"]
-            ?? "/tmp/reisen-ui-review"
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        let stamp = formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        let directory = URL(fileURLWithPath: root, isDirectory: true)
-            .appendingPathComponent(stamp, isDirectory: true)
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-ui-review-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory
     }
 
-    static func write(app: XCUIApplication, directory: URL, screen: String) throws {
-        let png = app.screenshot().pngRepresentation
-        try png.write(to: directory.appendingPathComponent("\(screen).png"))
+    static func write(
+        app: XCUIApplication,
+        directory: URL,
+        screen: String,
+        testCase: XCTestCase
+    ) throws {
+        let pngURL = directory.appendingPathComponent("\(screen).png")
+        try app.screenshot().pngRepresentation.write(to: pngURL)
+        addAttachment(at: pngURL, to: testCase)
         let nodes = walk(app)
         let data = try JSONSerialization.data(withJSONObject: [
             "schemaVersion": schemaVersion,
             "screen": screen,
             "nodes": nodes,
         ], options: [.prettyPrinted, .sortedKeys])
-        try data.write(to: directory.appendingPathComponent("\(screen).ax.json"))
+        let axURL = directory.appendingPathComponent("\(screen).ax.json")
+        try data.write(to: axURL)
+        addAttachment(at: axURL, to: testCase)
     }
 
-    static func writeManifest(directory: URL) throws {
+    static func writeManifest(directory: URL, testCase: XCTestCase) throws {
+        let files = try FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil
+        )
+        .filter { $0.pathExtension == "png" || $0.pathExtension == "json" }
+        .map(\.lastPathComponent)
+        .sorted()
         let data = try JSONSerialization.data(withJSONObject: [
             "schemaVersion": schemaVersion,
             "platform": "macOS",
             "createdAt": ISO8601DateFormatter().string(from: Date()),
+            "artifacts": files,
         ], options: [.prettyPrinted, .sortedKeys])
-        try data.write(to: directory.appendingPathComponent("manifest.json"))
+        let manifestURL = directory.appendingPathComponent("manifest.json")
+        try data.write(to: manifestURL)
+        addAttachment(at: manifestURL, to: testCase)
+    }
+
+    private static func addAttachment(at url: URL, to testCase: XCTestCase) {
+        let attachment = XCTAttachment(contentsOfFile: url)
+        attachment.lifetime = XCTAttachment.Lifetime.keepAlways
+        testCase.add(attachment)
     }
 
     private static func walk(_ root: XCUIElement) -> [[String: Any]] {
         var nodes: [[String: Any]] = []
-        append(root, into: &nodes, remaining: 400)
+        append(root.windows.firstMatch, into: &nodes, remaining: 400)
         return nodes
     }
 
