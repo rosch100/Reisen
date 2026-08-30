@@ -102,12 +102,12 @@ struct BookingDetailContent: View {
                 BookingGuestHintsView(booking: booking, style: .inspector)
             }
 
+            Divider()
             if BookingPortalActionBar.isVisible(
                 open: booking.browserURL,
                 cancellation: booking.cancellationBrowserURL,
                 status: booking.status
             ) {
-                Divider()
                 BookingPortalActionBar(
                     openURL: booking.browserURL,
                     cancellationURL: booking.cancellationBrowserURL,
@@ -118,6 +118,10 @@ struct BookingDetailContent: View {
                     showsCopyMenu: true
                 )
                 .font(.caption)
+            } else {
+                Text(L10n.string(.bookingDetailNoBrowserLink))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             if let onEditBooking {

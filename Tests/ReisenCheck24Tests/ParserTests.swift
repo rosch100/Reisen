@@ -5,6 +5,7 @@ import ReisenDomain
 import ReisenProviders
 
 @Test("ActivityListParser schließt stornierte und vergangene Buchungen aus")
+@MainActor
 func activityListExcludesCancelledAndPast() throws {
     let json = """
     {
@@ -41,23 +42,14 @@ func activityListExcludesCancelledAndPast() throws {
     #expect(parsed.bookings.count == 1)
     #expect(parsed.bookings[0].title == "Zukunft Hotel")
 
-    let parsedBooking = parsed.bookings[0]
-    let times = TemporalFact.pair(
-        bookingType: parsedBooking.type,
-        start: parsedBooking.startAt,
-        end: parsedBooking.endAt
-    )
     let draft = try #require(
-        DraftAssembler.draft(
-            from: ProviderBookingFacts(
-                provider: .check24,
-                bookingType: parsedBooking.type,
-                start: times.start,
-                end: times.end,
-                title: parsedBooking.title,
-                confirmationCode: parsedBooking.confirmationCode,
-                externalUrl: parsedBooking.externalUrl
-            )
+        Check24TravelProvider().mapDraft(
+            parsed.bookings[0],
+            allBookings: parsed.bookings,
+            deadlinesByBookingURL: [:],
+            hotelStayByBookingURL: [:],
+            guestHintsByBookingURL: [:],
+            bookingDetailsByBookingKey: [:]
         )
     )
     #expect(draft.cancellationUrl == nil)
