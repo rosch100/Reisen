@@ -504,7 +504,7 @@ private func yamlLiteralBlock(after marker: String, in yaml: String) -> String? 
     let body = diagnosticBody(technicalDetails: "Domain: ReisenTest\nCode: 7")
     #expect(body.contains("## Technische Details"))
     #expect(body.contains("Domain: ReisenTest"))
-    #expect(body.contains("nicht auf GitHub"))
+    #expect(body.contains("keine Datei-Uploads"))
     #expect(body.contains(GitHubRepository.feedbackEmail))
 }
 

@@ -39,12 +39,32 @@ import ReisenDomain
     let text = PasteImportSource.text("x")
     #expect(text.attachmentFileName == "paste.txt")
     #expect(text.attachmentMimeType == "text/plain")
-    let image = PasteImportSource.image(Data([1]))
-    #expect(image.attachmentFileName == "paste-image.bin")
-    #expect(image.attachmentMimeType == "application/octet-stream")
+    let unknown = PasteImportSource.image(Data([1]))
+    #expect(unknown.attachmentFileName == "paste-image.bin")
+    #expect(unknown.attachmentMimeType == "application/octet-stream")
     let pdf = PasteImportSource.pdf(Data([1]))
     #expect(pdf.attachmentFileName == "paste.pdf")
     #expect(pdf.attachmentMimeType == "application/pdf")
+}
+
+@Test func pasteImportSource_imageAttachmentUsesMagicBytes() {
+    let png = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00])
+    let pngSource = PasteImportSource.image(png)
+    #expect(pngSource.attachmentFileName == "paste-image.png")
+    #expect(pngSource.attachmentMimeType == "image/png")
+
+    let jpeg = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x00])
+    let jpegSource = PasteImportSource.image(jpeg)
+    #expect(jpegSource.attachmentFileName == "paste-image.jpg")
+    #expect(jpegSource.attachmentMimeType == "image/jpeg")
+
+    var heic = Data([0x00, 0x00, 0x00, 0x18])
+    heic.append(contentsOf: "ftyp".utf8)
+    heic.append(contentsOf: "heic".utf8)
+    heic.append(Data(repeating: 0, count: 8))
+    let heicSource = PasteImportSource.image(heic)
+    #expect(heicSource.attachmentFileName == "paste-image.heic")
+    #expect(heicSource.attachmentMimeType == "image/heic")
 }
 
 @Test func pasteImportSource_fromHandoffRoundTripsKinds() throws {

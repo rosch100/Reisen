@@ -127,9 +127,10 @@
         “Send errors automatically as a public issue” (consent, off by default). You do <strong>not</strong>
         need a GitHub account; the app uses an embedded issues-only token. Anyone can read the issue at
         <a href="https://github.com/rosch100/Reisen/issues">github.com/rosch100/Reisen/issues</a>.
-        Obvious secrets and personal data in report text (email, names, phone numbers,
-        addresses, dates of birth, booking references, IBANs) are redacted before sending;
-        still do not include passenger data in feedback.
+        Obvious secrets and typical personal data in structured fields and labels
+        (email, first/last name fields, phone numbers, addresses, dates of birth,
+        booking references, IBANs) are redacted before sending;
+        still do not include passenger data in feedback and do not rely on free-text name detection.
       </p>
       <p>
         Email to <a href="mailto:reisenapp100@gmail.com">reisenapp100@gmail.com</a> is also filed

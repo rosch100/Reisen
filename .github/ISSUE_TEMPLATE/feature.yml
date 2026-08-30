@@ -13,7 +13,9 @@ body:
         Nach Maintainer-Freigabe kann Issue-Dev (`/feature-dev`) bis zum PR entwickeln — kein Auto-Merge.
         Uploads in diesem Formular sind **öffentlich**. Sensible Screenshots und Archive:
         [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (bleiben in der Mailbox).
-        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
+        Issues aus App und Gmail-Ingress haben **keine Datei-Uploads** über die Issues-API.
+        Textanhänge aus dem Gmail-Ingress erscheinen als Text im Issue (geschwärzt wo möglich);
+        Binärdateien bleiben in der Mailbox.
   - type: textarea
     id: want
     attributes:

@@ -1,6 +1,8 @@
 import Foundation
 
 /// Lauf-Lifecycle gegen Cancel-/Fail-Races: nur der aktuelle `runID` darf die Phase setzen.
+///
+/// Die schwere Arbeit (`work`) läuft **nicht** auf dem Main Actor. Abschluss-Callbacks schon.
 @MainActor
 public final class PasteImportRunLifetime {
     private var runID = UUID()
@@ -8,21 +10,33 @@ public final class PasteImportRunLifetime {
 
     public init() {}
 
-    /// Startet einen Lauf und liefert dessen ID an den Body.
-    public func begin(_ body: @escaping @MainActor (_ runID: UUID) async -> Void) {
+    /// Startet einen Lauf: `work` off-Main, Erfolg/Fehler auf Main.
+    public func begin<Success: Sendable>(
+        work: @escaping @Sendable () async throws -> Success,
+        onSuccess: @escaping @MainActor (Success) -> Void,
+        onFailure: @escaping @MainActor (Error) -> Void
+    ) {
         invalidate()
         let id = UUID()
         runID = id
-        task = Task { @MainActor in
-            await body(id)
+        task = Task { [weak self] in
+            let outcome: Result<Success, Error>
+            do {
+                outcome = .success(try await work())
+            } catch {
+                outcome = .failure(error)
+            }
+            await MainActor.run {
+                guard let self, self.runID == id else { return }
+                self.task = nil
+                switch outcome {
+                case .success(let value):
+                    onSuccess(value)
+                case .failure(let error):
+                    onFailure(error)
+                }
+            }
         }
-    }
-
-    /// Wendet das Ergebnis nur an, wenn `id` noch der aktuelle Lauf ist.
-    public func complete(ifCurrent id: UUID, _ apply: () -> Void) {
-        guard runID == id else { return }
-        task = nil
-        apply()
     }
 
     /// Invalidiert den laufenden Lauf (Cancel, Reset, Fail).

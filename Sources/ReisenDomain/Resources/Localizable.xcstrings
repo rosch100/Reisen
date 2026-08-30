@@ -4401,6 +4401,22 @@
         }
       }
     },
+    "paste_import.review_discard_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungen verwerfen? Die Buchung wird nicht angelegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes? The booking will not be created."
+          }
+        }
+      }
+    },
     "paste_import.empty": {
       "localizations": {
         "de": {

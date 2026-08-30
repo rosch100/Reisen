@@ -21,11 +21,16 @@ struct RootTabView: View {
     @State private var providerEnableEpoch = 0
     @State private var selectedTab: AppTab = .reisen
     @State private var selectedTripID: UUID?
+    @State private var selectedOpenBookingID: UUID?
+    @State private var compactPushOpenBookingID: UUID?
+    @State private var focusTripBookingID: UUID?
+    @State private var compactPushTripID: UUID?
     @State private var pasteImport = PasteImportSession()
     #if REISEN_PROVIDER_SYNC
     @State private var installedProviderIDs: Set<ProviderID> = []
     #endif
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var modelContext
 
     private enum AppTab: Hashable {
         case reisen, offen
@@ -43,7 +48,11 @@ struct RootTabView: View {
 
     @ViewBuilder
     var body: some View {
-        PasteImportHost(session: pasteImport, entry: { pasteImportEntry }) {
+        PasteImportHost(
+            session: pasteImport,
+            entry: { pasteImportEntry },
+            onSelectSavedBooking: selectPasteImportBooking
+        ) {
             tabsWithSessionProbe
         }
     }
@@ -95,6 +104,24 @@ struct RootTabView: View {
         selectedTab = .reisen
     }
 
+    /// Nach Review-Sichern: compact → Detail, split → Selection.
+    private func selectPasteImportBooking(_ bookingID: UUID) {
+        let tripID = try? modelContext.fetch(
+            FetchDescriptor<SDBooking>(predicate: #Predicate { $0.id == bookingID })
+        ).first?.trip?.id
+
+        if let tripID {
+            selectedTripID = tripID
+            compactPushTripID = tripID
+            focusTripBookingID = bookingID
+            selectedTab = .reisen
+            return
+        }
+        selectedOpenBookingID = bookingID
+        compactPushOpenBookingID = bookingID
+        selectedTab = .offen
+    }
+
     /// Drop und „Öffnen mit“ nutzen den sichtbaren Tab, nicht einen anderen Reise-Kontext.
     private var pasteImportEntry: PasteImportEntry {
         switch selectedTab {
@@ -117,6 +144,8 @@ struct RootTabView: View {
             ReisenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
                 selectedTripID: $selectedTripID,
+                compactPushTripID: $compactPushTripID,
+                focusBookingID: $focusTripBookingID,
                 pasteImport: pasteImport,
                 onOpenSync: { selectedTab = .sync }
             )
@@ -126,6 +155,8 @@ struct RootTabView: View {
             ReisenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
                 selectedTripID: $selectedTripID,
+                compactPushTripID: $compactPushTripID,
+                focusBookingID: $focusTripBookingID,
                 pasteImport: pasteImport
             )
             .tabItem { Label(L10n.string(.tabTrips), systemImage: "airplane") }
@@ -135,6 +166,8 @@ struct RootTabView: View {
             #if REISEN_PROVIDER_SYNC
             OffenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                selectedBookingID: $selectedOpenBookingID,
+                compactPushBookingID: $compactPushOpenBookingID,
                 pasteImport: pasteImport,
                 onTripCreated: focusCreatedTrip,
                 onOpenSync: { selectedTab = .sync }
@@ -144,6 +177,8 @@ struct RootTabView: View {
             #else
             OffenTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
+                selectedBookingID: $selectedOpenBookingID,
+                compactPushBookingID: $compactPushOpenBookingID,
                 pasteImport: pasteImport,
                 onTripCreated: focusCreatedTrip
             )

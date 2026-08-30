@@ -587,10 +587,18 @@ private extension BookingEditorDraft {
 
 /// Scrollbares Formular mit sticky Fußleiste - für die rechte Detailspalte (kein Modal).
 public struct BookingEditorForm: View {
+    public enum Chrome: Equatable, Sendable {
+        /// macOS / Inspector: Cancel/Sichern unten.
+        case footer
+        /// iOS Compose: Aktionen in der Navigationsleiste — keine doppelte Fußleiste.
+        case navigation
+    }
+
     let title: String
     let showsSyncOverwriteHint: Bool
     @Binding var draft: BookingEditorDraft
     let providerReadOnly: Bool
+    var chrome: Chrome
     var onCancel: () -> Void
     var onSave: () throws -> Void
 
@@ -607,6 +615,7 @@ public struct BookingEditorForm: View {
         showsSyncOverwriteHint: Bool,
         draft: Binding<BookingEditorDraft>,
         providerReadOnly: Bool,
+        chrome: Chrome = .footer,
         onCancel: @escaping () -> Void,
         onSave: @escaping () throws -> Void
     ) {
@@ -614,6 +623,7 @@ public struct BookingEditorForm: View {
         self.showsSyncOverwriteHint = showsSyncOverwriteHint
         self._draft = draft
         self.providerReadOnly = providerReadOnly
+        self.chrome = chrome
         self.onCancel = onCancel
         self.onSave = onSave
     }
@@ -843,26 +853,28 @@ public struct BookingEditorForm: View {
             .formStyle(.grouped)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            Divider()
+            if chrome == .footer {
+                Divider()
 
-            HStack {
-                Button(L10n.string(.commonCancel)) { onCancel() }
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                Button(L10n.string(.commonSave)) {
-                    do {
-                        try draft.validate()
-                        try onSave()
-                        errorMessage = nil
-                    } catch {
-                        errorMessage = (error as? LocalizedError)?.errorDescription
-                            ?? String(describing: error)
+                HStack {
+                    Button(L10n.string(.commonCancel)) { onCancel() }
+                        .keyboardShortcut(.cancelAction)
+                    Spacer()
+                    Button(L10n.string(.commonSave)) {
+                        do {
+                            try draft.validate()
+                            try onSave()
+                            errorMessage = nil
+                        } catch {
+                            errorMessage = (error as? LocalizedError)?.errorDescription
+                                ?? String(describing: error)
+                        }
                     }
+                    .keyboardShortcut(.defaultAction)
                 }
-                .keyboardShortcut(.defaultAction)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.background)

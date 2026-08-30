@@ -15,32 +15,43 @@ import ReisenSharedUI
 struct PasteImportHost<Content: View>: View {
     let session: PasteImportSession
     let entry: () -> PasteImportEntry
+    let onSelectSavedBooking: (UUID) -> Void
     @ViewBuilder let content: Content
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
-    @State private var review: PasteImportReview?
+    @State private var reviewPayload: PasteImportReviewPayload?
     @State private var reviewQueue = PasteImportReviewQueue()
 
     init(
         session: PasteImportSession,
         entry: @escaping () -> PasteImportEntry,
+        onSelectSavedBooking: @escaping (UUID) -> Void = { _ in },
         @ViewBuilder content: () -> Content
     ) {
         self.session = session
         self.entry = entry
+        self.onSelectSavedBooking = onSelectSavedBooking
         self.content = content()
     }
 
     var body: some View {
         content
             .pasteImportFlow(session: session, onReviewQueue: advanceQueue)
-            .sheet(item: $review) { review in
-                PasteImportReviewSheet(review: review) {
-                    self.review = nil
-                    advanceQueue()
-                }
-                .reisenSheetDetents()
+            .sheet(item: $reviewPayload) { payload in
+                PasteImportReviewSheet(
+                    payload: payload,
+                    onCancel: {
+                        reviewPayload = nil
+                        advanceQueue()
+                    },
+                    onSaved: { bookingID in
+                        onSelectSavedBooking(bookingID)
+                        reviewPayload = nil
+                        advanceQueue()
+                    }
+                )
+                .id(payload.id)
             }
             .onOpenURL { url in
                 if PasteImportHandoff.isHandoff(url) {
@@ -57,6 +68,10 @@ struct PasteImportHost<Content: View>: View {
                 onDropped: startFromDroppedFiles,
                 onExternal: consumeExternalFiles
             )
+            .onChange(of: session.isReviewing) { _, reviewing in
+                guard !reviewing else { return }
+                reviewPayload = nil
+            }
     }
 
     private func consumeExternalFiles() {
@@ -116,47 +131,62 @@ struct PasteImportHost<Content: View>: View {
         reviewQueue.advance(ifPending: session.hasPendingCandidates) {
             presentNextCandidate()
         }
+        if !session.hasPendingCandidates {
+            session.endReview()
+        }
     }
 
     private func presentNextCandidate() {
-        guard let candidate = session.nextCandidate() else { return }
+        guard let candidate = session.nextCandidate() else {
+            session.endReview()
+            return
+        }
+        let total = session.hasPendingCandidates ? 2 : 1
         if let match = candidate.uniqueMatchedBooking {
-            presentEnrich(candidate, match: match)
+            presentEnrich(candidate, match: match, index: 1, total: total)
         } else {
-            presentNew(candidate)
+            presentNew(candidate, index: 1, total: total)
         }
     }
 
-    private func presentEnrich(_ candidate: PasteImportCandidate, match: Booking) {
+    private func presentEnrich(
+        _ candidate: PasteImportCandidate,
+        match: Booking,
+        index: Int,
+        total: Int
+    ) {
         do {
             guard let booking = try booking(id: match.id) else {
-                // Ohne Bestandsbuchung nicht als „Neu“ weiterlaufen — das legte ein Duplikat an.
                 session.fail(L10n.string(.pasteImportErrorMatchMissing))
                 return
             }
-            review = PasteImportReview.enriching(candidate: candidate, booking: booking)
+            session.beginReview()
+            reviewPayload = .enriching(
+                candidate: candidate,
+                booking: booking,
+                index: index,
+                total: total
+            )
         } catch {
             session.fail(L10n.string(.storeLoadFailed))
         }
     }
 
-    private func presentNew(_ candidate: PasteImportCandidate) {
-        do {
-            review = PasteImportReview.creating(candidate: candidate, trip: try selectedTrip())
-        } catch {
-            session.fail(L10n.string(.storeLoadFailed))
-        }
+    private func presentNew(
+        _ candidate: PasteImportCandidate,
+        index: Int,
+        total: Int
+    ) {
+        session.beginReview()
+        reviewPayload = .creating(
+            candidate: candidate,
+            tripID: session.tripID,
+            index: index,
+            total: total
+        )
     }
 
     private func booking(id: UUID) throws -> SDBooking? {
         try modelContext.fetch(FetchDescriptor<SDBooking>(predicate: #Predicate { $0.id == id })).first
-    }
-
-    /// Reise des laufenden Imports; sie kommt aus dem Einstieg, nicht aus einer fremden Tab-Auswahl.
-    private func selectedTrip() throws -> SDTrip? {
-        guard let tripID = session.tripID else { return nil }
-        return try modelContext.fetch(
-            FetchDescriptor<SDTrip>(predicate: #Predicate { $0.id == tripID })
-        ).first
     }
 }

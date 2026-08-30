@@ -100,12 +100,14 @@ Fehler: Token fehlt, Rate-Limit, HTTP — UI zeigt `localizedDescription`, kein 
 - Modellfehler-Alert: `OK` schließt; zweiter Button startet die Bestätigung (Quelle bleibt).
 - Bestätigung: Titel Feature-Request; Message öffentlich + Dokument; `Abbrechen` / `Senden`. Senden ist nicht `.destructive` (kein Löschen), aber nicht Default-Action — Default bleibt Abbrechen, damit Enter nicht sendet.
 - **Abbrechen** der Bestätigung: zurück in den Angebot-Zustand (leeres Kandidaten-Sheet bzw. Modellfehler-Alert), **Quelle bleibt**. `reset` nur bei Schließen des Imports.
-- Erfolg: nur `PublicGitHubIssueLink` (Reporter-URL). Nicht `PublicGitHubIssueReportActions` (das öffnet ohne Token Safari ohne Anhang).
+- Erfolg nach Mail: Session `reset()`; kein Erfolg-Sheet mit GitHub-Link (Issue wurde schon vor der Mail angelegt).
+- Erfolg-Sheet mit `PublicGitHubIssueLink` **nur** wenn Mail unavailable (`canSend == false`). Nicht `PublicGitHubIssueReportActions` (öffnet ohne Token Safari ohne Anhang).
+- macOS: Mail-Übergabe als RFC822-`.eml` per `NSWorkspace` (Default-Mailer), nicht `NSSharingService` mit Body+Datei-URL.
 - VoiceOver: Button-Label = sichtbarer Text.
 
 ## Privacy
 
-`privacy.html` / `en/privacy.html`: Nach fehlgeschlagener Erkennung kann der Nutzer ein **öffentliches** GitHub-Issue **ohne Dokument** erzeugen, **nur nach Bestätigung**. Das Original geht **per E-Mail**. Ohne Bestätigung verlässt das Dokument das Gerät nicht.
+`privacy.html` / `en/privacy.html`: Nach fehlgeschlagener Erkennung kann der Nutzer ein **öffentliches** GitHub-Issue **ohne Dokument** erzeugen, **nur nach Bestätigung**. Das Original geht **per E-Mail**, wenn Mail eingerichtet ist (`canSend == true`). Ist Mail unavailable (`canSend == false`), bleibt das Dokument auf dem Gerät; nur der öffentliche Issue-Link (Metadaten, ohne Anhang) wird angeboten. Ohne Bestätigung verlässt das Dokument das Gerät nicht.
 
 ## Offene Lücken (`open_gaps`)
 

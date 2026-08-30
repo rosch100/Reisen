@@ -600,6 +600,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case pasteImportCandidatesTitle = "paste_import.candidates_title"
     case pasteImportContinue = "paste_import.continue"
     case pasteImportShareDisplayName = "paste_import.share_display_name"
+    case pasteImportReviewDiscardMessage = "paste_import.review_discard_message"
 
     // MARK: - Guest hints
 

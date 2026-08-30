@@ -1,7 +1,7 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
-Status: **Backlog** (F01, F03, F09 umgesetzt; übrige Features geplant)  
-Stand: 2026-08-28
+Status: **Backlog** (F01, F03, F06, F09 umgesetzt; übrige Features geplant)  
+Stand: 2026-08-30
 
 ## Zweck und Leitlinie
 
@@ -22,7 +22,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 | F03 | Copy/Paste für Info- und Editor-Felder | umgesetzt | P2 | — |
 | F04 | ICS/Text-Export einer Reise | geplant | P2 | — |
 | F05 | Dokumente an der Buchung | geplant | P2 | eigene Spec |
-| F06 | On-device Paste-Import | geplant | P2 | F01, F05 optional |
+| F06 | On-device Paste-Import | umgesetzt | P2 | F01, F05 optional |
 | F07 | Next-up Widget / Live Activity | geplant | P3 | F02 |
 | F08 | macOS-Suche und Typfilter | geplant | P3 | — |
 | F09 | Vollständigkeitsanzeige (Gaps) | umgesetzt | P3 | — |
@@ -177,6 +177,8 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 ---
 
 ### F06 — On-device Paste-Import
+
+**Status:** umgesetzt (inkl. Feature-Request per Mail, nicht-modaler Progress, Review-Fenster/Compose-Sheet).
 
 **Sinn:** Abdeckung für Bahn, Restaurant, unbekannte OTAs **ohne** Inbox-OAuth. Ergänzt Provider-Sync, ersetzt ihn nicht.
 

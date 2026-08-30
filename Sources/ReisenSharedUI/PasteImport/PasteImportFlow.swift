@@ -21,6 +21,13 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
 
     func body(content: Content) -> some View {
         content
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if let kind = session.runningKind {
+                    PasteImportRunningStatusBar(kind: kind) {
+                        session.cancelRun()
+                    }
+                }
+            }
             .alert(
                 L10n.string(.pasteImportPccConfirmTitle),
                 isPresented: Binding(
@@ -43,9 +50,7 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                     set: { if !$0 { session.dismissSheet() } }
                 )
             ) {
-                if let kind = session.runningKind {
-                    PasteImportProgressSheet(kind: kind) { session.cancelRun() }
-                } else if let result = session.choosingResult {
+                if let result = session.choosingResult {
                     PasteImportCandidateSheet(
                         result: result,
                         canOfferFeatureRequest: session.canOfferFeatureRequest,
@@ -57,7 +62,7 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                         onRequestFeature: { session.offerFailedFeatureRequest() }
                     )
                     #if !os(macOS)
-                    .reisenSheetDetents()
+                    .presentationDetents([.large])
                     #endif
                 }
             }
@@ -133,7 +138,7 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                         }
                     }
                 }
-                .reisenSheetDetents()
+                .presentationDetents([.large])
                 #endif
             }
             #if os(iOS)
@@ -154,6 +159,25 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
             .onChange(of: session.featureRequestMailDraft?.id) { _, newID in
                 guard newID != nil else { return }
                 PasteImportFailedMailCompose.handleAppearingDraft(session: session)
+            }
+            .onChange(of: session.isRunning) { wasRunning, isRunning in
+                if isRunning {
+                    #if os(iOS) || os(macOS)
+                    AccessibilityNotification.Announcement(L10n.string(.pasteImportProgress)).post()
+                    #endif
+                } else if wasRunning {
+                    #if os(iOS) || os(macOS)
+                    let ended = session.errorMessage
+                        ?? (session.hasPendingCandidates
+                            ? L10n.string(.pasteImportCandidatesTitle)
+                            : L10n.string(.pasteImportEmpty))
+                    AccessibilityNotification.Announcement(ended).post()
+                    #endif
+                }
+                // Nach erfolgreichem Lauf mit Kandidaten: Review-Queue starten (kein Sheet).
+                if wasRunning, !isRunning, session.hasPendingCandidates {
+                    onReviewQueue()
+                }
             }
             .alert(
                 L10n.string(.pasteImportErrorTitle),
@@ -180,39 +204,44 @@ private struct PasteImportFailedFeatureRequestSuccessBody: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(chrome.doneTitle)
-            if !PasteImportFailedMailCompose.canSend {
-                Text(chrome.mailUnavailableMessage)
-            }
+            Text(chrome.mailUnavailableMessage)
             PublicGitHubIssueLink(url: url, errorMessage: nil)
         }
     }
 }
 
-struct PasteImportProgressSheet: View {
+/// Nicht-modale Fortschrittsleiste während der Erkennung (HIG: kein Blocking-Sheet).
+struct PasteImportRunningStatusBar: View {
     let kind: PasteImportModelKind
     let onCancel: () -> Void
 
     var body: some View {
         let presentation = PasteImportProgressPresentation(kind: kind)
-
-        VStack(spacing: 16) {
+        HStack(alignment: .center, spacing: 10) {
             ProgressView()
-            Text(presentation.title)
-            if let modelName = presentation.modelName {
-                Text(modelName)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                .controlSize(.small)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(presentation.title)
+                    .font(.callout)
+                if let modelName = presentation.modelName {
+                    Text(modelName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
+            Spacer(minLength: 8)
             Button(L10n.string(.commonCancel), action: onCancel)
-            #if os(macOS)
                 .keyboardShortcut(.cancelAction)
-            #endif
         }
-        .padding(24)
-        #if os(macOS)
-        .frame(minWidth: 280)
-        #else
-        .reisenSheetDetents()
-        #endif
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            [presentation.title, presentation.modelName]
+                .compactMap { $0 }
+                .joined(separator: ", ")
+        )
     }
 }

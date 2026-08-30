@@ -8,6 +8,7 @@ import ReisenData
 
 struct TripDetailIOS: View {
     let tripID: UUID
+    @Binding var focusBookingID: UUID?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -21,6 +22,16 @@ struct TripDetailIOS: View {
     @State private var persistErrorMessage: String?
     @State private var pendingDeleteBooking: SDBooking?
     @State private var showBookingDeleteConfirm = false
+    @State private var presentedBookingID: PresentedBookingID?
+
+    init(tripID: UUID, focusBookingID: Binding<UUID?> = .constant(nil)) {
+        self.tripID = tripID
+        self._focusBookingID = focusBookingID
+    }
+
+    private struct PresentedBookingID: Identifiable, Hashable {
+        let id: UUID
+    }
 
     var trip: SDTrip? {
         trips.first(where: { $0.id == tripID })
@@ -72,7 +83,7 @@ struct TripDetailIOS: View {
                         trip: trip,
                         bookings: trip.timelineBookings()
                     ) { booking in
-                        NavigationLink(destination: BookingDetailIOS(bookingID: booking.id)) {
+                        NavigationLink(value: PresentedBookingID(id: booking.id)) {
                             OpenBookingRow(booking: booking)
                         }
                         .contextMenu {
@@ -94,6 +105,17 @@ struct TripDetailIOS: View {
                 }
                 .navigationTitle(trip.title)
                 .id(trip.id)
+                .navigationDestination(for: PresentedBookingID.self) { token in
+                    BookingDetailIOS(bookingID: token.id)
+                }
+                .navigationDestination(item: $presentedBookingID) { token in
+                    BookingDetailIOS(bookingID: token.id)
+                }
+                .onChange(of: focusBookingID) { _, bookingID in
+                    guard let bookingID else { return }
+                    presentedBookingID = PresentedBookingID(id: bookingID)
+                    focusBookingID = nil
+                }
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {

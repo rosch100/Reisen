@@ -45,10 +45,10 @@ struct ContentView: View {
     @State private var tripCreateSeed: TripCreateSeed?
     @State private var showCreateTripFromBookingsFailed = false
 
-    /// Paste-Import: Lauf-Zustand und der Kandidat, der gerade außerhalb des Inspectors geprüft wird.
+    /// Paste-Import: Lauf-Zustand; Review läuft im eigenen Fenster (Presenter).
     @State private var pasteImport = PasteImportSession()
-    @State private var pasteReview: PasteImportReview?
     @State private var pasteImportReviewQueue = PasteImportReviewQueue()
+    @Environment(\.openWindow) private var openWindow
 
     /// HIG: Spalten per dünnem Divider ziehbar (keine sichtbaren Slider-Knöpfe).
     private let sidebarMinWidth: CGFloat = 180
@@ -125,23 +125,16 @@ struct ContentView: View {
                 await startPasteImportFromFile()
             }
         }
-        .pasteImportInboxAndDrop(
-            isSessionActive: pasteImport.isActive,
-            onDropped: { startPasteImport(fromDropped: $0) },
-            onExternal: consumeExternalFiles
+        .modifier(
+            ContentViewPasteImportModifier(
+                session: pasteImport,
+                bookingEditorSession: $bookingEditorSession,
+                onReviewQueue: advancePasteImportQueue,
+                onSelectSavedBooking: selectPasteImportBooking,
+                onDropped: { startPasteImport(fromDropped: $0) },
+                onExternal: consumeExternalFiles
+            )
         )
-        .pasteImportFlow(session: pasteImport, onReviewQueue: advancePasteImportQueue)
-        .sheet(item: $pasteReview) { review in
-            PasteImportReviewSheet(review: review) {
-                pasteReview = nil
-                advancePasteImportQueue()
-            }
-        }
-        .onChange(of: bookingEditorSession) { _, newSession in
-            // Der Inspector ist fertig (gespeichert oder abgebrochen) — nächster Kandidat.
-            guard newSession == nil else { return }
-            advancePasteImportQueue()
-        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
@@ -1097,51 +1090,73 @@ struct ContentView: View {
         pasteImportReviewQueue.advance(ifPending: pasteImport.hasPendingCandidates) {
             presentNextPasteImportCandidate()
         }
+        if !pasteImport.hasPendingCandidates {
+            pasteImport.endReview()
+        }
     }
 
     private func presentNextPasteImportCandidate() {
-        guard let candidate = pasteImport.nextCandidate() else { return }
+        guard let candidate = pasteImport.nextCandidate() else {
+            pasteImport.endReview()
+            return
+        }
+        let remaining = pasteImport.hasPendingCandidates
+        // index/total: grob — Warteschlange ohne feste Gesamtzahl; 1 von n nur wenn noch mehr warten.
+        let total = remaining ? 2 : 1
+        let index = 1
         if let match = candidate.uniqueMatchedBooking {
-            reviewPasteImportEnrich(candidate, match: match)
+            reviewPasteImportEnrich(candidate, match: match, index: index, total: total)
         } else {
-            reviewPasteImportNew(candidate)
+            reviewPasteImportNew(candidate, index: index, total: total)
         }
     }
 
-    /// Ergänzen läuft im Inspector, solange die Bestandsbuchung in der Timeline der Reise steht;
-    /// sonst zeigt der Inspector nichts an und der Editor kommt als eigenes Sheet.
-    private func reviewPasteImportEnrich(_ candidate: PasteImportCandidate, match: Booking) {
+    /// Ergänzen und Neu: eigenes Fenster, Persistenz erst bei Sichern.
+    private func reviewPasteImportEnrich(
+        _ candidate: PasteImportCandidate,
+        match: Booking,
+        index: Int,
+        total: Int
+    ) {
         guard let booking = allBookings.first(where: { $0.id == match.id }) else {
-            // Ohne Bestandsbuchung nicht als „Neu“ weiterlaufen — das legte ein Duplikat an.
             pasteImport.fail(L10n.string(.pasteImportErrorMatchMissing))
             return
         }
-        if let trip = pasteImportTrip, selection?.tripID == trip.id,
-           futureBookings(for: trip).contains(where: { $0.id == booking.id }) {
-            selectedTimelineID = booking.id.uuidString
-            bookingEditorSession = .edit(
-                bookingID: booking.id,
-                prefilledDraft: PasteImportEditorPrefill.draft(for: candidate, existing: booking)
-            )
-        } else {
-            pasteReview = .enriching(candidate: candidate, booking: booking)
-        }
+        openPasteImportReview(
+            .enriching(candidate: candidate, booking: booking, index: index, total: total)
+        )
     }
 
-    /// Ohne Reise-Kontext entsteht eine offene Buchung (`trip: nil`), keine Ersatzreise.
-    ///
-    /// Der Inspector legt immer in der gerade ausgewählten Reise an; steht dort inzwischen eine
-    /// andere, geht der Editor als eigenes Sheet mit der Reise des Einstiegs auf.
-    private func reviewPasteImportNew(_ candidate: PasteImportCandidate) {
-        if let trip = pasteImportTrip, selection?.tripID == trip.id {
-            bookingEditorSession = .create(
-                prefillStart: nil,
-                prefillEnd: nil,
-                prefilledDraft: PasteImportEditorPrefill.draft(for: candidate, existing: nil)
+    private func reviewPasteImportNew(
+        _ candidate: PasteImportCandidate,
+        index: Int,
+        total: Int
+    ) {
+        openPasteImportReview(
+            .creating(
+                candidate: candidate,
+                tripID: pasteImport.tripID,
+                index: index,
+                total: total
             )
-        } else {
-            pasteReview = .creating(candidate: candidate, trip: pasteImportTrip)
+        )
+    }
+
+    private func openPasteImportReview(_ payload: PasteImportReviewPayload) {
+        pasteImport.beginReview()
+        PasteImportReviewPresenter.shared.present(payload)
+        openWindow(id: PasteImportReviewPresenter.windowID)
+    }
+
+    private func selectPasteImportBooking(_ id: UUID) {
+        if let booking = allBookings.first(where: { $0.id == id }),
+           let trip = booking.trip {
+            selection = .trip(trip.id)
+            selectedTimelineID = id.uuidString
+            return
         }
+        selection = .openBookings
+        selectedOpenBookingIDs = [id]
     }
 
     private func startCreateBooking(in trip: SDTrip, selectBookingID: UUID? = nil) {

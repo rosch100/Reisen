@@ -16,7 +16,9 @@ body:
         Uploads in diesem Formular sind **öffentlich** / Uploads in this form are **public**.
         Sensible Dateien / sensitive files:
         [reisenapp100@gmail.com](mailto:reisenapp100@gmail.com) (Mailbox).
-        Issues aus App und Gmail-Ingress (Issues-API) haben keine Dateianhänge.
+        Issues aus App und Gmail-Ingress haben **keine Datei-Uploads** über die Issues-API.
+        Textanhänge aus dem Gmail-Ingress erscheinen als Text im Issue (geschwärzt wo möglich);
+        Binärdateien bleiben in der Mailbox.
 
         Sicherheitslücken bitte über eine [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new) melden — nicht hier.
   - type: textarea

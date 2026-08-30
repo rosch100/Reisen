@@ -65,11 +65,13 @@ import Testing
 
 @Test func secretRedactor_redactsJSONSessionTokens() {
     let input = """
-    {"token":"json-secret","access_token":"atk","session":"sess","password":"pw","keep":"ok"}
+    {"token":"json-secret","access_token":"atk","client_secret":"cs","clientSecret":"cs2","session":"sess","password":"pw","keep":"ok"}
     """
     let redacted = SecretRedactor.redact(input)
     #expect(!redacted.contains("json-secret"))
     #expect(!redacted.contains("atk"))
+    #expect(!redacted.contains("\"cs\""))
+    #expect(!redacted.contains("\"cs2\""))
     #expect(!redacted.contains("\"sess\""))
     #expect(!redacted.contains("\"pw\""))
     #expect(redacted.contains("\"keep\":\"ok\""))

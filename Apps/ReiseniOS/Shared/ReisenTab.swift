@@ -10,6 +10,8 @@ import ReisenData
 struct ReisenTab: View {
     @Binding var sessionChromeEpoch: Int
     @Binding var selectedTripID: UUID?
+    @Binding var compactPushTripID: UUID?
+    @Binding var focusBookingID: UUID?
     let pasteImport: PasteImportSession
     #if REISEN_PROVIDER_SYNC
     var onOpenSync: () -> Void
@@ -35,9 +37,10 @@ struct ReisenTab: View {
     var body: some View {
         AdaptiveListDetail(
             selection: $selectedTripID,
+            compactPush: $compactPushTripID,
             list: { tripList },
             detail: { tripID in
-                TripDetailIOS(tripID: tripID)
+                TripDetailIOS(tripID: tripID, focusBookingID: $focusBookingID)
             },
             emptyDetail: {
                 ContentUnavailableView(
@@ -80,6 +83,7 @@ struct ReisenTab: View {
                 filteredTrips: filteredTrips,
                 searchText: $searchText,
                 selectedTripID: $selectedTripID,
+                focusBookingID: $focusBookingID,
                 onCreateTrip: { showCreateTrip = true },
                 onOpenSync: onOpenSync,
                 onRequestDelete: { trip in
@@ -93,6 +97,7 @@ struct ReisenTab: View {
                 filteredTrips: filteredTrips,
                 searchText: $searchText,
                 selectedTripID: $selectedTripID,
+                focusBookingID: $focusBookingID,
                 onCreateTrip: { showCreateTrip = true },
                 onRequestDelete: { trip in
                     pendingDeleteTrip = trip
@@ -145,6 +150,7 @@ private struct TripListPane: View {
     let filteredTrips: [SDTrip]
     @Binding var searchText: String
     @Binding var selectedTripID: UUID?
+    @Binding var focusBookingID: UUID?
     var onCreateTrip: () -> Void
     #if REISEN_PROVIDER_SYNC
     var onOpenSync: () -> Void
@@ -186,7 +192,7 @@ private struct TripListPane: View {
         }
         .navigationTitle(L10n.string(.tabTrips))
         .modifier(CompactUUIDDestination(enabled: !usesSplit) { tripID in
-            TripDetailIOS(tripID: tripID)
+            TripDetailIOS(tripID: tripID, focusBookingID: $focusBookingID)
         })
     }
 

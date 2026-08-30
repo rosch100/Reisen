@@ -15,13 +15,30 @@ extension EnvironmentValues {
 /// Regular width: `NavigationSplitView`. Compact: `NavigationStack`.
 struct AdaptiveListDetail<ListContent: View, DetailContent: View, EmptyDetail: View, Selection: Hashable>: View {
     @Binding var selection: Selection?
+    /// Einmaliger Compact-Push (z. B. nach Paste-Import-Sichern), ohne List-Selection-Doppelpush.
+    @Binding var compactPush: Selection?
     @ViewBuilder var list: () -> ListContent
     @ViewBuilder var detail: (Selection) -> DetailContent
     @ViewBuilder var emptyDetail: () -> EmptyDetail
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var compactPath = NavigationPath()
 
     private var usesSplit: Bool { sizeClass == .regular }
+
+    init(
+        selection: Binding<Selection?>,
+        compactPush: Binding<Selection?> = .constant(nil),
+        @ViewBuilder list: @escaping () -> ListContent,
+        @ViewBuilder detail: @escaping (Selection) -> DetailContent,
+        @ViewBuilder emptyDetail: @escaping () -> EmptyDetail
+    ) {
+        self._selection = selection
+        self._compactPush = compactPush
+        self.list = list
+        self.detail = detail
+        self.emptyDetail = emptyDetail
+    }
 
     var body: some View {
         if usesSplit {
@@ -36,9 +53,14 @@ struct AdaptiveListDetail<ListContent: View, DetailContent: View, EmptyDetail: V
                 }
             }
         } else {
-            NavigationStack {
+            NavigationStack(path: $compactPath) {
                 list()
                     .environment(\.adaptiveUsesSplitNavigation, false)
+            }
+            .onChange(of: compactPush) { _, newValue in
+                guard let newValue else { return }
+                compactPath.append(newValue)
+                compactPush = nil
             }
         }
     }
