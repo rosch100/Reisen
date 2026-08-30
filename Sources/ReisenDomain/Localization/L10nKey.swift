@@ -578,6 +578,8 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case pasteImportPccConfirmMessage = "paste_import.pcc_confirm_message"
     case pasteImportPccConfirmOk = "paste_import.pcc_confirm_ok"
     case pasteImportProgress = "paste_import.progress"
+    case pasteImportCancelled = "paste_import.cancelled"
+    case pasteImportReviewReady = "paste_import.review_ready"
     case pasteImportEmpty = "paste_import.empty"
     case pasteImportFeatureRequest = "paste_import.feature_request"
     case pasteImportFeatureRequestDone = "paste_import.feature_request_done"

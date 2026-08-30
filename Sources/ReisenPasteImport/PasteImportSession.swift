@@ -90,6 +90,9 @@ public final class PasteImportSession: PasteImportSessionControlling {
 
     public var hasPendingCandidates: Bool { !pending.isEmpty }
 
+    /// Letzter Lauf wurde abgebrochen (für Accessibility-Ende-Ansage); `reset`/`start` löschen das.
+    public private(set) var runWasCancelled = false
+
     /// Review-Fenster/Sheet ist offen (auch wenn `pending` schon geleert wurde).
     public private(set) var isReviewing = false
 
@@ -147,6 +150,7 @@ public final class PasteImportSession: PasteImportSessionControlling {
     public func cancelRun() {
         guard case .running = phase else { return }
         reset()
+        runWasCancelled = true
     }
 
     /// Übernimmt die Kandidaten in die Editor-Warteschlange.
@@ -289,6 +293,7 @@ public final class PasteImportSession: PasteImportSessionControlling {
         pending = []
         tripID = nil
         isReviewing = false
+        runWasCancelled = false
         phase = .idle
     }
 }

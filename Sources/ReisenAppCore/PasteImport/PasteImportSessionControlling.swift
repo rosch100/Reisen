@@ -18,6 +18,8 @@ public protocol PasteImportSessionControlling: AnyObject {
     var featureRequestSubmitError: String? { get }
     var featureRequestMailDraft: PasteImportFailedMailDraft? { get }
     var hasPendingCandidates: Bool { get }
+    /// `true`, wenn der letzte Lauf per Abbrechen beendet wurde (bis zum nächsten Start).
+    var runWasCancelled: Bool { get }
 
     func confirmPrivateCloudCompute()
     func cancelConfirmation()

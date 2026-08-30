@@ -165,17 +165,14 @@ private struct PasteImportFlowModifier<Session: PasteImportSessionControlling & 
                     #if os(iOS) || os(macOS)
                     AccessibilityNotification.Announcement(L10n.string(.pasteImportProgress)).post()
                     #endif
-                } else if wasRunning {
-                    #if os(iOS) || os(macOS)
-                    let ended = session.errorMessage
-                        ?? (session.hasPendingCandidates
-                            ? L10n.string(.pasteImportCandidatesTitle)
-                            : L10n.string(.pasteImportEmpty))
-                    AccessibilityNotification.Announcement(ended).post()
-                    #endif
+                    return
                 }
-                // Nach erfolgreichem Lauf mit Kandidaten: Review-Queue starten (kein Sheet).
-                if wasRunning, !isRunning, session.hasPendingCandidates {
+                guard wasRunning else { return }
+                let end = session.runEnd
+                #if os(iOS) || os(macOS)
+                AccessibilityNotification.Announcement(end.announcement).post()
+                #endif
+                if end.shouldAdvanceReviewQueue {
                     onReviewQueue()
                 }
             }

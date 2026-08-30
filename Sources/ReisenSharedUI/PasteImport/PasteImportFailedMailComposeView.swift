@@ -84,10 +84,11 @@ public enum PasteImportFailedMailCompose {
         return NSWorkspace.shared.urlForApplication(toOpen: mailto) != nil
     }
 
-    /// Hält die `.eml`, bis der Default-Mailer sie geöffnet hat; Cleanup verzögert.
-    fileprivate static var openLifetime: MailOpenLifetime?
-    /// Verhindert Doppel-Completion; Datei bleibt während `pendingFileURLs` erhalten.
+    /// Completion-Callbacks pro `.eml`-URL — parallele `present`-Aufrufe überschreiben einander nicht.
+    fileprivate static var openCallbacks: [URL: @MainActor (PasteImportFailedMailComposeFinish) -> Void] = [:]
+    /// Hält die Datei, bis der Mailer sie gelesen hat (Cleanup verzögert).
     fileprivate static var pendingFileURLs: Set<URL> = []
+    private static let mailerReadGraceNanoseconds: UInt64 = 60_000_000_000
 
     static func present(
         _ draft: PasteImportFailedMailDraft,
@@ -97,8 +98,7 @@ public enum PasteImportFailedMailCompose {
             data: draft.rfc822Data(),
             fileName: "reisen-paste-import.eml"
         )
-        let lifetime = MailOpenLifetime(fileURL: fileURL, onFinished: onFinished)
-        openLifetime = lifetime
+        openCallbacks[fileURL] = onFinished
         pendingFileURLs.insert(fileURL)
         let configuration = NSWorkspace.OpenConfiguration()
         NSWorkspace.shared.open(fileURL, configuration: configuration) { _, error in
@@ -109,43 +109,26 @@ public enum PasteImportFailedMailCompose {
                 } else {
                     finish = .completed
                 }
-                completeOpen(fileURL: fileURL, finish: finish, onFinished: onFinished)
+                completeOpen(fileURL: fileURL, finish: finish)
             }
         }
     }
 
     fileprivate static func completeOpen(
         fileURL: URL,
-        finish: PasteImportFailedMailComposeFinish,
-        onFinished: @MainActor @escaping (PasteImportFailedMailComposeFinish) -> Void
+        finish: PasteImportFailedMailComposeFinish
     ) {
-        guard openLifetime != nil else { return }
-        openLifetime = nil
+        guard let onFinished = openCallbacks.removeValue(forKey: fileURL) else { return }
         onFinished(finish)
         // Mailer liest die Datei oft erst nach dem Open-Callback — Cleanup verzögern.
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 60_000_000_000)
+            try? await Task.sleep(nanoseconds: mailerReadGraceNanoseconds)
             pendingFileURLs.remove(fileURL)
             PasteImportFailedMailAttachmentFile.removeContainerIfPresent(of: fileURL)
         }
     }
     #endif
 }
-
-#if os(macOS)
-private final class MailOpenLifetime {
-    let fileURL: URL
-    let onFinished: @MainActor (PasteImportFailedMailComposeFinish) -> Void
-
-    init(
-        fileURL: URL,
-        onFinished: @escaping @MainActor (PasteImportFailedMailComposeFinish) -> Void
-    ) {
-        self.fileURL = fileURL
-        self.onFinished = onFinished
-    }
-}
-#endif
 
 #if os(iOS)
 struct PasteImportFailedMailComposeView: UIViewControllerRepresentable {

@@ -178,7 +178,7 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 ### F06 — On-device Paste-Import
 
-**Status:** umgesetzt (inkl. Feature-Request per Mail, nicht-modaler Progress, Review-Fenster/Compose-Sheet).
+**Status:** umgesetzt (inkl. öffentlichem GitHub-Feature-Request; Originaldokument per Mail nur wenn Mail verfügbar, sonst nur Metadaten-Issue-Link auf dem Gerät; nicht-modaler Progress; Review-Fenster/Compose-Sheet).
 
 **Sinn:** Abdeckung für Bahn, Restaurant, unbekannte OTAs **ohne** Inbox-OAuth. Ergänzt Provider-Sync, ersetzt ihn nicht.
 

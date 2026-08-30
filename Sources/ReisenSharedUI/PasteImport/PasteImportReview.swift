@@ -138,11 +138,24 @@ public struct PasteImportReviewSheet: View {
     }
 
     public var body: some View {
-        #if os(iOS)
-        iosBody
-        #else
-        macBody
-        #endif
+        Group {
+            #if os(iOS)
+            iosBody
+            #else
+            macBody
+            #endif
+        }
+        .alert(
+            L10n.string(.commonCancel),
+            isPresented: $showDiscardConfirm
+        ) {
+            Button(L10n.string(.commonCancel), role: .cancel) {}
+            Button(L10n.string(.commonOk), role: .destructive) {
+                onCancel()
+            }
+        } message: {
+            Text(L10n.string(.pasteImportReviewDiscardMessage))
+        }
     }
 
     #if os(macOS)
@@ -195,17 +208,6 @@ public struct PasteImportReviewSheet: View {
                         .background(.background)
                 }
             }
-            .alert(
-                L10n.string(.commonCancel),
-                isPresented: $showDiscardConfirm
-            ) {
-                Button(L10n.string(.commonCancel), role: .cancel) {}
-                Button(L10n.string(.commonOk), role: .destructive) {
-                    onCancel()
-                }
-            } message: {
-                Text(L10n.string(.pasteImportReviewDiscardMessage))
-            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
@@ -230,12 +232,10 @@ public struct PasteImportReviewSheet: View {
     }
 
     private func requestCancel() {
-        #if os(iOS)
         if isDirty {
             showDiscardConfirm = true
             return
         }
-        #endif
         onCancel()
     }
 

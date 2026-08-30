@@ -19,6 +19,9 @@ body:
         Issues aus App und Gmail-Ingress haben **keine Datei-Uploads** über die Issues-API.
         Textanhänge aus dem Gmail-Ingress erscheinen als Text im Issue (geschwärzt wo möglich);
         Binärdateien bleiben in der Mailbox.
+        Issues from the app and Gmail ingress have **no file uploads** via the Issues API.
+        Text attachments from Gmail ingress appear as text in the issue (redacted where possible);
+        binary files remain in the mailbox.
 
         Sicherheitslücken bitte über eine [private Security Advisory](https://github.com/rosch100/Reisen/security/advisories/new) melden — nicht hier.
   - type: textarea
