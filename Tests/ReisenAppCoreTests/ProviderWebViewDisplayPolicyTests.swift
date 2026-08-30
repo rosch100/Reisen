@@ -1,4 +1,5 @@
 import Testing
+import WebKit
 @testable import ReisenAppCore
 
 @Test func providerWebViewDisplayPolicy_syncHostAllowsProbeAndSyncOnly() {
@@ -20,4 +21,12 @@ import Testing
     #expect(hub.webViewDisplayOwner == .cancelSheet)
     hub.setWebViewDisplayOwner(.syncHost)
     #expect(hub.webViewDisplayOwner == .syncHost)
+}
+
+@Test @MainActor func providerSessionHub_hasSessionWebViewReflectsSlot() {
+    let hub = ProviderSessionHub()
+    hub.syncEnabledProviders([.check24])
+    #expect(!hub.hasSessionWebView(for: .check24))
+    hub.updateWebView(.check24, webView: WKWebView())
+    #expect(hub.hasSessionWebView(for: .check24))
 }

@@ -4,6 +4,16 @@ import ReisenAppCore
 import ReisenDomain
 import ReisenSharedUI
 
+extension View {
+    func bookingPortalCancelSheet(_ request: Binding<BookingPortalCancelRequest?>) -> some View {
+        sheet(item: request) { item in
+            BookingPortalCancelSheetHostIOS(request: item) {
+                request.wrappedValue = nil
+            }
+        }
+    }
+}
+
 struct BookingPortalCancelSheetHostIOS: View {
     let request: BookingPortalCancelRequest
     var onDismiss: () -> Void

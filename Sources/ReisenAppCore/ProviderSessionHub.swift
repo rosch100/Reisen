@@ -83,6 +83,10 @@ public final class ProviderSessionHub {
         slots[providerID]?.webView
     }
 
+    public func hasSessionWebView(for providerID: ProviderID) -> Bool {
+        webView(for: providerID) != nil
+    }
+
     public func status(for providerID: ProviderID) -> ProviderSessionStatus? {
         slots[providerID]?.status
     }

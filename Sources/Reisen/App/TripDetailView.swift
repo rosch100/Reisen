@@ -288,7 +288,7 @@ struct TripDetailView: View {
                         requestRemoveBookingFromTrip(booking)
                     },
                     hasSessionWebView: { booking in
-                        sessionHub?.webView(for: booking.provider) != nil
+                        sessionHub?.hasSessionWebView(for: booking.provider) == true
                     },
                     onPresentCancel: { booking, presentation, url in
                         BookingPortalCancelRequest.handle(
@@ -334,11 +334,7 @@ struct TripDetailView: View {
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
         )
         .persistFailureAlert(message: $persistErrorMessage)
-        .sheet(item: $cancelRequest) { request in
-            BookingPortalCancelSheetHost(request: request) {
-                cancelRequest = nil
-            }
-        }
+        .bookingPortalCancelSheet($cancelRequest)
     }
 
     @ViewBuilder
@@ -396,7 +392,7 @@ struct TripDetailView: View {
                                     openURL: booking.browserURL,
                                     status: booking.status,
                                     deadlines: booking.domainCancellationDeadlines,
-                                    hasSessionWebView: sessionHub?.webView(for: booking.provider) != nil,
+                                    hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
                                     onPresentCancel: { presentation, url in
                                         BookingPortalCancelRequest.handle(
                                             presentation,

@@ -187,7 +187,7 @@ struct BookingDetailIOS: View {
                 status: booking.status,
                 deadlines: booking.domainCancellationDeadlines,
                 now: Date(),
-                hasSessionWebView: sessionHub?.webView(for: booking.provider) != nil
+                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true
             ) {
                 BookingPortalActionBar(
                     openURL: booking.browserURL,
@@ -198,7 +198,7 @@ struct BookingDetailIOS: View {
                     openButtonStyle: .prominent,
                     showsCopyMenu: true,
                     deadlines: booking.domainCancellationDeadlines,
-                    hasSessionWebView: sessionHub?.webView(for: booking.provider) != nil,
+                    hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
                     onPresentCancel: { presentation, url in
                         BookingPortalCancelRequest.handle(
                             presentation,
@@ -344,11 +344,7 @@ struct BookingDetailIOS: View {
             onCancelDelete: { pendingDeleteBookingID = nil },
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
         )
-        .sheet(item: $cancelRequest) { request in
-            BookingPortalCancelSheetHostIOS(request: request) {
-                cancelRequest = nil
-            }
-        }
+        .bookingPortalCancelSheet($cancelRequest)
         .createTripFromBookingsPresentation(
             seed: $tripCreateSeed,
             showFailed: $showCreateTripFromBookingsFailed,

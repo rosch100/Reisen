@@ -230,11 +230,7 @@ struct ContentView: View {
                 }
             )
         }
-        .sheet(item: $cancelRequest) { request in
-            BookingPortalCancelSheetHost(request: request) {
-                cancelRequest = nil
-            }
-        }
+        .bookingPortalCancelSheet($cancelRequest)
         .tripDeleteConfirmDialog(
             isPresented: $showTripDeleteConfirmation,
             tripTitle: tripPendingDelete?.title ?? "",
@@ -312,7 +308,7 @@ struct ContentView: View {
     }
 
     private func hasSessionWebView(for booking: SDBooking) -> Bool {
-        sessionHub?.webView(for: booking.provider) != nil
+        sessionHub?.hasSessionWebView(for: booking.provider) == true
     }
 
     private func presentPortalCancel(
@@ -1114,11 +1110,7 @@ struct ContentView: View {
                 }
             }
             .persistFailureAlert(message: $persistErrorMessage)
-            .sheet(item: $cancelRequest) { request in
-                BookingPortalCancelSheetHost(request: request) {
-                    cancelRequest = nil
-                }
-            }
+            .bookingPortalCancelSheet($cancelRequest)
             .bookingDeleteConfirmAlert(
                 isPresented: $showDeleteConfirmation,
                 bookingTitle: booking.presentationTitle,
@@ -1150,7 +1142,7 @@ struct ContentView: View {
                                     pendingDeleteBookingID = bookingID
                                     showDeleteConfirmation = true
                                 },
-                                hasSessionWebView: sessionHub?.webView(for: booking.provider) != nil,
+                                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
                                 onPresentCancel: { presentation, url in
                                     BookingPortalCancelRequest.handle(
                                         presentation,

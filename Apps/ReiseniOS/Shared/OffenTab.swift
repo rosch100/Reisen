@@ -235,11 +235,7 @@ struct OpenBookingsScreen: View {
         .modifier(CompactUUIDDestination(enabled: !usesSplit && !isSelectingForTripCreate) { bookingID in
             BookingDetailIOS(bookingID: bookingID, onTripCreated: onTripCreated)
         })
-        .sheet(item: $cancelRequest) { request in
-            BookingPortalCancelSheetHostIOS(request: request) {
-                cancelRequest = nil
-            }
-        }
+        .bookingPortalCancelSheet($cancelRequest)
     }
 
     @ViewBuilder
@@ -298,7 +294,7 @@ struct OpenBookingsScreen: View {
                             openURL: booking.browserURL,
                             status: booking.status,
                             deadlines: booking.domainCancellationDeadlines,
-                            hasSessionWebView: sessionHub?.webView(for: booking.provider) != nil,
+                            hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
                             onPresentCancel: { presentation, url in
                                 BookingPortalCancelRequest.handle(
                                     presentation,
