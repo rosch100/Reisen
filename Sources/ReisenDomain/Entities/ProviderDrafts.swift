@@ -7,6 +7,7 @@ public struct ProviderBookingDraft: Equatable, Sendable {
     public var title: String?
     public var confirmationCode: String?
     public var externalUrl: String?
+    public var cancellationUrl: String?
     public var startAt: Date
     public var endAt: Date
     public var locationFrom: String?
@@ -34,6 +35,7 @@ public struct ProviderBookingDraft: Equatable, Sendable {
         title: String? = nil,
         confirmationCode: String? = nil,
         externalUrl: String? = nil,
+        cancellationUrl: String? = nil,
         startAt: Date,
         endAt: Date,
         locationFrom: String? = nil,
@@ -59,6 +61,7 @@ public struct ProviderBookingDraft: Equatable, Sendable {
         self.title = title
         self.confirmationCode = confirmationCode
         self.externalUrl = externalUrl
+        self.cancellationUrl = cancellationUrl
         self.startAt = startAt
         self.endAt = endAt
         self.locationFrom = locationFrom
@@ -131,6 +134,7 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
     public var locationToAddress: String?
     public var operatorName: String?
     public var isAllDay: Bool?
+    public var cancellationUrl: String?
 
     public init(
         deadlines: [CancellationDeadline] = [],
@@ -149,7 +153,8 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         locationFromAddress: String? = nil,
         locationToAddress: String? = nil,
         operatorName: String? = nil,
-        isAllDay: Bool? = nil
+        isAllDay: Bool? = nil,
+        cancellationUrl: String? = nil
     ) {
         self.deadlines = deadlines
         self.rateDetails = rateDetails
@@ -168,5 +173,6 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         self.locationToAddress = locationToAddress
         self.operatorName = operatorName
         self.isAllDay = isAllDay
+        self.cancellationUrl = cancellationUrl
     }
 }

@@ -370,6 +370,11 @@ struct TripDetailView: View {
                                     BookingPortalOpenButton(browserURL: url)
                                     CopyLinkMenuItem(url: url)
                                 }
+                                BookingPortalCancelMenuItems(
+                                    cancellationURL: booking.cancellationBrowserURL,
+                                    openURL: booking.browserURL,
+                                    status: booking.status
+                                )
                                 Button(role: .destructive) {
                                     requestRemoveBookingFromTrip(booking)
                                 } label: {

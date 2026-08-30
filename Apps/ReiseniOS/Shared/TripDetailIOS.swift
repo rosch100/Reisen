@@ -96,6 +96,11 @@ struct TripDetailIOS: View {
                                 )
                                 CopyLinkMenuItem(url: url)
                             }
+                            BookingPortalCancelMenuItems(
+                                cancellationURL: booking.cancellationBrowserURL,
+                                openURL: booking.browserURL,
+                                status: booking.status
+                            )
                             Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
                                 pendingDeleteBooking = booking
                                 showBookingDeleteConfirm = true

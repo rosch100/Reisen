@@ -22,6 +22,7 @@ func opodoParsesFlightsAndHotels() throws {
     let typesByUrl = Dictionary(bookings.map { ($0.externalUrl, $0.bookingType) }, uniquingKeysWith: { $1 })
     #expect(typesByUrl["https://www.opodo.de/hotel/abc"] == .hotel)
     #expect(typesByUrl["https://www.opodo.de/flight/def"] == .flight)
+    #expect(bookings.allSatisfy { $0.cancellationUrl == nil })
 }
 
 @Test("OpodoActivityListParser ignoriert Upsell- und Mietwagen-Links")

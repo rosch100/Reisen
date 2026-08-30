@@ -65,12 +65,19 @@ enum TravelokaItineraryEntryParser {
             incoming: bookingPrice
         )
 
+        let productType = product == .other
+            ? (TravelokaJSON.string(entry["itineraryType"]) ?? "OTHER")
+            : product.rawValue
         let externalUrl = TravelokaAPI.detailURL(
             bookingId: bookingId,
             itineraryId: itineraryId,
-            productType: product == .other
-                ? (TravelokaJSON.string(entry["itineraryType"]) ?? "OTHER")
-                : product.rawValue,
+            productType: productType,
+            routePrefix: routePrefix
+        ).absoluteString
+        let cancellationUrl = TravelokaAPI.refundPresubmissionURL(
+            productType: productType,
+            bookingId: bookingId,
+            itineraryId: itineraryId,
             routePrefix: routePrefix
         ).absoluteString
 
@@ -88,6 +95,7 @@ enum TravelokaItineraryEntryParser {
             title: fields.title,
             confirmationCode: bookingId,
             externalUrl: externalUrl,
+            cancellationUrl: cancellationUrl,
             locationFrom: TravelokaJSON.string(fields.locationFrom),
             locationTo: TravelokaJSON.string(fields.locationTo),
             locationFromAddress: TravelokaJSON.string(fields.locationFromAddress),

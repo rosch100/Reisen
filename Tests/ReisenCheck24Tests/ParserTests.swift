@@ -5,6 +5,7 @@ import ReisenDomain
 import ReisenProviders
 
 @Test("ActivityListParser schließt stornierte und vergangene Buchungen aus")
+@MainActor
 func activityListExcludesCancelledAndPast() throws {
     let json = """
     {
@@ -40,6 +41,18 @@ func activityListExcludesCancelledAndPast() throws {
     let parsed = try ActivityListParser().parseActivityListHTML(json)
     #expect(parsed.bookings.count == 1)
     #expect(parsed.bookings[0].title == "Zukunft Hotel")
+
+    let draft = try #require(
+        Check24TravelProvider().mapDraft(
+            parsed.bookings[0],
+            allBookings: parsed.bookings,
+            deadlinesByBookingURL: [:],
+            hotelStayByBookingURL: [:],
+            guestHintsByBookingURL: [:],
+            bookingDetailsByBookingKey: [:]
+        )
+    )
+    #expect(draft.cancellationUrl == nil)
 }
 
 @Test("ActivityListParser parst Hotel-ISO mit Offset-Suffix über Datumspräfix")

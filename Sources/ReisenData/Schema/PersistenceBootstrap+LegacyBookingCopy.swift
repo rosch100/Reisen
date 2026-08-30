@@ -32,6 +32,7 @@ extension PersistenceBootstrap {
             title: booking.title,
             confirmationCode: booking.confirmationCode,
             externalUrl: booking.externalUrl,
+            cancellationUrl: booking.cancellationUrl,
             startAt: booking.startAt,
             endAt: booking.endAt,
             locationFrom: booking.locationFrom,
