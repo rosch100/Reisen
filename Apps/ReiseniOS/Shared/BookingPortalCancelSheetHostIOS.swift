@@ -59,6 +59,10 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
         }
     }
 
+    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        coordinator.releaseNavigationDelegate()
+    }
+
     private func embedIfNeeded(in host: UIView, context: Context) {
         guard allowsEmbed, let webView else { return }
         if webView.superview !== host {
@@ -73,6 +77,7 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
             ])
         }
         webView.navigationDelegate = context.coordinator
+        context.coordinator.observedWebView = webView
         if context.coordinator.loadedURL != url {
             context.coordinator.loadedURL = url
             webView.load(URLRequest(url: url))
@@ -82,9 +87,17 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
     final class Coordinator: NSObject, WKNavigationDelegate {
         var onLoadFailed: () -> Void
         var loadedURL: URL?
+        weak var observedWebView: WKWebView?
 
         init(onLoadFailed: @escaping () -> Void) {
             self.onLoadFailed = onLoadFailed
+        }
+
+        func releaseNavigationDelegate() {
+            if observedWebView?.navigationDelegate as AnyObject? === self {
+                observedWebView?.navigationDelegate = nil
+            }
+            observedWebView = nil
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

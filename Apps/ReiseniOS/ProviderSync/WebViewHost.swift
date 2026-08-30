@@ -88,6 +88,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         let host = WebViewHostUIView()
         let view = resolveWebView(context: context)
         if allowsEmbed {
+            attachCoordinator(view, context: context)
             host.embed(view)
         }
         context.coordinator.loadedLoginURL = loginURL
@@ -101,6 +102,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
     func updateUIView(_ uiView: WebViewHostUIView, context: Context) {
         let view = resolveWebView(context: context)
         if allowsEmbed {
+            attachCoordinator(view, context: context)
             if uiView.webView !== view || view.superview !== uiView {
                 uiView.embed(view)
             }
@@ -125,6 +127,14 @@ struct ProviderSessionWebView: UIViewRepresentable {
             return hubView
         }
         return makeWebView(context: context)
+    }
+
+    private func attachCoordinator(_ view: InteractiveWKWebView, context: Context) {
+        let ucc = view.configuration.userContentController
+        ucc.removeScriptMessageHandler(forName: LoginFormCapture.messageHandlerName)
+        ucc.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
+        view.navigationDelegate = context.coordinator
+        view.uiDelegate = context.coordinator
     }
 
     private func makeWebView(context: Context) -> InteractiveWKWebView {
