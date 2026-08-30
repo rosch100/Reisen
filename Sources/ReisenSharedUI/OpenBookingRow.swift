@@ -27,6 +27,8 @@ public struct OpenBookingRow: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
+            BookingElapsedLabel(for: booking)
+
             if let fillCaption, !fillCaption.isEmpty {
                 Text(fillCaption)
                     .font(.caption)

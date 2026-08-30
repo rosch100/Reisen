@@ -231,6 +231,7 @@ struct BookingDetailIOS: View {
                 value: BookingScheduleRangeText.make(for: booking),
                 style: .list
             )
+            BookingElapsedLabel(for: booking)
         }
     }
 

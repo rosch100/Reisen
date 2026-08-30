@@ -23,17 +23,33 @@ public struct OpenBookingFillPartition {
     }
 }
 
-/// Zuordnung unzugeordneter Buchungen zu Reisen (Trip-Fenster + ab heute).
+/// Unzugeordnete Buchungen: Offen-Liste, Fill und Seed (Trip-Fenster + ListInclusion).
 public enum OpenBookingMatching {
-    /// Offene Liste: keine Reise, ab heute, nicht storniert.
+    /// Offen-Liste: keine Reise; `BookingListInclusion` (ab heute oder manuell).
+    private static func isListedUnassigned(
+        _ booking: SDBooking,
+        calendar: Calendar,
+        now: Date
+    ) -> Bool {
+        booking.trip == nil && booking.appearsInList(now: now, calendar: calendar)
+    }
+
+    public static func listedUnassigned(
+        in bookings: [SDBooking],
+        calendar: Calendar = .current,
+        now: Date = Date()
+    ) -> [SDBooking] {
+        bookings.filter { isListedUnassigned($0, calendar: calendar, now: now) }
+    }
+
+    /// Fill/Seed-ohne-Auswahl: listed und ab heute.
     public static func isOpenUnassigned(
         _ booking: SDBooking,
         calendar: Calendar = .current,
         now: Date = Date()
     ) -> Bool {
-        guard booking.trip == nil, booking.status != .cancelled else { return false }
-        let startOfToday = calendar.startOfDay(for: now)
-        return booking.startAt >= startOfToday
+        isListedUnassigned(booking, calendar: calendar, now: now)
+            && booking.isUpcoming(now: now, calendar: calendar)
     }
 
     public static func openUnassigned(
