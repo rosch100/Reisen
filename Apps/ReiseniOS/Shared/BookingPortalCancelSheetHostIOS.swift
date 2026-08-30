@@ -86,8 +86,7 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
                 webView.trailingAnchor.constraint(equalTo: host.trailingAnchor),
             ])
         }
-        webView.navigationDelegate = context.coordinator
-        context.coordinator.observedWebView = webView
+        context.coordinator.adopt(webView)
         if context.coordinator.loadedURL != url {
             context.coordinator.loadedURL = url
             webView.load(URLRequest(url: url))
@@ -98,15 +97,26 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
         var onLoadFailed: () -> Void
         var loadedURL: URL?
         weak var observedWebView: WKWebView?
+        private var previousNavigationDelegate: (any WKNavigationDelegate)?
 
         init(onLoadFailed: @escaping () -> Void) {
             self.onLoadFailed = onLoadFailed
         }
 
+        func adopt(_ webView: WKWebView) {
+            if observedWebView === webView { return }
+            releaseNavigationDelegate()
+            previousNavigationDelegate = WebViewNavigationDelegateHandoff.take(webView, owner: self)
+            observedWebView = webView
+        }
+
         func releaseNavigationDelegate() {
-            if observedWebView?.navigationDelegate as AnyObject? === self {
-                observedWebView?.navigationDelegate = nil
-            }
+            WebViewNavigationDelegateHandoff.release(
+                observedWebView,
+                owner: self,
+                previous: previousNavigationDelegate
+            )
+            previousNavigationDelegate = nil
             observedWebView = nil
         }
 

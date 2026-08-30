@@ -74,7 +74,7 @@ Diese Spec **hebt** `cancel ≠ open` als Actionable-Zwang auf und **führt** Fr
 
 ## Architektur
 
-```
+```text
 Storno-URL + status + deadlinesForDisplay + hasSessionWebView
         │
         ▼
@@ -109,7 +109,7 @@ Damit das Sheet nicht ein **zweites** WKWebView erzeugt: iOS-Bindings auf den Hu
 
 Policy-SSOT (`ReisenAppCore`):
 
-```
+```text
 allowsEmbed(owner:host:)
   syncHost    → probe | sync
   cancelSheet → cancelSheet

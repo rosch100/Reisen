@@ -406,17 +406,9 @@ In `BookingPortalCancelTitleTests.swift` ergänzen:
 
 ```swift
 @Test func bookingPortalCancelTitle_buttonIsStornierenInGerman() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
-    #expect(BookingPortalCancelTitle.button == "Stornieren")
-}
-
-@Test func bookingPortalCancelLoadFailed_keyResolves() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
-    let value = L10n.string(.bookingPortalCancelLoadFailed)
-    #expect(value != L10nKey.bookingPortalCancelLoadFailed.rawValue)
-    #expect(!value.isEmpty)
+    L10n.withLocale(Locale(identifier: "de")) {
+        #expect(BookingPortalCancelTitle.button == "Stornieren")
+    }
 }
 ```
 
@@ -424,7 +416,7 @@ In `BookingPortalCancelTitleTests.swift` ergänzen:
 
 Run: `swift test --filter bookingPortalCancelTitle_buttonIsStornierenInGerman`
 
-Expected: FAIL (`Storno` != `Stornieren`). `bookingPortalCancelLoadFailed` existiert noch nicht (Compile-Fail ist hier nicht der fachliche RED — zuerst nur den Titel-Test laufen lassen, Key erst mit Implementation anlegen).
+Expected: FAIL (`Storno` != `Stornieren`). `bookingPortalCancelLoadFailed` existiert noch nicht — den Resolve-Test erst nach Step 3 anlegen, sonst kompiliert das Target nicht.
 
 - [ ] **Step 3: Strings**
 
@@ -442,6 +434,16 @@ In `Localizable.xcstrings` neuen Eintrag:
 - EN: `The cancellation page could not be loaded.`
 
 Help-Text (`action.cancel_in_portal_help`) bleibt: Öffnen der Stornoseite, kein Storno in Reisen. Menu-Key bleibt „Stornieren im Portal“.
+
+```swift
+@Test func bookingPortalCancelLoadFailed_keyResolves() {
+    L10n.withLocale(Locale(identifier: "de")) {
+        let value = L10n.string(.bookingPortalCancelLoadFailed)
+        #expect(value != L10nKey.bookingPortalCancelLoadFailed.rawValue)
+        #expect(!value.isEmpty)
+    }
+}
+```
 
 - [ ] **Step 4: GREEN**
 
@@ -606,11 +608,11 @@ import ReisenDomain
 @testable import ReisenSharedUI
 
 @Test func bookingPortalCancelChrome_destructiveUsesStornierenTitle() {
-    L10n.locale = Locale(identifier: "de")
-    defer { L10n.locale = .current }
-    #expect(BookingPortalCancelTitle.button == "Stornieren")
-    #expect(BookingPortalCancelChrome.systemImage == "arrow.up.right.square")
-    #expect(BookingPortalCancelChrome.usesDestructiveRole)
+    L10n.withLocale(Locale(identifier: "de")) {
+        #expect(BookingPortalCancelTitle.button == "Stornieren")
+        #expect(BookingPortalCancelChrome.systemImage == "arrow.up.right.square")
+        #expect(BookingPortalCancelChrome.usesDestructiveRole)
+    }
 }
 
 @Test func bookingPortalActionBar_isVisible_sameURLRequiresSession() {
@@ -733,9 +735,13 @@ Erst Binding, dann Hub, erst dann `makeWebView`. Ohne Hub-Binding in `SyncTab`/`
 `SyncTab` Binding (macOS-`SyncView` kopieren):
 
 ```swift
+private var selectedSessionWebView: WKWebView? {
+    sessionHub?.webView(for: selectedProviderID)
+}
+
 private var webViewBinding: Binding<WKWebView?> {
     Binding(
-        get: { webView ?? sessionHub?.webView(for: selectedProviderID) },
+        get: { selectedSessionWebView },
         set: { newValue in
             webView = newValue
             sessionHub?.updateWebView(selectedProviderID, webView: newValue)
@@ -788,7 +794,7 @@ Nach Dismiss (`syncHost`): Sync-Host `updateUIView` bettet die **dieselbe** Inst
 macOS-Sheet-Host (`BookingPortalCancelSheetHost`):
 
 1. `onAppear`: `hub.setWebViewDisplayOwner(.cancelSheet)`; `webView.load(URLRequest(url: cancellationURL))` — `cancellationURL` ist bereits `URL` (Fragment bleibt).
-2. Navigation-Delegate-Fail → `loadFailed = true`. Nicht `openURL`.
+2. Navigation-Delegate-Fail → `loadFailed = true`. Nicht `openURL`. Vor dem Setzen den bestehenden Session-Delegate merken (`WebViewNavigationDelegateHandoff.take`); beim Dismantle nur restore, wenn der Cancel-Coordinator noch Owner ist — nicht pauschal `nil`.
 3. `onDisappear` / Dismiss: `hub.setWebViewDisplayOwner(.syncHost)`. **Kein** Zurück-`load` der vorherigen URL.
 4. Body: `BookingPortalCancelSheetChrome` + Einbettung der Hub-WebView (bestehende `ProviderSessionView` **nicht** mit `loginURL` verwenden). Eigener schmaler Host, der nur embed+load kann — z. B. dieselbe `WebViewHostView.embed`-Logik mit `allowsEmbed: hub.allowsEmbed(on: .cancelSheet)`.
 
@@ -797,23 +803,20 @@ iOS analog (`BookingPortalCancelSheetHostIOS`).
 ContentView / BookingDetail / iOS Detail:
 
 ```swift
-@State private var cancelSheetURL: URL?
-@State private var cancelSheetProvider: ProviderID?
+@State private var cancelRequest: BookingPortalCancelRequest?
 
 onPresentCancel: { presentation, url in
-    switch presentation {
-    case .sheet:
-        cancelSheetURL = url
-        cancelSheetProvider = booking.provider
-    case .safari:
-        openURL(url)
-    case .hidden:
-        break
-    }
+    BookingPortalCancelRequest.handle(
+        presentation,
+        url: url,
+        providerID: booking.provider,
+        openURL: { openURL($0) },
+        presentSheet: { cancelRequest = $0 }
+    )
 }
 ```
 
-`.sheet(item:)` oder `isPresented` gebunden an `cancelSheetURL != nil`.
+`.bookingPortalCancelSheet($cancelRequest)` (`sheet(item:)`). Toolbar und interaktives Dismiss setzen das Item auf `nil`; `onDisappear` gibt den Display-Owner zurück.
 
 `hasSessionWebView` an **jedem** Buchungs-Einstieg: `hub?.webView(for: booking.provider) != nil` (explizit, kein Default). Store-iOS / fehlender Hub → `false`. Pflicht-Sites: `BookingDetailContent`-Parent, `BookingDetailIOS`, `ContentView` (Menu + Command), `TripDetailView`, `OffenTab`, `TripDetailIOS`.
 
@@ -825,7 +828,7 @@ Kontextmenüs: `BookingPortalCancelMenuItems` mit `onPresentCancel` — `TripDet
 
 Run:
 
-```
+```bash
 swift test --filter bookingPortalCancel
 swift test --filter bookingPortalCancellation
 swift test --filter ProviderWebViewDisplay
