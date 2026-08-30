@@ -179,6 +179,7 @@ targets:
         MARKETING_VERSION: 0.2.1
         CODE_SIGN_ENTITLEMENTS: Resources/Reisen.entitlements
         COMBINE_HIDPI_IMAGES: true
+        ENABLE_DEBUG_DYLIB: NO
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC
     dependencies:
       - package: Reisen
@@ -195,14 +196,41 @@ targets:
         product: ReisenDomain
       - package: Reisen
         product: ReisenPasteImport
+    scheme:
+      testTargets:
+        - ReisenMacUITests
+
+  ReisenMacUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: Tests/ReisenMacUITests
+    dependencies:
+      - target: ReisenMac
+      - package: Reisen
+        product: ReisenSharedUI
+      - package: Reisen
+        product: ReisenData
+      - package: Reisen
+        product: ReisenAppCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.reisen.Reisen.mac.uitests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: ReisenMac
 
 schemes:
   ReisenMac:
     build:
       targets:
         ReisenMac: all
+        ReisenMacUITests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - ReisenMacUITests
   ReiseniOS:
     build:
       targets:

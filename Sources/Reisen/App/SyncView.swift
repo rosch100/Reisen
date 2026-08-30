@@ -148,6 +148,13 @@ struct SyncView: View {
                     systemImage: "nosign",
                     description: Text(L10n.string(.syncProviderDisabledHint))
                 )
+            } else if UITestingLaunch.isActive {
+                VStack(spacing: 0) {
+                    sessionBanner
+                    Divider()
+                    actionBar
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 VStack(spacing: 0) {
                     sessionBanner
@@ -198,6 +205,7 @@ struct SyncView: View {
             }
         }
         .onAppear {
+            if UITestingLaunch.isActive { return }
             restoreSessionFromHub()
             // Browser nur bei Login-Bedarf; sonst Sync-UI ohne Webseite.
             isBrowserExpanded = (sessionStatus == .needsLogin)

@@ -19,7 +19,7 @@ struct ContentView: View {
     @State private var didInitExpanded = false
     @State private var didRunTimeRepair = false
     @State private var didApplyInitialSelection = false
-    @State private var sessionProbeFinished = false
+    @State private var sessionProbeFinished = UITestingLaunch.isActive
     @Environment(\.modelContext) private var modelContext
     @Environment(\.syncStore) private var store
     @Environment(\.providerSessionHub) private var sessionHub
@@ -162,6 +162,7 @@ struct ContentView: View {
             globalSyncStatusBar
         }
         .onAppear {
+            applyUITestingLaunchSelectionIfNeeded()
             if !didInitExpanded {
                 // Reisen standardmäßig eingeklappt; Nutzer kann aufklappen.
                 expandedTripIDs = []
@@ -315,6 +316,7 @@ struct ContentView: View {
                         selection = .providerSync(enabledProviderIDs.first ?? .check24)
                     }
                 }
+                .accessibilityIdentifier(UITestingIdentifiers.emptyState)
             }
         }
     }
@@ -532,6 +534,7 @@ struct ContentView: View {
                                 .buttonStyle(.plain)
                             }
                             .tag(SidebarSelection.trip(trip.id))
+                            .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
                             .contextMenu {
                                 Button(L10n.string(.commonEdit)) {
                                     tripToEdit = trip
@@ -545,6 +548,7 @@ struct ContentView: View {
                                 } label: {
                                     Text(L10n.string(.actionDeleteTrip))
                                 }
+                                .accessibilityIdentifier(UITestingIdentifiers.deleteTripMenu)
                             }
 
                             if isExpanded {
@@ -577,6 +581,7 @@ struct ContentView: View {
                                     }
                                     .buttonStyle(.plain)
                                     .contentShape(Rectangle())
+                                    .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
                                     .contextMenu {
                                         Button(L10n.string(.commonEdit)) {
                                             editBooking(booking, in: trip)
@@ -632,6 +637,17 @@ struct ContentView: View {
         }
         .listStyle(.sidebar)
         .navigationTitle(L10n.string(.tripTrips))
+        .accessibilityIdentifier(UITestingIdentifiers.sidebar)
+    }
+
+    private func applyUITestingLaunchSelectionIfNeeded() {
+        guard UITestingLaunch.isActive, !didApplyInitialSelection else { return }
+        didApplyInitialSelection = true
+        sessionProbeFinished = true
+        guard UITestingLaunch.shouldSeed else { return }
+        if let trip = trips.first(where: { $0.id == UITestingSeed.tripID }) ?? trips.first {
+            selection = .trip(trip.id)
+        }
     }
 
     private var openBookings: [SDBooking] {

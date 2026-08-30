@@ -319,7 +319,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ReisenAppCoreTests",
-            dependencies: ["ReisenAppCore", "ReisenDomain", "ReisenCrashSignal"],
+            dependencies: ["ReisenAppCore", "ReisenData", "ReisenDomain", "ReisenCrashSignal"],
             path: "Tests/ReisenAppCoreTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

@@ -878,6 +878,7 @@ public struct BookingEditorForm: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.background)
+        .accessibilityIdentifier(UITestingIdentifiers.bookingEditor)
     }
 
     private func localizedBookingStatus(_ status: BookingStatus) -> String {

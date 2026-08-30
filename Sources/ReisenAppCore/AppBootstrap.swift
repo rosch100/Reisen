@@ -96,6 +96,7 @@ public final class AppBootstrap {
     }
 
     private func startCloudSideEffectObserverIfReady() {
+        guard !UITestingMode.fromProcess.skipsSideEffects else { return }
         if case .ready(_, _, let syncStore, _) = state {
             syncStore.startObservingCloudSideEffects()
         }
@@ -107,8 +108,19 @@ public final class AppBootstrap {
         }
     }
 
-    public static func makeReadyState(registry: ProviderRegistry = .empty) throws -> State {
-        let container = try PersistenceBootstrap.makeContainer()
+    public static func makeReadyState(
+        registry: ProviderRegistry = .empty,
+        uiTesting: UITestingMode = .fromProcess
+    ) throws -> State {
+        let container: ModelContainer
+        if uiTesting.skipsSideEffects {
+            container = try PersistenceBootstrap.makeInMemoryContainer()
+            if uiTesting == .populated {
+                try UITestingSeed.insertPopulated(into: container.mainContext)
+            }
+        } else {
+            container = try PersistenceBootstrap.makeContainer()
+        }
         let syncStore = SyncStore(modelContext: container.mainContext, registry: registry)
         let sessionHub = ProviderSessionHub()
         return .ready(container, registry, syncStore, sessionHub)

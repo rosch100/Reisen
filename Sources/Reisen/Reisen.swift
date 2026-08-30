@@ -24,7 +24,9 @@ struct ReisenApp: App {
                         .environment(\.syncStore, syncStore)
                         .environment(\.providerSessionHub, sessionHub)
                         .modelContainer(container)
+                        .uiTestingIsolation()
                         .task(id: ObjectIdentifier(syncStore)) {
+                            guard !UITestingLaunch.isActive else { return }
                             // Verification first: rebuild/EventKit must not block seed/expect.
                             await CloudKitTwoDeviceVerification.runIfRequested(
                                 modelContext: container.mainContext
@@ -33,6 +35,7 @@ struct ReisenApp: App {
                             await syncStore.rebuildLocalSideEffects(announceProgress: false)
                         }
                         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                            guard !UITestingLaunch.isActive else { return }
                             Task {
                                 await syncStore.rebuildLocalSideEffects(announceProgress: false)
                             }
@@ -81,6 +84,7 @@ struct ReisenApp: App {
                 .environment(\.providerRegistry, registry)
                 .environment(\.syncStore, syncStore)
                 .modelContainer(container)
+                .uiTestingIsolation()
             } else {
                 Text(L10n.string(.appSettingsUnavailable))
                     .padding()

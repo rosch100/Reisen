@@ -72,6 +72,7 @@ public struct TripDeleteConfirmDialog: ViewModifier {
                 Button(L10n.string(.tripDeleteKeepBookings), action: onKeepBookings)
             }
             Button(L10n.string(.commonCancel), role: .cancel, action: onCancel)
+                .accessibilityIdentifier(UITestingIdentifiers.tripDeleteDialog)
         } message: {
             Text(BookingTripActions.tripDeleteMessage(bookingCount: bookingCount))
         }

@@ -20,6 +20,9 @@ HAR/
 # LLVM coverage profiles (local test runs)
 *.profraw
 
+# On-demand UI-Review-Tour (PNG/AX, nicht committen)
+/DerivedData/ui-review/
+
 # iOS / XcodeGen / SweetPad (generated)
 *.xcodeproj/
 *.xcworkspace/

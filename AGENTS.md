@@ -30,6 +30,8 @@ Dieses Repo nutzt Cursor-Agents primär für saubere CI-/Review-Workflows. Die �
 - Test (CI-parität): `bash ./Scripts/ci-test.sh`
 - Produkt-Build (CodeQL, ohne Test-Targets): `bash ./Scripts/ci-build.sh --arch arm64`
 - App-Bundle bauen: `bash ./Scripts/build-app.sh --configuration debug|release`
+- macOS-UI-Smokes (XCUI, XcodeGen-ReisenMac): `bash ./Scripts/macos-ui-test.sh`
+- macOS-UI-Review-Tour (advisory, kein Gate): `bash ./Scripts/macos-ui-review.sh`
 
 ## Referenzen
 - `AI_POLICY.md`: Regeln für die Verwendung von AI in Issues, PRs und Reviews
