@@ -24,6 +24,8 @@ enum SidebarSelection: Hashable, Identifiable {
     case trip(UUID)
     /// „Mailbox“ für offene Buchungen (Content-Spalte).
     case openBookings
+    /// Offene Buchungen, deren Datum bereits vergangen ist.
+    case elapsedOpenBookings
 
     var id: String {
         switch self {
@@ -31,6 +33,8 @@ enum SidebarSelection: Hashable, Identifiable {
             return "trips"
         case .openBookings:
             return "openBookings"
+        case .elapsedOpenBookings:
+            return "elapsedOpenBookings"
         case .providerSync(let providerID):
             return "providerSync:\(providerID.rawValue)"
         case .trip(let uuid):
@@ -48,7 +52,7 @@ enum SidebarSelection: Hashable, Identifiable {
         switch self {
         case .trip(let id):
             return .trip(id)
-        case .trips, .providerSync, .openBookings:
+        case .trips, .providerSync, .openBookings, .elapsedOpenBookings:
             return .open
         }
     }
