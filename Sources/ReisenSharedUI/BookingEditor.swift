@@ -956,6 +956,7 @@ public struct BookingEditorForm: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.background)
+        .accessibilityIdentifier(UITestingIdentifiers.bookingEditor)
     }
 
     private func attemptSave(using proxy: ScrollViewProxy) {

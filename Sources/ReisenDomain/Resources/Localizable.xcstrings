@@ -8992,6 +8992,22 @@
           }
         }
       }
+    },
+    "split.column_resize": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spaltenbreite"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Column width"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

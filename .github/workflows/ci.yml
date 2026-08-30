@@ -21,7 +21,7 @@ jobs:
   ci:
     name: CI
     runs-on: xcode-27
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -75,3 +75,17 @@ jobs:
           CI: "true"
           REISEN_CLOUDKIT: "0"
         run: bash ./Scripts/ios-build-release-check.sh
+
+      - name: macOS UI tests
+        env:
+          CI: "true"
+          REISEN_CLOUDKIT: "0"
+        run: bash ./Scripts/macos-ui-test.sh
+
+      - name: Upload macOS UI xcresult
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macos-ui-xcresult
+          path: DerivedData/ReisenMacUITests/*.xcresult
+          if-no-files-found: ignore

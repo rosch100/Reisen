@@ -94,9 +94,14 @@ struct ProviderSyncContainer: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier(UITestingIdentifiers.syncChrome)
         .onAppear { syncHub() }
         .onProviderEnabledChange(bump: $providerEnableEpoch, perform: syncHub)
         .onAppear {
+            if UITestingLaunch.isActive {
+                phase = .ready
+                return
+            }
             if hub?.didCompleteStartupProbe == true {
                 phase = .ready
                 let needingLogin = enabledProviderIDs.filter { hub?.status(for: $0) != .sessionReady }
