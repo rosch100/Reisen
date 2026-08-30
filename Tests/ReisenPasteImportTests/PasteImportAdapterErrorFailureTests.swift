@@ -15,3 +15,10 @@ import ReisenDomain
         try PasteImportImageAttachments.requireSupport(false)
     }
 }
+
+@Test func pasteImportImageAttachments_runtimeSupportDoesNotThrow() {
+    #expect(PasteImportImageAttachments.isSupported)
+    #expect(throws: Never.self) {
+        try PasteImportImageAttachments.requireSupport()
+    }
+}

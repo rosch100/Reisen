@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 import PDFKit
 import Testing
-import ReisenPasteImport
+@testable import ReisenPasteImport
 
 @Test func pasteImportPDFText_readsEmbeddedTextAndSkipsPageImages() throws {
     let content = try PasteImportPDFPreparation.prepare(try PDFTestData.helloFixture())
@@ -46,6 +46,15 @@ import ReisenPasteImport
     let content = try PasteImportPDFPreparation.prepare(PDFTestData.blankPages(count: 1))
     let header = try #require(content.pageImages.first).prefix(8)
     #expect(Array(header) == [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+}
+
+@Test func pasteImportPDFText_scannedPageImagesPassImageAttachmentGate() throws {
+    let content = try PasteImportPDFPreparation.prepare(PDFTestData.blankPages(count: 1))
+    #expect(content.pageImages.count == 1)
+    #expect(PasteImportImageAttachments.isSupported)
+    #expect(throws: Never.self) {
+        try PasteImportImageAttachments.requireSupport()
+    }
 }
 
 /// PDF-Bytes für die Tests: Fixture mit Text, generierte Seiten ohne Text.

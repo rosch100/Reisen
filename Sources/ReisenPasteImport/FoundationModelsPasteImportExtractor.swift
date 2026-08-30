@@ -68,27 +68,8 @@ public struct FoundationModelsPasteImportExtractor: PasteImportExtracting {
         guard !material.images.isEmpty else {
             return PreparedPrompt(prompt: Prompt(request), temporaryImageURLs: [])
         }
-        try PasteImportImageAttachments.requireSupport()
-        guard #available(macOS 27.0, iOS 27.0, visionOS 27.0, *) else {
-            throw PasteImportAdapterError.imageInputUnsupported
-        }
-        let attachments: [Attachment<ImageAttachmentContent>]
-        let temporaryImageURLs: [URL]
-        if PasteImportImageAttachments.cgImageInitializerAvailable {
-            attachments = try material.images.map { Attachment(try PasteImportImageData.image(from: $0)) }
-            temporaryImageURLs = []
-        } else {
-            let urls = try PasteImportTemporaryPNGs.write(material.images)
-            attachments = urls.map { Attachment(imageURL: $0) }
-            temporaryImageURLs = urls
-        }
-        return PreparedPrompt(
-            prompt: Prompt {
-                request
-                attachments
-            },
-            temporaryImageURLs: temporaryImageURLs
-        )
+        let prepared = try PasteImportImagePrompt.make(request: request, images: material.images)
+        return PreparedPrompt(prompt: prepared.prompt, temporaryImageURLs: prepared.temporaryImageURLs)
     }
 
     private static func request(for material: PasteImportPromptMaterial) -> String {
