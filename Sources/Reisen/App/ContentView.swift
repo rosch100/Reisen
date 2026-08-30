@@ -552,9 +552,9 @@ struct ContentView: View {
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
                             }
                             .tag(SidebarSelection.trip(trip.id))
-                            .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
                             .contextMenu {
                                 Button(L10n.string(.commonEdit)) {
                                     tripToEdit = trip

@@ -44,6 +44,12 @@ public final class AppBootstrap {
         do {
             stopCloudSideEffectObserverIfReady()
 
+            // UI-Tests laufen nur In-Memory: keine Disk-SQLite löschen, nur Ready-State neu aufbauen.
+            if UITestingMode.fromProcess.skipsSideEffects {
+                try activateReadyState()
+                return
+            }
+
             if wipeCloudDataBeforeReset {
                 try await wipeCloudThenResetLocal()
             } else {
@@ -57,6 +63,11 @@ public final class AppBootstrap {
 
     /// Cloud wipe works from `.ready` (delete+export) or `.failed` (reopen → import → delete → export).
     private func wipeCloudThenResetLocal() async throws {
+        if UITestingMode.fromProcess.skipsSideEffects {
+            try activateReadyState()
+            return
+        }
+
         if case .ready(let container, _, _, _) = state {
             try await wipeCloud(from: container.mainContext)
             try PersistenceBootstrap.resetStoreFiles()

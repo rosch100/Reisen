@@ -13,7 +13,9 @@ Advisory only. Kein Merge-Gate, kein Score.
 ## Pflicht zuerst
 
 1. Artifacts lesen: `manifest.json` (`schemaVersion`), PNG, `*.ax.json`.
-2. Default-Pfad: `$REISEN_UI_REVIEW_DIR` oder `DerivedData/ui-review/<timestamp>/`.
+2. Artifact-Pfad:
+   - Script `Scripts/macos-ui-review.sh`: `$REISEN_UI_REVIEW_DIR` (Default `DerivedData/ui-review/<timestamp>/`), plus Export aus xcresult-Attachments.
+   - Standalone `ReviewArtifactWriter` (ohne Script): Prozess-Temp `…/reisen-ui-review-<uuid>/` und `XCTAttachment` (Sandbox schreibt nicht zuverlässig nach `/tmp`).
 3. Rubrik: [`docs/qa/ui-review-rubric.md`](../../../docs/qa/ui-review-rubric.md).
 4. HIG-Ist: [`docs/superpowers/specs/2026-07-20-hig-core-ux-review.md`](../../../docs/superpowers/specs/2026-07-20-hig-core-ux-review.md).
 
@@ -25,7 +27,9 @@ Advisory only. Kein Merge-Gate, kein Score.
 2. Jeden Screen (PNG + AX) gegen HIG / Unlogik / Design halten.
 3. Nur belegen, was Screenshot oder AX-Knoten zeigt (identifier, label, frame, enabled, hittable).
 4. Findings auf Deutsch mit Severity `blocker` / `major` / `minor` / `nit`.
-5. Jedes Finding: Evidence (PNG-Name + AX-Identifier oder Knoten), Why, Fix.
+5. Jedes Finding: `severity`, `category` (`hig` / `unlogik` / `design`), `title`,
+   `evidence.screenshot` (PNG-Dateiname), `evidence.ax` (Identifier oder AX-Knoten),
+   `why`, `fix`.
 
 ## Nicht tun
 

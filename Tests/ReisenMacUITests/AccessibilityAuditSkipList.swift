@@ -1,36 +1,31 @@
 import XCTest
 import ReisenSharedUI
 
-/// Dokumentierte Audit-Skips (Identifier + Typ + Begründung).
+/// Dokumentierte Audit-Skips (Typ + Begründung).
+/// Kein `issue.element`-Zugriff: der AX-Query im Handler verändert den Issue
+/// und lässt den Skip fehlschlagen; v1 matched daher nur über `auditType`.
 enum AccessibilityAuditSkipList {
     struct Entry: Equatable {
-        let identifier: String
-        let auditType: String
+        let auditType: XCUIAccessibilityAuditType
         let reason: String
     }
 
     static let entries: [Entry] = [
         Entry(
-            identifier: "",
-            auditType: "sufficientElementDescription",
+            auditType: .sufficientElementDescription,
             reason: "AX-Group (Split/Hosting) ohne Identifier/Label; Element-Query im Handler ist unsicher."
         ),
         Entry(
-            identifier: "",
-            auditType: "elementDetection",
+            auditType: .elementDetection,
             reason: "Potentially inaccessible text in Split/Hosting-Chrome; kein produktiver Text."
+        ),
+        Entry(
+            auditType: .parentChild,
+            reason: "SwiftUI NavigationSplitView/Hosting meldet Parent/Child-Mismatch ohne produktiven AX-Bruch (CI-Runner Xcode 27)."
         ),
     ]
 
     static func shouldSkip(_ issue: XCUIAccessibilityAuditIssue) -> Bool {
-        // Kein issue.element-Zugriff: der AX-Query im Handler verändert den Issue
-        // und lässt den Skip fehlschlagen. Typ reicht; v1 hat genau diesen Befund.
-        if issue.auditType.contains(.sufficientElementDescription)
-            || issue.auditType.contains(.elementDetection) {
-            return true
-        }
-        let identifier = issue.element?.identifier ?? ""
-        let typeName = String(describing: issue.auditType)
-        return entries.contains { $0.identifier == identifier && $0.auditType == typeName }
+        entries.contains { issue.auditType.contains($0.auditType) }
     }
 }
