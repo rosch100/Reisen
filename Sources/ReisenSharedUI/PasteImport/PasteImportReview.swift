@@ -128,7 +128,6 @@ public struct PasteImportReviewSheet: View {
     @Environment(\.modelContext) private var modelContext
     @State private var draft: BookingEditorDraft
     @State private var showDiscardConfirm = false
-    @State private var navigationError: String?
 
     public init(
         payload: PasteImportReviewPayload,
@@ -208,37 +207,12 @@ public struct PasteImportReviewSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(L10n.string(.commonCancel), action: requestCancel)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.string(.commonSave)) {
-                        performSaveFromNavigation()
-                    }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                if let navigationError {
-                    Text(navigationError)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.background)
-                }
             }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
 
-    private func performSaveFromNavigation() {
-        do {
-            try draft.validate()
-            try save()
-            navigationError = nil
-        } catch {
-            navigationError = (error as? LocalizedError)?.errorDescription
-                ?? String(describing: error)
-        }
-    }
     #endif
 
     private var editorTitle: String {

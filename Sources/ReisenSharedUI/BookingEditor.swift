@@ -75,6 +75,24 @@ public enum BookingIncludedBreakfastState: String, CaseIterable, Identifiable, S
     }
 }
 
+public enum BookingEditorField: Hashable, Sendable {
+    case title
+    case externalUrl
+    case cancellationUrl
+    case end
+    case hotelOffset
+    case departureOffset
+    case arrivalOffset
+    case checkInMinutes
+    case checkOutMinutes
+    case price
+    case guests
+    case rooms
+    case passengers
+    case cancellationOffset(UUID)
+    case cancellationFee(UUID)
+}
+
 public struct BookingEditorDraft: Equatable, Sendable {
     public var bookingID: UUID?
     public var provider: ProviderID
@@ -217,15 +235,28 @@ public struct BookingEditorDraft: Equatable, Sendable {
     public enum ValidationError: LocalizedError, Sendable {
         case emptyTitle
         case endBeforeStart
-        case invalidNumber(field: String)
-        case invalidUrl
+        case invalidNumber(field: String, focusField: BookingEditorField)
+        case invalidUrl(focusField: BookingEditorField)
 
         public var errorDescription: String? {
             switch self {
             case .emptyTitle: return L10n.string(.editorValidationEmptyTitle)
             case .endBeforeStart: return L10n.string(.editorValidationEndBeforeStart)
-            case .invalidNumber(let field): return L10n.format(.editorValidationInvalidNumber, field)
+            case .invalidNumber(let field, _): return L10n.format(.editorValidationInvalidNumber, field)
             case .invalidUrl: return L10n.string(.editorValidationInvalidUrl)
+            }
+        }
+
+        public var focusField: BookingEditorField {
+            switch self {
+            case .emptyTitle:
+                return .title
+            case .endBeforeStart:
+                return .end
+            case .invalidNumber(_, let focusField):
+                return focusField
+            case .invalidUrl(let focusField):
+                return focusField
             }
         }
     }
@@ -258,45 +289,59 @@ public struct BookingEditorDraft: Equatable, Sendable {
         guard endAt >= startAt else { throw ValidationError.endBeforeStart }
 
         if !externalUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            guard URL(string: externalUrl) != nil else { throw ValidationError.invalidUrl }
+            guard URL(string: externalUrl) != nil else {
+                throw ValidationError.invalidUrl(focusField: .externalUrl)
+            }
         }
         if !cancellationUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            guard URL(string: cancellationUrl) != nil else { throw ValidationError.invalidUrl }
+            guard URL(string: cancellationUrl) != nil else {
+                throw ValidationError.invalidUrl(focusField: .cancellationUrl)
+            }
         }
 
-        try ensureOptionalInt(L10n.string(.editorFieldHotelOffset), hotelOffsetSecondsText)
-        try ensureOptionalInt(L10n.string(.editorFieldDepartureOffset), flightDepartureOffsetSecondsText)
-        try ensureOptionalInt(L10n.string(.editorFieldArrivalOffset), flightArrivalOffsetSecondsText)
-        try ensureOptionalInt(L10n.string(.editorFieldCheckInMinutes), hotelCheckInMinutesText)
-        try ensureOptionalInt(L10n.string(.editorFieldCheckOutMinutes), hotelCheckOutMinutesText)
-        try ensureOptionalDouble(L10n.string(.editorFieldPrice), totalPriceAmountText)
-        try ensureOptionalInt(L10n.string(.editorFieldGuests), guestCountText)
-        try ensureOptionalInt(L10n.string(.editorFieldRooms), roomCountText)
-        try ensureOptionalInt(L10n.string(.editorFieldPassengers), passengerCountText)
+        try ensureOptionalInt(L10n.string(.editorFieldHotelOffset), hotelOffsetSecondsText, focusField: .hotelOffset)
+        try ensureOptionalInt(L10n.string(.editorFieldDepartureOffset), flightDepartureOffsetSecondsText, focusField: .departureOffset)
+        try ensureOptionalInt(L10n.string(.editorFieldArrivalOffset), flightArrivalOffsetSecondsText, focusField: .arrivalOffset)
+        try ensureOptionalInt(L10n.string(.editorFieldCheckInMinutes), hotelCheckInMinutesText, focusField: .checkInMinutes)
+        try ensureOptionalInt(L10n.string(.editorFieldCheckOutMinutes), hotelCheckOutMinutesText, focusField: .checkOutMinutes)
+        try ensureOptionalDouble(L10n.string(.editorFieldPrice), totalPriceAmountText, focusField: .price)
+        try ensureOptionalInt(L10n.string(.editorFieldGuests), guestCountText, focusField: .guests)
+        try ensureOptionalInt(L10n.string(.editorFieldRooms), roomCountText, focusField: .rooms)
+        try ensureOptionalInt(L10n.string(.editorFieldPassengers), passengerCountText, focusField: .passengers)
 
         for (index, deadline) in cancellationDeadlines.enumerated() {
             try ensureOptionalInt(
                 L10n.format(.editorFieldCancellationOffset, index + 1),
-                deadline.hotelOffsetSecondsText
+                deadline.hotelOffsetSecondsText,
+                focusField: .cancellationOffset(deadline.id)
             )
             try ensureOptionalDouble(
                 L10n.format(.editorFieldCancellationFee, index + 1),
-                deadline.cancellationFeeAmountText
+                deadline.cancellationFeeAmountText,
+                focusField: .cancellationFee(deadline.id)
             )
         }
     }
 
-    private func ensureOptionalInt(_ name: String, _ text: String) throws {
+    private func ensureOptionalInt(
+        _ name: String,
+        _ text: String,
+        focusField: BookingEditorField
+    ) throws {
         if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return }
         guard Self.parseIntOrNil(text) != nil else {
-            throw ValidationError.invalidNumber(field: name)
+            throw ValidationError.invalidNumber(field: name, focusField: focusField)
         }
     }
 
-    private func ensureOptionalDouble(_ name: String, _ text: String) throws {
+    private func ensureOptionalDouble(
+        _ name: String,
+        _ text: String,
+        focusField: BookingEditorField
+    ) throws {
         if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return }
         guard Self.parseDoubleOrNil(text) != nil else {
-            throw ValidationError.invalidNumber(field: name)
+            throw ValidationError.invalidNumber(field: name, focusField: focusField)
         }
     }
 
@@ -611,6 +656,7 @@ public struct BookingEditorForm: View {
     var onSave: () throws -> Void
 
     @State private var errorMessage: String?
+    @FocusState private var focusedField: BookingEditorField?
 
     private var computedEndAtMin: Date { draft.startAt }
 
@@ -654,7 +700,8 @@ public struct BookingEditorForm: View {
 
             Divider()
 
-            Form {
+            ScrollViewReader { proxy in
+                Form {
                 Section(L10n.string(.editorGeneral)) {
                     if providerReadOnly {
                         CopyableLabeledValue(
@@ -664,6 +711,7 @@ public struct BookingEditorForm: View {
                         )
                     }
                     TextField(L10n.string(.editorTitle), text: $draft.title)
+                        .editorFocus(.title, $focusedField)
                     Picker(L10n.string(.editorType), selection: $draft.bookingType) {
                         ForEach(BookingType.allCases) { type in
                             BookingTypeLabel(type).tag(type)
@@ -676,8 +724,10 @@ public struct BookingEditorForm: View {
                     }
                     TextField(L10n.string(.editorConfirmationCode), text: $draft.confirmationCode)
                     TextField(L10n.string(.editorUrlOptional), text: $draft.externalUrl)
+                        .editorFocus(.externalUrl, $focusedField)
                         .modifier(BookingEditorURLFieldChrome())
                     TextField(L10n.string(.editorCancellationUrlOptional), text: $draft.cancellationUrl)
+                        .editorFocus(.cancellationUrl, $focusedField)
                         .modifier(BookingEditorURLFieldChrome())
                     DatePicker(
                         draft.bookingType.scheduleStartLabel,
@@ -690,6 +740,7 @@ public struct BookingEditorForm: View {
                         in: computedEndAtMin...,
                         displayedComponents: scheduleDateComponents
                     )
+                    .editorFocus(.end, $focusedField)
                     if draft.bookingType.showsLocationFrom {
                         TextField(draft.bookingType.locationFromLabel, text: $draft.locationFrom)
                     }
@@ -708,18 +759,24 @@ public struct BookingEditorForm: View {
                 if draft.bookingType == .hotel {
                     Section(L10n.string(.editorHotel)) {
                         TextField(L10n.string(.editorHotelOffset), text: $draft.hotelOffsetSecondsText)
+                            .editorFocus(.hotelOffset, $focusedField)
                         TextField(L10n.string(.editorCheckInMinutes), text: $draft.hotelCheckInMinutesText)
+                            .editorFocus(.checkInMinutes, $focusedField)
                         TextField(L10n.string(.editorCheckOutMinutes), text: $draft.hotelCheckOutMinutesText)
+                            .editorFocus(.checkOutMinutes, $focusedField)
                     }
                 } else if draft.bookingType == .flight {
                     Section(L10n.string(.editorFlight)) {
                         TextField(L10n.string(.editorDepartureOffset), text: $draft.flightDepartureOffsetSecondsText)
+                            .editorFocus(.departureOffset, $focusedField)
                         TextField(L10n.string(.editorArrivalOffset), text: $draft.flightArrivalOffsetSecondsText)
+                            .editorFocus(.arrivalOffset, $focusedField)
                     }
                 }
 
                 Section(BookingDetailLabels.rateSection) {
                     TextField(L10n.string(.bookingDetailPrice), text: $draft.totalPriceAmountText)
+                        .editorFocus(.price, $focusedField)
                     TextField(L10n.string(.bookingDetailCurrency), text: $draft.totalPriceCurrency)
                     if let roomCategoryLabel = draft.bookingType.roomCategoryLabel {
                         TextField(roomCategoryLabel, text: $draft.roomCategory)
@@ -741,7 +798,9 @@ public struct BookingEditorForm: View {
                             Text(draft.includedBreakfastState.label)
                         }
                         TextField(L10n.string(.bookingDetailGuests), text: $draft.guestCountText)
+                            .editorFocus(.guests, $focusedField)
                         TextField(L10n.string(.editorFieldRooms), text: $draft.roomCountText)
+                            .editorFocus(.rooms, $focusedField)
                     }
                     if draft.bookingType == .flight {
                         if !draft.passengers.isEmpty {
@@ -776,6 +835,7 @@ public struct BookingEditorForm: View {
                         } else {
                             // Fallback für Provider, die (noch) keine strukturierten Passagiere liefern.
                             TextField(L10n.string(.editorFieldPassengers), text: $draft.passengerCountText)
+                                .editorFocus(.passengers, $focusedField)
                             TextField(L10n.string(.bookingDetailBaggage), text: $draft.baggageInfoRaw)
                         }
                         TextField(BookingDetailLabels.airline, text: $draft.airline)
@@ -803,7 +863,9 @@ public struct BookingEditorForm: View {
                             Toggle(BookingDetailLabels.strictDeadline, isOn: $deadline.isStrict)
                             TextField(L10n.string(.editorPolicyText), text: $deadline.policyText)
                             TextField(L10n.string(.editorOffsetSeconds), text: $deadline.hotelOffsetSecondsText)
+                                .editorFocus(.cancellationOffset(deadline.id), $focusedField)
                             TextField(L10n.string(.editorFee), text: $deadline.cancellationFeeAmountText)
+                                .editorFocus(.cancellationFee(deadline.id), $focusedField)
                             Button(L10n.string(.editorRemoveEntry), role: .destructive) {
                                 draft.cancellationDeadlines.removeAll { $0.id == deadline.id }
                             }
@@ -857,6 +919,23 @@ public struct BookingEditorForm: View {
             }
             .formStyle(.grouped)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onChange(of: focusedField) { _, newField in
+                guard let newField else { return }
+                withAnimation {
+                    proxy.scrollTo(newField, anchor: .center)
+                }
+            }
+            #if os(iOS)
+            .toolbar {
+                if chrome == .navigation {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(L10n.string(.commonSave)) {
+                            attemptSave(using: proxy)
+                        }
+                    }
+                }
+            }
+            #endif
 
             if chrome == .footer {
                 Divider()
@@ -866,23 +945,34 @@ public struct BookingEditorForm: View {
                         .keyboardShortcut(.cancelAction)
                     Spacer()
                     Button(L10n.string(.commonSave)) {
-                        do {
-                            try draft.validate()
-                            try onSave()
-                            errorMessage = nil
-                        } catch {
-                            errorMessage = (error as? LocalizedError)?.errorDescription
-                                ?? String(describing: error)
-                        }
+                        attemptSave(using: proxy)
                     }
                     .keyboardShortcut(.defaultAction)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.background)
+    }
+
+    private func attemptSave(using proxy: ScrollViewProxy) {
+        do {
+            try draft.validate()
+            try onSave()
+            errorMessage = nil
+        } catch let error as BookingEditorDraft.ValidationError {
+            errorMessage = error.errorDescription
+            focusedField = error.focusField
+            withAnimation {
+                proxy.scrollTo(error.focusField, anchor: .center)
+            }
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription
+                ?? String(describing: error)
+        }
     }
 
     private func localizedBookingStatus(_ status: BookingStatus) -> String {
@@ -891,6 +981,12 @@ public struct BookingEditorForm: View {
 
     private func localizedBoardType(_ type: BookingBoardType) -> String {
         type.displayLabel
+    }
+}
+
+private extension View {
+    func editorFocus(_ field: BookingEditorField, _ focused: FocusState<BookingEditorField?>.Binding) -> some View {
+        self.focused(focused, equals: field).id(field)
     }
 }
 
