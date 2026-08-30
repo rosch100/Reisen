@@ -7,6 +7,9 @@ public enum SyncBookingDraftFieldCopy {
         booking.title = draft.title
         booking.confirmationCode = draft.confirmationCode
         booking.externalUrl = draft.externalUrl
+        if let url = draft.cancellationUrl, BookingExternalURL.browserURL(from: url) != nil {
+            booking.cancellationUrl = url
+        }
         booking.startAt = draft.startAt
         booking.endAt = draft.endAt
         booking.locationFrom = draft.locationFrom

@@ -59,3 +59,22 @@ private func persistedBooking(id: UUID, in context: ModelContext) throws -> SDBo
     #expect(booking.trip?.id == trip.id)
     #expect(booking.providerRaw == ProviderID.manual.rawValue)
 }
+
+@MainActor
+@Test func pasteImportCreateBooking_cancellationUrlRoundtrip() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let context = container.mainContext
+
+    var draft = pastedDraft()
+    draft.cancellationUrl = "https://example.com/cancel"
+    let bookingID = try BookingEditorDraft.createBooking(
+        from: draft,
+        trip: nil,
+        in: context
+    )
+    let booking = try persistedBooking(id: bookingID, in: context)
+    #expect(booking.cancellationUrl == "https://example.com/cancel")
+
+    let roundtrip = BookingEditorDraft.fromExisting(booking)
+    #expect(roundtrip.cancellationUrl == "https://example.com/cancel")
+}

@@ -61,6 +61,67 @@ func pasteImportReviewPresenter_noteSavedClearsPayloadAndRecordsID() {
     #expect(advanced)
 }
 
+/// Neu-Import: außerhalb des Reisezeitraums bleibt die Buchung offen.
+@Test @MainActor
+func pasteImportReviewPayload_creating_outsideWindowStaysOpen() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let tripStart = Date(timeIntervalSince1970: 1_700_000_000)
+    let tripEnd = tripStart.addingTimeInterval(7 * 86_400)
+    let bookingStart = tripEnd.addingTimeInterval(30 * 86_400)
+    let bookingEnd = bookingStart.addingTimeInterval(86_400)
+    let tripID = UUID()
+
+    let candidate = PasteImportCandidate(
+        draft: PasteImportDraft(
+            bookingType: .hotel,
+            startAt: bookingStart,
+            endAt: bookingEnd,
+            endAtIsPlaceholder: false,
+            status: .unknown
+        ),
+        match: .none
+    )
+    let payload = PasteImportReviewPayload.creating(
+        candidate: candidate,
+        tripID: tripID,
+        tripStart: tripStart,
+        tripEnd: tripEnd,
+        calendar: calendar
+    )
+    #expect(payload.tripID == nil)
+    #expect(payload.entryTripID == tripID)
+}
+
+@Test @MainActor
+func pasteImportReviewPayload_creating_inWindowKeepsTrip() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let tripStart = Date(timeIntervalSince1970: 1_700_000_000)
+    let tripEnd = tripStart.addingTimeInterval(7 * 86_400)
+    let tripID = UUID()
+
+    let candidate = PasteImportCandidate(
+        draft: PasteImportDraft(
+            bookingType: .hotel,
+            startAt: tripStart,
+            endAt: tripStart.addingTimeInterval(86_400),
+            endAtIsPlaceholder: false,
+            status: .unknown
+        ),
+        match: .none
+    )
+    let payload = PasteImportReviewPayload.creating(
+        candidate: candidate,
+        tripID: tripID,
+        tripStart: tripStart,
+        tripEnd: tripEnd,
+        calendar: calendar
+    )
+    #expect(payload.tripID == tripID)
+    #expect(payload.entryTripID == tripID)
+}
+
 @Test @MainActor
 func pasteImportReviewPresenter_cancelClearsWithoutSavedID() {
     let presenter = PasteImportReviewPresenter()

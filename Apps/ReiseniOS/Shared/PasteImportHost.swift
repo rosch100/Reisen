@@ -179,10 +179,19 @@ struct PasteImportHost<Content: View>: View {
         index: Int,
         total: Int
     ) {
+        let entryTrip: SDTrip?
+        do {
+            entryTrip = try trip(id: session.tripID)
+        } catch {
+            session.fail(L10n.string(.storeLoadFailed))
+            return
+        }
         session.beginReview()
         reviewPayload = .creating(
             candidate: candidate,
             tripID: session.tripID,
+            tripStart: entryTrip?.startDate,
+            tripEnd: entryTrip?.endDate,
             index: index,
             total: total
         )
@@ -190,5 +199,12 @@ struct PasteImportHost<Content: View>: View {
 
     private func booking(id: UUID) throws -> SDBooking? {
         try modelContext.fetch(FetchDescriptor<SDBooking>(predicate: #Predicate { $0.id == id })).first
+    }
+
+    private func trip(id: UUID?) throws -> SDTrip? {
+        guard let id else { return nil }
+        return try modelContext.fetch(
+            FetchDescriptor<SDTrip>(predicate: #Predicate { $0.id == id })
+        ).first
     }
 }

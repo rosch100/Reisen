@@ -33,6 +33,7 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     #expect(deadline.deadlineAt == iso8601("2026-08-07T19:00:00+07:00"))
     #expect(deadline.isFreeCancellation == true)
     #expect(deadline.policyText?.contains("vollständige Rückerstattung") == true)
+    #expect(draft.cancellationUrl == nil)
 }
 
 @Test("GetYourGuideMyBookingsParser mappt pastBookings ohne Pagination-Keys")

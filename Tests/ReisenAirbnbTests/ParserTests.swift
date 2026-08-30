@@ -71,6 +71,7 @@ func airbnbTripListMapsExperienceToActivity() throws {
     #expect(draft.startAt == iso8601("2026-08-10T11:00:00.000Z"))
     #expect(draft.endAt == iso8601("2026-08-10T14:00:00.000Z"))
     #expect(draft.externalUrl?.contains("EXPERIENCE_RESERVATION") == true)
+    #expect(draft.cancellationUrl == nil)
 }
 
 @Test("AirbnbActivityReservationDetailsParser parst Marquee, Treffpunkt, Gäste, Preis und Storno")

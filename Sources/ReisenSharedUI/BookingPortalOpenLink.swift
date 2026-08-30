@@ -88,3 +88,138 @@ public struct BookingPortalOpenButton: View {
         .help(helpText ?? title)
     }
 }
+
+/// HIG-Action-Bar: Öffnen- und Storno-Portal als SwiftUI `Link` + Button-Stil.
+public struct BookingPortalActionBar: View {
+    let openURL: URL?
+    let cancellationURL: URL?
+    var status: BookingStatus
+    var openTitle: String
+    var openHelp: String?
+    var openButtonStyle: BookingPortalOpenButtonStyle
+    var showsCopyMenu: Bool
+
+    public enum BookingPortalOpenButtonStyle {
+        case bordered
+        case prominent
+    }
+
+    public init(
+        openURL: URL?,
+        cancellationURL: URL?,
+        status: BookingStatus,
+        openTitle: String,
+        openHelp: String? = nil,
+        openButtonStyle: BookingPortalOpenButtonStyle,
+        showsCopyMenu: Bool = false
+    ) {
+        self.openURL = openURL
+        self.cancellationURL = cancellationURL
+        self.status = status
+        self.openTitle = openTitle
+        self.openHelp = openHelp
+        self.openButtonStyle = openButtonStyle
+        self.showsCopyMenu = showsCopyMenu
+    }
+
+    public static func isVisible(open: URL?, cancellation: URL?, status: BookingStatus) -> Bool {
+        let shown = BookingPortalActions.visible(
+            open: open,
+            cancellation: cancellation,
+            status: status
+        )
+        return shown.open != nil || shown.cancel != nil
+    }
+
+    public var body: some View {
+        let shown = BookingPortalActions.visible(
+            open: openURL,
+            cancellation: cancellationURL,
+            status: status
+        )
+        let bar = HStack(spacing: 8) {
+            if let open = shown.open {
+                Link(destination: open) {
+                    Label(openTitle, systemImage: BookingPortalOpenChrome.systemImage)
+                }
+                .modifier(BookingPortalOpenStyle(openButtonStyle))
+                .help(openHelp ?? openTitle)
+            }
+            if let cancel = shown.cancel {
+                Link(destination: cancel) {
+                    Label(BookingPortalCancelTitle.button, systemImage: BookingPortalOpenChrome.systemImage)
+                }
+                .buttonStyle(.bordered)
+                .help(BookingPortalCancelTitle.help)
+            }
+        }
+        if showsCopyMenu {
+            bar.contextMenu {
+                if let url = shown.open { CopyLinkMenuItem(url: url) }
+                if let url = shown.cancel {
+                    CopyLinkMenuItem(
+                        url: url,
+                        title: L10n.string(.actionCopyCancellationLink)
+                    )
+                }
+            }
+        } else {
+            bar
+        }
+    }
+}
+
+private struct BookingPortalOpenStyle: ViewModifier {
+    var style: BookingPortalActionBar.BookingPortalOpenButtonStyle
+
+    init(_ style: BookingPortalActionBar.BookingPortalOpenButtonStyle) {
+        self.style = style
+    }
+
+    func body(content: Content) -> some View {
+        switch style {
+        case .prominent: content.buttonStyle(.borderedProminent)
+        case .bordered: content.buttonStyle(.bordered)
+        }
+    }
+}
+
+/// Kontextmenü: Storno-Seite im Portal öffnen.
+public struct BookingPortalCancelMenuButton: View {
+    let url: URL
+    @Environment(\.openURL) private var openURL
+
+    public init(url: URL) { self.url = url }
+
+    public var body: some View {
+        Button {
+            openURL(url)
+        } label: {
+            Label(BookingPortalCancelTitle.menu, systemImage: BookingPortalOpenChrome.systemImage)
+        }
+        .help(BookingPortalCancelTitle.help)
+    }
+}
+
+/// Kontextmenü-Storno, nur wenn `isActionable`.
+public struct BookingPortalCancelMenuItems: View {
+    let cancellationURL: URL?
+    let openURL: URL?
+    var status: BookingStatus
+
+    public init(cancellationURL: URL?, openURL: URL?, status: BookingStatus) {
+        self.cancellationURL = cancellationURL
+        self.openURL = openURL
+        self.status = status
+    }
+
+    public var body: some View {
+        if BookingPortalCancellation.isActionable(
+            cancellation: cancellationURL,
+            open: openURL,
+            status: status
+        ), let cancelURL = cancellationURL {
+            BookingPortalCancelMenuButton(url: cancelURL)
+        }
+    }
+}

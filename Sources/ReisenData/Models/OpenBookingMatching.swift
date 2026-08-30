@@ -42,6 +42,42 @@ public enum OpenBookingMatching {
         bookings.filter { isListedUnassigned($0, calendar: calendar, now: now) }
     }
 
+    /// Offen-Liste ohne abgelaufene Buchungen.
+    public static func currentUnassigned(
+        in bookings: [SDBooking],
+        calendar: Calendar = .current,
+        now: Date = Date()
+    ) -> [SDBooking] {
+        listedUnassigned(in: bookings, calendar: calendar, now: now)
+            .filter { !BookingListInclusion.isElapsed(endAt: $0.endAt, now: now, calendar: calendar) }
+    }
+
+    /// Offene Buchungen, deren Ende kalendarisch vor heute liegt.
+    public static func elapsedUnassigned(
+        in bookings: [SDBooking],
+        calendar: Calendar = .current,
+        now: Date = Date()
+    ) -> [SDBooking] {
+        listedUnassigned(in: bookings, calendar: calendar, now: now)
+            .filter { BookingListInclusion.isElapsed(endAt: $0.endAt, now: now, calendar: calendar) }
+    }
+
+    /// Offen-Mailbox nach Speichern einer unzugeordneten Buchung (aktuell vs. Abgelaufen).
+    public enum UnassignedList: Equatable, Sendable {
+        case current
+        case elapsed
+    }
+
+    public static func unassignedList(
+        endAt: Date,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> UnassignedList {
+        BookingListInclusion.isElapsed(endAt: endAt, now: now, calendar: calendar)
+            ? .elapsed
+            : .current
+    }
+
     /// Fill/Seed-ohne-Auswahl: listed und ab heute.
     public static func isOpenUnassigned(
         _ booking: SDBooking,
