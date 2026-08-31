@@ -31,4 +31,11 @@ public enum ProviderCancellationLinkPolicy {
         case .distinctURL, .none: return false
         }
     }
+
+    public static func requiresProviderSession(
+        provider: ProviderID,
+        bookingType: BookingType
+    ) -> Bool {
+        requiresProviderSession(mode(provider: provider, bookingType: bookingType))
+    }
 }

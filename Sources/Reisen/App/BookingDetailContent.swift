@@ -25,6 +25,12 @@ struct BookingDetailContent: View {
     }
 
     private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
+    private var requiresProviderSession: Bool {
+        ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: booking.provider,
+            bookingType: booking.bookingType
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -111,7 +117,8 @@ struct BookingDetailContent: View {
                 status: booking.status,
                 deadlines: booking.domainCancellationDeadlines,
                 now: Date(),
-                hasSessionWebView: hasSessionWebView
+                hasSessionWebView: hasSessionWebView,
+                requiresProviderSession: requiresProviderSession
             ) {
                 BookingPortalActionBar(
                     openURL: booking.browserURL,
@@ -123,6 +130,7 @@ struct BookingDetailContent: View {
                     showsCopyMenu: true,
                     deadlines: booking.domainCancellationDeadlines,
                     hasSessionWebView: hasSessionWebView,
+                    requiresProviderSession: requiresProviderSession,
                     onPresentCancel: onPresentCancel
                 )
                 .font(.caption)

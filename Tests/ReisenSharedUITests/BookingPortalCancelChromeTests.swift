@@ -20,7 +20,8 @@ import ReisenDomain
     #expect(
         BookingPortalActionBar.isVisible(
             open: url, cancellation: url, status: .confirmed,
-            deadlines: [free], now: now, hasSessionWebView: false
+            deadlines: [free], now: now, hasSessionWebView: false,
+            requiresProviderSession: true
         )
     )
     let withoutSession = BookingPortalActions.visible(
@@ -33,6 +34,59 @@ import ReisenDomain
         deadlines: [free], now: now, hasSessionWebView: true
     )
     #expect(withSession.cancel == url)
+}
+
+@MainActor
+@Test func bookingPortalActionBar_hidesSessionBoundCancelWithoutSessionWebView() {
+    let open = URL(string: "https://example.com/booking")!
+    let cancel = URL(string: "https://example.com/booking/cancel")!
+    let free = CancellationDeadline(
+        deadlineAt: Date().addingTimeInterval(86_400),
+        isFreeCancellation: true
+    )
+    #expect(
+        !BookingPortalActionBar.isVisible(
+            open: nil,
+            cancellation: cancel,
+            status: .confirmed,
+            deadlines: [free],
+            now: Date(),
+            hasSessionWebView: false,
+            requiresProviderSession: true
+        )
+    )
+    #expect(
+        BookingPortalActionBar.isVisible(
+            open: open,
+            cancellation: cancel,
+            status: .confirmed,
+            deadlines: [free],
+            now: Date(),
+            hasSessionWebView: false,
+            requiresProviderSession: true
+        )
+    )
+    let shown = BookingPortalActions.visible(
+        open: open,
+        cancellation: cancel,
+        status: .confirmed,
+        deadlines: [free],
+        now: Date(),
+        hasSessionWebView: false,
+        requiresProviderSession: true
+    )
+    #expect(shown.open == open)
+    #expect(shown.cancel == nil)
+}
+
+@Test func bookingPortalActionBar_hidesCopyCancelWhenSameURL() {
+    let url = URL(string: "https://example.com/booking")!
+    #expect(
+        !BookingPortalCancellation.allowsCopyingCancellationLink(
+            cancel: url,
+            open: url
+        )
+    )
 }
 
 @Test func bookingPortalCancelRequest_handle_sheetDoesNotOpenURL() {

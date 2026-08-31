@@ -125,7 +125,8 @@ struct ContentView: View {
                     status: booking.status,
                     deadlines: booking.domainCancellationDeadlines,
                     now: Date(),
-                    hasSessionWebView: hasSessionWebView(for: booking)
+                    hasSessionWebView: hasSessionWebView(for: booking),
+                    requiresProviderSession: requiresProviderSession(for: booking)
                 ),
                 url: url,
                 providerID: booking.provider
@@ -304,12 +305,20 @@ struct ContentView: View {
             cancellationURL: booking.cancellationBrowserURL,
             status: booking.status,
             deadlines: booking.domainCancellationDeadlines,
-            hasSessionWebView: hasSessionWebView(for: booking)
+            hasSessionWebView: hasSessionWebView(for: booking),
+            requiresProviderSession: requiresProviderSession(for: booking)
         )
     }
 
     private func hasSessionWebView(for booking: SDBooking) -> Bool {
         sessionHub?.hasSessionWebView(for: booking.provider) == true
+    }
+
+    private func requiresProviderSession(for booking: SDBooking) -> Bool {
+        ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: booking.provider,
+            bookingType: booking.bookingType
+        )
     }
 
     private func presentPortalCancel(
@@ -661,6 +670,7 @@ struct ContentView: View {
                                             status: booking.status,
                                             deadlines: booking.domainCancellationDeadlines,
                                             hasSessionWebView: hasSessionWebView(for: booking),
+                                            requiresProviderSession: requiresProviderSession(for: booking),
                                             onPresentCancel: { presentation, url in
                                                 presentPortalCancel(
                                                     presentation,
@@ -863,6 +873,7 @@ struct ContentView: View {
                             status: booking.status,
                             deadlines: booking.domainCancellationDeadlines,
                             hasSessionWebView: hasSessionWebView(for: booking),
+                            requiresProviderSession: requiresProviderSession(for: booking),
                             onPresentCancel: { presentation, url in
                                 presentPortalCancel(
                                     presentation,

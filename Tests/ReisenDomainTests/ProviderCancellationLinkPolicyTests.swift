@@ -34,6 +34,24 @@ import ReisenDomain
     #expect(ProviderCancellationLinkPolicy.requiresProviderSession(.sessionBoundDistinct))
     #expect(!ProviderCancellationLinkPolicy.requiresProviderSession(.distinctURL))
     #expect(!ProviderCancellationLinkPolicy.requiresProviderSession(.none))
+    #expect(
+        ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: .getYourGuide,
+            bookingType: .activity
+        )
+    )
+    #expect(
+        ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: .billigerMietwagen,
+            bookingType: .carRental
+        )
+    )
+    #expect(
+        !ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: .traveloka,
+            bookingType: .hotel
+        )
+    )
 }
 
 @Test func providerCancellationLinkPolicy_coversAllSyncProviders() {

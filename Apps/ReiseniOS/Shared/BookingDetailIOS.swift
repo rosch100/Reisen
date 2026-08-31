@@ -187,7 +187,8 @@ struct BookingDetailIOS: View {
                 status: booking.status,
                 deadlines: booking.domainCancellationDeadlines,
                 now: Date(),
-                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true
+                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                requiresProviderSession: requiresProviderSession(for: booking)
             ) {
                 BookingPortalActionBar(
                     openURL: booking.browserURL,
@@ -199,6 +200,7 @@ struct BookingDetailIOS: View {
                     showsCopyMenu: true,
                     deadlines: booking.domainCancellationDeadlines,
                     hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                    requiresProviderSession: requiresProviderSession(for: booking),
                     onPresentCancel: { presentation, url in
                         BookingPortalCancelRequest.handle(
                             presentation,
@@ -214,6 +216,13 @@ struct BookingDetailIOS: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func requiresProviderSession(for booking: SDBooking) -> Bool {
+        ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: booking.provider,
+            bookingType: booking.bookingType
+        )
     }
 
     @ViewBuilder
