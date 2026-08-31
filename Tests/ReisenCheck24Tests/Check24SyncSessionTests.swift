@@ -9,7 +9,7 @@ import ReisenProviders
 @MainActor
 func check24ExistentialMakeSyncSessionYieldsUsableWebView() throws {
     // Wie SyncStore: `any TravelProvider.makeSyncSession` (Extension-Default).
-    // Check24-Override greift nicht; `webView(from:)` wirft `invalidSessionType`.
+    // Der Extension-Default liefert `WebViewProviderSession`; `webView(from:)` extrahiert dieselbe `WKWebView`.
     let check24 = Check24TravelProvider()
     let provider: any TravelProvider = check24
     let webView = WKWebView()
