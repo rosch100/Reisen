@@ -35,6 +35,7 @@ public enum GetYourGuideMyBookingsParser {
             return nil
         }
         let times = TemporalFact.pair(bookingType: .activity, start: startAt, end: endAt)
+        let externalUrl = GetYourGuideWebConstants.bookingURL(hash: hash)
         return DraftAssembler.draft(
             from: ProviderBookingFacts(
                 provider: .getYourGuide,
@@ -43,7 +44,8 @@ public enum GetYourGuideMyBookingsParser {
                 end: times.end,
                 title: booking.bookedOption?.activityTitle,
                 confirmationCode: NonEmpty.first(booking.bookingReference, hash),
-                externalUrl: GetYourGuideWebConstants.bookingURL(hash: hash),
+                externalUrl: externalUrl,
+                cancellationUrl: externalUrl,
                 locationTo: booking.bookedOption?.activityLocation?.city?.name,
                 statusRaw: booking.status,
                 deadlines: GYGCancellationPolicy.deadlines(booking.bookingCancellationPolicy),
