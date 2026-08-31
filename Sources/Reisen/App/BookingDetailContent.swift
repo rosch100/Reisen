@@ -25,12 +25,7 @@ struct BookingDetailContent: View {
     }
 
     private var hotelTimeZone: TimeZone { booking.resolvedHotelTimeZone }
-    private var requiresProviderSession: Bool {
-        ProviderCancellationLinkPolicy.requiresProviderSession(
-            provider: booking.provider,
-            bookingType: booking.bookingType
-        )
-    }
+    private var requiresProviderSession: Bool { booking.cancellationRequiresProviderSession }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

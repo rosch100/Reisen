@@ -31,6 +31,14 @@ public extension SDBooking {
         BookingExternalURL.browserURL(from: cancellationUrl)
     }
 
+    /// Storno-UI braucht die Provider-Session (In-Page / session-bound Cancel-URL).
+    var cancellationRequiresProviderSession: Bool {
+        ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: provider,
+            bookingType: bookingType
+        )
+    }
+
     var displayTitle: String {
         title ?? bookingType.defaultDisplayTitle
     }

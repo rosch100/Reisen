@@ -295,10 +295,7 @@ struct OpenBookingsScreen: View {
                             status: booking.status,
                             deadlines: booking.domainCancellationDeadlines,
                             hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
-                            requiresProviderSession: ProviderCancellationLinkPolicy.requiresProviderSession(
-                                provider: booking.provider,
-                                bookingType: booking.bookingType
-                            ),
+                            requiresProviderSession: booking.cancellationRequiresProviderSession,
                             onPresentCancel: { presentation, url in
                                 BookingPortalCancelRequest.handle(
                                     presentation,

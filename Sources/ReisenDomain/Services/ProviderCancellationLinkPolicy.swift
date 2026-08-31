@@ -9,17 +9,15 @@ public enum ProviderCancellationLinkMode: Equatable, Sendable {
 
 public enum ProviderCancellationLinkPolicy {
     public static func mode(provider: ProviderID, bookingType: BookingType) -> ProviderCancellationLinkMode {
-        switch provider {
-        case .traveloka:
+        switch (provider, bookingType) {
+        case (.traveloka, _):
             return .distinctURL
-        case .airbnb:
-            return bookingType == .activity ? .distinctURL : .none
-        case .getYourGuide:
+        case (.airbnb, .activity):
+            return .distinctURL
+        case (.getYourGuide, _):
             return .inPageOnOpen
-        case .billigerMietwagen:
+        case (.billigerMietwagen, _):
             return .sessionBoundDistinct
-        case .check24, .opodo, .booking, .manual:
-            return .none
         default:
             return .none
         }

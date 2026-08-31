@@ -117,4 +117,12 @@ public struct Booking: Identifiable, Equatable, Sendable {
     public var cancellationBrowserURL: URL? {
         BookingExternalURL.browserURL(from: cancellationUrl)
     }
+
+    /// Storno-UI braucht die Provider-Session (In-Page / session-bound Cancel-URL).
+    public var cancellationRequiresProviderSession: Bool {
+        ProviderCancellationLinkPolicy.requiresProviderSession(
+            provider: provider,
+            bookingType: bookingType
+        )
+    }
 }
