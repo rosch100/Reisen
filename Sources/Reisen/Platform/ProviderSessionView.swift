@@ -735,14 +735,15 @@ private struct ProviderWebView: NSViewRepresentable {
             case .needsLogin:
                 sessionStatus.wrappedValue = .needsLogin
             case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen, .shouldProbeCheck24:
-                guard ProviderSessionLiveProbe.shouldStart(
+                guard let liveProbe = ProviderSessionLiveProbe.prepare(
                     statusHeuristic,
-                    sessionAlreadyReady: sessionStatus.wrappedValue == .sessionReady
-                ), let applies = ProviderSessionLiveProbe.applies(to: statusHeuristic) else { break }
+                    sessionAlreadyReady: sessionStatus.wrappedValue == .sessionReady,
+                    url: url
+                ) else { break }
                 scheduleSessionProbe(
                     in: webView,
-                    applies: applies,
-                    skipAccountPage: ProviderSessionLiveProbe.skipsAccountPageProbe(statusHeuristic)
+                    applies: liveProbe.applies,
+                    skipAccountPage: liveProbe.skipsAccountPage
                 ) { [weak self] webView in
                     let hints = self?.lastURLString.wrappedValue.flatMap(URL.init(string:)).map { [$0] } ?? []
                     return try await ProviderSessionLiveProbe.fetchIsLoggedIn(

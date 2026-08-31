@@ -3,30 +3,39 @@ import WebKit
 
 /// SSOT: Heuristik → applies / Account-Skip / Live-Fetch für Session-Probes.
 public enum ProviderSessionLiveProbe {
-    public static func applies(to heuristic: ProviderSessionStatusHeuristic) -> ((URL) -> Bool)? {
-        switch heuristic {
-        case .shouldProbeOpodo:
-            return OpodoSessionProbe.applies(to:)
-        case .shouldProbeTraveloka:
-            return TravelokaSessionProbe.applies(to:)
-        case .shouldProbeBilligerMietwagen:
-            return BilligerMietwagenSessionProbe.applies(to:)
-        case .shouldProbeCheck24:
-            return Check24SessionProbe.applies(to:)
-        case .sessionReady, .needsLogin, .unknown:
-            return nil
+    /// Konfiguration für den Start einer Live-Probe, oder `nil` wenn keine Probe laufen soll.
+    ///
+    /// Check24: Produktseiten bei schon grüner Ampel überspringen; Marketing-Homepage
+    /// (`/` / leer) trotzdem erneut prüfen (Logout → Homepage ohne Login-URL).
+    public static func prepare(
+        _ heuristic: ProviderSessionStatusHeuristic,
+        sessionAlreadyReady: Bool,
+        url: URL? = nil
+    ) -> (applies: (URL) -> Bool, skipsAccountPage: Bool)? {
+        guard let kind = Kind.from(heuristic) else { return nil }
+        if sessionAlreadyReady {
+            guard kind == .check24 else { return (kind.applies, kind.skipsAccountPage) }
+            guard isCheck24AmbiguousLanding(url) else { return nil }
         }
+        return (kind.applies, kind.skipsAccountPage)
+    }
+
+    /// Ob nach der Heuristik eine Live-Probe gestartet werden soll.
+    public static func shouldStart(
+        _ heuristic: ProviderSessionStatusHeuristic,
+        sessionAlreadyReady: Bool,
+        url: URL? = nil
+    ) -> Bool {
+        prepare(heuristic, sessionAlreadyReady: sessionAlreadyReady, url: url) != nil
+    }
+
+    public static func applies(to heuristic: ProviderSessionStatusHeuristic) -> ((URL) -> Bool)? {
+        Kind.from(heuristic)?.applies
     }
 
     /// Opodo/Traveloka: Account-URL braucht keine GraphQL-/whoami-Probe.
     public static func skipsAccountPageProbe(_ heuristic: ProviderSessionStatusHeuristic) -> Bool {
-        switch heuristic {
-        case .shouldProbeOpodo, .shouldProbeTraveloka:
-            return true
-        case .shouldProbeBilligerMietwagen, .shouldProbeCheck24,
-             .sessionReady, .needsLogin, .unknown:
-            return false
-        }
+        Kind.from(heuristic)?.skipsAccountPage ?? false
     }
 
     public static func fetchIsLoggedIn(
@@ -34,20 +43,67 @@ public enum ProviderSessionLiveProbe {
         using webView: WKWebView,
         additionalHintURLs: [URL] = []
     ) async throws -> Bool? {
-        switch heuristic {
-        case .shouldProbeOpodo:
-            return try await OpodoSessionProbe.fetchIsLoggedIn(using: webView)
-        case .shouldProbeTraveloka:
-            return try await TravelokaSessionProbe.fetchIsLoggedIn(
-                using: webView,
-                additionalHintURLs: additionalHintURLs
-            )
-        case .shouldProbeBilligerMietwagen:
-            return try await BilligerMietwagenSessionProbe.fetchIsLoggedIn(using: webView)
-        case .shouldProbeCheck24:
-            return try await Check24SessionProbe.fetchIsLoggedIn(using: webView)
-        case .sessionReady, .needsLogin, .unknown:
-            return nil
+        guard let kind = Kind.from(heuristic) else { return nil }
+        return try await kind.fetchIsLoggedIn(using: webView, additionalHintURLs: additionalHintURLs)
+    }
+
+    /// SSO-/Logout-Landing ohne Account-/Login-Pfad — Ampel muss neu verifiziert werden.
+    private static func isCheck24AmbiguousLanding(_ url: URL?) -> Bool {
+        guard let url, Check24SessionProbe.applies(to: url) else { return false }
+        let path = url.path
+        return path.isEmpty || path == "/"
+    }
+
+    /// Eine Abbildung Heuristik → Probe-Verhalten (SSOT statt paralleler Switches).
+    private enum Kind {
+        case opodo
+        case traveloka
+        case billigerMietwagen
+        case check24
+
+        static func from(_ heuristic: ProviderSessionStatusHeuristic) -> Kind? {
+            switch heuristic {
+            case .shouldProbeOpodo: return .opodo
+            case .shouldProbeTraveloka: return .traveloka
+            case .shouldProbeBilligerMietwagen: return .billigerMietwagen
+            case .shouldProbeCheck24: return .check24
+            case .sessionReady, .needsLogin, .unknown: return nil
+            }
+        }
+
+        var applies: (URL) -> Bool {
+            switch self {
+            case .opodo: return OpodoSessionProbe.applies(to:)
+            case .traveloka: return TravelokaSessionProbe.applies(to:)
+            case .billigerMietwagen: return BilligerMietwagenSessionProbe.applies(to:)
+            case .check24: return Check24SessionProbe.applies(to:)
+            }
+        }
+
+        var skipsAccountPage: Bool {
+            switch self {
+            case .opodo, .traveloka: return true
+            case .billigerMietwagen, .check24: return false
+            }
+        }
+
+        func fetchIsLoggedIn(
+            using webView: WKWebView,
+            additionalHintURLs: [URL]
+        ) async throws -> Bool? {
+            switch self {
+            case .opodo:
+                return try await OpodoSessionProbe.fetchIsLoggedIn(using: webView)
+            case .traveloka:
+                return try await TravelokaSessionProbe.fetchIsLoggedIn(
+                    using: webView,
+                    additionalHintURLs: additionalHintURLs
+                )
+            case .billigerMietwagen:
+                return try await BilligerMietwagenSessionProbe.fetchIsLoggedIn(using: webView)
+            case .check24:
+                return try await Check24SessionProbe.fetchIsLoggedIn(using: webView)
+            }
         }
     }
 }

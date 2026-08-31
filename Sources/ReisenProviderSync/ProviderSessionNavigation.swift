@@ -63,10 +63,11 @@ public enum ProviderSessionNavigation {
             if status != currentStatus {
                 clearProbeStarts(for: providerID)
             }
-        } else if ProviderSessionLiveProbe.shouldStart(
+        } else if let liveProbe = ProviderSessionLiveProbe.prepare(
             heuristic,
-            sessionAlreadyReady: currentStatus == .sessionReady
-        ), let applies = ProviderSessionLiveProbe.applies(to: heuristic) {
+            sessionAlreadyReady: currentStatus == .sessionReady,
+            url: url
+        ) {
             startProbe(
                 webView: webView,
                 navigationURL: url,
@@ -75,7 +76,7 @@ public enum ProviderSessionNavigation {
                 hub: hub,
                 enabledProviderIDs: enabledProviderIDs,
                 onChanged: onChanged,
-                applies: applies
+                applies: liveProbe.applies
             ) { hints in
                 try await ProviderSessionLiveProbe.fetchIsLoggedIn(
                     heuristic,

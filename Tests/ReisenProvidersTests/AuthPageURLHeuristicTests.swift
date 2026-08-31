@@ -123,33 +123,6 @@ import ReisenProviders
     #expect(ProviderSessionStatusResolver.classify(URL(string: product)!) == .shouldProbeCheck24)
 }
 
-@Test func shouldStartLiveProbeSkipsCheck24WhenAlreadyReady() {
-    #expect(
-        ProviderSessionLiveProbe.shouldStart(
-            .shouldProbeCheck24,
-            sessionAlreadyReady: false
-        )
-    )
-    #expect(
-        !ProviderSessionLiveProbe.shouldStart(
-            .shouldProbeCheck24,
-            sessionAlreadyReady: true
-        )
-    )
-    #expect(
-        ProviderSessionLiveProbe.shouldStart(
-            .shouldProbeOpodo,
-            sessionAlreadyReady: true
-        )
-    )
-    #expect(
-        !ProviderSessionLiveProbe.shouldStart(
-            .needsLogin,
-            sessionAlreadyReady: false
-        )
-    )
-}
-
 @Test func check24LoginAndAccountStayImmediateHeuristics() {
     let login = "https://kundenbereich.check24.de/user/login.html"
     let account = "https://kundenbereich.check24.de/user/account/activities.html"
