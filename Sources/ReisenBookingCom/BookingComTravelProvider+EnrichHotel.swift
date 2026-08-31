@@ -36,7 +36,8 @@ extension BookingComTravelProvider {
             referer: Self.myTripsURL.absoluteString,
             contentType: nil,
             body: nil,
-            headers: [:]
+            headers: [:],
+            timeoutSeconds: 60
         )
     }
 

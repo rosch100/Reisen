@@ -1,15 +1,41 @@
 import Foundation
 import WebKit
+import ReisenAppCore
 import ReisenProviders
 
 extension Check24TravelProvider {
+    func recordDiagnosticPhase(
+        _ phase: String,
+        event: String,
+        result: DiagnosticResult,
+        url: URL? = nil,
+        reason: String? = nil
+    ) async {
+        guard let diagnosticContext = DiagnosticContext.current else { return }
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: diagnosticContext,
+                component: "Check24TravelProvider",
+                phase: phase,
+                event: event,
+                result: result,
+                url: url.flatMap(DiagnosticRedactor.urlMetadata(for:)),
+                reason: reason
+            )
+        )
+    }
+
     /// Hub-Session (`WebViewProviderSession`), kein Check24-Sondertyp.
     func webView(from session: any ProviderSession) throws -> WKWebView {
         try ProviderWebView.webView(from: session, orThrow: Check24ProviderError.invalidSessionType)
     }
 
     func load(url: URL, in webView: WKWebView) async throws {
-        try await NavigationAwaiter().load(url, in: webView)
+        try await NavigationAwaiter().load(
+            url,
+            in: webView,
+            diagnosticContext: DiagnosticContext.current
+        )
         try await Task.sleep(nanoseconds: 400_000_000)
     }
 
@@ -18,23 +44,28 @@ extension Check24TravelProvider {
         let html = try await webView.evaluateJavaScriptStringAsync("document.documentElement.outerHTML")
         guard let html else { throw Check24ProviderError.snapshotFailed }
 
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            throw Check24ProviderError.snapshotFailed
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-ReisenDiagnosticsDebug"),
+           let diagnosticContext = DiagnosticContext.current {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: diagnosticContext,
+                    component: "Check24TravelProvider",
+                    phase: "dom",
+                    event: "allowlist_features",
+                    result: .succeeded,
+                    url: DiagnosticRedactor.urlMetadata(for: pageURL),
+                    reason: [
+                        "activities=\(html.contains("activities"))",
+                        "booking_info=\(html.contains("bookingInfo"))",
+                        "third_view_data=\(html.contains("thirdViewData"))",
+                        "basket=\(html.contains("basketContainer"))",
+                    ].joined(separator: ","),
+                    visibility: .localDebugOnly
+                )
+            )
         }
-        let base = appSupport.appendingPathComponent("Reisen", isDirectory: true)
-        let snapshots = base.appendingPathComponent("snapshots", isDirectory: true)
-        try FileManager.default.createDirectory(at: snapshots, withIntermediateDirectories: true)
-        let formatter = ISO8601DateFormatter()
-        let fileName = "check24-\(formatter.string(from: Date())).html"
-        let htmlURL = snapshots.appendingPathComponent(fileName)
-        let metaURL = snapshots.appendingPathComponent(fileName + ".json")
-        let meta: [String: Any] = [
-            "createdAt": formatter.string(from: Date()),
-            "pageURL": pageURL.absoluteString,
-        ]
-        try JSONSerialization.data(withJSONObject: meta, options: [.prettyPrinted]).write(to: metaURL, options: [.atomic])
-        guard let htmlData = html.data(using: .utf8) else { throw Check24ProviderError.snapshotFailed }
-        try htmlData.write(to: htmlURL, options: [.atomic])
+#endif
         return (url: pageURL, html: html)
     }
 

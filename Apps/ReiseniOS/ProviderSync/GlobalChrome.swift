@@ -41,6 +41,7 @@ struct GlobalChromeTrailingToolbar: View {
     var body: some View {
         Button {
             guard let syncStore, let sessionHub else { return }
+            let runID = UUID()
             Task {
                 await SyncAllCoordinator.run(
                     syncStore: syncStore,
@@ -49,7 +50,8 @@ struct GlobalChromeTrailingToolbar: View {
                     settings: .fromUserDefaults(),
                     navigationHints: { id in
                         NavigationHintURLs.ordered(hubURLString: sessionHub.lastURLString(for: id))
-                    }
+                    },
+                    diagnosticRunID: runID
                 )
             }
         } label: {
@@ -70,6 +72,7 @@ struct GlobalChromeTrailingToolbar: View {
 
 struct SyncBackgroundSessionProbe: View {
     var onSessionChanged: () -> Void
+    @State private var diagnosticRunID = UUID()
 
     @Environment(\.providerEnableEpoch) private var providerEnableEpoch
     @Environment(\.providerRegistry) private var providerRegistry
@@ -106,7 +109,12 @@ struct SyncBackgroundSessionProbe: View {
             providerID: providerID,
             hub: hub,
             enabledProviderIDs: Set(enabledProviderIDs),
-            notifyAlways: false
+            notifyAlways: false,
+            diagnosticContext: DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: providerID,
+                operation: "ios_startup_probe"
+            )
         ) {
             onSessionChanged()
         }
@@ -118,6 +126,11 @@ struct SyncBackgroundSessionProbe: View {
                 WebViewHost(
                     loginURL: loginURL(for: id),
                     providerID: id,
+                    diagnosticContext: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: id,
+                        operation: "ios_startup_probe"
+                    ),
                     webView: webViewBinding(for: id),
                     allowsEmbed: sessionHub?.allowsEmbed(on: .probe) ?? false,
                     onDidFinish: { finishedWebView in

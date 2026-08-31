@@ -39,7 +39,8 @@ extension BookingComTravelProvider {
                 referer: "https://secure.booking.com/",
                 contentType: nil,
                 body: nil,
-                headers: [:]
+                headers: [:],
+                timeoutSeconds: 60
             )
         } catch {
             throw BookingComProviderError.catalogNotFound

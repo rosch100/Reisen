@@ -4,6 +4,7 @@ import ReisenDomain
 import ReisenProviders
 import ReisenAppCore
 import ReisenSharedUI
+import ReisenProviderSync
 
 /// Zeigt die Sync-UI des ausgewählten Providers.
 /// Start: alle enabled Provider per Cookie/Session prüfen (1×1-Hosts), danach
@@ -15,6 +16,7 @@ struct ProviderSyncContainer: View {
     @Environment(\.providerRegistry) private var providerRegistry
 
     @State private var providerEnableEpoch = 0
+    @State private var diagnosticRunID = UUID()
 
     private var enabledProviderIDs: [ProviderID] {
         _ = providerEnableEpoch
@@ -81,12 +83,18 @@ struct ProviderSyncContainer: View {
             // Unsichtbarer Probe-Host (nur während Bootstrap / ohne sichtbaren SyncView).
             if let backgroundProviderID {
                 ProviderSessionView(
+                    providerID: backgroundProviderID,
                     loginURL: providerLoginURL(for: backgroundProviderID),
                     sessionStatus: backgroundSessionStatusBinding(for: backgroundProviderID),
                     lastURLString: backgroundLastURLBinding(for: backgroundProviderID),
                     webView: backgroundWebViewBinding(for: backgroundProviderID),
                     autofillCredentials: nil,
-                    allowsEmbed: hub?.allowsEmbed(on: .probe) ?? false
+                    allowsEmbed: hub?.allowsEmbed(on: .probe) ?? false,
+                    diagnosticContext: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: backgroundProviderID,
+                        operation: "startup_probe"
+                    )
                 )
                 .frame(width: 1, height: 1)
                 .opacity(0.01)
@@ -173,6 +181,7 @@ struct ProviderSyncContainer: View {
     /// Startup inkrementell: sobald der erste Provider gefunden ist, der noch Login braucht,
     /// wechseln wir sofort in die Login-UI. Die restlichen Provider werden im Hintergrund fertig geprüft.
     private func runStartupBootstrapIncremental() async {
+        diagnosticRunID = UUID()
         isRunningStartupBootstrap = true
         syncHub()
         phase = .probing
@@ -184,7 +193,14 @@ struct ProviderSyncContainer: View {
         var firstNeedingLoginIndex: Int?
         for (index, providerID) in enabledProviderIDs.enumerated() {
             probingProviderLabel = providerDisplayName(providerID)
-            await probeProviderSession(providerID)
+            await probeProviderSession(
+                providerID,
+                context: DiagnosticContext(
+                    runID: diagnosticRunID,
+                    providerID: providerID,
+                    operation: "startup_probe"
+                )
+            )
 
             if hub?.status(for: providerID) != .sessionReady {
                 firstNeedingLoginIndex = index
@@ -203,6 +219,8 @@ struct ProviderSyncContainer: View {
             isRunningLoginQueue = false
             didFinishBackgroundProbingRemaining = true
             hub?.markStartupProbeCompleted()
+            ProviderSessionNavigation.resetProbeTracking()
+            await DiagnosticLogger.shared.flush()
             phase = .ready
             isRunningStartupBootstrap = false
             return
@@ -228,6 +246,8 @@ struct ProviderSyncContainer: View {
         guard startIndex < enabledProviderIDs.count else {
             didFinishBackgroundProbingRemaining = true
             hub?.markStartupProbeCompleted()
+            ProviderSessionNavigation.resetProbeTracking()
+            await DiagnosticLogger.shared.flush()
             isRunningLoginQueue = !loginQueue.isEmpty
             isRunningStartupBootstrap = false
             return
@@ -238,7 +258,14 @@ struct ProviderSyncContainer: View {
             if providerID == selectedProviderID { continue }
 
             probingProviderLabel = providerDisplayName(providerID)
-            await probeProviderSession(providerID)
+            await probeProviderSession(
+                providerID,
+                context: DiagnosticContext(
+                    runID: diagnosticRunID,
+                    providerID: providerID,
+                    operation: "startup_probe_remaining"
+                )
+            )
             probingProviderLabel = ""
 
             guard hub?.status(for: providerID) != .sessionReady else { continue }
@@ -257,6 +284,8 @@ struct ProviderSyncContainer: View {
 
         didFinishBackgroundProbingRemaining = true
         hub?.markStartupProbeCompleted()
+        ProviderSessionNavigation.resetProbeTracking()
+        await DiagnosticLogger.shared.flush()
 
         // Wenn Queue fertig ergänzt wurde und current bereits sessionReady ist, zum nächsten.
         if let next = loginQueue.first,
@@ -270,22 +299,65 @@ struct ProviderSyncContainer: View {
     }
 
     /// Lädt Provider in 1×1-Host und wartet auf Cookie-Heuristik / Session-Probe.
-    private func probeProviderSession(_ providerID: ProviderID) async {
+    private func probeProviderSession(
+        _ providerID: ProviderID,
+        context: DiagnosticContext? = nil
+    ) async {
         guard providerLoginURL(for: providerID) != nil else {
+            if let context {
+                await recordProbeEvent(
+                    context: context,
+                    event: "missing_login_url",
+                    result: .skipped,
+                    reason: "login_url_missing"
+                )
+            }
             return
         }
 
         if hub?.status(for: providerID) == .sessionReady {
+            if let context {
+                await recordProbeEvent(
+                    context: context,
+                    event: "already_ready",
+                    result: .skipped
+                )
+            }
             return
         }
 
         backgroundProviderID = providerID
+        let statusBefore = hub?.status(for: providerID)
+        let start = DispatchTime.now().uptimeNanoseconds
+        if let context {
+            await recordProbeEvent(
+                context: context,
+                event: "started",
+                result: .started,
+                url: hub?.lastURLString(for: providerID),
+                statusBefore: statusBefore
+            )
+        }
 
         let timeoutNanoseconds: UInt64 = 5_000_000_000
         let pollNanoseconds: UInt64 = 200_000_000
-        let start = DispatchTime.now().uptimeNanoseconds
 
         while DispatchTime.now().uptimeNanoseconds - start < timeoutNanoseconds {
+            if Task.isCancelled {
+                backgroundProviderID = nil
+                if let context {
+                    await recordProbeEvent(
+                        context: context,
+                        event: "cancelled",
+                        result: .cancelled,
+                        reason: "task_cancelled",
+                        url: hub?.lastURLString(for: providerID),
+                        statusBefore: statusBefore,
+                        statusAfter: hub?.status(for: providerID)
+                    )
+                }
+                return
+            }
             if hub?.status(for: providerID) == .sessionReady {
                 break
             }
@@ -309,13 +381,71 @@ struct ProviderSyncContainer: View {
                 }
             }
 
-            try? await Task.sleep(nanoseconds: pollNanoseconds)
+            do {
+                try await Task.sleep(nanoseconds: pollNanoseconds)
+            } catch {
+                backgroundProviderID = nil
+                if let context {
+                    await recordProbeEvent(
+                        context: context,
+                        event: "cancelled",
+                        result: .cancelled,
+                        reason: "task_cancelled",
+                        url: hub?.lastURLString(for: providerID),
+                        statusBefore: statusBefore,
+                        statusAfter: hub?.status(for: providerID)
+                    )
+                }
+                return
+            }
         }
 
         backgroundProviderID = nil
+        if let context {
+            let elapsedMilliseconds = Int(
+                (DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
+            )
+            let ready = hub?.status(for: providerID) == .sessionReady
+            await recordProbeEvent(
+                context: context,
+                event: ready ? "completed" : "timeout",
+                result: ready ? .succeeded : .timedOut,
+                durationMilliseconds: elapsedMilliseconds,
+                reason: ready ? nil : "startup_probe_deadline",
+                url: hub?.lastURLString(for: providerID),
+                statusBefore: statusBefore,
+                statusAfter: hub?.status(for: providerID)
+            )
+        }
         // Kurz warten, damit dismantle den Host freigibt, bevor der nächste startet.
         try? await Task.sleep(nanoseconds: 50_000_000)
 
+    }
+
+    private func recordProbeEvent(
+        context: DiagnosticContext,
+        event: String,
+        result: DiagnosticResult,
+        durationMilliseconds: Int? = nil,
+        reason: String? = nil,
+        url: String? = nil,
+        statusBefore: ProviderSessionStatus? = nil,
+        statusAfter: ProviderSessionStatus? = nil
+    ) async {
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: context,
+                component: "ProviderSyncContainer",
+                phase: "session_probe",
+                event: event,
+                result: result,
+                durationMilliseconds: durationMilliseconds,
+                url: url.flatMap(DiagnosticRedactor.urlMetadata(for:)),
+                reason: reason,
+                statusBefore: statusBefore.map(String.init(describing:)),
+                statusAfter: statusAfter.map(String.init(describing:))
+            )
+        )
     }
 
     private func advanceLoginQueueIfNeeded(completed providerID: ProviderID) {

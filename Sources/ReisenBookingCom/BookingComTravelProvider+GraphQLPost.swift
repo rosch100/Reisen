@@ -34,7 +34,8 @@ extension BookingComTravelProvider {
                 referer: Self.myTripsURL.absoluteString,
                 contentType: "application/json",
                 body: body,
-                headers: headers
+                headers: headers,
+                timeoutSeconds: 60
             )
         }
     }

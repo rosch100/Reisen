@@ -36,6 +36,7 @@ struct SyncTab: View {
     @State private var rememberLoginMode: ProviderRememberLoginMode = .passwordManual
     @State private var rememberLoginMessage: String?
     @State private var navigationWasBlocked = false
+    @State private var diagnosticRunID = UUID()
 
     @AppStorage(AppSettingsKeys.rememberLoginAutomatically)
     private var rememberLoginAutomatically: Bool = false
@@ -151,6 +152,11 @@ struct SyncTab: View {
             WebViewHost(
                 loginURL: loginURLForSelectedProvider(),
                 providerID: selectedProviderID,
+                diagnosticContext: DiagnosticContext(
+                    runID: diagnosticRunID,
+                    providerID: selectedProviderID,
+                    operation: "ios_sync"
+                ),
                 webView: webViewBinding,
                 allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false,
                 onDidFinish: { finishedWebView in
@@ -367,12 +373,19 @@ struct SyncTab: View {
                     guard let syncStore else { return }
                     let targetWebView = selectedSessionWebView
                     guard let targetWebView else { return }
+                    let runID = UUID()
+                    diagnosticRunID = runID
                     Task {
                         await syncStore.sync(
                             providerID: selectedProviderID,
                             webView: targetWebView,
                             settings: .fromUserDefaults(),
-                            navigationHintURLs: navigationHintURLsForSync()
+                            navigationHintURLs: navigationHintURLsForSync(),
+                            diagnosticContext: DiagnosticContext(
+                                runID: runID,
+                                providerID: selectedProviderID,
+                                operation: "provider_sync"
+                            )
                         )
                     }
                 } label: {
@@ -450,7 +463,12 @@ struct SyncTab: View {
             providerID: selectedProviderID,
             hub: hub,
             enabledProviderIDs: Set(enabledProviderIDs),
-            notifyAlways: true
+            notifyAlways: true,
+            diagnosticContext: DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: selectedProviderID,
+                operation: "ios_sync"
+            )
         ) {
             sessionChromeEpoch &+= 1
         }
@@ -515,6 +533,24 @@ struct SyncTab: View {
             applyAccountSelection(accounts: accounts, autoFill: autoFill)
         } catch {
             selectedKeychainAccount = nil
+            let context = DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: providerID,
+                operation: "auto_login"
+            )
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: context,
+                        component: "SyncTab",
+                        phase: "keychain",
+                        event: "account_lookup",
+                        result: .failed,
+                        errorType: String(describing: type(of: error)),
+                        reason: DiagnosticRedactor.redact(error.localizedDescription)
+                    )
+                )
+            }
         }
     }
 
@@ -560,7 +596,12 @@ struct SyncTab: View {
                     && selectedKeychainAccount != nil
             },
             webView: { selectedSessionWebView },
-            action: { insertKeychainCredentials(in: $0) }
+            action: { insertKeychainCredentials(in: $0) },
+            diagnosticContext: DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: selectedProviderID,
+                operation: "ios_auto_login"
+            )
         )
     }
 
@@ -569,7 +610,15 @@ struct SyncTab: View {
         guard let account = selectedKeychainAccount else { return }
         guard let webView = targetWebView ?? selectedSessionWebView else { return }
         do {
-            try KeychainAutoFill.applyAccount(account, in: webView)
+            try KeychainAutoFill.applyAccount(
+                account,
+                in: webView,
+                diagnosticContext: DiagnosticContext(
+                    runID: diagnosticRunID,
+                    providerID: selectedProviderID,
+                    operation: "ios_auto_login"
+                )
+            )
         } catch {
             selectedKeychainAccount = nil
         }

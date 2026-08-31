@@ -34,9 +34,10 @@ extension WKWebView {
         referer: String? = nil,
         contentType: String? = nil,
         body: Data? = nil,
-        headers: [String: String] = [:]
+        headers: [String: String] = [:],
+        timeoutSeconds: TimeInterval = 60
     ) async throws -> String {
-        let request = await authenticatedRequest(
+        var request = await authenticatedRequest(
             url: url,
             method: method,
             accept: accept,
@@ -45,6 +46,7 @@ extension WKWebView {
             body: body,
             headers: headers
         )
+        request.timeoutInterval = timeoutSeconds
         let (data, response) = try await URLSession.shared.data(for: request)
         return try AuthenticatedTextDecode.utf8Text(data: data, response: response)
     }

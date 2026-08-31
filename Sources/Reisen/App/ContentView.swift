@@ -454,6 +454,7 @@ struct ContentView: View {
     @MainActor
     private func runSyncAll() async {
         guard let store, let sessionHub else { return }
+        let runID = UUID()
         await SyncAllCoordinator.run(
             syncStore: store,
             enabledProviderIDs: enabledProviderIDs,
@@ -461,7 +462,8 @@ struct ContentView: View {
             settings: syncAllSettings,
             navigationHints: { id in
                 NavigationHintURLs.ordered(hubURLString: sessionHub.lastURLString(for: id))
-            }
+            },
+            diagnosticRunID: runID
         )
     }
 

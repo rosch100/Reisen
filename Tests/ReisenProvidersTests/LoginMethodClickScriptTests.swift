@@ -11,6 +11,7 @@ func loginMethodClickScriptDetectsEmailOrMobileAndAvoidsSocial() {
     #expect(script.contains("sign.?in.?with"))
     #expect(script.contains("apple"))
     #expect(script.contains("clicked"))
+    #expect(script.contains("reisenLoginMethodSetup"))
 }
 
 @Test

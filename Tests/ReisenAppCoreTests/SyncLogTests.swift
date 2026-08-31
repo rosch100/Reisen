@@ -47,3 +47,98 @@ import Foundation
     let size = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber
     #expect(size?.intValue == SyncLog.keepBytes)
 }
+
+@Test func syncLog_recentTailExcludesLocalDebugEventsByDefault() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-sync-log-visibility-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+
+    let context = DiagnosticContext(runID: UUID(), providerID: .check24, operation: "test")
+    let localEvent = String(
+        decoding: try JSONEncoder().encode(
+            DiagnosticEvent(
+                context: context,
+                component: "Test",
+                phase: "dom",
+                event: "dom_snapshot",
+                result: .succeeded,
+                visibility: .localDebugOnly
+            )
+        ),
+        as: UTF8.self
+    )
+    let publicEvent = String(
+        decoding: try JSONEncoder().encode(
+            DiagnosticEvent(
+                context: context,
+                component: "Test",
+                phase: "navigation",
+                event: "navigation_failed",
+                result: .failed
+            )
+        ),
+        as: UTF8.self
+    )
+    try Data("""
+    [2026-08-31T10:00:00Z] diagnostic=\(localEvent)
+    [2026-08-31T10:00:01Z] diagnostic=\(publicEvent)
+    """.utf8).write(to: url)
+
+    let attachment = SyncLog.recentTail(fileURL: url)
+
+    guard case .attached(let preview, _, _, _, _) = attachment else {
+        Issue.record("expected attached log")
+        return
+    }
+    #expect(!preview.contains("dom_snapshot"))
+    #expect(preview.contains("navigation_failed"))
+}
+
+@Test func syncLog_removesExpiredDiagnosticEventsOnly() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-sync-log-expiry-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+
+    let context = DiagnosticContext(runID: UUID(), providerID: .check24, operation: "test")
+    let expired = String(
+        decoding: try JSONEncoder().encode(
+            DiagnosticEvent(
+                timestamp: Date(timeIntervalSince1970: 1_700_000_000),
+                context: context,
+                component: "Test",
+                phase: "probe",
+                event: "expired",
+                result: .started,
+                visibility: .localDebugOnly
+            )
+        ),
+        as: UTF8.self
+    )
+    let current = String(
+        decoding: try JSONEncoder().encode(
+            DiagnosticEvent(
+                timestamp: Date(timeIntervalSince1970: 1_700_100_000),
+                context: context,
+                component: "Test",
+                phase: "probe",
+                event: "current",
+                result: .started,
+                visibility: .localDebugOnly
+            )
+        ),
+        as: UTF8.self
+    )
+    try Data("legacy\n[date] diagnostic=unknown-payload\n[date] diagnostic=\(expired)\n[date] diagnostic=\(current)\n".utf8)
+        .write(to: url)
+
+    try SyncLog.removeExpiredDiagnosticEvents(
+        olderThan: Date(timeIntervalSince1970: 1_700_086_400),
+        fileURL: url
+    )
+
+    let result = try String(contentsOf: url, encoding: .utf8)
+    #expect(result.contains("legacy"))
+    #expect(result.contains("unknown-payload"))
+    #expect(!result.contains("expired"))
+    #expect(result.contains("current"))
+}

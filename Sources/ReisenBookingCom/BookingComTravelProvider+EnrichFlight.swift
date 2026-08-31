@@ -76,7 +76,8 @@ extension BookingComTravelProvider {
                 body: nil,
                 headers: [
                     "Origin": "https://flights.booking.com",
-                ]
+                ],
+                timeoutSeconds: 60
             )
         } catch {
             return nil

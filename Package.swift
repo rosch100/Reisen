@@ -50,7 +50,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenProviders",
-            dependencies: ["ReisenDomain"],
+            dependencies: ["ReisenDomain", "ReisenAppCore"],
             path: "Sources/ReisenProviders",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

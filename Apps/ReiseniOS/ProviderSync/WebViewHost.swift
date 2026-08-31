@@ -37,6 +37,7 @@ enum WebViewHostFit {
 struct WebViewHost: View {
     let loginURL: URL?
     let providerID: ProviderID
+    var diagnosticContext: DiagnosticContext?
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
@@ -47,6 +48,7 @@ struct WebViewHost: View {
         ProviderSessionWebView(
             loginURL: loginURL,
             providerID: providerID,
+            diagnosticContext: diagnosticContext,
             webView: $webView,
             allowsEmbed: allowsEmbed,
             onDidFinish: onDidFinish,
@@ -61,6 +63,7 @@ struct WebViewHost: View {
 struct ProviderSessionWebView: UIViewRepresentable {
     let loginURL: URL?
     let providerID: ProviderID
+    var diagnosticContext: DiagnosticContext?
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
@@ -72,7 +75,8 @@ struct ProviderSessionWebView: UIViewRepresentable {
         Coordinator(
             onDidFinish: onDidFinish,
             onCapturedCredentials: onCapturedCredentials,
-            onNavigationBlocked: onNavigationBlocked
+            onNavigationBlocked: onNavigationBlocked,
+            diagnosticContext: diagnosticContext
         )
     }
 
@@ -101,10 +105,16 @@ struct ProviderSessionWebView: UIViewRepresentable {
 
     func updateUIView(_ uiView: WebViewHostUIView, context: Context) {
         let view = resolveWebView(context: context)
+        context.coordinator.diagnosticContext = diagnosticContext
         if allowsEmbed {
             attachCoordinator(view, context: context)
             if uiView.webView !== view || view.superview !== uiView {
                 uiView.embed(view)
+                context.coordinator.recordNavigationEvent(
+                    "webview_reparented",
+                    result: .succeeded,
+                    webView: view
+                )
             }
         }
         if webView !== view {
@@ -153,6 +163,11 @@ struct ProviderSessionWebView: UIViewRepresentable {
         let view = InteractiveWKWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = context.coordinator
         view.uiDelegate = context.coordinator
+        context.coordinator.recordNavigationEvent(
+            "webview_created",
+            result: .succeeded,
+            webView: view
+        )
         view.customUserAgent = ProviderWebViewMobileMode.safariMobileUserAgent
         view.allowsBackForwardNavigationGestures = true
         view.scrollView.keyboardDismissMode = .interactive
@@ -192,16 +207,19 @@ struct ProviderSessionWebView: UIViewRepresentable {
         let onDidFinish: (WKWebView) -> Void
         let onCapturedCredentials: ((ProviderCredentials) -> Void)?
         let onNavigationBlocked: (() -> Void)?
+        var diagnosticContext: DiagnosticContext?
         var loadedLoginURL: URL?
 
         init(
             onDidFinish: @escaping (WKWebView) -> Void,
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
-            onNavigationBlocked: (() -> Void)?
+            onNavigationBlocked: (() -> Void)?,
+            diagnosticContext: DiagnosticContext?
         ) {
             self.onDidFinish = onDidFinish
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
+            self.diagnosticContext = diagnosticContext
         }
 
         func tearDown(from webView: WKWebView?) {
@@ -217,11 +235,13 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            recordNavigationEvent("did_finish", result: .succeeded, webView: webView)
             applyAssistance(in: webView)
             onDidFinish(webView)
         }
 
         func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+            recordNavigationEvent("did_commit", result: .started, webView: webView)
             applyAssistance(in: webView)
             onDidFinish(webView)
         }
@@ -236,6 +256,12 @@ struct ProviderSessionWebView: UIViewRepresentable {
             let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
             if let url = navigationAction.request.url,
                !allowsNavigation(to: url, isMainFrame: isMainFrame) {
+                recordNavigationEvent(
+                    "navigation_blocked",
+                    result: .skipped,
+                    webView: webView,
+                    reason: "navigation_policy"
+                )
                 decisionHandler(.cancel, preferences)
                 return
             }
@@ -247,7 +273,50 @@ struct ProviderSessionWebView: UIViewRepresentable {
             didFailProvisionalNavigation navigation: WKNavigation!,
             withError error: Error
         ) {
+            recordNavigationEvent(
+                "did_fail_provisional",
+                result: .failed,
+                webView: webView,
+                error: error
+            )
             onDidFinish(webView)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            didFail navigation: WKNavigation!,
+            withError error: Error
+        ) {
+            recordNavigationEvent(
+                "did_fail",
+                result: .failed,
+                webView: webView,
+                error: error
+            )
+        }
+
+        func recordNavigationEvent(
+            _ event: String,
+            result: DiagnosticResult,
+            webView: WKWebView,
+            error: Error? = nil,
+            reason: String? = nil
+        ) {
+            guard let diagnosticContext else { return }
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: diagnosticContext,
+                        component: "ProviderSessionWebView",
+                        phase: "navigation",
+                        event: event,
+                        result: result,
+                        url: webView.url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
+                        errorType: error.map { String(reflecting: type(of: $0)) },
+                        reason: reason ?? error.map { DiagnosticRedactor.redact($0.localizedDescription) }
+                    )
+                )
+            }
         }
 
         func webView(
@@ -258,7 +327,21 @@ struct ProviderSessionWebView: UIViewRepresentable {
         ) -> WKWebView? {
             guard navigationAction.targetFrame == nil else { return nil }
             guard let url = navigationAction.request.url else { return nil }
-            guard allowsNavigation(to: url, isMainFrame: true) else { return nil }
+            guard allowsNavigation(to: url, isMainFrame: true) else {
+                recordNavigationEvent(
+                    "popup_blocked",
+                    result: .skipped,
+                    webView: webView,
+                    reason: "navigation_policy"
+                )
+                return nil
+            }
+            recordNavigationEvent(
+                "popup_reparented",
+                result: .succeeded,
+                webView: webView,
+                reason: "loaded_in_existing_webview"
+            )
             webView.load(navigationAction.request)
             return nil
         }
@@ -276,7 +359,10 @@ struct ProviderSessionWebView: UIViewRepresentable {
             if AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(absolute) {
                 OneTimeCodeAutofill.apply(in: webView, relaxSplitFieldMaxLength: true)
             }
-            ProviderLoginAssistance.installOnLoginPage(in: webView)
+            ProviderLoginAssistance.installOnLoginPage(
+                in: webView,
+                diagnosticContext: diagnosticContext
+            )
         }
     }
 }

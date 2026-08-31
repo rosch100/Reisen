@@ -89,7 +89,8 @@ final class FakeBookingComWebView: BookingComWebView {
         referer: String?,
         contentType: String?,
         body: Data?,
-        headers: [String: String]
+        headers: [String: String],
+        timeoutSeconds: TimeInterval
     ) async throws -> String {
         let urlString = url.absoluteString
         if urlString == "https://secure.booking.com/dml/graphql" {

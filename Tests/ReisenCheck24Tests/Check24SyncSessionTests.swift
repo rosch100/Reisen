@@ -18,3 +18,46 @@ func check24ExistentialMakeSyncSessionYieldsUsableWebView() throws {
     let extracted = try check24.webView(from: session)
     #expect(extracted === webView)
 }
+
+@Test("Check24 JavaScript-Bedingung unterscheidet Fehler und Timeout")
+@MainActor
+func check24JavaScriptConditionDistinguishesErrorAndTimeout() async {
+    let webView = WKWebView()
+
+    let errorResult = await webView.waitForJavaScriptCondition(
+        "throw new Error('condition failed')",
+        timeoutSeconds: 0.01,
+        pollIntervalSeconds: 0.001
+    )
+    let timeoutResult = await webView.waitForJavaScriptCondition(
+        "false",
+        timeoutSeconds: 0.01,
+        pollIntervalSeconds: 0.001
+    )
+
+    #expect(errorResult == .javaScriptError)
+    #expect(timeoutResult == .timedOut)
+}
+
+@Test("Check24 JavaScript-Bedingung reagiert auf Cancellation")
+@MainActor
+func check24JavaScriptConditionReturnsCancellation() async {
+    let webView = WKWebView()
+    let signal = AsyncStream<Void>.makeStream()
+    let task = Task { @MainActor in
+        await webView.waitForJavaScriptCondition(
+            "false",
+            timeoutSeconds: 20,
+            pollIntervalSeconds: 0.1,
+            onPollStarted: {
+                signal.continuation.yield()
+            }
+        )
+    }
+    var iterator = signal.stream.makeAsyncIterator()
+    _ = await iterator.next()
+    task.cancel()
+
+    let result = await task.value
+    #expect(result == .cancelled)
+}
