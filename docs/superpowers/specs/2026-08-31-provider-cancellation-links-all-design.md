@@ -1,7 +1,7 @@
 # Provider-Storno-Links: maximale Belegung (Hybrid)
 
 Datum: 2026-08-31  
-Status: Entwurf (brainstorming freigegeben)  
+Status: Entwurf (brainstorming freigegeben; Review-Nachzug)  
 Plattformen: macOS (`Reisen`) und iOS/iPadOS (`ReiseniOS`, Private und Store)
 
 ## Ziel
@@ -12,7 +12,7 @@ Alle Sync-Provider unterstützen den Storno-Einstieg **so gut wie belegt möglic
 2. **In-Page-Cancel**, wenn Storno nur auf der Buchungsseite (Modal/Button) liegt: `cancellationUrl` bewusst gleich `externalUrl`, Storno nur über **Session-Sheet**.
 3. Sonst `nil` — kein Raten, kein Dummy-Template.
 
-Reisen storniert nicht selbst. UI-Semantik (Fristen-Gate, destruktives „Stornieren“, Sheet) bleibt in [2026-08-30-in-app-cancellation-sheet-design.md](2026-08-30-in-app-cancellation-sheet-design.md). Pipeline-Grundlage: [2026-08-30-cancellation-portal-links-design.md](2026-08-30-cancellation-portal-links-design.md). Open-Matrix: [booking-portal-open.md](../../dev/booking-portal-open.md).
+Reisen storniert nicht selbst. UI-Semantik (Fristen-Gate, destruktives „Stornieren“, Sheet) bleibt in [2026-08-30-in-app-cancellation-sheet-design.md](2026-08-30-in-app-cancellation-sheet-design.md). Pipeline-Grundlage: [2026-08-30-cancellation-portal-links-design.md](2026-08-30-cancellation-portal-links-design.md) (diese Spec **ersetzt** deren Provider-Matrix und die Regel „nie Open-URL kopieren“ für dokumentiertes In-Page). Open-Matrix: [booking-portal-open.md](../../dev/booking-portal-open.md).
 
 ## Entscheidungen (Konsens)
 
@@ -23,6 +23,16 @@ Reisen storniert nicht selbst. UI-Semantik (Fristen-Gate, destruktives „Storni
 | Persistenz In-Page | `cancellationUrl == externalUrl` bewusst setzen (Sheet-Spec), kein separates Cloud-Enum |
 | Ableitung UI | URL + `cancel == open` + `hasSessionWebView` (bestehende Presentation) |
 | Belegpflicht | Fixture/HAR/dokumentierter Live-Beleg; Capture nachziehen statt raten |
+| Soft-Wave-1 | Kein „wenn ableitbar“ ohne Builder+Fixture → sonst Welle 2 |
+| BM Safari | `/reservation/cancellation` ist **session-bound**; sichtbares Stornieren nur mit Hub-Session (wie In-Page) |
+
+## HIG (kurz)
+
+- Zwei Controls, die in Safari dieselbe URL öffnen: **verboten**; In-Page nur Session-Sheet.
+- Destruktive Rolle, Titel, Help: Sheet-Spec (nicht hier neu definieren).
+- Fehlendes Control **weg**, nicht disabled.
+- „Storno-Link kopieren“ nur bei `cancel ≠ open`.
+- Store ohne Hub: In-Page und session-bound distinct → kein Storno-Control (Öffnen bleibt).
 
 ## Begriffe
 
@@ -30,92 +40,120 @@ Reisen storniert nicht selbst. UI-Semantik (Fristen-Gate, destruktives „Storni
 |---------|-----------|
 | **distinctURL** | `cancellationUrl` HTTPS und ≠ `externalUrl` nach `browserURL`-Filter |
 | **inPageOnOpen** | Cancel-Fläche = Buchungsseite; Extract setzt `cancellationUrl` auf dieselbe HTTPS-Open-URL |
+| **sessionBoundDistinct** | Distinct-URL, die ohne Provider-Cookies nutzlos ist (z. B. BM Cancellation-SPA); Presentation wie In-Page: **nur Sheet** |
 | **none** | `cancellationUrl == nil` bis Beleg existiert |
-| **Policy-SSOT** | `ProviderCancellationLinkPolicy` — dokumentiert Mode pro Provider(+Buchungstyp); Extract implementiert, Views raten nicht |
+| **Policy-SSOT** | `ProviderCancellationLinkPolicy.mode(provider:bookingType:)` in **Domain** (neben `BookingPortalCancellation`); Provider-Module liefern nur URL-Builder |
 
-Die ältere Portal-Links-Zeile „keine Kopie der Öffnen-URL“ gilt **nur** für unbelegte Provider (`none`). Bei dokumentiertem `inPageOnOpen` ist die Gleichheit Absicht, kein Dummy.
+Die ältere Portal-Links-Zeile „keine Kopie der Öffnen-URL“ gilt **nur** für `none`. Bei `inPageOnOpen` ist die Gleichheit Absicht, kein Dummy.
 
 ## Architektur
 
 ```text
-ProviderCancellationLinkPolicy (Mode: distinct | inPage | none)
+ProviderCancellationLinkPolicy.mode(provider:bookingType:)
+        → distinct | inPageOnOpen | sessionBoundDistinct | none
         │
-Provider-Extract / Enrich
+Provider-Extract / Enrich (siehe Matrix: Catalog vs Enrich)
   → Facts.cancellationUrl
-        │  distinct: Template/Extract-URL
-        │  inPage:   externalUrl (nur wenn browserURL-tauglich)
-        │  none:     nil
+        │  distinct / sessionBoundDistinct: Template-URL
+        │  inPageOnOpen: externalUrl (nur browserURL-tauglich)
+        │  none: nil
         ▼
-Draft → Upsert (nil wischt persistierte URL nicht)
+Draft → Upsert (nil wischt persistierte URL nicht;
+         nächster Sync mit nicht-leerer Draft-URL füllt Backfill via assignNonEmpty)
         ▼
 Booking.cancellationUrl
   → isActionable(status, deadlinesForDisplay)
-  → presentation:
-        Session → sheet (auch wenn cancel == open)
-        kein Session + cancel ≠ open → safari
-        kein Session + cancel == open → hidden
+  → presentation (erweitert um sessionBoundDistinct):
+        Session → sheet (auch cancel == open; auch sessionBoundDistinct)
+        kein Session + distinct (nicht session-bound) + cancel ≠ open → safari
+        kein Session + (inPage | sessionBoundDistinct | cancel == open) → hidden
   → ActionBar / Menü / Cancel-Sheet load(URL)
-  → „Storno-Link kopieren“ nur wenn cancel ≠ open
+  → allowsCopyingCancellationLink = (cancel != nil && cancel != open)
 ```
 
-Kein neues SwiftData-Attribut. Store-iOS ohne Hub-WebView: nur distinct+Safari; In-Page bleibt hidden.
+Kein neues SwiftData-Attribut. Store-iOS ohne Hub-WebView: nur nicht-session-bound distinct → Safari; sonst hidden.
+
+### Presentation-API
+
+Bestehende `BookingPortalCancellation.presentation` um Erkennung **session-bound** ergänzen:
+
+- Entweder Hilfsflag `requiresProviderSession: Bool` am Aufruf (Apps setzen true für BM laut Policy), **oder**
+- Domain-Helper `requiresProviderSession(cancellation:provider:)` aus Policy.
+
+Empfehlung: `BookingPortalCancellation.presentation(..., requiresProviderSession: Bool)` — Apps/SharedUI leiten das Flag aus `ProviderCancellationLinkPolicy` + Booking.provider ab. Kein Raten an der URL-Zeichenkette in der View.
 
 ## Provider-Matrix
 
-| Provider | Mode | Beleg | Welle |
-|----------|------|-------|-------|
-| Traveloka | distinct | `TravelokaAPI.refundPresubmissionURL` | 0 (Ist) |
-| Airbnb Experience | distinct | `experience_alteration/…?flow=oneCancel` | 0 (PR #98 / Ist) |
-| billiger-mietwagen.de | distinct | Live `/reservation/cancellation` (SPA, keine Buchungs-ID im Pfad; Session) | 1 |
-| GetYourGuide | inPage | HAR/Live: Cancel-Modal auf `/booking/{hash}` | 1 |
-| Opodo | distinct | Hash `#tripdetails/…&funnel=cancellationHSA` (Fragment behalten) | 1, wenn Token/Open ableitbar |
-| Booking.com Hotel | distinct | Live-Kandidat `cancel.html` | 1 nur mit Fixture-/Pfad-Beleg |
-| Booking.com Flug | inPage oder none | oft Cancel auf Confirmation | 2 falls unsicher |
-| Check24 | inPage oder none | oft Kundenbereich-Buchungsseite | 2 falls unsicher |
-| Airbnb Stay | none bis Cancel-HAR | geratene `/reservation/cancel/{code}` = 404 | 2 |
-| Manual | Editor-HTTPS = distinct | Nutzer | — |
+Jeder Sync-Provider hat **genau einen** Mode pro `(provider, bookingType)`-Zelle. Kein „oder“.
 
-**Welle 1 (dieser Spec-Scope):** Policy-SSOT + Docs/Matrix-Update + Extract/Tests für GYG (inPage), billiger-mietwagen (distinct), Opodo/Booking Hotel soweit ableitbar ohne Raten.  
-**Welle 2:** Cancel-Click-HARs; Matrix und Extract nachziehen.
+| Provider | bookingType | Mode | Setzt | Beleg | Welle |
+|----------|-------------|------|-------|-------|-------|
+| Traveloka | * | distinct | Catalog (IDs bekannt) | `TravelokaAPI.refundPresubmissionURL` | 0 |
+| Airbnb | `.activity` | distinct | Catalog (TripList) | `experience_alteration/…?flow=oneCancel` | 0 |
+| Airbnb | `.lodging` (Stay) | none | — | Cancel-HAR fehlt; `/reservation/cancel/{code}` 404 | 2 |
+| billiger-mietwagen.de | * | sessionBoundDistinct | Catalog oder Enrich (WebConstants) | Live `/reservation/cancellation` (keine Buchungs-ID; Session) | 1 |
+| GetYourGuide | * | inPageOnOpen | Catalog (wenn `externalUrl` gesetzt) | HAR: Cancel-Modal auf `/booking/{hash}` | 1 |
+| Opodo | * | none | — | `funnel=cancellationHSA` Live genannt, **kein** Fixture-Builder ohne Raten | 2 |
+| Booking.com | Hotel / lodging | none | — | `cancel.html` Live-Kandidat, **kein** Fixture-Pfad | 2 |
+| Booking.com | Flug / transport | none | — | Cancel oft auf Confirmation; Capture nötig | 2 |
+| Check24 | * | none | — | oft Kundenbereich-Seite; Capture nötig | 2 |
+| Manual | — | distinct (Editor) | Nutzer | HTTPS-Feld | — |
+
+**Welle 1 (verbindlicher Spec-Scope):** Policy-SSOT + Presentation `requiresProviderSession` + Copy-Helper + Docs-Folgen + Extract/Tests für **GYG (inPage)** und **billiger-mietwagen (sessionBoundDistinct)**. Traveloka/Airbnb Experience Regression.
+
+**Welle 2:** Cancel-Click-HAR → Mode auf `distinct` / `inPageOnOpen` / `sessionBoundDistinct` umstellen; Opodo, Booking Hotel/Flug, Check24, Airbnb Stay.
+
+### Welle-2 Capture (kurz)
+
+Safari/Firefox, eingeloggt, **eine** aktive Buchung, Network an, **Storno/Cancel klicken** (nicht nur Detail), HAR nach `HAR/` (gitignored). Erfolg: Request-URL ≠ Open-URL **oder** belegt In-Page (keine Navigation). Ins Repo nur redigierte Test-Assertion.
 
 ## Komponenten
 
-| Stück | Verantwortung |
-|-------|----------------|
-| `ProviderCancellationLinkPolicy` | Mode + Kurzbegründung; SSOT für Docs/Tests |
-| Provider-`*API` / Parser | URL bauen oder Open spiegeln laut Policy |
-| `BookingPortalCancellation` | unveränderte Presentation-Regeln; `allowsCopyingCancellationLink(cancel:open:)` = `(cancel != nil && cancel != open)` |
-| SharedUI ActionBar/Menü | Copy-Cancel nur wenn `allowsCopyingCancellationLink` |
-| `docs/dev/booking-portal-open.md` | Storno-Matrix an diese Spec anbinden |
+| Stück | Ort | Verantwortung |
+|-------|-----|----------------|
+| `ProviderCancellationLinkPolicy` | `ReisenDomain` | `mode(provider:bookingType:)`; optional `requiresProviderSession(mode:)` |
+| URL-Builder | jeweiliges Provider-Modul (`*API` / `*WebConstants`) | Nur Templates mit Beleg |
+| Parser / TravelProvider | Provider-Modul | Catalog und/oder Enrich laut Matrix |
+| `BookingPortalCancellation` | Domain | Presentation + `allowsCopyingCancellationLink` + `requiresProviderSession`-Parameter |
+| SharedUI ActionBar/Menü | SharedUI | Copy-Cancel nur bei erlaubt |
+| Apps | macOS/iOS | Flag aus Policy + `booking.provider` / Typ |
 
 ## Fehler und Grenzen
 
-- Weder distinct `cancellationUrl` noch (bei inPage) browserURL-taugliche Open-URL → kein Storno-Control.
+- Weder ladbare distinct-/session-bound-URL noch (inPage) browserURL-taugliche Open-URL → kein Storno-Control.
 - Keine anzeigbare Frist → hidden (bestehendes Gate).
 - Sheet-Nav-Fehler → Fehler im Sheet, kein stiller Safari-Wechsel.
 - Paste-Import setzt `cancellationUrl` nicht.
 - Kein DOM-Auto-Klick auf Portal-Cancel.
 - Kein Provider-Cancel-API / lokales `cancelled` durch diesen Flow.
+- Opodo/Booking/Check24 in Welle 1 **nicht** per geratenem Query/Pfad befüllen.
 
 ## Tests
 
-- Domain: Presentation und Copy-Regel (distinct vs same-URL × Session).
-- Welle 1 Provider: GYG `cancellationUrl == externalUrl` und actionable-Voraussetzungen; billiger-mietwagen Cancellation-Pfad ≠ Open; Opodo Fragment wenn ableitbar; Traveloka/Airbnb Experience Regression.
-- Negativ: Airbnb Stay / unbelegte Cases bleiben `nil` bzw. explizit inPage nur mit Open-URL.
-- Keine HAR-Binaries im Repo; nur redigierte Assertions.
+- Domain: Policy deckt alle `ProviderID.syncProviderIDs` × relevante Typen ab; Presentation (distinct Safari vs sessionBound/inPage hidden ohne Session); Copy-Regel.
+- Welle 1: GYG `cancellationUrl == externalUrl` (bei Hash/Open); BM Cancellation-URL ≠ Open und `requiresProviderSession`; Traveloka/Airbnb Experience Regression.
+- Negativ: Opodo/Booking/Check24/Airbnb Stay Catalog-Tests bleiben `cancellationUrl == nil` bis Welle 2.
+- Keine HAR-Binaries im Repo.
 
-## Akzeptanz
+## Akzeptanz (Welle 1)
 
-1. Policy-Matrix deckt alle `ProviderID.syncProviderIDs` ab (Mode ≠ stilles Vergessen).
-2. GYG: bei Open-URL + anzeigbaren Fristen erscheint Stornieren nur mit Hub-Session (Sheet).
-3. billiger-mietwagen: distinct Cancellation-URL; Sheet/Safari laut Presentation.
-4. Kein Safari-Open für Stornieren, wenn URL identisch zur Öffnen-URL.
-5. Copy-Storno-Link fehlt bei gleicher URL.
-6. Welle-2-Provider dokumentiert als `none`/offen, nicht geraten.
+1. `ProviderCancellationLinkPolicy` liefert für jeden Sync-Provider einen definierten Mode (Airbnb Stay = `none`, Experience = `distinct`).
+2. GYG: bei Open-URL + anzeigbaren Fristen + Hub-Session erscheint Stornieren (Sheet); ohne Session kein Storno-Control.
+3. billiger-mietwagen: persistierte Cancellation-URL ≠ Open; Stornieren nur mit Hub-Session; ohne Session hidden (kein Safari-Akzeptanzkriterium).
+4. Kein Safari-Open für Stornieren, wenn `cancel == open` oder Mode session-bound.
+5. Copy-Storno-Link fehlt bei `cancel == open`.
+6. Opodo/Booking/Check24/Airbnb Stay: weiterhin `nil` in Catalog-Tests (kein Raten).
+
+## Doc-Folgen (gleiche Änderung / Folge-Commit)
+
+1. [2026-08-30-cancellation-portal-links-design.md](2026-08-30-cancellation-portal-links-design.md) — Matrix und Akzeptanz an Hybrid/In-Page anpassen; Verweis auf diese Spec.
+2. [booking-portal-open.md](../../dev/booking-portal-open.md) — Storno-Tabelle an Matrix hier.
+3. Sheet-Spec — Querverweis „URL-Extract: diese Spec“; BM als session-bound distinct erwähnen.
 
 ## Nicht in Scope
 
-- Neue Cancel-Click-HARs als Blocker für Welle 1 (nur wo Beleg schon existiert).
+- Welle-2-HARs als Blocker für Welle 1.
 - Schema-Enum für Cancel-Mode.
 - XCUI / automatisches Klicken im Portal.
 - Änderung des Frist-Gates.
+- Geratene Opodo-`funnel=`- oder Booking-`cancel.html`-Templates ohne Fixture.

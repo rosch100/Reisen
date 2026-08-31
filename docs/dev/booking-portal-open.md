@@ -32,20 +32,21 @@ GYG ohne `bookingHash`: kein Katalog-Draft. Airbnb ohne ableitbare Portal-URL: D
 
 ## Buchungs-Storno (Provider × Storno-URL × Button)
 
-Persistiertes `Booking.cancellationUrl` → `BookingExternalURL.browserURL` → `BookingPortalActions.visible` → SwiftUI `Link` / Menü / Command. Filter identisch zu Open. Guard: `BookingPortalCancellation.isActionable` (kein Button bei `status == .cancelled`, fehlender URL, oder URL identisch zur Open-URL). Der Button storniert nicht in Reisen.
+Persistiertes `Booking.cancellationUrl` → `BookingExternalURL.browserURL` → `BookingPortalActions.visible` / Presentation. Filter identisch zu Open. Guard: Status, anzeigbare Fristen; Sheet bei Hub-Session auch wenn Cancel-URL = Open-URL (In-Page); Safari nur bei eigener Storno-Seite ohne Session-Zwang. Der Button storniert nicht in Reisen.
+
+**SSOT-Matrix:** [2026-08-31-provider-cancellation-links-all-design.md](../superpowers/specs/2026-08-31-provider-cancellation-links-all-design.md).
 
 | Provider | Storno-URL-Form | Button |
 |----------|-----------------|--------|
-| Traveloka | `…/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | ja, wenn ≠ Open-URL |
-| Check24 | unbelegt in Fixtures | nein |
-| Booking.com | unbelegt in Fixtures | nein |
-| Airbnb | unbelegt in Fixtures | nein |
-| GetYourGuide | unbelegt in Fixtures | nein |
-| Opodo | unbelegt in Fixtures | nein |
-| billiger-mietwagen.de | unbelegt in Fixtures | nein |
+| Traveloka | `…/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | ja, wenn actionable (≠ Open) |
+| Airbnb Experience | `…/experience_alteration/{code}?flow=oneCancel&productType=experience` | ja, wenn actionable (≠ Open) |
+| Airbnb Stay | unbelegt | nein |
+| GetYourGuide | = Open-URL (In-Page-Modal) | ja, nur mit Hub-Session + Fristen |
+| billiger-mietwagen.de | `…/reservation/cancellation` (keine Buchungs-ID; Session) | ja, nur mit Hub-Session + Fristen |
+| Check24 / Booking.com / Opodo | unbelegt bis Cancel-HAR | nein |
 | Manual | Editor-Feld `cancellationUrl` | ja, wenn belegte HTTPS-URL und actionable |
 
-Nur-Storno (ohne Open-URL) ist erlaubt, z. B. nach Editor-Nachtrag.
+Nur-Storno (ohne Open-URL) ist erlaubt bei distinct-URL, z. B. nach Editor-Nachtrag.
 
 ## Gap-Suche (Kategorie × Provider)
 
