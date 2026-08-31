@@ -13,12 +13,16 @@ public enum BilligerMietwagenSessionProbe {
     }
 
     /// GET `session.php` mit Probe-Referer und Login-Auswertung (SSOT für Navigation + Session-UI).
-    public static func fetchIsLoggedIn(using webView: WKWebView) async throws -> Bool? {
+    public static func fetchIsLoggedIn(
+        using webView: WKWebView,
+        timeoutSeconds: TimeInterval = 20
+    ) async throws -> Bool? {
         let text = try await webView.fetchAuthenticatedText(
             url: BilligerMietwagenAuthConstants.sessionURL,
             accept: "application/json",
             referer: BilligerMietwagenAuthConstants.sessionProbeReferer,
-            headers: BilligerMietwagenAuthConstants.sessionBrowserHeaders
+            headers: BilligerMietwagenAuthConstants.sessionBrowserHeaders,
+            timeoutSeconds: timeoutSeconds
         )
         return isLoggedIn(fromSessionJSON: text)
     }

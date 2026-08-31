@@ -11,6 +11,7 @@ public enum ProviderSessionStatusHeuristic: Equatable {
     case shouldProbeOpodo
     case shouldProbeTraveloka
     case shouldProbeBilligerMietwagen
+    case shouldProbeCheck24
     case unknown
 }
 
@@ -19,8 +20,6 @@ public enum ProviderSessionStatusResolver {
     /// and provider applicability via session probes.
     public static func classify(_ url: URL) -> ProviderSessionStatusHeuristic {
         let absolute = url.absoluteString.lowercased()
-        let looksLikeLogin = AuthPageURLHeuristic.looksLikeLoginPage(absolute)
-        let looksLikeAccount = AuthPageURLHeuristic.looksLikeAccountPage(absolute)
 
         // billiger-mietwagen: SPA bleibt oft auf /login während Buchungen sichtbar sind.
         // session.php ist die einzige verlässliche Session-Quelle (auch auf der Login-URL).
@@ -33,10 +32,13 @@ public enum ProviderSessionStatusResolver {
             return .shouldProbeOpodo
         }
 
-        if looksLikeAccount && !looksLikeLogin {
+        if AuthPageURLHeuristic.looksLikeAccountPageWithoutLogin(absolute) {
             return .sessionReady
-        } else if looksLikeLogin {
+        } else if AuthPageURLHeuristic.looksLikeLoginPage(absolute) {
             return .needsLogin
+        } else if Check24SessionProbe.applies(to: url) {
+            // Nach SSO oft Marketing-Homepage (weder Login noch Account) → Activities-Probe.
+            return .shouldProbeCheck24
         } else if TravelokaSessionProbe.applies(to: url) {
             return .shouldProbeTraveloka
         } else {

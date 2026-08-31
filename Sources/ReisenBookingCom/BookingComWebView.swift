@@ -21,7 +21,8 @@ internal protocol BookingComWebView: NavigationWebView {
         referer: String?,
         contentType: String?,
         body: Data?,
-        headers: [String: String]
+        headers: [String: String],
+        timeoutSeconds: TimeInterval
     ) async throws -> String
 }
 

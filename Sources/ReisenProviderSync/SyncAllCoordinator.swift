@@ -24,7 +24,8 @@ public enum SyncAllCoordinator {
         enabledProviderIDs: [ProviderID],
         sessionHub: ProviderSessionHub,
         settings: AppSettings,
-        navigationHints: @escaping (ProviderID) -> [URL]
+        navigationHints: @escaping (ProviderID) -> [URL],
+        diagnosticRunID: UUID
     ) async {
         let ready = candidates(
             enabledProviderIDs: enabledProviderIDs,
@@ -34,7 +35,8 @@ public enum SyncAllCoordinator {
         await syncStore.syncAll(
             providers: ready,
             settings: settings,
-            resolveNavigationHintURLs: navigationHints
+            resolveNavigationHintURLs: navigationHints,
+            diagnosticRunID: diagnosticRunID
         )
     }
 }

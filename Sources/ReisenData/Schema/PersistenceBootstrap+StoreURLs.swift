@@ -1,9 +1,9 @@
 import Foundation
+import ReisenDomain
 
 extension PersistenceBootstrap {
     nonisolated public static func supportDirectoryURL() -> URL? {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("Reisen", isDirectory: true)
+        ReisenApplicationSupport.directoryURL()
     }
 
     public static func supportDirectory() throws -> URL {

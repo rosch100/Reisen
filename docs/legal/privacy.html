@@ -46,6 +46,16 @@
         <a href="https://github.com/rosch100/Reisen">github.com/rosch100/Reisen</a> bereitgestellt.
       </p>
       <p>
+        Die technische Diagnose der Provider-Navigation, Session-Prüfung und des Auto-Logins
+        enthält im normalen Betrieb redigierte Status-/Zeitinformationen sowie redigierte
+        URL-Metadaten (nur Host, ohne Pfad/Query/Fragment). Eine lokale Detaildiagnose mit
+        strukturierten DOM-Merkmalen wird ausschließlich in einem DEBUG-Build nach
+        ausdrücklicher Aktivierung über das Launch-Argument
+        <code>-ReisenDiagnosticsDebug</code> gespeichert, nach 24&nbsp;Stunden gelöscht und
+        teilt sich das lokale Sync-Log (Rotation bei 256&nbsp;KiB). Diese Detaildaten werden
+        niemals automatisch in öffentliche Fehlerberichte übernommen.
+      </p>
+      <p>
         Schnelle elektronische Kontaktaufnahme: öffentliche
         <a href="https://github.com/rosch100/Reisen/issues">GitHub-Issues</a>.
         Für vertrauliche Betroffenenanfragen (Auskunft, Löschung) bitte ein Issue

@@ -12,16 +12,36 @@ extension Check24TravelProvider {
         guard let url = URL(string: ref.externalUrl) else {
             throw Check24ProviderError.navigationFailed
         }
+        await recordDiagnosticPhase(
+            "enrichment",
+            event: "started",
+            result: .started,
+            url: url,
+            reason: "booking_type=\(ref.bookingType)"
+        )
         try await load(url: url, in: webView)
         await dismissBookingChooserIfNeeded(
             in: webView,
             needles: [ref.externalUrl, url.lastPathComponent]
         )
         if ref.bookingType == .carRental {
-            guard await waitForCarRentalDetailReady(in: webView) else {
+            guard try await waitForCarRentalDetailReady(in: webView) else {
+                await recordDiagnosticPhase(
+                    "enrichment",
+                    event: "readiness_failed",
+                    result: .failed,
+                    url: url,
+                    reason: "car_rental_readiness"
+                )
                 return Self.carRentalEnrichment(html: nil)
             }
             let snapshot = try await snapshotHTML(from: webView)
+            await recordDiagnosticPhase(
+                "enrichment",
+                event: "completed",
+                result: .succeeded,
+                url: url
+            )
             return Self.carRentalEnrichment(html: snapshot.html)
         }
         let snapshot = try await snapshotHTML(from: webView)
@@ -46,6 +66,13 @@ extension Check24TravelProvider {
                     )
                     passengers = built.isEmpty ? nil : built
                 } catch {
+                    await recordDiagnosticPhase(
+                        "enrichment",
+                        event: "baggage_failed",
+                        result: .failed,
+                        url: statusURL,
+                        reason: error.localizedDescription
+                    )
                     passengers = nil
                 }
             }
@@ -66,7 +93,7 @@ extension Check24TravelProvider {
             providerRaw: ProviderID.check24.rawValue
         )
         let mappedDeadlines = policy.deadlines.map(\.asDomain)
-        return DraftAssembler.enrichment(
+        let enrichment = DraftAssembler.enrichment(
             from: ProviderBookingFacts(
                 provider: .check24,
                 bookingType: ref.bookingType,
@@ -78,6 +105,13 @@ extension Check24TravelProvider {
                 guestHints: hints
             )
         )
+        await recordDiagnosticPhase(
+            "enrichment",
+            event: "completed",
+            result: .succeeded,
+            url: url
+        )
+        return enrichment
     }
 
     func check24StatusURL(from externalUrl: String) -> URL? {

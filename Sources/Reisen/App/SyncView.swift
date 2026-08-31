@@ -33,6 +33,7 @@ struct SyncView: View {
     @AppStorage private var preferredKeychainAccountID: String
 
     @State private var sessionWebView: WKWebView?
+    @State private var diagnosticRunID = UUID()
     @State private var sessionStatus: ProviderSessionStatus = .needsLogin
     @State private var lastURLString: String?
     @State private var missingProviderMessage: String?
@@ -160,6 +161,7 @@ struct SyncView: View {
                     sessionBanner
                     Divider()
                     ProviderSessionView(
+                        providerID: providerID,
                         loginURL: providerLoginURL,
                         sessionStatus: $sessionStatus,
                         lastURLString: $lastURLString,
@@ -171,7 +173,12 @@ struct SyncView: View {
                         onNavigationBlocked: {
                             navigationWasBlocked = true
                         },
-                        allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false
+                        allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false,
+                        diagnosticContext: DiagnosticContext(
+                            runID: diagnosticRunID,
+                            providerID: providerID,
+                            operation: "macos_sync"
+                        )
                     )
                     .frame(
                         maxWidth: .infinity,
@@ -550,11 +557,18 @@ struct SyncView: View {
     private func runSync() async {
         guard let sessionWebView else { return }
         guard let store else { return }
+        let runID = UUID()
+        diagnosticRunID = runID
         await store.sync(
             providerID: providerID,
             webView: sessionWebView,
             settings: settings,
-            navigationHintURLs: navigationHintURLs(for: providerID)
+            navigationHintURLs: navigationHintURLs(for: providerID),
+            diagnosticContext: DiagnosticContext(
+                runID: runID,
+                providerID: providerID,
+                operation: "provider_sync"
+            )
         )
     }
 
@@ -669,6 +683,24 @@ struct SyncView: View {
             applyAccountSelection(accounts: accounts, preferred: preferred, autoFill: autoFill)
         } catch {
             keychainMessage = error.localizedDescription
+            let context = DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: providerID,
+                operation: "auto_login"
+            )
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: context,
+                        component: "SyncView",
+                        phase: "keychain",
+                        event: "account_lookup",
+                        result: .failed,
+                        errorType: String(describing: type(of: error)),
+                        reason: DiagnosticRedactor.redact(error.localizedDescription)
+                    )
+                )
+            }
         }
     }
 
@@ -726,27 +758,58 @@ struct SyncView: View {
 
     /// Automatisches Ausfüllen + Submit, wenn Login nötig und Konto bekannt.
     private func scheduleAutoFillFromKeychain() {
+        let diagnosticContext = DiagnosticContext(
+            runID: diagnosticRunID,
+            providerID: providerID,
+            operation: "auto_login"
+        )
         Task { @MainActor in
             await KeychainAutoFill.runWhenWebViewReady(
                 shouldContinue: {
                     sessionStatus == .needsLogin && selectedKeychainAccount != nil
                 },
                 webView: { sessionWebView ?? sessionHub?.webView(for: providerID) },
-                action: { insertKeychainCredentials(in: $0) }
+                action: { insertKeychainCredentials(in: $0, diagnosticContext: diagnosticContext) },
+                diagnosticContext: diagnosticContext
             )
         }
     }
 
     @MainActor
-    private func insertKeychainCredentials(in targetWebView: WKWebView? = nil) {
+    private func insertKeychainCredentials(
+        in targetWebView: WKWebView? = nil,
+        diagnosticContext: DiagnosticContext? = nil
+    ) {
         guard let account = selectedKeychainAccount else { return }
         guard let webView = targetWebView ?? sessionWebView ?? sessionHub?.webView(for: providerID) else { return }
         do {
-            autofillCredentials = try KeychainAutoFill.applyAccount(account, in: webView)
+            autofillCredentials = try KeychainAutoFill.applyAccount(
+                account,
+                in: webView,
+                diagnosticContext: diagnosticContext
+            )
             keychainMessage = nil
         } catch {
             autofillCredentials = nil
             keychainMessage = error.localizedDescription
+            let context = diagnosticContext ?? DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: providerID,
+                operation: "auto_login"
+            )
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: context,
+                        component: "SyncView",
+                        phase: "keychain",
+                        event: "credential_load",
+                        result: .failed,
+                        errorType: String(describing: type(of: error)),
+                        reason: DiagnosticRedactor.redact(error.localizedDescription)
+                    )
+                )
+            }
         }
     }
 

@@ -11,6 +11,7 @@ let package = Package(
     products: [
         .library(name: "ReisenDomain", targets: ["ReisenDomain"]),
         .library(name: "ReisenData", targets: ["ReisenData"]),
+        .library(name: "ReisenDiagnostics", targets: ["ReisenDiagnostics"]),
         .library(name: "ReisenProviders", targets: ["ReisenProviders"]),
         .library(name: "ReisenAppCore", targets: ["ReisenAppCore"]),
         .library(name: "ReisenProviderSync", targets: ["ReisenProviderSync"]),
@@ -49,8 +50,16 @@ let package = Package(
             ]
         ),
         .target(
-            name: "ReisenProviders",
+            name: "ReisenDiagnostics",
             dependencies: ["ReisenDomain"],
+            path: "Sources/ReisenDiagnostics",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .target(
+            name: "ReisenProviders",
+            dependencies: ["ReisenDomain", "ReisenDiagnostics"],
             path: "Sources/ReisenProviders",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
@@ -68,6 +77,7 @@ let package = Package(
             dependencies: [
                 "ReisenDomain",
                 "ReisenData",
+                "ReisenDiagnostics",
                 "ReisenCrashSignal",
             ],
             path: "Sources/ReisenAppCore",
@@ -127,7 +137,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenCheck24",
-            dependencies: ["ReisenDomain", "ReisenProviders"],
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
             path: "Sources/ReisenCheck24",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
@@ -319,7 +329,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ReisenAppCoreTests",
-            dependencies: ["ReisenAppCore", "ReisenData", "ReisenDomain", "ReisenCrashSignal"],
+            dependencies: ["ReisenAppCore", "ReisenData", "ReisenDomain", "ReisenCrashSignal", "ReisenDiagnostics"],
             path: "Tests/ReisenAppCoreTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

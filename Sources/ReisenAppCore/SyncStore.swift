@@ -1,9 +1,11 @@
 import Foundation
+import OSLog
 import Observation
 import SwiftData
 
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 @MainActor
 @Observable
@@ -167,70 +169,3 @@ public final class SyncStore {
     }
 }
 
-public enum SyncLog {
-    static let maxFileBytes = 262_144
-    static let keepBytes = 65_536
-
-    static func fileURL() -> URL? {
-        PersistenceBootstrap.supportDirectoryURL()?
-            .appendingPathComponent("sync-log.txt")
-    }
-
-    public static func append(_ line: String) {
-        append(line, to: fileURL(), now: Date())
-    }
-
-    static func append(_ line: String, to url: URL?, now: Date) {
-        let fm = FileManager.default
-        guard let logURL = url else { return }
-        let base = logURL.deletingLastPathComponent()
-        do {
-            try fm.createDirectory(at: base, withIntermediateDirectories: true)
-            let fullLine = "[\(ISO8601DateFormatter().string(from: now))] \(line)\n"
-            guard let data = fullLine.data(using: .utf8) else { return }
-            if fm.fileExists(atPath: logURL.path) {
-                let handle = try FileHandle(forWritingTo: logURL)
-                defer { try? handle.close() }
-                try handle.seekToEnd()
-                try handle.write(contentsOf: data)
-            } else {
-                try data.write(to: logURL, options: [.atomic])
-            }
-            rotateIfNeeded(at: logURL)
-        } catch {
-            #if DEBUG
-            print("[Reisen] Sync-Log fehlgeschlagen: \(error)")
-            #endif
-        }
-    }
-
-    static func rotateIfNeeded(at url: URL) {
-        guard let data = try? Data(contentsOf: url), data.count > maxFileBytes else { return }
-        let suffix = data.suffix(keepBytes)
-        try? suffix.write(to: url, options: [.atomic])
-    }
-
-    static func recentTail(
-        maxBytes: Int = DiagnosticLogAttachment.attachMaxRawBytes,
-        fileURL: URL? = nil
-    ) -> DiagnosticLogAttachment {
-        guard let url = fileURL ?? Self.fileURL() else { return .missing }
-        let fm = FileManager.default
-        guard fm.fileExists(atPath: url.path) else { return .missing }
-        do {
-            let data = try Data(contentsOf: url)
-            if data.isEmpty { return .empty }
-            let fileByteCount = data.count
-            let tailData = data.suffix(maxBytes)
-            let tail = String(decoding: tailData, as: UTF8.self)
-            let redacted = SecretRedactor.redact(tail)
-            return DiagnosticLogAttachment.makeAttached(
-                redactedTail: redacted,
-                fileByteCount: fileByteCount,
-                truncated: fileByteCount > maxBytes
-            )
-        } catch {
-            return .unreadable(error.localizedDescription)
-        }
-    }
-}

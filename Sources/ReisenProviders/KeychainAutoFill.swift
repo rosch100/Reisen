@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import ReisenDiagnostics
 
 /// SSOT: Keychain-Konto in Provider-WebView laden und ausfüllen.
 public enum KeychainAutoFill {
@@ -12,10 +13,15 @@ public enum KeychainAutoFill {
     public static func applyAccount(
         _ account: KeychainCredentialAccount,
         in webView: WKWebView,
-        store: KeychainCredentialStore = KeychainCredentialStore()
+        store: KeychainCredentialStore = KeychainCredentialStore(),
+        diagnosticContext: DiagnosticContext? = nil
     ) throws -> ProviderCredentials {
         let credentials = try store.credentials(for: account)
-        ProviderLoginAssistance.applyCredentials(in: webView, credentials: credentials)
+        ProviderLoginAssistance.applyCredentials(
+            in: webView,
+            credentials: credentials,
+            diagnosticContext: diagnosticContext
+        )
         return credentials
     }
 
@@ -25,12 +31,73 @@ public enum KeychainAutoFill {
         retryCount: Int = webViewRetryCount,
         retryDelayNanoseconds: UInt64 = webViewRetryDelayNanoseconds,
         shouldContinue: () -> Bool,
-        webView: () -> WKWebView?
+        webView: () -> WKWebView?,
+        diagnosticContext: DiagnosticContext? = nil
     ) async -> WKWebView? {
-        for _ in 0..<retryCount {
-            guard shouldContinue() else { return nil }
+        guard retryCount > 0 else {
+            if let diagnosticContext {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: diagnosticContext,
+                        component: "KeychainAutoFill",
+                        phase: "webview_ready",
+                        event: "retries_exhausted",
+                        result: .timedOut,
+                        attempt: 0,
+                        reason: "retry_count_zero"
+                    )
+                )
+            }
+            return nil
+        }
+        for attempt in 1...retryCount {
+            guard shouldContinue() else {
+                if let diagnosticContext {
+                    await DiagnosticLogger.shared.record(
+                        DiagnosticEvent(
+                            context: diagnosticContext,
+                            component: "KeychainAutoFill",
+                            phase: "webview_ready",
+                            event: "cancelled",
+                            result: .cancelled,
+                            attempt: attempt,
+                            reason: "should_continue_false"
+                        )
+                    )
+                }
+                return nil
+            }
             if let view = webView() { return view }
-            try? await Task.sleep(nanoseconds: retryDelayNanoseconds)
+            do {
+                try await Task.sleep(nanoseconds: retryDelayNanoseconds)
+            } catch {
+                if let diagnosticContext {
+                    await DiagnosticLogger.shared.record(
+                        DiagnosticEvent(
+                            context: diagnosticContext,
+                            component: "KeychainAutoFill",
+                            phase: "webview_ready",
+                            event: "cancelled",
+                            result: .cancelled,
+                            attempt: attempt,
+                            reason: "task_cancelled"
+                        )
+                    )
+                }
+                return nil
+            }
+        }
+        if let diagnosticContext {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: diagnosticContext,
+                    component: "KeychainAutoFill",
+                    phase: "webview_ready",
+                    event: "retries_exhausted",
+                    result: .timedOut,
+                    attempt: retryCount
+                )
+            )
         }
         return nil
     }
@@ -63,11 +130,13 @@ public enum KeychainAutoFill {
     public static func runWhenWebViewReady(
         shouldContinue: @escaping @MainActor () -> Bool,
         webView: @escaping @MainActor () -> WKWebView?,
-        action: @escaping @MainActor (WKWebView) -> Void
+        action: @escaping @MainActor (WKWebView) -> Void,
+        diagnosticContext: DiagnosticContext? = nil
     ) async {
         guard let view = await waitForWebView(
             shouldContinue: shouldContinue,
-            webView: webView
+            webView: webView,
+            diagnosticContext: diagnosticContext
         ) else { return }
         action(view)
     }
@@ -77,14 +146,16 @@ public enum KeychainAutoFill {
         existing: inout Task<Void, Never>?,
         shouldContinue: @escaping @MainActor () -> Bool,
         webView: @escaping @MainActor () -> WKWebView?,
-        action: @escaping @MainActor (WKWebView) -> Void
+        action: @escaping @MainActor (WKWebView) -> Void,
+        diagnosticContext: DiagnosticContext? = nil
     ) {
         existing?.cancel()
         existing = Task { @MainActor in
             await runWhenWebViewReady(
                 shouldContinue: shouldContinue,
                 webView: webView,
-                action: action
+                action: action,
+                diagnosticContext: diagnosticContext
             )
         }
     }

@@ -1,7 +1,7 @@
 # In-App-Storno: Sheet mit Provider-Session
 
 Datum: 2026-08-30  
-Status: P1 (Promote-and-Gapfill)  
+Status: Entwurf  
 Plattformen: macOS (`Reisen`) und iOS/iPadOS (`ReiseniOS`, Private und Store)
 
 ## Ziel
@@ -10,25 +10,21 @@ Plattformen: macOS (`Reisen`) und iOS/iPadOS (`ReiseniOS`, Private und Store)
 2. Der Tap öffnet den Portal-Storno-Flow **in der eingeloggten Provider-Session**: dieselbe Hub-`WKWebView` in einem Sheet. Das ist der zusätzliche Schritt (keine Settings, kein `confirmationDialog`).
 3. Reisen storniert **nicht** selbst (kein Cancel-API, kein lokales `cancelled`). Schließen des Sheets ohne Portal-Abschluss ändert die Buchung nicht.
 
-Voraussetzung: persistierte `cancellationUrl` und Extract-Matrix aus [cancellation-portal-links-design.md](2026-08-30-cancellation-portal-links-design.md) (auf `origin/master` via PR #83). Diese Spec **ändert das Storno-Control** (Frist-Sichtbarkeit, Titel, destruktive Rolle, Session-Sheet). URL-Extract bleibt dort.
+Voraussetzung: persistierte `cancellationUrl` und Extract-Matrix aus [cancellation-portal-links-design.md](2026-08-30-cancellation-portal-links-design.md). Diese Spec **ändert das Storno-Control** (Frist-Sichtbarkeit, Titel, destruktive Rolle, Session-Sheet). URL-Extract bleibt dort.
 
 Live-Belege (Browser 2026-08-30, nichts storniert): Traveloka Refund-Info mit „Start My Refund“; billiger-mietwagen SPA `/reservation/cancellation` ohne Buchungs-ID in der URL; mehrere Provider stornieren **auf der Buchungsseite** (In-Page-Modal / Button), nicht auf einem eigenen GET-Pfad.
 
 Verwandt: [booking-portal-open.md](../../dev/booking-portal-open.md), [booking-trip-delete-design.md](2026-08-28-booking-trip-delete-design.md).
 
-## Ist-Zustand (`origin/master` 5b94e47)
+## Ist-Zustand
 
 | Stück | Verhalten |
 |-------|-----------|
-| Storno-Button | `Link` / `openURL`, Titel DE „Storno“ (`action.cancel_in_portal`), kein `.destructive`. |
-| `isActionable` | URL gesetzt, nicht cancelled, **und** `cancellation != open`. Gleiche URL wie Öffnen → kein Storno-Control. |
-| Fristen | `deadlinesForDisplay` blendet abgelaufene und Vollpreis-Paid aus. **Nicht** in `isActionable`. |
-| Session | Eine Hub-`WKWebView` pro aktivem Sync-Provider (`ProviderSessionHub`). Sync unabhängig von der sichtbaren Seite. |
-| Reparenting | macOS `ProviderWebView.updateNSView` **stiehlt** die Hub-Instanz, wenn `superview !== host` (`resolveWebView` wiederverwendet `webViewRef`). iOS ist **nicht** analog: `makeUIView` erzeugt immer eine **neue** `InteractiveWKWebView`; `updateUIView` lädt nur `loginURL` und bettet nicht neu ein. `WebViewHostUIView.embed` kann stehlen, wird aber nur beim Create aufgerufen. Kein Display-Owner. |
-| Store-iOS | Keine Provider-WebViews (Binary-Isolation). |
-| Command | `ReisenCommands` ruft `openURL` auf der Storno-URL auf (`canCancel` = altes `isActionable`). |
-
-Diese Spec **hebt** `cancel ≠ open` als Actionable-Zwang auf und **führt** Fristen + Session-Sheet ein. Die Portal-Links-Spec bleibt SSOT für Extract; ihr Satz „Button nur bei anderer URL“ gilt nicht mehr für das Control.
+| Storno-Button | `Link` / `openURL`, Titel „Storno“, kein `.destructive`. `isActionable`: URL gesetzt, nicht cancelled; **gleiche URL wie Öffnen ist erlaubt**, wenn die Buchungsseite die Cancel-Fläche ist. |
+| Fristen | `deadlinesForDisplay` blendet abgelaufene und Vollpreis-Paid aus. |
+| Session | Eine Hub-`WKWebView` pro aktivem Sync-Provider. Sync funktioniert unabhängig von der sichtbaren Provider-Seite (Cookie-Fetch oder eigenes `load`). |
+| Reparenting | Probe- und Sync-Host teilen die Instanz; `updateNSView` holt sie zurück, wenn `superview` nicht der Sync-Host ist. |
+| Store-iOS | Keine Provider-WebViews. |
 
 ## Begriffe (SSOT)
 
@@ -39,27 +35,24 @@ Diese Spec **hebt** `cancel ≠ open` als Actionable-Zwang auf und **führt** Fr
 | **Cancel-Fläche = Buchungsseite** | Storno-URL == Öffnen-URL: In-Page-Modal oder Button auf der Detailseite (GYG, Check24, Booking.com Flug, Airbnb Stay sofern belegt). |
 | **Anzeigbare Frist** | `CancellationDeadlineDisplayFilter.deadlinesForDisplay` — Zukunft, Free oder Paid unter der höchsten gespeicherten Fee. Vollpreis-Paid und Paid ohne Betrag zählen nicht. |
 | **Storno möglich** | `isActionable`: nicht cancelled, Storno-URL gesetzt, `deadlinesForDisplay` nicht leer. **Kein** Zwang `cancel ≠ open`. |
-| **Stornieren-Button** | Titel „Stornieren“ (DE; EN-Key `action.cancel_in_portal` bleibt, EN-Text „Cancel in portal“). `role: .destructive`. |
+| **Stornieren-Button** | Titel „Stornieren“ (DE; EN-Key `action.cancel_in_portal`). `role: .destructive`. |
 | **Cancel-Sheet** | Modal mit der Hub-WebView des Buchungs-`provider`; lädt die Storno-URL (Fragment bleibt, `URL(string:)`). |
-| **Display-Owner** | `syncHost` \| `cancelSheet`. Solange Sheet: Probe- und Sync-Host betten **nicht** ein (`allowsEmbed == false`). |
+| **Display-Owner** | `syncHost` \| `cancelSheet`. Solange Sheet: Probe- und Sync-Host betten nicht ein. |
 | **Safari-Fallback** | `openURL` der Storno-URL **nur** wenn keine Hub-WebView **und** eigene Storno-Seite (`cancel ≠ open`). Bei gleicher URL wie Öffnen ohne WebView: **kein** Stornieren-Button (Öffnen reicht). |
-| **hasSessionWebView** | `Bool` aus `ProviderSessionHub.webView(for: provider) != nil`. Domain kennt kein WebKit. |
 
 ## Anforderungen
 
 ### In Scope
 
-- `isActionable(cancellation:open:status:deadlines:now:)` — Fristen zusätzlich; gleiche URL wie Öffnen bleibt actionable (Portal-Links-Kontrakt dieser Spec).
-- `BookingPortalCancelPresentation`: `sheet` \| `safari` \| `hidden`. Sichtbares Stornieren nur bei `sheet` oder `safari`.
-- Sichtbares Stornieren: `isActionable` **und** (Hub-WebView **oder** eigene Storno-Seite). Sonst kein Control, nicht disabled.
+- `isActionable(cancellation:open:status:deadlines:now:)` — Fristen zusätzlich; gleiche URL wie Öffnen bleibt actionable (Portal-Links-Kontrakt).
+- Sichtbares Stornieren: `visible.cancel` **und** (Hub-WebView **oder** eigene Storno-Seite). Sonst kein Control, nicht disabled.
 - Hub-WebView da: Sheet, Owner `cancelSheet`, `load` der Storno-URL. In-Page-Cancel passiert auf der geladenen Seite in der Session (Cookies).
 - billiger-mietwagen: URL ohne Buchungs-ID ist Absicht; die SPA nutzt die Session. Sheet lädt genau diese URL, kein Erraten einer UUID in den Pfad.
-- Traveloka: Seite ist Refund-Info („Start My Refund“); Sheet zeigt sie, Reisen klickt nicht weiter. Extract der Refund-URL bleibt Portal-Links-Spec.
+- Traveloka: Seite ist Refund-Info („Start My Refund“); Sheet zeigt sie, Reisen klickt nicht weiter. Enrich muss die Refund-URL setzen, auch wenn der Refund-HTML-Fetch wegen vorhandener Fristen übersprungen wird (Extract-Spec / Traveloka-Provider — nicht still nur Katalog).
 - Nach Dismiss: Owner `syncHost`, WebView zurück. URL nicht restaurieren. Sync während des Sheets auf derselben Instanz.
-- Sheet-Navigation fehlgeschlagen: Fehler **im Sheet**, Button bleibt, kein stiller Safari-Wechsel.
-- Hash-URLs (Opodo): Fragment nicht strippen (`BookingExternalURL.browserURL` / `URL(string:)`).
-- L10n DE+EN. Sheet-Dismiss: bestehendes `common.cancel` („Abbrechen“ / „Cancel“), nicht noch einmal „Stornieren“.
-- Alle bisherigen Einstiege nutzen dieselbe Presentation-SSOT: ActionBar (macOS Inspector, iOS Detail), Kontextmenü (`ContentView`, `TripDetailView`, `OffenTab`, `TripDetailIOS`), macOS-Command. `BookingPortalCancelMenuButton` intern **kein** `openURL` bei `.sheet`.
+- Sheet-Navigation fehlgeschlagen: Fehler im Sheet, Button bleibt, kein stiller Safari-Wechsel.
+- Hash-URLs (Opodo): Fragment nicht strippen.
+- L10n DE+EN.
 
 ### Nicht in Scope
 
@@ -69,57 +62,27 @@ Diese Spec **hebt** `cancel ≠ open` als Actionable-Zwang auf und **führt** Fr
 - Zweites WebView.
 - DOM-Klick auf „Start My Refund“ / Modal-Buttons (Nutzer im Sheet).
 - Neue URL-Extracts (Portal-Links-Spec). Kein `?? externalUrl` als Dummy, wenn Cancel unbelegt ist.
-- XCUI / UI-Test-Target / Harness.
-- Neue Entitlements oder `LSApplicationQueriesSchemes`.
+- XCUI.
 
 ## Architektur
 
 ```text
-Storno-URL + status + deadlinesForDisplay + hasSessionWebView
+Storno-URL + status + deadlinesForDisplay
         │
         ▼
-isActionable  ──► presentation
+isActionable  ──► visible.cancel
         │
-        ├── hidden (nil / keine anzeigbare Frist / keine WebView und cancel == open)
-        ├── sheet  (Hub-WebView vorhanden)
-        └── safari (keine WebView und cancel ≠ open)
-              │
-              ├── sheet  → Owner cancelSheet, load(Storno-URL)
-              └── safari → openURL
+        ├── nil / keine anzeigbare Frist → kein Control
+        └── URL
+              ├── hub.webView(provider) vorhanden
+              │     → Sheet, load(Storno-URL)   // eigene Seite oder Buchungsseite+Modal
+              ├── keine WebView und cancel ≠ open
+              │     → openURL (Safari-Fallback)
+              └── keine WebView und cancel == open
+                    → kein Stornieren (Öffnen bleibt)
 ```
 
-Schicht-Landung:
-
-| Was | Wo |
-|----|-----|
-| `isActionable`, `BookingPortalCancelPresentation`, `visible` | `ReisenDomain` (Foundation; `hasSessionWebView: Bool`) |
-| Display-Owner, Embed-Policy | `ReisenAppCore` (`ProviderSessionHub` + `ProviderWebViewDisplayPolicy`) |
-| Destruktiver Button, Sheet-Chrome, Presentation-Callback | `ReisenSharedUI` |
-| Hosts + Sheet-Einbettung + Command | `Reisen` (macOS `ProviderSessionView`); `Apps/ReiseniOS` (`WebViewHost` in `SyncTab` + `GlobalChrome`-Probe). iOS muss **dieselbe** Hub-Instanz resolven wie macOS — kein zweites WKWebView. |
-
-Domain bleibt SwiftData-/WebKit-frei. Kein neues Modul. Kein zweites WKWebView.
-
-### Display-Owner (Ist-Code)
-
-macOS `ProviderWebView.updateNSView` stiehlt die Hub-Instanz, sobald `superview !== host`. Ohne Owner holt der Sync-/Probe-Host die View während des Sheets zurück.
-
-iOS **heute**: kein Steal-back. `makeUIView` baut immer eine neue WebView. `SyncTab` hält `@State webView`; `SyncBackgroundSessionProbe` (`GlobalChrome`) hält `webViewsByProvider` **lokal** und schreibt nicht in den Hub (macOS `SyncView` / `ProviderSessionProbeHost` binden `get/set` an `hub.webView` / `updateWebView`).
-
-Damit das Sheet nicht ein **zweites** WKWebView erzeugt: iOS-Bindings auf den Hub legen; `resolveWebView` zuerst Binding, dann `hub.webView(for:)`, erst dann `makeWebView`; `embed` in `makeUIView` **und** `updateUIView`; Steal nur bei `allowsEmbed`; nach Dismiss Steal-back zum Sync-Host.
-
-Policy-SSOT (`ReisenAppCore`):
-
-```text
-allowsEmbed(owner:host:)
-  syncHost    → probe | sync
-  cancelSheet → cancelSheet
-```
-
-Hosts bekommen `allowsEmbed` **ohne** `?? true` (kein Hub → nicht einbetten). `updateNSView` / `updateUIView` dürfen bei `false` **nicht** einbetten.
-
-### Sheet-Load
-
-Cancel-Host lädt **nur** die Storno-URL (kein `loginURL`-Pfad von `ProviderSessionView`). `didFail` / `didFailProvisionalNavigation` → Fehlertext im Sheet. Kein `openURL`. Dismiss setzt Owner `syncHost`; vorherige Portal-URL wird nicht restauriert.
+Schicht-Landung: Domain (Fristen in `isActionable` + Sichtbarkeit ohne WebView nur bei eigener Seite), AppCore (Display-Owner), SharedUI/Apps (destruktiver Button, Sheet, Hosts).
 
 ## HIG
 
@@ -127,7 +90,7 @@ Cancel-Host lädt **nur** die Storno-URL (kein `loginURL`-Pfad von `ProviderSess
 - `.destructive` am Stornieren-Button.
 - Sheet (bzw. Safari nur bei eigener Storno-Seite ohne Session) ist die Nachfrage.
 - Zwei Buttons mit gleicher URL sind erlaubt, weil **unterschiedliche Präsentation**: Öffnen = System-Browser/AASA; Stornieren = Session-WebView (Modal/SPA braucht Login).
-- Sheet-Dismiss: Abbrechen (`common.cancel`), nicht noch einmal „Stornieren“.
+- Sheet-Dismiss: Abbrechen/Schließen, nicht noch einmal „Stornieren“.
 - Symbol `arrow.up.right.square`.
 
 ## Fehler
@@ -141,27 +104,11 @@ Cancel-Host lädt **nur** die Storno-URL (kein `loginURL`-Pfad von `ProviderSess
 | Sync während Sheet | läuft; Seite darf weg navigieren |
 | Store-iOS | wie „keine WebView“ |
 
-## Schnittstellen
-
-Kein `port-only`. Kein Profil `unstructured_input` / `live_app` (kein XCUI, kein Paste/Extract).
-
-| id | kind | Supply | Evidence |
-|----|------|--------|----------|
-| stornieren-entry | entry | ActionBar (`BookingDetailContent`, `BookingDetailIOS`); Kontextmenü (`ContentView`, `TripDetailView`, `OffenTab`, `TripDetailIOS`); macOS-Command | Domain presentation-Tests; SharedUI role/title; nach Inner sichtbarer Weg (verification-before-completion, kein XCUI) |
-| session-webview-adapter | adapter | `hub.webView(for:)` an jedem Einstieg + Cancel-Host; fehlend ist typisiert `safari`/`hidden`, kein Crash, kein stiller Safari bei gleicher URL | Domain-Tests `hasSessionWebView` × URL-Gleichheit; Hosts reichen den Bool durch (kein Default `false` nach Task 4) |
-| isActionable-contract | contract | Fristen + Status + URL; gleiche URL bleibt actionable | `BookingPortalCancellationTests` |
-| display-owner-neighbor | neighbor | bestehender Hub; macOS `updateNSView`-Steal + iOS `resolveWebView`/`embed` in make+update; Probe (`GlobalChrome`) / Sync (`SyncTab`) stehlen nicht während `cancelSheet` | `ProviderWebViewDisplayPolicyTests` + Host-`allowsEmbed`-Verdrahtung |
-| hash-url-neighbor | neighbor | `BookingExternalURL.browserURL` behält Fragment | Domain-Test Opodo-Hash |
-
-Keine neue Capability. Store-iOS-Isolation bleibt bestehendes Binary-Gate.
-
 ## Tests
 
 - Domain: Free-Frist + URL; abgelaufen; nur Vollpreis; Teil-Fee; Free+Vollpreis; Paid ohne Betrag ohne Free → aus; cancelled; `now` injiziert; **gleiche URL wie Öffnen bleibt actionable**.
-- Presentation: Hub an + gleiche URL → `sheet`; Hub aus + gleiche URL → `hidden`; Hub aus + eigene Seite → `safari`.
-- Hash-URL: Fragment bleibt in `cancellationBrowserURL`.
-- Display-Owner: `allowsEmbed` für alle Owner×Host-Paare; nach Dismiss `syncHost`.
-- L10n: DE-Button „Stornieren“, Key `action.cancel_in_portal`.
+- Sichtbarkeit ohne Hub: `cancel == open` → kein Stornieren; `cancel ≠ open` → Safari-Pfad.
+- Hub-Owner: Sheet hält die View; nach Dismiss `syncHost`.
 - Kein XCUI.
 
 ## Akzeptanz
@@ -182,9 +129,3 @@ Keine neue Capability. Store-iOS-Isolation bleibt bestehendes Binary-Gate.
 | Generic-URL ohne ID (BM) | Session-SPA; nicht UUID in den Pfad raten |
 | Hash-Cancel (Opodo) | Fragment in `browserURL` behalten |
 | Portal-Links-Spec noch Link ohne destructive | diese Spec gilt für das Control |
-
-## Offene Lücken (`open_gaps`)
-
-- URL-Extract (Traveloka Refund immer setzen, übrige Provider-Matrix) — Portal-Links-Spec / anderer Worktree, nicht v1-Bug dieser Spec.
-- DOM-Klick / XCUI / Live-Portal.
-- Provider-Cancel-API.

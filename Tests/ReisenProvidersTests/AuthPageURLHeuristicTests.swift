@@ -110,6 +110,26 @@ import ReisenProviders
     #expect(ProviderSessionStatusResolver.classify(URL(string: home)!) == .shouldProbeBilligerMietwagen)
 }
 
+@Test func check24HomepageAfterLoginRequiresSessionProbe() {
+    // Nach SSO landet Check24 oft auf der Marketing-Homepage — weder Login noch Account.
+    // Ohne Probe bleibt die Ampel rot („Anmeldung erforderlich“).
+    let home = "https://www.check24.de/"
+    #expect(!AuthPageURLHeuristic.looksLikeLoginPage(home))
+    #expect(!AuthPageURLHeuristic.looksLikeAccountPage(home))
+    #expect(ProviderSessionStatusResolver.classify(URL(string: home)!) == .shouldProbeCheck24)
+    // Produktseiten klassifizieren ebenfalls als Probe; Call-Sites starten sie nur,
+    // solange der Status noch nicht `.sessionReady` ist.
+    let product = "https://www.check24.de/hotel/irgendwas/"
+    #expect(ProviderSessionStatusResolver.classify(URL(string: product)!) == .shouldProbeCheck24)
+}
+
+@Test func check24LoginAndAccountStayImmediateHeuristics() {
+    let login = "https://kundenbereich.check24.de/user/login.html"
+    let account = "https://kundenbereich.check24.de/user/account/activities.html"
+    #expect(ProviderSessionStatusResolver.classify(URL(string: login)!) == .needsLogin)
+    #expect(ProviderSessionStatusResolver.classify(URL(string: account)!) == .sessionReady)
+}
+
 @Test func getYourGuideLoginIsOTPAutofillNotAccount() {
     let login = "https://www.getyourguide.com/login?next=/de-de/customer-bookings/"
     #expect(AuthPageURLHeuristic.looksLikeLoginPage(login))

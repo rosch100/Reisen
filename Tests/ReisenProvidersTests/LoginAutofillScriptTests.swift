@@ -59,3 +59,27 @@ func loginAutofillScriptDoesNotClickSocialIdPSubmit() {
     #expect(script.contains("anmelden.?mit.?(apple|google|facebook)"))
     #expect(script.contains("if (isSocialSubmit(el)) return false"))
 }
+
+@Test
+func loginAutofillScriptUsesSentinelCredentialsAndReturnsSubmitIdentifier() {
+    let username = "unique-user-sentinel@example.invalid"
+    let password = "unique-password-sentinel"
+    let script = LoginAutofillScript.build(username: username, password: password)
+
+    #expect(script.contains(username))
+    #expect(script.contains(password))
+    #expect(script.contains("submitId"))
+    #expect(script.contains("submitClicked"))
+}
+
+@Test
+func providerLoginAttemptPolicyCapsAttemptsAndRequiresRetryDelay() {
+    #expect(ProviderLoginAttemptPolicy.maximumAttempts(requested: 99) == 3)
+    #expect(ProviderLoginAttemptPolicy.maximumAttempts(requested: 0) == 1)
+    #expect(
+        ProviderLoginAttemptPolicy.retryDelay(after: 0, delays: [0.1, 0.2]) == nil
+    )
+    #expect(
+        ProviderLoginAttemptPolicy.retryDelay(after: 1, delays: [0.1, 0.2]) == 0.1
+    )
+}

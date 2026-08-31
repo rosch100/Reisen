@@ -1,12 +1,14 @@
 import SwiftUI
 import WebKit
 import AppKit
+import ReisenDomain
 import ReisenProviders
 import ReisenAppCore
 
 /// Vollflächiger Provider-Browser für alle Provider (Check24, Opodo, Booking.com, …).
 /// Kein ScrollView/Form-Container — sonst ist der Login auf macOS oft nicht bedienbar.
 struct ProviderSessionView: View {
+    let providerID: ProviderID
     let loginURL: URL?
     @Binding var sessionStatus: ProviderSessionStatus
     @Binding var lastURLString: String?
@@ -16,8 +18,10 @@ struct ProviderSessionView: View {
     let onCapturedCredentials: ((ProviderCredentials) -> Void)?
     let onNavigationBlocked: (() -> Void)?
     let allowsEmbed: Bool
+    let diagnosticContext: DiagnosticContext
 
     init(
+        providerID: ProviderID,
         loginURL: URL?,
         sessionStatus: Binding<ProviderSessionStatus>,
         lastURLString: Binding<String?>,
@@ -25,8 +29,10 @@ struct ProviderSessionView: View {
         autofillCredentials: ProviderCredentials? = nil,
         onCapturedCredentials: ((ProviderCredentials) -> Void)? = nil,
         onNavigationBlocked: (() -> Void)? = nil,
-        allowsEmbed: Bool
+        allowsEmbed: Bool,
+        diagnosticContext: DiagnosticContext
     ) {
+        self.providerID = providerID
         self.loginURL = loginURL
         self._sessionStatus = sessionStatus
         self._lastURLString = lastURLString
@@ -35,6 +41,7 @@ struct ProviderSessionView: View {
         self.onCapturedCredentials = onCapturedCredentials
         self.onNavigationBlocked = onNavigationBlocked
         self.allowsEmbed = allowsEmbed
+        self.diagnosticContext = diagnosticContext
     }
 
     var body: some View {
@@ -46,7 +53,8 @@ struct ProviderSessionView: View {
             autofillCredentials: autofillCredentials,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
-            allowsEmbed: allowsEmbed
+            allowsEmbed: allowsEmbed,
+            diagnosticContext: diagnosticContext
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -165,6 +173,7 @@ private struct ProviderWebView: NSViewRepresentable {
     let onCapturedCredentials: ((ProviderCredentials) -> Void)?
     let onNavigationBlocked: (() -> Void)?
     let allowsEmbed: Bool
+    let diagnosticContext: DiagnosticContext
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
@@ -172,7 +181,8 @@ private struct ProviderWebView: NSViewRepresentable {
             lastURLString: $lastURLString,
             autofillCredentials: autofillCredentials,
             onCapturedCredentials: onCapturedCredentials,
-            onNavigationBlocked: onNavigationBlocked
+            onNavigationBlocked: onNavigationBlocked,
+            diagnosticContext: diagnosticContext
         )
     }
 
@@ -205,16 +215,24 @@ private struct ProviderWebView: NSViewRepresentable {
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
             onCapturedCredentials: onCapturedCredentials,
-            onNavigationBlocked: onNavigationBlocked
+            onNavigationBlocked: onNavigationBlocked,
+            diagnosticContext: diagnosticContext
         )
 
         guard allowsEmbed else { return }
 
         let webView = resolveWebView(context: context)
+        if credentialsChanged {
+            ProviderLoginAssistance.resetAssistanceScheduling(for: webView)
+        }
         // Auch neu einbinden, wenn die Property noch gesetzt ist, der WebView aber
         // inzwischen in einem anderen Host (Hintergrund-Bootstrap) hängt.
         if nsView.webView !== webView || webView.superview !== nsView {
             nsView.embed(webView)
+            context.coordinator.recordLifecycleEvent(
+                "webview_reparented",
+                webView: webView
+            )
             context.coordinator.observeWindowActivation(for: webView)
         }
 
@@ -271,6 +289,10 @@ private struct ProviderWebView: NSViewRepresentable {
         let webView = FocusableWKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
+        context.coordinator.recordLifecycleEvent(
+            "webview_created",
+            webView: webView
+        )
         // Safari-UA: manche Provider (Opodo) unterdrücken Auth-XHR in Default-WKWebView-UA.
         webView.customUserAgent = Self.safariUserAgent
         webView.allowsBackForwardNavigationGestures = true
@@ -305,8 +327,12 @@ private struct ProviderWebView: NSViewRepresentable {
         private var becomeKeyObserver: NSObjectProtocol?
         private weak var trackedWebView: WKWebView?
         private var loginAssistanceWorkItem: DispatchWorkItem?
+        private var loginAssistanceCancellation: ProviderLoginAssistanceCancellation?
         private var sessionProbeWorkItem: DispatchWorkItem?
+        private var sessionProbeTask: Task<Void, Never>?
+        private var diagnosticContext: DiagnosticContext
         var loadedLoginURL: URL?
+        private var lastObservedURL: URL?
         /// Während „Anmelden…“ (Post-Submit) keine DOM-Hilfe mehr.
         private var loginAssistanceSuspended = false
 
@@ -315,25 +341,29 @@ private struct ProviderWebView: NSViewRepresentable {
             lastURLString: Binding<String?>,
             autofillCredentials: ProviderCredentials?,
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
-            onNavigationBlocked: (() -> Void)?
+        onNavigationBlocked: (() -> Void)?,
+        diagnosticContext: DiagnosticContext
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
             self.autofillCredentials = autofillCredentials
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
+            self.diagnosticContext = diagnosticContext
         }
 
         func update(
             sessionStatus: Binding<ProviderSessionStatus>,
             lastURLString: Binding<String?>,
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
-            onNavigationBlocked: (() -> Void)?
+            onNavigationBlocked: (() -> Void)?,
+            diagnosticContext: DiagnosticContext
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
+            self.diagnosticContext = diagnosticContext
         }
 
         @discardableResult
@@ -367,6 +397,8 @@ private struct ProviderWebView: NSViewRepresentable {
         func tearDown() {
             loginAssistanceWorkItem?.cancel()
             loginAssistanceWorkItem = nil
+            loginAssistanceCancellation?.cancel()
+            loginAssistanceCancellation = nil
             sessionProbeWorkItem?.cancel()
             sessionProbeWorkItem = nil
             if let becomeKeyObserver {
@@ -374,6 +406,7 @@ private struct ProviderWebView: NSViewRepresentable {
             }
             becomeKeyObserver = nil
             trackedWebView = nil
+            lastObservedURL = nil
         }
 
         func userContentController(
@@ -413,10 +446,22 @@ private struct ProviderWebView: NSViewRepresentable {
                 ?? [:]
             let type = body["type"] as? String ?? ""
             if type == "busy", body["busy"] as? Bool == true {
+                recordEvent(
+                    "login_busy_started",
+                    phase: "autofill",
+                    result: .started,
+                    webView: trackedWebView ?? message.webView
+                )
                 Task { @MainActor in
                     self.suspendLoginAssistance()
                 }
             } else if type == "busy", body["busy"] as? Bool == false {
+                recordEvent(
+                    "login_busy_ended",
+                    phase: "autofill",
+                    result: .succeeded,
+                    webView: trackedWebView ?? message.webView
+                )
                 Task { @MainActor in
                     if let webView = self.trackedWebView ?? message.webView {
                         self.updateSession(from: webView)
@@ -426,10 +471,20 @@ private struct ProviderWebView: NSViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            recordNavigationEvent(
+                "did_finish",
+                result: .succeeded,
+                webView: webView
+            )
             updateSession(from: webView)
         }
 
         func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+            recordNavigationEvent(
+                "did_commit",
+                result: .started,
+                webView: webView
+            )
             updateSession(from: webView)
         }
 
@@ -438,6 +493,12 @@ private struct ProviderWebView: NSViewRepresentable {
             didFail navigation: WKNavigation!,
             withError error: Error
         ) {
+            recordNavigationEvent(
+                "did_fail",
+                result: .failed,
+                webView: webView,
+                error: error
+            )
         }
 
         func webView(
@@ -445,6 +506,80 @@ private struct ProviderWebView: NSViewRepresentable {
             didFailProvisionalNavigation navigation: WKNavigation!,
             withError error: Error
         ) {
+            recordNavigationEvent(
+                "did_fail_provisional",
+                result: .failed,
+                webView: webView,
+                error: error
+            )
+        }
+
+        private func recordNavigationEvent(
+            _ event: String,
+            result: DiagnosticResult,
+            webView: WKWebView,
+            error: Error? = nil,
+            reason: String? = nil
+        ) {
+            recordDiagnostic(
+                event,
+                phase: "navigation",
+                result: result,
+                webView: webView,
+                error: error,
+                reason: reason
+            )
+        }
+
+        private func recordEvent(
+            _ event: String,
+            phase: String,
+            result: DiagnosticResult,
+            webView: WKWebView?,
+            reason: String? = nil
+        ) {
+            guard let webView else { return }
+            recordDiagnostic(
+                event,
+                phase: phase,
+                result: result,
+                webView: webView,
+                reason: reason
+            )
+        }
+
+        func recordLifecycleEvent(_ event: String, webView: WKWebView) {
+            recordDiagnostic(
+                event,
+                phase: "lifecycle",
+                result: .succeeded,
+                webView: webView
+            )
+        }
+
+        private func recordDiagnostic(
+            _ event: String,
+            phase: String,
+            result: DiagnosticResult,
+            webView: WKWebView,
+            error: Error? = nil,
+            reason: String? = nil,
+            statusBefore: ProviderSessionStatus? = nil,
+            statusAfter: ProviderSessionStatus? = nil
+        ) {
+            let diagnosticEvent = DiagnosticEvent(
+                context: diagnosticContext,
+                component: "ProviderSessionView",
+                phase: phase,
+                event: event,
+                result: result,
+                url: webView.url?.absoluteString,
+                errorType: error.map { String(reflecting: type(of: $0)) },
+                reason: reason ?? error.map { DiagnosticRedactor.redact($0.localizedDescription) },
+                statusBefore: statusBefore.map { String(describing: $0) },
+                statusAfter: statusAfter.map { String(describing: $0) }
+            )
+            Task { await DiagnosticLogger.shared.record(diagnosticEvent) }
         }
 
         @MainActor
@@ -456,6 +591,12 @@ private struct ProviderWebView: NSViewRepresentable {
             let isMain = navigationAction.targetFrame?.isMainFrame ?? false
             if let requestURL = navigationAction.request.url,
                !ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: isMain) {
+                recordNavigationEvent(
+                    "navigation_blocked",
+                    result: .skipped,
+                    webView: webView,
+                    reason: "navigation_policy"
+                )
                 onNavigationBlocked?()
                 decisionHandler(.cancel)
                 return
@@ -465,7 +606,10 @@ private struct ProviderWebView: NSViewRepresentable {
 
         @MainActor
         func scheduleLoginAssistance(in webView: WKWebView) {
+            guard ProviderLoginAssistance.shouldScheduleAssistance(in: webView) else { return }
             loginAssistanceWorkItem?.cancel()
+            loginAssistanceCancellation?.cancel()
+            loginAssistanceCancellation = nil
             let work = DispatchWorkItem { [weak self, weak webView] in
                 guard let self, let webView else { return }
                 self.applyLoginAssistance(in: webView)
@@ -477,8 +621,13 @@ private struct ProviderWebView: NSViewRepresentable {
         @MainActor
         func suspendLoginAssistance() {
             loginAssistanceSuspended = true
+            if let webView = trackedWebView {
+                ProviderLoginAssistance.resetAssistanceScheduling(for: webView)
+            }
             loginAssistanceWorkItem?.cancel()
             loginAssistanceWorkItem = nil
+            loginAssistanceCancellation?.cancel()
+            loginAssistanceCancellation = nil
         }
 
         @MainActor
@@ -514,7 +663,11 @@ private struct ProviderWebView: NSViewRepresentable {
             guard let credentials = autofillCredentials else {
                 return
             }
-            ProviderLoginAssistance.applyCredentials(in: webView, credentials: credentials)
+            loginAssistanceCancellation = ProviderLoginAssistance.applyCredentials(
+                in: webView,
+                credentials: credentials,
+                diagnosticContext: diagnosticContext
+            )
         }
 
         // MARK: - WKUIDelegate (Popups / target=_blank)
@@ -529,8 +682,20 @@ private struct ProviderWebView: NSViewRepresentable {
             if navigationAction.targetFrame == nil {
                 if let requestURL = navigationAction.request.url {
                     if ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: true) {
+                        recordNavigationEvent(
+                            "popup_reparented",
+                            result: .succeeded,
+                            webView: webView,
+                            reason: "loaded_in_existing_webview"
+                        )
                         webView.load(navigationAction.request)
                     } else {
+                        recordNavigationEvent(
+                            "popup_blocked",
+                            result: .skipped,
+                            webView: webView,
+                            reason: "navigation_policy"
+                        )
                         onNavigationBlocked?()
                     }
                 }
@@ -540,6 +705,15 @@ private struct ProviderWebView: NSViewRepresentable {
 
         private func updateSession(from webView: WKWebView) {
             guard let url = webView.url else { return }
+            if lastObservedURL != url {
+                recordEvent(
+                    "login_page_changed",
+                    phase: "session",
+                    result: .started,
+                    webView: webView
+                )
+                lastObservedURL = url
+            }
             lastURLString.wrappedValue = url.absoluteString
 
             let absolute = url.absoluteString.lowercased()
@@ -548,21 +722,35 @@ private struct ProviderWebView: NSViewRepresentable {
 
             switch statusHeuristic {
             case .sessionReady:
+                let wasReady = sessionStatus.wrappedValue == .sessionReady
                 sessionStatus.wrappedValue = .sessionReady
+                if !wasReady {
+                    recordEvent(
+                        "session_ready",
+                        phase: "session",
+                        result: .succeeded,
+                        webView: webView
+                    )
+                }
             case .needsLogin:
                 sessionStatus.wrappedValue = .needsLogin
-            case .shouldProbeOpodo:
-                // Homepage nach Login: weder Login- noch Account-URL → GraphQL-Probe.
-                scheduleDelayedSessionProbe(in: webView) { [weak self] webView in
-                    self?.runOpodoSessionProbe(in: webView)
-                }
-            case .shouldProbeTraveloka:
-                scheduleDelayedSessionProbe(in: webView) { [weak self] webView in
-                    self?.runTravelokaSessionProbe(in: webView)
-                }
-            case .shouldProbeBilligerMietwagen:
-                scheduleDelayedSessionProbe(in: webView) { [weak self] webView in
-                    self?.runBilligerMietwagenSessionProbe(in: webView)
+            case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen, .shouldProbeCheck24:
+                guard let liveProbe = ProviderSessionLiveProbe.prepare(
+                    statusHeuristic,
+                    sessionAlreadyReady: sessionStatus.wrappedValue == .sessionReady,
+                    url: url
+                ) else { break }
+                scheduleSessionProbe(
+                    in: webView,
+                    applies: liveProbe.applies,
+                    skipAccountPage: liveProbe.skipsAccountPage
+                ) { [weak self] webView in
+                    let hints = self?.lastURLString.wrappedValue.flatMap(URL.init(string:)).map { [$0] } ?? []
+                    return try await ProviderSessionLiveProbe.fetchIsLoggedIn(
+                        statusHeuristic,
+                        using: webView,
+                        additionalHintURLs: hints
+                    )
                 }
             case .unknown:
                 break
@@ -575,7 +763,10 @@ private struct ProviderWebView: NSViewRepresentable {
             }
 
             if AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute) {
-                ProviderLoginAssistance.installOnLoginPage(in: webView)
+                ProviderLoginAssistance.installOnLoginPage(
+                    in: webView,
+                    diagnosticContext: diagnosticContext
+                )
             }
 
             // OTP-Hints nicht auf Account-Seiten — nur Login/OTP-Challenge.
@@ -587,69 +778,80 @@ private struct ProviderWebView: NSViewRepresentable {
         }
 
         @MainActor
-        private func runOpodoSessionProbe(in webView: WKWebView) {
-            guard hasNavigationHint(in: webView, applies: OpodoSessionProbe.applies(to:)) else { return }
-            if shouldSkipAccountPageProbe(in: webView) { return }
+        private func scheduleSessionProbe(
+            in webView: WKWebView,
+            applies: @escaping (URL) -> Bool,
+            skipAccountPage: Bool = false,
+            probe: @escaping @MainActor (WKWebView) async throws -> Bool?
+        ) {
+            scheduleDelayedSessionProbe(in: webView) { [weak self] webView in
+                self?.runSessionProbe(
+                    in: webView,
+                    applies: applies,
+                    skipAccountPage: skipAccountPage,
+                    probe: probe
+                )
+            }
+        }
 
-            Task { @MainActor [weak self, weak webView] in
+        @MainActor
+        private func runSessionProbe(
+            in webView: WKWebView,
+            applies: (URL) -> Bool,
+            skipAccountPage: Bool = false,
+            probe: @escaping @MainActor (WKWebView) async throws -> Bool?
+        ) {
+            guard hasNavigationHint(in: webView, applies: applies) else { return }
+            if skipAccountPage, shouldSkipAccountPageProbe(in: webView) { return }
+
+            sessionProbeTask?.cancel()
+            sessionProbeTask = Task { @MainActor [weak self, weak webView] in
                 guard let self, let webView else { return }
+                let statusBefore = self.sessionStatus.wrappedValue
+                self.recordProbeEvent(
+                    "started",
+                    result: .started,
+                    webView: webView,
+                    statusBefore: statusBefore
+                )
                 do {
-                    let text = try await webView.fetchAuthenticatedText(
-                        url: OpodoSessionProbe.graphqlURL,
-                        method: "POST",
-                        accept: "application/json",
-                        referer: "https://www.opodo.de/",
-                        contentType: "application/json",
-                        body: OpodoSessionProbe.getUserAccountRequestBody()
-                    )
-                    let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text)
+                    let loggedIn = try await probe(webView)
+                    if NetworkErrorClassification.isCurrentTaskCancelled {
+                        self.recordProbeCancellation(webView: webView, statusBefore: statusBefore)
+                        return
+                    }
+                    guard let loggedIn else {
+                        self.recordProbeEvent(
+                            "unknown",
+                            result: .skipped,
+                            webView: webView,
+                            reason: "probe_returned_unknown",
+                            statusBefore: statusBefore
+                        )
+                        return
+                    }
                     self.applySessionProbeOutcome(loggedIn)
-                } catch {
-                    // Probe-Fehler: Status unverändert lassen (kein stiller Fallback).
-                }
-            }
-        }
-
-        @MainActor
-        private func runBilligerMietwagenSessionProbe(in webView: WKWebView) {
-            guard hasNavigationHint(in: webView, applies: BilligerMietwagenSessionProbe.applies(to:)) else { return }
-
-            Task { @MainActor [weak self, weak webView] in
-                guard let self, let webView else { return }
-                do {
-                    self.applySessionProbeOutcome(
-                        try await BilligerMietwagenSessionProbe.fetchIsLoggedIn(using: webView)
+                    self.recordProbeEvent(
+                        "completed",
+                        result: .succeeded,
+                        webView: webView,
+                        reason: loggedIn ? "session_ready" : "needs_login",
+                        statusBefore: statusBefore,
+                        statusAfter: self.sessionStatus.wrappedValue
                     )
                 } catch {
-                    // Probe-Fehler: Status unverändert lassen (kein stiller Fallback).
-                }
-            }
-        }
-
-        @MainActor
-        private func runTravelokaSessionProbe(in webView: WKWebView) {
-            guard hasNavigationHint(in: webView, applies: TravelokaSessionProbe.applies(to:)) else { return }
-            if shouldSkipAccountPageProbe(in: webView) { return }
-
-            Task { @MainActor [weak self, weak webView] in
-                guard let self, let webView else { return }
-                do {
-                    let hintURLs = self.lastURLString.wrappedValue.flatMap(URL.init(string:)).map { [$0] } ?? []
-                    let context = await webView.travelokaSessionContext(additionalHintURLs: hintURLs)
-                    let text = try await webView.fetchAuthenticatedText(
-                        url: TravelokaSessionProbe.whoamiURL,
-                        method: "POST",
-                        accept: "application/json",
-                        referer: context.apiReferer(),
-                        contentType: "application/json",
-                        body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
-                        headers: TravelokaSessionProbe.whoamiHeaders(context: context)
+                    if NetworkErrorClassification.isCancellation(error) {
+                        self.recordProbeCancellation(webView: webView, statusBefore: statusBefore)
+                        return
+                    }
+                    let timedOut = NetworkErrorClassification.isURLTimeout(error)
+                    self.recordProbeEvent(
+                        timedOut ? "timeout" : "failed",
+                        result: timedOut ? .timedOut : .failed,
+                        webView: webView,
+                        error: error,
+                        statusBefore: statusBefore
                     )
-                    self.applySessionProbeOutcome(
-                        TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text)
-                    )
-                } catch {
-                    // Probe-Fehler: Status unverändert lassen (kein stiller Fallback).
                 }
             }
         }
@@ -660,6 +862,8 @@ private struct ProviderWebView: NSViewRepresentable {
             run: @escaping @MainActor (WKWebView) -> Void
         ) {
             sessionProbeWorkItem?.cancel()
+            sessionProbeTask?.cancel()
+            sessionProbeTask = nil
             let work = DispatchWorkItem { [weak webView] in
                 guard let webView else { return }
                 run(webView)
@@ -670,9 +874,9 @@ private struct ProviderWebView: NSViewRepresentable {
 
         private func shouldSkipAccountPageProbe(in webView: WKWebView) -> Bool {
             guard let url = webView.url else { return false }
-            let absolute = url.absoluteString.lowercased()
-            return AuthPageURLHeuristic.looksLikeAccountPage(absolute)
-                && !AuthPageURLHeuristic.looksLikeLoginPage(absolute)
+            return AuthPageURLHeuristic.looksLikeAccountPageWithoutLogin(
+                url.absoluteString.lowercased()
+            )
         }
 
         private func hasNavigationHint(in webView: WKWebView, applies: (URL) -> Bool) -> Bool {
@@ -683,12 +887,45 @@ private struct ProviderWebView: NSViewRepresentable {
             return false
         }
 
-        private func applySessionProbeOutcome(_ loggedIn: Bool?) {
-            guard let loggedIn else { return }
+        private func applySessionProbeOutcome(_ loggedIn: Bool) {
             if loggedIn {
                 suspendLoginAssistance()
             }
             sessionStatus.wrappedValue = .fromProbe(loggedIn: loggedIn)
+        }
+
+        private func recordProbeCancellation(
+            webView: WKWebView,
+            statusBefore: ProviderSessionStatus
+        ) {
+            recordProbeEvent(
+                "cancelled",
+                result: .cancelled,
+                webView: webView,
+                reason: "task_cancelled",
+                statusBefore: statusBefore
+            )
+        }
+
+        private func recordProbeEvent(
+            _ event: String,
+            result: DiagnosticResult,
+            webView: WKWebView,
+            error: Error? = nil,
+            reason: String? = nil,
+            statusBefore: ProviderSessionStatus? = nil,
+            statusAfter: ProviderSessionStatus? = nil
+        ) {
+            recordDiagnostic(
+                event,
+                phase: "session_probe",
+                result: result,
+                webView: webView,
+                error: error,
+                reason: reason,
+                statusBefore: statusBefore,
+                statusAfter: statusAfter
+            )
         }
     }
 }

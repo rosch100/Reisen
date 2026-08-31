@@ -13,6 +13,7 @@ extension SyncStore {
         webView: WKWebView,
         settings: AppSettings,
         navigationHintURLs: [URL] = [],
+        diagnosticContext: DiagnosticContext,
         holdsSyncLock: Bool = true
     ) async {
         lastSyncSkippedPrivacyPanes = []
@@ -36,6 +37,7 @@ extension SyncStore {
                 webView: webView,
                 navigationHintURLs: navigationHintURLs,
                 settings: settings,
+                diagnosticContext: diagnosticContext,
                 attemptStart: attemptStart
             )
         } catch {
@@ -65,7 +67,8 @@ extension SyncStore {
     public func syncAll(
         providers: [(ProviderID, WKWebView)],
         settings: AppSettings,
-        resolveNavigationHintURLs: @escaping (ProviderID) -> [URL] = { _ in [] }
+        resolveNavigationHintURLs: @escaping (ProviderID) -> [URL] = { _ in [] },
+        diagnosticRunID: UUID
     ) async {
         guard !isSyncing else { return }
         guard !providers.isEmpty else {
@@ -89,7 +92,8 @@ extension SyncStore {
                 providerID: providerID,
                 webView: webView,
                 settings: settings,
-                navigationHintURLs: resolveNavigationHintURLs(providerID)
+                navigationHintURLs: resolveNavigationHintURLs(providerID),
+                diagnosticRunID: diagnosticRunID
             )
             aggregation.recordProviderRun(outcome)
         }
@@ -103,7 +107,8 @@ extension SyncStore {
         providerID: ProviderID,
         webView: WKWebView,
         settings: AppSettings,
-        navigationHintURLs: [URL]
+        navigationHintURLs: [URL],
+        diagnosticRunID: UUID
     ) async -> ProviderSyncRunOutcome {
         statusMessage = L10n.format(.syncProgressIndex, index + 1, total)
         messageProviderID = providerID
@@ -114,6 +119,11 @@ extension SyncStore {
             webView: webView,
             settings: settings,
             navigationHintURLs: navigationHintURLs,
+            diagnosticContext: DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: providerID,
+                operation: "provider_sync"
+            ),
             holdsSyncLock: false
         )
 
@@ -192,6 +202,7 @@ private extension SyncStore {
         webView: WKWebView,
         navigationHintURLs: [URL],
         settings: AppSettings,
+        diagnosticContext: DiagnosticContext,
         attemptStart: Date
     ) async throws -> PersistedSyncSnapshot {
         guard let provider = registry.provider(id: providerID) else {
@@ -205,16 +216,20 @@ private extension SyncStore {
             navigationHintURLs: navigationHintURLs
         )
 
-        let catalog = try await provider.fetchCatalog(session: session)
+        let catalog = try await DiagnosticContext.$current.withValue(diagnosticContext) {
+            try await provider.fetchCatalog(session: session)
+        }
 
         var drafts = catalog.bookings
         let requiresDeadlines = settings.requiresDeadlineEnrichment
-        try await enrichDraftsIfNeeded(
-            provider: provider,
-            session: session,
-            requiresDeadlines: requiresDeadlines,
-            drafts: &drafts
-        )
+        try await DiagnosticContext.$current.withValue(diagnosticContext) {
+            try await enrichDraftsIfNeeded(
+                provider: provider,
+                session: session,
+                requiresDeadlines: requiresDeadlines,
+                drafts: &drafts
+            )
+        }
 
         let (activeDrafts, cancelledCount) = drafts.partitionedByCancellation()
         let missingDeadlinesHint = activeDrafts.missingDeadlinesHint(requiresDeadlines: requiresDeadlines)
@@ -282,8 +297,11 @@ private extension SyncStore {
             Self.logPersistedSync(
                 snapshot,
                 result: "success_side_effects_failed",
-                extra: "\(snapshot.cancelledDroppedLogSuffix) sideEffectError=\(detail)"
+                extra: "\(snapshot.cancelledDroppedLogSuffix) sideEffectError=\(DiagnosticRedactor.redact(detail))"
             )
+        }
+        Task {
+            await DiagnosticLogger.shared.flush()
         }
     }
 
@@ -310,8 +328,11 @@ private extension SyncStore {
         setSyncFailure(error, clearStatus: true)
         messageProviderID = providerID
         SyncLog.append(
-            "result=failure provider=\(providerID.rawValue) durationMs=\(Self.durationMs(since: attemptStart)) error=\(error.localizedDescription)"
+            "result=failure provider=\(providerID.rawValue) durationMs=\(Self.durationMs(since: attemptStart)) error=\(DiagnosticRedactor.redact(error.localizedDescription))"
         )
+        Task {
+            await DiagnosticLogger.shared.flush()
+        }
     }
 
     func attachProviderProgressCallback(providerID: ProviderID, provider: any TravelProvider) {
@@ -348,7 +369,8 @@ private extension SyncStore {
     ) {
         let hotels = activeDrafts.filter { $0.bookingType == .hotel }
         let withDeadlines = activeDrafts.filter { !$0.deadlines.isEmpty }.count
-        let hotelURLSample = hotels.first?.externalUrl.map { String($0.prefix(120)) } ?? "-"
+        let hotelURLSample = hotels.first?.externalUrl
+            .flatMap(DiagnosticRedactor.urlMetadata(for:)) ?? "-"
         SyncLog.append(
             "enrich_deadlines provider=\(providerID.rawValue) active=\(activeDrafts.count) hotels=\(hotels.count) withDeadlines=\(withDeadlines) missingHint=\(missingDeadlinesHint) hotelUrl=\(hotelURLSample)"
         )

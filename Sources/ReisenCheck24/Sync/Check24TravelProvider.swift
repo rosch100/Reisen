@@ -9,7 +9,7 @@ public final class Check24TravelProvider: TravelProvider, TravelProviderLoginCon
     public let displayName = "Check24"
 
     public var loginURL: URL { URL(string: "https://kundenbereich.check24.de/user/login.html")! }
-    static let activitiesPageURL = URL(string: "https://kundenbereich.check24.de/user/account/activities.html")!
+    static var activitiesPageURL: URL { Check24SessionProbe.activitiesPageURL }
     public var keychainServerHost: String { "check24.de" }
 
     public var onProgress: (@MainActor (String) -> Void)?

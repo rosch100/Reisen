@@ -5,6 +5,14 @@ public enum LoginMethodClickScript {
     public static func build() -> String {
         """
         (function() {
+          const setupRoot = document.documentElement;
+          if (setupRoot && setupRoot.dataset.reisenLoginMethodSetup === '1') {
+            return { clicked: false, label: null, alreadySetup: true };
+          }
+          function markSetup() {
+            if (setupRoot) setupRoot.dataset.reisenLoginMethodSetup = '1';
+          }
+
           function isVisible(el) {
             if (!el) return false;
             try {
@@ -94,6 +102,7 @@ public enum LoginMethodClickScript {
           const target = scored[0].el;
           try {
             target.click();
+            markSetup();
             return {
               clicked: true,
               label: (target.innerText || target.textContent || target.getAttribute('aria-label') || '').trim().slice(0, 120)
@@ -101,6 +110,7 @@ public enum LoginMethodClickScript {
           } catch (_) {
             try {
               target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+              markSetup();
               return {
                 clicked: true,
                 label: (target.innerText || target.textContent || '').trim().slice(0, 120)

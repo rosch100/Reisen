@@ -22,6 +22,12 @@ extension Check24TravelProvider {
         guestHintsByBasketId: inout [String: [BookingGuestHint]],
         bookingDetailsByBasketId: inout [String: ParsedBookingDetails]
     ) async throws {
+        await recordDiagnosticPhase(
+            "hotel_detail",
+            event: "started",
+            result: .started,
+            url: bookingURL
+        )
         let alreadyThere = webView.url?.absoluteString == bookingURL.absoluteString
             || (webView.url?.path == bookingURL.path && webView.url?.host == bookingURL.host)
         if !alreadyThere {
@@ -29,7 +35,16 @@ extension Check24TravelProvider {
         }
 
         await dismissBookingChooserIfNeeded(in: webView, for: parsedBooking)
-        _ = await waitForHotelDetailReady(in: webView)
+        guard try await waitForHotelDetailReady(in: webView) else {
+            await recordDiagnosticPhase(
+                "hotel_detail",
+                event: "readiness_failed",
+                result: .failed,
+                url: bookingURL,
+                reason: "readiness_condition_false"
+            )
+            return
+        }
 
         let detailSnapshot = try await snapshotHTML(from: webView)
         let html = detailSnapshot.html
@@ -84,10 +99,16 @@ extension Check24TravelProvider {
                 guestHints: guestHints
             )
         }
+        await recordDiagnosticPhase(
+            "hotel_detail",
+            event: "completed",
+            result: .succeeded,
+            url: bookingURL
+        )
     }
 
-    func waitForHotelDetailReady(in webView: WKWebView) async -> Bool {
-        await webView.waitForJavaScriptCondition(
+    func waitForHotelDetailReady(in webView: WKWebView) async throws -> Bool {
+        try await webView.waitForJavaScriptCondition(
             """
             document.documentElement.outerHTML.includes('cancelationLabelFee') ||
             document.documentElement.outerHTML.includes('cancelationLabelTime') ||
@@ -100,6 +121,6 @@ extension Check24TravelProvider {
             document.documentElement.outerHTML.includes('€')
             """,
             timeoutSeconds: 12
-        )
+        ).asReadyFlag()
     }
 }
