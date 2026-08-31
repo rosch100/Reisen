@@ -122,41 +122,46 @@ public enum OneTimeCodeAutofillScript {
             return [el];
           }
 
-          function distributeDigits(startEl, digits) {
-            const cleaned = String(digits || '').replace(/\\D/g, '');
-            if (!cleaned || !startEl) return;
-            const group = splitOTPGroup(startEl);
-            const targets = group.length >= 4 ? group : [startEl];
-            if (targets.length === 1) {
-              setNativeValue(targets[0], cleaned);
-              return;
-            }
-            for (let i = 0; i < targets.length; i += 1) {
-              setNativeValue(targets[i], cleaned[i] || '');
+          function distributeCodeCharacters(startEl, code) {
+            if (!code || !startEl) return;
+            if (startEl.__reisenOTPUpdating) return;
+            startEl.__reisenOTPUpdating = true;
+            try {
+              const group = splitOTPGroup(startEl);
+              const targets = group.length >= 4 ? group : [startEl];
+              if (targets.length === 1) {
+                setNativeValue(targets[0], code);
+                return;
+              }
+              for (let i = 0; i < targets.length; i += 1) {
+                setNativeValue(targets[i], code[i] || '');
+              }
+            } finally {
+              startEl.__reisenOTPUpdating = false;
             }
           }
 
-          function digitsFromClipboard(event) {
+          function codeFromClipboard(event) {
             let text = '';
             try {
               text = (event.clipboardData && event.clipboardData.getData('text')) || '';
             } catch (_) {}
-            return String(text).replace(/\\D/g, '');
+            return String(text);
           }
 
           function enablePaste(el) {
             if (!el || el.__reisenOTCPaste) return;
             el.__reisenOTCPaste = true;
             el.addEventListener('paste', function(event) {
-              const digits = digitsFromClipboard(event);
-              if (!digits) return;
+              const code = codeFromClipboard(event);
+              if (!code) return;
               event.preventDefault();
               event.stopPropagation();
-              distributeDigits(el, digits);
+              distributeCodeCharacters(el, code);
             }, true);
             el.addEventListener('input', function() {
-              const v = String(el.value || '').replace(/\\D/g, '');
-              if (v.length > 1) distributeDigits(el, v);
+              const value = el.value;
+              if (value.length > 1) distributeCodeCharacters(el, value);
             });
           }
 
@@ -170,7 +175,6 @@ public enum OneTimeCodeAutofillScript {
             const first = singles[0];
             first.setAttribute('autocomplete', 'one-time-code');
             first.setAttribute('inputmode', 'numeric');
-            first.setAttribute('pattern', '[0-9]*');
             first.setAttribute('data-reisen-otp-slot', '1');
             \(relaxSplitFieldMaxLength ? "first.setAttribute('maxlength', String(singles.length));" : "")
           }
@@ -198,11 +202,11 @@ public enum OneTimeCodeAutofillScript {
               const target = event.target;
               if (!target || target.tagName !== 'INPUT') return;
               if (!looksLikeOTP(target)) return;
-              const digits = digitsFromClipboard(event);
-              if (digits.length < 4) return;
+              const code = codeFromClipboard(event);
+              if (code.length < 4) return;
               event.preventDefault();
               event.stopPropagation();
-              distributeDigits(target, digits);
+              distributeCodeCharacters(target, code);
             }, true);
           }
 
