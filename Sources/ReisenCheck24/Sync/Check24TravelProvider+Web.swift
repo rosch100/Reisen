@@ -3,11 +3,9 @@ import WebKit
 import ReisenProviders
 
 extension Check24TravelProvider {
+    /// Hub-Session (`WebViewProviderSession`), kein Check24-Sondertyp.
     func webView(from session: any ProviderSession) throws -> WKWebView {
-        guard let check24 = session as? Check24WebSession else {
-            throw Check24ProviderError.invalidSessionType
-        }
-        return check24.webView
+        try ProviderWebView.webView(from: session, orThrow: Check24ProviderError.invalidSessionType)
     }
 
     func load(url: URL, in webView: WKWebView) async throws {
