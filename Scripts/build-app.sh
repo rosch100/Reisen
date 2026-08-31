@@ -109,6 +109,21 @@ CONTENTS="$APP/Contents"
 MACOS="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
 
+# Laufende Instanz dieses Bundle-Pfads vor rm -rf beenden. Sonst zeigt Bundle.main
+# weiter auf gelöschte Resources → ProviderLogo fällt auf questionmark.circle zurück
+# (SVGs/L10n nicht mehr ladbar, Prozess bleibt aber am Leben).
+if [[ -d "$APP" ]]; then
+  while read -r pid; do
+    [[ -n "${pid:-}" ]] || continue
+    kill "$pid" 2>/dev/null || true
+  done < <(pgrep -f "$APP/Contents/MacOS/Reisen" || true)
+  # Kurz warten, bis der Prozess die Dateien freigibt (kein hangendes unlink).
+  for _ in 1 2 3 4 5; do
+    pgrep -f "$APP/Contents/MacOS/Reisen" >/dev/null 2>&1 || break
+    sleep 0.1
+  done
+fi
+
 rm -rf "$APP"
 mkdir -p "$MACOS" "$RESOURCES"
 

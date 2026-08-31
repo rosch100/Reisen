@@ -6449,6 +6449,22 @@
         }
       }
     },
+    "sync.apple_passkey_hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei „Login mit Apple“ funktioniert der Passkey nur in Safari oder dem System-Anmeldefenster. Verwende hier das Apple-Account-Passwort und gegebenenfalls den Bestätigungscode."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For Sign in with Apple, passkeys work only in Safari or the system authentication window. Here, use your Apple Account password and, if requested, the verification code."
+          }
+        }
+      }
+    },
     "sync.all.all_providers_synced": {
       "localizations": {
         "de": {

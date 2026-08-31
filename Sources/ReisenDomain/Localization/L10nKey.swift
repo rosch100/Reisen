@@ -379,6 +379,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case syncProviderSyncTitle = "sync.provider_sync_title"
     case syncProviderUnavailable = "sync.provider_unavailable"
     case syncRememberLoginHelp = "sync.remember_login_help"
+    case syncApplePasskeyHint = "sync.apple_passkey_hint"
     case syncSyncBookingsHelp = "sync.sync_bookings_help"
     case syncSyncNowHelp = "sync.sync_now_help"
     case syncUnavailableHelp = "sync.unavailable_help"

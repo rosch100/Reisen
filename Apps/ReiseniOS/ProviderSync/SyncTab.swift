@@ -307,6 +307,13 @@ struct SyncTab: View {
         )
     }
 
+    private var showsApplePasskeyHint: Bool {
+        AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: sessionStatus == .needsLogin,
+            urlAbsoluteString: lastURLString
+        )
+    }
+
     private var sessionBanner: some View {
         HStack(alignment: .center, spacing: 12) {
             trafficLightDot(size: 14)
@@ -320,6 +327,9 @@ struct SyncTab: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
+                    if showsApplePasskeyHint {
+                        SyncApplePasskeyHintLabel()
+                    }
                 }
             }
 
