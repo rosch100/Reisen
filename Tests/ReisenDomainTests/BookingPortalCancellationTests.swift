@@ -180,3 +180,33 @@ private func paid(amount: Double?, days: Int = 3) -> CancellationDeadline {
     )
     #expect(cancelled.open == open && cancelled.cancel == nil)
 }
+
+@Test func bookingPortalCancellation_presentation_sessionBoundHidesSafari() {
+    let deadlines = [freeDeadline()]
+    #expect(
+        BookingPortalCancellation.presentation(
+            cancellation: cancel, open: open, status: .confirmed,
+            deadlines: deadlines, now: now, hasSessionWebView: false,
+            requiresProviderSession: true
+        ) == .hidden
+    )
+    #expect(
+        BookingPortalCancellation.presentation(
+            cancellation: cancel, open: open, status: .confirmed,
+            deadlines: deadlines, now: now, hasSessionWebView: true,
+            requiresProviderSession: true
+        ) == .sheet
+    )
+}
+
+@Test func bookingPortalCancellation_allowsCopyingCancellationLink() {
+    #expect(
+        BookingPortalCancellation.allowsCopyingCancellationLink(cancel: cancel, open: open)
+    )
+    #expect(
+        !BookingPortalCancellation.allowsCopyingCancellationLink(cancel: open, open: open)
+    )
+    #expect(
+        !BookingPortalCancellation.allowsCopyingCancellationLink(cancel: nil, open: open)
+    )
+}

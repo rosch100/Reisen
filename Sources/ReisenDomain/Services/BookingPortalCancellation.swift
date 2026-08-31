@@ -24,7 +24,8 @@ public enum BookingPortalCancellation {
         status: BookingStatus,
         deadlines: [CancellationDeadline],
         now: Date,
-        hasSessionWebView: Bool
+        hasSessionWebView: Bool,
+        requiresProviderSession: Bool = false
     ) -> BookingPortalCancelPresentation {
         guard isActionable(
             cancellation: cancellation,
@@ -34,8 +35,14 @@ public enum BookingPortalCancellation {
             now: now
         ) else { return .hidden }
         if hasSessionWebView { return .sheet }
+        if requiresProviderSession { return .hidden }
         if cancellation != open { return .safari }
         return .hidden
+    }
+
+    public static func allowsCopyingCancellationLink(cancel: URL?, open: URL?) -> Bool {
+        guard let cancel else { return false }
+        return cancel != open
     }
 }
 
@@ -51,7 +58,8 @@ public enum BookingPortalActions {
         status: BookingStatus,
         deadlines: [CancellationDeadline],
         now: Date,
-        hasSessionWebView: Bool
+        hasSessionWebView: Bool,
+        requiresProviderSession: Bool = false
     ) -> Visible {
         let shown: URL?
         switch BookingPortalCancellation.presentation(
@@ -60,7 +68,8 @@ public enum BookingPortalActions {
             status: status,
             deadlines: deadlines,
             now: now,
-            hasSessionWebView: hasSessionWebView
+            hasSessionWebView: hasSessionWebView,
+            requiresProviderSession: requiresProviderSession
         ) {
         case .sheet, .safari:
             shown = cancellation
