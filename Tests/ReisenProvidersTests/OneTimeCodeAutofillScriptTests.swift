@@ -20,11 +20,21 @@ func oneTimeCodeAutofillScriptEnablesPasteAndSplitFieldFill() {
     #expect(script.contains("paste"))
     #expect(script.contains("clipboardData"))
     #expect(script.contains("maxlength"))
-    #expect(script.contains("distributeDigits"))
+    #expect(script.contains("distributeCodeCharacters"))
     #expect(script.contains("splitOTPGroup"))
     #expect(script.contains("prepareSplitGroup"))
     #expect(script.contains("if (!looksLikeOTP(el)) return false"))
     #expect(!script.contains("first.setAttribute('maxlength'"))
+}
+
+@Test
+func oneTimeCodeAutofillScriptPreservesAlphanumericCodes() {
+    let script = OneTimeCodeAutofillScript.build()
+
+    #expect(script.contains("return String(text)"))
+    #expect(!script.contains("replace("))
+    #expect(script.contains("__reisenOTPUpdating"))
+    #expect(script.contains("finally"))
 }
 
 @Test
