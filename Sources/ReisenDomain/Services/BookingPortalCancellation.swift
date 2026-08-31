@@ -25,7 +25,7 @@ public enum BookingPortalCancellation {
         deadlines: [CancellationDeadline],
         now: Date,
         hasSessionWebView: Bool,
-        requiresProviderSession: Bool = false
+        requiresProviderSession: Bool
     ) -> BookingPortalCancelPresentation {
         guard isActionable(
             cancellation: cancellation,
@@ -59,7 +59,7 @@ public enum BookingPortalActions {
         deadlines: [CancellationDeadline],
         now: Date,
         hasSessionWebView: Bool,
-        requiresProviderSession: Bool = false
+        requiresProviderSession: Bool
     ) -> Visible {
         let shown: URL?
         switch BookingPortalCancellation.presentation(

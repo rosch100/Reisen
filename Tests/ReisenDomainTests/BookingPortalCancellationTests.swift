@@ -125,25 +125,29 @@ private func paid(amount: Double?, days: Int = 3) -> CancellationDeadline {
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: open, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: true
+            deadlines: deadlines, now: now, hasSessionWebView: true,
+            requiresProviderSession: false
         ) == .sheet
     )
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: open, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: false
+            deadlines: deadlines, now: now, hasSessionWebView: false,
+            requiresProviderSession: false
         ) == .hidden
     )
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: cancel, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: false
+            deadlines: deadlines, now: now, hasSessionWebView: false,
+            requiresProviderSession: false
         ) == .safari
     )
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: cancel, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: true
+            deadlines: deadlines, now: now, hasSessionWebView: true,
+            requiresProviderSession: false
         ) == .sheet
     )
 }
@@ -152,31 +156,36 @@ private func paid(amount: Double?, days: Int = 3) -> CancellationDeadline {
     let deadlines = [freeDeadline()]
     let both = BookingPortalActions.visible(
         open: open, cancellation: cancel, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: true
+        deadlines: deadlines, now: now, hasSessionWebView: true,
+        requiresProviderSession: false
     )
     #expect(both.open == open && both.cancel == cancel)
 
     let sameNoHub = BookingPortalActions.visible(
         open: open, cancellation: open, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: false
+        deadlines: deadlines, now: now, hasSessionWebView: false,
+        requiresProviderSession: false
     )
     #expect(sameNoHub.open == open && sameNoHub.cancel == nil)
 
     let sameHub = BookingPortalActions.visible(
         open: open, cancellation: open, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: true
+        deadlines: deadlines, now: now, hasSessionWebView: true,
+        requiresProviderSession: false
     )
     #expect(sameHub.open == open && sameHub.cancel == open)
 
     let onlyCancel = BookingPortalActions.visible(
         open: nil, cancellation: cancel, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: false
+        deadlines: deadlines, now: now, hasSessionWebView: false,
+        requiresProviderSession: false
     )
     #expect(onlyCancel.open == nil && onlyCancel.cancel == cancel)
 
     let cancelled = BookingPortalActions.visible(
         open: open, cancellation: cancel, status: .cancelled,
-        deadlines: deadlines, now: now, hasSessionWebView: true
+        deadlines: deadlines, now: now, hasSessionWebView: true,
+        requiresProviderSession: false
     )
     #expect(cancelled.open == open && cancelled.cancel == nil)
 }

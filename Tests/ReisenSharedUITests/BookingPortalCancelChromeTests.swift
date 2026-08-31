@@ -26,12 +26,14 @@ import ReisenDomain
     )
     let withoutSession = BookingPortalActions.visible(
         open: url, cancellation: url, status: .confirmed,
-        deadlines: [free], now: now, hasSessionWebView: false
+        deadlines: [free], now: now, hasSessionWebView: false,
+        requiresProviderSession: false
     )
     #expect(withoutSession.open == url && withoutSession.cancel == nil)
     let withSession = BookingPortalActions.visible(
         open: url, cancellation: url, status: .confirmed,
-        deadlines: [free], now: now, hasSessionWebView: true
+        deadlines: [free], now: now, hasSessionWebView: true,
+        requiresProviderSession: false
     )
     #expect(withSession.cancel == url)
 }

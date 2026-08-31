@@ -55,9 +55,40 @@ import ReisenDomain
 }
 
 @Test func providerCancellationLinkPolicy_coversAllSyncProviders() {
-    for provider in ProviderID.syncProviderIDs {
-        for type in BookingType.allCases {
-            _ = ProviderCancellationLinkPolicy.mode(provider: provider, bookingType: type)
+    typealias ExpectedMode = (
+        bookingType: BookingType,
+        mode: ProviderCancellationLinkMode
+    )
+    func expectedModes(_ mode: ProviderCancellationLinkMode) -> [ExpectedMode] {
+        BookingType.allCases.map { (bookingType: $0, mode: mode) }
+    }
+
+    let expectations: [(provider: ProviderID, modes: [ExpectedMode])] = [
+        (.traveloka, expectedModes(.distinctURL)),
+        (
+            .airbnb,
+            BookingType.allCases.map {
+                (bookingType: $0, mode: $0 == .activity ? .distinctURL : .none)
+            }
+        ),
+        (.getYourGuide, expectedModes(.inPageOnOpen)),
+        (.billigerMietwagen, expectedModes(.sessionBoundDistinct)),
+        (.check24, expectedModes(.none)),
+        (.opodo, expectedModes(.none)),
+        (.booking, expectedModes(.none)),
+    ]
+
+    #expect(expectations.count == ProviderID.syncProviderIDs.count)
+    #expect(Set(expectations.map(\.provider)) == Set(ProviderID.syncProviderIDs))
+
+    for expectation in expectations {
+        for expected in expectation.modes {
+            #expect(
+                ProviderCancellationLinkPolicy.mode(
+                    provider: expectation.provider,
+                    bookingType: expected.bookingType
+                ) == expected.mode
+            )
         }
     }
 }
