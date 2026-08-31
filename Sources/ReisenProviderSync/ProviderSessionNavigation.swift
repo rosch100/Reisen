@@ -76,7 +76,8 @@ public enum ProviderSessionNavigation {
                 hub: hub,
                 enabledProviderIDs: enabledProviderIDs,
                 onChanged: onChanged,
-                applies: liveProbe.applies
+                applies: liveProbe.applies,
+                skipAccountPage: liveProbe.skipsAccountPage
             ) { hints in
                 try await ProviderSessionLiveProbe.fetchIsLoggedIn(
                     heuristic,
@@ -118,6 +119,7 @@ public enum ProviderSessionNavigation {
         enabledProviderIDs: Set<ProviderID>?,
         onChanged: @escaping () -> Void,
         applies: @escaping (URL) -> Bool,
+        skipAccountPage: Bool,
         probe: @escaping @MainActor ([URL]) async throws -> Bool?
     ) {
         let probeStartCount = registerProbeStart(
@@ -150,6 +152,17 @@ public enum ProviderSessionNavigation {
                     result: .skipped,
                     url: navigationURL,
                     reason: "url_not_applicable"
+                )
+                return
+            }
+            if skipAccountPage, shouldSkipAccountPageProbe(webView: webView, navigationURL: navigationURL) {
+                await recordEvent(
+                    context: diagnosticContext,
+                    phase: "session_probe",
+                    event: "account_page",
+                    result: .skipped,
+                    url: navigationURL,
+                    reason: "account_page_skip"
                 )
                 return
             }
@@ -218,6 +231,13 @@ public enum ProviderSessionNavigation {
     ) -> Bool {
         [webView.url, navigationURL].compactMap { $0 }.contains(where: applies)
             || hints.contains(where: applies)
+    }
+
+    private static func shouldSkipAccountPageProbe(webView: WKWebView, navigationURL: URL) -> Bool {
+        let candidates = [webView.url, navigationURL].compactMap { $0 }
+        return candidates.contains { url in
+            AuthPageURLHeuristic.looksLikeAccountPageWithoutLogin(url.absoluteString.lowercased())
+        }
     }
 
     private static func applyProbeResult(

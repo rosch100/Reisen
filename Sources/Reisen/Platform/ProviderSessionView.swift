@@ -874,9 +874,9 @@ private struct ProviderWebView: NSViewRepresentable {
 
         private func shouldSkipAccountPageProbe(in webView: WKWebView) -> Bool {
             guard let url = webView.url else { return false }
-            let absolute = url.absoluteString.lowercased()
-            return AuthPageURLHeuristic.looksLikeAccountPage(absolute)
-                && !AuthPageURLHeuristic.looksLikeLoginPage(absolute)
+            return AuthPageURLHeuristic.looksLikeAccountPageWithoutLogin(
+                url.absoluteString.lowercased()
+            )
         }
 
         private func hasNavigationHint(in webView: WKWebView, applies: (URL) -> Bool) -> Bool {

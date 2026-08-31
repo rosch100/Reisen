@@ -3,7 +3,7 @@ import WebKit
 
 /// SSOT: Heuristik → applies / Account-Skip / Live-Fetch für Session-Probes.
 public enum ProviderSessionLiveProbe {
-    /// Konfiguration für den Start einer Live-Probe, oder `nil` wenn keine Probe laufen soll.
+    /// Startkonfiguration einer Live-Probe, oder `nil` wenn keine Probe laufen soll.
     ///
     /// Check24: Produktseiten bei schon grüner Ampel überspringen; Marketing-Homepage
     /// (`/` / leer) trotzdem erneut prüfen (Logout → Homepage ohne Login-URL).
@@ -13,29 +13,13 @@ public enum ProviderSessionLiveProbe {
         url: URL? = nil
     ) -> (applies: (URL) -> Bool, skipsAccountPage: Bool)? {
         guard let kind = Kind.from(heuristic) else { return nil }
-        if sessionAlreadyReady {
-            guard kind == .check24 else { return (kind.applies, kind.skipsAccountPage) }
-            guard isCheck24AmbiguousLanding(url) else { return nil }
+        if sessionAlreadyReady,
+           kind == .check24,
+           !isCheck24AmbiguousLanding(url)
+        {
+            return nil
         }
         return (kind.applies, kind.skipsAccountPage)
-    }
-
-    /// Ob nach der Heuristik eine Live-Probe gestartet werden soll.
-    public static func shouldStart(
-        _ heuristic: ProviderSessionStatusHeuristic,
-        sessionAlreadyReady: Bool,
-        url: URL? = nil
-    ) -> Bool {
-        prepare(heuristic, sessionAlreadyReady: sessionAlreadyReady, url: url) != nil
-    }
-
-    public static func applies(to heuristic: ProviderSessionStatusHeuristic) -> ((URL) -> Bool)? {
-        Kind.from(heuristic)?.applies
-    }
-
-    /// Opodo/Traveloka: Account-URL braucht keine GraphQL-/whoami-Probe.
-    public static func skipsAccountPageProbe(_ heuristic: ProviderSessionStatusHeuristic) -> Bool {
-        Kind.from(heuristic)?.skipsAccountPage ?? false
     }
 
     public static func fetchIsLoggedIn(

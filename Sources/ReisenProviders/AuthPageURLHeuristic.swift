@@ -26,6 +26,11 @@ public enum AuthPageURLHeuristic {
         )
     }
 
+    /// Account-URL ohne Login-Marker (Session-Heuristik „fertig“ / Probe-Skip).
+    public static func looksLikeAccountPageWithoutLogin(_ absoluteURL: String) -> Bool {
+        looksLikeAccountPage(absoluteURL) && !looksLikeLoginPage(absoluteURL)
+    }
+
     /// Prefer applying OTP AutoFill whenever navigation may show an auth challenge.
     public static func shouldApplyOneTimeCodeAutofill(_ absoluteURL: String) -> Bool {
         if AuthIdentityProviderHost.matches(urlAbsoluteString: absoluteURL) {
