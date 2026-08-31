@@ -24,10 +24,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "Baue Reisen.app..." >&2
+# build-app.sh beendet bereits eine laufende .build/Reisen.app-Instanz vor rm -rf.
 APP="$("$ROOT/Scripts/build-app.sh")"
-
-pkill -x Reisen 2>/dev/null || true
-sleep 0.3
 
 # Launch Services trifft bei gleicher Bundle-ID oft /Applications (ältere Kopie).
 # `-n` + Pfad startet genau dieses Bundle; kein `open -a` / Bundle-ID-Activate.
