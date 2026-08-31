@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import ReisenDomain
 import ReisenProviders
 
 @Test func providerAuthPopupPolicy_presentsChildForAllowedBlankTarget() {
@@ -76,6 +77,26 @@ import ReisenProviders
     )
 }
 
+@Test func providerAuthPopupPolicy_doesNotCollapseDistinctCoUkHosts() {
+    let evil = URL(string: "https://evil.co.uk/phish")!
+    let parent = URL(string: "https://www.airbnb.co.uk/trips")!
+    #expect(
+        !ProviderAuthPopupPolicy.shouldDismissChildAfterLoad(
+            childURL: evil,
+            parentURL: parent,
+            sawIdentityProvider: true
+        )
+    )
+    let sibling = URL(string: "https://auth.airbnb.co.uk/oauth/callback")!
+    #expect(
+        ProviderAuthPopupPolicy.shouldDismissChildAfterLoad(
+            childURL: sibling,
+            parentURL: parent,
+            sawIdentityProvider: true
+        )
+    )
+}
+
 @Test func providerAuthPopupPolicy_tracksIdentityProviderSighting() {
     #expect(
         !ProviderAuthPopupPolicy.noteIdentityProviderSighting(
@@ -95,4 +116,13 @@ import ReisenProviders
             alreadySawIdentityProvider: true
         )
     )
+}
+
+@Test func providerAuthPopupPolicy_bindProviderDetectsSwitch() {
+    var bound: ProviderID?
+    #expect(ProviderAuthPopupPolicy.bindProvider(.airbnb, previous: &bound))
+    #expect(bound == .airbnb)
+    #expect(!ProviderAuthPopupPolicy.bindProvider(.airbnb, previous: &bound))
+    #expect(ProviderAuthPopupPolicy.bindProvider(.getYourGuide, previous: &bound))
+    #expect(bound == .getYourGuide)
 }
