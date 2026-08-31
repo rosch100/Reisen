@@ -243,7 +243,7 @@ private struct ProviderWebView: NSViewRepresentable {
             diagnosticContext.providerID,
             previous: &context.coordinator.boundProviderID
         ) {
-            context.coordinator.dismissAuthPopup(reloadParent: false)
+            context.coordinator.dismissAuthPopup()
         }
 
         guard allowsEmbed else { return }
@@ -255,7 +255,7 @@ private struct ProviderWebView: NSViewRepresentable {
         // Auch neu einbinden, wenn die Property noch gesetzt ist, der WebView aber
         // inzwischen in einem anderen Host (Hintergrund-Bootstrap) hängt.
         if nsView.webView !== webView || webView.superview !== nsView {
-            context.coordinator.dismissAuthPopup(reloadParent: false)
+            context.coordinator.dismissAuthPopup()
             nsView.embed(webView)
             context.coordinator.recordLifecycleEvent(
                 "webview_reparented",
@@ -271,7 +271,7 @@ private struct ProviderWebView: NSViewRepresentable {
         }
 
         if let loginURL, context.coordinator.loadedLoginURL != loginURL {
-            context.coordinator.dismissAuthPopup(reloadParent: false)
+            context.coordinator.dismissAuthPopup()
             context.coordinator.loadedLoginURL = loginURL
             webView.load(URLRequest(url: loginURL))
         } else if credentialsChanged {
@@ -438,7 +438,7 @@ private struct ProviderWebView: NSViewRepresentable {
                 NotificationCenter.default.removeObserver(becomeKeyObserver)
             }
             becomeKeyObserver = nil
-            dismissAuthPopup(reloadParent: false)
+            dismissAuthPopup()
             trackedWebView = nil
             lastObservedURL = nil
         }
@@ -729,7 +729,7 @@ private struct ProviderWebView: NSViewRepresentable {
             ) {
             case .block:
                 recordNavigationEvent(
-                    "popup_blocked",
+                    ProviderAuthPopupPolicy.Event.blocked,
                     result: .skipped,
                     webView: webView,
                     reason: ProviderAuthPopupPolicy.blockReason(
@@ -743,14 +743,14 @@ private struct ProviderWebView: NSViewRepresentable {
             case .presentChild:
                 guard let host = webView.superview as? WebViewHostView else {
                     recordNavigationEvent(
-                        "popup_present_failed",
+                        ProviderAuthPopupPolicy.Event.presentFailed,
                         result: .failed,
                         webView: webView,
-                        reason: "missing_host"
+                        reason: ProviderAuthPopupPolicy.Reason.missingHost
                     )
                     return nil
                 }
-                dismissAuthPopup(reloadParent: false)
+                dismissAuthPopup()
                 let popup = FocusableWKWebView(frame: .zero, configuration: configuration)
                 popup.navigationDelegate = self
                 popup.uiDelegate = self
@@ -763,10 +763,10 @@ private struct ProviderWebView: NSViewRepresentable {
                 )
                 host.presentAuthPopup(popup)
                 recordNavigationEvent(
-                    "popup_presented",
+                    ProviderAuthPopupPolicy.Event.presented,
                     result: .succeeded,
                     webView: webView,
-                    reason: "child_webview"
+                    reason: ProviderAuthPopupPolicy.Reason.childWebView
                 )
                 return popup
             }
@@ -775,12 +775,12 @@ private struct ProviderWebView: NSViewRepresentable {
         func webViewDidClose(_ webView: WKWebView) {
             guard webView === authPopupWebView else { return }
             recordNavigationEvent(
-                "popup_closed",
+                ProviderAuthPopupPolicy.Event.closed,
                 result: .succeeded,
                 webView: webView,
-                reason: "webview_did_close"
+                reason: ProviderAuthPopupPolicy.Reason.webViewDidClose
             )
-            dismissAuthPopup(reloadParent: true)
+            dismissAuthPopup(refreshParent: true)
         }
 
         @MainActor
@@ -798,22 +798,24 @@ private struct ProviderWebView: NSViewRepresentable {
                 sawIdentityProvider: authPopupSawIdentityProvider
             ) else { return }
             recordNavigationEvent(
-                "popup_completed",
+                ProviderAuthPopupPolicy.Event.completed,
                 result: .succeeded,
                 webView: webView,
-                reason: "returned_to_provider_site"
+                reason: ProviderAuthPopupPolicy.Reason.returnedToProviderSite
             )
             // Kurz warten: Callback-Seite kann window.opener + close nutzen.
             DispatchQueue.main.asyncAfter(
                 deadline: .now() + ProviderAuthPopupPolicy.childDismissDelay
             ) { [weak self, weak webView] in
                 guard let self, let webView, webView === self.authPopupWebView else { return }
-                self.dismissAuthPopup(reloadParent: true)
+                self.dismissAuthPopup(refreshParent: true)
             }
         }
 
+        /// Schließt das Kind-Overlay. `refreshParent` nur nach OAuth-Abschluss
+        /// (kein Reload — postMessage an `window.opener` muss erhalten bleiben).
         @MainActor
-        func dismissAuthPopup(reloadParent: Bool) {
+        func dismissAuthPopup(refreshParent: Bool = false) {
             let parent = authPopupParent
             let popup = authPopupWebView
             popup?.navigationDelegate = nil
@@ -826,14 +828,10 @@ private struct ProviderWebView: NSViewRepresentable {
             } else {
                 popup?.removeFromSuperview()
             }
-            guard reloadParent, let parent else { return }
-            if parent.url != nil {
-                parent.reload()
-            } else if let loadedLoginURL {
-                parent.load(URLRequest(url: loadedLoginURL))
-            }
-            if let parentURL = parent.url ?? loadedLoginURL {
-                lastURLString.wrappedValue = parentURL.absoluteString
+            guard refreshParent, let parent else { return }
+            updateSession(from: parent)
+            if parent.url == nil, let loadedLoginURL {
+                lastURLString.wrappedValue = loadedLoginURL.absoluteString
             }
             windowMakeFirstResponder(parent)
         }

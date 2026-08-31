@@ -12,7 +12,27 @@ public enum ProviderAuthPopupPolicy: Sendable {
         case presentChild
     }
 
+    /// Diagnose-Event-Namen (macOS + iOS).
+    public enum Event {
+        public static let blocked = "popup_blocked"
+        public static let presentFailed = "popup_present_failed"
+        public static let presented = "popup_presented"
+        public static let closed = "popup_closed"
+        public static let completed = "popup_completed"
+    }
+
+    /// Diagnose-`reason`-Werte (macOS + iOS).
+    public enum Reason {
+        public static let childWebView = "child_webview"
+        public static let webViewDidClose = "webview_did_close"
+        public static let returnedToProviderSite = "returned_to_provider_site"
+        public static let missingHost = "missing_host"
+        public static let missingRequestURL = "missing_request_url"
+        public static let navigationPolicy = "navigation_policy"
+    }
+
     /// Wartet kurz, damit Callback-Seiten `window.opener` + `close` nutzen können.
+    /// Parent danach nicht neu laden: OAuth (z. B. GYG) postMessage't an den Opener.
     public static let childDismissDelay: TimeInterval = 0.75
 
     public static func createAction(
@@ -25,7 +45,7 @@ public enum ProviderAuthPopupPolicy: Sendable {
     }
 
     public static func blockReason(requestURL: URL?) -> String {
-        requestURL == nil ? "missing_request_url" : "navigation_policy"
+        requestURL == nil ? Reason.missingRequestURL : Reason.navigationPolicy
     }
 
     /// `true`, wenn der gebundene Provider gewechselt hat (Caller soll Popup schließen).
@@ -47,11 +67,9 @@ public enum ProviderAuthPopupPolicy: Sendable {
         sawIdentityProvider: Bool
     ) -> Bool {
         guard sawIdentityProvider else { return false }
-        guard !AuthIdentityProviderHost.matches(urlAbsoluteString: childURL.absoluteString) else {
-            return false
-        }
-        guard let parentHost = parentURL?.host else { return false }
         guard let childHost = childURL.host else { return false }
+        guard !AuthIdentityProviderHost.matches(childHost) else { return false }
+        guard let parentHost = parentURL?.host else { return false }
         return sharesRegistrableDomain(childHost, parentHost)
     }
 
@@ -60,7 +78,8 @@ public enum ProviderAuthPopupPolicy: Sendable {
         alreadySawIdentityProvider: Bool
     ) -> Bool {
         if alreadySawIdentityProvider { return true }
-        return AuthIdentityProviderHost.matches(urlAbsoluteString: currentURL.absoluteString)
+        guard let host = currentURL.host else { return false }
+        return AuthIdentityProviderHost.matches(host)
     }
 
     public static func initialIdentityProviderSighting(requestURL: URL?) -> Bool {

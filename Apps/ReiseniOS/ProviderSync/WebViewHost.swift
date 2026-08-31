@@ -111,12 +111,12 @@ struct ProviderSessionWebView: UIViewRepresentable {
             providerID,
             previous: &context.coordinator.boundProviderID
         ) {
-            context.coordinator.dismissAuthPopup(reloadParent: false)
+            context.coordinator.dismissAuthPopup()
         }
         if allowsEmbed {
             attachCoordinator(view, context: context)
             if uiView.webView !== view || view.superview !== uiView {
-                context.coordinator.dismissAuthPopup(reloadParent: false)
+                context.coordinator.dismissAuthPopup()
                 uiView.embed(view)
                 context.coordinator.recordNavigationEvent(
                     "webview_reparented",
@@ -132,7 +132,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
         guard allowsEmbed, let loginURL else { return }
         if context.coordinator.loadedLoginURL != loginURL {
-            context.coordinator.dismissAuthPopup(reloadParent: false)
+            context.coordinator.dismissAuthPopup()
             context.coordinator.loadedLoginURL = loginURL
             view.load(URLRequest(url: loginURL))
         }
@@ -236,7 +236,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
 
         func tearDown(from webView: WKWebView?) {
-            dismissAuthPopup(reloadParent: false)
+            dismissAuthPopup()
             webView?.configuration.userContentController.removeScriptMessageHandler(
                 forName: LoginFormCapture.messageHandlerName
             )
@@ -354,7 +354,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
             ) {
             case .block:
                 recordNavigationEvent(
-                    "popup_blocked",
+                    ProviderAuthPopupPolicy.Event.blocked,
                     result: .skipped,
                     webView: webView,
                     reason: ProviderAuthPopupPolicy.blockReason(
@@ -368,14 +368,14 @@ struct ProviderSessionWebView: UIViewRepresentable {
             case .presentChild:
                 guard let host = webView.superview as? WebViewHostUIView else {
                     recordNavigationEvent(
-                        "popup_present_failed",
+                        ProviderAuthPopupPolicy.Event.presentFailed,
                         result: .failed,
                         webView: webView,
-                        reason: "missing_host"
+                        reason: ProviderAuthPopupPolicy.Reason.missingHost
                     )
                     return nil
                 }
-                dismissAuthPopup(reloadParent: false)
+                dismissAuthPopup()
                 let popup = InteractiveWKWebView(frame: .zero, configuration: configuration)
                 popup.navigationDelegate = self
                 popup.uiDelegate = self
@@ -387,10 +387,10 @@ struct ProviderSessionWebView: UIViewRepresentable {
                 )
                 host.presentAuthPopup(popup)
                 recordNavigationEvent(
-                    "popup_presented",
+                    ProviderAuthPopupPolicy.Event.presented,
                     result: .succeeded,
                     webView: webView,
-                    reason: "child_webview"
+                    reason: ProviderAuthPopupPolicy.Reason.childWebView
                 )
                 return popup
             }
@@ -399,12 +399,12 @@ struct ProviderSessionWebView: UIViewRepresentable {
         func webViewDidClose(_ webView: WKWebView) {
             guard webView === authPopupWebView else { return }
             recordNavigationEvent(
-                "popup_closed",
+                ProviderAuthPopupPolicy.Event.closed,
                 result: .succeeded,
                 webView: webView,
-                reason: "webview_did_close"
+                reason: ProviderAuthPopupPolicy.Reason.webViewDidClose
             )
-            dismissAuthPopup(reloadParent: true)
+            dismissAuthPopup(refreshParent: true)
         }
 
         private func handleAuthPopupNavigation(_ webView: WKWebView, allowDismiss: Bool) {
@@ -421,20 +421,22 @@ struct ProviderSessionWebView: UIViewRepresentable {
                 sawIdentityProvider: authPopupSawIdentityProvider
             ) else { return }
             recordNavigationEvent(
-                "popup_completed",
+                ProviderAuthPopupPolicy.Event.completed,
                 result: .succeeded,
                 webView: webView,
-                reason: "returned_to_provider_site"
+                reason: ProviderAuthPopupPolicy.Reason.returnedToProviderSite
             )
             DispatchQueue.main.asyncAfter(
                 deadline: .now() + ProviderAuthPopupPolicy.childDismissDelay
             ) { [weak self, weak webView] in
                 guard let self, let webView, webView === self.authPopupWebView else { return }
-                self.dismissAuthPopup(reloadParent: true)
+                self.dismissAuthPopup(refreshParent: true)
             }
         }
 
-        func dismissAuthPopup(reloadParent: Bool) {
+        /// Schließt das Kind-Overlay. `refreshParent` nur nach OAuth-Abschluss
+        /// (kein Reload — postMessage an `window.opener` muss erhalten bleiben).
+        func dismissAuthPopup(refreshParent: Bool = false) {
             let parent = authPopupParent
             let popup = authPopupWebView
             popup?.navigationDelegate = nil
@@ -447,12 +449,9 @@ struct ProviderSessionWebView: UIViewRepresentable {
             } else {
                 popup?.removeFromSuperview()
             }
-            guard reloadParent, let parent else { return }
-            if parent.url != nil {
-                parent.reload()
-            } else if let loadedLoginURL {
-                parent.load(URLRequest(url: loadedLoginURL))
-            }
+            guard refreshParent, let parent else { return }
+            applyAssistance(in: parent)
+            onDidFinish(parent)
         }
 
         private func allowsNavigation(to url: URL, isMainFrame: Bool) -> Bool {
