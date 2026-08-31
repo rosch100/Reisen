@@ -17,18 +17,13 @@ public enum ProviderSessionNavigation {
         diagnosticContext: DiagnosticContext,
         onChanged: @escaping () -> Void
     ) {
-        Task {
-            await DiagnosticLogger.shared.record(
-                DiagnosticEvent(
-                    context: diagnosticContext,
-                    component: "ProviderSessionNavigation",
-                    phase: "navigation",
-                    event: "did_finish",
-                    result: .started,
-                    url: webView.url.flatMap(DiagnosticRedactor.urlMetadata(for:))
-                )
-            )
-        }
+        record(
+            context: diagnosticContext,
+            phase: "navigation",
+            event: "did_finish",
+            result: .started,
+            url: webView.url
+        )
         if let enabledProviderIDs {
             hub.syncEnabledProviders(enabledProviderIDs)
         }
@@ -39,22 +34,16 @@ public enum ProviderSessionNavigation {
         let currentStatus = hub.status(for: providerID) ?? .needsLogin
         let previousReady = currentStatus == .sessionReady
         let heuristic = ProviderSessionStatusResolver.classify(url)
-        let statusAtClassification = currentStatus
-        Task {
-            await DiagnosticLogger.shared.record(
-                DiagnosticEvent(
-                    context: diagnosticContext,
-                    component: "ProviderSessionNavigation",
-                    phase: "session_status",
-                    event: "heuristic_classified",
-                    result: .succeeded,
-                    url: DiagnosticRedactor.urlMetadata(for: url),
-                    reason: String(describing: heuristic),
-                    statusBefore: String(describing: statusAtClassification),
-                    statusAfter: String(describing: statusAtClassification)
-                )
-            )
-        }
+        record(
+            context: diagnosticContext,
+            phase: "session_status",
+            event: "heuristic_classified",
+            result: .succeeded,
+            url: url,
+            reason: String(describing: heuristic),
+            statusBefore: String(describing: currentStatus),
+            statusAfter: String(describing: currentStatus)
+        )
         if let webViewURL = webView.url {
             hub.updateLastURL(providerID, urlString: webViewURL.absoluteString)
         }
@@ -62,87 +51,37 @@ public enum ProviderSessionNavigation {
 
         if let status = immediateStatus(for: heuristic, current: currentStatus) {
             hub.updateStatus(providerID, status: status)
-            Task {
-                await DiagnosticLogger.shared.record(
-                    DiagnosticEvent(
-                        context: diagnosticContext,
-                        component: "ProviderSessionNavigation",
-                        phase: "session_status",
-                        event: "status_changed",
-                        result: .succeeded,
-                        reason: "heuristic",
-                        statusBefore: String(describing: currentStatus),
-                        statusAfter: String(describing: status)
-                    )
-                )
-            }
+            record(
+                context: diagnosticContext,
+                phase: "session_status",
+                event: "status_changed",
+                result: .succeeded,
+                reason: "heuristic",
+                statusBefore: String(describing: currentStatus),
+                statusAfter: String(describing: status)
+            )
             if status != currentStatus {
                 clearProbeStarts(for: providerID)
             }
-        } else {
-            switch heuristic {
-            case .shouldProbeOpodo:
-                startProbe(
-                    webView: webView,
-                    navigationURL: url,
-                    providerID: providerID,
-                    diagnosticContext: diagnosticContext,
-                    hub: hub,
-                    enabledProviderIDs: enabledProviderIDs,
-                    onChanged: onChanged,
-                    applies: OpodoSessionProbe.applies(to:)
-                ) { _ in
-                    let text = try await webView.fetchAuthenticatedText(
-                        url: OpodoSessionProbe.graphqlURL,
-                        method: "POST",
-                        accept: "application/json",
-                        referer: "https://www.opodo.de/",
-                        contentType: "application/json",
-                        body: OpodoSessionProbe.getUserAccountRequestBody(),
-                        timeoutSeconds: 20
-                    )
-                    return OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: text)
-                }
-            case .shouldProbeTraveloka:
-                startProbe(
-                    webView: webView,
-                    navigationURL: url,
-                    providerID: providerID,
-                    diagnosticContext: diagnosticContext,
-                    hub: hub,
-                    enabledProviderIDs: enabledProviderIDs,
-                    onChanged: onChanged,
-                    applies: TravelokaSessionProbe.applies(to:)
-                ) { hints in
-                    let context = await webView.travelokaSessionContext(additionalHintURLs: hints)
-                    guard context.hasSentinel else { return nil }
-                    let text = try await webView.fetchAuthenticatedText(
-                        url: TravelokaSessionProbe.whoamiURL,
-                        method: "POST",
-                        accept: "application/json",
-                        referer: context.apiReferer(),
-                        contentType: "application/json",
-                        body: try TravelokaSessionProbe.whoamiRequestBody(context: context),
-                        headers: TravelokaSessionProbe.whoamiHeaders(context: context),
-                        timeoutSeconds: 20
-                    )
-                    return TravelokaSessionProbe.isLoggedIn(fromWhoAmIJSON: text)
-                }
-            case .shouldProbeBilligerMietwagen:
-                startProbe(
-                    webView: webView,
-                    navigationURL: url,
-                    providerID: providerID,
-                    diagnosticContext: diagnosticContext,
-                    hub: hub,
-                    enabledProviderIDs: enabledProviderIDs,
-                    onChanged: onChanged,
-                    applies: BilligerMietwagenSessionProbe.applies(to:)
-                ) { _ in
-                    try await BilligerMietwagenSessionProbe.fetchIsLoggedIn(using: webView)
-                }
-            case .sessionReady, .needsLogin, .unknown:
-                break
+        } else if ProviderSessionLiveProbe.shouldStart(
+            heuristic,
+            sessionAlreadyReady: currentStatus == .sessionReady
+        ), let applies = ProviderSessionLiveProbe.applies(to: heuristic) {
+            startProbe(
+                webView: webView,
+                navigationURL: url,
+                providerID: providerID,
+                diagnosticContext: diagnosticContext,
+                hub: hub,
+                enabledProviderIDs: enabledProviderIDs,
+                onChanged: onChanged,
+                applies: applies
+            ) { hints in
+                try await ProviderSessionLiveProbe.fetchIsLoggedIn(
+                    heuristic,
+                    using: webView,
+                    additionalHintURLs: hints
+                )
             }
         }
 
@@ -164,7 +103,7 @@ public enum ProviderSessionNavigation {
             return .needsLogin
         case .unknown:
             return current == .sessionReady ? nil : .needsLogin
-        case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen:
+        case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen, .shouldProbeCheck24:
             return nil
         }
     }
@@ -185,20 +124,15 @@ public enum ProviderSessionNavigation {
             url: navigationURL
         )
         if probeStartCount >= 3 {
-            Task {
-                await DiagnosticLogger.shared.record(
-                    DiagnosticEvent(
-                        context: diagnosticContext,
-                        component: "ProviderSessionNavigation",
-                        phase: "session_probe",
-                        event: "repeated_probe",
-                        result: .failed,
-                        attempt: probeStartCount,
-                        url: DiagnosticRedactor.urlMetadata(for: navigationURL),
-                        reason: "identical_probe_starts"
-                    )
-                )
-            }
+            record(
+                context: diagnosticContext,
+                phase: "session_probe",
+                event: "repeated_probe",
+                result: .failed,
+                attempt: probeStartCount,
+                url: navigationURL,
+                reason: "identical_probe_starts"
+            )
         }
         Task {
             let hints = hintURLs(hub: hub, providerID: providerID)
@@ -208,47 +142,38 @@ public enum ProviderSessionNavigation {
                 hints: hints,
                 applies: applies
             ) else {
-                await DiagnosticLogger.shared.record(
-                    DiagnosticEvent(
-                        context: diagnosticContext,
-                        component: "ProviderSessionNavigation",
-                        phase: "session_probe",
-                        event: "missing_probe_context",
-                        result: .skipped,
-                        url: DiagnosticRedactor.urlMetadata(for: navigationURL),
-                        reason: "url_not_applicable"
-                    )
+                await recordEvent(
+                    context: diagnosticContext,
+                    phase: "session_probe",
+                    event: "missing_probe_context",
+                    result: .skipped,
+                    url: navigationURL,
+                    reason: "url_not_applicable"
                 )
                 return
             }
             do {
                 guard let loggedIn = try await probe(hints) else {
-                    await DiagnosticLogger.shared.record(
-                        DiagnosticEvent(
-                            context: diagnosticContext,
-                            component: "ProviderSessionNavigation",
-                            phase: "session_probe",
-                            event: "unknown",
-                            result: .skipped,
-                            url: DiagnosticRedactor.urlMetadata(for: navigationURL),
-                            reason: "probe_returned_unknown"
-                        )
+                    await recordEvent(
+                        context: diagnosticContext,
+                        phase: "session_probe",
+                        event: "unknown",
+                        result: .skipped,
+                        url: navigationURL,
+                        reason: "probe_returned_unknown"
                     )
                     return
                 }
                 let statusBeforeProbeResult = hub.status(for: providerID)
-                await DiagnosticLogger.shared.record(
-                    DiagnosticEvent(
-                        context: diagnosticContext,
-                        component: "ProviderSessionNavigation",
-                        phase: "session_probe",
-                        event: "completed",
-                        result: .succeeded,
-                        url: DiagnosticRedactor.urlMetadata(for: navigationURL),
-                        reason: loggedIn ? "session_ready" : "needs_login",
-                        statusBefore: statusBeforeProbeResult.map { String(describing: $0) },
-                        statusAfter: loggedIn ? "sessionReady" : "needsLogin"
-                    )
+                await recordEvent(
+                    context: diagnosticContext,
+                    phase: "session_probe",
+                    event: "completed",
+                    result: .succeeded,
+                    url: navigationURL,
+                    reason: loggedIn ? "session_ready" : "needs_login",
+                    statusBefore: statusBeforeProbeResult.map { String(describing: $0) },
+                    statusAfter: loggedIn ? "sessionReady" : "needsLogin"
                 )
                 applyProbeResult(
                     loggedIn: loggedIn,
@@ -259,34 +184,25 @@ public enum ProviderSessionNavigation {
                     onChanged: onChanged
                 )
             } catch {
-                let timedOut = isTimeout(error)
-                let cancelled = Task.isCancelled
+                let timedOut = NetworkErrorClassification.isURLTimeout(error)
+                let cancelled = NetworkErrorClassification.isCancellation(error)
                 let statusBeforeProbeFailure = hub.status(for: providerID)
-                await DiagnosticLogger.shared.record(
-                    DiagnosticEvent(
-                        context: diagnosticContext,
-                        component: "ProviderSessionNavigation",
-                        phase: "session_probe",
-                        event: cancelled ? "cancelled" : (timedOut ? "timeout" : "failed"),
-                        result: cancelled ? .cancelled : (timedOut ? .timedOut : .failed),
-                        url: DiagnosticRedactor.urlMetadata(for: navigationURL),
-                        errorType: cancelled ? nil : String(reflecting: type(of: error)),
-                        reason: cancelled
-                            ? "task_cancelled"
-                            : (timedOut
-                                ? "probe_timeout"
-                                : DiagnosticRedactor.redact(error.localizedDescription)),
-                        statusBefore: statusBeforeProbeFailure.map { String(describing: $0) }
-                    )
+                await recordEvent(
+                    context: diagnosticContext,
+                    phase: "session_probe",
+                    event: cancelled ? "cancelled" : (timedOut ? "timeout" : "failed"),
+                    result: cancelled ? .cancelled : (timedOut ? .timedOut : .failed),
+                    url: navigationURL,
+                    errorType: cancelled ? nil : String(reflecting: type(of: error)),
+                    reason: cancelled
+                        ? "task_cancelled"
+                        : (timedOut
+                            ? "probe_timeout"
+                            : DiagnosticRedactor.redact(error.localizedDescription)),
+                    statusBefore: statusBeforeProbeFailure.map { String(describing: $0) }
                 )
             }
         }
-    }
-
-    private static func isTimeout(_ error: Error) -> Bool {
-        let nsError = error as NSError
-        return nsError.domain == NSURLErrorDomain
-            && nsError.code == NSURLErrorTimedOut
     }
 
     private static func hintURLs(hub: ProviderSessionHub, providerID: ProviderID) -> [URL] {
@@ -317,21 +233,74 @@ public enum ProviderSessionNavigation {
         }
         hub.updateStatus(providerID, status: .fromProbe(loggedIn: loggedIn))
         clearProbeStarts(for: providerID)
+        record(
+            context: diagnosticContext,
+            phase: "session_status",
+            event: "status_changed",
+            result: .succeeded,
+            reason: loggedIn ? "session_ready" : "needs_login",
+            statusBefore: statusBefore.map { String(describing: $0) },
+            statusAfter: loggedIn ? "sessionReady" : "needsLogin"
+        )
+        onChanged()
+    }
+
+    /// URL roh übergeben; Host-Redaction ist SSOT in `DiagnosticLogger`.
+    private static func record(
+        context: DiagnosticContext,
+        phase: String,
+        event: String,
+        result: DiagnosticResult,
+        attempt: Int? = nil,
+        url: URL? = nil,
+        errorType: String? = nil,
+        reason: String? = nil,
+        statusBefore: String? = nil,
+        statusAfter: String? = nil
+    ) {
         Task {
-            await DiagnosticLogger.shared.record(
-                DiagnosticEvent(
-                    context: diagnosticContext,
-                    component: "ProviderSessionNavigation",
-                    phase: "session_status",
-                    event: "status_changed",
-                    result: .succeeded,
-                    reason: loggedIn ? "session_ready" : "needs_login",
-                    statusBefore: statusBefore.map { String(describing: $0) },
-                    statusAfter: loggedIn ? "sessionReady" : "needsLogin"
-                )
+            await recordEvent(
+                context: context,
+                phase: phase,
+                event: event,
+                result: result,
+                attempt: attempt,
+                url: url,
+                errorType: errorType,
+                reason: reason,
+                statusBefore: statusBefore,
+                statusAfter: statusAfter
             )
         }
-        onChanged()
+    }
+
+    private static func recordEvent(
+        context: DiagnosticContext,
+        phase: String,
+        event: String,
+        result: DiagnosticResult,
+        attempt: Int? = nil,
+        url: URL? = nil,
+        errorType: String? = nil,
+        reason: String? = nil,
+        statusBefore: String? = nil,
+        statusAfter: String? = nil
+    ) async {
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: context,
+                component: "ProviderSessionNavigation",
+                phase: phase,
+                event: event,
+                result: result,
+                attempt: attempt,
+                url: url?.absoluteString,
+                errorType: errorType,
+                reason: reason,
+                statusBefore: statusBefore,
+                statusAfter: statusAfter
+            )
+        )
     }
 
     private static var probeStartTracker = ProbeStartTracker()
@@ -356,13 +325,14 @@ struct ProbeStartTracker {
     private var lastURLByProvider: [ProviderID: String?] = [:]
 
     mutating func register(providerID: ProviderID, url: URL, at date: Date) -> Int {
-        let urlMetadata = DiagnosticRedactor.urlMetadata(for: url)
+        // Host+Pfad: nicht DiagnosticRedactor.urlMetadata (nur Host würde Pfade zusammenführen).
+        let urlIdentity = navigationIdentity(for: url)
         if let previousURL = lastURLByProvider[providerID],
-           previousURL != urlMetadata {
+           previousURL != urlIdentity {
             clear(providerID: providerID)
         }
-        lastURLByProvider[providerID] = urlMetadata
-        let key = Key(providerID: providerID, url: urlMetadata)
+        lastURLByProvider[providerID] = urlIdentity
+        let key = Key(providerID: providerID, url: urlIdentity)
         guard let previous = starts[key],
               date.timeIntervalSince(previous.startedAt) <= Self.window
         else {
@@ -382,6 +352,12 @@ struct ProbeStartTracker {
     mutating func reset() {
         starts.removeAll()
         lastURLByProvider.removeAll()
+    }
+
+    private func navigationIdentity(for url: URL) -> String? {
+        guard let host = url.host, !host.isEmpty else { return nil }
+        let path = url.path.isEmpty ? "/" : url.path
+        return "\(host.lowercased())\(path)"
     }
 
     private struct Key: Hashable {

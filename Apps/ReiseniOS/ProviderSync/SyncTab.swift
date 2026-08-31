@@ -535,7 +535,7 @@ struct SyncTab: View {
             selectedKeychainAccount = nil
             let context = DiagnosticContext(
                 runID: diagnosticRunID,
-                providerID: providerID,
+                providerID: selectedProviderID,
                 operation: "auto_login"
             )
             Task {

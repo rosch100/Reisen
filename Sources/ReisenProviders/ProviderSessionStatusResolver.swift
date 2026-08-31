@@ -11,6 +11,7 @@ public enum ProviderSessionStatusHeuristic: Equatable {
     case shouldProbeOpodo
     case shouldProbeTraveloka
     case shouldProbeBilligerMietwagen
+    case shouldProbeCheck24
     case unknown
 }
 
@@ -37,6 +38,9 @@ public enum ProviderSessionStatusResolver {
             return .sessionReady
         } else if looksLikeLogin {
             return .needsLogin
+        } else if Check24SessionProbe.applies(to: url) {
+            // Nach SSO oft Marketing-Homepage (weder Login noch Account) → Activities-Probe.
+            return .shouldProbeCheck24
         } else if TravelokaSessionProbe.applies(to: url) {
             return .shouldProbeTraveloka
         } else {

@@ -1,12 +1,24 @@
 import WebKit
 import Foundation
-import ReisenAppCore
+import ReisenDiagnostics
 
 enum JavaScriptConditionResult: Equatable, Sendable {
     case succeeded
     case javaScriptError
     case timedOut
     case cancelled
+
+    /// `true` wenn bereit; `false` bei Timeout/JS-Fehler; wirft bei Cancel.
+    func asReadyFlag() throws -> Bool {
+        switch self {
+        case .succeeded:
+            return true
+        case .cancelled:
+            throw CancellationError()
+        case .timedOut, .javaScriptError:
+            return false
+        }
+    }
 }
 
 extension WKWebView {
@@ -53,7 +65,7 @@ extension WKWebView {
         var lastJavaScriptError: Error?
         var didSignalStart = false
         while true {
-            if Task.isCancelled {
+            if NetworkErrorClassification.isCurrentTaskCancelled {
                 await recordConditionEvent(
                     result: .cancelled,
                     durationMilliseconds: elapsedMilliseconds(since: start),
@@ -142,7 +154,7 @@ extension WKWebView {
                 event: "condition",
                 result: result,
                 durationMilliseconds: durationMilliseconds,
-                url: url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
+                url: url?.absoluteString,
                 reason: reason
             )
         )

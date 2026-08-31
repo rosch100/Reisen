@@ -96,6 +96,7 @@ struct ProviderSyncContainer: View {
                         operation: "startup_probe"
                     )
                 )
+                .id(backgroundProviderID)
                 .frame(width: 1, height: 1)
                 .opacity(0.01)
                 .allowsHitTesting(false)
@@ -432,6 +433,7 @@ struct ProviderSyncContainer: View {
         statusBefore: ProviderSessionStatus? = nil,
         statusAfter: ProviderSessionStatus? = nil
     ) async {
+        // URL roh; Host-Redaction ist SSOT in `DiagnosticLogger`.
         await DiagnosticLogger.shared.record(
             DiagnosticEvent(
                 context: context,
@@ -440,7 +442,7 @@ struct ProviderSyncContainer: View {
                 event: event,
                 result: result,
                 durationMilliseconds: durationMilliseconds,
-                url: url.flatMap(DiagnosticRedactor.urlMetadata(for:)),
+                url: url,
                 reason: reason,
                 statusBefore: statusBefore.map(String.init(describing:)),
                 statusAfter: statusAfter.map(String.init(describing:))

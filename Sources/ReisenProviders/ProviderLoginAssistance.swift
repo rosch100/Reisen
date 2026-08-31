@@ -1,6 +1,6 @@
 import Foundation
 import WebKit
-import ReisenAppCore
+import ReisenDiagnostics
 
 struct LoginAssistanceTracker {
     private var lastURL: URL?
@@ -50,7 +50,7 @@ public final class ProviderLoginAssistanceCancellation {
             phase: "autofill",
             event: "cancelled",
             result: .cancelled,
-            url: webView?.url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
+            url: webView?.url?.absoluteString,
             reason: "task_cancelled"
         )
         Task { await DiagnosticLogger.shared.record(event) }
@@ -110,7 +110,7 @@ public enum ProviderLoginAssistance {
                 context: diagnosticContext,
                 phase: "login_page_setup",
                 event: "login_method_script",
-                url: urlMetadata(for: webView)
+                url: urlForLog(for: webView)
             )
             webView.evaluateJavaScript(LoginFieldHintsScript.build()) { _, error in
                 recordJavaScriptError(
@@ -118,7 +118,7 @@ public enum ProviderLoginAssistance {
                     context: diagnosticContext,
                     phase: "login_page_setup",
                     event: "field_hints_script",
-                    url: urlMetadata(for: webView)
+                    url: urlForLog(for: webView)
                 )
             }
         }
@@ -156,7 +156,7 @@ public enum ProviderLoginAssistance {
                             event: "attempt",
                             result: .started,
                             attempt: attempt,
-                            url: urlMetadata(for: webView)
+                            url: urlForLog(for: webView)
                         )
                     )
                 }
@@ -176,7 +176,7 @@ public enum ProviderLoginAssistance {
                                         event: "filled",
                                         result: .succeeded,
                                         attempt: attempt,
-                                        url: urlMetadata(for: webView),
+                                        url: urlForLog(for: webView),
                                         reason: filled.submitID.map {
                                             "submit_id=\(DiagnosticRedactor.redact($0))"
                                         }
@@ -203,7 +203,7 @@ public enum ProviderLoginAssistance {
                                         event: "retries_exhausted",
                                         result: .failed,
                                         attempt: attempt,
-                                        url: urlMetadata(for: webView),
+                                        url: urlForLog(for: webView),
                                         reason: retryDelays.isEmpty
                                             ? "retry_schedule_missing"
                                             : "fill_failed"
@@ -244,7 +244,7 @@ public enum ProviderLoginAssistance {
                 context: diagnosticContext,
                 phase: "autofill",
                 event: "login_method_click",
-                url: urlMetadata(for: webView)
+                url: urlForLog(for: webView)
             )
             completion(WebKitJSResult.bool(from: result, key: "clicked") ?? false)
         }
@@ -272,7 +272,7 @@ public enum ProviderLoginAssistance {
     }
 
     @MainActor
-    private static func urlMetadata(for webView: WKWebView) -> String? {
-        webView.url.flatMap(DiagnosticRedactor.urlMetadata(for:))
+    private static func urlForLog(for webView: WKWebView) -> String? {
+        webView.url?.absoluteString
     }
 }

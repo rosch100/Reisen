@@ -97,7 +97,7 @@ import ReisenDomain
         DiagnosticEvent.self,
         from: Data(payload.utf8)
     )
-    #expect(decoded.url == "kundenbereich.check24.de/login")
+    #expect(decoded.url == "kundenbereich.check24.de")
 }
 
 @Test func diagnosticLogger_rateLimitsIdenticalEvents() async throws {

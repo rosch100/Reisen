@@ -1,5 +1,5 @@
 import Foundation
-import ReisenAppCore
+import ReisenDiagnostics
 
 @MainActor
 public enum NavigationSettleLoop {
@@ -30,53 +30,37 @@ public enum NavigationSettleLoop {
             )
             if let diagnosticContext {
                 if currentURL != previousURL {
-                    await DiagnosticLogger.shared.record(
-                        DiagnosticEvent(
-                            context: diagnosticContext,
-                            component: "NavigationSettleLoop",
-                            phase: "navigation",
-                            event: "url_changed",
-                            result: .started,
-                            url: currentURL.flatMap { DiagnosticRedactor.urlMetadata(for: $0) }
-                        )
+                    await record(
+                        context: diagnosticContext,
+                        event: "url_changed",
+                        result: .started,
+                        url: currentURL
                     )
                 }
                 if currentLoading != previousLoading {
-                    await DiagnosticLogger.shared.record(
-                        DiagnosticEvent(
-                            context: diagnosticContext,
-                            component: "NavigationSettleLoop",
-                            phase: "navigation",
-                            event: "loading_changed",
-                            result: .started,
-                            url: currentURL.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
-                            reason: "is_loading=\(currentLoading)"
-                        )
+                    await record(
+                        context: diagnosticContext,
+                        event: "loading_changed",
+                        result: .started,
+                        url: currentURL,
+                        reason: "is_loading=\(currentLoading)"
                     )
                 }
                 if currentTargetMatch != previousTargetMatch {
-                    await DiagnosticLogger.shared.record(
-                        DiagnosticEvent(
-                            context: diagnosticContext,
-                            component: "NavigationSettleLoop",
-                            phase: "navigation",
-                            event: "target_match_changed",
-                            result: currentTargetMatch ? .succeeded : .started,
-                            url: currentURL.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
-                            reason: "target_match=\(currentTargetMatch)"
-                        )
+                    await record(
+                        context: diagnosticContext,
+                        event: "target_match_changed",
+                        result: currentTargetMatch ? .succeeded : .started,
+                        url: currentURL,
+                        reason: "target_match=\(currentTargetMatch)"
                     )
                 }
-                await DiagnosticLogger.shared.record(
-                    DiagnosticEvent(
-                        context: diagnosticContext,
-                        component: "NavigationSettleLoop",
-                        phase: "navigation",
-                        event: "poll",
-                        result: .started,
-                        url: webView.url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
-                        reason: "is_loading=\(webView.isLoading),saw_loading=\(sawLoading),target=\(NavigationTargetMatching.isOnTarget(webView: webView, host: targetHost, path: targetPath))"
-                    )
+                await record(
+                    context: diagnosticContext,
+                    event: "poll",
+                    result: .started,
+                    url: webView.url,
+                    reason: "is_loading=\(webView.isLoading),saw_loading=\(sawLoading),target=\(NavigationTargetMatching.isOnTarget(webView: webView, host: targetHost, path: targetPath))"
                 )
             }
             if try await NavigationSettlePoll.tick(
@@ -93,7 +77,27 @@ public enum NavigationSettleLoop {
             previousTargetMatch = currentTargetMatch
             try await Task.sleep(nanoseconds: 100_000_000)
         }
-
         throw NavigationSettleTimeout.error(for: timeoutURL)
+    }
+
+    /// URL roh; Host-Redaction ist SSOT in `DiagnosticLogger`.
+    private static func record(
+        context: DiagnosticContext,
+        event: String,
+        result: DiagnosticResult,
+        url: URL?,
+        reason: String? = nil
+    ) async {
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: context,
+                component: "NavigationSettleLoop",
+                phase: "navigation",
+                event: event,
+                result: result,
+                url: url?.absoluteString,
+                reason: reason
+            )
+        )
     }
 }

@@ -142,3 +142,85 @@ import Foundation
     #expect(!result.contains("expired"))
     #expect(result.contains("current"))
 }
+
+@Test func syncLog_recentTailDropsPartialFirstLineWhenTruncated() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-sync-log-partial-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+
+    let context = DiagnosticContext(runID: UUID(), providerID: .check24, operation: "test")
+    let localEvent = String(
+        decoding: try JSONEncoder().encode(
+            DiagnosticEvent(
+                context: context,
+                component: "Test",
+                phase: "dom",
+                event: "dom_snapshot_secret",
+                result: .succeeded,
+                visibility: .localDebugOnly
+            )
+        ),
+        as: UTF8.self
+    )
+    let publicEvent = String(
+        decoding: try JSONEncoder().encode(
+            DiagnosticEvent(
+                context: context,
+                component: "Test",
+                phase: "navigation",
+                event: "navigation_ok",
+                result: .succeeded
+            )
+        ),
+        as: UTF8.self
+    )
+    let localLine = "[2026-08-31T10:00:00Z] diagnostic=\(localEvent)"
+    let publicLine = "[2026-08-31T10:00:01Z] diagnostic=\(publicEvent)"
+    let padding = String(repeating: "P", count: 200)
+    let full = "\(padding)\n\(localLine)\n\(publicLine)\n"
+    try Data(full.utf8).write(to: url)
+
+    // Schneidet mitten in der localDebug-Zeile (nach "diagnostic="), ohne Marker am Fragment-Anfang.
+    let cutInsideLocal = full.utf8.count - publicLine.utf8.count - 2 - (localLine.utf8.count / 2)
+    let attachment = SyncLog.recentTail(maxBytes: cutInsideLocal, fileURL: url)
+
+    guard case .attached(let preview, _, _, _, let truncated) = attachment else {
+        Issue.record("expected attached log")
+        return
+    }
+    #expect(truncated)
+    #expect(!preview.contains("dom_snapshot_secret"))
+    #expect(preview.contains("navigation_ok"))
+}
+
+@Test func syncLog_recentTailDropsEntireSuffixWhenTruncatedWithoutNewline() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-sync-log-no-nl-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+
+    let context = DiagnosticContext(runID: UUID(), providerID: .check24, operation: "test")
+    let localEvent = String(
+        decoding: try JSONEncoder().encode(
+            DiagnosticEvent(
+                context: context,
+                component: "Test",
+                phase: "dom",
+                event: "dom_snapshot_secret",
+                result: .succeeded,
+                visibility: .localDebugOnly
+            )
+        ),
+        as: UTF8.self
+    )
+    let localLine = "[2026-08-31T10:00:00Z] diagnostic=\(localEvent)"
+    try Data(localLine.utf8).write(to: url)
+
+    let attachment = SyncLog.recentTail(maxBytes: localLine.utf8.count / 2, fileURL: url)
+    guard case .attached(let preview, _, _, _, let truncated) = attachment else {
+        Issue.record("expected attached log")
+        return
+    }
+    #expect(truncated)
+    #expect(preview.isEmpty)
+    #expect(!preview.contains("dom_snapshot_secret"))
+}

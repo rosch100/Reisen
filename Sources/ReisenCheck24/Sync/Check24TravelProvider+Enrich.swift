@@ -25,7 +25,7 @@ extension Check24TravelProvider {
             needles: [ref.externalUrl, url.lastPathComponent]
         )
         if ref.bookingType == .carRental {
-            guard await waitForCarRentalDetailReady(in: webView) else {
+            guard try await waitForCarRentalDetailReady(in: webView) else {
                 await recordDiagnosticPhase(
                     "enrichment",
                     event: "readiness_failed",

@@ -23,7 +23,7 @@ extension Check24TravelProvider {
             try await load(url: bookingURL, in: webView)
         }
 
-        guard await waitForCarRentalDetailReady(in: webView) else {
+        guard try await waitForCarRentalDetailReady(in: webView) else {
             await recordDiagnosticPhase(
                 "car_rental_detail",
                 event: "readiness_failed",
@@ -56,11 +56,11 @@ extension Check24TravelProvider {
     }
 
     /// Wartet auf eingebettetes `CpInitial` / `rentalcarDetails` (Catalog + `enrichBooking`).
-    func waitForCarRentalDetailReady(in webView: WKWebView) async -> Bool {
-        await webView.waitForJavaScriptCondition(
+    func waitForCarRentalDetailReady(in webView: WKWebView) async throws -> Bool {
+        try await webView.waitForJavaScriptCondition(
             Check24CarRentalDetailParser.detailReadyJavaScript,
             timeoutSeconds: 8
-        ) == .succeeded
+        ).asReadyFlag()
     }
 
     /// `html == nil` → leeres Enrichment (z. B. Wait-Timeout), ohne Snapshot/Parse.

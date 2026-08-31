@@ -45,6 +45,7 @@ struct ProviderSessionProbeHost: View {
                         operation: "startup_probe"
                     )
                 )
+                .id(backgroundProviderID)
                 .frame(width: 1, height: 1)
             }
 
@@ -214,7 +215,7 @@ struct ProviderSessionProbeHost: View {
                 event: event,
                 result: result,
                 durationMilliseconds: durationMilliseconds,
-                url: url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
+                url: url?.absoluteString,
                 reason: reason,
                 statusBefore: statusBefore.map { String(describing: $0) },
                 statusAfter: statusAfter.map { String(describing: $0) }

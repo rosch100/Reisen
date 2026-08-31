@@ -61,3 +61,81 @@ func check24JavaScriptConditionReturnsCancellation() async {
     let result = await task.value
     #expect(result == .cancelled)
 }
+
+@Test("JavaScriptConditionResult.asReadyFlag mappt Cancel und Timeout")
+func javaScriptConditionResultAsReadyFlag() throws {
+    #expect(try JavaScriptConditionResult.succeeded.asReadyFlag() == true)
+    #expect(try JavaScriptConditionResult.timedOut.asReadyFlag() == false)
+    #expect(try JavaScriptConditionResult.javaScriptError.asReadyFlag() == false)
+    do {
+        _ = try JavaScriptConditionResult.cancelled.asReadyFlag()
+        Issue.record("expected CancellationError")
+    } catch is CancellationError {
+        // expected
+    } catch {
+        Issue.record("unexpected error: \(error)")
+    }
+}
+
+@Test("Car-Rental-Readiness propagiert Cancellation")
+@MainActor
+func check24CarRentalReadinessPropagatesCancellation() async {
+    let provider = Check24TravelProvider()
+    let webView = WKWebView()
+    let task = Task { @MainActor in
+        try await provider.waitForCarRentalDetailReady(in: webView)
+    }
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    task.cancel()
+
+    do {
+        _ = try await task.value
+        Issue.record("expected CancellationError")
+    } catch is CancellationError {
+        // expected
+    } catch {
+        Issue.record("unexpected error: \(error)")
+    }
+}
+
+@Test("Hotel-Readiness propagiert Cancellation")
+@MainActor
+func check24HotelReadinessPropagatesCancellation() async {
+    let provider = Check24TravelProvider()
+    let webView = WKWebView()
+    let task = Task { @MainActor in
+        try await provider.waitForHotelDetailReady(in: webView)
+    }
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    task.cancel()
+
+    do {
+        _ = try await task.value
+        Issue.record("expected CancellationError")
+    } catch is CancellationError {
+        // expected
+    } catch {
+        Issue.record("unexpected error: \(error)")
+    }
+}
+
+@Test("Non-Hotel-Readiness propagiert Cancellation")
+@MainActor
+func check24NonHotelReadinessPropagatesCancellation() async {
+    let provider = Check24TravelProvider()
+    let webView = WKWebView()
+    let task = Task { @MainActor in
+        try await provider.waitForNonHotelDetailReady(in: webView)
+    }
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    task.cancel()
+
+    do {
+        _ = try await task.value
+        Issue.record("expected CancellationError")
+    } catch is CancellationError {
+        // expected
+    } catch {
+        Issue.record("unexpected error: \(error)")
+    }
+}

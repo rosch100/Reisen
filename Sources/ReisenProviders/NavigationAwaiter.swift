@@ -1,6 +1,6 @@
 import Foundation
 import WebKit
-import ReisenAppCore
+import ReisenDiagnostics
 
 /// Wartet auf Navigation-Abschluss, **ohne** den bestehenden `navigationDelegate` zu stehlen.
 /// SwiftUI/`ProviderSessionView` setzt den Delegate sonst zurück → Timeout (NavigationAwaiter-Fehler 1),
@@ -101,7 +101,7 @@ public final class NavigationAwaiter: NSObject {
                 event: event,
                 result: result,
                 durationMilliseconds: durationMilliseconds,
-                url: url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
+                url: url?.absoluteString,
                 errorType: errorType,
                 reason: reason
             )

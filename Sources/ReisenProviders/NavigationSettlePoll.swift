@@ -1,5 +1,5 @@
 import Foundation
-import ReisenAppCore
+import ReisenDiagnostics
 
 @MainActor
 public enum NavigationSettlePoll {
@@ -25,7 +25,7 @@ public enum NavigationSettlePoll {
                     phase: "navigation",
                     event: "settle_check",
                     result: confirmed ? .succeeded : .started,
-                    url: webView.url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
+                    url: webView.url?.absoluteString,
                     reason: "confirmed=\(confirmed)"
                 )
             )

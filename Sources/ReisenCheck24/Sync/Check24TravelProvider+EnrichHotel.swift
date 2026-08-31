@@ -35,7 +35,7 @@ extension Check24TravelProvider {
         }
 
         await dismissBookingChooserIfNeeded(in: webView, for: parsedBooking)
-        guard await waitForHotelDetailReady(in: webView) else {
+        guard try await waitForHotelDetailReady(in: webView) else {
             await recordDiagnosticPhase(
                 "hotel_detail",
                 event: "readiness_failed",
@@ -107,8 +107,8 @@ extension Check24TravelProvider {
         )
     }
 
-    func waitForHotelDetailReady(in webView: WKWebView) async -> Bool {
-        await webView.waitForJavaScriptCondition(
+    func waitForHotelDetailReady(in webView: WKWebView) async throws -> Bool {
+        try await webView.waitForJavaScriptCondition(
             """
             document.documentElement.outerHTML.includes('cancelationLabelFee') ||
             document.documentElement.outerHTML.includes('cancelationLabelTime') ||
@@ -121,6 +121,6 @@ extension Check24TravelProvider {
             document.documentElement.outerHTML.includes('€')
             """,
             timeoutSeconds: 12
-        ) == .succeeded
+        ).asReadyFlag()
     }
 }

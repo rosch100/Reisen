@@ -1,6 +1,6 @@
 import Foundation
 import WebKit
-import ReisenAppCore
+import ReisenDiagnostics
 import ReisenProviders
 
 extension Check24TravelProvider {
@@ -19,7 +19,7 @@ extension Check24TravelProvider {
                 phase: phase,
                 event: event,
                 result: result,
-                url: url.flatMap(DiagnosticRedactor.urlMetadata(for:)),
+                url: url?.absoluteString,
                 reason: reason
             )
         )
@@ -54,7 +54,7 @@ extension Check24TravelProvider {
                     phase: "dom",
                     event: "allowlist_features",
                     result: .succeeded,
-                    url: DiagnosticRedactor.urlMetadata(for: pageURL),
+                    url: pageURL.absoluteString,
                     reason: [
                         "activities=\(html.contains("activities"))",
                         "booking_info=\(html.contains("bookingInfo"))",

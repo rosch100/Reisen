@@ -16,8 +16,8 @@ public enum TravelokaRoutePrefix {
 
     public static func extract(fromAbsoluteString absoluteString: String) -> String? {
         guard let url = URL(string: absoluteString),
-              let host = url.host?.lowercased(),
-              host == "traveloka.com" || host.hasSuffix(".traveloka.com")
+              let host = url.host,
+              KeychainHostMatching.server(host, matches: "traveloka.com")
         else {
             return nil
         }

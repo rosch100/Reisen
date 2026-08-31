@@ -1,13 +1,11 @@
 import Foundation
 import WebKit
-import ReisenAppCore
+import ReisenDiagnostics
 import ReisenProviders
 
 extension Check24TravelProvider {
     func fetchActivitiesJSON(using webView: WKWebView) async throws -> String {
-        guard let url = URL(string: "https://kundenbereich.check24.de/kb/api/activities") else {
-            throw Check24ProviderError.activitiesFetchFailed("ungültige Activities-URL")
-        }
+        let url = Check24SessionProbe.activitiesAPIURL
         await recordDiagnosticPhase(
             "activity",
             event: "started",

@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import ReisenProviders
 
 extension WKWebView {
     /// Liest alle Cookies aus dem WebsiteDataStore des WebViews.
@@ -15,7 +16,7 @@ extension WKWebView {
     func authenticatedRequest(
         url: URL,
         accept: String = "application/json, text/plain, */*",
-        referer: String? = "https://kundenbereich.check24.de/user/account/activities.html"
+        referer: String? = Check24SessionProbe.activitiesPageURL.absoluteString
     ) async -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"

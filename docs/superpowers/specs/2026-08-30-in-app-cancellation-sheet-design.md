@@ -66,7 +66,7 @@ Verwandt: [booking-portal-open.md](../../dev/booking-portal-open.md), [booking-t
 
 ## Architektur
 
-```
+```text
 Storno-URL + status + deadlinesForDisplay
         │
         ▼

@@ -1,10 +1,10 @@
 import Foundation
 
 public enum DiagnosticRedactor {
+    /// Nur Host (lowercased) — Pfade können Buchungs-/Account-IDs enthalten.
     public static func urlMetadata(for url: URL) -> String? {
         guard let host = url.host, !host.isEmpty else { return nil }
-        let path = url.path.isEmpty ? "/" : url.path
-        return "\(host.lowercased())\(path)"
+        return host.lowercased()
     }
 
     public static func urlMetadata(for rawValue: String) -> String? {

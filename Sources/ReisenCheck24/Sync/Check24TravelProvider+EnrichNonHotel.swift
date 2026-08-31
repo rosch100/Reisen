@@ -20,14 +20,7 @@ extension Check24TravelProvider {
             try await load(url: bookingURL, in: webView)
         }
 
-        let hasDetailsData = await webView.waitForJavaScriptCondition(
-            """
-            document.documentElement.outerHTML.includes('thirdViewData') &&
-            document.documentElement.outerHTML.includes('bookingInfo')
-            """,
-            timeoutSeconds: 8
-        ) == .succeeded
-        guard hasDetailsData else {
+        guard try await waitForNonHotelDetailReady(in: webView) else {
             await recordDiagnosticPhase(
                 "non_hotel_detail",
                 event: "readiness_failed",
@@ -60,5 +53,15 @@ extension Check24TravelProvider {
             result: .succeeded,
             url: bookingURL
         )
+    }
+
+    func waitForNonHotelDetailReady(in webView: WKWebView) async throws -> Bool {
+        try await webView.waitForJavaScriptCondition(
+            """
+            document.documentElement.outerHTML.includes('thirdViewData') &&
+            document.documentElement.outerHTML.includes('bookingInfo')
+            """,
+            timeoutSeconds: 8
+        ).asReadyFlag()
     }
 }

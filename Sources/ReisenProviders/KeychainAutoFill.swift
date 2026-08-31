@@ -1,6 +1,6 @@
 import Foundation
 import WebKit
-import ReisenAppCore
+import ReisenDiagnostics
 
 /// SSOT: Keychain-Konto in Provider-WebView laden und ausfüllen.
 public enum KeychainAutoFill {
