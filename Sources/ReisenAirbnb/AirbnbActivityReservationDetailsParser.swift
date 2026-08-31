@@ -80,44 +80,8 @@ private extension AirbnbActivityReservationDetailsParser {
     }
 
     static func parsePayment(subtitle: String?) -> BookingRateDetails? {
-        guard let subtitle, let amount = parseAmount(from: subtitle) else { return nil }
-        let cleaned = subtitle.replacingOccurrences(of: "\u{00A0}", with: " ")
-        let currency: String?
-        if cleaned.uppercased().contains("EUR") || cleaned.contains("€") {
-            currency = "EUR"
-        } else {
-            currency = nil
-        }
-        return BookingRateDetails(
-            totalPriceAmount: amount,
-            totalPriceCurrency: currency,
-            boardType: .unknown,
-            lastParsedAt: Date()
-        )
-    }
-
-    /// Supports "€41.61 EUR" and German "52,56 €".
-    static func parseAmount(from subtitle: String) -> Double? {
-        let cleaned = subtitle.replacingOccurrences(of: "\u{00A0}", with: " ")
-        guard let match = cleaned.range(
-            of: #"([0-9]+[.,][0-9]{2}|[0-9]+)"#,
-            options: .regularExpression
-        ) else {
-            return nil
-        }
-        let token = String(cleaned[match])
-        if token.contains(",") && token.contains(".") {
-            // "1.234,56" → strip thousands separator
-            return Double(
-                token
-                    .replacingOccurrences(of: ".", with: "")
-                    .replacingOccurrences(of: ",", with: ".")
-            )
-        }
-        if token.contains(",") {
-            return Double(token.replacingOccurrences(of: ",", with: "."))
-        }
-        return Double(token)
+        guard let subtitle else { return nil }
+        return AirbnbMoneyAmount.rateDetails(from: subtitle)
     }
 
     static func parseCancelPolicy(

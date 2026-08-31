@@ -83,6 +83,26 @@ Siehe Plan-Tabellen. Domain-Erweiterungen: `operatorName`, `isAllDay`.
 3. Kein natives `ASAuthorizationAppleIDProvider` in v1
 4. Autofill nur auf `*.traveloka.com`; IdP-Hosts (`apple.com` / `appleid.`) nicht `sessionReady`
 
+### Apple-ID-Passkey im eingebetteten Browser
+
+Die Option „Mit dem Passkey anmelden“ auf `appleid.apple.com` ist Apples
+WebAuthn-Anmeldung für die Apple-ID. Sie funktioniert in Safari und
+`ASWebAuthenticationSession`, aber nicht für Apples fremde RP-ID in Reisens
+eingebettetem `WKWebView`. Associated Domains (`webcredentials:`) können diese
+Einschränkung nicht aufheben, weil Reisen weder `apple.com` besitzt noch die
+Apple-ID-Domain kontrolliert. Das eingeschränkte
+`com.apple.developer.web-browser.public-key-credential`-Entitlement ist für
+Browser-Apps vorgesehen und gehört nicht zum Provider-Sync.
+
+Deshalb bleibt der Login mit Apple im bestehenden Cookie-Flow erhalten:
+Auf der Apple-Seite muss in der eingebetteten WebView das Apple-Account-Passwort
+und gegebenenfalls der Bestätigungscode verwendet werden. Reisen klickt
+Passkey-/IdP-Buttons nicht automatisch an und speichert Apple-/Passkey-Sessions
+nicht als Passwort. Ein Wechsel zu `ASWebAuthenticationSession` würde zwar
+Passkeys ermöglichen, übergibt die Authentifizierungs-Cookies aber nicht
+zuverlässig an die bestehende Provider-`WKWebView` und ist daher kein
+unterstützter Handoff.
+
 ## Gap-Deep-Links
 
 `TravelokaDeepLinkBuilder`: `flight`, `hotel`, `activities` (Things to Do). Kein Train.

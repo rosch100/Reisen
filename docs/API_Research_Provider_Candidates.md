@@ -397,6 +397,51 @@ Siehe A.2 bzw. A.3 — keine zusätzlichen Teil-B-Befunde.
 
 ---
 
+## Apple-Passkey-Browser-Audit
+
+Status: **Live-Browser-Prüfung 2026-08-31**. Geprüft wurde jeweils der
+abgemeldete Login im Cursor-Browser. Es wurden keine Apple- oder
+Provider-Credentials eingegeben; der Passkey-Aufruf wurde nur bis zur
+Browser-/Systemanfrage gestartet.
+
+### Ergebnisse
+
+| Provider | Apple-Login | Apple-OAuth-Parameter | Bewertung für `ASWebAuthenticationSession` |
+|----------|-------------|-----------------------|--------------------------------------------|
+| Traveloka | Ja | `response_mode=web_message`, `redirect_uri=https://www.traveloka.com`, `client_id=com.traveloka.web.production` | Nicht direkt geeignet: `web_message` benötigt das von Traveloka geöffnete Popup mit `window.opener`; zusätzlich bleibt die Session Cookie-basiert. |
+| Airbnb | Ja | `response_mode=web_message`, `redirect_uri=https://www.airbnb.de/oauth_callback`, `client_id=com.airbnb.web` | Nicht direkt geeignet: gleicher `web_message`-/`window.opener`-Flow; Callback und Session gehören Airbnb. |
+| GetYourGuide | Ja | `response_mode=form_post`, `redirect_uri=https://auth.getyourguide.com/login/callback`, `client_id=com.getyourguide` | Bester Kandidat für einen macOS-Spike: Standard-WebAuthn-Flow und Passkey-Option sichtbar; Callback gehört weiterhin GetYourGuide. |
+| Booking.com | Ja | `response_mode=form_post`, `redirect_uri=https://account.booking.com/social/result/apple`, `client_id=com.booking.BookingApp.ServiceID` | Ebenfalls Spike-Kandidat: Standard-WebAuthn-Flow und Passkey-Option sichtbar; Callback gehört weiterhin Booking.com. |
+| Check24 | Nein | — | Login bietet ausschließlich E-Mail/Mobiltelefonnummer und Check24-Sicherheitscodes; kein Apple-, Social- oder Passkey-Login. |
+
+Bei GetYourGuide und Booking.com wurde auf der Apple-Seite die Option
+„Mit dem Passkey anmelden“ angezeigt. Nach dem Start wechselte die Schaltfläche
+zu „Überprüfen … Mit dem Passkey anmelden“. Der QR-Code selbst erscheint als
+native Browser-/Betriebssystem-UI und nicht als HTML-Inhalt; der Cursor-Browser
+kann diese UI nicht auslesen.
+
+### App-only-Fazit
+
+Der QR-Code ist für GetYourGuide und Booking.com grundsätzlich erreichbar,
+wenn der Login in Safari, Chrome oder `ASWebAuthenticationSession` läuft.
+Für Reisen fehlt jedoch bei allen getesteten Providern ein direkter
+App-Callback:
+
+- Traveloka und Airbnb verwenden `response_mode=web_message` und benötigen
+  ein Provider-Popup mit `window.opener`.
+- GetYourGuide und Booking.com verwenden zwar `form_post`, leiten aber auf
+  Provider-Callbacks weiter. Die daraus entstehenden Browser-Cookies sind
+  nicht für die Reisen-`WKWebView` verfügbar.
+- Check24 bietet keinen Apple-Login an.
+
+Eine App-interne Passkey-Unterstützung ist daher ohne Provideränderung nur als
+unvollständiger Browser-Login möglich. Für einen vollständigen Sync müsste der
+Provider einen App-Callback oder ein von Reisen verwendbares Authentifizierungs-
+Token bereitstellen. Cookie-Import aus Safari bzw. dem Systembrowser und das
+Nachbauen der Provider-OAuth-Flows sind keine unterstützten Lösungen.
+
+---
+
 ## Expedia Trips – Session-Sync-Bewertung
 
 ### Was nicht passt

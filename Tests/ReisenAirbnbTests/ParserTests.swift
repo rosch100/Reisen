@@ -32,6 +32,56 @@ func airbnbScheduledEventsParsesPriceDeadlinesAndTimes() throws {
     #expect(deadline.policyText?.localizedCaseInsensitiveContains("non-refundable") == true)
 }
 
+@Test("AirbnbScheduledEventsPayment parst EN Total-cost mit Dezimalpunkt (Sync-Locale)")
+func airbnbScheduledEventsPaymentParsesEnglishTotalCost() {
+    let rows = [
+        AirbnbScheduledEventRow(
+            id: "payment_summary",
+            leadingSubtitle: nil,
+            trailingSubtitle: nil,
+            subtitle: "Total cost: €133.15",
+            cancellationMilestoneModalV2: nil
+        )
+    ]
+    let rate = AirbnbScheduledEventsPayment.parse(rows: rows)
+    #expect(rate?.totalPriceAmount == 133.15)
+    #expect(rate?.totalPriceCurrency == "EUR")
+}
+
+@Test("AirbnbMoneyAmount parst EN- und DE-Tausender korrekt")
+func airbnbMoneyAmountParsesGroupedThousands() {
+    #expect(AirbnbMoneyAmount.parse(from: "Total cost: €1,234.56") == 1234.56)
+    #expect(AirbnbMoneyAmount.parse(from: "Gesamtkosten: 1.234,56 €") == 1234.56)
+    #expect(AirbnbMoneyAmount.parse(from: "52,56 €") == 52.56)
+}
+
+@Test("AirbnbScheduledEventsCancellation nutzt end_at als Free-Cancel-Frist")
+func airbnbScheduledEventsCancellationUsesEndAtForFreeRefund() {
+    let freeUntil = iso8601("2026-09-30T12:00:00.000Z")
+    let entry = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: "Before",
+        refundType: "Full refund",
+        refundTerm: "Get back 100% of what you paid.",
+        startAt: iso8601("2026-08-30T15:41:33.336Z"),
+        endAt: freeUntil
+    )
+    let deadline = AirbnbScheduledEventsCancellation.deadline(from: entry)
+    #expect(deadline?.isFreeCancellation == true)
+    #expect(deadline.map { abs($0.deadlineAt.timeIntervalSince(freeUntil)) < 0.01 } == true)
+}
+
+@Test("AirbnbScheduledEventsCancellation verwirft Free-Tier ohne end_at")
+func airbnbScheduledEventsCancellationDropsFreeWithoutEndAt() {
+    let entry = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: "Before",
+        refundType: "Full refund",
+        refundTerm: "Get back 100% of what you paid.",
+        startAt: iso8601("2026-08-30T15:41:33.336Z"),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.deadline(from: entry) == nil)
+}
+
 @Test("AirbnbTripDetailsParser parst Zeitzone, Adresse, Gäste und Raumanzahl")
 func airbnbTripDetailsParsesAddressGuestsAndTimezone() throws {
     let json = try fixtureJSON("trip_details_sample.json")
@@ -183,6 +233,33 @@ func airbnbScheduledEventsCancellationClassifiesPrecisely() {
         endAt: nil
     )
     #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(freeToken) == true)
+
+    let germanFull = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "Vollständige Rückerstattung",
+        refundTerm: nil,
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(germanFull) == true)
+
+    let germanNone = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "Keine Rückerstattung",
+        refundTerm: nil,
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(germanNone) == false)
+
+    let partialWithNightClause = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: nil,
+        refundType: "Anteilige Rückerstattung",
+        refundTerm: "Keine Rückerstattung der Kosten für die erste Nacht oder der Servicegebühr.",
+        startAt: Date(),
+        endAt: nil
+    )
+    #expect(AirbnbScheduledEventsCancellation.classifyFreeCancellation(partialWithNightClause) == nil)
 }
 
 private func dateInTimeZone(

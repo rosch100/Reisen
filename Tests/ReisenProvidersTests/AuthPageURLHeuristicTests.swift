@@ -88,9 +88,23 @@ import ReisenProviders
 
 @Test func appleIdAuthIsLoginButNoPasswordAutofill() {
     let url = "https://appleid.apple.com/auth/authorize?client_id=x"
+    #expect(AuthIdentityProviderHost.matchesApple(urlAbsoluteString: url))
+    #expect(
+        AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: true,
+            urlAbsoluteString: url
+        )
+    )
+    #expect(
+        !AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: false,
+            urlAbsoluteString: url
+        )
+    )
     #expect(AuthPageURLHeuristic.looksLikeLoginPage(url))
     #expect(!AuthPageURLHeuristic.shouldApplyPasswordAutofill(url))
     #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(url))
+    #expect(!AuthIdentityProviderHost.matchesApple(urlAbsoluteString: "https://accounts.google.com/signin"))
 }
 
 @Test func travelokaMyBookingIsAccountPage() {

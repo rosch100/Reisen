@@ -319,6 +319,13 @@ struct SyncView: View {
         )
     }
 
+    private var showsApplePasskeyHint: Bool {
+        AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: sessionStatus == .needsLogin,
+            urlAbsoluteString: lastURLString
+        )
+    }
+
     private var sessionBanner: some View {
         HStack(alignment: .center, spacing: 12) {
             Image(systemName: loginTrafficLight == .green
@@ -334,6 +341,9 @@ struct SyncView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                if showsApplePasskeyHint {
+                    SyncApplePasskeyHintLabel()
+                }
             }
 
             Spacer(minLength: 8)
