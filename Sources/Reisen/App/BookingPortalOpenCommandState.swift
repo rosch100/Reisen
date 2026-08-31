@@ -8,7 +8,7 @@ struct BookingPortalOpenCommandState {
     var status: BookingStatus = .unknown
     var deadlines: [CancellationDeadline] = []
     var hasSessionWebView: Bool = false
-    var requiresProviderSession: Bool = false
+    var requiresProviderSession: Bool
 
     var canOpen: Bool { url != nil }
     var canCancel: Bool {

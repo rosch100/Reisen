@@ -17,6 +17,12 @@ import ReisenDomain
         isFreeCancellation: true
     )
     let now = Date()
+    let withoutSession = BookingPortalActions.visible(
+        open: url, cancellation: url, status: .confirmed,
+        deadlines: [free], now: now, hasSessionWebView: false,
+        requiresProviderSession: true
+    )
+    #expect(withoutSession.open == url && withoutSession.cancel == nil)
     #expect(
         BookingPortalActionBar.isVisible(
             open: url, cancellation: url, status: .confirmed,
@@ -24,16 +30,10 @@ import ReisenDomain
             requiresProviderSession: true
         )
     )
-    let withoutSession = BookingPortalActions.visible(
-        open: url, cancellation: url, status: .confirmed,
-        deadlines: [free], now: now, hasSessionWebView: false,
-        requiresProviderSession: false
-    )
-    #expect(withoutSession.open == url && withoutSession.cancel == nil)
     let withSession = BookingPortalActions.visible(
         open: url, cancellation: url, status: .confirmed,
         deadlines: [free], now: now, hasSessionWebView: true,
-        requiresProviderSession: false
+        requiresProviderSession: true
     )
     #expect(withSession.cancel == url)
 }
@@ -81,11 +81,17 @@ import ReisenDomain
     #expect(shown.cancel == nil)
 }
 
-@Test func bookingPortalActionBar_hidesCopyCancelWhenSameURL() {
+@Test func bookingPortalCancellation_allowsCopyingCancellationLink_hidesSameURL() {
     let url = URL(string: "https://example.com/booking")!
     #expect(
         !BookingPortalCancellation.allowsCopyingCancellationLink(
             cancel: url,
+            open: url
+        )
+    )
+    #expect(
+        BookingPortalCancellation.allowsCopyingCancellationLink(
+            cancel: URL(string: "https://example.com/cancel")!,
             open: url
         )
     )

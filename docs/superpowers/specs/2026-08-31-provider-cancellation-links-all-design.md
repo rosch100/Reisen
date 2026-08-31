@@ -90,12 +90,12 @@ Jeder Sync-Provider hat **genau einen** Mode pro `(provider, bookingType)`-Zelle
 |----------|-------------|------|-------|-------|-------|
 | Traveloka | * | distinct | Catalog (IDs bekannt) | `TravelokaAPI.refundPresubmissionURL` | 0 |
 | Airbnb | `.activity` | distinct | Catalog (TripList) | `experience_alteration/…?flow=oneCancel` | 0 |
-| Airbnb | `.lodging` (Stay) | none | — | Cancel-HAR fehlt; `/reservation/cancel/{code}` 404 | 2 |
+| Airbnb | `.hotel` (Stay) | none | — | Cancel-HAR fehlt; `/reservation/cancel/{code}` 404 | 2 |
 | billiger-mietwagen.de | * | sessionBoundDistinct | Catalog oder Enrich (WebConstants) | Live `/reservation/cancellation` (keine Buchungs-ID; Session) | 1 |
 | GetYourGuide | * | inPageOnOpen | Catalog (wenn `externalUrl` gesetzt) | HAR: Cancel-Modal auf `/booking/{hash}` | 1 |
 | Opodo | * | none | — | `funnel=cancellationHSA` Live genannt, **kein** Fixture-Builder ohne Raten | 2 |
-| Booking.com | Hotel / lodging | none | — | `cancel.html` Live-Kandidat, **kein** Fixture-Pfad | 2 |
-| Booking.com | Flug / transport | none | — | Cancel oft auf Confirmation; Capture nötig | 2 |
+| Booking.com | `.hotel` | none | — | `cancel.html` Live-Kandidat, **kein** Fixture-Pfad | 2 |
+| Booking.com | `.flight` | none | — | Cancel oft auf Confirmation; Capture nötig | 2 |
 | Check24 | * | none | — | oft Kundenbereich-Seite; Capture nötig | 2 |
 | Manual | — | distinct (Editor) | Nutzer | HTTPS-Feld | — |
 

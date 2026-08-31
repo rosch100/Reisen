@@ -298,7 +298,7 @@ struct ContentView: View {
 
     private var selectedBookingPortalCommandState: BookingPortalOpenCommandState {
         guard let booking = selectedPortalBooking else {
-            return BookingPortalOpenCommandState()
+            return BookingPortalOpenCommandState(requiresProviderSession: false)
         }
         return BookingPortalOpenCommandState(
             url: booking.browserURL,
