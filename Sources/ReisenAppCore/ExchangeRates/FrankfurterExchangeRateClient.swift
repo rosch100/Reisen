@@ -67,15 +67,18 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
 
         var rates: [String: Decimal] = [:]
         for (code, value) in payload.rates {
-            rates[code.uppercased()] = decimal(fromJSONNumber: value)
+            rates[code.uppercased()] = try decimal(fromJSONNumber: value)
         }
         return ExchangeRateQuote(base: expectedBase, date: date, rates: rates)
     }
 
-    /// Vermeidet Double→Decimal-Binärrauschen (JSON-Zahlen).
-    private static func decimal(fromJSONNumber value: Double) -> Decimal {
+    /// Vermeidet Double→Decimal-Binärrauschen (JSON-Zahlen). Parse-Fail → Fehler, kein `Decimal(Double)`.
+    private static func decimal(fromJSONNumber value: Double) throws -> Decimal {
         let formatted = String(format: "%.8f", value)
-        return Decimal(string: formatted) ?? Decimal(value)
+        guard let decimal = Decimal(string: formatted) else {
+            throw FrankfurterExchangeRateError.decodingFailed
+        }
+        return decimal
     }
 
     private struct Payload: Decodable {
@@ -116,8 +119,6 @@ public final class ExchangeRateQuoteCache: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         guard let entry = stored[quote.base] else { return true }
-        if now.timeIntervalSince(entry.fetchedAt) > maxAge { return true }
-        let calendar = Calendar(identifier: .gregorian)
-        return calendar.startOfDay(for: quote.date) < calendar.startOfDay(for: now)
+        return now.timeIntervalSince(entry.fetchedAt) > maxAge
     }
 }

@@ -60,7 +60,7 @@ struct TripCostOverviewIOSRows: View {
                 summary: costSummary,
                 convertEnabled: convert,
                 preferredCurrency: preferred,
-                rates: FrankfurterExchangeRateClient()
+                rates: ExchangeRateService.sharedClient
             )
             guard refreshToken == token else { return }
             result = loaded

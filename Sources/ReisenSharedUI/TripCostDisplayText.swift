@@ -10,8 +10,9 @@ public enum TripCostDisplayText {
         guard summary.pricedCount > 0 else {
             return L10n.string(.commonNotAvailable)
         }
-        let parts = summary.sortedCurrencyCodes.map { code in
-            formatAmount(summary.totalsByCurrency[code] ?? 0, code)
+        let parts = summary.sortedCurrencyCodes.compactMap { code -> String? in
+            guard let amount = summary.totalsByCurrency[code] else { return nil }
+            return formatAmount(amount, code)
         }
         return parts.joined(separator: " · ")
     }

@@ -57,7 +57,7 @@ struct TripDetailView: View {
                 summary: summary,
                 convertEnabled: convert,
                 preferredCurrency: preferred,
-                rates: FrankfurterExchangeRateClient()
+                rates: ExchangeRateService.sharedClient
             )
             guard tripCostRefreshToken == token else { return }
             tripCostResult = result
