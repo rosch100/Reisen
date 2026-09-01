@@ -28,6 +28,7 @@ public final class SDBooking {
     public var statusRaw: String = ""
     public var lastSyncedAt: Date?
     public var rawPayloadFingerprint: String?
+    public var autoGapIdentityKey: String?
 
     public var trip: SDTrip?
 
@@ -68,6 +69,7 @@ public final class SDBooking {
         statusRaw: String,
         lastSyncedAt: Date? = nil,
         rawPayloadFingerprint: String? = nil,
+        autoGapIdentityKey: String? = nil,
         trip: SDTrip? = nil,
         cancellationDeadlines: [SDCancellationDeadline] = [],
         hotelOffsetSeconds: Int? = nil,
@@ -99,6 +101,7 @@ public final class SDBooking {
         self.statusRaw = statusRaw
         self.lastSyncedAt = lastSyncedAt
         self.rawPayloadFingerprint = rawPayloadFingerprint
+        self.autoGapIdentityKey = autoGapIdentityKey
         self.trip = trip
         self.cancellationDeadlines = cancellationDeadlines
         self.hotelOffsetSeconds = hotelOffsetSeconds

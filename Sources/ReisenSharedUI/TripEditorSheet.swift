@@ -240,6 +240,7 @@ public struct TripEditorSheet: View {
             for bookingID in ids {
                 try tripRepo.assignBooking(bookingID: bookingID, toTripID: savedTrip.id)
             }
+            try AutoGapReconcileTrigger.run(tripIDs: [savedTrip.id], in: modelContext)
             try tripRepo.save()
 
             pendingPeriodExpand = nil

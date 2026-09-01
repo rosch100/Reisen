@@ -49,7 +49,7 @@ public enum TripCompletenessCalculator {
         bookings: [Booking],
         minGap: TimeInterval = GapDetector.defaultMinGap
     ) -> TripCompleteness {
-        let active = bookings.filter { $0.status != .cancelled }
+        let active = bookings.filter(\.isRealForGapDetect)
         let gaps = GapDetector(minGap: minGap).computeGaps(
             bookings: active,
             tripStart: tripStart,
