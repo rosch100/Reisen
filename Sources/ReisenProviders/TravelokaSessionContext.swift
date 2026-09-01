@@ -6,7 +6,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
     public var mccId: String?
     public var clientSessionId: String?
     public var sentinelToken: String?
-    public var currency: String?
     /// Nutzerseite für API-Referer (HAR: aktuelle Seite, nicht immer mybooking).
     public var bestPageURL: URL?
 
@@ -15,14 +14,12 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         mccId: String? = nil,
         clientSessionId: String? = nil,
         sentinelToken: String? = nil,
-        currency: String? = nil,
         bestPageURL: URL? = nil
     ) {
         self.deviceId = deviceId
         self.mccId = mccId
         self.clientSessionId = clientSessionId
         self.sentinelToken = sentinelToken
-        self.currency = currency
         self.bestPageURL = bestPageURL
     }
 
@@ -43,13 +40,13 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         TravelokaWebConstants.defaultCountry
     }
 
-    public var resolvedCurrency: String {
-        nonEmpty(currency) ?? TravelokaWebConstants.defaultCurrency
-    }
-
-    private func nonEmpty(_ value: String?) -> String? {
-        guard let value, !value.isEmpty else { return nil }
-        return value
+    /// Sync-Abfragewährung: App-/Locale-Preferred (`ProviderSyncLocale`).
+    /// Session-Cookie ist kein Override; Provider-Antwort-Währung wird beim Parse gespeichert.
+    public func resolvedCurrency(
+        defaults: UserDefaults = .standard,
+        locale: Locale = .current
+    ) -> String {
+        ProviderSyncLocale.currency(defaults: defaults, locale: locale)
     }
 
     public static func from(cookies: [HTTPCookie]) -> TravelokaSessionContext {
@@ -57,7 +54,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         var mccId: String?
         var clientSessionId: String?
         var sentinelToken: String?
-        var currency: String?
         for cookie in cookies {
             switch cookie.name {
             case "sen_t":
@@ -72,10 +68,6 @@ public struct TravelokaSessionContext: Equatable, Sendable {
                 if deviceId == nil, Self.isDeviceId(cookie.value) {
                     deviceId = cookie.value
                 }
-            case "tv_currency", "tv-currency", "currency", "preferred_currency", "selectedCurrency":
-                if currency == nil, !cookie.value.isEmpty {
-                    currency = cookie.value.uppercased()
-                }
             default:
                 continue
             }
@@ -84,8 +76,7 @@ public struct TravelokaSessionContext: Equatable, Sendable {
             deviceId: deviceId,
             mccId: mccId,
             clientSessionId: clientSessionId,
-            sentinelToken: sentinelToken,
-            currency: currency
+            sentinelToken: sentinelToken
         )
     }
 
@@ -175,7 +166,11 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         return Data(deviceId.utf8).base64EncodedString()
     }
 
-    public func applying(to headers: [String: String]) -> [String: String] {
+    public func applying(
+        to headers: [String: String],
+        defaults: UserDefaults = .standard,
+        locale: Locale = .current
+    ) -> [String: String] {
         var next = headers
         if let clientSessionId, !clientSessionId.isEmpty {
             next["tv-clientsessionid"] = clientSessionId
@@ -188,7 +183,7 @@ public struct TravelokaSessionContext: Equatable, Sendable {
         }
         next["tv-language"] = resolvedLanguage
         next["tv-country"] = resolvedCountry
-        next["tv-currency"] = resolvedCurrency
+        next["tv-currency"] = resolvedCurrency(defaults: defaults, locale: locale)
         next["x-route-prefix"] = resolvedRoutePrefix
         return next
     }

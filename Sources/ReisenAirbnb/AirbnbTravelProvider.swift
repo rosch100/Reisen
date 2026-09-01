@@ -189,13 +189,14 @@ private extension AirbnbTravelProvider {
     func reservationOverviewURL(
         pathPrefix: String,
         schedulableType: String,
-        confirmationCode: String
+        confirmationCode: String,
+        currency: String = ProviderSyncLocale.currency()
     ) -> URL {
         var comps = URLComponents(url: AirbnbAPI.baseURL, resolvingAgainstBaseURL: false)!
         comps.path = "\(pathPrefix)/\(schedulableType)/\(confirmationCode)"
         comps.queryItems = [
             URLQueryItem(name: "locale", value: ProviderSyncLocale.language),
-            URLQueryItem(name: "currency", value: ProviderSyncLocale.currency),
+            URLQueryItem(name: "currency", value: currency),
             URLQueryItem(name: "include_header_action_rows", value: "true"),
             URLQueryItem(name: "_format", value: "for_generic_ro"),
             URLQueryItem(name: "translate_ugc", value: "false"),
