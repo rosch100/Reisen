@@ -1,8 +1,6 @@
 import Foundation
 
 public enum SpatialGapDetector {
-    public static let minSpatialDuration: TimeInterval = 15 * 60
-
     public static func detect(sortedReal: [Booking]) -> [AutoGapDesired] {
         guard sortedReal.count >= 2 else { return [] }
         var results: [AutoGapDesired] = []
@@ -23,12 +21,7 @@ public enum SpatialGapDetector {
 
         let start = from.endAt
         let end = to.startAt
-        let duration = end.timeIntervalSince(start)
-        if duration < minSpatialDuration, duration >= 0 {
-            // Kurz aber klarer Ortswechsel: trotzdem Transport.
-        } else if duration < 0 {
-            return nil
-        }
+        guard end.timeIntervalSince(start) >= 0 else { return nil }
 
         let type = transportType(from: from, to: to)
         let rawFrom = fromEndPlace(from)
@@ -38,7 +31,7 @@ public enum SpatialGapDetector {
             role: .transport,
             bookingType: type,
             startAt: start,
-            endAt: max(end, start.addingTimeInterval(minSpatialDuration)),
+            endAt: end,
             locationFrom: rawFrom,
             locationTo: rawTo,
             fromBookingID: from.id,
