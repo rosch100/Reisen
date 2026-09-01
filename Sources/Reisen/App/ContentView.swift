@@ -605,10 +605,14 @@ struct ContentView: View {
                         Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
-                            .frame(width: 14, height: 14)
+                            .frame(width: 20, height: 20)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .help(isExpanded.wrappedValue
+                        ? L10n.string(.tripCollapseBookings)
+                        : L10n.string(.tripExpandBookings))
+                    .accessibilityLabel(isExpanded.wrappedValue
                         ? L10n.string(.tripCollapseBookings)
                         : L10n.string(.tripExpandBookings))
                 }
@@ -737,6 +741,7 @@ struct ContentView: View {
             }
         }
         if actions.contains(.deleteBooking) {
+            Divider()
             Button(role: .destructive) {
                 requestOpenBookingDeletion(booking)
             } label: {
@@ -764,10 +769,14 @@ struct ContentView: View {
                         Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
-                            .frame(width: 14, height: 14)
+                            .frame(width: 20, height: 20)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .help(isExpanded
+                        ? L10n.string(.tripCollapseBookings)
+                        : L10n.string(.tripExpandBookings))
+                    .accessibilityLabel(isExpanded
                         ? L10n.string(.tripCollapseBookings)
                         : L10n.string(.tripExpandBookings))
                 }
@@ -811,6 +820,7 @@ struct ContentView: View {
                     }
                 }
                 if tripActions.contains(.deleteTrip) {
+                    Divider()
                     Button(role: .destructive) {
                         tripPendingDelete = trip
                         showTripDeleteConfirmation = true
@@ -890,6 +900,9 @@ struct ContentView: View {
                     )
                 }
             )
+            if actions.contains(.removeFromTrip) || actions.contains(.deleteBooking) {
+                Divider()
+            }
             if actions.contains(.removeFromTrip) {
                 Button(role: .destructive) {
                     applyAfterTripFocus(trip: trip) {
