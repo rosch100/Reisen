@@ -25,6 +25,8 @@ public struct TripEditorSheet: View {
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var errorMessage: String?
+    @State private var pendingPeriodExpand: TripPeriodExpandOnAssign.Proposal?
+    @State private var showPeriodExpandConfirm = false
     @FocusState private var focusedField: FocusField?
 
     private let seedBookingIDs: Set<UUID>?
@@ -129,9 +131,57 @@ public struct TripEditorSheet: View {
                 focusedField = .title
             }
         }
+        .alert(
+            TripPeriodExpandPrompt.title,
+            isPresented: $showPeriodExpandConfirm
+        ) {
+            Button(TripPeriodExpandPrompt.confirmAction) {
+                if let pendingPeriodExpand {
+                    startDate = pendingPeriodExpand.start
+                    endDate = pendingPeriodExpand.end
+                }
+                persist(assignSeedOutsideWindow: true)
+            }
+            Button(TripPeriodExpandPrompt.declineAction, role: .cancel) {
+                persist(assignSeedOutsideWindow: false)
+            }
+        } message: {
+            if let pendingPeriodExpand {
+                Text(TripPeriodExpandPrompt.message(for: pendingPeriodExpand))
+            }
+        }
     }
 
     private func save() {
+        errorMessage = nil
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, endDate >= startDate else { return }
+
+        if mode == .create, let seedBookingIDs, !seedBookingIDs.isEmpty {
+            do {
+                let bookingRepo = SwiftDataBookingRepository(modelContext: modelContext)
+                let bookings = try bookingRepo.fetchAll().filter { seedBookingIDs.contains($0.id) }
+                let ranges = bookings.map { (start: $0.startAt, end: $0.endAt) }
+                if let proposal = TripPeriodExpandOnAssign.proposalIfNeeded(
+                    bookings: ranges,
+                    tripStart: startDate,
+                    tripEnd: endDate
+                ) {
+                    pendingPeriodExpand = proposal
+                    showPeriodExpandConfirm = true
+                    return
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                return
+            }
+        }
+
+        persist(assignSeedOutsideWindow: true)
+    }
+
+    /// - Parameter assignSeedOutsideWindow: `true` after confirm (dates already expanded) or when no expand needed; `false` on decline (only in-window seeds).
+    private func persist(assignSeedOutsideWindow: Bool) {
         errorMessage = nil
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, endDate >= startDate else { return }
@@ -161,16 +211,39 @@ public struct TripEditorSheet: View {
             let tripRepo = SwiftDataTripRepository(modelContext: modelContext)
             let domainTrip = DomainMapper.trip(from: savedTrip)
             let bookings = try bookingRepo.fetchAll()
+            let restrictingTo: Set<UUID>?
+            if mode == .create, let seedBookingIDs {
+                if assignSeedOutsideWindow {
+                    restrictingTo = seedBookingIDs
+                } else {
+                    restrictingTo = Set(
+                        bookings.compactMap { booking -> UUID? in
+                            guard seedBookingIDs.contains(booking.id) else { return nil }
+                            guard TripBookingDateWindow.contains(
+                                bookingStart: booking.startAt,
+                                bookingEnd: booking.endAt,
+                                tripStart: startDate,
+                                tripEnd: endDate
+                            ) else { return nil }
+                            return booking.id
+                        }
+                    )
+                }
+            } else {
+                restrictingTo = nil
+            }
             let ids = TripBookingAssignment().bookingIDsToAssign(
                 bookings: bookings,
                 trip: domainTrip,
-                restrictingTo: mode == .create ? seedBookingIDs : nil
+                restrictingTo: restrictingTo
             )
             for bookingID in ids {
                 try tripRepo.assignBooking(bookingID: bookingID, toTripID: savedTrip.id)
             }
             try tripRepo.save()
 
+            pendingPeriodExpand = nil
+            showPeriodExpandConfirm = false
             onSaved?(savedTrip)
             dismiss()
         } catch {

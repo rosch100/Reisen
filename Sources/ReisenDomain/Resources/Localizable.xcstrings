@@ -8337,6 +8337,70 @@
         }
       }
     },
+    "trip.period_expand_confirm_action": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeitraum erweitern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extend period"
+          }
+        }
+      }
+    },
+    "trip.period_expand_confirm_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Buchung liegt außerhalb des Reisezeitraums. Zeitraum auf %1$@ erweitern und zuordnen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The booking is outside the trip period. Extend the period to %1$@ and assign?"
+          }
+        }
+      }
+    },
+    "trip.period_expand_confirm_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reisezeitraum erweitern?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extend trip period?"
+          }
+        }
+      }
+    },
+    "trip.period_expand_decline_action": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Zuordnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave unassigned"
+          }
+        }
+      }
+    },
     "trip.period_range": {
       "localizations": {
         "de": {
