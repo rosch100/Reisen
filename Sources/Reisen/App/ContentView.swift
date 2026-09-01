@@ -670,6 +670,9 @@ struct ContentView: View {
                 Text(BookingScheduleRangeText.make(for: booking))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                if BookingOverlapCaption.isVisible(overlapCount: overlapCountsByBookingID[booking.id] ?? 0) {
+                    BookingOverlapCaption(extraCount: overlapCountsByBookingID[booking.id] ?? 0)
+                }
             }
             .padding(.leading, 28)
             .padding(.vertical, 4)
@@ -856,6 +859,9 @@ struct ContentView: View {
                 Text(BookingScheduleRangeText.make(for: booking))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                if BookingOverlapCaption.isVisible(overlapCount: overlapCountsByBookingID[booking.id] ?? 0) {
+                    BookingOverlapCaption(extraCount: overlapCountsByBookingID[booking.id] ?? 0)
+                }
             }
             .padding(.leading, 28)
             .padding(.vertical, 4)
@@ -951,6 +957,10 @@ struct ContentView: View {
         OpenBookingMatching.elapsedUnassigned(in: allBookings)
     }
 
+    private var overlapCountsByBookingID: [UUID: Int] {
+        BookingDayOverlap.countsByID(sdBookings: allBookings)
+    }
+
     private var currentTrips: [SDTrip] {
         trips.filter { !$0.isElapsed() }
     }
@@ -1008,7 +1018,11 @@ struct ContentView: View {
                 )
                 List(selection: $selectedOpenBookingIDs) {
                     OpenBookingsFillSections(partition: partition) { booking, fillCaption in
-                        OpenBookingRow(booking: booking, fillCaption: fillCaption)
+                        OpenBookingRow(
+                            booking: booking,
+                            fillCaption: fillCaption,
+                            overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+                        )
                             .tag(booking.id)
                     }
                 }
@@ -1060,7 +1074,11 @@ struct ContentView: View {
             } else {
                 List(selection: $selectedOpenBookingIDs) {
                     ForEach(elapsedOpenBookings) { booking in
-                        OpenBookingRow(booking: booking, fillCaption: nil)
+                        OpenBookingRow(
+                            booking: booking,
+                            fillCaption: nil,
+                            overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+                        )
                             .tag(booking.id)
                     }
                 }
@@ -1141,6 +1159,7 @@ struct ContentView: View {
                 OpenBookingDetailView(
                     booking: booking,
                     matchingTrip: matchingTrip(for: booking),
+                    overlapCount: overlapCountsByBookingID[booking.id] ?? 0,
                     onCreateTrip: {
                         OpenBookingCreateTripAction.assignSeed(
                             fromIDs: [booking.id],
@@ -1156,6 +1175,7 @@ struct ContentView: View {
                 OpenBookingDetailView(
                     booking: first,
                     matchingTrip: matchingTrip(for: first),
+                    overlapCount: overlapCountsByBookingID[first.id] ?? 0,
                     onCreateTrip: {
                         OpenBookingCreateTripAction.assignSeed(
                             fromIDs: [first.id],
@@ -1180,6 +1200,7 @@ struct ContentView: View {
                 OpenBookingDetailView(
                     booking: booking,
                     matchingTrip: matchingTrip(for: booking),
+                    overlapCount: overlapCountsByBookingID[booking.id] ?? 0,
                     onCreateTrip: {
                         OpenBookingCreateTripAction.assignSeed(
                             fromIDs: [booking.id],
@@ -1195,6 +1216,7 @@ struct ContentView: View {
                 OpenBookingDetailView(
                     booking: first,
                     matchingTrip: matchingTrip(for: first),
+                    overlapCount: overlapCountsByBookingID[first.id] ?? 0,
                     onCreateTrip: {
                         OpenBookingCreateTripAction.assignSeed(
                             fromIDs: [first.id],
@@ -1236,6 +1258,7 @@ struct ContentView: View {
     private struct OpenBookingDetailView: View {
         let booking: SDBooking
         let matchingTrip: SDTrip?
+        let overlapCount: Int
         var onCreateTrip: () -> Void
 
         @Environment(\.modelContext) private var modelContext
@@ -1315,6 +1338,7 @@ struct ContentView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             BookingDetailContent(
                                 booking: booking,
+                                overlapCount: overlapCount,
                                 onEditBooking: {
                                     isEditing = true
                                     bookingEditorDraft = BookingEditorDraft.fromExisting(booking)

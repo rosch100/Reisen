@@ -6,8 +6,7 @@ import ReisenSharedUI
 /// Vollständige Buchungsdetails (alle persistierten Felder) — gleiche Ansicht für zugeordnete und offene Buchungen.
 struct BookingDetailContent: View {
     let booking: SDBooking
-    var isOverlapping: Bool = false
-    var overlapCount: Int = 0
+    let overlapCount: Int
     var onEditBooking: (() -> Void)?
     var onRequestDeleteBooking: ((UUID) -> Void)?
     var onRequestRemoveFromTrip: ((UUID) -> Void)?
@@ -36,10 +35,8 @@ struct BookingDetailContent: View {
                         textStyle: .headline,
                         lineLimit: 3
                     )
-                    if isOverlapping {
-                        Text(L10n.overlapLabel(extraCount: overlapCount))
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+                    if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
+                        BookingOverlapCaption(extraCount: overlapCount)
                     }
                     BookingElapsedLabel(for: booking)
                 }

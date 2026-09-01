@@ -125,6 +125,10 @@ struct OpenBookingsScreen: View {
         OpenBookingMatching.elapsedUnassigned(in: allBookings)
     }
 
+    private var overlapCountsByBookingID: [UUID: Int] {
+        BookingDayOverlap.countsByID(sdBookings: allBookings)
+    }
+
     private var openBookings: [SDBooking] {
         currentOpenBookings
     }
@@ -354,7 +358,11 @@ struct OpenBookingsScreen: View {
                         }
                     }
             } else {
-                OpenBookingRow(booking: booking, fillCaption: fillCaption)
+                OpenBookingRow(
+                    booking: booking,
+                    fillCaption: fillCaption,
+                    overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+                )
                     .tag(booking.id)
             }
         }
@@ -388,7 +396,11 @@ struct OpenBookingsScreen: View {
     @ViewBuilder
     private func bookingRow(_ booking: SDBooking, fillCaption: String? = nil) -> some View {
         AdaptiveUUIDSelectionRow(id: booking.id, selection: $selectedBookingID, usesSplit: usesSplit) {
-            OpenBookingRow(booking: booking, fillCaption: fillCaption)
+            OpenBookingRow(
+                booking: booking,
+                fillCaption: fillCaption,
+                overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+            )
         }
     }
 }

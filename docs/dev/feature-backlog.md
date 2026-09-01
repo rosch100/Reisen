@@ -268,6 +268,7 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 | Pre-Travel Hints, Passagiere, Gepäck | Freitext in Mails | Kein generisches „Tipps“-Feature |
 | EventKit schreiben | iCal-Feed-URL | F04 Datei-Share, kein Feed (X06) |
 | Offen-Tab / Zuordnung | TripIt merged nach Datum | Beibehalten |
+| Reiseübergreifende Tages-Überschneidungen (Typ-Occupancy, Caption macOS+iOS) | Oft nur Intra-Trip / Text-only | Kern halten; F24 bleibt Provider-Duplikat (geplant) |
 
 ---
 

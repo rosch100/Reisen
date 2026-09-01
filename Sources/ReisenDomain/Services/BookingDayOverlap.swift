@@ -1,11 +1,15 @@
 import Foundation
 
-/// SSOT: Tages-Überschneidungen zwischen Buchungen (Ende exclusive am Kalendertag).
+/// SSOT: Tages-Überschneidungen zwischen Buchungen (Typ-Occupancy, Ende je nach Typ).
 public enum BookingDayOverlap {
+    public static func isEligible(status: BookingStatus) -> Bool {
+        status != .cancelled
+    }
+
     /// Anzahl überlappender anderer Buchungen pro ID; Einträge nur bei Count > 0.
     public static func countsByID(
         _ bookings: [BookingDaySpan],
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> [UUID: Int] {
         guard bookings.count >= 2 else { return [:] }
 
