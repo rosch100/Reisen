@@ -24,11 +24,18 @@ import ReisenDomain
     }
 }
 
-@Test func l10n_overlapLabel_withAndWithoutCount() {
+@Test func l10n_overlapLabel_namesPartnersWithoutCountBadge() {
     L10n.withLocale(Locale(identifier: "de")) {
 
-    #expect(L10n.overlapLabel(extraCount: 0) == L10n.string(.bookingOverlap))
-    #expect(L10n.overlapLabel(extraCount: 2) == L10n.format(.bookingOverlapWithCount, 2))
+    #expect(L10n.overlapLabel(partnerTitles: []) == L10n.string(.bookingOverlap))
+    #expect(L10n.overlapLabel(partnerTitles: ["Hotel A"]) == L10n.format(.bookingOverlapWithPartner, "Hotel A"))
+    #expect(
+        L10n.overlapLabel(partnerTitles: ["Hotel A", "Flug B"])
+            == L10n.format(.bookingOverlapWithTwoPartners, "Hotel A", "Flug B")
+    )
+    let many = L10n.overlapLabel(partnerTitles: ["Hotel A", "Flug B", "Tour C"])
+    #expect(many == L10n.format(.bookingOverlapWithPartnerAndOthers, "Hotel A", 2))
+    #expect(!many.contains("+"))
     }
 }
 

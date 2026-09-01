@@ -114,11 +114,28 @@ extension L10n {
         }
     }
 
-    public static func overlapLabel(extraCount: Int) -> String {
-        if extraCount > 0 {
-            return format(.bookingOverlapWithCount, extraCount)
+    /// Caption-Text: Partner-Titel nennen; ohne Count-Badge `(+N)`.
+    public static func overlapLabel(partnerTitles: [String]) -> String {
+        switch partnerTitles.count {
+        case 0:
+            return string(.bookingOverlap)
+        case 1:
+            return format(.bookingOverlapWithPartner, partnerTitles[0])
+        case 2:
+            return format(.bookingOverlapWithTwoPartners, partnerTitles[0], partnerTitles[1])
+        default:
+            return format(
+                .bookingOverlapWithPartnerAndOthers,
+                partnerTitles[0],
+                partnerTitles.count - 1
+            )
         }
-        return string(.bookingOverlap)
+    }
+
+    /// Vollständige Partnerliste für `.help` / A11y-Ergänzung.
+    public static func overlapHelp(partnerTitles: [String]) -> String {
+        guard !partnerTitles.isEmpty else { return string(.bookingOverlap) }
+        return partnerTitles.joined(separator: "\n")
     }
 
     public static func cancellationFreeUntilText(deadlineAt formattedDeadline: String) -> String {

@@ -38,8 +38,20 @@ struct BookingDetailIOS: View {
         bookings.first(where: { $0.id == bookingID })
     }
 
-    private var overlapCountsByBookingID: [UUID: Int] {
-        BookingDayOverlap.countsByID(sdBookings: bookings)
+    private var overlapPartnerIDsByBookingID: [UUID: [UUID]] {
+        BookingDayOverlap.partnerIDsByID(sdBookings: bookings)
+    }
+
+    private var bookingPresentationTitleByID: [UUID: String] {
+        Dictionary(uniqueKeysWithValues: bookings.map { ($0.id, $0.presentationTitle) })
+    }
+
+    private func overlapPartnerTitles(for bookingID: UUID) -> [String] {
+        BookingOverlapCaption.partnerTitles(
+            for: bookingID,
+            partnerIDsByBookingID: overlapPartnerIDsByBookingID,
+            titleByID: bookingPresentationTitleByID
+        )
     }
 
     private var bookingTrip: SDTrip? {
@@ -239,8 +251,8 @@ struct BookingDetailIOS: View {
                 style: .list
             )
             BookingElapsedLabel(for: booking)
-            if BookingOverlapCaption.isVisible(overlapCount: overlapCountsByBookingID[booking.id] ?? 0) {
-                BookingOverlapCaption(extraCount: overlapCountsByBookingID[booking.id] ?? 0)
+            if BookingOverlapCaption.isVisible(partnerTitles: overlapPartnerTitles(for: booking.id)) {
+                BookingOverlapCaption(partnerTitles: overlapPartnerTitles(for: booking.id))
             }
         }
     }
