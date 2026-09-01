@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import ReisenDomain
+import ReisenData
 import ReisenSharedUI
 import ReisenAppCore
 
