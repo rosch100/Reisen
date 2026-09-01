@@ -31,8 +31,8 @@ Die Reiseübersicht zeigt eine **ehrliche** Kostensumme: vorhandene Buchungs- un
 1. Domain-SSOT `TripCostSummary` aus Preiszeilen.
 2. ReisenData-Mapper Timeline → Preiszeilen (Paar-Pflicht).
 3. Default-UI (macOS + iOS Übersicht): Nebeneinander + fehlende Preise; keine Preiszeile → „k. A.“ (+ Missing falls > 0).
-4. Settings-Section **Währung** (Copy unten); Toggle Default aus.
-5. Convert an: Fetch/Cache; Preferred-Total + Original-Nebeneinander + Datumshinweis; Fehler → Conversion-unavailable, Original bleibt.
+4. Settings-Section **Währung** (Copy unten); Toggle Default aus; bevorzugte Währung als **Picker** (keine Freitext-ISO), nur sichtbar wenn Umrechnen an (progressive disclosure).
+5. Convert an: Fetch/Cache; Preferred-Total (primär) + Original-Nebeneinander + Datumshinweis (sekundär); Fehler → Conversion-unavailable, Original bleibt.
 6. Cache TTL ≤ 24 h oder bis Frankfurter-`date` wechselt; Offline mit gültigem Cache ok.
 7. Privacy: Settings-Footer **und** Absatz in `docs/legal/privacy.html` + `docs/legal/en/privacy.html`. PrivacyInfo.xcprivacy unverändert.
 8. `tripTotalPriceText` in macOS ersetzen.

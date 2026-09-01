@@ -2,21 +2,30 @@ import Foundation
 
 /// Eine verwertbare Preiszeile: Betrag und nicht-leerer ISO-4217-Code.
 public struct TripCostLine: Equatable, Sendable {
-    public var amount: Decimal
-    public var currencyCode: String
+    public let amount: Decimal
+    public let currencyCode: String
 
     public init(amount: Decimal, currencyCode: String) {
         self.amount = amount
-        self.currencyCode = currencyCode
+        self.currencyCode = Self.normalizedCurrencyCode(currencyCode)
     }
 
     /// Paar aus optionalem Betrag und Code; fehlendes Paar → `nil` (zählt als fehlend beim Mapper).
     public static func optional(amount: Double?, currencyCode: String?) -> TripCostLine? {
         guard let amount else { return nil }
-        guard let raw = currencyCode?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
-            return nil
-        }
-        return TripCostLine(amount: Decimal(amount), currencyCode: raw.uppercased())
+        let code = normalizedCurrencyCode(currencyCode ?? "")
+        guard !code.isEmpty else { return nil }
+        guard let decimal = decimalFromJSONNumber(amount) else { return nil }
+        return TripCostLine(amount: decimal, currencyCode: code)
+    }
+
+    public static func normalizedCurrencyCode(_ raw: String) -> String {
+        raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    }
+
+    /// Vermeidet Double→Decimal-Binärrauschen an der SD/JSON-Grenze.
+    public static func decimalFromJSONNumber(_ value: Double) -> Decimal? {
+        Decimal(string: String(format: "%.8f", value))
     }
 }
 
@@ -34,13 +43,16 @@ public struct TripCostSummary: Equatable, Sendable {
 
     public static func make(lines: [TripCostLine], missingCount: Int) -> TripCostSummary {
         var totals: [String: Decimal] = [:]
+        var priced = 0
         for line in lines {
-            let code = line.currencyCode.uppercased()
+            let code = TripCostLine.normalizedCurrencyCode(line.currencyCode)
+            guard !code.isEmpty else { continue }
             totals[code, default: 0] += line.amount
+            priced += 1
         }
         return TripCostSummary(
             totalsByCurrency: totals,
-            pricedCount: lines.count,
+            pricedCount: priced,
             missingCount: missingCount
         )
     }
@@ -48,5 +60,14 @@ public struct TripCostSummary: Equatable, Sendable {
     /// ISO-Codes aufsteigend für stabile Nebeneinander-Anzeige.
     public var sortedCurrencyCodes: [String] {
         totalsByCurrency.keys.sorted()
+    }
+
+    /// Stabile Signatur für UI-Refresh (IDs allein reichen nicht bei Preis-Edits).
+    public var costFingerprint: String {
+        let parts = sortedCurrencyCodes.map { code in
+            let amount = totalsByCurrency[code].map { "\($0)" } ?? "0"
+            return "\(code)=\(amount)"
+        }
+        return parts.joined(separator: "|") + "#m\(missingCount)#p\(pricedCount)"
     }
 }

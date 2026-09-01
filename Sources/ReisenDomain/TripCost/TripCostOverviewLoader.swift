@@ -1,5 +1,4 @@
 import Foundation
-import ReisenDomain
 
 /// Ergebnis für die Reiseübersicht (SharedUI formatiert).
 public enum TripCostOverviewResult: Equatable, Sendable {

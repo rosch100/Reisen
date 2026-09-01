@@ -28,10 +28,8 @@ public enum TripCostDisplayText {
             return L10n.string(.commonNotAvailable)
         case .native(let summary), .conversionFailed(let summary):
             return sideBySide(summary: summary)
-        case .converted(let summary, let preferredTotal, let preferredCurrency, _):
-            let converted = defaultFormat(preferredTotal, preferredCurrency)
-            let originals = sideBySide(summary: summary)
-            return "\(converted) (\(originals))"
+        case .converted(_, let preferredTotal, let preferredCurrency, _):
+            return defaultFormat(preferredTotal, preferredCurrency)
         }
     }
 
@@ -42,24 +40,23 @@ public enum TripCostDisplayText {
         case .native(let summary):
             return missingSuffix(missingCount: summary.missingCount)
         case .converted(let summary, _, _, let quoteDate):
-            let missing = missingSuffix(missingCount: summary.missingCount)
+            var parts: [String] = [sideBySide(summary: summary)]
             let dateText = quoteDate.formatted(date: .abbreviated, time: .omitted)
-            let hint = L10n.format(.tripCostReferenceRateHint, dateText)
-            if let missing {
-                return "\(hint) · \(missing)"
-            }
-            return hint
-        case .conversionFailed(let summary):
-            let fail = L10n.string(.tripCostConversionUnavailable)
+            parts.append(L10n.format(.tripCostReferenceRateHint, dateText))
             if let missing = missingSuffix(missingCount: summary.missingCount) {
-                return "\(fail) · \(missing)"
+                parts.append(missing)
             }
-            return fail
+            return parts.joined(separator: " · ")
+        case .conversionFailed(let summary):
+            var parts = [L10n.string(.tripCostConversionUnavailable)]
+            if let missing = missingSuffix(missingCount: summary.missingCount) {
+                parts.append(missing)
+            }
+            return parts.joined(separator: " · ")
         }
     }
 
     public static func defaultFormat(_ amount: Decimal, _ currencyCode: String) -> String {
-        let doubleValue = NSDecimalNumber(decimal: amount).doubleValue
-        return Formatting.formatCurrencyAmount(doubleValue, currencyCode: currencyCode)
+        Formatting.formatCurrencyAmount(amount, currencyCode: currencyCode)
     }
 }

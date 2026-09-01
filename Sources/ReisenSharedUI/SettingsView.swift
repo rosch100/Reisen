@@ -87,6 +87,10 @@ public struct SettingsView: View {
         )
     }
 
+    private var preferredCurrencyPickerCodes: [String] {
+        PreferredCurrencyOptions.codes(including: preferredCurrencyBinding.wrappedValue)
+    }
+
     public var body: some View {
         Form {
             if showsProviderSyncSettings {
@@ -110,10 +114,19 @@ public struct SettingsView: View {
             }
 
             Section {
-                TextField(L10n.string(.settingsCurrencyPreferred), text: preferredCurrencyBinding)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
                 Toggle(L10n.string(.settingsCurrencyConvertToggle), isOn: $convertAmountsToPreferredCurrency)
+                if convertAmountsToPreferredCurrency {
+                    Picker(L10n.string(.settingsCurrencyPreferred), selection: preferredCurrencyBinding) {
+                        ForEach(preferredCurrencyPickerCodes, id: \.self) { code in
+                            Text(PreferredCurrencyOptions.displayName(for: code)).tag(code)
+                        }
+                    }
+                    #if os(macOS)
+                    .pickerStyle(.menu)
+                    #else
+                    .pickerStyle(.navigationLink)
+                    #endif
+                }
             } header: {
                 Text(L10n.string(.settingsCurrencySection))
             } footer: {

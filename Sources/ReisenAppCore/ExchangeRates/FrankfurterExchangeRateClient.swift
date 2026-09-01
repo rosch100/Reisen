@@ -6,6 +6,7 @@ public enum FrankfurterExchangeRateError: Error, Equatable, Sendable {
     case httpStatus(Int)
     case decodingFailed
     case emptyRates
+    case baseMismatch(expected: String, actual: String)
 }
 
 /// Abruf täglicher Referenzkurse von api.frankfurter.dev (ECB u. a.).
@@ -14,8 +15,16 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
     private let cache: ExchangeRateQuoteCache
     private let baseURL: URL
 
+    public static func makeDefaultSession() -> URLSession {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        config.waitsForConnectivity = false
+        return URLSession(configuration: config)
+    }
+
     public init(
-        session: URLSession = .shared,
+        session: URLSession = FrankfurterExchangeRateClient.makeDefaultSession(),
         cache: ExchangeRateQuoteCache = ExchangeRateQuoteCache(),
         baseURL: URL = URL(string: "https://api.frankfurter.dev/v1")!
     ) {
@@ -26,7 +35,7 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
 
     public func latestQuote(base: String) async throws -> ExchangeRateQuote {
         let normalizedBase = base.uppercased()
-        if let cached = cache.quote(forBase: normalizedBase), !cache.isStale(cached) {
+        if let cached = cache.freshQuote(forBase: normalizedBase) {
             return cached
         }
 
@@ -56,6 +65,13 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
         }
         guard !payload.rates.isEmpty else { throw FrankfurterExchangeRateError.emptyRates }
 
+        let expected = expectedBase.uppercased()
+        if let actual = payload.base?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+           !actual.isEmpty,
+           actual != expected {
+            throw FrankfurterExchangeRateError.baseMismatch(expected: expected, actual: actual)
+        }
+
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -69,13 +85,12 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
         for (code, value) in payload.rates {
             rates[code.uppercased()] = try decimal(fromJSONNumber: value)
         }
-        return ExchangeRateQuote(base: expectedBase, date: date, rates: rates)
+        return ExchangeRateQuote(base: expected, date: date, rates: rates)
     }
 
     /// Vermeidet Double→Decimal-Binärrauschen (JSON-Zahlen). Parse-Fail → Fehler, kein `Decimal(Double)`.
     private static func decimal(fromJSONNumber value: Double) throws -> Decimal {
-        let formatted = String(format: "%.8f", value)
-        guard let decimal = Decimal(string: formatted) else {
+        guard let decimal = TripCostLine.decimalFromJSONNumber(value) else {
             throw FrankfurterExchangeRateError.decodingFailed
         }
         return decimal
@@ -109,16 +124,25 @@ public final class ExchangeRateQuoteCache: @unchecked Sendable {
         return stored[base.uppercased()]?.quote
     }
 
+    /// Atomar: liefert nur ein Cache-Hit, der zum selben Zeitpunkt noch frisch ist.
+    public func freshQuote(forBase base: String, now: Date = Date()) -> ExchangeRateQuote? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let entry = stored[base.uppercased()] else { return nil }
+        if now.timeIntervalSince(entry.fetchedAt) > maxAge { return nil }
+        return entry.quote
+    }
+
     public func store(_ quote: ExchangeRateQuote, fetchedAt: Date = Date()) {
         lock.lock()
         defer { lock.unlock() }
-        stored[quote.base] = Entry(quote: quote, fetchedAt: fetchedAt)
+        stored[quote.base.uppercased()] = Entry(quote: quote, fetchedAt: fetchedAt)
     }
 
     public func isStale(_ quote: ExchangeRateQuote, now: Date = Date()) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        guard let entry = stored[quote.base] else { return true }
+        guard let entry = stored[quote.base.uppercased()] else { return true }
         return now.timeIntervalSince(entry.fetchedAt) > maxAge
     }
 }

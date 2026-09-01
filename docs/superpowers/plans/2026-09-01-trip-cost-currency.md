@@ -8,6 +8,8 @@
 
 **Tech Stack:** Swift 6 / SwiftUI / Swift Testing; URLSession + URLProtocol; UserDefaults; L10n.
 
+**Status:** Historischer Plan — Tasks unten erledigt (F13 im Backlog „umgesetzt“).
+
 ## Global Constraints
 
 - No silent fallbacks / mixed-currency sums / unpaired amount+currency as priced.
@@ -34,7 +36,7 @@
 | `Sources/Reisen/App/TripDetailView.swift` | Overview |
 | `Apps/ReiseniOS/Shared/TripDetailIOS.swift` | Overview |
 | `docs/legal/privacy.html`, `en/privacy.html` | FX disclosure |
-| L10n + Tests |
+| L10n keys + Domain/SharedUI/AppCore/Data-Tests | Localization and coverage |
 
 ---
 
@@ -43,40 +45,40 @@
 - Create: `Sources/ReisenDomain/TripCost/TripCostSummary.swift`
 - Create: `Tests/ReisenDomainTests/TripCostSummaryTests.swift`
 
-- [ ] RED: empty; single EUR; EUR+USD separate; missing increments; **amount without currency** and **currency without amount** are not lines (if constructing from optional pairs via factory).
-- [ ] Implement `TripCostLine` + `TripCostSummary`.
-- [ ] GREEN + commit: `feat(domain): TripCostSummary per currency with missing count`
+- [x] RED: empty; single EUR; EUR+USD separate; missing increments; **amount without currency** and **currency without amount** are not lines (if constructing from optional pairs via factory).
+- [x] Implement `TripCostLine` + `TripCostSummary`.
+- [x] GREEN + commit: `feat(domain): TripCostSummary per currency with missing count`
 
 ### Task 2: Conversion + Port (TDD)
 
 - Create: Port + `ExchangeRateQuote` (`Decimal` rates) + conversion
 - Create: `Tests/ReisenDomainTests/TripCostConversionTests.swift`
 
-- [ ] RED→GREEN: convert EUR+USD→EUR; missing rate errors; same-currency passthrough.
-- [ ] Commit: `feat(domain): convert TripCostSummary with Decimal FX quotes`
+- [x] RED→GREEN: convert EUR+USD→EUR; missing rate errors; same-currency passthrough.
+- [x] Commit: `feat(domain): convert TripCostSummary with Decimal FX quotes`
 
 ### Task 3: AppSettings currency keys (TDD)
 
 - Modify: `Sources/ReisenDomain/Settings/AppSettings.swift` (`AppSettingsKeys`)
 - Modify: `Tests/ReisenDomainTests/AppSettingsKeysTests.swift`
 
-- [ ] `preferredCurrencyCode`, `convertAmountsToPreferredCurrency`; Locale default; convert default false.
-- [ ] Readers/writers on `AppSettingsKeys` (UserDefaults) — dieselbe SSOT wie SettingsView (View ruft Writer oder schreibt denselben Key-String; Evidence = UserDefaults mit Key-Konstanten, kein Parallel-Pfad).
-- [ ] Commit: `feat(settings): preferred currency and convert toggle keys`
+- [x] `preferredCurrencyCode`, `convertAmountsToPreferredCurrency`; Locale default; convert default false.
+- [x] Readers/writers on `AppSettingsKeys` (UserDefaults) — dieselbe SSOT wie SettingsView (View ruft Writer oder schreibt denselben Key-String; Evidence = UserDefaults mit Key-Konstanten, kein Parallel-Pfad).
+- [x] Commit: `feat(settings): preferred currency and convert toggle keys`
 
 ### Task 4: ReisenData mapper (TDD)
 
 - Create: `Sources/ReisenData/Mapping/TripCostLineMapping.swift`
 - Create: `Tests/ReisenDataTests/TripCostLineMappingTests.swift` (or DomainTests if Data test target pattern differs — use existing Data test target)
 
-- [ ] RED: unpaired rateDetails → missing; gap without pair → missing; mixed currencies → separate lines.
-- [ ] Commit: `feat(data): map trip timeline prices to TripCostLine`
+- [x] RED: unpaired rateDetails → missing; gap without pair → missing; mixed currencies → separate lines.
+- [x] Commit: `feat(data): map trip timeline prices to TripCostLine`
 
 ### Task 5: Frankfurter client (TDD)
 
 - Create AppCore client + URLProtocol tests
-- [ ] Double→Decimal at decode; cache; typed errors.
-- [ ] Commit: `feat(appcore): Frankfurter ECB reference rate client with cache`
+- [x] Double→Decimal at decode; cache; typed errors.
+- [x] Commit: `feat(appcore): Frankfurter ECB reference rate client with cache`
 
 ### Task 6: Display + L10n + Settings entry evidence (TDD)
 
@@ -85,18 +87,18 @@
   - Display: side-by-side; missing; converted+originals+date; failure keeps originals wording
   - **Entry evidence:** `UserDefaults` mit `AppSettingsKeys` Konstanten (gleicher Pfad wie `@AppStorage`); Readers; Testname `currencySettings_entry_…`.
 - Assert privacy HTML contains Frankfurter/ECB (string contains test).
-- Commit: `feat(ui): trip cost display, currency settings, privacy note`
+- [x] Commit: `feat(ui): trip cost display, currency settings, privacy note`
 
 ### Task 7: Wire macOS + iOS overview
 
 - Replace `tripTotalPriceText`; add iOS overview row; convert async only if toggle on
-- [ ] Spy `ExchangeRateProviding`: convert off → 0 Fetches; convert on → ≥1.
-- Commit: `feat(ui): trip overview cost summary on macOS and iOS`
+- [x] Spy `ExchangeRateProviding`: convert off → 0 Fetches; convert on → ≥1.
+- [x] Commit: `feat(ui): trip overview cost summary on macOS and iOS`
 
 ### Task 8: Backlog archive
 
 - Move F13 to Umgesetzt with Spec link
-- Commit: `docs: archive F13 trip cost currency as implemented`
+- [x] Commit: `docs: archive F13 trip cost currency as implemented`
 
 ---
 

@@ -37,18 +37,25 @@ struct TripCostOverviewIOSRows: View {
             )
             if let secondary = TripCostDisplayText.secondaryLine(for: result) {
                 Text(secondary)
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel(secondary)
             }
         }
+        .accessibilityElement(children: .combine)
         .onAppear { refresh() }
         .onChange(of: convertAmountsToPreferredCurrency) { _, _ in refresh() }
         .onChange(of: preferredCurrencyCodeStored) { _, _ in refresh() }
-        .onChange(of: bookings.map(\.id)) { _, _ in refresh() }
+        .onChange(of: summary.costFingerprint) { _, _ in refresh() }
     }
 
     private func refresh() {
         let costSummary = summary
+        // Sofort aktuelle native Summe — nie alte Converted-Werte über Summary-Wechsel behalten.
+        result = costSummary.pricedCount == 0 && costSummary.missingCount == 0
+            ? .empty
+            : .native(costSummary)
+
         let convert = convertAmountsToPreferredCurrency
         let preferred = preferredCurrencyCodeStored.isEmpty
             ? AppSettingsKeys.preferredCurrency()

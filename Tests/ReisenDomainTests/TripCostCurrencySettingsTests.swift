@@ -2,6 +2,15 @@ import Foundation
 import Testing
 import ReisenDomain
 
+@Test func preferredCurrencyOptions_includesLocaleAndStored() {
+    let locale = Locale(identifier: "de_DE")
+    let codes = PreferredCurrencyOptions.codes(locale: locale, including: "ISK")
+    #expect(codes.contains("EUR"))
+    #expect(codes.contains("ISK"))
+    #expect(codes.firstIndex(of: "ISK")! < codes.firstIndex(of: "USD")!)
+    #expect(PreferredCurrencyOptions.displayName(for: "EUR", locale: locale).hasPrefix("EUR"))
+}
+
 @Test func currencySettings_preferredDefaultsToLocaleOrEUR() {
     let suite = "ReisenTests.preferredCurrency"
     let defaults = UserDefaults(suiteName: suite)!

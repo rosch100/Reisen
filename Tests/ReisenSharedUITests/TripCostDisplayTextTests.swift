@@ -39,7 +39,7 @@ import ReisenSharedUI
     #expect(TripCostDisplayText.primaryLine(for: native).isEmpty == false)
 }
 
-@Test func tripCostDisplay_convertedKeepsOriginalsAndFailedKeepsNative() {
+@Test func tripCostDisplay_convertedPreferredPrimary_originalsSecondary() {
     let summary = TripCostSummary.make(
         lines: [TripCostLine(amount: 10, currencyCode: "EUR")],
         missingCount: 0
@@ -51,9 +51,13 @@ import ReisenSharedUI
         quoteDate: Date(timeIntervalSince1970: 0)
     )
     let primary = TripCostDisplayText.primaryLine(for: converted)
-    #expect(primary.contains("("))
-    #expect(TripCostDisplayText.secondaryLine(for: converted) != nil)
+    #expect(primary.contains("(") == false)
+    let secondary = TripCostDisplayText.secondaryLine(for: converted) ?? ""
+    #expect(secondary.contains("€") || secondary.contains("EUR") || secondary.contains("10"))
+    #expect(secondary.localizedCaseInsensitiveContains("referenz") || secondary.localizedCaseInsensitiveContains("reference"))
 
     let failed = TripCostOverviewResult.conversionFailed(summary: summary)
     #expect(TripCostDisplayText.secondaryLine(for: failed)?.contains(L10n.string(.tripCostConversionUnavailable)) == true)
+    let failedPrimary = TripCostDisplayText.primaryLine(for: failed)
+    #expect(failedPrimary.contains("€") || failedPrimary.contains("EUR") || failedPrimary.contains("10"))
 }

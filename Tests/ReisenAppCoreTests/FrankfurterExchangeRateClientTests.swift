@@ -20,6 +20,21 @@ import ReisenAppCore
     }
 }
 
+@Test func frankfurterDecode_baseMismatch_throws() {
+    let json = #"{"amount":1.0,"base":"USD","date":"2026-08-31","rates":{"EUR":0.9}}"#.data(using: .utf8)!
+    #expect(throws: FrankfurterExchangeRateError.baseMismatch(expected: "EUR", actual: "USD")) {
+        try FrankfurterExchangeRateClient.decodeQuote(data: json, expectedBase: "EUR")
+    }
+}
+
+@Test func frankfurterCache_freshQuote_isAtomicHit() {
+    let cache = ExchangeRateQuoteCache(maxAge: 3600)
+    let quote = ExchangeRateQuote(base: "EUR", date: Date(), rates: ["USD": 1])
+    cache.store(quote, fetchedAt: Date())
+    #expect(cache.freshQuote(forBase: "EUR")?.rates["USD"] == 1)
+    #expect(cache.freshQuote(forBase: "EUR", now: Date().addingTimeInterval(7200)) == nil)
+}
+
 @Test func frankfurterCache_hitSkipsStaleFalse() {
     let cache = ExchangeRateQuoteCache(maxAge: 3600)
     let quote = ExchangeRateQuote(base: "EUR", date: Date(), rates: ["USD": 1])

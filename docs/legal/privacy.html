@@ -124,9 +124,12 @@
       <p>
         Wenn du in den Einstellungen „In bevorzugte Währung umrechnen“ aktivierst, fragt Reisen
         Referenzkurse der <strong>Europäischen Zentralbank</strong> über den öffentlichen Dienst
-        <strong>Frankfurter</strong> (<code>api.frankfurter.dev</code>) ab. Es werden keine Reisedaten
-        oder Personenbezüge übermittelt — nur Währungskürzel. Die Umrechnung ist unverbindlich und kein
-        Wechselkursangebot. Bei deaktiviertem Schalter findet keine Netzwerkanfrage statt.
+        <strong>Frankfurter</strong> (<code>api.frankfurter.dev</code>) ab. Die App übermittelt dabei
+        keine Reisedaten oder Personenbezüge — im Anwendungs-Payload nur Währungskürzel.
+        Der öffentliche Frankfurter-Endpunkt kann über seine Infrastruktur (z.&nbsp;B. CDN/Cloudflare)
+        übliche Verbindungsmetadaten verarbeiten; Details siehe deren Datenschutzhinweise.
+        Die Umrechnung ist unverbindlich und kein Wechselkursangebot. Bei deaktiviertem Schalter
+        findet keine Netzwerkanfrage statt.
       </p>
 
       <h3>Installierte Provider-Apps (nur Gerät)</h3>

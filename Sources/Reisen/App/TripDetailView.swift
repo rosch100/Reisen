@@ -46,6 +46,11 @@ struct TripDetailView: View {
 
     private func refreshTripCost() {
         let summary = tripCostSummary
+        // Sofort aktuelle native Summe — nie alte Converted-Werte über Summary-Wechsel behalten.
+        tripCostResult = summary.pricedCount == 0 && summary.missingCount == 0
+            ? .empty
+            : .native(summary)
+
         let convert = convertAmountsToPreferredCurrency
         let preferred = preferredCurrencyCodeStored.isEmpty
             ? AppSettingsKeys.preferredCurrency()
@@ -500,12 +505,15 @@ struct TripDetailView: View {
                         Text(secondary)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .help(secondary)
                     }
                 }
+                .accessibilityElement(children: .combine)
                 .onAppear { refreshTripCost() }
                 .onChange(of: convertAmountsToPreferredCurrency) { _, _ in refreshTripCost() }
                 .onChange(of: preferredCurrencyCodeStored) { _, _ in refreshTripCost() }
-                .onChange(of: sortedBookings.map(\.id)) { _, _ in refreshTripCost() }
+                .onChange(of: tripCostSummary.costFingerprint) { _, _ in refreshTripCost() }
                 if let destination = trip.destination, !destination.isEmpty {
                     overviewFact(label: L10n.string(.tripDestination), value: destination)
                 }

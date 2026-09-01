@@ -40,3 +40,33 @@ import ReisenDomain
         try TripCostConversion.convertedTotal(summary: summary, preferredCurrency: "EUR", quote: quote)
     }
 }
+
+@Test func tripCostConversion_zeroTargetRate_throws() {
+    let summary = TripCostSummary.make(
+        lines: [TripCostLine(amount: 10, currencyCode: "EUR")],
+        missingCount: 0
+    )
+    let quote = ExchangeRateQuote(
+        base: "USD",
+        date: Date(timeIntervalSince1970: 0),
+        rates: ["EUR": 0]
+    )
+    #expect(throws: TripCostConversionError.missingRate(currencyCode: "EUR")) {
+        try TripCostConversion.convertedTotal(summary: summary, preferredCurrency: "USD", quote: quote)
+    }
+}
+
+@Test func tripCostLine_init_normalizesCurrencyCode() {
+    let line = TripCostLine(amount: 1, currencyCode: " eur ")
+    #expect(line.currencyCode == "EUR")
+    let summary = TripCostSummary.make(
+        lines: [
+            TripCostLine(amount: 1, currencyCode: " eur "),
+            TripCostLine(amount: 2, currencyCode: "EUR"),
+        ],
+        missingCount: 0
+    )
+    #expect(summary.totalsByCurrency["EUR"] == 3)
+    #expect(summary.totalsByCurrency.count == 1)
+    #expect(summary.costFingerprint.contains("EUR="))
+}

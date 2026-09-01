@@ -53,7 +53,7 @@ public enum TripCostConversion {
         if from == base {
             amountInBase = amount
         } else {
-            guard let fromRate = quote.rates[from], fromRate != 0 else {
+            guard let fromRate = quote.rates[from], fromRate > 0 else {
                 throw TripCostConversionError.missingRate(currencyCode: from)
             }
             amountInBase = amount / fromRate
@@ -62,7 +62,7 @@ public enum TripCostConversion {
         if to == base {
             return amountInBase
         }
-        guard let toRate = quote.rates[to] else {
+        guard let toRate = quote.rates[to], toRate > 0 else {
             throw TripCostConversionError.missingRate(currencyCode: to)
         }
         return amountInBase * toRate
