@@ -98,9 +98,16 @@ public struct AssignBookingsSheet: View {
     private func assignSelectedBookings() {
         errorMessage = nil
         do {
+            var affectedTripIDs = Set<UUID>()
+            affectedTripIDs.insert(trip.id)
             for booking in candidates where selectedBookingIDs.contains(booking.id) {
+                if let oldID = booking.trip?.id {
+                    affectedTripIDs.insert(oldID)
+                }
                 booking.trip = trip
             }
+            try modelContext.save()
+            try AutoGapReconcileTrigger.run(tripIDs: affectedTripIDs, in: modelContext)
             try modelContext.save()
             dismiss()
         } catch {

@@ -39,6 +39,7 @@ public final class SwiftDataTripRepository: TripRepository {
         model.endDate = trip.endDate
         model.destination = trip.destination
         model.notes = trip.notes
+        try AutoGapReconcileTrigger.run(tripIDs: [tripID], in: modelContext)
     }
 
     public func delete(id: UUID) throws {
@@ -54,15 +55,21 @@ public final class SwiftDataTripRepository: TripRepository {
         guard let booking = try modelContext.fetch(bookingDescriptor).first else {
             throw RepositoryError.notFound("Booking \(bookingID)")
         }
+        var affected = Set<UUID>()
+        if let oldID = booking.trip?.id {
+            affected.insert(oldID)
+        }
         if let tripID {
             let tripDescriptor = FetchDescriptor<SDTrip>(predicate: #Predicate { $0.id == tripID })
             guard let trip = try modelContext.fetch(tripDescriptor).first else {
                 throw RepositoryError.notFound("Trip \(tripID)")
             }
             booking.trip = trip
+            affected.insert(tripID)
         } else {
             booking.trip = nil
         }
+        try AutoGapReconcileTrigger.run(tripIDs: affected, in: modelContext)
     }
 
     public func save() throws {

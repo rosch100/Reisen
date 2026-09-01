@@ -75,6 +75,27 @@ private func booking(
     #expect(result.edgeGapCount >= 1)
 }
 
+@Test func tripCompleteness_autoGapFillerDoesNotCompleteTimeline() {
+    let early = booking(type: .flight, start: 1 * day, end: 1 * day + 3 * hour)
+    let late = booking(type: .flight, start: 3 * day, end: 3 * day + 3 * hour)
+    let auto = Booking(
+        provider: .autoGap,
+        bookingType: .hotel,
+        startAt: Date(timeIntervalSince1970: 1 * day + 3 * hour),
+        endAt: Date(timeIntervalSince1970: 3 * day),
+        status: .unknown,
+        autoGapIdentityKey: AutoGapIdentity.key(from: early.id, to: late.id, role: .lodging)
+    )
+    let result = TripCompletenessCalculator.evaluate(
+        tripStart: Date(timeIntervalSince1970: 1 * day),
+        tripEnd: Date(timeIntervalSince1970: 3 * day + 3 * hour),
+        bookings: [early, auto, late]
+    )
+    #expect(result.bookingCount == 2)
+    #expect(result.interBookingGapCount == 1)
+    #expect(result.isTimelineComplete == false)
+}
+
 @Test func tripCompleteness_cancelledBookingIgnored() {
     let hotel = booking(type: .hotel, start: 0, end: 5 * day)
     let cancelled = booking(
