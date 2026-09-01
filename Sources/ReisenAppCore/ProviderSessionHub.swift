@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import Observation
 import ReisenDomain
+import ReisenData
 
 /// App-weit gültiger Provider-Session-Status (wie „Browser-Tabs“): Status + WKWebView pro aktivem Provider.
 @MainActor
@@ -84,7 +85,12 @@ public final class ProviderSessionHub {
     }
 
     public func hasSessionWebView(for providerID: ProviderID) -> Bool {
-        webView(for: providerID) != nil
+        guard let slot = slots[providerID] else { return false }
+        return slot.webView != nil && slot.status == .sessionReady
+    }
+
+    public func hasSessionWebView(for booking: SDBooking) -> Bool {
+        hasSessionWebView(for: booking.provider)
     }
 
     public func status(for providerID: ProviderID) -> ProviderSessionStatus? {
@@ -96,3 +102,9 @@ public final class ProviderSessionHub {
     }
 }
 
+extension Optional where Wrapped == ProviderSessionHub {
+    @MainActor
+    public func hasSessionWebView(for booking: SDBooking) -> Bool {
+        self?.hasSessionWebView(for: booking) ?? false
+    }
+}

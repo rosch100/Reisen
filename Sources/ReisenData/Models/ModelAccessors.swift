@@ -31,6 +31,26 @@ public extension SDBooking {
         BookingExternalURL.browserURL(from: cancellationUrl)
     }
 
+    /// Policy-Mode für Storno-Portal (SSOT `(provider, bookingType)`).
+    var cancellationLinkMode: ProviderCancellationLinkMode {
+        ProviderCancellationLinkPolicy.mode(provider: provider, bookingType: bookingType)
+    }
+
+    func portalCancelPresentation(
+        hasSessionWebView: Bool,
+        now: Date = Date()
+    ) -> BookingPortalCancelPresentation {
+        BookingPortalCancellation.presentation(
+            cancellation: cancellationBrowserURL,
+            open: browserURL,
+            status: status,
+            deadlines: domainCancellationDeadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView,
+            linkMode: cancellationLinkMode
+        )
+    }
+
     var displayTitle: String {
         title ?? bookingType.defaultDisplayTitle
     }
