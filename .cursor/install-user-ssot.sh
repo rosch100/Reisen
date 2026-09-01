@@ -139,6 +139,11 @@ self_test() {
   teardown_ephemeral_credential_helper
   unset ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN
 
+  if ! grep -Fq 'git_ssot clone --branch "${BRANCH}"' "$0"; then
+    echo 'fresh-clone path must pass --branch to git clone' >&2
+    return 1
+  fi
+
   REMOTE="${saved_remote}"
   CLEAN_REMOTE="${saved_clean}"
   echo 'install-user-ssot self-test OK'
@@ -161,6 +166,10 @@ if [ ! -d "${CLONE}/.git" ]; then
 else
   refresh_existing_clone
 fi
+
+# exec ersetzt die Shell — EXIT-Trap läuft nicht; Credential-State vor sync-cloud entfernen.
+teardown_ephemeral_credential_helper
+ensure_clone_origin_without_credentials
 
 # Immer das Skript aus dem Archiv (nicht eine veraltete Repo-Kopie).
 exec bash "${CLONE}/Scripts/sync-cloud.sh"
