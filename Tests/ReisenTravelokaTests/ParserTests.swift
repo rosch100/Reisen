@@ -718,6 +718,28 @@ private func expectTravelokaPrice(
     #expect(BookingStatus.parse("CANCELLATION_AVAILABLE") == .unknown)
 }
 
+/// Live Hotel 1387353870: itineraryBookingStatus=REFUNDED trotz userTripStatus=ETICKET_PUBLISHED.
+@Test func travelokaStatusMapperPrefersItineraryBookingStatusRefundedOverEticketPublished() {
+    let refundedInactiveEntry: [String: Any] = [
+        "itineraryTags": [
+            ["text": "Pemesanan tidak aktif", "status": "DEFAULT"],
+        ],
+        "paymentInfo": [
+            "userTripStatus": "ETICKET_PUBLISHED",
+            "latestPaymentStatus": "FAILED",
+        ],
+        "cardSummaryInfo": [
+            "commonSummary": [
+                "itineraryBookingStatus": "REFUNDED",
+                "sectionType": "ACTIVE_BOOKING",
+            ],
+        ],
+    ]
+    #expect(
+        BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: refundedInactiveEntry)) == .cancelled
+    )
+}
+
 @Test func travelokaEnrichmentTimeZoneIdentifierFromFixture() throws {
     let text = try TravelokaFixtureLoader.load("traveloka_itinerary_single_experience_redacted.json")
     #expect(TravelokaEnrichmentParser.timeZoneIdentifier(from: text) == "Asia/Saigon")
