@@ -15,17 +15,6 @@ CRED_SCRIPT=""
 GIT_CONFIG_ARGS=()
 CLEAN_REMOTE=""
 
-cleanup() {
-  if [ -n "${CRED_SCRIPT}" ] && [ -f "${CRED_SCRIPT}" ]; then
-    rm -f "${CRED_SCRIPT}"
-    CRED_SCRIPT=""
-  fi
-  unset CURSOR_SSOT_GIT_OAUTH_TOKEN 2>/dev/null || true
-  if [ -n "${CLEAN_REMOTE}" ] && [ -d "${CLONE}/.git" ]; then
-    git -C "${CLONE}" remote set-url origin "${CLEAN_REMOTE}" 2>/dev/null || true
-  fi
-}
-
 forgejo_token() {
   if [ -n "${ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN:-}" ]; then
     printf '%s' "${ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN}"
@@ -50,14 +39,7 @@ validate_remote() {
   esac
 }
 
-configure_ephemeral_auth() {
-  local token
-  token="$(forgejo_token)"
-  [ -n "${token}" ] || return 0
-
-  export CURSOR_SSOT_GIT_OAUTH_TOKEN="${token}"
-  CRED_SCRIPT="$(mktemp -t cursor-ssot-git-cred.XXXXXX)"
-  chmod 700 "${CRED_SCRIPT}"
+write_ephemeral_credential_helper() {
   cat > "${CRED_SCRIPT}" <<'SCRIPT'
 #!/usr/bin/env bash
 case "$1" in
@@ -68,7 +50,25 @@ get)
 store|erase) ;;
 esac
 SCRIPT
+}
 
+teardown_ephemeral_credential_helper() {
+  if [ -n "${CRED_SCRIPT}" ] && [ -f "${CRED_SCRIPT}" ]; then
+    rm -f "${CRED_SCRIPT}"
+    CRED_SCRIPT=""
+  fi
+  unset CURSOR_SSOT_GIT_OAUTH_TOKEN 2>/dev/null || true
+}
+
+configure_ephemeral_auth() {
+  local token
+  token="$(forgejo_token)"
+  [ -n "${token}" ] || return 0
+
+  export CURSOR_SSOT_GIT_OAUTH_TOKEN="${token}"
+  CRED_SCRIPT="$(mktemp -t cursor-ssot-git-cred.XXXXXX)"
+  chmod 700 "${CRED_SCRIPT}"
+  write_ephemeral_credential_helper
   GIT_CONFIG_ARGS=(-c "credential.helper=!${CRED_SCRIPT}")
 }
 
@@ -76,8 +76,46 @@ git_ssot() {
   git "${GIT_CONFIG_ARGS[@]}" "$@"
 }
 
+ensure_clone_origin_without_credentials() {
+  git -C "${CLONE}" remote set-url origin "${CLEAN_REMOTE}" 2>/dev/null || true
+}
+
+refresh_existing_clone() {
+  ensure_clone_origin_without_credentials
+  git_ssot -C "${CLONE}" fetch origin --prune
+  git_ssot -C "${CLONE}" checkout -B "${BRANCH}" "origin/${BRANCH}"
+  git_ssot -C "${CLONE}" reset --hard "origin/${BRANCH}"
+  git_ssot -C "${CLONE}" clean -fd
+  ensure_clone_origin_without_credentials
+}
+
+cleanup() {
+  teardown_ephemeral_credential_helper
+  if [ -n "${CLEAN_REMOTE}" ] && [ -d "${CLONE}/.git" ]; then
+    ensure_clone_origin_without_credentials
+  fi
+}
+
+assert_credential_helper_reads_token_from_env() {
+  local cred_out token_line
+  cred_out="$("${CRED_SCRIPT}" get)"
+  if ! printf '%s\n' "${cred_out}" | grep -qx 'username=oauth2'; then
+    echo 'credential helper missing username=oauth2' >&2
+    return 1
+  fi
+  token_line="$(printf '%s\n' "${cred_out}" | sed -n '2p')"
+  if [ "${token_line}" != "password=$(forgejo_token)" ]; then
+    echo 'credential helper env read failed' >&2
+    return 1
+  fi
+  if grep -q 'token"with' "${CRED_SCRIPT}" 2>/dev/null; then
+    echo 'token must not be embedded in credential script' >&2
+    return 1
+  fi
+}
+
 self_test() {
-  local got cred_out saved_remote saved_clean
+  local got saved_remote saved_clean
   saved_remote="${REMOTE}"
   saved_clean="${CLEAN_REMOTE}"
 
@@ -97,22 +135,9 @@ self_test() {
 
   ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN='token"with\\quotes'
   configure_ephemeral_auth
-  cred_out="$("${CRED_SCRIPT}" get)"
-  if ! printf '%s\n' "${cred_out}" | grep -qx 'username=oauth2'; then
-    echo 'credential helper missing username=oauth2' >&2
-    return 1
-  fi
-  if [ "$(printf '%s\n' "${cred_out}" | sed -n '2p')" != "password=$(forgejo_token)" ]; then
-    echo 'credential helper env read failed' >&2
-    return 1
-  fi
-  if grep -q 'token"with' "${CRED_SCRIPT}" 2>/dev/null; then
-    echo 'token must not be embedded in credential script' >&2
-    return 1
-  fi
-  rm -f "${CRED_SCRIPT}"
-  CRED_SCRIPT=""
-  unset ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN CURSOR_SSOT_GIT_OAUTH_TOKEN
+  assert_credential_helper_reads_token_from_env
+  teardown_ephemeral_credential_helper
+  unset ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN
 
   REMOTE="${saved_remote}"
   CLEAN_REMOTE="${saved_clean}"
@@ -134,14 +159,8 @@ mkdir -p "$(dirname "${CLONE}")"
 if [ ! -d "${CLONE}/.git" ]; then
   git_ssot clone --branch "${BRANCH}" "${CLEAN_REMOTE}" "${CLONE}"
 else
-  git -C "${CLONE}" remote set-url origin "${CLEAN_REMOTE}"
-  git_ssot -C "${CLONE}" fetch origin --prune
-  git_ssot -C "${CLONE}" checkout -B "${BRANCH}" "origin/${BRANCH}"
-  git_ssot -C "${CLONE}" reset --hard "origin/${BRANCH}"
-  git_ssot -C "${CLONE}" clean -fd
+  refresh_existing_clone
 fi
-
-git -C "${CLONE}" remote set-url origin "${CLEAN_REMOTE}"
 
 # Immer das Skript aus dem Archiv (nicht eine veraltete Repo-Kopie).
 exec bash "${CLONE}/Scripts/sync-cloud.sh"
