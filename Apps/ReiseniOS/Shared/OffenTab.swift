@@ -109,7 +109,11 @@ struct OpenBookingsScreen: View {
     @Environment(\.providerNativeAppPresence) private var nativeAppPresence
     @Environment(\.providerSessionHub) private var sessionHub
     @Environment(\.openURL) private var openURL
+    @Environment(\.modelContext) private var modelContext
     @State private var cancelRequest: BookingPortalCancelRequest?
+    @State private var pendingDeleteBooking: SDBooking?
+    @State private var showDeleteConfirmation = false
+    @State private var persistErrorMessage: String?
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @Query(sort: \SDTrip.startDate, order: .forward) private var trips: [SDTrip]
 
@@ -240,6 +244,33 @@ struct OpenBookingsScreen: View {
             BookingDetailIOS(bookingID: bookingID, onTripCreated: onTripCreated)
         })
         .bookingPortalCancelSheet($cancelRequest)
+        .bookingDeleteConfirmAlert(
+            isPresented: $showDeleteConfirmation,
+            bookingTitle: pendingDeleteBooking?.presentationTitle ?? L10n.string(.editorBooking),
+            showsSyncRestoreWarning: pendingDeleteBooking.map { $0.provider != .manual } ?? false,
+            onConfirm: deletePendingBooking,
+            onCancel: { pendingDeleteBooking = nil }
+        )
+        .persistFailureAlert(message: $persistErrorMessage)
+    }
+
+    private func requestDeleteBooking(_ booking: SDBooking) {
+        pendingDeleteBooking = booking
+        showDeleteConfirmation = true
+    }
+
+    private func deletePendingBooking() {
+        guard let booking = pendingDeleteBooking else { return }
+        do {
+            try BookingDeletion.perform(booking: booking, in: modelContext)
+            if selectedBookingID == booking.id {
+                selectedBookingID = nil
+            }
+            multiSelection.remove(booking.id)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
+        pendingDeleteBooking = nil
     }
 
     @ViewBuilder
@@ -306,6 +337,15 @@ struct OpenBookingsScreen: View {
                                 )
                             }
                         )
+                        Divider()
+                        Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
+                            requestDeleteBooking(booking)
+                        }
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(L10n.string(.commonDelete), role: .destructive) {
+                            requestDeleteBooking(booking)
+                        }
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         if !usesSplit {
