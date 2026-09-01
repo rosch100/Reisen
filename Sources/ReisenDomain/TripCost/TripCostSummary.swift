@@ -7,25 +7,16 @@ public struct TripCostLine: Equatable, Sendable {
 
     public init(amount: Decimal, currencyCode: String) {
         self.amount = amount
-        self.currencyCode = Self.normalizedCurrencyCode(currencyCode)
+        self.currencyCode = CurrencyCode.normalize(currencyCode)
     }
 
     /// Paar aus optionalem Betrag und Code; fehlendes Paar → `nil` (zählt als fehlend beim Mapper).
     public static func optional(amount: Double?, currencyCode: String?) -> TripCostLine? {
         guard let amount else { return nil }
-        let code = normalizedCurrencyCode(currencyCode ?? "")
+        let code = CurrencyCode.normalize(currencyCode ?? "")
         guard !code.isEmpty else { return nil }
-        guard let decimal = decimalFromJSONNumber(amount) else { return nil }
+        guard let decimal = DecimalJSON.parse(amount) else { return nil }
         return TripCostLine(amount: decimal, currencyCode: code)
-    }
-
-    public static func normalizedCurrencyCode(_ raw: String) -> String {
-        raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-    }
-
-    /// Vermeidet Double→Decimal-Binärrauschen an der SD/JSON-Grenze.
-    public static func decimalFromJSONNumber(_ value: Double) -> Decimal? {
-        Decimal(string: String(format: "%.8f", value))
     }
 }
 
@@ -45,7 +36,7 @@ public struct TripCostSummary: Equatable, Sendable {
         var totals: [String: Decimal] = [:]
         var priced = 0
         for line in lines {
-            let code = TripCostLine.normalizedCurrencyCode(line.currencyCode)
+            let code = CurrencyCode.normalize(line.currencyCode)
             guard !code.isEmpty else { continue }
             totals[code, default: 0] += line.amount
             priced += 1

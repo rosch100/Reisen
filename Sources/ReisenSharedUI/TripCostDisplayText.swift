@@ -40,23 +40,27 @@ public enum TripCostDisplayText {
         case .native(let summary):
             return missingSuffix(missingCount: summary.missingCount)
         case .converted(let summary, _, _, let quoteDate):
-            var parts: [String] = [sideBySide(summary: summary)]
             let dateText = quoteDate.formatted(date: .abbreviated, time: .omitted)
-            parts.append(L10n.format(.tripCostReferenceRateHint, dateText))
-            if let missing = missingSuffix(missingCount: summary.missingCount) {
-                parts.append(missing)
-            }
-            return parts.joined(separator: " · ")
+            return joinedSecondary([
+                sideBySide(summary: summary),
+                L10n.format(.tripCostReferenceRateHint, dateText),
+                missingSuffix(missingCount: summary.missingCount),
+            ])
         case .conversionFailed(let summary):
-            var parts = [L10n.string(.tripCostConversionUnavailable)]
-            if let missing = missingSuffix(missingCount: summary.missingCount) {
-                parts.append(missing)
-            }
-            return parts.joined(separator: " · ")
+            return joinedSecondary([
+                L10n.string(.tripCostConversionUnavailable),
+                missingSuffix(missingCount: summary.missingCount),
+            ])
         }
     }
 
     public static func defaultFormat(_ amount: Decimal, _ currencyCode: String) -> String {
         Formatting.formatCurrencyAmount(amount, currencyCode: currencyCode)
+    }
+
+    private static func joinedSecondary(_ parts: [String?]) -> String? {
+        let present = parts.compactMap { $0 }
+        guard !present.isEmpty else { return nil }
+        return present.joined(separator: " · ")
     }
 }

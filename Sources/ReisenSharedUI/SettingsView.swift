@@ -75,14 +75,10 @@ public struct SettingsView: View {
     private var preferredCurrencyBinding: Binding<String> {
         Binding(
             get: {
-                preferredCurrencyCode.isEmpty
-                    ? AppSettingsKeys.preferredCurrency()
-                    : preferredCurrencyCode
+                AppSettingsKeys.preferredCurrency(stored: preferredCurrencyCode)
             },
             set: { newValue in
-                preferredCurrencyCode = newValue
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .uppercased()
+                preferredCurrencyCode = CurrencyCode.normalize(newValue)
             }
         )
     }

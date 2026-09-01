@@ -10,17 +10,22 @@ public enum TripCostOverviewResult: Equatable, Sendable {
 
 /// Lädt optional Kurse — bei Convert aus **kein** Provider-Aufruf.
 public enum TripCostOverviewLoader {
+    /// Sofort anzeigbares Ergebnis vor async FX (kein Flash „k. A.“, kein stale Converted).
+    public static func immediate(summary: TripCostSummary) -> TripCostOverviewResult {
+        summary.pricedCount == 0 && summary.missingCount == 0
+            ? .empty
+            : .native(summary)
+    }
+
     public static func load(
         summary: TripCostSummary,
         convertEnabled: Bool,
         preferredCurrency: String,
         rates: ExchangeRateProviding
     ) async -> TripCostOverviewResult {
-        if summary.pricedCount == 0 {
-            return summary.missingCount > 0 ? .native(summary) : .empty
-        }
-        guard convertEnabled else {
-            return .native(summary)
+        let baseline = immediate(summary: summary)
+        guard convertEnabled, summary.pricedCount > 0 else {
+            return baseline
         }
         do {
             let quote = try await rates.latestQuote(base: preferredCurrency)

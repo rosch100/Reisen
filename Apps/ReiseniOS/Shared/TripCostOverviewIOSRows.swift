@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 import ReisenDomain
-import ReisenData
 import ReisenSharedUI
 import ReisenAppCore
 
@@ -18,13 +17,7 @@ struct TripCostOverviewIOSRows: View {
     private var bookings: [SDBooking] { trip.timelineBookings() }
 
     private var summary: TripCostSummary {
-        let saved = TripGapTimeline.savedGapsByKey(allGaps: allGaps, tripID: trip.id)
-        let computed = TripGapTimeline.computedGaps(trip: trip, bookings: bookings)
-        let gapPairs: [(Double?, String?)] = computed.map { gap in
-            let model = saved[gap.identityKey]
-            return (model?.priceAmount, model?.priceCurrencyCode)
-        }
-        return TripCostLineMapping.summary(bookings: bookings, gapPairs: gapPairs)
+        TripCostTimelineSummary.make(trip: trip, bookings: bookings, allGaps: allGaps)
     }
 
     var body: some View {
@@ -50,27 +43,14 @@ struct TripCostOverviewIOSRows: View {
     }
 
     private func refresh() {
-        let costSummary = summary
-        // Sofort aktuelle native Summe — nie alte Converted-Werte über Summary-Wechsel behalten.
-        result = costSummary.pricedCount == 0 && costSummary.missingCount == 0
-            ? .empty
-            : .native(costSummary)
-
-        let convert = convertAmountsToPreferredCurrency
-        let preferred = preferredCurrencyCodeStored.isEmpty
-            ? AppSettingsKeys.preferredCurrency()
-            : preferredCurrencyCodeStored
-        let token = UUID()
-        refreshToken = token
-        Task { @MainActor in
-            let loaded = await TripCostOverviewLoader.load(
-                summary: costSummary,
-                convertEnabled: convert,
-                preferredCurrency: preferred,
-                rates: ExchangeRateService.sharedClient
-            )
-            guard refreshToken == token else { return }
-            result = loaded
-        }
+        TripCostOverviewRefresh.run(
+            summary: summary,
+            convertEnabled: convertAmountsToPreferredCurrency,
+            preferredCurrencyStored: preferredCurrencyCodeStored,
+            rates: ExchangeRateService.sharedClient,
+            setToken: { refreshToken = $0 },
+            setResult: { result = $0 },
+            currentToken: { refreshToken }
+        )
     }
 }

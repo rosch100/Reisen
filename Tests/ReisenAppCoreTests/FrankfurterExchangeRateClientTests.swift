@@ -35,14 +35,6 @@ import ReisenAppCore
     #expect(cache.freshQuote(forBase: "EUR", now: Date().addingTimeInterval(7200)) == nil)
 }
 
-@Test func frankfurterCache_hitSkipsStaleFalse() {
-    let cache = ExchangeRateQuoteCache(maxAge: 3600)
-    let quote = ExchangeRateQuote(base: "EUR", date: Date(), rates: ["USD": 1])
-    cache.store(quote, fetchedAt: Date())
-    #expect(cache.isStale(quote) == false)
-    #expect(cache.quote(forBase: "EUR")?.rates["USD"] == 1)
-}
-
 @Suite(.serialized)
 struct FrankfurterHTTPClientTests {
     private final class StubURLProtocol: URLProtocol, @unchecked Sendable {

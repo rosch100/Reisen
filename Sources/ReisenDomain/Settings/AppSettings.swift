@@ -96,20 +96,32 @@ public struct AppSettingsKeys {
         defaults: UserDefaults = .standard,
         locale: Locale = .current
     ) -> String {
-        if let stored = defaults.string(forKey: preferredCurrencyCode)?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-           !stored.isEmpty {
-            return stored.uppercased()
+        preferredCurrency(stored: nil, defaults: defaults, locale: locale)
+    }
+
+    /// AppStorage-/Formularwert; leer/`nil` → Defaults → Locale → EUR.
+    public static func preferredCurrency(
+        stored: String?,
+        defaults: UserDefaults = .standard,
+        locale: Locale = .current
+    ) -> String {
+        for raw in [stored, defaults.string(forKey: preferredCurrencyCode)].compactMap({ $0 }) {
+            let normalized = CurrencyCode.normalize(raw)
+            if !normalized.isEmpty {
+                return normalized
+            }
         }
-        if let code = locale.currency?.identifier, !code.isEmpty {
-            return code.uppercased()
+        if let code = locale.currency?.identifier {
+            let normalized = CurrencyCode.normalize(code)
+            if !normalized.isEmpty {
+                return normalized
+            }
         }
         return "EUR"
     }
 
     public static func setPreferredCurrency(_ code: String, defaults: UserDefaults = .standard) {
-        let normalized = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        defaults.set(normalized, forKey: preferredCurrencyCode)
+        defaults.set(CurrencyCode.normalize(code), forKey: preferredCurrencyCode)
     }
 
     /// Default: Umrechnung aus.

@@ -11,7 +11,7 @@ public enum PreferredCurrencyOptions {
             "KRW", "MXN", "BRL", "ZAR", "AED", "ILS",
         ]
         func prepend(_ raw: String?) {
-            guard let code = raw?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+            guard let code = raw.map(CurrencyCode.normalize),
                   !code.isEmpty,
                   !ordered.contains(code) else { return }
             ordered.insert(code, at: 0)
@@ -22,10 +22,10 @@ public enum PreferredCurrencyOptions {
     }
 
     public static func displayName(for code: String, locale: Locale = .current) -> String {
-        let upper = code.uppercased()
-        if let name = locale.localizedString(forCurrencyCode: upper) {
-            return "\(upper) – \(name)"
+        let normalized = CurrencyCode.normalize(code)
+        if let name = locale.localizedString(forCurrencyCode: normalized) {
+            return "\(normalized) – \(name)"
         }
-        return upper
+        return normalized
     }
 }

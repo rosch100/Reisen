@@ -24,7 +24,7 @@ public enum Formatting {
         currencyCode: String?,
         locale: Locale = L10n.locale
     ) -> String {
-        let decimal = TripCostLine.decimalFromJSONNumber(amount) ?? Decimal(amount)
+        let decimal = DecimalJSON.parse(amount) ?? Decimal(amount)
         return formatCurrencyAmount(decimal, currencyCode: currencyCode, locale: locale)
     }
 

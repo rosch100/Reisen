@@ -37,36 +37,19 @@ struct TripDetailView: View {
     @State private var tripCostRefreshToken = UUID()
 
     private var tripCostSummary: TripCostSummary {
-        let gapPairs: [(Double?, String?)] = gaps.map { gap in
-            let saved = savedGapsByKey[gap.identityKey]
-            return (saved?.priceAmount, saved?.priceCurrencyCode)
-        }
-        return TripCostLineMapping.summary(bookings: sortedBookings, gapPairs: gapPairs)
+        TripCostTimelineSummary.make(trip: trip, bookings: sortedBookings, allGaps: allGaps)
     }
 
     private func refreshTripCost() {
-        let summary = tripCostSummary
-        // Sofort aktuelle native Summe — nie alte Converted-Werte über Summary-Wechsel behalten.
-        tripCostResult = summary.pricedCount == 0 && summary.missingCount == 0
-            ? .empty
-            : .native(summary)
-
-        let convert = convertAmountsToPreferredCurrency
-        let preferred = preferredCurrencyCodeStored.isEmpty
-            ? AppSettingsKeys.preferredCurrency()
-            : preferredCurrencyCodeStored
-        let token = UUID()
-        tripCostRefreshToken = token
-        Task { @MainActor in
-            let result = await TripCostOverviewLoader.load(
-                summary: summary,
-                convertEnabled: convert,
-                preferredCurrency: preferred,
-                rates: ExchangeRateService.sharedClient
-            )
-            guard tripCostRefreshToken == token else { return }
-            tripCostResult = result
-        }
+        TripCostOverviewRefresh.run(
+            summary: tripCostSummary,
+            convertEnabled: convertAmountsToPreferredCurrency,
+            preferredCurrencyStored: preferredCurrencyCodeStored,
+            rates: ExchangeRateService.sharedClient,
+            setToken: { tripCostRefreshToken = $0 },
+            setResult: { tripCostResult = $0 },
+            currentToken: { tripCostRefreshToken }
+        )
     }
 
     private var savedGapsByKey: [String: SDGap] {

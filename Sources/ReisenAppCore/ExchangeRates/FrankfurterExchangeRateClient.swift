@@ -34,7 +34,7 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
     }
 
     public func latestQuote(base: String) async throws -> ExchangeRateQuote {
-        let normalizedBase = base.uppercased()
+        let normalizedBase = CurrencyCode.normalize(base)
         if let cached = cache.freshQuote(forBase: normalizedBase) {
             return cached
         }
@@ -65,8 +65,8 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
         }
         guard !payload.rates.isEmpty else { throw FrankfurterExchangeRateError.emptyRates }
 
-        let expected = expectedBase.uppercased()
-        if let actual = payload.base?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+        let expected = CurrencyCode.normalize(expectedBase)
+        if let actual = payload.base.map(CurrencyCode.normalize),
            !actual.isEmpty,
            actual != expected {
             throw FrankfurterExchangeRateError.baseMismatch(expected: expected, actual: actual)
@@ -83,17 +83,12 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
 
         var rates: [String: Decimal] = [:]
         for (code, value) in payload.rates {
-            rates[code.uppercased()] = try decimal(fromJSONNumber: value)
+            guard let decimal = DecimalJSON.parse(value) else {
+                throw FrankfurterExchangeRateError.decodingFailed
+            }
+            rates[CurrencyCode.normalize(code)] = decimal
         }
         return ExchangeRateQuote(base: expected, date: date, rates: rates)
-    }
-
-    /// Vermeidet Double→Decimal-Binärrauschen (JSON-Zahlen). Parse-Fail → Fehler, kein `Decimal(Double)`.
-    private static func decimal(fromJSONNumber value: Double) throws -> Decimal {
-        guard let decimal = TripCostLine.decimalFromJSONNumber(value) else {
-            throw FrankfurterExchangeRateError.decodingFailed
-        }
-        return decimal
     }
 
     private struct Payload: Decodable {
@@ -101,48 +96,5 @@ public final class FrankfurterExchangeRateClient: ExchangeRateProviding, @unchec
         let base: String?
         let date: String
         let rates: [String: Double]
-    }
-}
-
-public final class ExchangeRateQuoteCache: @unchecked Sendable {
-    private struct Entry {
-        var quote: ExchangeRateQuote
-        var fetchedAt: Date
-    }
-
-    private var stored: [String: Entry] = [:]
-    private let lock = NSLock()
-    public var maxAge: TimeInterval
-
-    public init(maxAge: TimeInterval = 24 * 60 * 60) {
-        self.maxAge = maxAge
-    }
-
-    public func quote(forBase base: String) -> ExchangeRateQuote? {
-        lock.lock()
-        defer { lock.unlock() }
-        return stored[base.uppercased()]?.quote
-    }
-
-    /// Atomar: liefert nur ein Cache-Hit, der zum selben Zeitpunkt noch frisch ist.
-    public func freshQuote(forBase base: String, now: Date = Date()) -> ExchangeRateQuote? {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let entry = stored[base.uppercased()] else { return nil }
-        if now.timeIntervalSince(entry.fetchedAt) > maxAge { return nil }
-        return entry.quote
-    }
-
-    public func store(_ quote: ExchangeRateQuote, fetchedAt: Date = Date()) {
-        lock.lock()
-        defer { lock.unlock() }
-        stored[quote.base.uppercased()] = Entry(quote: quote, fetchedAt: fetchedAt)
-    }
-
-    public func isStale(_ quote: ExchangeRateQuote, now: Date = Date()) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let entry = stored[quote.base.uppercased()] else { return true }
-        return now.timeIntervalSince(entry.fetchedAt) > maxAge
     }
 }
