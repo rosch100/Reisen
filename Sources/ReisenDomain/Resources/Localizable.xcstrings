@@ -5121,6 +5121,38 @@
         }
       }
     },
+    "provider.auto_gap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic"
+          }
+        }
+      }
+    },
+    "booking.badge.auto_gap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic"
+          }
+        }
+      }
+    },
     "repository.not_found": {
       "localizations": {
         "de": {
@@ -9088,8 +9120,7 @@
           }
         }
       }
-    }
-,
+    },
     "split.column_resize": {
       "localizations": {
         "de": {

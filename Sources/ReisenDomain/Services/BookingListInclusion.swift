@@ -22,6 +22,7 @@ public enum BookingListInclusion {
         guard status != .cancelled else { return false }
         return isUpcoming(startAt: startAt, now: now, calendar: calendar)
             || provider == .manual
+            || provider == .autoGap
     }
 
     /// Ende liegt kalendarisch vor heute.
