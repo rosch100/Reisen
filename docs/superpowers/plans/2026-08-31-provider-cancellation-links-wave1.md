@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Status (shipped):** Wave 1 ist umgesetzt. Historische Task-Snippets unten erwähnen teils noch `requiresProviderSession: Bool` an `presentation`/`visible`. **Live-SSOT:** Parameter `linkMode: ProviderCancellationLinkMode` (`.none` → hidden zuerst); Spec `docs/superpowers/specs/2026-08-31-provider-cancellation-links-all-design.md` + Code. Policy-Helper `requiresProviderSession(mode:)` bleibt intern.
+
 **Goal:** Wire Hybrid Storno-Modes so GetYourGuide (in-page) and billiger-mietwagen (session-bound distinct URL) persist actionable `cancellationUrl`s, with Policy-SSOT and Sheet-only presentation where Safari would be useless or duplicate Open.
 
-**Architecture:** Domain `ProviderCancellationLinkPolicy` owns mode per `(ProviderID, BookingType)`. Extract sets `cancellationUrl` accordingly. `BookingPortalCancellation.presentation` gains `requiresProviderSession` so BM never falls through to Safari. SharedUI hides copy-cancel when `cancel == open`.
+**Architecture:** Domain `ProviderCancellationLinkPolicy` owns mode per `(ProviderID, BookingType)`. Extract sets `cancellationUrl` accordingly. `BookingPortalCancellation.presentation` / `visible` take `linkMode` (session-bound / in-page never fall through to Safari; `.none` stays hidden). SharedUI hides copy-cancel when `cancel == open`.
 
 **Tech Stack:** Swift 6 / Swift Testing / SPM targets `ReisenDomain`, `ReisenGetYourGuide`, `ReisenBilligerMietwagen`, `ReisenSharedUI`, macOS `Reisen` app.
 
@@ -148,7 +150,7 @@ public enum ProviderCancellationLinkPolicy {
 }
 ```
 
-Note: `manual` is not in `syncProviderIDs`; Editor HTTPS remains distinct via user field, not this policy. Returning `.none` for `.manual` is correct for sync path.
+Note: `manual` is not in `syncProviderIDs`; Editor HTTPS remains distinct via user field. Policy returns `.distinctURL` for `.manual` (not `.none`).
 
 - [ ] **Step 4: Run test to verify it passes**
 

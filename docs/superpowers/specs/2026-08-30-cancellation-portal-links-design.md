@@ -129,7 +129,7 @@ Leitplanken: bestehendes Open ([booking-portal-open.md](../../dev/booking-portal
 - Lange Titel nur **Menü/Command** (bestehende Open-Keys; `action.cancel_in_portal_menu` = „Stornieren im Portal“ / „Cancel in portal“).
 - `.help`: macOS Open = `action.open_in_browser_help`; Storno = `action.cancel_in_portal_help` (öffnet Anbieter-Seite, storniert nicht in Reisen).
 - Kontextmenü Copy: bestehendes `action.copy_link` nur für die Öffnen-URL; Storno-URL eigener Key `action.copy_cancellation_link` („Storno-Link kopieren“ / „Copy cancellation link“). Keine zwei identischen „Link kopieren“.
-- Kein Confirm, kein destruktiver Role, kein `xmark`.
+- Kein Confirm, kein `xmark`. Rolle: Sheet-Flow `.destructive` (Sheet-SSOT); Safari-Open ohne Sheet: kein `.destructive` (siehe Alternatives-Tabelle oben).
 - Fehlendes Control **weg**. Leer-Caption nur wenn `visible` beide nil. Command/Menü: disabled + Help „kein Link“.
 - iOS Store: Buttons über iCloud-Felder, ohne Provider-Registry.
 - macOS: Inspector-Action-Bar, nicht Caption-only-Textlink.

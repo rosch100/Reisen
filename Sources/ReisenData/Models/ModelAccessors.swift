@@ -36,11 +36,6 @@ public extension SDBooking {
         ProviderCancellationLinkPolicy.mode(provider: provider, bookingType: bookingType)
     }
 
-    /// Storno-UI braucht die Provider-Session (In-Page / session-bound Cancel-URL).
-    var cancellationRequiresProviderSession: Bool {
-        ProviderCancellationLinkPolicy.requiresProviderSession(cancellationLinkMode)
-    }
-
     func portalCancelPresentation(
         hasSessionWebView: Bool,
         now: Date = Date()
