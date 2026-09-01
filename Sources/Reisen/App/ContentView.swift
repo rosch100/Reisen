@@ -1245,7 +1245,7 @@ struct ContentView: View {
     private struct OpenBookingDetailView: View {
         let booking: SDBooking
         let matchingTrip: SDTrip?
-        var overlapCount: Int = 0
+        let overlapCount: Int
         var onCreateTrip: () -> Void
 
         @Environment(\.modelContext) private var modelContext

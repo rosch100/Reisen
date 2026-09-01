@@ -143,3 +143,36 @@ private func span(
     let b = span(start: d2, end: day(2026, 8, 3), place: "B", type: .hotel)
     #expect(BookingDayOverlap.countsByID([a, b]).isEmpty)
 }
+
+@Test func bookingDayOverlap_samePlaceNormalizedIata_multiRoomSuppressed() {
+    let trip = UUID()
+    let d1 = day(2026, 8, 1)
+    let d3 = day(2026, 8, 3)
+    let aBooking = Booking(
+        provider: .manual,
+        bookingType: .hotel,
+        startAt: d1,
+        endAt: d3,
+        locationTo: "Marina Bay Sands (SIN)",
+        tripID: trip
+    )
+    let bBooking = Booking(
+        provider: .manual,
+        bookingType: .hotel,
+        startAt: d1,
+        endAt: d3,
+        locationTo: "SIN",
+        tripID: trip
+    )
+    #expect(aBooking.daySpan.placeKey == "SIN")
+    #expect(bBooking.daySpan.placeKey == "SIN")
+    #expect(BookingDayOverlap.countsByID([aBooking.daySpan, bBooking.daySpan]).isEmpty)
+}
+
+@Test func bookingDayOverlap_hotelSameCalendarDay_emptyOccupancy() {
+    let d = day(2026, 8, 1)
+    let hotel = span(start: d, end: d, place: "H", type: .hotel)
+    let flight = span(start: d, end: d, place: "X", type: .flight)
+    #expect(BookingDayOverlap.dayRangesOverlap(hotel, flight) == false)
+    #expect(BookingDayOverlap.countsByID([hotel, flight]).isEmpty)
+}

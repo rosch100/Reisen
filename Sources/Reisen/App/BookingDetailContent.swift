@@ -6,7 +6,7 @@ import ReisenSharedUI
 /// Vollständige Buchungsdetails (alle persistierten Felder) — gleiche Ansicht für zugeordnete und offene Buchungen.
 struct BookingDetailContent: View {
     let booking: SDBooking
-    var overlapCount: Int = 0
+    let overlapCount: Int
     var onEditBooking: (() -> Void)?
     var onRequestDeleteBooking: ((UUID) -> Void)?
     var onRequestRemoveFromTrip: ((UUID) -> Void)?

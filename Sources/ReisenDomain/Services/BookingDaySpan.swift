@@ -28,12 +28,14 @@ public struct BookingDaySpan: Equatable, Sendable, Identifiable {
 }
 
 public extension Booking {
+    /// Ortsschlüssel über `PlaceKey.normalize` (SSOT mit SpatialGap).
     var daySpan: BookingDaySpan {
-        BookingDaySpan(
+        let rawPlace = locationTo ?? locationFrom
+        return BookingDaySpan(
             id: id,
             startAt: startAt,
             endAt: endAt,
-            placeKey: locationTo ?? locationFrom ?? "",
+            placeKey: PlaceKey.normalize(rawPlace) ?? "",
             tripID: tripID,
             bookingType: bookingType
         )

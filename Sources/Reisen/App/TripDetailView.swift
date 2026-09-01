@@ -1071,13 +1071,7 @@ private struct BookingRow: View {
             .foregroundColor: secondary
         ]))
 
-        if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
-            let overlapText = BookingOverlapCaption.labelText(extraCount: overlapCount)
-            ns.append(NSAttributedString(string: "  \(overlapText)", attributes: [
-                .font: caption2Font,
-                .foregroundColor: orange
-            ]))
-        }
+        // Overlap visually via BookingOverlapCaption (summary + details); Copy behält labelText.
         if let elapsed = BookingElapsedText.string(for: booking, now: now) {
             ns.append(NSAttributedString(string: "  \(elapsed)", attributes: [
                 .font: caption2Font,
@@ -1349,6 +1343,9 @@ private struct BookingRow: View {
 
     private func bookingDetailsBody(now: Date) -> some View {
         VStack(alignment: .leading, spacing: 6) {
+            if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
+                BookingOverlapCaption(extraCount: overlapCount)
+            }
             HStack(alignment: .top, spacing: 12) {
                 SelectableBookingTextView(
                     attributedString: bookingAttributedDisplayText(now: now),

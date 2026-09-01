@@ -8,7 +8,7 @@ public struct OpenBookingRow: View {
     let fillCaption: String?
     let overlapCount: Int
 
-    public init(booking: SDBooking, fillCaption: String? = nil, overlapCount: Int = 0) {
+    public init(booking: SDBooking, fillCaption: String? = nil, overlapCount: Int) {
         self.booking = booking
         self.fillCaption = fillCaption
         self.overlapCount = overlapCount

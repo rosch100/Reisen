@@ -30,6 +30,7 @@ public enum BookingDaySpanMatching {
         let startDay = calendar.startOfDay(for: span.startAt)
         let endDay = calendar.startOfDay(for: span.endAt)
         guard endDay >= startDay else { return nil }
+        // Stay-artig: Checkout exclusive. startDay == endDay → 0 Nächte (leeres Intervall).
         if span.bookingType.usesStayLikeOverlapEnd {
             return (startDay, endDay)
         }
