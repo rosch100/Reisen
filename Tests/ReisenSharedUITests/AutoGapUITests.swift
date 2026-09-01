@@ -16,7 +16,7 @@ import ReisenSharedUI
         statusRaw: BookingStatus.unknown.rawValue,
         autoGapIdentityKey: "a|b|lodging"
     )
-    #expect(booking.presentationTitle.contains(L10n.string(.bookingAutoGapBadge)))
+    #expect(booking.presentationTitle.contains(L10n.string(.bookingBadgeAutoGap)))
 }
 
 @MainActor
