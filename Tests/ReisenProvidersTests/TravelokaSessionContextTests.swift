@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import ReisenDomain
 @testable import ReisenProviders
 
 @Test func travelokaRoutePrefixExtractsFromLocalizedPath() {
@@ -63,7 +64,7 @@ import Testing
     #expect(context.apiReferer() == "https://www.traveloka.com/en-en/user/mybooking")
 }
 
-@Test func travelokaSessionContextIgnoresLocaleCookieForSyncHeaders() {
+@Test func travelokaSessionContextIgnoresLocaleAndCurrencyCookieForSyncHeaders() {
     let locale = HTTPCookie(properties: [
         .name: "locale",
         .value: "id_ID",
@@ -76,13 +77,19 @@ import Testing
         .domain: ".traveloka.com",
         .path: "/",
     ])!
+    let suite = "ReisenTests.TravelokaSyncCurrency.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+    AppSettingsKeys.setPreferredCurrency("GBP", defaults: defaults)
+
     let context = TravelokaSessionContext.from(cookies: [locale, currency])
     #expect(context.resolvedRoutePrefix == "en-en")
     #expect(context.resolvedLanguage == "en_EN")
     #expect(context.resolvedCountry == "EN")
-    #expect(context.resolvedCurrency == "IDR")
-    let headers = context.applying(to: [:])
+    #expect(context.resolvedCurrency(defaults: defaults) == "GBP")
+    let headers = context.applying(to: [:], defaults: defaults)
     #expect(headers["x-route-prefix"] == "en-en")
     #expect(headers["tv-language"] == "en_EN")
     #expect(headers["tv-country"] == "EN")
+    #expect(headers["tv-currency"] == "GBP")
 }

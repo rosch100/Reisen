@@ -59,13 +59,27 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.sidebar)
-        try ui.app.performAccessibilityAudit(for: [
-            .sufficientElementDescription,
-            .elementDetection,
-            .action,
-            .parentChild,
-        ]) { issue in
-            AccessibilityAuditSkipList.shouldSkip(issue)
+        _ = ui.app.wait(for: .runningForeground, timeout: 5)
+
+        // Nur `.action`: die übrigen v1-Typen werden in `AccessibilityAuditSkipList`
+        // ohnehin vollständig geskippt — deren Audit-Scan verursachte auf CI-Runnern
+        // wiederholt Timeouts (Code -56) ohne zusätzlichen Gate-Wert.
+        var lastError: Error?
+        for attempt in 1...2 {
+            do {
+                try ui.app.performAccessibilityAudit(for: .action) { issue in
+                    AccessibilityAuditSkipList.shouldSkip(issue)
+                }
+                return
+            } catch let error as NSError
+                where error.domain == "com.apple.xcode.xctest.accessibilityAudit"
+                    && error.code == -56
+                    && attempt < 2 {
+                lastError = error
+            } catch {
+                throw error
+            }
         }
+        throw lastError!
     }
 }

@@ -117,7 +117,7 @@ public struct AppSettingsKeys {
                 return normalized
             }
         }
-        return "EUR"
+        return CurrencyCode.fallback
     }
 
     public static func setPreferredCurrency(_ code: String, defaults: UserDefaults = .standard) {

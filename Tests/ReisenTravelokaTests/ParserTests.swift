@@ -985,15 +985,20 @@ private func travelokaCatalogStatusEntry(
     var context = TravelokaSessionContext.from(cookies: [currency])
     context.applyPageContext(from: URL(string: "https://www.traveloka.com/id-id/user/mybooking")!)
 
+    let suite = "ReisenTests.TravelokaParserCurrency.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+    AppSettingsKeys.setPreferredCurrency("USD", defaults: defaults)
+
     #expect(context.resolvedRoutePrefix == "en-en")
     #expect(context.resolvedLanguage == "en_EN")
     #expect(context.resolvedCountry == "EN")
-    #expect(context.resolvedCurrency == "IDR")
+    #expect(context.resolvedCurrency(defaults: defaults) == "USD")
 
-    let headers = context.applying(to: [:])
+    let headers = context.applying(to: [:], defaults: defaults)
     #expect(headers["tv-language"] == "en_EN")
     #expect(headers["tv-country"] == "EN")
-    #expect(headers["tv-currency"] == "IDR")
+    #expect(headers["tv-currency"] == "USD")
     #expect(headers["x-route-prefix"] == "en-en")
 }
 

@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenProviders
 
 /// SSOT for Airbnb money amounts in stay/activity payment subtitles.
 enum AirbnbMoneyAmount {
@@ -17,17 +18,29 @@ enum AirbnbMoneyAmount {
 
     static func currency(from subtitle: String) -> String? {
         let cleaned = normalizeSpaces(subtitle)
-        if cleaned.uppercased().contains("EUR") || cleaned.contains("€") {
+        let upper = cleaned.uppercased()
+        if upper.contains("EUR") || cleaned.contains("€") {
             return "EUR"
+        }
+        if upper.contains("GBP") || cleaned.contains("£") {
+            return "GBP"
+        }
+        // Bare "$" is ambiguous (USD/CAD/AUD/…); only accept explicit ISO.
+        if upper.contains("USD") {
+            return "USD"
         }
         return nil
     }
 
-    static func rateDetails(from subtitle: String) -> BookingRateDetails? {
+    /// `requestedCurrency`: Sync-Query-Währung; wenn Subtitle kein Symbol hat, Betrag gilt in dieser Währung.
+    static func rateDetails(
+        from subtitle: String,
+        requestedCurrency: String = ProviderSyncLocale.currency()
+    ) -> BookingRateDetails? {
         guard let amount = parse(from: subtitle) else { return nil }
         return BookingRateDetails(
             totalPriceAmount: amount,
-            totalPriceCurrency: currency(from: subtitle),
+            totalPriceCurrency: currency(from: subtitle) ?? requestedCurrency,
             boardType: .unknown,
             lastParsedAt: Date()
         )

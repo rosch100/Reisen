@@ -8,7 +8,7 @@ public enum TravelokaWebConstants {
 
     public static let defaultLanguage = "en_EN"
     public static let defaultCountry = "EN"
-    public static let defaultCurrency = "EUR"
+    public static let defaultCurrency = ProviderSyncLocale.defaultCurrency
 }
 
 public enum TravelokaLocale {

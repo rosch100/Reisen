@@ -38,12 +38,12 @@ enum AirbnbAPI {
         return value.addingPercentEncoding(withAllowedCharacters: pathAllowed) ?? value
     }
 
-    static func tripListQueryURL() -> URL {
+    static func tripListQueryURL(currency: String = ProviderSyncLocale.currency()) -> URL {
         URL(string: "/api/v3/TripListQuery/\(tripListQuerySHA)")!.appendingQueryItems(
             [
                 "operationName": "TripListQuery",
                 "locale": ProviderSyncLocale.language,
-                "currency": ProviderSyncLocale.currency,
+                "currency": currency,
             ],
             variables: "{}",
             extensionsJSON: """
@@ -52,7 +52,10 @@ enum AirbnbAPI {
         )
     }
 
-    static func tripDetailsQueryURL(relayTripIDBase64: String) -> URL {
+    static func tripDetailsQueryURL(
+        relayTripIDBase64: String,
+        currency: String = ProviderSyncLocale.currency()
+    ) -> URL {
         let variablesJSON = """
         {"tripId":"\(relayTripIDBase64)"}
         """
@@ -60,7 +63,7 @@ enum AirbnbAPI {
             [
                 "operationName": "TripDetailsQuery",
                 "locale": ProviderSyncLocale.language,
-                "currency": ProviderSyncLocale.currency,
+                "currency": currency,
             ],
             variables: variablesJSON,
             extensionsJSON: """

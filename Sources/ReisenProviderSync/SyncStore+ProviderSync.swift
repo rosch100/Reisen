@@ -216,6 +216,28 @@ private extension SyncStore {
             navigationHintURLs: navigationHintURLs
         )
 
+        // Preferred-Währung für jeden Provider-Sync; request-fähige Module lesen via ProviderSyncLocale.
+        let preferredCurrency = AppSettingsKeys.preferredCurrency()
+        return try await ProviderSyncCurrency.$requested.withValue(preferredCurrency) {
+            try await persistProviderCatalogBody(
+                providerID: providerID,
+                provider: provider,
+                session: session,
+                settings: settings,
+                diagnosticContext: diagnosticContext,
+                attemptStart: attemptStart
+            )
+        }
+    }
+
+    private func persistProviderCatalogBody(
+        providerID: ProviderID,
+        provider: any TravelProvider,
+        session: any ProviderSession,
+        settings: AppSettings,
+        diagnosticContext: DiagnosticContext,
+        attemptStart: Date
+    ) async throws -> PersistedSyncSnapshot {
         let catalog = try await DiagnosticContext.$current.withValue(diagnosticContext) {
             try await provider.fetchCatalog(session: session)
         }
