@@ -2,9 +2,45 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "iOS: Generate Xcode project",
+      "label": "CI: Test",
+      "type": "shell",
+      "command": "bash ./Scripts/ci-test.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "macOS: Run App",
+      "type": "shell",
+      "command": "bash ./Scripts/run-app.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "macOS: UI Tests",
+      "type": "shell",
+      "command": "bash ./Scripts/macos-ui-test.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "macOS: UI Review Tour",
+      "type": "shell",
+      "command": "bash ./Scripts/macos-ui-review.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "XcodeGen: Generate project",
       "type": "shell",
       "command": "bash ./Scripts/generate-ios-project.sh",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "iOS: Run on Simulator",
+      "type": "shell",
+      "command": "bash ./Scripts/ios-run.sh",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },

@@ -1,9 +1,9 @@
 ---
 name: ui-surface-review
 description: >-
-  Bewertet macOS-UI-Review-Dumps (Screenshot + AX-JSON + Manifest) nach HIG,
-  Unlogik und Design. Nutzen nach bash ./Scripts/macos-ui-review.sh oder wenn
-  der User UI-Surface-Review, HIG-Audit oder Screenshot-Dumps nennt.
+  Reviews macOS UI surface dumps (screenshot, AX JSON, manifest) against HIG,
+  logic, and design. Use after bash ./Scripts/macos-ui-review.sh or when the
+  user asks for UI-surface review, HIG audit, or screenshot dump evaluation.
 ---
 
 # UI-Surface-Review
@@ -30,6 +30,10 @@ Advisory only. Kein Merge-Gate, kein Score.
 5. Jedes Finding: `severity`, `category` (`hig` / `unlogik` / `design`), `title`,
    `evidence.screenshot` (PNG-Dateiname), `evidence.ax` (Identifier oder AX-Knoten),
    `why`, `fix`.
+
+## Beziehung zu Observability/Tests
+
+Neue UI-Flächen brauchen Identifier + XCUI-Smoke **im Feature-Diff** (Rule `reisen-logging-and-tests`, Skill `reisen-observability-tests`). Dieser Skill bewertet nur advisory Review-Dumps.
 
 ## Nicht tun
 
