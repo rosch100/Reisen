@@ -57,7 +57,7 @@ struct TripDetailView: View {
     }
 
     private var overlapCountsByBookingID: [UUID: Int] {
-        BookingDayOverlap.countsByID(sortedBookings.map(\.daySpan))
+        BookingDayOverlap.countsByID(sdBookings: allBookings)
     }
 
     private var gaps: [ComputedGap] {
@@ -579,7 +579,6 @@ private struct TimelineRowLabel: View {
             BookingRow(
                 booking: booking,
                 displayMode: .summary,
-                isOverlapping: overlapCount > 0,
                 overlapCount: overlapCount,
                 onSelect: nil
             )
@@ -760,7 +759,6 @@ private struct BookingDetailPanel: View {
                         case .booking(let booking):
                             BookingDetailContent(
                                 booking: booking,
-                                isOverlapping: (overlapCountsByBookingID[booking.id] ?? 0) > 0,
                                 overlapCount: overlapCountsByBookingID[booking.id] ?? 0,
                                 onEditBooking: { bookingEditorSession = .edit(bookingID: booking.id) },
                                 onRequestDeleteBooking: onRequestDeleteBooking,
@@ -875,7 +873,6 @@ private struct BookingDetailPanel: View {
 private struct BookingRow: View {
     let booking: SDBooking
     let displayMode: TimelineRowDisplayMode
-    let isOverlapping: Bool
     let overlapCount: Int
     var onSelect: (() -> Void)? = nil
 
@@ -1047,8 +1044,8 @@ private struct BookingRow: View {
         parts.append(booking.bookingType.displayLabel)
         parts.append(L10n.format(.bookingCopyPriceLine, bookingPriceText))
 
-        if isOverlapping {
-            parts.append(L10n.overlapLabel(extraCount: overlapCount))
+        if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
+            parts.append(BookingOverlapCaption.labelText(extraCount: overlapCount))
         }
         if let elapsed = BookingElapsedText.string(for: booking, now: now) {
             parts.append(elapsed)
@@ -1092,13 +1089,7 @@ private struct BookingRow: View {
             .foregroundColor: secondary
         ]))
 
-        if isOverlapping {
-            let overlapText = L10n.overlapLabel(extraCount: overlapCount)
-            ns.append(NSAttributedString(string: "  \(overlapText)", attributes: [
-                .font: caption2Font,
-                .foregroundColor: orange
-            ]))
-        }
+        // Overlap visually via BookingOverlapCaption (summary + details); Copy behält labelText.
         if let elapsed = BookingElapsedText.string(for: booking, now: now) {
             ns.append(NSAttributedString(string: "  \(elapsed)", attributes: [
                 .font: caption2Font,
@@ -1333,10 +1324,8 @@ private struct BookingRow: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .lineLimit(2)
-                    if isOverlapping {
-                        Text(L10n.overlapLabel(extraCount: overlapCount))
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
+                    if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
+                        BookingOverlapCaption(extraCount: overlapCount)
                     }
                     BookingElapsedLabel(for: booking, now: now)
                 }
@@ -1372,6 +1361,9 @@ private struct BookingRow: View {
 
     private func bookingDetailsBody(now: Date) -> some View {
         VStack(alignment: .leading, spacing: 6) {
+            if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
+                BookingOverlapCaption(extraCount: overlapCount)
+            }
             HStack(alignment: .top, spacing: 12) {
                 SelectableBookingTextView(
                     attributedString: bookingAttributedDisplayText(now: now),

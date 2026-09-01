@@ -44,6 +44,10 @@ struct TripDetailIOS: View {
         allBookings.filter { OpenBookingMatching.isCandidate($0, for: trip) }
     }
 
+    private var overlapCountsByBookingID: [UUID: Int] {
+        BookingDayOverlap.countsByID(sdBookings: allBookings)
+    }
+
     var body: some View {
         Group {
             if let trip {
@@ -88,7 +92,10 @@ struct TripDetailIOS: View {
                         bookings: trip.timelineBookings()
                     ) { booking in
                         NavigationLink(value: PresentedBookingID(id: booking.id)) {
-                            OpenBookingRow(booking: booking)
+                            OpenBookingRow(
+                                booking: booking,
+                                overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+                            )
                         }
                         .contextMenu {
                             BookingCopyConfirmationMenuItems(booking: booking)
