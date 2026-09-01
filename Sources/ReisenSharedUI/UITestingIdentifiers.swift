@@ -13,6 +13,8 @@ public enum UITestingIdentifiers {
     public static let addBooking = "reisen.action.add-booking"
     public static let deleteTripMenu = "reisen.action.delete-trip"
     public static let deleteBookingMenu = "reisen.action.delete-booking"
+    /// Chevron zum Ausklappen von Sidebar-Outline-Kindern (Trip oder Offene-Mailbox).
+    public static let sidebarExpandBookings = "reisen.action.expand-sidebar-bookings"
     public static let splitDivider = "reisen.split.divider"
     public static let tripDeleteDialog = "reisen.dialog.delete-trip"
 

@@ -597,59 +597,59 @@ struct ContentView: View {
         iconSystemName: String,
         createTripFromAll: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 4) {
-                if !bookings.isEmpty {
-                    Button {
-                        isExpanded.wrappedValue.toggle()
-                    } label: {
-                        Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20, height: 20)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(isExpanded.wrappedValue
-                        ? L10n.string(.tripCollapseBookings)
-                        : L10n.string(.tripExpandBookings))
-                    .accessibilityLabel(isExpanded.wrappedValue
-                        ? L10n.string(.tripCollapseBookings)
-                        : L10n.string(.tripExpandBookings))
-                }
-
+        // Sibling List-Rows (nicht nested VStack): sonst kein macOS-Kontextmenü auf Kindern.
+        HStack(spacing: 4) {
+            if !bookings.isEmpty {
                 Button {
-                    selection = selectionValue
+                    isExpanded.wrappedValue.toggle()
                 } label: {
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(L10n.string(.tripOpenBookings))
-                            Text(L10n.format(.tripOpenEntries, bookings.count))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    } icon: {
-                        Image(systemName: iconSystemName)
-                    }
+                    Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, height: 20)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-            }
-            .tag(selectionValue)
-            .contextMenu {
-                let actions = SidebarEntryContextActions.actions(for: selectionValue == .elapsedOpenBookings
-                    ? .elapsedOpenBookingMailbox
-                    : .openBookingMailbox)
-                if actions.contains(.createTripFromAllOpen), !bookings.isEmpty {
-                    Button(action: createTripFromAll) {
-                        CreateTripFromAllOpenBookingsLabel(count: bookings.count)
-                    }
-                }
+                .help(isExpanded.wrappedValue
+                    ? L10n.string(.tripCollapseBookings)
+                    : L10n.string(.tripExpandBookings))
+                .accessibilityLabel(isExpanded.wrappedValue
+                    ? L10n.string(.tripCollapseBookings)
+                    : L10n.string(.tripExpandBookings))
+                .accessibilityIdentifier(UITestingIdentifiers.sidebarExpandBookings)
             }
 
-            if isExpanded.wrappedValue {
-                ForEach(bookings) { booking in
-                    sidebarOpenBookingRow(booking: booking, mailboxSelection: selectionValue)
+            Button {
+                selection = selectionValue
+            } label: {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.string(.tripOpenBookings))
+                        Text(L10n.format(.tripOpenEntries, bookings.count))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: iconSystemName)
                 }
+            }
+            .buttonStyle(.plain)
+        }
+        .tag(selectionValue)
+        .contextMenu {
+            let actions = SidebarEntryContextActions.actions(for: selectionValue == .elapsedOpenBookings
+                ? .elapsedOpenBookingMailbox
+                : .openBookingMailbox)
+            if actions.contains(.createTripFromAllOpen), !bookings.isEmpty {
+                Button(action: createTripFromAll) {
+                    CreateTripFromAllOpenBookingsLabel(count: bookings.count)
+                }
+            }
+        }
+
+        if isExpanded.wrappedValue {
+            ForEach(bookings) { booking in
+                sidebarOpenBookingRow(booking: booking, mailboxSelection: selectionValue)
             }
         }
     }
@@ -763,81 +763,81 @@ struct ContentView: View {
     ) -> some View {
         let isExpanded = expandedTripIDs.contains(trip.id)
         let tripActions = SidebarEntryContextActions.actions(for: tripMenuKind)
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 4) {
-                if !tripBookings.isEmpty {
-                    Button {
-                        expandedBinding(for: trip.id).wrappedValue.toggle()
-                    } label: {
-                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20, height: 20)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(isExpanded
-                        ? L10n.string(.tripCollapseBookings)
-                        : L10n.string(.tripExpandBookings))
-                    .accessibilityLabel(isExpanded
-                        ? L10n.string(.tripCollapseBookings)
-                        : L10n.string(.tripExpandBookings))
-                }
-
+        // Sibling List-Rows (nicht nested VStack): sonst kein macOS-Kontextmenü auf Kindern.
+        HStack(spacing: 4) {
+            if !tripBookings.isEmpty {
                 Button {
-                    selection = .trip(trip.id)
+                    expandedBinding(for: trip.id).wrappedValue.toggle()
                 } label: {
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(trip.title)
-                            Text(dateRange(trip))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            if let meta = L10n.tripCompletenessListMeta(
-                                futureBookingCount: tripBookings.count,
-                                gapCount: gapCount
-                            ) {
-                                Text(meta)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    } icon: {
-                        Image(systemName: "airplane")
-                    }
-                    .contentShape(Rectangle())
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, height: 20)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
-            }
-            .tag(SidebarSelection.trip(trip.id))
-            .contextMenu {
-                if tripActions.contains(.edit) {
-                    Button(L10n.string(.commonEdit)) {
-                        tripToEdit = trip
-                    }
-                }
-                if tripActions.contains(.addBooking) {
-                    Button(L10n.string(.actionAddBooking)) {
-                        startCreateBooking(in: trip)
-                    }
-                }
-                if tripActions.contains(.deleteTrip) {
-                    Divider()
-                    Button(role: .destructive) {
-                        tripPendingDelete = trip
-                        showTripDeleteConfirmation = true
-                    } label: {
-                        Text(L10n.string(.actionDeleteTrip))
-                    }
-                    .accessibilityIdentifier(UITestingIdentifiers.deleteTripMenu)
-                }
+                .help(isExpanded
+                    ? L10n.string(.tripCollapseBookings)
+                    : L10n.string(.tripExpandBookings))
+                .accessibilityLabel(isExpanded
+                    ? L10n.string(.tripCollapseBookings)
+                    : L10n.string(.tripExpandBookings))
+                .accessibilityIdentifier(UITestingIdentifiers.sidebarExpandBookings)
             }
 
-            if isExpanded {
-                ForEach(tripBookings) { booking in
-                    sidebarTripBookingRow(booking: booking, trip: trip)
+            Button {
+                selection = .trip(trip.id)
+            } label: {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(trip.title)
+                        Text(dateRange(trip))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let meta = L10n.tripCompletenessListMeta(
+                            futureBookingCount: tripBookings.count,
+                            gapCount: gapCount
+                        ) {
+                            Text(meta)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } icon: {
+                    Image(systemName: "airplane")
                 }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
+        }
+        .tag(SidebarSelection.trip(trip.id))
+        .contextMenu {
+            if tripActions.contains(.edit) {
+                Button(L10n.string(.commonEdit)) {
+                    tripToEdit = trip
+                }
+            }
+            if tripActions.contains(.addBooking) {
+                Button(L10n.string(.actionAddBooking)) {
+                    startCreateBooking(in: trip)
+                }
+            }
+            if tripActions.contains(.deleteTrip) {
+                Divider()
+                Button(role: .destructive) {
+                    tripPendingDelete = trip
+                    showTripDeleteConfirmation = true
+                } label: {
+                    Text(L10n.string(.actionDeleteTrip))
+                }
+                .accessibilityIdentifier(UITestingIdentifiers.deleteTripMenu)
+            }
+        }
+
+        if isExpanded {
+            ForEach(tripBookings) { booking in
+                sidebarTripBookingRow(booking: booking, trip: trip)
             }
         }
     }
