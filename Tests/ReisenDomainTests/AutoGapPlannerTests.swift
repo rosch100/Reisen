@@ -30,13 +30,60 @@ private func booking(
     )
 }
 
-@Test func spatial_detectsDifferentCities() {
+@Test func spatial_detectsDifferentCities_withoutModeEvidence_skipsAutoTransport() {
     let a = booking(type: .hotel, start: 1_000, end: 2_000, locationTo: "Paris")
     let b = booking(type: .hotel, start: 2_000 + 3_600, end: 4_000, locationFrom: "Berlin")
     let gaps = SpatialGapDetector.detect(sortedReal: [a, b])
+    #expect(gaps.isEmpty)
+}
+
+@Test func spatial_flightNeighbor_createsCappedTransportWithCities() {
+    let day: TimeInterval = 24 * 60 * 60
+    let a = booking(type: .hotel, start: 0, end: day, locationTo: "Paris")
+    let b = booking(type: .flight, start: 5 * day, end: 5 * day + 3_600, locationFrom: "Berlin", locationTo: "FRA")
+    let gaps = SpatialGapDetector.detect(sortedReal: [a, b])
     #expect(gaps.count == 1)
-    #expect(gaps[0].bookingType == .train)
+    #expect(gaps[0].bookingType == .flight)
     #expect(gaps[0].role == .transport)
+    #expect(gaps[0].locationFrom == "Paris")
+    #expect(gaps[0].locationTo == "Berlin")
+    #expect(gaps[0].endAt.timeIntervalSince(gaps[0].startAt) <= SpatialGapDetector.maxTransportDuration)
+}
+
+@Test func planner_hotelPairDifferentCities_plansLodgingNotInventedTrain() {
+    let day: TimeInterval = 24 * 60 * 60
+    let hotelA = booking(type: .hotel, start: 0, end: day, locationFrom: "Paris", locationTo: "Paris")
+    let hotelB = booking(type: .hotel, start: 5 * day, end: 6 * day, locationFrom: "Berlin", locationTo: "Berlin")
+    let plan = AutoGapPlanner.plan(
+        tripStart: Date(timeIntervalSince1970: 0),
+        tripEnd: Date(timeIntervalSince1970: 7 * day),
+        bookings: [hotelA, hotelB]
+    )
+    #expect(plan.contains { $0.role == .lodging && $0.bookingType == .hotel })
+    #expect(!plan.contains { $0.bookingType == .train })
+    let lodging = plan.filter { $0.role == .lodging }
+    #expect(lodging.count == 1)
+    #expect(lodging[0].endAt.timeIntervalSince(lodging[0].startAt) >= GapDetector.defaultMinGap)
+}
+
+@Test func gapDetector_hotelPairDifferentCities_splitsTransportAndLodging() {
+    let day: TimeInterval = 24 * 60 * 60
+    let hotelA = booking(type: .hotel, start: 0, end: day, locationFrom: "Paris", locationTo: "Paris")
+    let hotelB = booking(type: .hotel, start: 5 * day, end: 6 * day, locationFrom: "Berlin", locationTo: "Berlin")
+    let gaps = GapDetector().computeGaps(
+        bookings: [hotelA, hotelB],
+        tripStart: Date(timeIntervalSince1970: 0),
+        tripEnd: Date(timeIntervalSince1970: 7 * day)
+    ).filter { !$0.isTripBoundary }
+    let transport = gaps.filter { $0.kind == .transport }
+    let lodging = gaps.filter { $0.kind == .lodging }
+    #expect(transport.count == 1)
+    #expect(lodging.count == 1)
+    guard let transportGap = transport.first, let lodgingGap = lodging.first else { return }
+    #expect(transportGap.gapEnd.timeIntervalSince(transportGap.gapStart) <= SpatialGapDetector.maxTransportDuration)
+    #expect(transportGap.gapStart == hotelA.endAt)
+    #expect(lodgingGap.gapStart == transportGap.gapEnd)
+    #expect(lodgingGap.gapEnd == hotelB.startAt)
 }
 
 @Test func spatial_skipsWhenEitherPlaceMissing() {
