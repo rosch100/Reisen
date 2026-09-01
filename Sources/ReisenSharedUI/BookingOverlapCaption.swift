@@ -3,24 +3,37 @@ import ReisenDomain
 
 /// SSOT: Overlap-Caption (Sichtbarkeit, L10n-Text, Symbol + A11y) für macOS/iOS.
 public struct BookingOverlapCaption: View {
-    public let extraCount: Int
+    public let partnerTitles: [String]
 
-    public init(extraCount: Int) {
-        self.extraCount = extraCount
+    public init(partnerTitles: [String]) {
+        self.partnerTitles = partnerTitles
     }
 
-    /// Caption nur bei Overlap-Count > 0.
-    nonisolated public static func isVisible(overlapCount: Int) -> Bool {
-        overlapCount > 0
+    /// Partner-Titel in Partner-Reihenfolge; fehlende Titel werden übersprungen.
+    nonisolated public static func partnerTitles(
+        for bookingID: UUID,
+        partnerIDsByBookingID: [UUID: [UUID]],
+        titleByID: [UUID: String]
+    ) -> [String] {
+        (partnerIDsByBookingID[bookingID] ?? []).compactMap { titleByID[$0] }
     }
 
-    /// Identisch mit `L10n.overlapLabel(extraCount:)`.
-    nonisolated public static func labelText(extraCount: Int) -> String {
-        L10n.overlapLabel(extraCount: extraCount)
+    /// Caption nur wenn mindestens ein Partner-Titel vorliegt.
+    nonisolated public static func isVisible(partnerTitles: [String]) -> Bool {
+        !partnerTitles.isEmpty
+    }
+
+    /// Identisch mit `L10n.overlapLabel(partnerTitles:)`.
+    nonisolated public static func labelText(partnerTitles: [String]) -> String {
+        L10n.overlapLabel(partnerTitles: partnerTitles)
+    }
+
+    nonisolated public static func helpText(partnerTitles: [String]) -> String {
+        L10n.overlapHelp(partnerTitles: partnerTitles)
     }
 
     public var body: some View {
-        let text = Self.labelText(extraCount: extraCount)
+        let text = Self.labelText(partnerTitles: partnerTitles)
         Label {
             Text(text)
                 .font(.caption)
@@ -31,6 +44,7 @@ public struct BookingOverlapCaption: View {
                 .foregroundStyle(.orange)
         }
         .labelStyle(.titleAndIcon)
+        .help(Self.helpText(partnerTitles: partnerTitles))
         .accessibilityLabel(text)
     }
 }
