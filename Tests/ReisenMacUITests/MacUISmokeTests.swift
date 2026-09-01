@@ -29,6 +29,32 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitFor(UITestingIdentifiers.inspector)
     }
 
+    /// Sidebar-Buchungskinder müssen eigene List-Rows mit Kontextmenü sein (nicht nested in der Trip-Zelle).
+    func testSidebarTripBookingContextMenu() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.sidebar)
+        ui.waitFor(UITestingIdentifiers.seededTripRow)
+
+        let expand = ui.waitFor(UITestingIdentifiers.sidebarExpandBookings)
+        expand.click()
+
+        let sidebarBooking = ui.element(UITestingIdentifiers.sidebar)
+            .descendants(matching: .any)[UITestingIdentifiers.seededBookingRow]
+            .firstMatch
+        XCTAssertTrue(
+            sidebarBooking.waitForExistence(timeout: 5),
+            "Sidebar-Buchungszeile fehlt nach Expand\n\(ui.app.debugDescription)"
+        )
+        sidebarBooking.rightClick()
+
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenu].waitForExistence(timeout: 3),
+            "Buchungs-Kontextmenü (Löschen) fehlt in der Sidebar\n\(ui.app.debugDescription)"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
+    }
+
     func testAccessibilityAuditAllowlist() throws {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
