@@ -14,13 +14,14 @@ public extension SDTrip {
             .sorted { $0.startAt < $1.startAt }
     }
 
-    /// Sidebar Trip-Outline: current nutzt Timeline; elapsed alle nicht-stornierten Zuordnungen.
-    func sidebarOutlineBookings(
-        isElapsed: Bool,
+    /// Sidebar-Kindzeilen einer Reise.
+    /// Aktuell: Timeline. Abgelaufen: alle nicht-stornierten Buchungen (inkl. vergangener Provider-Buchungen).
+    func sidebarChildBookings(
+        tripIsElapsed: Bool,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> [SDBooking] {
-        if isElapsed {
+        if tripIsElapsed {
             return resolvedBookings
                 .filter { $0.status != .cancelled }
                 .sorted { $0.startAt < $1.startAt }

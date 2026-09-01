@@ -193,3 +193,27 @@ private func persist(
 
     #expect(trip.timelineBookings(now: now).isEmpty)
 }
+
+@MainActor
+@Test func sidebarChildBookings_elapsedTripIncludesPastProviderBookings() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let trip = makeTrip()
+    let pastSynced = makeBooking(start: pastSyncedAt, provider: .getYourGuide, trip: trip)
+    let pastManual = makeBooking(start: pastManualAt, provider: .manual, trip: trip)
+    let cancelled = makeBooking(
+        start: pastSyncedAt,
+        provider: .check24,
+        trip: trip,
+        status: .cancelled
+    )
+    trip.bookings = [pastSynced, pastManual, cancelled]
+    try persist(container.mainContext, trip: trip, pastSynced, pastManual, cancelled)
+
+    let currentKids = trip.sidebarChildBookings(tripIsElapsed: false, now: now)
+    #expect(Set(currentKids.map(\.id)) == Set([pastManual.id]))
+
+    let elapsedKids = trip.sidebarChildBookings(tripIsElapsed: true, now: now)
+    #expect(Set(elapsedKids.map(\.id)) == Set([pastSynced.id, pastManual.id]))
+    #expect(elapsedKids.map(\.id) == [pastSynced.id, pastManual.id])
+}
+
