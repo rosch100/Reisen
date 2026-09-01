@@ -1,7 +1,7 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
-Status: **Backlog** (F01, F03, F06, F09 umgesetzt; übrige Features geplant)  
-Stand: 2026-08-30
+Status: **Backlog** (F02/F04/F05/F07/F14/F15 zurückgestellt; F08 + F16–F24 aktiv; F10–F12 bedingt; F13 umgesetzt)
+Stand: 2026-09-01
 
 ## Zweck und Leitlinie
 
@@ -9,225 +9,147 @@ Reisen konsolidiert **bereits gebuchte** Multi-Anbieter-Reisen über Provider-Se
 
 **Nicht übernehmen:** Inbox-OAuth, Mail-Forward-Cloud, KI-Reise generieren, Gruppen-Collaboration, Meilen/Loyalty, SAP Concur, öffentlicher iCal-Feed, eigener Live-Flugstatus.
 
-Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleich.canvas.tsx` und `reisen-feature-ergaenzungen.canvas.tsx` im Cursor-Projekt — hier nicht duplizieren.
+Konkurrenz-Recherche: Canvas `reise-apps-vergleich.canvas.tsx` und `reisen-feature-ergaenzungen.canvas.tsx` im Cursor-Projekt — hier nicht duplizieren.
+Interaktive UX-ToDos: Canvas `feature-todo-liste.canvas.tsx`.
 
 ---
 
-## Übersicht
+## Übersicht (offen)
 
 | ID | Feature | Status | Prio | Abhängigkeit |
 |----|---------|--------|------|--------------|
-| F01 | `BookingType.train` (Bahn) | implementiert | P1 | — |
-| F02 | Check-in-Erinnerungen (Hotel + Flug) | geplant | P1 | — |
-| F03 | Copy/Paste für Info- und Editor-Felder | umgesetzt | P2 | — |
-| F04 | ICS/Text-Export einer Reise | geplant | P2 | — |
-| F05 | Dokumente an der Buchung | geplant | P2 | eigene Spec |
-| F06 | On-device Paste-Import | umgesetzt | P2 | F01, F05 optional |
-| F07 | Next-up Widget / Live Activity | geplant | P3 | F02 |
+| F02 | Check-in-Erinnerungen (Hotel + Flug) | zurückgestellt | P1 | — |
+| F04 | ICS/Text-Export einer Reise | zurückgestellt | P2 | — |
+| F05 | Dokumente an der Buchung | zurückgestellt | P2 | eigene Spec |
+| F07 | Next-up Widget / Live Activity | zurückgestellt | P3 | F02 |
 | F08 | macOS-Suche und Typfilter | geplant | P3 | — |
-| F09 | Vollständigkeitsanzeige (Gaps) | umgesetzt | P3 | — |
 | F10 | Kartenansicht der Reise | bedingt | P3 | Geocoding zuverlässig |
 | F11 | Zeitzonenwechsel in Timeline | bedingt | P3 | — |
 | F12 | Wetter am Aufenthaltsort | bedingt | P3 | Koordinate |
-| F13 | Kostensumme der Reise | umgesetzt | P3 | Preise vorhanden |
-| F14 | Apple Wallet / PKPass | bedingt | P3 | F05 |
-| F15 | Deep-Link zu Flighty / Airline | bedingt | P3 | — |
-| X01 | Inbox-OAuth / Mail-Forward-Cloud | abgelehnt | — | — |
-| X02 | KI-Reise generieren | abgelehnt | — | — |
-| X03 | Echtzeit-Gruppenbearbeitung | abgelehnt | — | — |
-| X04 | Meilen / Punkte / AwardWallet | abgelehnt | — | — |
-| X05 | SAP Concur / Firmenreise | abgelehnt | — | — |
-| X06 | Öffentlicher iCal-Feed-URL | abgelehnt | — | — |
-| X07 | Eigener Live-Flugstatus / Gate | abgelehnt | — | — |
+| F14 | Apple Wallet / PKPass | zurückgestellt | P3 | F05 |
+| F15 | Deep-Link zu Flighty / Airline | zurückgestellt | P3 | — |
+| F16 | Drag/Drop Buchung ↔ Reise | geplant | P1 | — |
+| F17 | Drop-Zone „Neue Reise“ | geplant | P2 | F16 |
+| F18 | Mehrfachauswahl + Sammel-Zuordnung | geplant | P2 | F16 |
+| F19 | Kontextmenü Zuordnen / Lösen | geplant | P2 | — |
+| F20 | Undo nach Zuordnung/Lösung | geplant | P3 | F16/F19 |
+| F21 | Datumsfenster-Warnung beim Drop | geplant | P2 | F16 |
+| F22 | Reisen zusammenführen | geplant | P3 | — |
+| F23 | Buchungs-Notiz / Memo | geplant | P3 | eigene Spec |
+| F24 | Duplikat-Hinweis über Provider | geplant | P3 | eigene Spec |
+| X01–X07 | abgelehnte Ideen | abgelehnt | — | siehe unten |
 
-**Empfohlene Implementierungsreihenfolge:** F02 → F04 → F05 → F07–F08.
-
----
-
-## Check-in-Erinnerungen: Was „Anlass neben Storno/Pre-Travel“ bedeutet
-
-Das Notification-Framework fehlt **nicht**. Lokale Push-Erinnerungen laufen bereits für zwei fachliche **Anlässe** (`ReminderTarget`):
-
-| Anlass | Code | Scheduler |
-|--------|------|-----------|
-| Stornofrist | `ReminderTarget.cancellationDeadline` | `LocalReminderScheduler.scheduleCancellationDeadlines` |
-| Pre-Travel-Hinweise | `ReminderTarget.preTravelHints` | `LocalReminderScheduler+PreTravelHints` |
-
-Hotel-**Check-in-Uhrzeiten** (`hotelCheckInMinutes`) werden bereits in **EventKit-Notizen** geschrieben (`CalendarTimelineTripCheckNotes`) — aber **nicht** als `UNUserNotification`.
-
-**Check-in fehlt als dritter Anlass:** kein produktiver `ReminderTarget` für Check-in. `.gap` und `.custom` existieren (Tests/Seed), sind aber kein Nutzer-Feature.
-
-### Zwei Check-ins (nicht vermischen)
-
-| Anlass | Vorhandene Daten | Sinnvolle Erinnerung |
-|--------|------------------|----------------------|
-| Hotel-Anreise | `hotelCheckInMinutes` + `startAt` | Push am Check-in-Tag; Lead-Times analog Storno (7/3/1) oder am Tag selbst |
-| Airline-Online-Check-in | Flug-`startAt` | Push typisch 24 h vor Abflug |
-
-**F02** = ein Feature mit zwei Triggern, Settings-Toggle analog Storno. **Kein Dummy**, wenn Minuten oder `startAt` fehlen.
-
-```
-Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──► UNNotification
-              ├──► PreTravel-Anlass ──► LocalReminderScheduler ──► UNNotification
-              ├──► Check-in-Anlass (fehlt)
-              └──► EventKit-Notizen (Check-in-Zeit bereits)
-```
+**Zurückgestellt:** F02, F04, F05, F07, F14, F15.
+**Aktive Reihenfolge:** F16 → F19 → F21 → F17/F18 → F20; danach F08; F22–F24 später.
 
 ---
 
-## Geplante Features (Detail)
+## Umgesetzt (Archiv)
 
-### F01 — `BookingType.train` (Bahn)
+Nur Referenz — Specs bleiben, keine Backlog-Details mehr.
 
-**Status:** implementiert (Spec: [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md))
-
-**Sinn:** DACH-Reisen ohne Bahn sind unvollständig. `.other` verschluckt Zugnummer, Bahnhof, Sitz — Transport-Gaps werden unscharf.
-
-**Machbarkeit:** hoch. Muster: [`booking-type-activity-impl-spec.md`](booking-type-activity-impl-spec.md).
-
-| Aspekt | Vorgehen |
-|--------|----------|
-| Domain | `case train` in `BookingType`; `rawValue` `"train"` |
-| Persistenz | `SDBooking.bookingTypeRaw` — **keine** Schema-Migration |
-| Zeitmodell | Wie Flug/Fähre in `BookingTimeNormalizeDispatch` (Punkt-zu-Punkt) |
-| Labels | `L10n+Booking`, `BookingType+DetailFieldLabels`: Von/Nach Bahnhof, Abfahrt/Ankunft, Betreiber; `showsLocationFrom = true` |
-| UI | `BookingEditor` (`BookingType.allCases`), Timeline, Details |
-| Provider | Traveloka `TRAIN`/`TRAIN_GLOBAL` → `.train`; kein DB/ÖBB; Check24-Bahn ohne HAR |
-| Tests | Analog `bookingType_carRental_*` in `BookingTypeTests` |
-
-**Out of Scope:** Provider-Sync für Bahnportale; automatisches Parsen von Bahn-Tickets (→ F06).
-
-**Folge-Spec:** `docs/dev/booking-type-train-impl-spec.md`
+| ID | Feature | Spec / Hinweis |
+|----|---------|----------------|
+| F01 | `BookingType.train` | [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md) |
+| F03 | Copy/Paste Info- und Editor-Felder | [`f03-copy-paste-fields.md`](f03-copy-paste-fields.md) |
+| F06 | On-device Paste-Import | [`../superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md) |
+| F09 | Vollständigkeitsanzeige (Gaps) | Inter-Booking-Lücken in Trip-/Offen-UI |
+| F13 | Kostensumme der Reise | [`../superpowers/specs/2026-09-01-trip-cost-currency-design.md`](../superpowers/specs/2026-09-01-trip-cost-currency-design.md) |
 
 ---
 
-### F02 — Check-in-Erinnerungen
-
-**Sinn:** Gleiche Infrastruktur wie Storno/Pre-Travel; unterwegs fehlt heute der Push zum Hotel-Check-in und zum Flug-Online-Check-in.
-
-**Machbarkeit:** hoch (kleinster produktiver Gewinn).
-
-| Aspekt | Vorgehen |
-|--------|----------|
-| Domain | Neuer `ReminderTarget` (z. B. `checkInHotel` / `checkInFlight` oder ein Target + Unterart) |
-| Port | `ReminderScheduling` erweitern |
-| Scheduler | `LocalReminderScheduler` + Aufruf aus `SyncStore.rebuildLocalSideEffects` |
-| Settings | Toggle neben Notifications; Lead-Times wiederverwenden (Hotel) oder fest 24 h (Flug) |
-| Guard | Keine Erinnerung ohne `startAt`; Hotel ohne `hotelCheckInMinutes` → nur Tages-Reminder oder weglassen |
-
-**Out of Scope:** Live-Flugstatus, Gate-Änderungen (→ X07, ggf. F15).
-
-**Folge-Spec:** Check-in-Reminder-Spec (noch anzulegen).
-
----
-
-### F03 — Copy/Paste für Info- und Editor-Felder
-
-**Status:** umgesetzt. Spec: [`f03-copy-paste-fields.md`](f03-copy-paste-fields.md).
-
-**Sinn:** Am Counter ein Tap auf die Buchungsnr./PNR statt Textselektion; alle Info-Feldwerte ohne Markier-Akrobatik kopierbar; Editoren mit systemischem Cut/Copy/Paste.
-
-| Aspekt | Vorgehen |
-|--------|----------|
-| Stufen | `standard` (Selektion + Kontextmenü) vs. `identifier` (Tap-to-Copy nur Buchungsnr./Zimmer-Code) |
-| iOS | Eine List-Zeile pro Feld; URL: Tap öffnet, Kontextmenü kopiert |
-| macOS | Inspector-Werte über `CopyableTextView` (Ablage → Kopieren ohne Markierung) |
-| Editor | Natives TextField-Pasteboard; `textContentType` für Namen/URL; kein Trailing-Copy |
-| SSOT | `StringPasteboard` + `FieldCopyKind` im Feldkatalog; kein `"Label: Wert"` in der Zwischenablage |
-
-**Out of Scope:** Clipboard-Monitoring (→ F06); Share-Snapshot (→ F04); Copy-Buttons an jeder Standardzeile.
-
----
-
-### F04 — ICS/Text-Export einer Reise
-
-**Sinn:** Partner ohne Reisen-App brauchen eine Datei, nicht ein Konto.
-
-**Machbarkeit:** hoch.
-
-| Aspekt | Vorgehen |
-|--------|----------|
-| Format | ICS + Plain-Text der Trip-Timeline |
-| UX | Share Sheet (iOS/macOS) |
-| Kalender | **Kein** öffentlicher Feed-URL (→ X06); EventKit-Schreiben bleibt primär |
-
-**Out of Scope:** Dynamischer Subscribe-Feed; PDF-Layout.
-
----
-
-### F05 — Dokumente an der Buchung
-
-**Sinn:** Ticket-PDF unterwegs; strukturierte Felder ersetzen das Original nicht.
-
-**Machbarkeit:** mittel — **eigener Spec nötig**, nicht trivial.
-
-| Aspekt | Vorgehen |
-|--------|----------|
-| Persistenz | Neues Cloud-Model `SDBookingAttachment` in `reisen-cloud` (mit Buchung über iCloud) |
-| Schema | Hybrid-Store: nicht-versioniertes `Schema(ReisenSchemaV9.models)` — Add-Model-Pfad in Spec festlegen; kein stilles Wipe |
-| Binärdaten | **Nicht** als großes SQLite-Attribut; Datei im Container + relative URL; CloudKit-Asset-tauglich |
-| Typen | PDF, Bild; optional `pkpass` (→ F14) |
-| UI | `fileImporter` an Buchungsdetail, Liste, Quick Look (iOS + Mac) |
-| Privacy | `PrivacyInfo.xcprivacy`, Datenschutzerklärung um Anhänge/PII ergänzen |
-
-**Out of Scope v1:** PDF automatisch parsen (→ F06); Server-Upload; Inbox-Anhänge.
-
-**Folge-Spec:** Attachment-Spec (Schema + Privacy).
-
----
-
-### F06 — On-device Paste-Import
-
-**Status:** umgesetzt (inkl. öffentlichem GitHub-Feature-Request; Originaldokument per Mail nur wenn Mail verfügbar, sonst nur Metadaten-Issue-Link auf dem Gerät; nicht-modaler Progress; Review-Fenster/Compose-Sheet).
-
-**Sinn:** Abdeckung für Bahn, Restaurant, unbekannte OTAs **ohne** Inbox-OAuth. Ergänzt Provider-Sync, ersetzt ihn nicht.
-
-**Machbarkeit:** mittel — harte Grenzen.
-
-| Aspekt | Vorgehen |
-|--------|----------|
-| Plattform | Foundation Models; PCC wenn verfügbar, sonst On-Device; sonst disabled |
-| Ausgabe | `ProviderBookingDraft`; Neu = `ProviderID.manual`, Ergänzen = bestehender Provider |
-| Review | Pflicht im bestehenden `BookingEditor` vor Speichern |
-| Fehler | Unsichere Felder leer; PCC-Fehler kein stiller Wechsel auf On-Device |
-| Deaktiviert | Aktion sichtbar, Begründung wenn weder PCC noch On-Device |
-| Abhängigkeit | F01 (`train`) zuerst, sonst ICE in `.other` |
-
-**Out of Scope:** Postfach-Scan, Forward an Parser-Adresse, automatischer Upsert ohne Review; Drittanbieter-LLM (v2); Datei persistieren (F05).
-
-**Spec:** [`docs/superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md)
-
----
-
-### F07 — Next-up Widget / Live Activity
-
-**Sinn:** Nächste Buchung und nächste Stornofrist sind Domain-Daten — Surface am Lock Screen.
-
-**Machbarkeit:** mittel (WidgetKit, App Intents).
-
-**Abhängigkeit:** F02 sinnvoll für konsistente Reminder-Targets.
-
-**Out of Scope:** Live-Flugstatus.
-
----
+## Aktive Features (Detail)
 
 ### F08 — macOS-Suche und Typfilter
 
 **Sinn:** iOS hat `.searchable` auf Reisen/Offen; macOS-Sidebar wird bei vielen Sync-Buchungen unübersichtlich.
 
-**Machbarkeit:** hoch.
-
-**Vorgehen:** Gleiche Query wie iOS; Filter über `BookingType` und `ProviderID` (SSOT Domain).
+**Machbarkeit:** hoch. Gleiche Query wie iOS; Filter über `BookingType` und `ProviderID` (SSOT Domain).
 
 ---
 
-### F09 — Vollständigkeitsanzeige (Gaps)
+### F16 — Drag/Drop Buchung ↔ Reise
 
-**Status:** umgesetzt.
+**Sinn:** Zuordnung heute über Menüs/Sheets; Drag/Drop macht Offen↔Reise greifbarer — Domain-Port existiert bereits (`TripRepository.assignBooking`).
 
-**Sinn:** Vorhandene Gap-Logik sichtbar machen (Vorbild: Voyager „planning percentage“).
+**Machbarkeit:** hoch (UI + Transferable/UTType; Persistenz fertig).
 
-**Umsetzung:** Inter-Booking-Lücken (nicht Rand-Gaps) in Trip-Übersicht, Reisen-Liste/Sidebar und Offen-Gruppierung „Kann Lücken füllen“. Kein Dummy-Prozent; `unknown`-Status nur als ruhige Detail-Caption.
+| Fluss | Start | Ziel | Aktion |
+|-------|-------|------|--------|
+| 1 | Offene Buchung | Reise (Sidebar-Zeile) | `assignBooking(id, tripID)` |
+| 2 | Buchung in Reise | „Offene Buchungen“ | `assignBooking(id, nil)` |
+
+**Drag-Start:** linke Spalte (Buchungszeile) **oder** mittlere Spalte (Liste/Timeline) — gleiche Payload (`bookingID`).
+
+**Guards:** Ungültige Drop-Ziele ablehnen (kein stilles Zuordnen). Datumsfenster → F21.
+
+**Out of Scope v1:** Multi-Drag (→ F18); Drop auf „Neue Reise“ (→ F17); iOS-Phone ohne Split-View (iPad/macOS zuerst).
+
+---
+
+### F17 — Drop-Zone „Neue Reise“
+
+Offene Buchung(en) auf explizite Zone → `TripEditor` mit Seed (`OpenBookingCreateTripAction`). Speichern erst nach Bestätigung.
+
+### F18 — Mehrfachauswahl + Sammel-Zuordnung
+
+Command/Shift-Auswahl; Batch über wiederholtes `assignBooking`; Fehler pro ID sichtbar.
+
+### F19 — Kontextmenü Zuordnen / Lösen
+
+Accessibility-/Tastatur-Parität zu F16; Reise-Picker ohne Dummy-Einträge.
+
+### F20 — Undo nach Zuordnung/Lösung
+
+Kurzzeitiges Undo mit gespeicherter vorheriger `tripID`; Timeout kommunizieren.
+
+### F21 — Datumsfenster-Warnung beim Drop
+
+`TripBookingDateWindow`: außerhalb → Confirm-Sheet, kein stiller Fallback auf Offen.
+
+### F22 — Reisen zusammenführen
+
+Batch-assign auf Zielreise + Quellreise löschen nach Bestätigung; Side Effects über Rebuild.
+
+### F23 — Buchungs-Notiz / Memo
+
+Optionales Freitextfeld; Privacy prüfen; eigene Spec.
+
+### F24 — Duplikat-Hinweis über Provider
+
+Heuristik Datum/Ort/Typ; Nutzer entscheidet; kein Auto-Dedup.
+
+---
+
+## Zurückgestellte Features
+
+Bewusst nicht in der aktiven Welle; Specs/Ideen bleiben gültig.
+
+| ID | Feature | Hinweis |
+|----|---------|---------|
+| F02 | Check-in-Erinnerungen | Spec noch offen; Kontext unten |
+| F04 | ICS/Text-Export | ICS + Plain-Text Share; kein Feed-URL (→ X06) |
+| F05 | Dokumente an der Buchung | `SDBookingAttachment` + Privacy; Attachment-Spec später |
+| F07 | Next-up Widget / Live Activity | hängt an F02 |
+| F14 | Apple Wallet / PKPass | hängt an F05 |
+| F15 | Deep-Link Flighty/Airline | Analog `ProviderNativeApp`; kein eigener Tracker |
+
+### F02 — Kontext: Check-in als dritter Reminder-Anlass
+
+Lokale Push laufen bereits für Storno (`cancellationDeadline`) und Pre-Travel (`preTravelHints`). Hotel-Check-in-Minuten stehen in EventKit-Notizen, aber **nicht** als `UNUserNotification`.
+
+| Anlass | Daten | Erinnerung |
+|--------|-------|------------|
+| Hotel-Anreise | `hotelCheckInMinutes` + `startAt` | Push am Check-in-Tag; Lead-Times analog Storno |
+| Airline-Online-Check-in | Flug-`startAt` | typisch 24 h vor Abflug |
+
+**Kein Dummy**, wenn Minuten oder `startAt` fehlen. Folge-Spec bei Reaktivierung.
+
+### F04 / F05 / F07 (Kurz)
+
+- **F04:** Share Sheet ICS + Plain-Text der Trip-Timeline; EventKit bleibt primär.
+- **F05:** Cloud-Model + Datei im Container (kein großes SQLite-Blob); PDF/Bild; optional pkpass → F14.
+- **F07:** WidgetKit / Live Activity aus Domain-„nächste Buchung / Stornofrist“.
 
 ---
 
@@ -238,10 +160,6 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 | F10 | Kartenansicht | Nur Punkte mit geocodeter Coordinate; fehlend = Lücke anzeigen, nicht raten |
 | F11 | Zeitzonenwechsel in Timeline | Offset-Diff zwischen Buchungen |
 | F12 | Wetter | WeatherKit, Opt-in, Coordinate nötig |
-| F14 | Apple Wallet | Nach F05; PKPass nur wenn Datei passt |
-| F15 | Deep-Link Flighty/Airline | Analog `ProviderNativeApp`; kein eigener Tracker |
-
-**F13 umgesetzt:** [`../superpowers/specs/2026-09-01-trip-cost-currency-design.md`](../superpowers/specs/2026-09-01-trip-cost-currency-design.md) — Summen pro Währung, fehlende Preise explizit, optional ECB/Frankfurter-Umrechnung.
 
 ---
 
@@ -249,7 +167,7 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 
 | ID | Feature | Begründung |
 |----|---------|------------|
-| X01 | Inbox-OAuth / Mail-Forward | Widerspricht Privacy, lokalem SSOT, App-Store-Risiko; macht Reisen zu TripIt |
+| X01 | Inbox-OAuth / Mail-Forward | Privacy, lokaler SSOT, App-Store-Risiko |
 | X02 | KI-Reise generieren | Planer, nicht Konsolidierer; Halluzination vs. no-fallbacks |
 | X03 | Gruppen-Collaboration | Anderes Produkt; CloudKit Sharing |
 | X04 | Meilen / Loyalty | Eigenes Produkt (AwardWallet) |
@@ -265,17 +183,17 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 |------------|------------|-------|
 | Provider-Session-Sync (7 OTAs) | Mail-Parser | Nicht durch Inbox ersetzen |
 | `CancellationDeadline` + Notifications | Kaum modelliert | Kern halten; F02 analog erweitern |
-| Gaps + Deep-Links + Vollständigkeits-UI (F09) | Voyager flagged nur Lücken | Kern halten |
+| Gaps + Vollständigkeits-UI | Voyager flagged nur Lücken | Kern halten |
 | Pre-Travel Hints, Passagiere, Gepäck | Freitext in Mails | Kein generisches „Tipps“-Feature |
 | EventKit schreiben | iCal-Feed-URL | F04 Datei-Share, kein Feed (X06) |
-| Offen-Tab / Zuordnung | TripIt merged nach Datum | Beibehalten |
+| Offen-Tab / Zuordnung | TripIt merged nach Datum | Beibehalten; F16 als UX darauf |
 | Reiseübergreifende Tages-Überschneidungen (Typ-Occupancy, Caption macOS+iOS) | Oft nur Intra-Trip / Text-only | Kern halten; F24 bleibt Provider-Duplikat (geplant) |
+| Bahn-Typ, Paste-Import, Copy-Felder | — | Umgesetzt (Archiv) |
 
 ---
 
-## Follow-up Specs (nach Backlog-Freigabe)
+## Follow-up Specs
 
-1. [`booking-type-train-impl-spec.md`](booking-type-train-impl-spec.md) — implementiert
-2. Check-in-Reminder-Spec — noch anzulegen
-3. Attachment-Spec (Schema + Privacy) — noch anzulegen
-4. [`../superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md) — F06 Spec; Plan: [`../superpowers/plans/2026-08-28-paste-import.md`](../superpowers/plans/2026-08-28-paste-import.md)
+1. Drag/Drop-Zuordnung-Spec (**F16**) — nächste aktive Spec
+2. Check-in-Reminder-Spec — zurückgestellt (F02)
+3. Attachment-Spec (Schema + Privacy) — zurückgestellt (F05)
