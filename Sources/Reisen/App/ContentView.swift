@@ -611,53 +611,92 @@ struct ContentView: View {
             }
             if !elapsedTrips.isEmpty || !elapsedOpenBookings.isEmpty {
                 Section(L10n.string(.bookingElapsed)) {
-                    if !elapsedOpenBookings.isEmpty {
+                    ForEach(elapsedOpenBookings) { booking in
+                        let isSelected = selection == .elapsedOpenBookings
+                            && selectedOpenBookingIDs.contains(booking.id)
                         Button {
-                            selection = .elapsedOpenBookings
+                            let focused = SidebarBookingOutlineFocus.select(
+                                mailbox: .elapsed,
+                                bookingID: booking.id
+                            )
+                            selection = focused.mailbox == .current
+                                ? .openBookings
+                                : .elapsedOpenBookings
+                            selectedOpenBookingIDs = focused.selectedIDs
                         } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L10n.string(.tripOpenBookings))
-                                    Text(L10n.format(.tripOpenEntries, elapsedOpenBookings.count))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: "calendar.badge.clock")
-                            }
+                            SidebarOpenBookingOutlineRow(
+                                booking: booking,
+                                systemImage: "calendar.badge.clock"
+                            )
+                            .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                isSelected
+                                    ? Color.accentColor.opacity(0.15)
+                                    : Color.clear
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         }
-                        .tag(SidebarSelection.elapsedOpenBookings)
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
                     }
                     ForEach(elapsedTrips) { trip in
-                        Button {
-                            selection = .trip(trip.id)
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(trip.title)
-                                    Text(dateRange(trip))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                        SidebarTripOutline(
+                            trip: trip,
+                            bookings: trip.sidebarOutlineBookings(isElapsed: true),
+                            gapCount: nil,
+                            allowsAddBooking: false,
+                            isTripSelected: selection == .trip(trip.id),
+                            selectedTimelineID: selectedTimelineID,
+                            isExpanded: expandedBinding(for: trip.id),
+                            onSelectTrip: { selection = .trip(trip.id) },
+                            onSelectBooking: { booking in
+                                selection = .trip(trip.id)
+                                selectedTimelineID = booking.id.uuidString
+                                if !expandedTripIDs.contains(trip.id) {
+                                    expandedTripIDs.insert(trip.id)
                                 }
-                            } icon: {
-                                Image(systemName: "airplane")
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .tag(SidebarSelection.trip(trip.id))
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button(L10n.string(.commonEdit)) {
-                                tripToEdit = trip
-                            }
-                            Button(role: .destructive) {
+                            },
+                            onEditTrip: { tripToEdit = trip },
+                            onDeleteTrip: {
                                 tripPendingDelete = trip
                                 showTripDeleteConfirmation = true
-                            } label: {
-                                Text(L10n.string(.actionDeleteTrip))
+                            },
+                            onAddBooking: { _ in },
+                            onEditBooking: { booking in
+                                editBooking(booking, in: trip)
+                            },
+                            onRemoveBookingFromTrip: { booking in
+                                applyAfterTripFocus(trip: trip) {
+                                    selectedTimelineID = booking.id.uuidString
+                                    NotificationCenter.default.post(
+                                        name: .reisenRequestRemoveBookingFromTrip,
+                                        object: booking.id
+                                    )
+                                }
+                            },
+                            onDeleteBooking: { booking in
+                                applyAfterTripFocus(trip: trip) {
+                                    selectedTimelineID = booking.id.uuidString
+                                    NotificationCenter.default.post(
+                                        name: .reisenRequestDeleteBooking,
+                                        object: booking.id
+                                    )
+                                }
+                            },
+                            hasSessionWebView: { booking in
+                                sessionHub.hasSessionWebView(for: booking)
+                            },
+                            onPresentCancel: { presentation, url, booking in
+                                BookingPortalCancelRequest.route(
+                                    presentation,
+                                    url: url,
+                                    booking: booking,
+                                    openURL: { openURL($0) },
+                                    setCancelRequest: { cancelRequest = $0 }
+                                )
                             }
-                        }
+                        )
                     }
                 }
             }
@@ -1125,12 +1164,6 @@ struct ContentView: View {
                 }
             }
         }
-    }
-
-    private func dateRange(_ trip: SDTrip) -> String {
-        let start = trip.startDate.formatted(date: .abbreviated, time: .omitted)
-        let end = trip.endDate.formatted(date: .abbreviated, time: .omitted)
-        return "\(start) – \(end)"
     }
 
     private func focusTrip(_ trip: SDTrip) {
