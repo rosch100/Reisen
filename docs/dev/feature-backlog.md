@@ -29,7 +29,7 @@ Konkurrenz-Recherche (Marktvergleich, Datenquellen): Canvas `reise-apps-vergleic
 | F10 | Kartenansicht der Reise | bedingt | P3 | Geocoding zuverlässig |
 | F11 | Zeitzonenwechsel in Timeline | bedingt | P3 | — |
 | F12 | Wetter am Aufenthaltsort | bedingt | P3 | Koordinate |
-| F13 | Kostensumme der Reise | bedingt | P3 | Preise vorhanden |
+| F13 | Kostensumme der Reise | umgesetzt | P3 | Preise vorhanden |
 | F14 | Apple Wallet / PKPass | bedingt | P3 | F05 |
 | F15 | Deep-Link zu Flighty / Airline | bedingt | P3 | — |
 | X01 | Inbox-OAuth / Mail-Forward-Cloud | abgelehnt | — | — |
@@ -238,9 +238,10 @@ Buchungsdaten ──► Storno-Anlass ──► LocalReminderScheduler ──►
 | F10 | Kartenansicht | Nur Punkte mit geocodeter Coordinate; fehlend = Lücke anzeigen, nicht raten |
 | F11 | Zeitzonenwechsel in Timeline | Offset-Diff zwischen Buchungen |
 | F12 | Wetter | WeatherKit, Opt-in, Coordinate nötig |
-| F13 | Kostensumme | Summe vorhandener `BookingRateDetails`/Gap-Preise; fehlende Preise explizit |
 | F14 | Apple Wallet | Nach F05; PKPass nur wenn Datei passt |
 | F15 | Deep-Link Flighty/Airline | Analog `ProviderNativeApp`; kein eigener Tracker |
+
+**F13 umgesetzt:** [`../superpowers/specs/2026-09-01-trip-cost-currency-design.md`](../superpowers/specs/2026-09-01-trip-cost-currency-design.md) — Summen pro Währung, fehlende Preise explizit, optional ECB/Frankfurter-Umrechnung.
 
 ---
 

@@ -117,6 +117,17 @@
         (e.g. airport IATA or hotel name) to <strong>Apple MapKit</strong>. Your GPS location is not collected.
       </p>
 
+      <h3>Currency conversion (optional, opt-in)</h3>
+      <p>
+        If you enable “Convert to Preferred Currency” in Settings, Reisen fetches
+        <strong>European Central Bank</strong> reference rates via the public
+        <strong>Frankfurter</strong> service (<code>api.frankfurter.dev</code>). The app does not send
+        trip or personal data — the application payload contains only currency codes.
+        The public Frankfurter endpoint may process ordinary connection metadata via its
+        infrastructure (e.g. CDN/Cloudflare); see their privacy notices for details.
+        Conversion is indicative, not a trading quote. With the toggle off, no network request is made.
+      </p>
+
       <h3>Installed provider apps (on-device only)</h3>
       <p>
         On iOS, Reisen locally checks URL schemes to see whether a provider’s native app is installed

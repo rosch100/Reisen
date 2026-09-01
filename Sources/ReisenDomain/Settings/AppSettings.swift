@@ -51,6 +51,11 @@ public struct AppSettingsKeys {
     /// Persistierte Breite der mittleren Buchungsliste (Punkte).
     public static let bookingListColumnWidth = "reisen_bookingListColumnWidth"
 
+    /// Bevorzugte Anzeige-/Umrechnungswährung (ISO 4217).
+    public static let preferredCurrencyCode = "reisen_preferredCurrencyCode"
+    /// Summen in die bevorzugte Währung umrechnen (Default aus).
+    public static let convertAmountsToPreferredCurrency = "reisen_convertAmountsToPreferredCurrency"
+
     public static func providerEnabledKey(for providerID: ProviderID) -> String {
         "\(providerEnabledPrefix)\(providerID.rawValue)"
     }
@@ -84,6 +89,48 @@ public struct AppSettingsKeys {
     /// Normalisierter optionaler GitHub-Benutzername für Issue-Attribution.
     public static func optionalFeedbackGitHubUsername(defaults: UserDefaults = .standard) -> String? {
         GitHubUsername.optionalValid(defaults.string(forKey: feedbackGitHubUsername))
+    }
+
+    /// Default: Locale-Währung, sonst EUR.
+    public static func preferredCurrency(
+        defaults: UserDefaults = .standard,
+        locale: Locale = .current
+    ) -> String {
+        preferredCurrency(stored: nil, defaults: defaults, locale: locale)
+    }
+
+    /// AppStorage-/Formularwert; leer/`nil` → Defaults → Locale → EUR.
+    public static func preferredCurrency(
+        stored: String?,
+        defaults: UserDefaults = .standard,
+        locale: Locale = .current
+    ) -> String {
+        for raw in [stored, defaults.string(forKey: preferredCurrencyCode)].compactMap({ $0 }) {
+            let normalized = CurrencyCode.normalize(raw)
+            if !normalized.isEmpty {
+                return normalized
+            }
+        }
+        if let code = locale.currency?.identifier {
+            let normalized = CurrencyCode.normalize(code)
+            if !normalized.isEmpty {
+                return normalized
+            }
+        }
+        return "EUR"
+    }
+
+    public static func setPreferredCurrency(_ code: String, defaults: UserDefaults = .standard) {
+        defaults.set(CurrencyCode.normalize(code), forKey: preferredCurrencyCode)
+    }
+
+    /// Default: Umrechnung aus.
+    public static func convertsAmountsToPreferredCurrency(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: convertAmountsToPreferredCurrency)
+    }
+
+    public static func setConvertsAmountsToPreferredCurrency(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: convertAmountsToPreferredCurrency)
     }
 }
 

@@ -78,6 +78,7 @@ struct TripDetailIOS: View {
                                 style: .list
                             )
                         }
+                        TripCostOverviewIOSRows(trip: trip)
                         TripCompletenessOverviewRow(completeness: trip.completeness())
                         if trip.resolvedBookings.isEmpty {
                             Button(L10n.string(.actionAssignBookings)) {

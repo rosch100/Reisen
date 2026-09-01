@@ -1,15 +1,31 @@
 import Foundation
+import ReisenDomain
 
 /// Plattformeinheitliche Formatierungs-Helfer für iOS/macOS UI.
 public enum Formatting {
-    public static func formatCurrencyAmount(_ amount: Double, currencyCode: String?) -> String {
+    /// Währungsbetrag für die UI. Locale folgt `L10n.locale` (Gerät/App-Sprache), kein festes `de_DE`.
+    public static func formatCurrencyAmount(
+        _ amount: Decimal,
+        currencyCode: String?,
+        locale: Locale = L10n.locale
+    ) -> String {
         let currency = currencyCode ?? "EUR"
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
+        formatter.locale = locale
         formatter.numberStyle = .currency
         formatter.currencyCode = currency
         formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "\(amount) \(currency)"
+        let number = amount as NSDecimalNumber
+        return formatter.string(from: number) ?? "\(number) \(currency)"
+    }
+
+    public static func formatCurrencyAmount(
+        _ amount: Double,
+        currencyCode: String?,
+        locale: Locale = L10n.locale
+    ) -> String {
+        let decimal = DecimalJSON.parse(amount) ?? Decimal(amount)
+        return formatCurrencyAmount(decimal, currencyCode: currencyCode, locale: locale)
     }
 
     public static func minutesToHHmm(_ minutes: Int) -> String {
@@ -28,4 +44,3 @@ public enum Formatting {
         return df.string(from: date)
     }
 }
-

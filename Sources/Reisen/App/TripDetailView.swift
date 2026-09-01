@@ -31,24 +31,25 @@ struct TripDetailView: View {
         trip.timelineBookings()
     }
 
-    private var tripTotalPriceText: String {
-        let bookingAmounts = sortedBookings.compactMap { $0.rateDetails?.totalPriceAmount }
+    @AppStorage(AppSettingsKeys.convertAmountsToPreferredCurrency) private var convertAmountsToPreferredCurrency = false
+    @AppStorage(AppSettingsKeys.preferredCurrencyCode) private var preferredCurrencyCodeStored = ""
+    @State private var tripCostResult: TripCostOverviewResult = .empty
+    @State private var tripCostRefreshToken = UUID()
 
-        let gapAmounts = gaps.compactMap { gap in
-            savedGapsByKey[gap.identityKey]?.priceAmount
-        }
+    private var tripCostSummary: TripCostSummary {
+        TripCostTimelineSummary.make(trip: trip, bookings: sortedBookings, allGaps: allGaps)
+    }
 
-        let amounts = bookingAmounts + gapAmounts
-        guard !amounts.isEmpty else { return L10n.string(.commonNotAvailable) }
-
-        let bookingCurrency = sortedBookings.compactMap { $0.rateDetails?.totalPriceCurrency }.first
-        let gapCurrency = gaps.compactMap { gap in
-            savedGapsByKey[gap.identityKey]?.priceCurrencyCode
-        }.first
-
-        let currency = bookingCurrency ?? gapCurrency
-        let total = amounts.reduce(0, +)
-        return Formatting.formatCurrencyAmount(total, currencyCode: currency)
+    private func refreshTripCost() {
+        TripCostOverviewRefresh.run(
+            summary: tripCostSummary,
+            convertEnabled: convertAmountsToPreferredCurrency,
+            preferredCurrencyStored: preferredCurrencyCodeStored,
+            rates: ExchangeRateService.sharedClient,
+            setToken: { tripCostRefreshToken = $0 },
+            setResult: { tripCostResult = $0 },
+            currentToken: { tripCostRefreshToken }
+        )
     }
 
     private var savedGapsByKey: [String: SDGap] {
@@ -489,7 +490,24 @@ struct TripDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 16) {
                 overviewFact(label: L10n.string(.tripPeriod), value: dateRange)
-                overviewFact(label: L10n.string(.bookingDetailPrice), value: tripTotalPriceText)
+                VStack(alignment: .leading, spacing: 2) {
+                    overviewFact(
+                        label: L10n.string(.bookingDetailPrice),
+                        value: TripCostDisplayText.primaryLine(for: tripCostResult)
+                    )
+                    if let secondary = TripCostDisplayText.secondaryLine(for: tripCostResult) {
+                        Text(secondary)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .help(secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .onAppear { refreshTripCost() }
+                .onChange(of: convertAmountsToPreferredCurrency) { _, _ in refreshTripCost() }
+                .onChange(of: preferredCurrencyCodeStored) { _, _ in refreshTripCost() }
+                .onChange(of: tripCostSummary.costFingerprint) { _, _ in refreshTripCost() }
                 if let destination = trip.destination, !destination.isEmpty {
                     overviewFact(label: L10n.string(.tripDestination), value: destination)
                 }
