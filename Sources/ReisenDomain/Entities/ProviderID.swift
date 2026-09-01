@@ -38,6 +38,8 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
     public static let billigerMietwagen = ProviderID(rawValue: "billigermietwagen")
     /// Lokale / benutzerdefinierte Buchung (wird nicht über Provider-Sync ersetzt).
     public static let manual = ProviderID(rawValue: "manual")
+    /// Automatisch erzeugter Lücken-Platzhalter (nur Reconcile; kein Sync).
+    public static let autoGap = ProviderID(rawValue: "autoGap")
 
     /// Registrierte Sync-Provider (SSOT; muss der App-Registry entsprechen).
     public static let syncProviderIDs: [ProviderID] = [
