@@ -2289,18 +2289,50 @@
         }
       }
     },
-    "booking.overlap.with_count": {
+    "booking.overlap.with_partner": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Überschneidung (+%1$d)"
+            "value": "Überschneidung mit %1$@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Overlap (+%1$d)"
+            "value": "Overlap with %1$@"
+          }
+        }
+      }
+    },
+    "booking.overlap.with_two_partners": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überschneidung mit %1$@ und %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overlap with %1$@ and %2$@"
+          }
+        }
+      }
+    },
+    "booking.overlap.with_partner_and_others": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überschneidung mit %1$@ und %2$d weiteren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overlap with %1$@ and %2$d others"
           }
         }
       }

@@ -1,7 +1,7 @@
 # Globale Buchungs-Tagesüberschneidungen (macOS + iOS)
 
-**Datum:** 2026-09-01  
-**Status:** Entwurf für Implementierung (Review-Findings eingearbeitet)  
+**Datum:** 2026-09-01
+**Status:** Entwurf für Implementierung (Review-Findings eingearbeitet)
 **Plattformen:** macOS (`Reisen`) und iOS/iPadOS (`ReiseniOS`)
 
 ## Ziel
@@ -37,23 +37,23 @@ Dies ist **nicht** Backlog-F24 (Provider-Duplikat-Hinweis). F24 bleibt geplant/e
 | **Same-Place+Same-Dates** | Nicht-leerer gleicher `placeKey` und gleiche Roh-Start-/End-Tage |
 | **Multi-Room-Suppress** | Same-Place+Same-Dates **und** beide `tripID` non-nil und **gleich** → kein Overlap |
 | **Offen** | `tripID == nil` |
-| **Overlap-Pool** | Alle Buchungen mit `BookingDayOverlap.isEligible(status:)` ≡ `status != .cancelled` (inkl. vergangener). **≠** `BookingListInclusion.appearsInList` |
-| **Overlap-Count** | Anzahl **anderer** Pool-Buchungen mit Intervall-Schnitt; Map nur Count > 0 |
-| **extraCount (L10n)** | Identisch mit Overlap-Count. Ein Konflikt → `Überschneidung (+1)` |
+| **Overlap-Pool** | Alle Buchungen mit `isInOverlapPool` ≡ `isEligible` **und nicht** `BookingListInclusion.isElapsed` (Subjekt und Partner). |
+| **Overlap-Partner** | Andere Pool-Buchungen mit Intervall-Schnitt; Map `[UUID: [UUID]]` nur bei ≥1 Partner |
+| **Caption (L10n)** | Partner-Titel nennen (`Überschneidung mit …`); kein `(+N)`-Count-Badge; `.help` listet alle Titel |
 
 ## Entscheidungen
 
 | Thema | Wahl |
 |-------|------|
-| Pool | Alle persistierten außer `cancelled`, **inkl. historischer** (bewusst) |
+| Pool | Persistierte außer `cancelled` **und** außer abgelaufenen (`isElapsed`) |
 | Scope | Reiseübergreifend inkl. offen |
 | Same-Place | Suppress nur intra-Trip |
 | Occupancy | **Typ-Regel** über `BookingType.usesStayLikeOverlapEnd` (kein generischer Same-Day-Clamp allein) |
-| Kalender | Nur `HotelStayDate.calendar` |
+| Kalender | Nur `HotelStayDate.calendar` (Occupancy); Elapsed über `Calendar.current` (SSOT Liste) |
 | Personenfilter | Out of Scope |
 | Architektur | Domain erweitert; Shared Compute; UI Lookup + Label |
 | Sidebar macOS | **In Scope v1** |
-| HIG/A11y | Symbol + Text + `accessibilityLabel` |
+| HIG/A11y | Symbol + Partner-Text + `accessibilityLabel`; macOS `.help` mit voller Partnerliste |
 | F24 / Deep-Link / Auto-Dedup | Out of Scope / geplant |
 
 ## Architektur
@@ -115,12 +115,13 @@ Beispiele:
 2. `shouldSuppressAsMultiRoom(a, b)` → skip
 3. Occupied-Intervalle schneiden → Count +1
 
-`shouldSuppressAsMultiRoom` = Same-Place+Same-Dates **und** `a.tripID == b.tripID`, beide non-nil.  
+`shouldSuppressAsMultiRoom` = Same-Place+Same-Dates **und** `a.tripID == b.tripID`, beide non-nil.
 Altes „Same-Place zählt nie“ entfällt.
 
-**Eligibility-SSOT:** `isEligible(status:)` ≡ `!= .cancelled`. Overlap-Pool ≠ `BookingListInclusion.appearsInList`.
+**Eligibility-SSOT:** `isEligible(status:)` ≡ `!= .cancelled`.
+**Pool-SSOT:** `isInOverlapPool` ≡ eligible **und** nicht `isElapsed`. Overlap-Pool ≠ `BookingListInclusion.appearsInList`.
 
-**Cancelled als Subjekt:** Nicht im Pool → kein Label.
+**Cancelled / elapsed als Subjekt:** Nicht im Pool → kein Label.
 
 **Factories:**
 
@@ -129,18 +130,18 @@ Altes „Same-Place zählt nie“ entfällt.
 
 **Shared Compute:**
 
-- Domain: `countsByID(_ spans:)`, `isEligible(status:)`
-- Data: `BookingDayOverlap.countsByID(sdBookings:)` — `isEligible` → `daySpan` → Domain
+- Domain: `partnerIDsByID(_ spans:)`, `countsByID` (abgeleitet), `isEligible` / `isInOverlapPool`
+- Data: `BookingDayOverlap.partnerIDsByID(sdBookings:)` — Pool-Filter → `daySpan` → Domain
 
-Views nur Data-Helfer. Default-Calendar: `HotelStayDate.calendar`.
+Views nur Data-Helfer + Titel-Lookup (`presentationTitle`). Default-Occupancy-Calendar: `HotelStayDate.calendar`.
 
 ### UI (dünn, Parität)
 
 1. `@Query` aller `SDBooking` (Parent)
-2. `counts = BookingDayOverlap.countsByID(sdBookings:)`
-3. `n = counts[id] ?? 0`; Anzeige wenn `n > 0`
+2. `partners = BookingDayOverlap.partnerIDsByID(sdBookings:)`
+3. Titel via `presentationTitle`; Anzeige wenn Partner-Titel nicht leer
 
-**Label-SSOT (SharedUI):** SF Symbol `exclamationmark.triangle` + `L10n.overlapLabel(extraCount: n)` + Farbe ergänzend + `.accessibilityLabel` = L10n-String.
+**Label-SSOT (SharedUI):** SF Symbol `exclamationmark.triangle` + `L10n.overlapLabel(partnerTitles:)` + Farbe ergänzend + `.accessibilityLabel` = L10n-String; macOS `.help` = volle Partnerliste.
 
 **`OpenBookingRow`:**
 
@@ -148,13 +149,13 @@ Views nur Data-Helfer. Default-Calendar: `HotelStayDate.calendar`.
 public init(
     booking: SDBooking,
     fillCaption: String? = nil,
-    overlapCount: Int = 0
+    partnerTitles: [String]
 )
 ```
 
 | Fläche | macOS | iOS |
 |--------|-------|-----|
-| Trip-Timeline / Zeile | Pool global | `OpenBookingRow(overlapCount:)` |
+| Trip-Timeline / Zeile | Pool global | `OpenBookingRow(partnerTitles:)` |
 | Buchungsdetail | `BookingDetailContent` | `BookingDetailIOS` |
 | Offene Buchung Detail | Overlap setzen | `BookingDetailIOS` |
 | Offen-Liste | `OpenBookingRow` | `OpenBookingRow` |
@@ -174,24 +175,24 @@ public init(
 - Passagier-/Gästegleichheit
 - Navigation „zeige Konfliktbuchung“
 - Live Activity / Widget
-- Upcoming-only-Filter für historische Overlaps
+- Deep-Link / Navigation zur Konfliktbuchung (Caption nennt Partner; Sprung bleibt OOS)
 
 ## Tests (Domain)
 
-1. Überlappende Hotel-Nächte, verschiedene `tripID` → Counts ≥ 1  
-2. Offen ↔ Reise, überlappende Nächte → Count  
-3. Same-Place+Same-Dates, gleiche `tripID` → kein Count  
-4. Same-Place+Same-Dates, verschiedene `tripID` / offen → Count  
-5. `cancelled` Partner → kein Count  
-6. Adjacent Hotel Checkout=Checkin → kein Overlap  
-7. Same-Day Flug vs. Same-Day Flug → Count ≥ 1  
-8. Same-Day Flug vs. Hotel, das denselben Tag als Nacht belegt → Count  
-9. Hotel 1.–3. vs. Flug nur am 3. (Checkout-Tag) → **kein** Overlap  
-10. Activity Same-Day vs. Activity Same-Day → Count  
-11. `unknown` eligible  
-12. Default-Calendar = `HotelStayDate.calendar`  
-13. `usesStayLikeOverlapEnd`: nur `.hotel == true`; alle anderen Cases `false` (exhaustive)  
-14. Mietwagen 1.–3. vs. Hotel-Nacht nur 2.–3. → Overlap  
+1. Überlappende Hotel-Nächte, verschiedene `tripID` → Counts ≥ 1
+2. Offen ↔ Reise, überlappende Nächte → Count
+3. Same-Place+Same-Dates, gleiche `tripID` → kein Count
+4. Same-Place+Same-Dates, verschiedene `tripID` / offen → Count
+5. `cancelled` Partner → kein Count
+6. Adjacent Hotel Checkout=Checkin → kein Overlap
+7. Same-Day Flug vs. Same-Day Flug → Count ≥ 1
+8. Same-Day Flug vs. Hotel, das denselben Tag als Nacht belegt → Count
+9. Hotel 1.–3. vs. Flug nur am 3. (Checkout-Tag) → **kein** Overlap
+10. Activity Same-Day vs. Activity Same-Day → Count
+11. `unknown` eligible
+12. Default-Calendar = `HotelStayDate.calendar`
+13. `usesStayLikeOverlapEnd`: nur `.hotel == true`; alle anderen Cases `false` (exhaustive)
+14. Mietwagen 1.–3. vs. Hotel-Nacht nur 2.–3. → Overlap
 15. `endDay < startDay` → leere Occupancy, kein Overlap (kein Dummy-Clamp)
 
 ## Offene Lücken (open_gaps)
@@ -202,7 +203,6 @@ Bewusst nicht v1:
 - Deep-Link zur Konfliktbuchung
 - Personenfilter
 - F24 Provider-Duplikat
-- Upcoming-only-Filter für historische Overlaps
 
 **Entry-Evidence v1:** SharedUI-Unit Caption-Text/A11y/Visibility; Parent-Lookup `countsByID(sdBookings:)`. Kein XCUI-Gate.
 
