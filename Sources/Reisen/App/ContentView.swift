@@ -16,6 +16,8 @@ struct ContentView: View {
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @State private var selection: SidebarSelection?
     @State private var expandedTripIDs: Set<UUID> = []
+    @State private var expandedOpenMailbox = false
+    @State private var expandedElapsedOpenMailbox = false
     @State private var didInitExpanded = false
     @State private var didRunTimeRepair = false
     @State private var didApplyInitialSelection = false
@@ -31,6 +33,8 @@ struct ContentView: View {
     @State private var tripToEdit: SDTrip?
     @State private var tripPendingDelete: SDTrip?
     @State private var showTripDeleteConfirmation = false
+    @State private var pendingDeleteOpenBooking: SDBooking?
+    @State private var showOpenBookingDeleteConfirmation = false
     @State private var persistErrorMessage: String?
     @State private var cancelRequest: BookingPortalCancelRequest?
 
@@ -233,6 +237,13 @@ struct ContentView: View {
             onDeleteBookings: { performPendingTripDeletion(.deleteContained) },
             onCancel: { tripPendingDelete = nil }
         )
+        .bookingDeleteConfirmAlert(
+            isPresented: $showOpenBookingDeleteConfirmation,
+            bookingTitle: pendingDeleteOpenBooking?.presentationTitle ?? L10n.string(.editorBooking),
+            showsSyncRestoreWarning: pendingDeleteOpenBooking.map { $0.provider != .manual } ?? false,
+            onConfirm: performPendingOpenBookingDeletion,
+            onCancel: { pendingDeleteOpenBooking = nil }
+        )
         .persistFailureAlert(message: $persistErrorMessage)
         .focusedSceneValue(
             \.openBookingsCommandState,
@@ -259,6 +270,22 @@ struct ContentView: View {
                 ?? .providerSync(enabledProviderIDs.first ?? .check24)
         }
         tripPendingDelete = nil
+    }
+
+    private func performPendingOpenBookingDeletion() {
+        guard let booking = pendingDeleteOpenBooking else { return }
+        do {
+            try BookingDeletion.perform(booking: booking, in: modelContext)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
+        selectedOpenBookingIDs.remove(booking.id)
+        pendingDeleteOpenBooking = nil
+    }
+
+    private func requestOpenBookingDeletion(_ booking: SDBooking) {
+        pendingDeleteOpenBooking = booking
+        showOpenBookingDeleteConfirmation = true
     }
 
     /// Aktuell selektierte Buchung für Portal-Menü/Command (Open + Storno).
@@ -478,38 +505,21 @@ struct ContentView: View {
                     Text(L10n.string(.tripNoOpenBookings))
                         .foregroundStyle(.secondary)
                 } else {
-                    Button {
-                        selection = .openBookings
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(L10n.string(.tripOpenBookings))
-                                Text(L10n.format(.tripOpenEntries, openBookings.count))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } icon: {
-                            Image(systemName: "calendar.badge.plus")
+                    sidebarOpenMailbox(
+                        selectionValue: .openBookings,
+                        bookings: openBookings,
+                        isExpanded: $expandedOpenMailbox,
+                        iconSystemName: "calendar.badge.plus",
+                        createTripFromAll: {
+                            selection = .openBookings
+                            selectedOpenBookingIDs = Set(openBookings.map(\.id))
+                            OpenBookingCreateTripAction.assignSeedFromAll(
+                                in: allBookings,
+                                seed: $tripCreateSeed,
+                                showFailed: $showCreateTripFromBookingsFailed
+                            )
                         }
-                    }
-                    .tag(SidebarSelection.openBookings)
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        let fromAll = OpenBookingMatching.openUnassigned(in: allBookings)
-                        if !fromAll.isEmpty {
-                            Button {
-                                selection = .openBookings
-                                selectedOpenBookingIDs = Set(fromAll.map(\.id))
-                                OpenBookingCreateTripAction.assignSeedFromAll(
-                                    in: allBookings,
-                                    seed: $tripCreateSeed,
-                                    showFailed: $showCreateTripFromBookingsFailed
-                                )
-                            } label: {
-                                CreateTripFromAllOpenBookingsLabel(count: fromAll.count)
-                            }
-                        }
-                    }
+                    )
                 }
             }
 
@@ -522,150 +532,12 @@ struct ContentView: View {
                 } else {
                     let gapBadges = SDTrip.listGapBadgeCounts(for: currentTrips)
                     ForEach(currentTrips) { trip in
-                        let tripBookings = futureBookings(for: trip)
-                        let isExpanded = expandedTripIDs.contains(trip.id)
-                        VStack(alignment: .leading, spacing: 0) {
-                            HStack(spacing: 4) {
-                                if !tripBookings.isEmpty {
-                                    Button {
-                                        expandedBinding(for: trip.id).wrappedValue.toggle()
-                                    } label: {
-                                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(.secondary)
-                                            .frame(width: 14, height: 14)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help(isExpanded
-                                        ? L10n.string(.tripCollapseBookings)
-                                        : L10n.string(.tripExpandBookings))
-                                }
-
-                                Button {
-                                    selection = .trip(trip.id)
-                                } label: {
-                                    Label {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(trip.title)
-                                            Text(dateRange(trip))
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            if let meta = L10n.tripCompletenessListMeta(
-                                                futureBookingCount: tripBookings.count,
-                                                gapCount: gapBadges[trip.id]
-                                            ) {
-                                                Text(meta)
-                                                    .font(.caption2)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
-                                    } icon: {
-                                        Image(systemName: "airplane")
-                                    }
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
-                            }
-                            .tag(SidebarSelection.trip(trip.id))
-                            .contextMenu {
-                                Button(L10n.string(.commonEdit)) {
-                                    tripToEdit = trip
-                                }
-                                Button(L10n.string(.actionAddBooking)) {
-                                    startCreateBooking(in: trip)
-                                }
-                                Button(role: .destructive) {
-                                    tripPendingDelete = trip
-                                    showTripDeleteConfirmation = true
-                                } label: {
-                                    Text(L10n.string(.actionDeleteTrip))
-                                }
-                                .accessibilityIdentifier(UITestingIdentifiers.deleteTripMenu)
-                            }
-
-                            if isExpanded {
-                                ForEach(tripBookings) { booking in
-                                    let isBookingSelected = selection == .trip(trip.id)
-                                        && selectedTimelineID == booking.id.uuidString
-                                    Button {
-                                        selection = .trip(trip.id)
-                                        selectedTimelineID = booking.id.uuidString
-                                        if !expandedTripIDs.contains(trip.id) {
-                                            expandedTripIDs.insert(trip.id)
-                                        }
-                                    } label: {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(booking.presentationTitle)
-                                                .lineLimit(1)
-                                            Text(BookingScheduleRangeText.make(for: booking))
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                        .padding(.leading, 28)
-                                        .padding(.vertical, 4)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(
-                                            isBookingSelected
-                                                ? Color.accentColor.opacity(0.15)
-                                                : Color.clear
-                                        )
-                                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .contentShape(Rectangle())
-                                    .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
-                                    .contextMenu {
-                                        Button(L10n.string(.commonEdit)) {
-                                            editBooking(booking, in: trip)
-                                        }
-                                        Button(L10n.string(.actionAddBooking)) {
-                                            startCreateBooking(in: trip, selectBookingID: booking.id)
-                                        }
-                                        BookingCopyConfirmationMenuItems(booking: booking)
-                                        if let url = booking.browserURL {
-                                            BookingPortalOpenButton(browserURL: url)
-                                            CopyLinkMenuItem(url: url)
-                                        }
-                                        BookingPortalCancelMenuItems(
-                                            booking: booking,
-                                            hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
-                                            onPresentCancel: { presentation, url in
-                                                BookingPortalCancelRequest.route(
-                                                    presentation,
-                                                    url: url,
-                                                    booking: booking,
-                                                    openURL: { openURL($0) },
-                                                    setCancelRequest: { cancelRequest = $0 }
-                                                )
-                                            }
-                                        )
-                                        Button(role: .destructive) {
-                                            applyAfterTripFocus(trip: trip) {
-                                                selectedTimelineID = booking.id.uuidString
-                                                NotificationCenter.default.post(
-                                                    name: .reisenRequestRemoveBookingFromTrip,
-                                                    object: booking.id
-                                                )
-                                            }
-                                        } label: {
-                                            Text(L10n.string(.actionRemoveFromTrip))
-                                        }
-                                        Button(role: .destructive) {
-                                            applyAfterTripFocus(trip: trip) {
-                                                selectedTimelineID = booking.id.uuidString
-                                                NotificationCenter.default.post(
-                                                    name: .reisenRequestDeleteBooking,
-                                                    object: booking.id
-                                                )
-                                            }
-                                        } label: {
-                                            Text(L10n.string(.actionDeleteEllipsis))
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        sidebarTripEntry(
+                            trip: trip,
+                            tripBookings: trip.sidebarChildBookings(tripIsElapsed: false),
+                            gapCount: gapBadges[trip.id],
+                            tripMenuKind: .trip
+                        )
                     }
                 }
             } header: {
@@ -683,52 +555,30 @@ struct ContentView: View {
             if !elapsedTrips.isEmpty || !elapsedOpenBookings.isEmpty {
                 Section(L10n.string(.bookingElapsed)) {
                     if !elapsedOpenBookings.isEmpty {
-                        Button {
-                            selection = .elapsedOpenBookings
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L10n.string(.tripOpenBookings))
-                                    Text(L10n.format(.tripOpenEntries, elapsedOpenBookings.count))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: "calendar.badge.clock")
+                        sidebarOpenMailbox(
+                            selectionValue: .elapsedOpenBookings,
+                            bookings: elapsedOpenBookings,
+                            isExpanded: $expandedElapsedOpenMailbox,
+                            iconSystemName: "calendar.badge.clock",
+                            createTripFromAll: {
+                                selection = .elapsedOpenBookings
+                                selectedOpenBookingIDs = Set(elapsedOpenBookings.map(\.id))
+                                OpenBookingCreateTripAction.assignSeed(
+                                    fromIDs: Set(elapsedOpenBookings.map(\.id)),
+                                    in: elapsedOpenBookings,
+                                    seed: $tripCreateSeed,
+                                    showFailed: $showCreateTripFromBookingsFailed
+                                )
                             }
-                        }
-                        .tag(SidebarSelection.elapsedOpenBookings)
-                        .buttonStyle(.plain)
+                        )
                     }
                     ForEach(elapsedTrips) { trip in
-                        Button {
-                            selection = .trip(trip.id)
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(trip.title)
-                                    Text(dateRange(trip))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: "airplane")
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .tag(SidebarSelection.trip(trip.id))
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button(L10n.string(.commonEdit)) {
-                                tripToEdit = trip
-                            }
-                            Button(role: .destructive) {
-                                tripPendingDelete = trip
-                                showTripDeleteConfirmation = true
-                            } label: {
-                                Text(L10n.string(.actionDeleteTrip))
-                            }
-                        }
+                        sidebarTripEntry(
+                            trip: trip,
+                            tripBookings: trip.sidebarChildBookings(tripIsElapsed: true),
+                            gapCount: nil,
+                            tripMenuKind: .elapsedTrip
+                        )
                     }
                 }
             }
@@ -736,6 +586,338 @@ struct ContentView: View {
         .listStyle(.sidebar)
         .navigationTitle(L10n.string(.tripTrips))
         .accessibilityIdentifier(UITestingIdentifiers.sidebar)
+    }
+
+    @ViewBuilder
+    private func sidebarOpenMailbox(
+        selectionValue: SidebarSelection,
+        bookings: [SDBooking],
+        isExpanded: Binding<Bool>,
+        iconSystemName: String,
+        createTripFromAll: @escaping () -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                if !bookings.isEmpty {
+                    Button {
+                        isExpanded.wrappedValue.toggle()
+                    } label: {
+                        Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 14, height: 14)
+                    }
+                    .buttonStyle(.plain)
+                    .help(isExpanded.wrappedValue
+                        ? L10n.string(.tripCollapseBookings)
+                        : L10n.string(.tripExpandBookings))
+                }
+
+                Button {
+                    selection = selectionValue
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.string(.tripOpenBookings))
+                            Text(L10n.format(.tripOpenEntries, bookings.count))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: iconSystemName)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            .tag(selectionValue)
+            .contextMenu {
+                let actions = SidebarEntryContextActions.actions(for: selectionValue == .elapsedOpenBookings
+                    ? .elapsedOpenBookingMailbox
+                    : .openBookingMailbox)
+                if actions.contains(.createTripFromAllOpen), !bookings.isEmpty {
+                    Button(action: createTripFromAll) {
+                        CreateTripFromAllOpenBookingsLabel(count: bookings.count)
+                    }
+                }
+            }
+
+            if isExpanded.wrappedValue {
+                ForEach(bookings) { booking in
+                    sidebarOpenBookingRow(booking: booking, mailboxSelection: selectionValue)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sidebarOpenBookingRow(
+        booking: SDBooking,
+        mailboxSelection: SidebarSelection
+    ) -> some View {
+        let isBookingSelected = selection == mailboxSelection
+            && selectedOpenBookingIDs == [booking.id]
+        Button {
+            selection = mailboxSelection
+            selectedOpenBookingIDs = [booking.id]
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(booking.presentationTitle)
+                    .lineLimit(1)
+                Text(BookingScheduleRangeText.make(for: booking))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.leading, 28)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isBookingSelected
+                    ? Color.accentColor.opacity(0.15)
+                    : Color.clear
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
+        .contextMenu {
+            openBookingContextMenuItems(
+                for: booking,
+                in: mailboxSelection == .elapsedOpenBookings ? elapsedOpenBookings : openBookings,
+                kind: mailboxSelection == .elapsedOpenBookings ? .elapsedOpenBooking : .openBooking
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func openBookingContextMenuItems(
+        for booking: SDBooking,
+        in mailboxBookings: [SDBooking],
+        kind: SidebarEntryKind
+    ) -> some View {
+        let actions = SidebarEntryContextActions.actions(for: kind)
+        BookingCopyConfirmationMenuItems(booking: booking)
+        if let url = booking.browserURL {
+            BookingPortalOpenButton(browserURL: url)
+            CopyLinkMenuItem(url: url)
+        }
+        BookingPortalCancelMenuItems(
+            booking: booking,
+            hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
+            onPresentCancel: { presentation, url in
+                BookingPortalCancelRequest.route(
+                    presentation,
+                    url: url,
+                    booking: booking,
+                    openURL: { openURL($0) },
+                    setCancelRequest: { cancelRequest = $0 }
+                )
+            }
+        )
+        if actions.contains(.assignToTrip), let trip = matchingTrip(for: booking) {
+            Button(L10n.string(.actionAssignToTrip)) {
+                applyAfterTripFocus(trip: trip) {
+                    NotificationCenter.default.post(
+                        name: .reisenAssignBookings,
+                        object: booking.id
+                    )
+                }
+            }
+        }
+        if actions.contains(.createTripFromSelection) {
+            Button {
+                OpenBookingCreateTripAction.assignSeed(
+                    fromIDs: [booking.id],
+                    in: mailboxBookings,
+                    seed: $tripCreateSeed,
+                    showFailed: $showCreateTripFromBookingsFailed
+                )
+            } label: {
+                CreateTripFromBookingsLabel()
+            }
+        }
+        if actions.contains(.deleteBooking) {
+            Button(role: .destructive) {
+                requestOpenBookingDeletion(booking)
+            } label: {
+                Text(L10n.string(.actionDeleteEllipsis))
+            }
+            .accessibilityIdentifier(UITestingIdentifiers.deleteBookingMenu)
+        }
+    }
+
+    @ViewBuilder
+    private func sidebarTripEntry(
+        trip: SDTrip,
+        tripBookings: [SDBooking],
+        gapCount: Int?,
+        tripMenuKind: SidebarEntryKind
+    ) -> some View {
+        let isExpanded = expandedTripIDs.contains(trip.id)
+        let tripActions = SidebarEntryContextActions.actions(for: tripMenuKind)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                if !tripBookings.isEmpty {
+                    Button {
+                        expandedBinding(for: trip.id).wrappedValue.toggle()
+                    } label: {
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 14, height: 14)
+                    }
+                    .buttonStyle(.plain)
+                    .help(isExpanded
+                        ? L10n.string(.tripCollapseBookings)
+                        : L10n.string(.tripExpandBookings))
+                }
+
+                Button {
+                    selection = .trip(trip.id)
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(trip.title)
+                            Text(dateRange(trip))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            if let meta = L10n.tripCompletenessListMeta(
+                                futureBookingCount: tripBookings.count,
+                                gapCount: gapCount
+                            ) {
+                                Text(meta)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } icon: {
+                        Image(systemName: "airplane")
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
+            }
+            .tag(SidebarSelection.trip(trip.id))
+            .contextMenu {
+                if tripActions.contains(.edit) {
+                    Button(L10n.string(.commonEdit)) {
+                        tripToEdit = trip
+                    }
+                }
+                if tripActions.contains(.addBooking) {
+                    Button(L10n.string(.actionAddBooking)) {
+                        startCreateBooking(in: trip)
+                    }
+                }
+                if tripActions.contains(.deleteTrip) {
+                    Button(role: .destructive) {
+                        tripPendingDelete = trip
+                        showTripDeleteConfirmation = true
+                    } label: {
+                        Text(L10n.string(.actionDeleteTrip))
+                    }
+                    .accessibilityIdentifier(UITestingIdentifiers.deleteTripMenu)
+                }
+            }
+
+            if isExpanded {
+                ForEach(tripBookings) { booking in
+                    sidebarTripBookingRow(booking: booking, trip: trip)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sidebarTripBookingRow(booking: SDBooking, trip: SDTrip) -> some View {
+        let isBookingSelected = selection == .trip(trip.id)
+            && selectedTimelineID == booking.id.uuidString
+        Button {
+            selection = .trip(trip.id)
+            selectedTimelineID = booking.id.uuidString
+            if !expandedTripIDs.contains(trip.id) {
+                expandedTripIDs.insert(trip.id)
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(booking.presentationTitle)
+                    .lineLimit(1)
+                Text(BookingScheduleRangeText.make(for: booking))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.leading, 28)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isBookingSelected
+                    ? Color.accentColor.opacity(0.15)
+                    : Color.clear
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
+        .contextMenu {
+            let actions = SidebarEntryContextActions.actions(for: .tripBooking)
+            if actions.contains(.edit) {
+                Button(L10n.string(.commonEdit)) {
+                    editBooking(booking, in: trip)
+                }
+            }
+            if actions.contains(.addBooking) {
+                Button(L10n.string(.actionAddBooking)) {
+                    startCreateBooking(in: trip, selectBookingID: booking.id)
+                }
+            }
+            BookingCopyConfirmationMenuItems(booking: booking)
+            if let url = booking.browserURL {
+                BookingPortalOpenButton(browserURL: url)
+                CopyLinkMenuItem(url: url)
+            }
+            BookingPortalCancelMenuItems(
+                booking: booking,
+                hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
+                onPresentCancel: { presentation, url in
+                    BookingPortalCancelRequest.route(
+                        presentation,
+                        url: url,
+                        booking: booking,
+                        openURL: { openURL($0) },
+                        setCancelRequest: { cancelRequest = $0 }
+                    )
+                }
+            )
+            if actions.contains(.removeFromTrip) {
+                Button(role: .destructive) {
+                    applyAfterTripFocus(trip: trip) {
+                        selectedTimelineID = booking.id.uuidString
+                        NotificationCenter.default.post(
+                            name: .reisenRequestRemoveBookingFromTrip,
+                            object: booking.id
+                        )
+                    }
+                } label: {
+                    Text(L10n.string(.actionRemoveFromTrip))
+                }
+            }
+            if actions.contains(.deleteBooking) {
+                Button(role: .destructive) {
+                    applyAfterTripFocus(trip: trip) {
+                        selectedTimelineID = booking.id.uuidString
+                        NotificationCenter.default.post(
+                            name: .reisenRequestDeleteBooking,
+                            object: booking.id
+                        )
+                    }
+                } label: {
+                    Text(L10n.string(.actionDeleteEllipsis))
+                }
+                .accessibilityIdentifier(UITestingIdentifiers.deleteBookingMenu)
+            }
+        }
     }
 
     private func applyUITestingLaunchSelectionIfNeeded() {
@@ -823,36 +1005,12 @@ struct ContentView: View {
                     if selectedIDs.count == 1,
                        let bookingID = selectedIDs.first,
                        let booking = openBookings.first(where: { $0.id == bookingID }) {
-                        BookingCopyConfirmationMenuItems(booking: booking)
-                        if let url = booking.browserURL {
-                            BookingPortalOpenButton(browserURL: url)
-                            CopyLinkMenuItem(url: url)
-                        }
-                        BookingPortalCancelMenuItems(
-                            booking: booking,
-                            hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
-                            onPresentCancel: { presentation, url in
-                                BookingPortalCancelRequest.route(
-                                    presentation,
-                                    url: url,
-                                    booking: booking,
-                                    openURL: { openURL($0) },
-                                    setCancelRequest: { cancelRequest = $0 }
-                                )
-                            }
+                        openBookingContextMenuItems(
+                            for: booking,
+                            in: openBookings,
+                            kind: .openBooking
                         )
-                        if let trip = matchingTrip(for: booking) {
-                            Button(L10n.string(.actionAssignToTrip)) {
-                                applyAfterTripFocus(trip: trip) {
-                                    NotificationCenter.default.post(
-                                        name: .reisenAssignBookings,
-                                        object: booking.id
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    if !selectedIDs.isEmpty {
+                    } else if !selectedIDs.isEmpty {
                         Button {
                             OpenBookingCreateTripAction.assignSeed(
                                 fromIDs: selectedIDs,
@@ -895,6 +1053,28 @@ struct ContentView: View {
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
                 .navigationTitle(L10n.string(.bookingElapsed))
+                .contextMenu(forSelectionType: UUID.self) { selectedIDs in
+                    if selectedIDs.count == 1,
+                       let bookingID = selectedIDs.first,
+                       let booking = elapsedOpenBookings.first(where: { $0.id == bookingID }) {
+                        openBookingContextMenuItems(
+                            for: booking,
+                            in: elapsedOpenBookings,
+                            kind: .elapsedOpenBooking
+                        )
+                    } else if !selectedIDs.isEmpty {
+                        Button {
+                            OpenBookingCreateTripAction.assignSeed(
+                                fromIDs: selectedIDs,
+                                in: elapsedOpenBookings,
+                                seed: $tripCreateSeed,
+                                showFailed: $showCreateTripFromBookingsFailed
+                            )
+                        } label: {
+                            CreateTripFromBookingsLabel()
+                        }
+                    }
+                }
                 .onAppear {
                     if selectedOpenBookingIDs.isEmpty, let first = elapsedOpenBookings.first?.id {
                         selectedOpenBookingIDs = [first]
@@ -1202,10 +1382,6 @@ struct ContentView: View {
         let start = trip.startDate.formatted(date: .abbreviated, time: .omitted)
         let end = trip.endDate.formatted(date: .abbreviated, time: .omitted)
         return "\(start) – \(end)"
-    }
-
-    private func futureBookings(for trip: SDTrip) -> [SDBooking] {
-        trip.timelineBookings()
     }
 
     private func focusTrip(_ trip: SDTrip) {
