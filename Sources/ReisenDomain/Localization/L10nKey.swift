@@ -321,6 +321,8 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case privacyNotifications = "privacy.notifications"
     case privacyReminders = "privacy.reminders"
     case providerManual = "provider.manual"
+    case providerAutoGap = "provider.auto_gap"
+    case bookingBadgeAutoGap = "booking.badge.auto_gap"
     case providerActivate = "provider.activate"
     case providerActivateHelp = "provider.activate_help"
     case providerActivateNamed = "provider.activate_named"

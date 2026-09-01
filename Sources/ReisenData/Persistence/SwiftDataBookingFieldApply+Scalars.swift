@@ -37,5 +37,6 @@ extension SwiftDataBookingFieldApply {
         model.statusRaw = booking.status.rawValue
         model.lastSyncedAt = booking.lastSyncedAt
         model.rawPayloadFingerprint = booking.rawPayloadFingerprint
+        model.autoGapIdentityKey = booking.autoGapIdentityKey
     }
 }

@@ -78,8 +78,17 @@ struct TripDetailView: View {
     }
 
     private func removeBookingFromTrip(_ booking: SDBooking, fallbackTimelineID: String?) {
+        let oldTripID = booking.trip?.id
         booking.trip = nil
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+            if let oldTripID {
+                try AutoGapReconcileTrigger.run(tripIDs: [oldTripID], in: modelContext)
+                try modelContext.save()
+            }
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
 
         let removedID = booking.id.uuidString
         if selectedTimelineID == removedID {
@@ -329,7 +338,9 @@ struct TripDetailView: View {
             showDeleteConfirmation: $showDeleteConfirmation,
             showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
             bookingTitle: pendingDeleteBooking?.presentationTitle ?? L10n.string(.editorBooking),
-            showsSyncRestoreWarning: pendingDeleteBooking.map { $0.provider != .manual } ?? false,
+            showsSyncRestoreWarning: pendingDeleteBooking.map {
+                ProviderID.syncProviderIDs.contains($0.provider)
+            } ?? false,
             onConfirmDelete: confirmDeleteBooking,
             onConfirmRemove: confirmRemoveBookingFromTrip,
             onCancelDelete: { pendingDeleteBookingID = nil },
@@ -701,7 +712,7 @@ private struct BookingDetailPanel: View {
     private var showsSyncOverwriteHint: Bool {
         guard case .edit = bookingEditorSession,
               let booking = selectedBooking else { return false }
-        return booking.provider != .manual
+        return ProviderID.syncProviderIDs.contains(booking.provider)
     }
 
     private var providerReadOnly: Bool {

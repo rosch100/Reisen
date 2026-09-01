@@ -7,7 +7,18 @@ extension SwiftDataBookingRepository {
         guard let model = try SwiftDataBookingFind.byID(id, in: modelContext) else {
             throw RepositoryError.notFound("Booking \(id)")
         }
+        let tripID = model.trip?.id
+        if model.provider == .autoGap,
+           let tripID,
+           let key = model.autoGapIdentityKey,
+           !key.isEmpty
+        {
+            try SwiftDataAutoGapReconciler.suppress(tripID: tripID, identityKey: key, in: modelContext)
+        }
         modelContext.delete(model)
+        if let tripID {
+            try AutoGapReconcileTrigger.run(tripIDs: [tripID], in: modelContext)
+        }
     }
 
     public func deleteProviderBookings(
