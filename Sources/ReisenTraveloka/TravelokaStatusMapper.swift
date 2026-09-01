@@ -2,8 +2,10 @@ import Foundation
 import ReisenDomain
 
 enum TravelokaStatusMapper {
-    /// Rohstatus aus Tags, `itineraryBookingStatus` und `userTripStatus` —
-    /// Domain parst via `BookingStatus.parse` (Storno-Token vor Confirmed).
+    /// Rohstatus aus Tags, `itineraryBookingStatus` und `userTripStatus`
+    /// (hotel/car/experience/flight u. a.) — Domain parst via `BookingStatus.parse`
+    /// (Storno-Token vor Confirmed). `latestPaymentStatus` bewusst nicht:
+    /// Live liefert FAILED auch bei aktiven SUCCESS-Buchungen.
     static func statusRaw(from entry: [String: Any]) -> String? {
         let tags = entry["itineraryTags"] as? [[String: Any]] ?? []
         let tagTexts = tags.compactMap { TravelokaJSON.string($0["text"]) }

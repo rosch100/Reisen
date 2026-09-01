@@ -718,26 +718,98 @@ private func expectTravelokaPrice(
     #expect(BookingStatus.parse("CANCELLATION_AVAILABLE") == .unknown)
 }
 
-/// Live Hotel 1387353870: itineraryBookingStatus=REFUNDED trotz userTripStatus=ETICKET_PUBLISHED.
-@Test func travelokaStatusMapperPrefersItineraryBookingStatusRefundedOverEticketPublished() {
-    let refundedInactiveEntry: [String: Any] = [
+/// Live Hotel 1387353870 und gleiche Feldkombination für alle Katalog-Typen.
+@Test(
+    arguments: [
+        "HOTEL",
+        "VEHICLE_RENTAL",
+        "EXPERIENCE",
+        "FLIGHT",
+        "SHUTTLE_AIRPORT_TRANSPORT",
+        "INSURANCE",
+        "FLIGHT_ANCILLARY",
+    ]
+)
+func travelokaStatusMapperPrefersItineraryBookingStatusRefundedOverEticketPublished(
+    itineraryType: String
+) {
+    let refundedInactiveEntry = travelokaCatalogStatusEntry(
+        itineraryType: itineraryType,
+        tagText: "Pemesanan tidak aktif",
+        tagStatus: "DEFAULT",
+        itineraryBookingStatus: "REFUNDED",
+        userTripStatus: "ETICKET_PUBLISHED",
+        latestPaymentStatus: "FAILED"
+    )
+    #expect(
+        BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: refundedInactiveEntry)) == .cancelled
+    )
+}
+
+@Test(
+    arguments: [
+        "HOTEL",
+        "VEHICLE_RENTAL",
+        "EXPERIENCE",
+        "FLIGHT",
+    ]
+)
+func travelokaStatusMapperPrefersItineraryBookingStatusCancelledOverEticketPublished(
+    itineraryType: String
+) {
+    let cancelledEntry = travelokaCatalogStatusEntry(
+        itineraryType: itineraryType,
+        tagText: "Booking cancelled",
+        tagStatus: "STATUS_ERROR",
+        itineraryBookingStatus: "CANCELLED",
+        userTripStatus: "ETICKET_PUBLISHED",
+        latestPaymentStatus: "REFUNDED"
+    )
+    #expect(
+        BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: cancelledEntry)) == .cancelled
+    )
+}
+
+/// Live Car Rental / Things to Do: SUCCESS trotz latestPaymentStatus=FAILED bleibt confirmed.
+@Test(arguments: ["VEHICLE_RENTAL", "EXPERIENCE", "FLIGHT", "HOTEL"])
+func travelokaStatusMapperKeepsSuccessActiveDespiteFailedLatestPayment(itineraryType: String) {
+    let activeEntry = travelokaCatalogStatusEntry(
+        itineraryType: itineraryType,
+        tagText: "Voucher telah terbit",
+        tagStatus: "STATUS_OK",
+        itineraryBookingStatus: "SUCCESS",
+        userTripStatus: "ETICKET_PUBLISHED",
+        latestPaymentStatus: "FAILED"
+    )
+    #expect(
+        BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: activeEntry)) == .confirmed
+    )
+}
+
+private func travelokaCatalogStatusEntry(
+    itineraryType: String,
+    tagText: String,
+    tagStatus: String,
+    itineraryBookingStatus: String,
+    userTripStatus: String,
+    latestPaymentStatus: String
+) -> [String: Any] {
+    [
+        "itineraryType": itineraryType,
         "itineraryTags": [
-            ["text": "Pemesanan tidak aktif", "status": "DEFAULT"],
+            ["text": tagText, "status": tagStatus],
         ],
         "paymentInfo": [
-            "userTripStatus": "ETICKET_PUBLISHED",
-            "latestPaymentStatus": "FAILED",
+            "userTripStatus": userTripStatus,
+            "latestPaymentStatus": latestPaymentStatus,
         ],
         "cardSummaryInfo": [
             "commonSummary": [
-                "itineraryBookingStatus": "REFUNDED",
+                "itineraryBookingStatus": itineraryBookingStatus,
                 "sectionType": "ACTIVE_BOOKING",
             ],
         ],
     ]
-    #expect(
-        BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: refundedInactiveEntry)) == .cancelled
-    )
 }
 
 @Test func travelokaEnrichmentTimeZoneIdentifierFromFixture() throws {
