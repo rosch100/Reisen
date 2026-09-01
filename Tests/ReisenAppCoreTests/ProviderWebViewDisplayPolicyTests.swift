@@ -28,5 +28,7 @@ import WebKit
     hub.syncEnabledProviders([.check24])
     #expect(!hub.hasSessionWebView(for: .check24))
     hub.updateWebView(.check24, webView: WKWebView())
+    #expect(!hub.hasSessionWebView(for: .check24))
+    hub.updateStatus(.check24, status: .sessionReady)
     #expect(hub.hasSessionWebView(for: .check24))
 }

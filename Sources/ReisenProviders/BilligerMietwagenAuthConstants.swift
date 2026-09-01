@@ -6,7 +6,10 @@ public enum BilligerMietwagenAuthConstants {
     public static let origin = "https://www.\(portalHost)"
     public static let consumerAPIOrigin = "https://consumer-api.floyt.com"
     public static let floytAPIHostSuffix = ".floyt.com"
-    public static let accountPathPrefix = "/reservation/account"
+    public static let reservationPathPrefix = "/reservation"
+    public static let accountPathPrefix = "\(reservationPathPrefix)/account"
+    /// SPA Cancel ohne Buchungs-ID (Session-Cookies); Sheet-Spec Live-Beleg.
+    public static let cancellationPath = "\(reservationPathPrefix)/cancellation"
 
     /// `X-Whitelabel` aus HAR `POST …/auth/v1/login` (nicht Hostname).
     public static let whitelabel = "DE_billiger-mietwagen"

@@ -90,6 +90,10 @@ enum BilligerMietwagenWebConstants {
         "\(origin)\(accountBookingsPath)/\(id)"
     }
 
+    /// Live-Beleg Sheet-Spec: SPA Cancel ohne Buchungs-ID; Session-Cookies erforderlich.
+    static let cancellationPageURL =
+        "\(origin)\(BilligerMietwagenAuthConstants.cancellationPath)"
+
     static func bookingID(from externalUrl: String) -> String? {
         guard let url = URL(string: externalUrl),
               let host = url.host,

@@ -117,4 +117,9 @@ public struct Booking: Identifiable, Equatable, Sendable {
     public var cancellationBrowserURL: URL? {
         BookingExternalURL.browserURL(from: cancellationUrl)
     }
+
+    /// Policy-Mode für Storno-Portal (SSOT `(provider, bookingType)`).
+    public var cancellationLinkMode: ProviderCancellationLinkMode {
+        ProviderCancellationLinkPolicy.mode(provider: provider, bookingType: bookingType)
+    }
 }

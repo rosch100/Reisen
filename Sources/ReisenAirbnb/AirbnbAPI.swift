@@ -26,6 +26,18 @@ enum AirbnbAPI {
     static let stayReservationDetailsPathPrefix = "/api/v2/stay_reservation_details"
     static let activityReservationDetailsPathPrefix = "/api/v2/activity_reservation_details"
 
+    /// HAR `skinny_row.cancel_reservation.app_url` (`flow=oneCancel`); Host wie `baseURL`.
+    static func experienceCancellationURL(confirmationCode: String) -> String {
+        let encoded = encodedPathSegment(confirmationCode)
+        return "\(baseURL.absoluteString)/experience_alteration/\(encoded)?flow=oneCancel&productType=experience"
+    }
+
+    private static func encodedPathSegment(_ value: String) -> String {
+        var pathAllowed = CharacterSet.urlPathAllowed
+        pathAllowed.remove(charactersIn: "/")
+        return value.addingPercentEncoding(withAllowedCharacters: pathAllowed) ?? value
+    }
+
     static func tripListQueryURL() -> URL {
         URL(string: "/api/v3/TripListQuery/\(tripListQuerySHA)")!.appendingQueryItems(
             [

@@ -180,32 +180,26 @@ struct BookingDetailIOS: View {
 
     @ViewBuilder
     private func bookingLinksSection(for booking: SDBooking) -> some View {
+        let hasSession = sessionHub.hasSessionWebView(for: booking)
         Section(L10n.string(.bookingDetailLinksSection)) {
             if BookingPortalActionBar.isVisible(
-                open: booking.browserURL,
-                cancellation: booking.cancellationBrowserURL,
-                status: booking.status,
-                deadlines: booking.domainCancellationDeadlines,
-                now: Date(),
-                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true
+                booking: booking,
+                hasSessionWebView: hasSession
             ) {
                 BookingPortalActionBar(
-                    openURL: booking.browserURL,
-                    cancellationURL: booking.cancellationBrowserURL,
-                    status: booking.status,
+                    booking: booking,
                     openTitle: BookingPortalOpenTitle.short,
                     openHelp: BookingPortalOpenTitle.openInBrowserHelp,
                     openButtonStyle: .prominent,
                     showsCopyMenu: true,
-                    deadlines: booking.domainCancellationDeadlines,
-                    hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                    hasSessionWebView: hasSession,
                     onPresentCancel: { presentation, url in
-                        BookingPortalCancelRequest.handle(
+                        BookingPortalCancelRequest.route(
                             presentation,
                             url: url,
-                            providerID: booking.provider,
+                            booking: booking,
                             openURL: { openURL($0) },
-                            presentSheet: { cancelRequest = $0 }
+                            setCancelRequest: { cancelRequest = $0 }
                         )
                     }
                 )
