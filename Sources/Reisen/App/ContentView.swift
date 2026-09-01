@@ -482,14 +482,7 @@ struct ContentView: View {
                         let isSelected = selection == .openBookings
                             && selectedOpenBookingIDs.contains(booking.id)
                         Button {
-                            let focused = SidebarBookingOutlineFocus.select(
-                                mailbox: .current,
-                                bookingID: booking.id
-                            )
-                            selection = focused.mailbox == .current
-                                ? .openBookings
-                                : .elapsedOpenBookings
-                            selectedOpenBookingIDs = focused.selectedIDs
+                            selectOpenBookingOutline(mailbox: .current, bookingID: booking.id)
                         } label: {
                             SidebarOpenBookingOutlineRow(
                                 booking: booking,
@@ -547,11 +540,7 @@ struct ContentView: View {
                             isExpanded: expandedBinding(for: trip.id),
                             onSelectTrip: { selection = .trip(trip.id) },
                             onSelectBooking: { booking in
-                                selection = .trip(trip.id)
-                                selectedTimelineID = booking.id.uuidString
-                                if !expandedTripIDs.contains(trip.id) {
-                                    expandedTripIDs.insert(trip.id)
-                                }
+                                selectTripOutlineBooking(booking, in: trip)
                             },
                             onEditTrip: { tripToEdit = trip },
                             onDeleteTrip: {
@@ -615,14 +604,7 @@ struct ContentView: View {
                         let isSelected = selection == .elapsedOpenBookings
                             && selectedOpenBookingIDs.contains(booking.id)
                         Button {
-                            let focused = SidebarBookingOutlineFocus.select(
-                                mailbox: .elapsed,
-                                bookingID: booking.id
-                            )
-                            selection = focused.mailbox == .current
-                                ? .openBookings
-                                : .elapsedOpenBookings
-                            selectedOpenBookingIDs = focused.selectedIDs
+                            selectOpenBookingOutline(mailbox: .elapsed, bookingID: booking.id)
                         } label: {
                             SidebarOpenBookingOutlineRow(
                                 booking: booking,
@@ -651,11 +633,7 @@ struct ContentView: View {
                             isExpanded: expandedBinding(for: trip.id),
                             onSelectTrip: { selection = .trip(trip.id) },
                             onSelectBooking: { booking in
-                                selection = .trip(trip.id)
-                                selectedTimelineID = booking.id.uuidString
-                                if !expandedTripIDs.contains(trip.id) {
-                                    expandedTripIDs.insert(trip.id)
-                                }
+                                selectTripOutlineBooking(booking, in: trip)
                             },
                             onEditTrip: { tripToEdit = trip },
                             onDeleteTrip: {
@@ -1163,6 +1141,27 @@ struct ContentView: View {
                     .buttonStyle(.link)
                 }
             }
+        }
+    }
+
+    private func selectOpenBookingOutline(mailbox: SidebarOpenBookingMailbox, bookingID: UUID) {
+        selectedOpenBookingIDs = SidebarBookingOutlineFocus.select(
+            mailbox: mailbox,
+            bookingID: bookingID
+        ).selectedIDs
+        switch mailbox {
+        case .current:
+            selection = .openBookings
+        case .elapsed:
+            selection = .elapsedOpenBookings
+        }
+    }
+
+    private func selectTripOutlineBooking(_ booking: SDBooking, in trip: SDTrip) {
+        selection = .trip(trip.id)
+        selectedTimelineID = booking.id.uuidString
+        if !expandedTripIDs.contains(trip.id) {
+            expandedTripIDs.insert(trip.id)
         }
     }
 

@@ -85,9 +85,6 @@ struct SidebarTripOutline: View {
                     let isBookingSelected = isTripSelected
                         && selectedTimelineID == booking.id.uuidString
                     Button {
-                        if !isExpanded {
-                            isExpanded = true
-                        }
                         onSelectBooking(booking)
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
