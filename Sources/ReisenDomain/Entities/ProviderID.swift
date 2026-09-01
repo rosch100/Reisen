@@ -46,4 +46,9 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
     public static let syncProviderIDs: [ProviderID] = [
         .check24, .opodo, .booking, .airbnb, .getYourGuide, .traveloka, .billigerMietwagen,
     ]
+
+    /// Sync-/Portal-Provider erwarten ein Brand-SVG; sonst kein Missing-Asset-„?“ in der UI.
+    public var expectsBrandedLogoAsset: Bool {
+        Self.syncProviderIDs.contains(self)
+    }
 }
