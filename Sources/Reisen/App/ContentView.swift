@@ -16,8 +16,9 @@ struct ContentView: View {
     @Query(sort: \SDBooking.startAt, order: .forward) private var allBookings: [SDBooking]
     @State private var selection: SidebarSelection?
     @State private var expandedTripIDs: Set<UUID> = []
-    @State private var expandedOpenMailbox = false
-    @State private var expandedElapsedOpenMailbox = false
+    /// Offene-/Abgelaufen-Mailbox standardmäßig aufgeklappt (Liste sichtbar; Nutzer kann einklappen).
+    @State private var expandedOpenMailbox = true
+    @State private var expandedElapsedOpenMailbox = true
     @State private var didInitExpanded = false
     @State private var didRunTimeRepair = false
     @State private var didApplyInitialSelection = false
@@ -657,8 +658,7 @@ struct ContentView: View {
         let isBookingSelected = selection == mailboxSelection
             && selectedOpenBookingIDs == [booking.id]
         Button {
-            selection = mailboxSelection
-            selectedOpenBookingIDs = [booking.id]
+            focusOpenBookingOutline(bookingID: booking.id, mailboxSelection: mailboxSelection)
         } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(booking.presentationTitle)
@@ -1387,6 +1387,19 @@ struct ContentView: View {
     private func focusTrip(_ trip: SDTrip) {
         selection = .trip(trip.id)
         expandedTripIDs.insert(trip.id)
+    }
+
+    private func focusOpenBookingOutline(bookingID: UUID, mailboxSelection: SidebarSelection) {
+        let mailbox: SidebarOpenBookingMailbox =
+            mailboxSelection == .elapsedOpenBookings ? .elapsed : .current
+        let focused = SidebarBookingOutlineFocus.select(mailbox: mailbox, bookingID: bookingID)
+        selectedOpenBookingIDs = focused.selectedIDs
+        switch focused.mailbox {
+        case .current:
+            selection = .openBookings
+        case .elapsed:
+            selection = .elapsedOpenBookings
+        }
     }
 
     /// Nach Reisewechsel setzt `onChange(selection)` Timeline/Editor zurück — Aktionen danach anwenden.
