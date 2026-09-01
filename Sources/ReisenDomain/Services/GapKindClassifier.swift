@@ -3,6 +3,8 @@ import Foundation
 /// SSOT: Gap-Art aus den angrenzenden Buchungstypen.
 public enum GapKindClassifier {
     public static func classify(from: BookingType, to: BookingType) -> GapKind {
+        // On-Site→On-Site: Übernachtungsbedarf; Transport kommt separat aus Ortsdifferenz.
+        if isOnSiteStay(from), isOnSiteStay(to) { return .lodging }
         if isOnSiteStay(from) || isOnSiteStay(to) { return .transport }
         guard from.isTransport, to.isTransport else { return .both }
         return .lodging

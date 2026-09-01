@@ -9,7 +9,13 @@ import ReisenDomain
 @Test func gapKindClassifier_activityNeighbor_isTransport() {
     #expect(GapKindClassifier.classify(from: .activity, to: .flight) == .transport)
     #expect(GapKindClassifier.classify(from: .flight, to: .activity) == .transport)
-    #expect(GapKindClassifier.classify(from: .activity, to: .activity) == .transport)
+}
+
+@Test func gapKindClassifier_onSitePair_isLodging() {
+    #expect(GapKindClassifier.classify(from: .hotel, to: .hotel) == .lodging)
+    #expect(GapKindClassifier.classify(from: .activity, to: .activity) == .lodging)
+    #expect(GapKindClassifier.classify(from: .hotel, to: .activity) == .lodging)
+    #expect(GapKindClassifier.classify(from: .activity, to: .hotel) == .lodging)
 }
 
 @Test func gapKindClassifier_transportPair_isLodging() {

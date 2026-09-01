@@ -28,16 +28,56 @@ public struct GapEdgeBuilder: Sendable {
 
     public func interBookingGaps(in sorted: [Booking]) -> [ComputedGap] {
         guard sorted.count >= 2 else { return [] }
-        return (0..<(sorted.count - 1)).compactMap { index in
-            let from = sorted[index]
-            let to = sorted[index + 1]
-            return edgeGap(
-                start: from.endAt,
-                end: to.startAt,
+        return (0..<(sorted.count - 1)).flatMap { index in
+            interGaps(from: sorted[index], to: sorted[index + 1])
+        }
+    }
+
+    /// Bei Ortswechsel: Transport-Segment (≤1 Tag) + optionales Lodging für den Rest (≥ minGap).
+    private func interGaps(from: Booking, to: Booking) -> [ComputedGap] {
+        let start = from.endAt
+        let end = to.startAt
+        guard end.timeIntervalSince(start) >= 0 else { return [] }
+
+        guard SpatialGapDetector.placesDiffer(from: from, to: to) else {
+            if let gap = edgeGap(
+                start: start,
+                end: end,
                 from: from,
                 to: to,
                 isTripBoundary: false
+            ) {
+                return [gap]
+            }
+            return []
+        }
+
+        var gaps: [ComputedGap] = []
+        let transportEnd = SpatialGapDetector.cappedTransportEnd(fromStart: start, intervalEnd: end)
+        if transportEnd.timeIntervalSince(start) > 0 {
+            gaps.append(
+                ComputedGap(
+                    gapStart: start,
+                    gapEnd: transportEnd,
+                    kind: .transport,
+                    fromBooking: from,
+                    toBooking: to,
+                    isTripBoundary: false
+                )
             )
         }
+        if end.timeIntervalSince(transportEnd) >= minGap {
+            gaps.append(
+                ComputedGap(
+                    gapStart: transportEnd,
+                    gapEnd: end,
+                    kind: .lodging,
+                    fromBooking: from,
+                    toBooking: to,
+                    isTripBoundary: false
+                )
+            )
+        }
+        return gaps
     }
 }

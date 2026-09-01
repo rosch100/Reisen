@@ -95,8 +95,10 @@ Eingabe: chronologisch sortierte **reale** Buchungen der Reise (Trip-Fenster wie
 ### 1. Zeitlich → Unterkunft
 
 - Inter-Booking-Zeitlücke ≥ `GapDetector.defaultMinGap`.
-- Gewünschter Typ: `hotel`, wenn `GapKindClassifier` `.lodging` oder `.both` liefert; bei reinem `.transport` **kein** Hotel-Auto aus der Zeitregel (räumliche Regel kann trotzdem Transport erzeugen).
-- Zeitraum: `gapStart`/`gapEnd` der berechneten Lücke.
+- Gewünschter Typ: `hotel`, wenn der zeitliche Gap-Kind `.lodging` oder `.both` ist (Classifier **oder** Restsegment nach Transport-Split).
+- **On-Site→On-Site** (`hotel`/`activity`): Classifier liefert `.lodging` (Übernachtung unabhängig vom Transport). Ortswechsel erzeugt zusätzlich ein Transport-Segment (siehe §2 und Gap-Split).
+- Bei reinem Nachbar-`.transport` (z. B. Hotel↔Flug ohne Orts-Split-Lodging): kein Hotel-Auto aus der Klassifikation allein; räumliche Regel kann trotzdem Transport erzeugen.
+- Zeitraum: `gapStart`/`gapEnd` der berechneten Lücke (beim Split: Lodging = Rest nach Transport-Cap).
 - Orte: `locationFrom`/`locationTo` aus `GapContext`-Hints (destination), sofern vorhanden; sonst Felder leer lassen (kein Dummy-Ort).
 
 ### 2. Räumlich → Transport
@@ -109,11 +111,12 @@ Eingabe: chronologisch sortierte **reale** Buchungen der Reise (Trip-Fenster wie
 - Ungleiche nicht-leere `PlaceKey`s → Transportbedarf.
 - Beide Keys leer → **kein** räumliches Auto (fehlende Daten sichtbar, kein Raten).
 - Ein Key leer, einer gesetzt → **kein** Auto (unklar); optional später Apple Intelligence (open_gaps).
-- Typ-Wahl v1 (deterministisch, ohne KI):
+- **ComputedGap-Split:** bei Ortswechsel Intervall → Transport-Segment ab `from.endAt` mit Dauer ≤ `SpatialGapDetector.maxTransportDuration` (24 h), danach Lodging-Segment wenn Rest ≥ `minGap`.
+- Typ-Wahl Auto-Fill (deterministisch, ohne KI) — **nur belegter Modus**:
   - mind. eine Nachbarbuchung `flight` **oder** Zeitzonen-Hinweis: `from.flightArrivalOffsetSeconds` und `to.flightDepartureOffsetSeconds` beide non-nil und ungleich → `.flight`
   - sonst wenn Nachbar `ferry` → `.ferry`
-  - sonst → `.train` (Bus siehe Restlücken; kein stilles `.other` als Transport-Attrappe)
-- Zeiten: Start = Ende vorherige, Ende = Start nächste (auch wenn Dauer &lt; 12 h). Sehr kurze Dauern (&lt; 15 min) nur anlegen wenn Ortskeys klar differieren (Umstiegssignal).
+  - sonst → **kein** Auto-Transport (kein erfundenes `.train` / `.other`); ComputedGap-Transport bleibt sichtbar mit Start-/Zielstadt in der Anzeige
+- Zeiten Auto: Start = Ende vorherige, Ende = `min(Start + 24h, Start nächste)`. Sehr kurze Dauern mit klar differierenden Ortskeys bleiben erlaubt.
 
 ### 3. Überlapp / Doppelpläne
 

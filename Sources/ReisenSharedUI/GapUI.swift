@@ -78,11 +78,21 @@ public struct GapPresentation: Equatable {
     public static func resolve(computed: ComputedGap, saved: SDGap?) -> GapPresentation {
         GapPresentation(
             key: computed.identityKey,
-            displayTitle: saved?.titleOverride ?? computed.kind.defaultDisplayTitle,
+            displayTitle: saved?.titleOverride ?? Self.defaultDisplayTitle(for: computed),
             effectiveKind: saved?.kind ?? computed.kind,
             priceAmount: saved?.priceAmount,
             priceCurrencyCode: saved?.priceCurrencyCode
         )
+    }
+
+    /// Transport-Lücken: Kind + Start-/Zielstadt, wenn ableitbar.
+    private static func defaultDisplayTitle(for gap: ComputedGap) -> String {
+        let base = gap.kind.defaultDisplayTitle
+        guard gap.kind == .transport else { return base }
+        guard let from = SpatialGapDetector.fromEndPlace(gap.fromBooking),
+              let to = SpatialGapDetector.toStartPlace(gap.toBooking)
+        else { return base }
+        return "\(base) · \(from) → \(to)"
     }
 
     public func editorPayload(for gap: ComputedGap) -> GapEditorPayload {
