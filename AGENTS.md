@@ -33,7 +33,7 @@ Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
 
 ### AI (Human-in-the-loop)
 - `AI_POLICY.md`: AI ist Hilfswerkzeug; Merge bleibt menschlich.
-- Issue-Dev: Bugs ohne `/approve` bis PR; Features nach `/approve`. SSOT: `docs/ci/issue-dev.md`.
+- Issue-Dev: Bugs ohne `/approve` bis PR; Features nach `/approve`. Labels/Webhooks/Ensure: SSOT `docs/ci/issue-dev.md` (Altanis/CI `config/issue-dev/`).
 
 ## Lokale Kommandos (SSOT)
 
@@ -45,7 +45,8 @@ Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
 | macOS starten | `bash ./Scripts/run-app.sh` |
 | macOS XCUI | `bash ./Scripts/macos-ui-test.sh` |
 | macOS UI-Review | `bash ./Scripts/macos-ui-review.sh` |
-| iOS Simulator | `bash ./Scripts/ios-run.sh` / `ios-test.sh` |
+| iOS Simulator starten | `bash ./Scripts/ios-run.sh` |
+| iOS Simulator testen | `bash ./Scripts/ios-test.sh` |
 | iOS Gerät | `bash ./Scripts/ios-run-device.sh` |
 | XcodeGen | `bash ./Scripts/generate-ios-project.sh` |
 

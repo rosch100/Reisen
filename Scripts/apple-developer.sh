@@ -112,21 +112,41 @@ reisen_icloud_container_id() {
 # Apple-Development-Identity, deren Zertifikat-OU zur Team-ID passt.
 # Development-Zertifikate gehören Personen; die Team-ID steckt in OU, nicht zwingend
 # in den Klammern des CN (dort kann eine Personen-/Member-ID stehen).
-# Subject-Formate: LibreSSL default `/OU=TEAM/`, RFC2253 `,OU=TEAM,`.
+reisen_x509_organizational_unit() {
+  local cert_pem="$1"
+  local line ou
+  [ -n "${cert_pem}" ] || return 1
+
+  line="$(printf '%s' "${cert_pem}" | openssl x509 -noout -subject -nameopt RFC2253 2>/dev/null || true)"
+  if [[ -n "${line}" ]]; then
+    ou="$(printf '%s\n' "${line}" | tr ',' '\n' | sed -n 's/^[[:space:]]*OU=\(.*\)/\1/p' | head -1)"
+    if [[ -n "${ou}" ]]; then
+      printf '%s' "${ou}"
+      return 0
+    fi
+  fi
+
+  line="$(printf '%s' "${cert_pem}" | openssl x509 -noout -subject 2>/dev/null || true)"
+  ou="$(printf '%s\n' "${line}" | tr '/' '\n' | sed -n 's/^OU=\(.*\)/\1/p' | head -1)"
+  if [[ -n "${ou}" ]]; then
+    printf '%s' "${ou}"
+    return 0
+  fi
+  return 1
+}
+
 reisen_apple_development_identity() {
   local team_id="${1:-}"
   if [[ -z "$team_id" ]]; then
     team_id="$(reisen_apple_team_id)" || return 1
   fi
 
-  local name subject
+  local name cert_pem ou
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
-    subject="$(security find-certificate -c "$name" -p 2>/dev/null | openssl x509 -noout -subject 2>/dev/null || true)"
-    if [[ "$subject" == *"/OU=${team_id}/"* ||
-          "$subject" == *",OU=${team_id},"* ||
-          "$subject" == *", OU=${team_id},"* ||
-          "$subject" == *"OU=${team_id},"* ]]; then
+    cert_pem="$(security find-certificate -c "$name" -p 2>/dev/null || true)"
+    ou="$(reisen_x509_organizational_unit "${cert_pem}")" || continue
+    if [[ "${ou}" == "${team_id}" ]]; then
       printf '%s\n' "$name"
       return 0
     fi

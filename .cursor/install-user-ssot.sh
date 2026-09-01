@@ -13,17 +13,18 @@ BRANCH="${CURSOR_SSOT_BRANCH:-main}"
 
 CRED_SCRIPT=""
 GIT_CONFIG_ARGS=()
+CLEAN_REMOTE=""
 
 cleanup() {
   if [ -n "${CRED_SCRIPT}" ] && [ -f "${CRED_SCRIPT}" ]; then
     rm -f "${CRED_SCRIPT}"
     CRED_SCRIPT=""
   fi
-  if [ -d "${CLONE}/.git" ]; then
+  unset CURSOR_SSOT_GIT_OAUTH_TOKEN 2>/dev/null || true
+  if [ -n "${CLEAN_REMOTE}" ] && [ -d "${CLONE}/.git" ]; then
     git -C "${CLONE}" remote set-url origin "${CLEAN_REMOTE}" 2>/dev/null || true
   fi
 }
-trap cleanup EXIT
 
 forgejo_token() {
   if [ -n "${ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN:-}" ]; then
@@ -54,18 +55,19 @@ configure_ephemeral_auth() {
   token="$(forgejo_token)"
   [ -n "${token}" ] || return 0
 
+  export CURSOR_SSOT_GIT_OAUTH_TOKEN="${token}"
   CRED_SCRIPT="$(mktemp -t cursor-ssot-git-cred.XXXXXX)"
   chmod 700 "${CRED_SCRIPT}"
-  {
-    printf '%s\n' '#!/usr/bin/env bash'
-    printf '%s\n' 'case "$1" in'
-    printf '%s\n' 'get)'
-    printf '%s\n' '  printf "%s\n" "username=oauth2"'
-    printf '  printf "%%s\\n" "password=%s"\n' "${token}"
-    printf '%s\n' '  ;;'
-    printf '%s\n' 'store|erase) ;;'
-    printf '%s\n' 'esac'
-  } > "${CRED_SCRIPT}"
+  cat > "${CRED_SCRIPT}" <<'SCRIPT'
+#!/usr/bin/env bash
+case "$1" in
+get)
+  printf '%s\n' 'username=oauth2'
+  printf '%s\n' "password=${CURSOR_SSOT_GIT_OAUTH_TOKEN}"
+  ;;
+store|erase) ;;
+esac
+SCRIPT
 
   GIT_CONFIG_ARGS=(-c "credential.helper=!${CRED_SCRIPT}")
 }
@@ -74,8 +76,58 @@ git_ssot() {
   git "${GIT_CONFIG_ARGS[@]}" "$@"
 }
 
+self_test() {
+  local got cred_out saved_remote saved_clean
+  saved_remote="${REMOTE}"
+  saved_clean="${CLEAN_REMOTE}"
+
+  got="$(strip_auth_from_https 'https://oauth2:secret@git.altanis.de/Altanis/cursor.git')"
+  if [ "${got}" != 'https://git.altanis.de/Altanis/cursor.git' ]; then
+    echo "strip_auth_from_https failed: ${got}" >&2
+    return 1
+  fi
+
+  REMOTE='https://git.altanis.de/Altanis/cursor.git'
+  validate_remote
+
+  if ( REMOTE='ftp://bad'; validate_remote ) 2>/dev/null; then
+    echo 'validate_remote should reject non-https' >&2
+    return 1
+  fi
+
+  ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN='token"with\\quotes'
+  configure_ephemeral_auth
+  cred_out="$("${CRED_SCRIPT}" get)"
+  if ! printf '%s\n' "${cred_out}" | grep -qx 'username=oauth2'; then
+    echo 'credential helper missing username=oauth2' >&2
+    return 1
+  fi
+  if [ "$(printf '%s\n' "${cred_out}" | sed -n '2p')" != "password=$(forgejo_token)" ]; then
+    echo 'credential helper env read failed' >&2
+    return 1
+  fi
+  if grep -q 'token"with' "${CRED_SCRIPT}" 2>/dev/null; then
+    echo 'token must not be embedded in credential script' >&2
+    return 1
+  fi
+  rm -f "${CRED_SCRIPT}"
+  CRED_SCRIPT=""
+  unset ALTANIS_ENTWICKLUNG_FORGEJO_TOKEN CURSOR_SSOT_GIT_OAUTH_TOKEN
+
+  REMOTE="${saved_remote}"
+  CLEAN_REMOTE="${saved_clean}"
+  echo 'install-user-ssot self-test OK'
+}
+
+if [ "${1:-}" = '--self-test' ]; then
+  self_test
+  exit 0
+fi
+
 validate_remote
 CLEAN_REMOTE="$(strip_auth_from_https "${REMOTE}")"
+trap cleanup EXIT
+
 configure_ephemeral_auth
 mkdir -p "$(dirname "${CLONE}")"
 
