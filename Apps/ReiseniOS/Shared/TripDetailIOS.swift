@@ -100,19 +100,15 @@ struct TripDetailIOS: View {
                                 CopyLinkMenuItem(url: url)
                             }
                             BookingPortalCancelMenuItems(
-                                cancellationURL: booking.cancellationBrowserURL,
-                                openURL: booking.browserURL,
-                                status: booking.status,
-                                deadlines: booking.domainCancellationDeadlines,
-                                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
-                                requiresProviderSession: booking.cancellationRequiresProviderSession,
+                                booking: booking,
+                                hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
                                 onPresentCancel: { presentation, url in
-                                    BookingPortalCancelRequest.handle(
+                                    BookingPortalCancelRequest.route(
                                         presentation,
                                         url: url,
-                                        providerID: booking.provider,
+                                        booking: booking,
                                         openURL: { openURL($0) },
-                                        presentSheet: { cancelRequest = $0 }
+                                        setCancelRequest: { cancelRequest = $0 }
                                     )
                                 }
                             )

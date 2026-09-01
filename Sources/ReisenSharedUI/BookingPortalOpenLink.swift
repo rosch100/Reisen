@@ -1,5 +1,6 @@
 import SwiftUI
 import ReisenDomain
+import ReisenData
 
 private enum BookingPortalOpenChrome {
     static let systemImage = "arrow.up.right.square"
@@ -137,6 +138,33 @@ public struct BookingPortalActionBar: View {
         self.onPresentCancel = onPresentCancel
     }
 
+    /// Portal-Action-Bar aus persistierter Buchung (URL-/Session-Felder SSOT).
+    public init(
+        booking: SDBooking,
+        openTitle: String,
+        openHelp: String? = nil,
+        openButtonStyle: BookingPortalOpenButtonStyle,
+        showsCopyMenu: Bool = false,
+        now: Date = Date(),
+        hasSessionWebView: Bool,
+        onPresentCancel: @escaping (BookingPortalCancelPresentation, URL) -> Void
+    ) {
+        self.init(
+            openURL: booking.browserURL,
+            cancellationURL: booking.cancellationBrowserURL,
+            status: booking.status,
+            openTitle: openTitle,
+            openHelp: openHelp,
+            openButtonStyle: openButtonStyle,
+            showsCopyMenu: showsCopyMenu,
+            deadlines: booking.domainCancellationDeadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView,
+            requiresProviderSession: booking.cancellationRequiresProviderSession,
+            onPresentCancel: onPresentCancel
+        )
+    }
+
     public static func isVisible(
         open: URL?,
         cancellation: URL?,
@@ -156,6 +184,22 @@ public struct BookingPortalActionBar: View {
             requiresProviderSession: requiresProviderSession
         )
         return shown.open != nil || shown.cancel != nil
+    }
+
+    public static func isVisible(
+        booking: SDBooking,
+        now: Date = Date(),
+        hasSessionWebView: Bool
+    ) -> Bool {
+        isVisible(
+            open: booking.browserURL,
+            cancellation: booking.cancellationBrowserURL,
+            status: booking.status,
+            deadlines: booking.domainCancellationDeadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView,
+            requiresProviderSession: booking.cancellationRequiresProviderSession
+        )
     }
 
     public var body: some View {
@@ -285,6 +329,25 @@ public struct BookingPortalCancelMenuItems: View {
         self.hasSessionWebView = hasSessionWebView
         self.requiresProviderSession = requiresProviderSession
         self.onPresentCancel = onPresentCancel
+    }
+
+    /// Kontextmenü-Storno aus persistierter Buchung (URL-/Session-Felder SSOT).
+    public init(
+        booking: SDBooking,
+        now: Date = Date(),
+        hasSessionWebView: Bool,
+        onPresentCancel: @escaping (BookingPortalCancelPresentation, URL) -> Void
+    ) {
+        self.init(
+            cancellationURL: booking.cancellationBrowserURL,
+            openURL: booking.browserURL,
+            status: booking.status,
+            deadlines: booking.domainCancellationDeadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView,
+            requiresProviderSession: booking.cancellationRequiresProviderSession,
+            onPresentCancel: onPresentCancel
+        )
     }
 
     public var body: some View {

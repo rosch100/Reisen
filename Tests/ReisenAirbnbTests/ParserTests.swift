@@ -103,6 +103,17 @@ func airbnbTripDetailsParsesAddressGuestsAndTimezone() throws {
     #expect(details.confirmationCode == confirmationCode)
 }
 
+@Test func airbnbExperienceCancellationURLEncodesPathSegment() {
+    #expect(
+        AirbnbAPI.experienceCancellationURL(confirmationCode: "TAJ8FMXK")
+            == "https://www.airbnb.de/experience_alteration/TAJ8FMXK?flow=oneCancel&productType=experience"
+    )
+    #expect(
+        AirbnbAPI.experienceCancellationURL(confirmationCode: "a/b")
+            == "https://www.airbnb.de/experience_alteration/a%2Fb?flow=oneCancel&productType=experience"
+    )
+}
+
 @Test("AirbnbTripsGraphQLParser mappt EXPERIENCE_RESERVATION auf BookingType.activity")
 func airbnbTripListMapsExperienceToActivity() throws {
     let json = try researchFixtureJSON("airbnb_TripListQuery_experience_redacted.json")
@@ -123,7 +134,7 @@ func airbnbTripListMapsExperienceToActivity() throws {
     #expect(draft.externalUrl?.contains("EXPERIENCE_RESERVATION") == true)
     #expect(
         draft.cancellationUrl
-            == "https://www.airbnb.de/experience_alteration/<REDACTED>?flow=oneCancel&productType=experience"
+            == "https://www.airbnb.de/experience_alteration/%3CREDACTED%3E?flow=oneCancel&productType=experience"
     )
     #expect(draft.cancellationUrl != draft.externalUrl)
 }

@@ -116,20 +116,12 @@ struct ContentView: View {
             tripToEdit = trip
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenPresentBookingCancel)) { _ in
-            guard let booking = selectedPortalBooking,
-                  let url = booking.cancellationBrowserURL else { return }
-            presentPortalCancel(
-                BookingPortalCancellation.presentation(
-                    cancellation: url,
-                    open: booking.browserURL,
-                    status: booking.status,
-                    deadlines: booking.domainCancellationDeadlines,
-                    now: Date(),
-                    hasSessionWebView: hasSessionWebView(for: booking),
-                    requiresProviderSession: booking.cancellationRequiresProviderSession
-                ),
-                url: url,
-                providerID: booking.provider
+            guard let booking = selectedPortalBooking else { return }
+            BookingPortalCancelRequest.present(
+                for: booking,
+                hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
+                openURL: { openURL($0) },
+                setCancelRequest: { cancelRequest = $0 }
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenPasteBooking)) { _ in
@@ -301,30 +293,8 @@ struct ContentView: View {
             return BookingPortalOpenCommandState(requiresProviderSession: false)
         }
         return BookingPortalOpenCommandState(
-            url: booking.browserURL,
-            cancellationURL: booking.cancellationBrowserURL,
-            status: booking.status,
-            deadlines: booking.domainCancellationDeadlines,
-            hasSessionWebView: hasSessionWebView(for: booking),
-            requiresProviderSession: booking.cancellationRequiresProviderSession
-        )
-    }
-
-    private func hasSessionWebView(for booking: SDBooking) -> Bool {
-        sessionHub?.hasSessionWebView(for: booking.provider) == true
-    }
-
-    private func presentPortalCancel(
-        _ presentation: BookingPortalCancelPresentation,
-        url: URL,
-        providerID: ProviderID
-    ) {
-        BookingPortalCancelRequest.handle(
-            presentation,
-            url: url,
-            providerID: providerID,
-            openURL: { openURL($0) },
-            presentSheet: { cancelRequest = $0 }
+            booking: booking,
+            hasSessionWebView: sessionHub.hasSessionWebView(for: booking)
         )
     }
 
@@ -658,17 +628,15 @@ struct ContentView: View {
                                             CopyLinkMenuItem(url: url)
                                         }
                                         BookingPortalCancelMenuItems(
-                                            cancellationURL: booking.cancellationBrowserURL,
-                                            openURL: booking.browserURL,
-                                            status: booking.status,
-                                            deadlines: booking.domainCancellationDeadlines,
-                                            hasSessionWebView: hasSessionWebView(for: booking),
-                                            requiresProviderSession: booking.cancellationRequiresProviderSession,
+                                            booking: booking,
+                                            hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
                                             onPresentCancel: { presentation, url in
-                                                presentPortalCancel(
+                                                BookingPortalCancelRequest.route(
                                                     presentation,
                                                     url: url,
-                                                    providerID: booking.provider
+                                                    booking: booking,
+                                                    openURL: { openURL($0) },
+                                                    setCancelRequest: { cancelRequest = $0 }
                                                 )
                                             }
                                         )
@@ -861,17 +829,15 @@ struct ContentView: View {
                             CopyLinkMenuItem(url: url)
                         }
                         BookingPortalCancelMenuItems(
-                            cancellationURL: booking.cancellationBrowserURL,
-                            openURL: booking.browserURL,
-                            status: booking.status,
-                            deadlines: booking.domainCancellationDeadlines,
-                            hasSessionWebView: hasSessionWebView(for: booking),
-                            requiresProviderSession: booking.cancellationRequiresProviderSession,
+                            booking: booking,
+                            hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
                             onPresentCancel: { presentation, url in
-                                presentPortalCancel(
+                                BookingPortalCancelRequest.route(
                                     presentation,
                                     url: url,
-                                    providerID: booking.provider
+                                    booking: booking,
+                                    openURL: { openURL($0) },
+                                    setCancelRequest: { cancelRequest = $0 }
                                 )
                             }
                         )
@@ -1164,14 +1130,14 @@ struct ContentView: View {
                                     pendingDeleteBookingID = bookingID
                                     showDeleteConfirmation = true
                                 },
-                                hasSessionWebView: sessionHub?.hasSessionWebView(for: booking.provider) == true,
+                                hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
                                 onPresentCancel: { presentation, url in
-                                    BookingPortalCancelRequest.handle(
+                                    BookingPortalCancelRequest.route(
                                         presentation,
                                         url: url,
-                                        providerID: booking.provider,
+                                        booking: booking,
                                         openURL: { openURL($0) },
-                                        presentSheet: { cancelRequest = $0 }
+                                        setCancelRequest: { cancelRequest = $0 }
                                     )
                                 }
                             )

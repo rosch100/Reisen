@@ -39,6 +39,21 @@ public extension SDBooking {
         )
     }
 
+    func portalCancelPresentation(
+        hasSessionWebView: Bool,
+        now: Date = Date()
+    ) -> BookingPortalCancelPresentation {
+        BookingPortalCancellation.presentation(
+            cancellation: cancellationBrowserURL,
+            open: browserURL,
+            status: status,
+            deadlines: domainCancellationDeadlines,
+            now: now,
+            hasSessionWebView: hasSessionWebView,
+            requiresProviderSession: cancellationRequiresProviderSession
+        )
+    }
+
     var displayTitle: String {
         title ?? bookingType.defaultDisplayTitle
     }
