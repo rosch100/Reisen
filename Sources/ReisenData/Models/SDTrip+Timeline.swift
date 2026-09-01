@@ -13,4 +13,19 @@ public extension SDTrip {
             .filter { $0.appearsInList(now: now, calendar: calendar) }
             .sorted { $0.startAt < $1.startAt }
     }
+
+    /// Sidebar-Kindzeilen einer Reise.
+    /// Aktuell: Timeline. Abgelaufen: alle nicht-stornierten Buchungen (inkl. vergangener Provider-Buchungen).
+    func sidebarChildBookings(
+        tripIsElapsed: Bool,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [SDBooking] {
+        if tripIsElapsed {
+            return resolvedBookings
+                .filter { $0.status != .cancelled }
+                .sorted { $0.startAt < $1.startAt }
+        }
+        return timelineBookings(now: now, calendar: calendar)
+    }
 }
