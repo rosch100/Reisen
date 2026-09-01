@@ -3,6 +3,8 @@ import Testing
 import ReisenDomain
 
 private let cal = HotelStayDate.calendar
+/// Vor den Aug-2026-Fixtures, damit Elapsed-Filter die Legacy-Tests nicht leert.
+private let fixtureNow = cal.date(from: DateComponents(year: 2026, month: 7, day: 1))!
 
 private func day(_ y: Int, _ m: Int, _ d: Int) -> Date {
     cal.date(from: DateComponents(year: y, month: m, day: d))!
@@ -33,13 +35,13 @@ private func span(
     let a = span(start: day1, end: day2, place: "SIN", type: .hotel)
     let b = span(start: day2, end: day3, place: "BKK", type: .hotel)
     #expect(BookingDayOverlap.dayRangesOverlap(a, b) == false)
-    #expect(BookingDayOverlap.countsByID([a, b]).isEmpty)
+    #expect(BookingDayOverlap.countsByID([a, b], now: fixtureNow).isEmpty)
 }
 
 @Test func bookingDayOverlap_overlappingHotelRanges_countsBoth() {
     let a = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "A")
     let b = span(start: day(2026, 8, 2), end: day(2026, 8, 4), place: "B")
-    let counts = BookingDayOverlap.countsByID([a, b])
+    let counts = BookingDayOverlap.countsByID([a, b], now: fixtureNow)
     #expect(counts[a.id] == 1)
     #expect(counts[b.id] == 1)
 }
@@ -50,13 +52,13 @@ private func span(
     let b = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "Hotel", tripID: trip)
     #expect(BookingDayOverlap.isSamePlaceAndDates(a, b))
     #expect(BookingDayOverlap.shouldSuppressAsMultiRoom(a, b))
-    #expect(BookingDayOverlap.countsByID([a, b]).isEmpty)
+    #expect(BookingDayOverlap.countsByID([a, b], now: fixtureNow).isEmpty)
 }
 
 @Test func bookingDayOverlap_samePlaceDifferentTrips_counts() {
     let a = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "Hotel", tripID: UUID())
     let b = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "Hotel", tripID: UUID())
-    let counts = BookingDayOverlap.countsByID([a, b])
+    let counts = BookingDayOverlap.countsByID([a, b], now: fixtureNow)
     #expect(counts[a.id] == 1)
     #expect(counts[b.id] == 1)
 }
@@ -64,14 +66,14 @@ private func span(
 @Test func bookingDayOverlap_samePlaceOpenVsTrip_counts() {
     let a = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "Hotel", tripID: nil)
     let b = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "Hotel", tripID: UUID())
-    #expect(BookingDayOverlap.countsByID([a, b])[a.id] == 1)
+    #expect(BookingDayOverlap.countsByID([a, b], now: fixtureNow)[a.id] == 1)
 }
 
 @Test func bookingDayOverlap_sameDayFlights_overlap() {
     let d = day(2026, 8, 1)
     let a = span(start: d, end: d, place: "FRA", type: .flight)
     let b = span(start: d, end: d, place: "MUC", type: .flight)
-    let counts = BookingDayOverlap.countsByID([a, b])
+    let counts = BookingDayOverlap.countsByID([a, b], now: fixtureNow)
     #expect(counts[a.id] == 1)
     #expect(counts[b.id] == 1)
 }
@@ -79,13 +81,13 @@ private func span(
 @Test func bookingDayOverlap_flightOnHotelCheckoutDay_noOverlap() {
     let hotel = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "H", type: .hotel)
     let flight = span(start: day(2026, 8, 3), end: day(2026, 8, 3), place: "X", type: .flight)
-    #expect(BookingDayOverlap.countsByID([hotel, flight]).isEmpty)
+    #expect(BookingDayOverlap.countsByID([hotel, flight], now: fixtureNow).isEmpty)
 }
 
 @Test func bookingDayOverlap_flightVsHotelOccupiedNight_counts() {
     let hotel = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "H", type: .hotel)
     let flight = span(start: day(2026, 8, 2), end: day(2026, 8, 2), place: "X", type: .flight)
-    #expect(BookingDayOverlap.countsByID([hotel, flight])[hotel.id] == 1)
+    #expect(BookingDayOverlap.countsByID([hotel, flight], now: fixtureNow)[hotel.id] == 1)
 }
 
 @Test func bookingDayOverlap_overnightFlight_occupiesBothDays() {
@@ -101,26 +103,26 @@ private func span(
         place: "H",
         type: .hotel
     )
-    #expect(BookingDayOverlap.countsByID([flight, hotelNight2])[flight.id] == 1)
+    #expect(BookingDayOverlap.countsByID([flight, hotelNight2], now: fixtureNow)[flight.id] == 1)
 }
 
 @Test func bookingDayOverlap_carRentalInclusiveEnd_overlapsHotelOnReturnDay() {
     let car = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "C", type: .carRental)
     let hotel = span(start: day(2026, 8, 3), end: day(2026, 8, 4), place: "H", type: .hotel)
-    #expect(BookingDayOverlap.countsByID([car, hotel])[car.id] == 1)
+    #expect(BookingDayOverlap.countsByID([car, hotel], now: fixtureNow)[car.id] == 1)
 }
 
 @Test func bookingDayOverlap_invertedDates_emptyOccupancy_noOverlap() {
     let bad = span(start: day(2026, 8, 3), end: day(2026, 8, 1), place: "X", type: .flight)
     let other = span(start: day(2026, 8, 1), end: day(2026, 8, 2), place: "Y", type: .hotel)
-    #expect(BookingDayOverlap.countsByID([bad, other]).isEmpty)
+    #expect(BookingDayOverlap.countsByID([bad, other], now: fixtureNow).isEmpty)
 }
 
 @Test func bookingDayOverlap_activitySameDay_counts() {
     let d = day(2026, 8, 5)
     let a = span(start: d, end: d, place: "TourA", type: .activity)
     let b = span(start: d, end: d, place: "TourB", type: .activity)
-    #expect(BookingDayOverlap.countsByID([a, b])[a.id] == 1)
+    #expect(BookingDayOverlap.countsByID([a, b], now: fixtureNow)[a.id] == 1)
 }
 
 @Test func bookingDayOverlap_isEligible_excludesCancelledOnly() {
@@ -141,7 +143,7 @@ private func span(
     let d2 = day(2026, 8, 2)
     let a = span(start: d1, end: d2, place: "A", type: .hotel)
     let b = span(start: d2, end: day(2026, 8, 3), place: "B", type: .hotel)
-    #expect(BookingDayOverlap.countsByID([a, b]).isEmpty)
+    #expect(BookingDayOverlap.countsByID([a, b], now: fixtureNow).isEmpty)
 }
 
 @Test func bookingDayOverlap_samePlaceNormalizedIata_multiRoomSuppressed() {
@@ -166,7 +168,7 @@ private func span(
     )
     #expect(aBooking.daySpan.placeKey == "SIN")
     #expect(bBooking.daySpan.placeKey == "SIN")
-    #expect(BookingDayOverlap.countsByID([aBooking.daySpan, bBooking.daySpan]).isEmpty)
+    #expect(BookingDayOverlap.countsByID([aBooking.daySpan, bBooking.daySpan], now: fixtureNow).isEmpty)
 }
 
 @Test func bookingDayOverlap_hotelSameCalendarDay_emptyOccupancy() {
@@ -174,5 +176,39 @@ private func span(
     let hotel = span(start: d, end: d, place: "H", type: .hotel)
     let flight = span(start: d, end: d, place: "X", type: .flight)
     #expect(BookingDayOverlap.dayRangesOverlap(hotel, flight) == false)
-    #expect(BookingDayOverlap.countsByID([hotel, flight]).isEmpty)
+    #expect(BookingDayOverlap.countsByID([hotel, flight], now: fixtureNow).isEmpty)
+}
+
+@Test func bookingDayOverlap_elapsedBookings_excludedFromPool() {
+    let now = day(2026, 9, 1)
+    let a = span(start: day(2026, 8, 1), end: day(2026, 8, 3), place: "A")
+    let b = span(start: day(2026, 8, 2), end: day(2026, 8, 4), place: "B")
+    #expect(BookingDayOverlap.partnerIDsByID([a, b], now: now).isEmpty)
+    #expect(BookingDayOverlap.countsByID([a, b], now: now).isEmpty)
+}
+
+@Test func bookingDayOverlap_activeVsElapsedPartner_excluded() {
+    let now = day(2026, 9, 1)
+    let active = span(
+        start: day(2026, 8, 28),
+        end: day(2026, 9, 5),
+        place: "Active"
+    )
+    let elapsed = span(
+        start: day(2026, 8, 28),
+        end: day(2026, 8, 30),
+        place: "Past"
+    )
+    #expect(BookingDayOverlap.partnerIDsByID([active, elapsed], now: now).isEmpty)
+}
+
+@Test func bookingDayOverlap_partnerIDsByID_returnsOtherBookingIDs() {
+    let now = day(2026, 7, 1)
+    let aID = UUID()
+    let bID = UUID()
+    let a = span(id: aID, start: day(2026, 8, 1), end: day(2026, 8, 3), place: "A")
+    let b = span(id: bID, start: day(2026, 8, 2), end: day(2026, 8, 4), place: "B")
+    let partners = BookingDayOverlap.partnerIDsByID([a, b], now: now)
+    #expect(partners[aID] == [bID])
+    #expect(partners[bID] == [aID])
 }

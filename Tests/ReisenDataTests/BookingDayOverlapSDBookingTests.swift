@@ -55,8 +55,18 @@ import ReisenDomain
     #expect(activeA.daySpan.tripID == tripA.id)
     #expect(activeA.daySpan.bookingType == .hotel)
 
-    let counts = BookingDayOverlap.countsByID(sdBookings: [activeA, activeB, cancelled])
+    let counts = BookingDayOverlap.countsByID(
+        sdBookings: [activeA, activeB, cancelled],
+        now: d1
+    )
     #expect(counts[activeA.id] == 1)
     #expect(counts[activeB.id] == 1)
     #expect(counts[cancelled.id] == nil)
+
+    let partners = BookingDayOverlap.partnerIDsByID(
+        sdBookings: [activeA, activeB, cancelled],
+        now: d1
+    )
+    #expect(partners[activeA.id] == [activeB.id])
+    #expect(partners[activeB.id] == [activeA.id])
 }

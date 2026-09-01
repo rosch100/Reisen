@@ -44,8 +44,20 @@ struct TripDetailIOS: View {
         allBookings.filter { OpenBookingMatching.isCandidate($0, for: trip) }
     }
 
-    private var overlapCountsByBookingID: [UUID: Int] {
-        BookingDayOverlap.countsByID(sdBookings: allBookings)
+    private var overlapPartnerIDsByBookingID: [UUID: [UUID]] {
+        BookingDayOverlap.partnerIDsByID(sdBookings: allBookings)
+    }
+
+    private var bookingPresentationTitleByID: [UUID: String] {
+        Dictionary(uniqueKeysWithValues: allBookings.map { ($0.id, $0.presentationTitle) })
+    }
+
+    private func overlapPartnerTitles(for bookingID: UUID) -> [String] {
+        BookingOverlapCaption.partnerTitles(
+            for: bookingID,
+            partnerIDsByBookingID: overlapPartnerIDsByBookingID,
+            titleByID: bookingPresentationTitleByID
+        )
     }
 
     var body: some View {
@@ -94,7 +106,7 @@ struct TripDetailIOS: View {
                         NavigationLink(value: PresentedBookingID(id: booking.id)) {
                             OpenBookingRow(
                                 booking: booking,
-                                overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+                                partnerTitles: overlapPartnerTitles(for: booking.id)
                             )
                         }
                         .contextMenu {

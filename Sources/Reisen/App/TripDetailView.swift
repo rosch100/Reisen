@@ -56,8 +56,19 @@ struct TripDetailView: View {
         TripGapTimeline.savedGapsByKey(allGaps: allGaps, tripID: trip.id)
     }
 
-    private var overlapCountsByBookingID: [UUID: Int] {
-        BookingDayOverlap.countsByID(sdBookings: allBookings)
+    private var overlapPartnerTitlesByBookingID: [UUID: [String]] {
+        let partnerIDs = BookingDayOverlap.partnerIDsByID(sdBookings: allBookings)
+        let titleByID = Dictionary(uniqueKeysWithValues: allBookings.map { ($0.id, $0.presentationTitle) })
+        return Dictionary(uniqueKeysWithValues: partnerIDs.keys.map { bookingID in
+            (
+                bookingID,
+                BookingOverlapCaption.partnerTitles(
+                    for: bookingID,
+                    partnerIDsByBookingID: partnerIDs,
+                    titleByID: titleByID
+                )
+            )
+        })
     }
 
     private var gaps: [ComputedGap] {
@@ -286,7 +297,7 @@ struct TripDetailView: View {
             BookingDetailPanel(
                 selectedTimelineItem: selectedTimelineItem,
                 trip: trip,
-                overlapCountsByBookingID: overlapCountsByBookingID,
+                overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
                 bookingEditorSession: $bookingEditorSession,
                 selectedTimelineID: $selectedTimelineID,
                 onEditGap: { payload in gapEditorPayload = payload },
@@ -367,7 +378,7 @@ struct TripDetailView: View {
                         } label: {
                             TimelineRowLabel(
                                 item: item,
-                                overlapCountsByBookingID: overlapCountsByBookingID,
+                                overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
                                 gapPresentation: gapPresentation(for:),
                                 onEditGap: { payload in
                                     gapEditorPayload = payload
@@ -568,18 +579,17 @@ private enum TimelineRowDisplayMode {
 
 private struct TimelineRowLabel: View {
     let item: TripTimelineItem
-    let overlapCountsByBookingID: [UUID: Int]
+    let overlapPartnerTitlesByBookingID: [UUID: [String]]
     let gapPresentation: (ComputedGap) -> GapPresentation
     let onEditGap: (GapEditorPayload) -> Void
 
     var body: some View {
         switch item {
         case .booking(let booking):
-            let overlapCount = overlapCountsByBookingID[booking.id] ?? 0
             BookingRow(
                 booking: booking,
                 displayMode: .summary,
-                overlapCount: overlapCount,
+                partnerTitles: overlapPartnerTitlesByBookingID[booking.id] ?? [],
                 onSelect: nil
             )
 
@@ -615,7 +625,7 @@ private struct ContentHeightReader: View {
 private struct BookingDetailPanel: View {
     let selectedTimelineItem: TripTimelineItem?
     let trip: SDTrip
-    let overlapCountsByBookingID: [UUID: Int]
+    let overlapPartnerTitlesByBookingID: [UUID: [String]]
     @Binding var bookingEditorSession: BookingEditorSession?
     @Binding var selectedTimelineID: String?
     let onEditGap: (GapEditorPayload) -> Void
@@ -759,7 +769,7 @@ private struct BookingDetailPanel: View {
                         case .booking(let booking):
                             BookingDetailContent(
                                 booking: booking,
-                                overlapCount: overlapCountsByBookingID[booking.id] ?? 0,
+                                partnerTitles: overlapPartnerTitlesByBookingID[booking.id] ?? [],
                                 onEditBooking: { bookingEditorSession = .edit(bookingID: booking.id) },
                                 onRequestDeleteBooking: onRequestDeleteBooking,
                                 onRequestRemoveFromTrip: onRequestRemoveFromTrip,
@@ -873,7 +883,7 @@ private struct BookingDetailPanel: View {
 private struct BookingRow: View {
     let booking: SDBooking
     let displayMode: TimelineRowDisplayMode
-    let overlapCount: Int
+    let partnerTitles: [String]
     var onSelect: (() -> Void)? = nil
 
     private var bookingPriceText: String {
@@ -1044,8 +1054,8 @@ private struct BookingRow: View {
         parts.append(booking.bookingType.displayLabel)
         parts.append(L10n.format(.bookingCopyPriceLine, bookingPriceText))
 
-        if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
-            parts.append(BookingOverlapCaption.labelText(extraCount: overlapCount))
+        if BookingOverlapCaption.isVisible(partnerTitles: partnerTitles) {
+            parts.append(BookingOverlapCaption.labelText(partnerTitles: partnerTitles))
         }
         if let elapsed = BookingElapsedText.string(for: booking, now: now) {
             parts.append(elapsed)
@@ -1324,8 +1334,8 @@ private struct BookingRow: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .lineLimit(2)
-                    if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
-                        BookingOverlapCaption(extraCount: overlapCount)
+                    if BookingOverlapCaption.isVisible(partnerTitles: partnerTitles) {
+                        BookingOverlapCaption(partnerTitles: partnerTitles)
                     }
                     BookingElapsedLabel(for: booking, now: now)
                 }
@@ -1361,8 +1371,8 @@ private struct BookingRow: View {
 
     private func bookingDetailsBody(now: Date) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
-                BookingOverlapCaption(extraCount: overlapCount)
+            if BookingOverlapCaption.isVisible(partnerTitles: partnerTitles) {
+                BookingOverlapCaption(partnerTitles: partnerTitles)
             }
             HStack(alignment: .top, spacing: 12) {
                 SelectableBookingTextView(

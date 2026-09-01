@@ -2,24 +2,24 @@ import Testing
 import ReisenDomain
 import ReisenSharedUI
 
-@Test func bookingOverlapCaption_isVisible_falseWhenCountZero() {
-    #expect(BookingOverlapCaption.isVisible(overlapCount: 0) == false)
+@Test func bookingOverlapCaption_isVisible_falseWhenNoPartners() {
+    #expect(BookingOverlapCaption.isVisible(partnerTitles: []) == false)
 }
 
-@Test func bookingOverlapCaption_isVisible_trueWhenCountAtLeastOne() {
-    #expect(BookingOverlapCaption.isVisible(overlapCount: 1) == true)
-    #expect(BookingOverlapCaption.isVisible(overlapCount: 3) == true)
+@Test func bookingOverlapCaption_isVisible_trueWhenPartnersPresent() {
+    #expect(BookingOverlapCaption.isVisible(partnerTitles: ["Hotel A"]) == true)
+    #expect(BookingOverlapCaption.isVisible(partnerTitles: ["A", "B"]) == true)
 }
 
 @Test func bookingOverlapCaption_labelText_matchesL10nOverlapLabel() {
-    #expect(BookingOverlapCaption.labelText(extraCount: 0) == L10n.overlapLabel(extraCount: 0))
-    #expect(BookingOverlapCaption.labelText(extraCount: 1) == L10n.overlapLabel(extraCount: 1))
-    #expect(BookingOverlapCaption.labelText(extraCount: 2) == L10n.overlapLabel(extraCount: 2))
+    let one = ["Hotel A"]
+    let many = ["Hotel A", "Flug B", "Tour C"]
+    #expect(BookingOverlapCaption.labelText(partnerTitles: one) == L10n.overlapLabel(partnerTitles: one))
+    #expect(BookingOverlapCaption.labelText(partnerTitles: many) == L10n.overlapLabel(partnerTitles: many))
 }
 
-@Test func bookingOverlapCaption_accessibilityMatchesLabelText() {
-    for n in [0, 1, 4] {
-        let text = BookingOverlapCaption.labelText(extraCount: n)
-        #expect(text == L10n.overlapLabel(extraCount: n))
-    }
+@Test func bookingOverlapCaption_labelText_hasNoPlusCountBadge() {
+    let text = BookingOverlapCaption.labelText(partnerTitles: ["Hotel A"])
+    #expect(!text.contains("+"))
+    #expect(text.contains("Hotel A"))
 }

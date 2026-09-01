@@ -125,8 +125,20 @@ struct OpenBookingsScreen: View {
         OpenBookingMatching.elapsedUnassigned(in: allBookings)
     }
 
-    private var overlapCountsByBookingID: [UUID: Int] {
-        BookingDayOverlap.countsByID(sdBookings: allBookings)
+    private var overlapPartnerIDsByBookingID: [UUID: [UUID]] {
+        BookingDayOverlap.partnerIDsByID(sdBookings: allBookings)
+    }
+
+    private var bookingPresentationTitleByID: [UUID: String] {
+        Dictionary(uniqueKeysWithValues: allBookings.map { ($0.id, $0.presentationTitle) })
+    }
+
+    private func overlapPartnerTitles(for bookingID: UUID) -> [String] {
+        BookingOverlapCaption.partnerTitles(
+            for: bookingID,
+            partnerIDsByBookingID: overlapPartnerIDsByBookingID,
+            titleByID: bookingPresentationTitleByID
+        )
     }
 
     private var openBookings: [SDBooking] {
@@ -361,7 +373,7 @@ struct OpenBookingsScreen: View {
                 OpenBookingRow(
                     booking: booking,
                     fillCaption: fillCaption,
-                    overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+                    partnerTitles: overlapPartnerTitles(for: booking.id)
                 )
                     .tag(booking.id)
             }
@@ -399,7 +411,7 @@ struct OpenBookingsScreen: View {
             OpenBookingRow(
                 booking: booking,
                 fillCaption: fillCaption,
-                overlapCount: overlapCountsByBookingID[booking.id] ?? 0
+                partnerTitles: overlapPartnerTitles(for: booking.id)
             )
         }
     }
