@@ -1,0 +1,15 @@
+---
+description: macOS Build/Run/UI-Test nur über SSOT-Scripts (XcodeGen, kein ad-hoc xcodebuild)
+globs: Sources/Reisen/**/*,Sources/ReisenSharedUI/**/*,Tests/ReisenMacUITests/**/*,Scripts/build-app.sh,Scripts/run-app.sh,Scripts/macos-ui-*.sh,Scripts/generate-ios-project.sh,project.yml
+alwaysApply: false
+---
+
+# macOS Cursor Workflow
+
+- App bauen/starten: `bash ./Scripts/build-app.sh` bzw. `bash ./Scripts/run-app.sh` (optional `--logging` → `-ReisenDiagnosticsDebug`).
+- XCUI-Smokes: `bash ./Scripts/macos-ui-test.sh` (Scheme `ReisenMac`, Target `ReisenMacUITests`).
+- Advisory UI-Tour: `bash ./Scripts/macos-ui-review.sh` + Skill `ui-surface-review`.
+- Xcode-Projekt: `bash ./Scripts/generate-ios-project.sh` (erzeugt auch macOS-Targets aus `project.yml`).
+- Kein ad-hoc-`xcodebuild` mit losen Flags im Standard-Agent-Workflow.
+- Kein Commit von `*.xcodeproj`, `buildServer.json`, `.sweetpad/`.
+- Identifier-SSOT: `UITestingIdentifiers`; Page Object: `Tests/ReisenMacUITests/MacUI.swift`.

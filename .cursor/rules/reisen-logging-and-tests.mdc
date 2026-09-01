@@ -1,0 +1,38 @@
+---
+description: Features/Fixes immer mit Diagnostic-Logging und Tests inkl. UI-Tests
+alwaysApply: true
+---
+
+# Reisen: Logging + Tests mitliefern
+
+Bei **Feature-, Bugfix- und Verhaltensänderungen** gehören Logging und Tests **in denselben Diff** — nicht „später“.
+
+## Logging (Pflicht bei Laufzeitpfaden)
+
+- Beobachtbare Pfade (Sync, Navigation, Persistenz, Side-Effects, Fehler, Timeouts) über `DiagnosticLogger` + `DiagnosticEvent` (`ReisenDiagnostics`).
+- Kein `print` und keine parallelen Diagnose-Kanäle; Produkt-Events nur über `DiagnosticLogger`/`DiagnosticEvent` (OSLog intern in Diagnostics ist OK).
+- Secrets/PII: Host-Redaction/SSOT in Diagnostics; nichts Klartext in Logs oder Issues.
+- Pure Domain-Rechnungen ohne I/O: Logging optional; Fehler-/Grenzpfade trotzdem testen.
+
+## Tests (Pflicht)
+
+| Änderung | Mindestabdeckung |
+| --- | --- |
+| Domain / Use Case / Mapper / Parser | Swift Testing unter `Tests/` (fachliche Asserts) |
+| AppCore / Providers / Diagnostics | Unit-/Actor-Tests im passenden Target |
+| User-sichtbare UI (SharedUI, macOS-Chrome, Identifier) | `UITestingIdentifiers` + XCUI in `Tests/ReisenMacUITests` |
+| Nur Docs/Rules/CI-YAML ohne Produktverhalten | keine Produkt-Tests nötig |
+
+- Bestehende Asserts nicht schwächen/skippen.
+- UI: stabile Identifier (nicht L10n); Page Objects in `MacUI`; Seed über `-UITesting`.
+- Verifikation: `bash ./Scripts/ci-test.sh`; bei UI-Diff zusätzlich `bash ./Scripts/macos-ui-test.sh`.
+- iOS: Build/Test nur über `Scripts/ios-*.sh`; XCUI-iOS erst wenn Target/Script existieren — Identifier trotzdem in SharedUI pflegen.
+
+## DoD vor „fertig“
+
+1. Logging an relevanten Start/Erfolg/Fehler/Timeout-Stellen vorhanden (oder begründet entbehrlich).
+2. Mindestens ein neuer/angepasster Test trifft die Spec-Semantik.
+3. UI-Änderung: Smoke oder Review-Tour-Hook, Identifier verdrahtet.
+4. Relevante Scripts lokal grün.
+
+Detail-Workflow: Skill `reisen-observability-tests`.

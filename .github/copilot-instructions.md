@@ -15,6 +15,8 @@
 - Korrektheit: Annahmen, Edge Cases, Off-by-one, falsche Conditions.
 - Security: Secrets, Injection, unsichere Deserialisierung/Parsing, gefährliche Permissions.
 - Wartbarkeit: klare Verantwortlichkeiten, sinnvolle Abstraktionen, keine redundant duplizierte Logik.
+- Verhaltensänderung ohne Tests und/oder ohne `DiagnosticLogger`-Events (siehe `.cursor/rules/reisen-logging-and-tests.mdc`).
+- Schichtverletzung (Domain mit SwiftData/WebKit, UI schreibt Persistenz direkt) — `docs/ARCHITECTURE.md`.
 
 ## Was wir vermeiden (nicht priorisieren)
 - Style-/Format-/Lint-Nits ohne fachliche Auswirkung.

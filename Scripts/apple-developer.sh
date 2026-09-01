@@ -110,6 +110,9 @@ reisen_icloud_container_id() {
 }
 
 # Apple-Development-Identity, deren Zertifikat-OU zur Team-ID passt.
+# Development-Zertifikate gehören Personen; die Team-ID steckt in OU, nicht zwingend
+# in den Klammern des CN (dort kann eine Personen-/Member-ID stehen).
+# Subject-Formate: LibreSSL default `/OU=TEAM/`, RFC2253 `,OU=TEAM,`.
 reisen_apple_development_identity() {
   local team_id="${1:-}"
   if [[ -z "$team_id" ]]; then
@@ -120,7 +123,10 @@ reisen_apple_development_identity() {
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
     subject="$(security find-certificate -c "$name" -p 2>/dev/null | openssl x509 -noout -subject 2>/dev/null || true)"
-    if [[ "$subject" == *", OU=${team_id},"* || "$subject" == *"OU=${team_id},"* ]]; then
+    if [[ "$subject" == *"/OU=${team_id}/"* ||
+          "$subject" == *",OU=${team_id},"* ||
+          "$subject" == *", OU=${team_id},"* ||
+          "$subject" == *"OU=${team_id},"* ]]; then
       printf '%s\n' "$name"
       return 0
     fi
