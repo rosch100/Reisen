@@ -1,6 +1,9 @@
 import Foundation
 
 public enum SpatialGapDetector {
+    /// SSOT: maximale Dauer einer Transport-Lücke (Auto + ComputedGap-Segment).
+    public static let maxTransportDuration: TimeInterval = 24 * 60 * 60
+
     public static func detect(sortedReal: [Booking]) -> [AutoGapDesired] {
         guard sortedReal.count >= 2 else { return [] }
         var results: [AutoGapDesired] = []
@@ -13,33 +16,44 @@ public enum SpatialGapDetector {
         return results
     }
 
-    private static func transportDesired(from: Booking, to: Booking) -> AutoGapDesired? {
+    /// Beide PlaceKeys gesetzt und ungleich.
+    public static func placesDiffer(from: Booking, to: Booking) -> Bool {
         guard let fromKey = PlaceKey.normalize(fromEndPlace(from)),
-              let toKey = PlaceKey.normalize(toStartPlace(to)),
-              fromKey != toKey
-        else { return nil }
+              let toKey = PlaceKey.normalize(toStartPlace(to))
+        else { return false }
+        return fromKey != toKey
+    }
+
+    public static func cappedTransportEnd(fromStart start: Date, intervalEnd: Date) -> Date {
+        min(start.addingTimeInterval(maxTransportDuration), intervalEnd)
+    }
+
+    private static func transportDesired(from: Booking, to: Booking) -> AutoGapDesired? {
+        guard placesDiffer(from: from, to: to) else { return nil }
+        guard let type = evidencedTransportType(from: from, to: to) else { return nil }
 
         let start = from.endAt
-        let end = to.startAt
-        guard end.timeIntervalSince(start) >= 0 else { return nil }
+        let intervalEnd = to.startAt
+        guard intervalEnd.timeIntervalSince(start) >= 0 else { return nil }
 
-        let type = transportType(from: from, to: to)
-        let rawFrom = fromEndPlace(from)
-        let rawTo = toStartPlace(to)
+        let end = cappedTransportEnd(fromStart: start, intervalEnd: intervalEnd)
+        guard end.timeIntervalSince(start) > 0 else { return nil }
+
         return AutoGapDesired(
             identityKey: AutoGapIdentity.key(from: from.id, to: to.id, role: .transport),
             role: .transport,
             bookingType: type,
             startAt: start,
             endAt: end,
-            locationFrom: rawFrom,
-            locationTo: rawTo,
+            locationFrom: fromEndPlace(from),
+            locationTo: toStartPlace(to),
             fromBookingID: from.id,
             toBookingID: to.id
         )
     }
 
-    private static func transportType(from: Booking, to: Booking) -> BookingType {
+    /// Nur belegter Modus (Flug/Fähre/Offset) — kein erfundenes `.train`.
+    private static func evidencedTransportType(from: Booking, to: Booking) -> BookingType? {
         if from.bookingType == .flight || to.bookingType == .flight {
             return .flight
         }
@@ -52,7 +66,7 @@ public enum SpatialGapDetector {
         if from.bookingType == .ferry || to.bookingType == .ferry {
             return .ferry
         }
-        return .train
+        return nil
     }
 
     /// Spec: locationTo → locationToAddress → locationFrom → locationFromAddress

@@ -13,7 +13,7 @@ struct ProviderLogo: View {
                 .scaledToFit()
                 .frame(width: 40, height: 16)
                 .accessibilityLabel(Text("\(providerID.rawValue) logo"))
-        } else {
+        } else if providerID.expectsBrandedLogoAsset {
             Image(systemName: "questionmark.circle")
                 .foregroundStyle(.secondary)
                 .imageScale(.small)
