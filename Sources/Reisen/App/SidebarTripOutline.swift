@@ -87,22 +87,16 @@ struct SidebarTripOutline: View {
                     Button {
                         onSelectBooking(booking)
                     } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(booking.presentationTitle)
-                                .lineLimit(1)
-                            Text(BookingScheduleRangeText.make(for: booking))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.leading, 28)
-                        .padding(.vertical, 4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            isBookingSelected
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        SidebarBookingOutlineCaption(booking: booking)
+                            .padding(.leading, 28)
+                            .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                isBookingSelected
+                                    ? Color.accentColor.opacity(0.15)
+                                    : Color.clear
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .contentShape(Rectangle())
