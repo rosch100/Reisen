@@ -38,6 +38,10 @@ struct BookingDetailIOS: View {
         bookings.first(where: { $0.id == bookingID })
     }
 
+    private var overlapCountsByBookingID: [UUID: Int] {
+        BookingDayOverlap.countsByID(sdBookings: bookings)
+    }
+
     private var bookingTrip: SDTrip? {
         guard let booking else { return nil }
         return booking.trip
@@ -235,6 +239,9 @@ struct BookingDetailIOS: View {
                 style: .list
             )
             BookingElapsedLabel(for: booking)
+            if BookingOverlapCaption.isVisible(overlapCount: overlapCountsByBookingID[booking.id] ?? 0) {
+                BookingOverlapCaption(extraCount: overlapCountsByBookingID[booking.id] ?? 0)
+            }
         }
     }
 

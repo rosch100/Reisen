@@ -56,11 +56,14 @@ public extension SDBooking {
     }
 
     var daySpan: BookingDaySpan {
-        BookingDaySpan(
+        let rawPlace = locationTo ?? locationFrom
+        return BookingDaySpan(
             id: id,
             startAt: startAt,
             endAt: endAt,
-            placeKey: locationTo ?? locationFrom ?? ""
+            placeKey: PlaceKey.normalize(rawPlace) ?? "",
+            tripID: trip?.id,
+            bookingType: bookingType
         )
     }
 
