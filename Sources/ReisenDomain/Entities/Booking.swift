@@ -31,6 +31,8 @@ public struct Booking: Identifiable, Equatable, Sendable {
     public var lastSyncedAt: Date?
     public var rawPayloadFingerprint: String?
     public var tripID: UUID?
+    /// Zeitstabiler Auto-Gap-Key (`from|to|role`); nur bei `provider == .autoGap`.
+    public var autoGapIdentityKey: String?
     public var cancellationDeadlines: [CancellationDeadline]
     public var rateDetails: BookingRateDetails?
     public var passengers: [BookingPassenger]
@@ -63,6 +65,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
         lastSyncedAt: Date? = nil,
         rawPayloadFingerprint: String? = nil,
         tripID: UUID? = nil,
+        autoGapIdentityKey: String? = nil,
         cancellationDeadlines: [CancellationDeadline] = [],
         rateDetails: BookingRateDetails? = nil,
         passengers: [BookingPassenger] = [],
@@ -94,6 +97,7 @@ public struct Booking: Identifiable, Equatable, Sendable {
         self.lastSyncedAt = lastSyncedAt
         self.rawPayloadFingerprint = rawPayloadFingerprint
         self.tripID = tripID
+        self.autoGapIdentityKey = autoGapIdentityKey
         self.cancellationDeadlines = cancellationDeadlines
         self.rateDetails = rateDetails
         self.passengers = passengers

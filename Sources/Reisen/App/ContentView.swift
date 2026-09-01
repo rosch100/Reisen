@@ -1252,9 +1252,9 @@ struct ContentView: View {
                 if isEditing, let draftBinding {
                     BookingEditorForm(
                         title: L10n.string(.editorEditTitle),
-                        showsSyncOverwriteHint: booking.provider != .manual,
+                        showsSyncOverwriteHint: ProviderID.syncProviderIDs.contains(booking.provider),
                         draft: draftBinding,
-                        providerReadOnly: booking.provider != .manual,
+                        providerReadOnly: ProviderID.syncProviderIDs.contains(booking.provider),
                         onCancel: {
                             isEditing = false
                             bookingEditorDraft = nil
@@ -1282,7 +1282,7 @@ struct ContentView: View {
             .bookingDeleteConfirmAlert(
                 isPresented: $showDeleteConfirmation,
                 bookingTitle: booking.presentationTitle,
-                showsSyncRestoreWarning: booking.provider != .manual,
+                showsSyncRestoreWarning: ProviderID.syncProviderIDs.contains(booking.provider),
                 onConfirm: deletePendingBooking,
                 onCancel: { pendingDeleteBookingID = nil }
             )
