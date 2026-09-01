@@ -6,10 +6,12 @@ import ReisenDomain
 public struct OpenBookingRow: View {
     let booking: SDBooking
     let fillCaption: String?
+    let overlapCount: Int
 
-    public init(booking: SDBooking, fillCaption: String? = nil) {
+    public init(booking: SDBooking, fillCaption: String? = nil, overlapCount: Int = 0) {
         self.booking = booking
         self.fillCaption = fillCaption
+        self.overlapCount = overlapCount
     }
 
     public var body: some View {
@@ -28,6 +30,10 @@ public struct OpenBookingRow: View {
                 .foregroundStyle(.secondary)
 
             BookingElapsedLabel(for: booking)
+
+            if BookingOverlapCaption.isVisible(overlapCount: overlapCount) {
+                BookingOverlapCaption(extraCount: overlapCount)
+            }
 
             if let fillCaption, !fillCaption.isEmpty {
                 Text(fillCaption)

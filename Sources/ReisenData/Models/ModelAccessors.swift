@@ -60,7 +60,9 @@ public extension SDBooking {
             id: id,
             startAt: startAt,
             endAt: endAt,
-            placeKey: locationTo ?? locationFrom ?? ""
+            placeKey: locationTo ?? locationFrom ?? "",
+            tripID: trip?.id,
+            bookingType: bookingType
         )
     }
 

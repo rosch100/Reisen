@@ -43,4 +43,14 @@ public enum BookingType: String, Codable, CaseIterable, Identifiable, Sendable {
     public var defaultDisplayTitle: String {
         rawValue.capitalized
     }
+
+    /// Overlap-Occupancy: nur Hotel half-open (Checkout exclusive); sonst inclusive End.
+    public var usesStayLikeOverlapEnd: Bool {
+        switch self {
+        case .hotel:
+            return true
+        case .flight, .ferry, .train, .activity, .carRental, .other:
+            return false
+        }
+    }
 }

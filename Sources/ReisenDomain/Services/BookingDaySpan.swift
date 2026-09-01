@@ -7,12 +7,23 @@ public struct BookingDaySpan: Equatable, Sendable, Identifiable {
     public let endAt: Date
     /// Ortsschlüssel (`locationTo` sonst `locationFrom`); leer = kein Mehrfachzimmer-Match.
     public let placeKey: String
+    public let tripID: UUID?
+    public let bookingType: BookingType
 
-    public init(id: UUID, startAt: Date, endAt: Date, placeKey: String) {
+    public init(
+        id: UUID,
+        startAt: Date,
+        endAt: Date,
+        placeKey: String,
+        tripID: UUID?,
+        bookingType: BookingType
+    ) {
         self.id = id
         self.startAt = startAt
         self.endAt = endAt
         self.placeKey = placeKey
+        self.tripID = tripID
+        self.bookingType = bookingType
     }
 }
 
@@ -22,7 +33,9 @@ public extension Booking {
             id: id,
             startAt: startAt,
             endAt: endAt,
-            placeKey: locationTo ?? locationFrom ?? ""
+            placeKey: locationTo ?? locationFrom ?? "",
+            tripID: tripID,
+            bookingType: bookingType
         )
     }
 }
