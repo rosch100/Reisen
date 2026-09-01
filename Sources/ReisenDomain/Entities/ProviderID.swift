@@ -25,6 +25,7 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
         case .traveloka: return "Traveloka"
         case .billigerMietwagen: return "billiger-mietwagen.de"
         case .manual: return L10n.string(.providerManual)
+        case .autoGap: return L10n.string(.providerAutoGap)
         default: return rawValue
         }
     }

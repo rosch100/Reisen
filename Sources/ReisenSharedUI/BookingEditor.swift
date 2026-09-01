@@ -390,6 +390,12 @@ public struct BookingEditorDraft: Equatable, Sendable {
     public func apply(to booking: SDBooking, in modelContext: ModelContext) throws {
         try validate()
 
+        // Promotion: Auto-Gap wird beim Speichern zur manuellen Buchung.
+        if booking.provider == .autoGap {
+            booking.providerRaw = ProviderID.manual.rawValue
+            booking.autoGapIdentityKey = nil
+        }
+
         booking.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         booking.confirmationCode = Self.normalizeOptionalString(confirmationCode)
         booking.externalUrl = Self.normalizeOptionalString(externalUrl)
@@ -514,6 +520,11 @@ public struct BookingEditorDraft: Equatable, Sendable {
         SwiftDataBookingGuestHintUpsert.upsert(persistedHints, on: booking, in: modelContext)
 
         try modelContext.save()
+
+        if let tripID = booking.trip?.id {
+            try AutoGapReconcileTrigger.run(tripIDs: [tripID], in: modelContext)
+            try modelContext.save()
+        }
     }
 }
 

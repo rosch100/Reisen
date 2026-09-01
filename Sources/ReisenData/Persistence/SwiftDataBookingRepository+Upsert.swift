@@ -11,5 +11,12 @@ extension SwiftDataBookingRepository {
         SwiftDataBookingGuestHintUpsert.upsert(booking.guestHints, on: model, in: modelContext)
         SwiftDataBookingRateDetailsUpsert.upsert(booking.rateDetails, on: model, in: modelContext)
         try SwiftDataBookingFieldApply.applyTripIfPresent(booking.tripID, to: model, in: modelContext)
+        var tripIDs = Set<UUID>()
+        if let tripID = booking.tripID {
+            tripIDs.insert(tripID)
+        } else if let existingTripID = model.trip?.id {
+            tripIDs.insert(existingTripID)
+        }
+        try AutoGapReconcileTrigger.run(tripIDs: tripIDs, in: modelContext)
     }
 }

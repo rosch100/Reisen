@@ -3,12 +3,12 @@ import SwiftData
 
 public enum ReisenMigrationPlan: SchemaMigrationPlan {
     /// Only the current schema is registered with SwiftData.
-    /// Historical V1…V8 share the same `@Model` types as V9; listing them in a
+    /// Historical V1…V9 share the same `@Model` types as V10; listing them in a
     /// `SchemaMigrationPlan` produces "Duplicate version checksums" at runtime.
     /// The monolithic → hybrid store rewrite lives in
     /// `PersistenceBootstrap.migrateLegacyMonolithicStoreIfNeeded()`.
     public static var schemas: [any VersionedSchema.Type] {
-        [ReisenSchemaV9.self]
+        [ReisenSchemaV10.self]
     }
 
     public static var stages: [MigrationStage] {

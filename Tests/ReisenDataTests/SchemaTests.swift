@@ -6,26 +6,27 @@ import ReisenDomain
 
 @Test func persistenceBootstrapCreatesContainer() throws {
     #expect(!ReisenSchemaV1.models.isEmpty)
-    #expect(!ReisenSchemaV9.models.isEmpty)
-    #expect(ReisenMigrationPlan.schemas.contains { $0 == ReisenSchemaV9.self })
+    #expect(!ReisenSchemaV10.models.isEmpty)
+    #expect(ReisenMigrationPlan.schemas.contains { $0 == ReisenSchemaV10.self })
     #expect(ReisenMigrationPlan.stages.isEmpty)
     #expect(PersistenceBootstrap.cloudKitContainerID.hasPrefix("iCloud."))
     #expect(PersistenceBootstrap.cloudKitContainerID.hasSuffix(".Reisen"))
     #expect(PersistenceBootstrap.cloudStoreName == "reisen-cloud")
     #expect(PersistenceBootstrap.localStoreName == "reisen-local")
-    #expect(!ReisenSchemaV9.cloudModels.isEmpty)
-    #expect(!ReisenSchemaV9.localModels.isEmpty)
+    #expect(!ReisenSchemaV10.cloudModels.isEmpty)
+    #expect(!ReisenSchemaV10.localModels.isEmpty)
 }
 
 @MainActor
 @Test func hybridStoreSplitKeepsCloudAndLocalModelsApart() throws {
-    let cloudTypes = Set(ReisenSchemaV9.cloudModels.map { ObjectIdentifier($0) })
-    let localTypes = Set(ReisenSchemaV9.localModels.map { ObjectIdentifier($0) })
+    let cloudTypes = Set(ReisenSchemaV10.cloudModels.map { ObjectIdentifier($0) })
+    let localTypes = Set(ReisenSchemaV10.localModels.map { ObjectIdentifier($0) })
     #expect(cloudTypes.isDisjoint(with: localTypes))
 
     #expect(cloudTypes.contains(ObjectIdentifier(SDTrip.self)))
     #expect(cloudTypes.contains(ObjectIdentifier(SDBooking.self)))
     #expect(cloudTypes.contains(ObjectIdentifier(SDGap.self)))
+    #expect(cloudTypes.contains(ObjectIdentifier(SDAutoGapSuppress.self)))
 
     #expect(localTypes.contains(ObjectIdentifier(SDReminder.self)))
     #expect(localTypes.contains(ObjectIdentifier(SDCalendarEventLink.self)))
