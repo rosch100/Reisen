@@ -401,6 +401,22 @@
         }
       }
     },
+    "action.open_booking": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open booking"
+          }
+        }
+      }
+    },
     "action.open_in_browser": {
       "localizations": {
         "de": {
@@ -413,6 +429,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open booking in browser"
+          }
+        }
+      }
+    },
+    "action.open_in_browser_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet die Buchung im Standard-Browser."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the booking in your default browser."
+          }
+        }
+      }
+    },
+    "action.open_in_provider_app": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In %1$@-App öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in %1$@ app"
           }
         }
       }
@@ -993,6 +1041,70 @@
         }
       }
     },
+    "booking.delete_confirm_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The booking will be permanently removed from Reisen."
+          }
+        }
+      }
+    },
+    "booking.delete_confirm_message_synced": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt. Nach dem nächsten Provider-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The booking will be permanently removed from Reisen. After the next provider sync it may reappear if it still exists at the provider."
+          }
+        }
+      }
+    },
+    "booking.delete_confirm_title_named": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buchung „%1$@“ löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete booking “%1$@”?"
+          }
+        }
+      }
+    },
+    "booking.delete_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Buchung unwiderruflich löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete this booking"
+          }
+        }
+      }
+    },
     "booking.detail.airline": {
       "localizations": {
         "de": {
@@ -1489,22 +1601,6 @@
         }
       }
     },
-    "booking.field.location_from.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abfahrtsbahnhof"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "From station"
-          }
-        }
-      }
-    },
     "booking.field.location_from.flight": {
       "localizations": {
         "de": {
@@ -1537,6 +1633,22 @@
         }
       }
     },
+    "booking.field.location_from.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrtsbahnhof"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From station"
+          }
+        }
+      }
+    },
     "booking.field.location_from_address.car_rental": {
       "localizations": {
         "de": {
@@ -1559,22 +1671,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abfahrtadresse"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Departure address"
-          }
-        }
-      }
-    },
-    "booking.field.location_from_address.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abfahrtsadresse"
           }
         },
         "en": {
@@ -1617,6 +1713,22 @@
         }
       }
     },
+    "booking.field.location_from_address.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrtsadresse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departure address"
+          }
+        }
+      }
+    },
     "booking.field.location_to.car_rental": {
       "localizations": {
         "de": {
@@ -1649,22 +1761,6 @@
         }
       }
     },
-    "booking.field.location_to.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ankunftsbahnhof"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "To station"
-          }
-        }
-      }
-    },
     "booking.field.location_to.hotel": {
       "localizations": {
         "de": {
@@ -1693,6 +1789,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "To"
+          }
+        }
+      }
+    },
+    "booking.field.location_to.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunftsbahnhof"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To station"
           }
         }
       }
@@ -1745,22 +1857,6 @@
         }
       }
     },
-    "booking.field.location_to_address.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ankunftsadresse"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Arrival address"
-          }
-        }
-      }
-    },
     "booking.field.location_to_address.hotel": {
       "localizations": {
         "de": {
@@ -1789,6 +1885,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Destination address"
+          }
+        }
+      }
+    },
+    "booking.field.location_to_address.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunftsadresse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival address"
           }
         }
       }
@@ -1825,22 +1937,6 @@
         }
       }
     },
-    "booking.field.operator.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Betreiber"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Operator"
-          }
-        }
-      }
-    },
     "booking.field.operator.default": {
       "localizations": {
         "de": {
@@ -1853,6 +1949,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Provider"
+          }
+        }
+      }
+    },
+    "booking.field.operator.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betreiber"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operator"
           }
         }
       }
@@ -1889,22 +2001,6 @@
         }
       }
     },
-    "booking.field.room_category.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sitz / Klasse"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seat / class"
-          }
-        }
-      }
-    },
     "booking.field.room_category.hotel": {
       "localizations": {
         "de": {
@@ -1933,6 +2029,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Category"
+          }
+        }
+      }
+    },
+    "booking.field.room_category.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sitz / Klasse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seat / class"
           }
         }
       }
@@ -2001,22 +2113,6 @@
         }
       }
     },
-    "booking.field.schedule_end.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ankunft"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Arrival"
-          }
-        }
-      }
-    },
     "booking.field.schedule_end.flight": {
       "localizations": {
         "de": {
@@ -2045,6 +2141,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Check-out date"
+          }
+        }
+      }
+    },
+    "booking.field.schedule_end.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival"
           }
         }
       }
@@ -2097,22 +2209,6 @@
         }
       }
     },
-    "booking.field.schedule_start.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abfahrt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Departure"
-          }
-        }
-      }
-    },
     "booking.field.schedule_start.flight": {
       "localizations": {
         "de": {
@@ -2145,6 +2241,22 @@
         }
       }
     },
+    "booking.field.schedule_start.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departure"
+          }
+        }
+      }
+    },
     "booking.overlap": {
       "localizations": {
         "de": {
@@ -2173,6 +2285,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Overlap (+%1$d)"
+          }
+        }
+      }
+    },
+    "booking.portal_cancel_load_failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Stornoseite konnte nicht geladen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The cancellation page could not be loaded."
           }
         }
       }
@@ -2258,38 +2386,6 @@
       }
     },
     "booking.timeline.ferry_arrival": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ankunft: %1$@ (%2$@)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Arrival: %1$@ (%2$@)"
-          }
-        }
-      }
-    },
-    "booking.timeline.train_departure": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abfahrt: %1$@ (%2$@)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Departure: %1$@ (%2$@)"
-          }
-        }
-      }
-    },
-    "booking.timeline.train_arrival": {
       "localizations": {
         "de": {
           "stringUnit": {
@@ -2401,6 +2497,38 @@
         }
       }
     },
+    "booking.timeline.train_arrival": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankunft: %1$@ (%2$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival: %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "booking.timeline.train_departure": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abfahrt: %1$@ (%2$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departure: %1$@ (%2$@)"
+          }
+        }
+      }
+    },
     "booking.type.activity": {
       "localizations": {
         "de": {
@@ -2449,22 +2577,6 @@
         }
       }
     },
-    "booking.type.train": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bahn"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Train"
-          }
-        }
-      }
-    },
     "booking.type.flight": {
       "localizations": {
         "de": {
@@ -2509,6 +2621,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Other"
+          }
+        }
+      }
+    },
+    "booking.type.train": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bahn"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Train"
           }
         }
       }
@@ -4081,6 +4209,230 @@
         }
       }
     },
+    "gap.search.activity": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlebnis suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search experiences (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.all_enabled": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle aktiven Portale"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All enabled portals"
+          }
+        }
+      }
+    },
+    "gap.search.car_rental": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mietwagen suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search car rental (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.category_activity": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlebnis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experiences"
+          }
+        }
+      }
+    },
+    "gap.search.category_car_rental": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mietwagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Car rental"
+          }
+        }
+      }
+    },
+    "gap.search.category_ferry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fähre"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferry"
+          }
+        }
+      }
+    },
+    "gap.search.category_flight": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flug"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flights"
+          }
+        }
+      }
+    },
+    "gap.search.category_hotel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotels"
+          }
+        }
+      }
+    },
+    "gap.search.ferry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fähre suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search ferry (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.flight": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flug suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search flights (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.hotel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotel suchen (%1$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search hotels (%1$@)"
+          }
+        }
+      }
+    },
+    "gap.search.menu": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search"
+          }
+        }
+      }
+    },
+    "gap.search.one_provider": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Portal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One portal"
+          }
+        }
+      }
+    },
+    "gap.search.provider_picker": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portal für Suche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search portal"
+          }
+        }
+      }
+    },
     "github.issue_already_open": {
       "localizations": {
         "de": {
@@ -4481,6 +4833,22 @@
         }
       }
     },
+    "paste_import.cancelled": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erkennung abgebrochen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detection cancelled."
+          }
+        }
+      }
+    },
     "paste_import.candidates_title": {
       "localizations": {
         "de": {
@@ -4513,22 +4881,6 @@
         }
       }
     },
-    "paste_import.review_discard_message": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Änderungen verwerfen? Die Buchung wird nicht angelegt."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Discard changes? The booking will not be created."
-          }
-        }
-      }
-    },
     "paste_import.empty": {
       "localizations": {
         "de": {
@@ -4541,86 +4893,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "No booking detected. Type and start must be certain."
-          }
-        }
-      }
-    },
-    "paste_import.feature_request": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Als Feature-Request senden…"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send as feature request…"
-          }
-        }
-      }
-    },
-    "paste_import.feature_request_done": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feature-Request angelegt."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feature request created."
-          }
-        }
-      }
-    },
-    "paste_import.feature_request_message": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "GitHub-Issues sind öffentlich. Das Originaldokument wird nicht an GitHub gesendet. Nach dem Senden öffnet sich eine E-Mail an die Feedback-Adresse mit dem Dokument als Anhang."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "GitHub issues are public. The original document is not sent to GitHub. After you send, an email opens to the feedback address with the document attached."
-          }
-        }
-      }
-    },
-    "paste_import.feature_request_send": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Senden"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send"
-          }
-        }
-      }
-    },
-    "paste_import.feature_request_title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Öffentlicher Feature-Request"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Public feature request"
           }
         }
       }
@@ -4721,6 +4993,134 @@
         }
       }
     },
+    "paste_import.feature_request": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Feature-Request senden…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send as feature request…"
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feature-Request angelegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feature request created."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_mail_body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Originaldokument ist angehängt. Bitte nicht in ein öffentliches GitHub-Issue kopieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original document is attached. Please do not copy it into a public GitHub issue."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_mail_failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die E-Mail mit dem Dokument konnte nicht geöffnet oder gesendet werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The email with the document could not be opened or sent."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_mail_unavailable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail ist nicht eingerichtet. Sende die Originaldatei selbst an %@ und hänge sie an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail is not set up. Send the original file yourself to %@ and attach it."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub-Issues sind öffentlich. Das Originaldokument wird nicht an GitHub gesendet. Nach dem Senden öffnet sich eine E-Mail an die Feedback-Adresse mit dem Dokument als Anhang."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub issues are public. The original document is not sent to GitHub. After you send, an email opens to the feedback address with the document attached."
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_send": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        }
+      }
+    },
+    "paste_import.feature_request_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffentlicher Feature-Request"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public feature request"
+          }
+        }
+      }
+    },
     "paste_import.model_on_device": {
       "localizations": {
         "de": {
@@ -4817,18 +5217,18 @@
         }
       }
     },
-    "paste_import.cancelled": {
+    "paste_import.review_discard_message": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erkennung abgebrochen."
+            "value": "Änderungen verwerfen? Die Buchung wird nicht angelegt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Detection cancelled."
+            "value": "Discard changes? The booking will not be created."
           }
         }
       }
@@ -4861,6 +5261,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open in Reisen"
+          }
+        }
+      }
+    },
+    "paste_import.source_truncated": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelltext gekürzt — fehlende Abschnitte ggf. manuell prüfen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source text truncated — check missing sections manually if needed."
           }
         }
       }
@@ -5437,6 +5853,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Create reminder list automatically"
+          }
+        }
+      }
+    },
+    "settings.currency.convert_toggle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In bevorzugte Währung umrechnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert to Preferred Currency"
+          }
+        }
+      }
+    },
+    "settings.currency.footer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei aktivierter Option werden Summen mit Referenzkursen der Europäischen Zentralbank (über Frankfurter) umgerechnet. Die Werte sind unverbindlich und kein Wechselkursangebot. Dafür wird eine Netzwerkanfrage gestellt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When enabled, totals use European Central Bank reference rates (via Frankfurter). Values are indicative, not a trading quote. This uses a network request."
+          }
+        }
+      }
+    },
+    "settings.currency.preferred": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bevorzugte Währung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferred Currency"
+          }
+        }
+      }
+    },
+    "settings.currency.section": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Währung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Currency"
           }
         }
       }
@@ -6337,6 +6817,22 @@
         }
       }
     },
+    "split.column_resize": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spaltenbreite"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Column width"
+          }
+        }
+      }
+    },
     "store.clear_icloud_message": {
       "localizations": {
         "de": {
@@ -6449,22 +6945,6 @@
         }
       }
     },
-    "sync.apple_passkey_hint": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bei „Login mit Apple“ funktioniert der Passkey nur in Safari oder dem System-Anmeldefenster. Verwende hier das Apple-Account-Passwort und gegebenenfalls den Bestätigungscode."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For Sign in with Apple, passkeys work only in Safari or the system authentication window. Here, use your Apple Account password and, if requested, the verification code."
-          }
-        }
-      }
-    },
     "sync.all.all_providers_synced": {
       "localizations": {
         "de": {
@@ -6557,6 +7037,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$d with restricted permissions"
+          }
+        }
+      }
+    },
+    "sync.apple_passkey_hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei „Login mit Apple“ funktioniert der Passkey nur in Safari oder dem System-Anmeldefenster. Verwende hier das Apple-Account-Passwort und gegebenenfalls den Bestätigungscode."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For Sign in with Apple, passkeys work only in Safari or the system authentication window. Here, use your Apple Account password and, if requested, the verification code."
           }
         }
       }
@@ -7761,6 +8257,54 @@
         }
       }
     },
+    "trip.cost.conversion_unavailable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umrechnung nicht möglich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conversion unavailable"
+          }
+        }
+      }
+    },
+    "trip.cost.missing_prices": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ohne Preis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld missing price(s)"
+          }
+        }
+      }
+    },
+    "trip.cost.reference_rate_hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referenzkurs %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference rate %@"
+          }
+        }
+      }
+    },
     "trip.create_from_bookings_failed": {
       "localizations": {
         "de": {
@@ -7773,70 +8317,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Trip dates cannot be derived from the selection."
-          }
-        }
-      }
-    },
-    "booking.delete_confirm_message": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The booking will be permanently removed from Reisen."
-          }
-        }
-      }
-    },
-    "booking.delete_confirm_message_synced": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt. Nach dem nächsten Provider-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The booking will be permanently removed from Reisen. After the next provider sync it may reappear if it still exists at the provider."
-          }
-        }
-      }
-    },
-    "booking.delete_confirm_title_named": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Buchung „%1$@“ löschen?"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete booking “%1$@”?"
-          }
-        }
-      }
-    },
-    "booking.delete_help": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diese Buchung unwiderruflich löschen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Permanently delete this booking"
           }
         }
       }
@@ -8733,375 +9213,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Welcome"
-          }
-        }
-      }
-    },
-    "action.open_booking": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Buchung öffnen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open booking"
-          }
-        }
-      }
-    },
-    "action.open_in_browser_help": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Öffnet die Buchung im Standard-Browser."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens the booking in your default browser."
-          }
-        }
-      }
-    },
-    "action.open_in_provider_app": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In %1$@-App öffnen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open in %1$@ app"
-          }
-        }
-      }
-    },
-    "gap.search.activity": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erlebnis suchen (%1$@)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search experiences (%1$@)"
-          }
-        }
-      }
-    },
-    "gap.search.all_enabled": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle aktiven Portale"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All enabled portals"
-          }
-        }
-      }
-    },
-    "gap.search.car_rental": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mietwagen suchen (%1$@)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search car rental (%1$@)"
-          }
-        }
-      }
-    },
-    "gap.search.ferry": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fähre suchen (%1$@)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search ferry (%1$@)"
-          }
-        }
-      }
-    },
-    "gap.search.flight": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flug suchen (%1$@)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search flights (%1$@)"
-          }
-        }
-      }
-    },
-    "gap.search.hotel": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hotel suchen (%1$@)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search hotels (%1$@)"
-          }
-        }
-      }
-    },
-    "gap.search.menu": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suchen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search"
-          }
-        }
-      }
-    },
-    "gap.search.one_provider": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein Portal"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One portal"
-          }
-        }
-      }
-    },
-    "gap.search.provider_picker": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Portal für Suche"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search portal"
-          }
-        }
-      }
-    },
-    "gap.search.category_hotel": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hotel"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hotels"
-          }
-        }
-      }
-    },
-    "gap.search.category_flight": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flug"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flights"
-          }
-        }
-      }
-    },
-    "gap.search.category_ferry": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fähre"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ferry"
-          }
-        }
-      }
-    },
-    "gap.search.category_activity": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erlebnis"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Experiences"
-          }
-        }
-      }
-    },
-    "gap.search.category_car_rental": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mietwagen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Car rental"
-          }
-        }
-      }
-    },
-    "paste_import.source_truncated": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quelltext gekürzt — fehlende Abschnitte ggf. manuell prüfen."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Source text truncated — check missing sections manually if needed."
-          }
-        }
-      }
-    },
-    "paste_import.feature_request_mail_body": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Das Originaldokument ist angehängt. Bitte nicht in ein öffentliches GitHub-Issue kopieren."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The original document is attached. Please do not copy it into a public GitHub issue."
-          }
-        }
-      }
-    },
-    "paste_import.feature_request_mail_unavailable": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail ist nicht eingerichtet. Sende die Originaldatei selbst an %@ und hänge sie an."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail is not set up. Send the original file yourself to %@ and attach it."
-          }
-        }
-      }
-    },
-    "paste_import.feature_request_mail_failed": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die E-Mail mit dem Dokument konnte nicht geöffnet oder gesendet werden."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The email with the document could not be opened or sent."
-          }
-        }
-      }
-    },
-    "booking.portal_cancel_load_failed": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Stornoseite konnte nicht geladen werden."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The cancellation page could not be loaded."
-          }
-        }
-      }
-    }
-,
-    "split.column_resize": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spaltenbreite"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Column width"
           }
         }
       }

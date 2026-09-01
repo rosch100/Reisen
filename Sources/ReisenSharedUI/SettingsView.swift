@@ -38,6 +38,8 @@ public struct SettingsView: View {
     @AppStorage(AppSettingsKeys.rememberLoginAutomatically) private var rememberLoginAutomatically: Bool = false
     @AppStorage(AppSettingsKeys.reportErrorsToGitHub) private var reportErrorsToGitHub: Bool = false
     @AppStorage(AppSettingsKeys.feedbackGitHubUsername) private var feedbackGitHubUsername = ""
+    @AppStorage(AppSettingsKeys.preferredCurrencyCode) private var preferredCurrencyCode: String = ""
+    @AppStorage(AppSettingsKeys.convertAmountsToPreferredCurrency) private var convertAmountsToPreferredCurrency: Bool = false
 
     @State private var eventCalendarNames: [String] = []
     @State private var reminderCalendarNames: [String] = []
@@ -70,6 +72,21 @@ public struct SettingsView: View {
             .joined(separator: ", ")
     }
 
+    private var preferredCurrencyBinding: Binding<String> {
+        Binding(
+            get: {
+                preferredCurrencyCode.isEmpty
+                    ? AppSettingsKeys.preferredCurrency()
+                    : preferredCurrencyCode
+            },
+            set: { newValue in
+                preferredCurrencyCode = newValue
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .uppercased()
+            }
+        )
+    }
+
     public var body: some View {
         Form {
             if showsProviderSyncSettings {
@@ -90,6 +107,17 @@ public struct SettingsView: View {
                 Text(L10n.string(.settingsReminders))
             } footer: {
                 Text(L10n.string(.settingsRemindersFooter))
+            }
+
+            Section {
+                TextField(L10n.string(.settingsCurrencyPreferred), text: preferredCurrencyBinding)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                Toggle(L10n.string(.settingsCurrencyConvertToggle), isOn: $convertAmountsToPreferredCurrency)
+            } header: {
+                Text(L10n.string(.settingsCurrencySection))
+            } footer: {
+                Text(L10n.string(.settingsCurrencyFooter))
             }
 
             Section {

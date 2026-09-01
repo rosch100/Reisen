@@ -51,6 +51,11 @@ public struct AppSettingsKeys {
     /// Persistierte Breite der mittleren Buchungsliste (Punkte).
     public static let bookingListColumnWidth = "reisen_bookingListColumnWidth"
 
+    /// Bevorzugte Anzeige-/Umrechnungswährung (ISO 4217).
+    public static let preferredCurrencyCode = "reisen_preferredCurrencyCode"
+    /// Summen in die bevorzugte Währung umrechnen (Default aus).
+    public static let convertAmountsToPreferredCurrency = "reisen_convertAmountsToPreferredCurrency"
+
     public static func providerEnabledKey(for providerID: ProviderID) -> String {
         "\(providerEnabledPrefix)\(providerID.rawValue)"
     }
@@ -84,6 +89,36 @@ public struct AppSettingsKeys {
     /// Normalisierter optionaler GitHub-Benutzername für Issue-Attribution.
     public static func optionalFeedbackGitHubUsername(defaults: UserDefaults = .standard) -> String? {
         GitHubUsername.optionalValid(defaults.string(forKey: feedbackGitHubUsername))
+    }
+
+    /// Default: Locale-Währung, sonst EUR.
+    public static func preferredCurrency(
+        defaults: UserDefaults = .standard,
+        locale: Locale = .current
+    ) -> String {
+        if let stored = defaults.string(forKey: preferredCurrencyCode)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !stored.isEmpty {
+            return stored.uppercased()
+        }
+        if let code = locale.currency?.identifier, !code.isEmpty {
+            return code.uppercased()
+        }
+        return "EUR"
+    }
+
+    public static func setPreferredCurrency(_ code: String, defaults: UserDefaults = .standard) {
+        let normalized = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        defaults.set(normalized, forKey: preferredCurrencyCode)
+    }
+
+    /// Default: Umrechnung aus.
+    public static func convertsAmountsToPreferredCurrency(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: convertAmountsToPreferredCurrency)
+    }
+
+    public static func setConvertsAmountsToPreferredCurrency(_ enabled: Bool, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: convertAmountsToPreferredCurrency)
     }
 }
 
