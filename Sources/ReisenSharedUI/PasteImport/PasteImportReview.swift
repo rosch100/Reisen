@@ -128,6 +128,9 @@ public struct PasteImportReviewSheet: View {
     @Environment(\.modelContext) private var modelContext
     @State private var draft: BookingEditorDraft
     @State private var showDiscardConfirm = false
+    @State private var pendingPeriodExpand: TripPeriodExpandOnAssign.Proposal?
+    @State private var showPeriodExpandConfirm = false
+    @State private var persistErrorMessage: String?
 
     public init(
         payload: PasteImportReviewPayload,
@@ -171,6 +174,22 @@ public struct PasteImportReviewSheet: View {
         } message: {
             Text(L10n.string(.pasteImportReviewDiscardMessage))
         }
+        .alert(
+            TripPeriodExpandPrompt.title,
+            isPresented: $showPeriodExpandConfirm
+        ) {
+            Button(TripPeriodExpandPrompt.confirmAction) {
+                confirmPeriodExpandAndSave()
+            }
+            Button(TripPeriodExpandPrompt.declineAction, role: .cancel) {
+                declinePeriodExpandAndSaveOpen()
+            }
+        } message: {
+            if let pendingPeriodExpand {
+                Text(TripPeriodExpandPrompt.message(for: pendingPeriodExpand))
+            }
+        }
+        .persistFailureAlert(message: $persistErrorMessage)
     }
 
     #if os(macOS)
@@ -237,19 +256,54 @@ public struct PasteImportReviewSheet: View {
             return
         }
         let entryTrip = try fetchTrip(id: payload.entryTripID)
-        let assignedID = TripBookingDateWindow.assignedTripID(
-            entryTripID: payload.entryTripID,
+        guard let entryTrip else {
+            try createBooking(assignedTo: nil)
+            return
+        }
+        if let proposal = TripPeriodExpandOnAssign.proposalIfNeeded(
             bookingStart: draft.startAt,
             bookingEnd: draft.endAt,
-            tripStart: entryTrip?.startDate,
-            tripEnd: entryTrip?.endDate
-        )
-        let trip = assignedID == nil ? nil : entryTrip
+            tripStart: entryTrip.startDate,
+            tripEnd: entryTrip.endDate
+        ) {
+            pendingPeriodExpand = proposal
+            showPeriodExpandConfirm = true
+            return
+        }
+        try createBooking(assignedTo: entryTrip)
+    }
+
+    private func confirmPeriodExpandAndSave() {
+        guard let proposal = pendingPeriodExpand else { return }
+        do {
+            guard let entryTrip = try fetchTrip(id: payload.entryTripID) else {
+                try createBooking(assignedTo: nil)
+                return
+            }
+            entryTrip.startDate = proposal.start
+            entryTrip.endDate = proposal.end
+            try createBooking(assignedTo: entryTrip)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func declinePeriodExpandAndSaveOpen() {
+        do {
+            try createBooking(assignedTo: nil)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func createBooking(assignedTo trip: SDTrip?) throws {
         let createdID = try BookingEditorDraft.createBooking(
             from: draft,
             trip: trip,
             in: modelContext
         )
+        pendingPeriodExpand = nil
+        showPeriodExpandConfirm = false
         onSaved(createdID)
     }
 

@@ -600,6 +600,9 @@ private struct BookingDetailPanel: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var bookingEditorDraft: BookingEditorDraft?
+    @State private var pendingPeriodExpand: TripPeriodExpandOnAssign.Proposal?
+    @State private var showPeriodExpandConfirm = false
+    @State private var persistErrorMessage: String?
 
     private var selectedBooking: SDBooking? {
         guard case .booking(let booking) = selectedTimelineItem else { return nil }
@@ -649,6 +652,22 @@ private struct BookingDetailPanel: View {
         .onChange(of: trip.id) { _, _ in
             clearEditor()
         }
+        .alert(
+            TripPeriodExpandPrompt.title,
+            isPresented: $showPeriodExpandConfirm
+        ) {
+            Button(TripPeriodExpandPrompt.confirmAction) {
+                confirmPeriodExpandAndCreate()
+            }
+            Button(TripPeriodExpandPrompt.declineAction, role: .cancel) {
+                declinePeriodExpandAndCreateOpen()
+            }
+        } message: {
+            if let pendingPeriodExpand {
+                Text(TripPeriodExpandPrompt.message(for: pendingPeriodExpand))
+            }
+        }
+        .persistFailureAlert(message: $persistErrorMessage)
     }
 
     private func syncDraftFromSession(resetDraft: Bool) {
@@ -765,19 +784,25 @@ private struct BookingDetailPanel: View {
     private func clearEditor() {
         bookingEditorSession = nil
         bookingEditorDraft = nil
+        pendingPeriodExpand = nil
+        showPeriodExpandConfirm = false
     }
 
     private func saveEditor() throws {
         guard let draft = bookingEditorDraft else { return }
         switch bookingEditorSession {
         case .create:
-            let newID = try BookingEditorDraft.createBooking(
-                from: draft,
-                trip: trip,
-                in: modelContext
-            )
-            selectedTimelineID = newID.uuidString
-            clearEditor()
+            if let proposal = TripPeriodExpandOnAssign.proposalIfNeeded(
+                bookingStart: draft.startAt,
+                bookingEnd: draft.endAt,
+                tripStart: trip.startDate,
+                tripEnd: trip.endDate
+            ) {
+                pendingPeriodExpand = proposal
+                showPeriodExpandConfirm = true
+                return
+            }
+            try createBookingAssigned(to: trip)
         case .edit:
             guard let booking = selectedBooking else { return }
             try draft.apply(to: booking, in: modelContext)
@@ -785,6 +810,36 @@ private struct BookingDetailPanel: View {
         case nil:
             break
         }
+    }
+
+    private func confirmPeriodExpandAndCreate() {
+        guard let proposal = pendingPeriodExpand else { return }
+        trip.startDate = proposal.start
+        trip.endDate = proposal.end
+        do {
+            try createBookingAssigned(to: trip)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func declinePeriodExpandAndCreateOpen() {
+        do {
+            try createBookingAssigned(to: nil)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func createBookingAssigned(to trip: SDTrip?) throws {
+        guard let draft = bookingEditorDraft else { return }
+        let newID = try BookingEditorDraft.createBooking(
+            from: draft,
+            trip: trip,
+            in: modelContext
+        )
+        selectedTimelineID = newID.uuidString
+        clearEditor()
     }
 }
 
