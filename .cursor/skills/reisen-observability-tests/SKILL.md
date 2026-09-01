@@ -19,7 +19,7 @@ Begleit-Skill zur Rule `reisen-logging-and-tests`. **Kein** Ersatz für `/featur
 
 ## Checkliste (kopieren)
 
-```
+```text
 Observability/Tests:
 - [ ] DiagnosticEvent an Start/Erfolg/Fehler/Timeout (oder begründet entbehrlich)
 - [ ] Keine Secrets/PII im Klartext; URL-Rohwerte nur über Diagnostics-Redaction

@@ -53,7 +53,7 @@ Nur Referenz — Specs bleiben, keine Backlog-Details mehr.
 | F06 | On-device Paste-Import | [`../superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md) |
 | F09 | Vollständigkeitsanzeige (Gaps) | Inter-Booking-Lücken in Trip-/Offen-UI |
 | F13 | Kostensumme der Reise | [`../superpowers/specs/2026-09-01-trip-cost-currency-design.md`](../superpowers/specs/2026-09-01-trip-cost-currency-design.md) |
-| F18 | Mehrfachauswahl + Sammel-Zuordnung | `AssignBookingsSheet` mit Batch-Zuordnung |
+| F18 | Mehrfachauswahl + Sammel-Zuordnung | `List(selection:)` + `AssignBookingsSheet` (kein Multi-Drag) |
 | F19 | Kontextmenü Zuordnen / Lösen | macOS-Kontextmenüs für offene und zugeordnete Buchungen |
 
 ---
@@ -83,7 +83,7 @@ Nur Referenz — Specs bleiben, keine Backlog-Details mehr.
 
 **Guards:** Ungültige Drop-Ziele ablehnen (kein stilles Zuordnen). Datumsfenster → F21.
 
-**Out of Scope v1:** Multi-Drag (→ F18); Drop auf „Neue Reise“ (→ F17); iOS-Phone ohne Split-View (iPad/macOS zuerst).
+**Out of Scope v1:** Multi-Drag; Mehrfachauswahl/Sammel-Zuordnung (→ F18, umgesetzt); Drop auf „Neue Reise“ (→ F17); iOS-Phone ohne Split-View (iPad/macOS zuerst).
 
 ---
 

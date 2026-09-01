@@ -41,7 +41,8 @@ Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
 | --- | --- |
 | Tests (CI-parität) | `bash ./Scripts/ci-test.sh` |
 | Produkt-Build | `bash ./Scripts/ci-build.sh --arch arm64` |
-| macOS App | `bash ./Scripts/build-app.sh` / `run-app.sh` |
+| macOS bauen | `bash ./Scripts/build-app.sh` |
+| macOS starten | `bash ./Scripts/run-app.sh` |
 | macOS XCUI | `bash ./Scripts/macos-ui-test.sh` |
 | macOS UI-Review | `bash ./Scripts/macos-ui-review.sh` |
 | iOS Simulator | `bash ./Scripts/ios-run.sh` / `ios-test.sh` |

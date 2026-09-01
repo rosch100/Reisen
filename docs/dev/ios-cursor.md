@@ -53,7 +53,7 @@ Anderen Simulator wählen (kein stiller Fallback — fehlt der Name, bricht das 
 IOS_SIMULATOR="iPhone 17" bash ./Scripts/ios-run.sh
 ```
 
-Entsprechende Cursor-Tasks: **Terminal → Run Task…** → `iOS: Generate Xcode project`, `iOS: Run on Simulator`, `iOS: Test on Simulator`.
+Entsprechende Cursor-Tasks: **Terminal → Run Task…** → `XcodeGen: Generate project`, `iOS: Run on Simulator`, `iOS: Test on Simulator`.
 
 ## Menschliches Debug: SweetPad + F5
 
