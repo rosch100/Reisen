@@ -7,6 +7,11 @@ import ReisenDomain
     #expect(ProviderID.autoGap != .manual)
 }
 
+@Test func providerAutoGap_doesNotExpectBrandedLogoAsset() {
+    #expect(!ProviderID.autoGap.expectsBrandedLogoAsset)
+    #expect(ProviderID.check24.expectsBrandedLogoAsset)
+}
+
 @Test func booking_isRealForGapDetect_excludesAutoAndCancelled() {
     let now = Date(timeIntervalSince1970: 1_700_000_000)
     let auto = Booking(
