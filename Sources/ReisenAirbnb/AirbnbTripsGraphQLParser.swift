@@ -70,6 +70,7 @@ private extension AirbnbTripNode {
                         end: times.end,
                         confirmationCode: confirmationCode,
                         externalUrl: externalUrl(schedulableType: details.schedulableType, confirmationCode: confirmationCode),
+                        cancellationUrl: AirbnbAPI.experienceCancellationURL(confirmationCode: confirmationCode),
                         locationTo: displayName,
                         statusRaw: BookingStatus.joinedRaw(status, activity.status),
                         rateDetails: Self.rateDetails(fromGuestCount: guestCount)

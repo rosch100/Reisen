@@ -28,6 +28,7 @@ Experiences als eigene Buchungsart synchronisieren und Enrichment über die HAR-
 | `startAt` / `endAt` | Trip `startTime`/`endTime` + TZ | unverändert |
 | `title` | Trip `displayName` | interim Ortstitel ok; Enrich überschreibt |
 | `externalUrl` | `…/trips/v1/{id}/ro/EXPERIENCE_RESERVATION/{code}` | unverändert |
+| `cancellationUrl` | `…/experience_alteration/{code}?flow=oneCancel&productType=experience` | HAR `app_url` Cancel-Row; Host `AirbnbAPI.baseURL` |
 | `status` | Trip `UPCOMING` / cancel | `confirmed` / `cancelled` |
 | Gäste | `travelerCapacity.numberOfAdults` | optional schon im Draft setzen |
 

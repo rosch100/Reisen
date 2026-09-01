@@ -125,25 +125,29 @@ private func paid(amount: Double?, days: Int = 3) -> CancellationDeadline {
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: open, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: true
+            deadlines: deadlines, now: now, hasSessionWebView: true,
+            linkMode: .distinctURL
         ) == .sheet
     )
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: open, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: false
+            deadlines: deadlines, now: now, hasSessionWebView: false,
+            linkMode: .distinctURL
         ) == .hidden
     )
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: cancel, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: false
+            deadlines: deadlines, now: now, hasSessionWebView: false,
+            linkMode: .distinctURL
         ) == .safari
     )
     #expect(
         BookingPortalCancellation.presentation(
             cancellation: cancel, open: open, status: .confirmed,
-            deadlines: deadlines, now: now, hasSessionWebView: true
+            deadlines: deadlines, now: now, hasSessionWebView: true,
+            linkMode: .distinctURL
         ) == .sheet
     )
 }
@@ -152,31 +156,90 @@ private func paid(amount: Double?, days: Int = 3) -> CancellationDeadline {
     let deadlines = [freeDeadline()]
     let both = BookingPortalActions.visible(
         open: open, cancellation: cancel, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: true
+        deadlines: deadlines, now: now, hasSessionWebView: true,
+        linkMode: .distinctURL
     )
     #expect(both.open == open && both.cancel == cancel)
 
     let sameNoHub = BookingPortalActions.visible(
         open: open, cancellation: open, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: false
+        deadlines: deadlines, now: now, hasSessionWebView: false,
+        linkMode: .distinctURL
     )
     #expect(sameNoHub.open == open && sameNoHub.cancel == nil)
 
     let sameHub = BookingPortalActions.visible(
         open: open, cancellation: open, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: true
+        deadlines: deadlines, now: now, hasSessionWebView: true,
+        linkMode: .distinctURL
     )
     #expect(sameHub.open == open && sameHub.cancel == open)
 
     let onlyCancel = BookingPortalActions.visible(
         open: nil, cancellation: cancel, status: .confirmed,
-        deadlines: deadlines, now: now, hasSessionWebView: false
+        deadlines: deadlines, now: now, hasSessionWebView: false,
+        linkMode: .distinctURL
     )
     #expect(onlyCancel.open == nil && onlyCancel.cancel == cancel)
 
     let cancelled = BookingPortalActions.visible(
         open: open, cancellation: cancel, status: .cancelled,
-        deadlines: deadlines, now: now, hasSessionWebView: true
+        deadlines: deadlines, now: now, hasSessionWebView: true,
+        linkMode: .distinctURL
     )
     #expect(cancelled.open == open && cancelled.cancel == nil)
+}
+
+@Test func bookingPortalCancellation_presentation_sessionBoundHidesSafari() {
+    let deadlines = [freeDeadline()]
+    #expect(
+        BookingPortalCancellation.presentation(
+            cancellation: cancel, open: open, status: .confirmed,
+            deadlines: deadlines, now: now, hasSessionWebView: false,
+            linkMode: .sessionBoundDistinct
+        ) == .hidden
+    )
+    #expect(
+        BookingPortalCancellation.presentation(
+            cancellation: cancel, open: open, status: .confirmed,
+            deadlines: deadlines, now: now, hasSessionWebView: true,
+            linkMode: .sessionBoundDistinct
+        ) == .sheet
+    )
+}
+
+@Test func bookingPortalCancellation_presentation_noneModeHidesEvenWithDistinctURL() {
+    let deadlines = [freeDeadline()]
+    #expect(
+        BookingPortalCancellation.presentation(
+            cancellation: cancel, open: open, status: .confirmed,
+            deadlines: deadlines, now: now, hasSessionWebView: false,
+            linkMode: .none
+        ) == .hidden
+    )
+    #expect(
+        BookingPortalCancellation.presentation(
+            cancellation: cancel, open: open, status: .confirmed,
+            deadlines: deadlines, now: now, hasSessionWebView: true,
+            linkMode: .none
+        ) == .hidden
+    )
+    let shown = BookingPortalActions.visible(
+        open: open, cancellation: cancel, status: .confirmed,
+        deadlines: deadlines, now: now, hasSessionWebView: false,
+        linkMode: .none
+    )
+    #expect(shown.open == open && shown.cancel == nil)
+}
+
+@Test func bookingPortalCancellation_allowsCopyingCancellationLink() {
+    #expect(
+        BookingPortalCancellation.allowsCopyingCancellationLink(cancel: cancel, open: open)
+    )
+    #expect(
+        !BookingPortalCancellation.allowsCopyingCancellationLink(cancel: open, open: open)
+    )
+    #expect(
+        !BookingPortalCancellation.allowsCopyingCancellationLink(cancel: nil, open: open)
+    )
 }

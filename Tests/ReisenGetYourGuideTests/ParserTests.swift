@@ -33,7 +33,8 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     #expect(deadline.deadlineAt == iso8601("2026-08-07T19:00:00+07:00"))
     #expect(deadline.isFreeCancellation == true)
     #expect(deadline.policyText?.contains("vollständige Rückerstattung") == true)
-    #expect(draft.cancellationUrl == nil)
+    #expect(draft.cancellationUrl == draft.externalUrl)
+    #expect(draft.cancellationUrl == GetYourGuideWebConstants.bookingURL(hash: "<REDACTED-1>"))
 }
 
 @Test("GetYourGuideMyBookingsParser mappt pastBookings ohne Pagination-Keys")
@@ -44,6 +45,7 @@ func gygMyBookingsParsesPastWhenUpcomingEmpty() throws {
     let draft = try #require(catalog.bookings.first)
     #expect(draft.status == .confirmed)
     #expect(draft.externalUrl == GetYourGuideWebConstants.bookingURL(hash: "<REDACTED>"))
+    #expect(draft.cancellationUrl == draft.externalUrl)
     #expect(draft.startAt == iso8601("2026-08-08T19:00:00+07:00"))
     #expect(draft.endAt == iso8601("2026-08-08T21:00:00+07:00"))
 }

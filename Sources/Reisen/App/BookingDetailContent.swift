@@ -106,22 +106,15 @@ struct BookingDetailContent: View {
 
             Divider()
             if BookingPortalActionBar.isVisible(
-                open: booking.browserURL,
-                cancellation: booking.cancellationBrowserURL,
-                status: booking.status,
-                deadlines: booking.domainCancellationDeadlines,
-                now: Date(),
+                booking: booking,
                 hasSessionWebView: hasSessionWebView
             ) {
                 BookingPortalActionBar(
-                    openURL: booking.browserURL,
-                    cancellationURL: booking.cancellationBrowserURL,
-                    status: booking.status,
+                    booking: booking,
                     openTitle: BookingPortalOpenTitle.short,
                     openHelp: BookingPortalOpenTitle.openInBrowserHelp,
                     openButtonStyle: .bordered,
                     showsCopyMenu: true,
-                    deadlines: booking.domainCancellationDeadlines,
                     hasSessionWebView: hasSessionWebView,
                     onPresentCancel: onPresentCancel
                 )
