@@ -25,8 +25,9 @@ public enum BookingPortalCancellation {
         deadlines: [CancellationDeadline],
         now: Date,
         hasSessionWebView: Bool,
-        requiresProviderSession: Bool
+        linkMode: ProviderCancellationLinkMode
     ) -> BookingPortalCancelPresentation {
+        guard linkMode != .none else { return .hidden }
         guard isActionable(
             cancellation: cancellation,
             open: open,
@@ -35,7 +36,7 @@ public enum BookingPortalCancellation {
             now: now
         ) else { return .hidden }
         if hasSessionWebView { return .sheet }
-        if requiresProviderSession { return .hidden }
+        if ProviderCancellationLinkPolicy.requiresProviderSession(linkMode) { return .hidden }
         if cancellation != open { return .safari }
         return .hidden
     }
@@ -59,7 +60,7 @@ public enum BookingPortalActions {
         deadlines: [CancellationDeadline],
         now: Date,
         hasSessionWebView: Bool,
-        requiresProviderSession: Bool
+        linkMode: ProviderCancellationLinkMode
     ) -> Visible {
         let shown: URL?
         switch BookingPortalCancellation.presentation(
@@ -69,7 +70,7 @@ public enum BookingPortalActions {
             deadlines: deadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: requiresProviderSession
+            linkMode: linkMode
         ) {
         case .sheet, .safari:
             shown = cancellation

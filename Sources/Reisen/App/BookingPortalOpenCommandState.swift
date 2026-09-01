@@ -9,7 +9,7 @@ struct BookingPortalOpenCommandState {
     var status: BookingStatus = .unknown
     var deadlines: [CancellationDeadline] = []
     var hasSessionWebView: Bool = false
-    var requiresProviderSession: Bool
+    var linkMode: ProviderCancellationLinkMode
 
     init(
         url: URL? = nil,
@@ -17,14 +17,14 @@ struct BookingPortalOpenCommandState {
         status: BookingStatus = .unknown,
         deadlines: [CancellationDeadline] = [],
         hasSessionWebView: Bool = false,
-        requiresProviderSession: Bool
+        linkMode: ProviderCancellationLinkMode
     ) {
         self.url = url
         self.cancellationURL = cancellationURL
         self.status = status
         self.deadlines = deadlines
         self.hasSessionWebView = hasSessionWebView
-        self.requiresProviderSession = requiresProviderSession
+        self.linkMode = linkMode
     }
 
     init(booking: SDBooking, hasSessionWebView: Bool) {
@@ -34,7 +34,7 @@ struct BookingPortalOpenCommandState {
             status: booking.status,
             deadlines: booking.domainCancellationDeadlines,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: booking.cancellationRequiresProviderSession
+            linkMode: booking.cancellationLinkMode
         )
     }
 
@@ -47,7 +47,7 @@ struct BookingPortalOpenCommandState {
             deadlines: deadlines,
             now: Date(),
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: requiresProviderSession
+            linkMode: linkMode
         ) != .hidden
     }
 }

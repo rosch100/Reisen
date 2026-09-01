@@ -10,6 +10,8 @@ public enum ProviderCancellationLinkMode: Equatable, Sendable {
 public enum ProviderCancellationLinkPolicy {
     public static func mode(provider: ProviderID, bookingType: BookingType) -> ProviderCancellationLinkMode {
         switch (provider, bookingType) {
+        case (.manual, _):
+            return .distinctURL
         case (.traveloka, _):
             return .distinctURL
         case (.airbnb, .activity):

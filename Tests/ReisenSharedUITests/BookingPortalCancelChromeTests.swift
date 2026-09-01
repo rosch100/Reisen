@@ -20,20 +20,20 @@ import ReisenDomain
     let withoutSession = BookingPortalActions.visible(
         open: url, cancellation: url, status: .confirmed,
         deadlines: [free], now: now, hasSessionWebView: false,
-        requiresProviderSession: true
+        linkMode: .inPageOnOpen
     )
     #expect(withoutSession.open == url && withoutSession.cancel == nil)
     #expect(
         BookingPortalActionBar.isVisible(
             open: url, cancellation: url, status: .confirmed,
             deadlines: [free], now: now, hasSessionWebView: false,
-            requiresProviderSession: true
+            linkMode: .inPageOnOpen
         )
     )
     let withSession = BookingPortalActions.visible(
         open: url, cancellation: url, status: .confirmed,
         deadlines: [free], now: now, hasSessionWebView: true,
-        requiresProviderSession: true
+        linkMode: .inPageOnOpen
     )
     #expect(withSession.cancel == url)
 }
@@ -54,7 +54,7 @@ import ReisenDomain
             deadlines: [free],
             now: Date(),
             hasSessionWebView: false,
-            requiresProviderSession: true
+            linkMode: .sessionBoundDistinct
         )
     )
     #expect(
@@ -65,7 +65,7 @@ import ReisenDomain
             deadlines: [free],
             now: Date(),
             hasSessionWebView: false,
-            requiresProviderSession: true
+            linkMode: .sessionBoundDistinct
         )
     )
     let shown = BookingPortalActions.visible(
@@ -75,7 +75,7 @@ import ReisenDomain
         deadlines: [free],
         now: Date(),
         hasSessionWebView: false,
-        requiresProviderSession: true
+        linkMode: .sessionBoundDistinct
     )
     #expect(shown.open == open)
     #expect(shown.cancel == nil)

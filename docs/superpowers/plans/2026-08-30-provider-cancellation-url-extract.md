@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans (Tasks gekoppelt) mit TDD.
 
-**Goal:** Jeder Sync-Provider persistiert eine **belegte** buchungsspezifische Storno-URL oder bleibt bewusst `nil`. Kein Raten, keine Kopie der Open-URL.
+**Goal:** Jeder Sync-Provider persistiert eine **belegte** Storno-URL gemäß Policy-Mode oder bleibt bewusst `nil`. Kein Raten. Open-URL-Kopie nur bei dokumentiertem `inPageOnOpen` (GYG).
 
-**Architecture:** Bestehendes `cancellationUrl` / `TravelokaAPI.refundPresubmissionURL`-Muster. URL-Bau im Provider-Modul (`*API` / `*Web`). Catalog/Parser setzt Facts.
+**Architecture:** Bestehendes `cancellationUrl` / `TravelokaAPI.refundPresubmissionURL`-Muster. URL-Bau im Provider-Modul (`*API` / `*Web`). Catalog/Parser setzt Facts. GYG: `cancellationUrl == externalUrl` (In-Page-Modal).
 
 **Beleg Stand 2026-08-30:** Airbnb Experience HAR `app_url` = `/experience_alteration/{code}?flow=oneCancel&productType=experience` (Host `AirbnbAPI.baseURL`). Browser: Seite „Verwalte dein gebuchtes Erlebnis“, nicht 404. Stay `/reservation/cancel/{code}` = 404. Übrige Provider: Cancel-Click-HAR fehlt.
 
@@ -48,6 +48,6 @@ Safari oder Firefox, eingeloggt, **eine** aktive Buchung:
 | Check24 | `kundenbereich/buchung/{uuid}` | Request-URL mit storn/cancel ≠ Detail-URL |
 | Booking.com | Confirmation | Cancel-URL ≠ confirmation.html |
 | Airbnb Stay | Trip-Detail | `app_url`/`url` der Cancel-Row |
-| GYG | `/booking/{hash}` | eigene HTTPS-URL nach Cancel-Klick |
+| GYG | `/booking/{hash}` | In-Page: Cancel-Modal ohne eigene HTTPS-URL → Mode `inPageOnOpen` (`cancellationUrl == open`) |
 | Opodo | `#tripdetails/td=` | Cancel/Refund-Route ≠ tripdetails |
 | billiger-mietwagen | `/reservation/account/bookings/{id}` | Storno-URL ≠ Booking-Page |

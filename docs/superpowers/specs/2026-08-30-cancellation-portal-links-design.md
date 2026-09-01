@@ -21,7 +21,7 @@ Verwandt, nicht dieser Intent: [booking-portal-open.md](../../dev/booking-portal
 | **Öffnen-URL** | `Booking.externalUrl`, gefiltert über `BookingExternalURL.browserURL` (kein `reisen://manual/`). |
 | **Storno-URL** | `Booking.cancellationUrl`, **derselbe** Filter `BookingExternalURL.browserURL`. Direkter Einstieg in den Storno-/Refund-Flow **dieser** Buchung. |
 | **Öffnen-Button** | Sichtbares Control (Link mit Button-Stil) mit kurzem Titel „Öffnen“ / „Open“. |
-| **Storno-Button** | Analog, Titel „Storno“ / „Cancel in portal“. Öffnet die Storno-URL. **Kein** `role: .destructive`, **kein** Confirm. |
+| **Storno-Button** | Analog, Titel „Storno“ / „Cancel in portal“. Öffnet die Storno-URL. Confirm: nein. Rolle: Sheet-Flow `.destructive` (Sheet-SSOT); Safari-Open ohne Sheet: kein `.destructive`. |
 | **Sync-Provider** | `ProviderID.syncProviderIDs` (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen.de). |
 | **Belegte Storno-URL** | Pfad steht in dem Provider-Web-SSOT **und** ein Test belegt ihn gegen Fixture/HAR-String; oder der Extract liefert ein explizites href/API-Feld. |
 | **Unbelegt** | `cancellationUrl == nil`. Storno-Button ausgeblendet. Kein Dummy. |
@@ -49,8 +49,8 @@ Verwandt, nicht dieser Intent: [booking-portal-open.md](../../dev/booking-portal
 ### Nicht in Scope
 
 - In-App-Storno, Provider-Cancel-API, Tombstones.
-- `role: .destructive` oder `confirmationDialog` für das Öffnen der Storno-Seite (die Destruktion passiert beim Anbieter).
-- Storno-URL = Öffnen-URL (stilless Fallback). Zwei Buttons, die dieselbe URL öffnen, sind verboten.
+- `confirmationDialog` für das Öffnen der Storno-Seite (die Destruktion passiert beim Anbieter). Sheet-Button-Rolle: siehe Sheet-SSOT.
+- Storno-URL = Öffnen-URL als stilles Fallback ohne Policy. Zwei Buttons, die dieselbe URL öffnen, sind außerhalb von dokumentiertem `inPageOnOpen` verboten.
 - Storno-Button bei `BookingStatus.cancelled`.
 - Neue `LSApplicationQueriesSchemes`.
 - Paste-Import-`@Generable`-Feld (v1 `open_gaps`; manuelles Editor-Feld deckt Nachtragen).
@@ -98,11 +98,13 @@ Domain bleibt SwiftData-/WebKit-frei. Kein neues Modul. Kein paralleler URL-Open
 Sichtbare Controls (SSOT, Domain, von der View nur gerendert):
 
 ```
-BookingPortalActions.visible(open:cancellation:status:) -> (open: URL?, cancel: URL?)
+BookingPortalActions.visible(
+  open:cancellation:status:deadlines:now:hasSessionWebView:linkMode:
+) -> (open: URL?, cancel: URL?)
 ```
 
 - `open`: `BookingExternalURL.browserURL` der Öffnen-URL (kann nil sein).
-- `cancel`: nur wenn Presentation ≠ hidden (Fristen/Status; Sheet bei Session auch wenn `cancel == open`; Safari nur bei eigener Storno-Seite ohne Session-Zwang). Siehe Sheet-Spec + Hybrid-Spec.
+- `cancel`: nur wenn Presentation ≠ hidden (Fristen/Status; `linkMode != .none`; Sheet bei Session auch wenn `cancel == open`; Safari nur bei `.distinctURL` ohne Session-Zwang). Siehe Sheet-Spec + Hybrid-Spec.
 
 Die ActionBar zeichnet genau diese beiden Optionals. Tests: nur Öffnen, nur Storno, beide, keine, cancelled, gleiche URL × Session.
 
@@ -186,7 +188,7 @@ Nicht port-only. Profil `unstructured_input` / `live_app` nicht geladen.
 | Ansatz | Grund gegen |
 |--------|-------------|
 | Storno-Button öffnet `externalUrl` ohne Matrix-Beleg | Stiller Fallback. Erlaubt nur als dokumentiertes `inPageOnOpen` (Hybrid-Spec). |
-| `role: .destructive` + Confirm | Impliziert Storno in Reisen; HIG-falsch für „Seite öffnen“. |
+| `role: .destructive` + Confirm für **Safari-Open** ohne Sheet | Impliziert Storno in Reisen. Sheet-Flow: `.destructive` laut [in-app-cancellation-sheet-design](2026-08-30-in-app-cancellation-sheet-design.md). |
 | Eigenes `BookingCancellationURL`-Filter-Enum | Duplikat von `BookingExternalURL.browserURL`. |
 | In-App Cancel-API | Keine belegte API; Store-/Auth-Risiko; Out of Scope Delete-Spec. |
 | Nur Traveloka | Widerspricht „alle Provider“ (Pipeline); UI darf trotzdem nur bei Beleg zeigen. |

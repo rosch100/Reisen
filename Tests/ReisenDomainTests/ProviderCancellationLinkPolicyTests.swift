@@ -23,6 +23,7 @@ import ReisenDomain
             == .sessionBoundDistinct
     )
     for type in BookingType.allCases {
+        #expect(ProviderCancellationLinkPolicy.mode(provider: .manual, bookingType: type) == .distinctURL)
         #expect(ProviderCancellationLinkPolicy.mode(provider: .opodo, bookingType: type) == .none)
         #expect(ProviderCancellationLinkPolicy.mode(provider: .booking, bookingType: type) == .none)
         #expect(ProviderCancellationLinkPolicy.mode(provider: .check24, bookingType: type) == .none)

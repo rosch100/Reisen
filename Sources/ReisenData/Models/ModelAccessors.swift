@@ -31,12 +31,14 @@ public extension SDBooking {
         BookingExternalURL.browserURL(from: cancellationUrl)
     }
 
+    /// Policy-Mode für Storno-Portal (SSOT `(provider, bookingType)`).
+    var cancellationLinkMode: ProviderCancellationLinkMode {
+        ProviderCancellationLinkPolicy.mode(provider: provider, bookingType: bookingType)
+    }
+
     /// Storno-UI braucht die Provider-Session (In-Page / session-bound Cancel-URL).
     var cancellationRequiresProviderSession: Bool {
-        ProviderCancellationLinkPolicy.requiresProviderSession(
-            provider: provider,
-            bookingType: bookingType
-        )
+        ProviderCancellationLinkPolicy.requiresProviderSession(cancellationLinkMode)
     }
 
     func portalCancelPresentation(
@@ -50,7 +52,7 @@ public extension SDBooking {
             deadlines: domainCancellationDeadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: cancellationRequiresProviderSession
+            linkMode: cancellationLinkMode
         )
     }
 

@@ -102,7 +102,7 @@ public struct BookingPortalActionBar: View {
     var deadlines: [CancellationDeadline]
     var now: Date
     var hasSessionWebView: Bool
-    var requiresProviderSession: Bool
+    var linkMode: ProviderCancellationLinkMode
     var onPresentCancel: (BookingPortalCancelPresentation, URL) -> Void
 
     public enum BookingPortalOpenButtonStyle {
@@ -121,7 +121,7 @@ public struct BookingPortalActionBar: View {
         deadlines: [CancellationDeadline],
         now: Date = Date(),
         hasSessionWebView: Bool,
-        requiresProviderSession: Bool,
+        linkMode: ProviderCancellationLinkMode,
         onPresentCancel: @escaping (BookingPortalCancelPresentation, URL) -> Void
     ) {
         self.openURL = openURL
@@ -134,7 +134,7 @@ public struct BookingPortalActionBar: View {
         self.deadlines = deadlines
         self.now = now
         self.hasSessionWebView = hasSessionWebView
-        self.requiresProviderSession = requiresProviderSession
+        self.linkMode = linkMode
         self.onPresentCancel = onPresentCancel
     }
 
@@ -160,7 +160,7 @@ public struct BookingPortalActionBar: View {
             deadlines: booking.domainCancellationDeadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: booking.cancellationRequiresProviderSession,
+            linkMode: booking.cancellationLinkMode,
             onPresentCancel: onPresentCancel
         )
     }
@@ -172,7 +172,7 @@ public struct BookingPortalActionBar: View {
         deadlines: [CancellationDeadline],
         now: Date,
         hasSessionWebView: Bool,
-        requiresProviderSession: Bool
+        linkMode: ProviderCancellationLinkMode
     ) -> Bool {
         let shown = BookingPortalActions.visible(
             open: open,
@@ -181,7 +181,7 @@ public struct BookingPortalActionBar: View {
             deadlines: deadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: requiresProviderSession
+            linkMode: linkMode
         )
         return shown.open != nil || shown.cancel != nil
     }
@@ -198,7 +198,7 @@ public struct BookingPortalActionBar: View {
             deadlines: booking.domainCancellationDeadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: booking.cancellationRequiresProviderSession
+            linkMode: booking.cancellationLinkMode
         )
     }
 
@@ -210,7 +210,7 @@ public struct BookingPortalActionBar: View {
             deadlines: deadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: requiresProviderSession
+            linkMode: linkMode
         )
         let bar = HStack(spacing: 8) {
             if let open = shown.open {
@@ -229,7 +229,7 @@ public struct BookingPortalActionBar: View {
                         deadlines: deadlines,
                         now: now,
                         hasSessionWebView: hasSessionWebView,
-                        requiresProviderSession: requiresProviderSession
+                        linkMode: linkMode
                     )
                     onPresentCancel(presentation, cancel)
                 } label: {
@@ -308,7 +308,7 @@ public struct BookingPortalCancelMenuItems: View {
     var deadlines: [CancellationDeadline]
     var now: Date
     var hasSessionWebView: Bool
-    var requiresProviderSession: Bool
+    var linkMode: ProviderCancellationLinkMode
     var onPresentCancel: (BookingPortalCancelPresentation, URL) -> Void
 
     public init(
@@ -318,7 +318,7 @@ public struct BookingPortalCancelMenuItems: View {
         deadlines: [CancellationDeadline],
         now: Date = Date(),
         hasSessionWebView: Bool,
-        requiresProviderSession: Bool,
+        linkMode: ProviderCancellationLinkMode,
         onPresentCancel: @escaping (BookingPortalCancelPresentation, URL) -> Void
     ) {
         self.cancellationURL = cancellationURL
@@ -327,7 +327,7 @@ public struct BookingPortalCancelMenuItems: View {
         self.deadlines = deadlines
         self.now = now
         self.hasSessionWebView = hasSessionWebView
-        self.requiresProviderSession = requiresProviderSession
+        self.linkMode = linkMode
         self.onPresentCancel = onPresentCancel
     }
 
@@ -345,7 +345,7 @@ public struct BookingPortalCancelMenuItems: View {
             deadlines: booking.domainCancellationDeadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: booking.cancellationRequiresProviderSession,
+            linkMode: booking.cancellationLinkMode,
             onPresentCancel: onPresentCancel
         )
     }
@@ -358,7 +358,7 @@ public struct BookingPortalCancelMenuItems: View {
             deadlines: deadlines,
             now: now,
             hasSessionWebView: hasSessionWebView,
-            requiresProviderSession: requiresProviderSession
+            linkMode: linkMode
         )
         if presentation != .hidden, let cancelURL = cancellationURL {
             BookingPortalCancelMenuButton(

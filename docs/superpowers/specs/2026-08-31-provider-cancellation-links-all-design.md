@@ -75,12 +75,14 @@ Kein neues SwiftData-Attribut. Store-iOS ohne Hub-WebView: nur nicht-session-bou
 
 ### Presentation-API
 
-Bestehende `BookingPortalCancellation.presentation` um Erkennung **session-bound** ergänzen:
+Bestehende `BookingPortalCancellation.presentation` nimmt den Policy-Mode:
 
-- Entweder Hilfsflag `requiresProviderSession: Bool` am Aufruf (Apps setzen true für BM laut Policy), **oder**
-- Domain-Helper `requiresProviderSession(cancellation:provider:)` aus Policy.
+- Parameter `linkMode: ProviderCancellationLinkMode` (nicht nur Bool).
+- `.none` → immer `.hidden` (auch bei persistierter Cancel-URL, z. B. Opodo-Rest).
+- Session-bound / In-Page: ohne Hub-Session → `.hidden`; mit Session → `.sheet`.
+- Distinct: ohne Session → `.safari`; mit Session → `.sheet`.
 
-Empfehlung: `BookingPortalCancellation.presentation(..., requiresProviderSession: Bool)` — Apps/SharedUI leiten das Flag aus `ProviderCancellationLinkPolicy` + Booking.provider ab. Kein Raten an der URL-Zeichenkette in der View.
+Empfehlung: Apps/SharedUI leiten `linkMode` aus `ProviderCancellationLinkPolicy.mode(provider:bookingType:)` ab (`Booking.provider` **und** `Booking.bookingType`). Kein Raten an der URL-Zeichenkette in der View.
 
 ## Provider-Matrix
 
@@ -99,7 +101,7 @@ Jeder Sync-Provider hat **genau einen** Mode pro `(provider, bookingType)`-Zelle
 | Check24 | * | none | — | oft Kundenbereich-Seite; Capture nötig | 2 |
 | Manual | — | distinct (Editor) | Nutzer | HTTPS-Feld | — |
 
-**Welle 1 (verbindlicher Spec-Scope):** Policy-SSOT + Presentation `requiresProviderSession` + Copy-Helper + Docs-Folgen + Extract/Tests für **GYG (inPage)** und **billiger-mietwagen (sessionBoundDistinct)**. Traveloka/Airbnb Experience Regression.
+**Welle 1 (verbindlicher Spec-Scope):** Policy-SSOT + Presentation `linkMode` (inkl. `.none` → hidden) + Copy-Helper + Docs-Folgen + Extract/Tests für **GYG (inPage)** und **billiger-mietwagen (sessionBoundDistinct)**. Traveloka/Airbnb Experience Regression.
 
 **Welle 2:** Cancel-Click-HAR → Mode auf `distinct` / `inPageOnOpen` / `sessionBoundDistinct` umstellen; Opodo, Booking Hotel/Flug, Check24, Airbnb Stay.
 
@@ -114,7 +116,7 @@ Safari/Firefox, eingeloggt, **eine** aktive Buchung, Network an, **Storno/Cancel
 | `ProviderCancellationLinkPolicy` | `ReisenDomain` | `mode(provider:bookingType:)`; optional `requiresProviderSession(mode:)` |
 | URL-Builder | jeweiliges Provider-Modul (`*API` / `*WebConstants`) | Nur Templates mit Beleg |
 | Parser / TravelProvider | Provider-Modul | Catalog und/oder Enrich laut Matrix |
-| `BookingPortalCancellation` | Domain | Presentation + `allowsCopyingCancellationLink` + `requiresProviderSession`-Parameter |
+| `BookingPortalCancellation` | Domain | Presentation + `allowsCopyingCancellationLink` + `linkMode`-Parameter |
 | SharedUI ActionBar/Menü | SharedUI | Copy-Cancel nur bei erlaubt |
 | Apps | macOS/iOS | Flag aus Policy + `booking.provider` / Typ |
 
@@ -131,7 +133,7 @@ Safari/Firefox, eingeloggt, **eine** aktive Buchung, Network an, **Storno/Cancel
 ## Tests
 
 - Domain: Policy deckt alle `ProviderID.syncProviderIDs` × relevante Typen ab; Presentation (distinct Safari vs sessionBound/inPage hidden ohne Session); Copy-Regel.
-- Welle 1: GYG `cancellationUrl == externalUrl` (bei Hash/Open); BM Cancellation-URL ≠ Open und `requiresProviderSession`; Traveloka/Airbnb Experience Regression.
+- Welle 1: GYG `cancellationUrl == externalUrl` (bei Hash/Open); BM Cancellation-URL ≠ Open und Session-bound Mode; Traveloka/Airbnb Experience Regression.
 - Negativ: Opodo/Booking/Check24/Airbnb Stay Catalog-Tests bleiben `cancellationUrl == nil` bis Welle 2.
 - Keine HAR-Binaries im Repo.
 
