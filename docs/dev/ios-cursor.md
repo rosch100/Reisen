@@ -2,6 +2,8 @@
 
 Kurzleitfaden für Build, Run, Test und Debug der iOS-App **ReiseniOS** aus Cursor heraus. Die Scripts unter `Scripts/` sind SSOT — Cursor-Tasks und Agent-Workflows rufen dieselben Befehle auf.
 
+Agent-Rule: [`.cursor/rules/ios-cursor-workflow.mdc`](../../.cursor/rules/ios-cursor-workflow.mdc). Overlay-Index: [`AGENTS.md`](../../AGENTS.md).
+
 Design-Spec: [2026-07-23-ios-cursor-dev-workflow-design.md](../superpowers/specs/2026-07-23-ios-cursor-dev-workflow-design.md)
 
 ## Voraussetzungen
@@ -51,7 +53,7 @@ Anderen Simulator wählen (kein stiller Fallback — fehlt der Name, bricht das 
 IOS_SIMULATOR="iPhone 17" bash ./Scripts/ios-run.sh
 ```
 
-Entsprechende Cursor-Tasks: **Terminal → Run Task…** → `iOS: Generate Xcode project`, `iOS: Run on Simulator`, `iOS: Test on Simulator`.
+Entsprechende Cursor-Tasks: **Terminal → Run Task…** → `XcodeGen: Generate project`, `iOS: Run on Simulator`, `iOS: Test on Simulator`.
 
 ## Menschliches Debug: SweetPad + F5
 

@@ -1,6 +1,6 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
-Status: **Backlog** (F02/F04/F05/F07/F14/F15 zurückgestellt; F08 + F16–F24 aktiv; F10–F12 bedingt; F13 umgesetzt)
+Status: **Backlog** (F02/F04/F05/F07/F14/F15 zurückgestellt; F08, F16/F17, F20–F24 aktiv; F10–F12 bedingt; F01/F03/F06/F09/F13/F18/F19 umgesetzt)
 Stand: 2026-09-01
 
 ## Zweck und Leitlinie
@@ -30,8 +30,6 @@ Interaktive UX-ToDos: Canvas `feature-todo-liste.canvas.tsx`.
 | F15 | Deep-Link zu Flighty / Airline | zurückgestellt | P3 | — |
 | F16 | Drag/Drop Buchung ↔ Reise | geplant | P1 | — |
 | F17 | Drop-Zone „Neue Reise“ | geplant | P2 | F16 |
-| F18 | Mehrfachauswahl + Sammel-Zuordnung | geplant | P2 | F16 |
-| F19 | Kontextmenü Zuordnen / Lösen | geplant | P2 | — |
 | F20 | Undo nach Zuordnung/Lösung | geplant | P3 | F16/F19 |
 | F21 | Datumsfenster-Warnung beim Drop | geplant | P2 | F16 |
 | F22 | Reisen zusammenführen | geplant | P3 | — |
@@ -40,7 +38,7 @@ Interaktive UX-ToDos: Canvas `feature-todo-liste.canvas.tsx`.
 | X01–X07 | abgelehnte Ideen | abgelehnt | — | siehe unten |
 
 **Zurückgestellt:** F02, F04, F05, F07, F14, F15.
-**Aktive Reihenfolge:** F16 → F19 → F21 → F17/F18 → F20; danach F08; F22–F24 später.
+**Aktive Reihenfolge:** F16 → F21 → F17 → F20; danach F08; F22–F24 später.
 
 ---
 
@@ -55,6 +53,8 @@ Nur Referenz — Specs bleiben, keine Backlog-Details mehr.
 | F06 | On-device Paste-Import | [`../superpowers/specs/2026-08-28-paste-import-design.md`](../superpowers/specs/2026-08-28-paste-import-design.md) |
 | F09 | Vollständigkeitsanzeige (Gaps) | Inter-Booking-Lücken in Trip-/Offen-UI |
 | F13 | Kostensumme der Reise | [`../superpowers/specs/2026-09-01-trip-cost-currency-design.md`](../superpowers/specs/2026-09-01-trip-cost-currency-design.md) |
+| F18 | Mehrfachauswahl + Sammel-Zuordnung | `List(selection:)` + `AssignBookingsSheet` (kein Multi-Drag) |
+| F19 | Kontextmenü Zuordnen / Lösen | macOS-Kontextmenüs für offene und zugeordnete Buchungen |
 
 ---
 
@@ -83,21 +83,13 @@ Nur Referenz — Specs bleiben, keine Backlog-Details mehr.
 
 **Guards:** Ungültige Drop-Ziele ablehnen (kein stilles Zuordnen). Datumsfenster → F21.
 
-**Out of Scope v1:** Multi-Drag (→ F18); Drop auf „Neue Reise“ (→ F17); iOS-Phone ohne Split-View (iPad/macOS zuerst).
+**Out of Scope v1:** Multi-Drag; Mehrfachauswahl/Sammel-Zuordnung (→ F18, umgesetzt); Drop auf „Neue Reise“ (→ F17); iOS-Phone ohne Split-View (iPad/macOS zuerst).
 
 ---
 
 ### F17 — Drop-Zone „Neue Reise“
 
 Offene Buchung(en) auf explizite Zone → `TripEditor` mit Seed (`OpenBookingCreateTripAction`). Speichern erst nach Bestätigung.
-
-### F18 — Mehrfachauswahl + Sammel-Zuordnung
-
-Command/Shift-Auswahl; Batch über wiederholtes `assignBooking`; Fehler pro ID sichtbar.
-
-### F19 — Kontextmenü Zuordnen / Lösen
-
-Accessibility-/Tastatur-Parität zu F16; Reise-Picker ohne Dummy-Einträge.
 
 ### F20 — Undo nach Zuordnung/Lösung
 

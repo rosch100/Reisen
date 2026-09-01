@@ -1,37 +1,54 @@
 # Cursor Agents für Reisen
 
-Dieses Repo nutzt Cursor-Agents primär für saubere CI-/Review-Workflows. Die „Agents“ sind nicht Magic, sondern Leitplanken, was in Änderungen erwartet wird.
+Leitplanken für CI, Review und AI — keine parallele Prozess-Wahrheit zu Skills (`/feature-dev`, `/bugfix`). Evidence: Ledger, Shell, Tests.
+
+## `.cursor/` Overlay (projektspezifisch)
+
+Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
+
+| Artefakt | Geltung | Inhalt |
+| --- | --- | --- |
+| `rules/reisen-logging-and-tests.mdc` | `alwaysApply` | Logging + Tests inkl. XCUI mitliefern |
+| `rules/codereview-exclusions.mdc` | `alwaysApply` | Bewusste Token-Einbettung nicht als Finding |
+| `rules/reisen-architecture.mdc` | globs: `Sources/**`, `Apps/**`, `Tests/**`, `Package.swift` | Domain-first, Store/Settings/Zeit |
+| `rules/reisen-macos-workflow.mdc` | globs: Reisen/SharedUI, MacUITests, build/run/macos-ui/XcodeGen | build/run/XCUI nur via Scripts |
+| `rules/ios-cursor-workflow.mdc` | globs: `Apps/ReiseniOS`, `Scripts/ios-*`, XcodeGen, `project.yml` | Run/Test nur via Scripts |
+| `rules/reisen-ci-agents.mdc` | globs: `Scripts/**`, `.github/workflows/**` | Script-SSOT, Secrets |
+| `skills/reisen-observability-tests/` | Auto bei Feature/Bugfix/Logging-Lücke | Checkliste Logging + Tests |
+| `skills/ui-surface-review/` | nach `macos-ui-review.sh` / HIG-Audit | Advisory HIG/AX-Review |
 
 ## Rollen
 
-### CI-Agent (Build/Test)
-- Ziel: `./Scripts/ci-test.sh` lokal und im CI zuverlässig ausführen.
-- Regel: Wenn CI fehlschlägt, wird erst Root-Cause analysiert (log/stack), dann gefixt.
-- Zielpfade: `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `.github/workflows/app-store-check.yml`, `Scripts/ci-test.sh`, `Scripts/ci-build.sh`, `Scripts/build-app.sh`.
+### CI
+- Root-Cause vor Fix; Scripts nicht in YAML duplizieren.
+- Gate lokal: `bash ./Scripts/ci-test.sh` (UI: zusätzlich `macos-ui-test.sh`).
 
-### Review-Agent (Qualität / Grenzen)
-- Ziel: keine Scope-Ausweitung ohne Absprache.
-- Fokus: Domain-Grenzen (`ReisenDomain`, `ReisenData`, `ReisenProviders`) und „keine stillen Fallbacks“.
+### Review
+- Domain-Grenzen und keine stillen Fallbacks.
+- Logging/Tests im Diff prüfen (Rule + Skill oben).
+- Token-Einbettung: siehe `codereview-exclusions.mdc`.
 
-### Security-Agent (Secrets / Supply Chain)
-- Ziel: Secrets nie in Logs oder Artefakten ausgeben.
-- Fokus: `release.yml`, `Scripts/sign-and-notarize.sh`, `docs/ci/apple-signing.md`.
-- Regel: Nur Secrets aus GitHub (`secrets.*`) verwenden; keine Hardcodings.
+### Security
+- Keine Secrets in Logs/Artefakten/Tree; nur `secrets.*` bzw. dokumentierte Embed-Pfade (`docs/ci/github-issues-token.md`).
 
-### AI-Assistenz (Human-in-the-loop)
-- Ziel: AI nur als Hilfswerkzeug nutzen; jede Änderung muss vom Menschen verstanden und geprüft werden.
-- Regel: Keine autonomen ungeprüften PR-Inhalte oder Kommentare; AI-Empfehlungen sind Hinweise, keine Gate-Kriterien.
-- **Issue-Dev:** Bugs (`kind/error`) starten ohne `/approve` bis zum PR; Feature-Requests erst nach `/approve` / `issue-dev/approved`. Merge bleibt menschlich. Labels/Webhooks per Ensure (SSOT Altanis/CI `config/issue-dev/`). Siehe `docs/ci/issue-dev.md`.
-- Zielpfade: `AI_POLICY.md`, `.github/copilot-instructions.md` (für Code-Review-Kommentare), `PULL_REQUEST_TEMPLATE.md` (für Kontext/Checklisten).
-- Hinweis: Der Beitragende bleibt für Korrektheit und Verständlichkeit verantwortlich.
+### AI (Human-in-the-loop)
+- `AI_POLICY.md`: AI ist Hilfswerkzeug; Merge bleibt menschlich.
+- Issue-Dev: Bugs ohne `/approve` bis PR; Features nach `/approve`. Labels/Webhooks/Ensure: SSOT `docs/ci/issue-dev.md` (Altanis/CI `config/issue-dev/`).
 
-## Lokale Kommandos (SSOT zu CI)
+## Lokale Kommandos (SSOT)
 
-- Test (CI-parität): `bash ./Scripts/ci-test.sh`
-- Produkt-Build (CodeQL, ohne Test-Targets): `bash ./Scripts/ci-build.sh --arch arm64`
-- App-Bundle bauen: `bash ./Scripts/build-app.sh --configuration debug|release`
-- macOS-UI-Smokes (XCUI, XcodeGen-ReisenMac): `bash ./Scripts/macos-ui-test.sh`
-- macOS-UI-Review-Tour (advisory, kein Gate): `bash ./Scripts/macos-ui-review.sh`
+| Zweck | Befehl |
+| --- | --- |
+| Tests (CI-parität) | `bash ./Scripts/ci-test.sh` |
+| Produkt-Build | `bash ./Scripts/ci-build.sh --arch arm64` |
+| macOS bauen | `bash ./Scripts/build-app.sh` |
+| macOS starten | `bash ./Scripts/run-app.sh` |
+| macOS XCUI | `bash ./Scripts/macos-ui-test.sh` |
+| macOS UI-Review | `bash ./Scripts/macos-ui-review.sh` |
+| iOS Simulator starten | `bash ./Scripts/ios-run.sh` |
+| iOS Simulator testen | `bash ./Scripts/ios-test.sh` |
+| iOS Gerät | `bash ./Scripts/ios-run-device.sh` |
+| XcodeGen | `bash ./Scripts/generate-ios-project.sh` |
 
 ## Cursor Cloud (Linux) — Grenzen und lauffähiger Umfang
 
@@ -53,6 +70,8 @@ importiert `UniformTypeIdentifiers`/`ImageIO`). Daher gilt in Cloud Agents:
 Die Cloud-Agent-Umgebung installiert daher nur die Token-Stub-Vorbereitung (idempotent); Python 3 ist im Default-Image vorhanden.
 
 ## Referenzen
-- `AI_POLICY.md`: Regeln für die Verwendung von AI in Issues, PRs und Reviews
-- `.github/copilot-instructions.md`: Regeln, wie (Copilot) Review-Kommentare formuliert sein sollen
 
+- `docs/ARCHITECTURE.md` — Module und Grenzen
+- `docs/dev/ios-cursor.md` — iOS in Cursor
+- `.github/copilot-instructions.md` — Review-Kommentarformat
+- `.github/PULL_REQUEST_TEMPLATE.md` — PR-Checkliste

@@ -1,0 +1,28 @@
+---
+description: Domain-first Architekturgrenzen und Produkt-Invarianten für Reisen
+globs: Sources/**/*,Apps/**/*,Tests/**/*,Package.swift
+alwaysApply: false
+---
+
+# Reisen: Architektur
+
+SSOT-Detail: `docs/ARCHITECTURE.md`. Hier nur Agent-Pflichten.
+
+## Schichten
+
+- `ReisenDomain`: keine SwiftData-, WebKit-, UIKit-/AppKit-Imports.
+- Persistenz nur über Use Cases / Ports — nicht direkt aus UI in SwiftData schreiben.
+- Provider liefern `ProviderBookingDraft`; Speichern über Domain-Use-Cases.
+- Diagnostics (`ReisenDiagnostics`) ohne Data/AppCore-Abhängigkeit.
+- Composition Roots: `Sources/Reisen` (macOS), `Apps/ReiseniOS` (iOS).
+
+## Invarianten (Reisen-spezifisch)
+
+- Store-Init ohne stilles Löschen oder stilles In-Memory; Reset nur explizit (Nutzer/UI-Testing-Flags).
+- Settings-Keys nur über `AppSettingsKeys` (kein paralleler String-Pfad).
+- Zeiten: `startAt`/`endAt`/Deadlines als absolute Instants; `hotelOffsetSeconds` für Wall-Clock; vor DB-Write kanonisieren.
+- Universelle Fallback-/Workaround-Verbote: User-Rules (`no-fallbacks-dummy-values`, `no-workarounds`) — hier nicht duplizieren.
+
+## Scope
+
+Keine Parallel-Architektur neben bestehenden Modulen. Neue Anbieter an `ProviderID.syncProviderIDs` + `ProviderSyncBootstrap` anbinden.
