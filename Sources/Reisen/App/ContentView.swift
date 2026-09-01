@@ -501,27 +501,35 @@ struct ContentView: View {
                 }
             }
 
-            Section(L10n.string(.tripOpenBookings)) {
+            Section {
                 if openBookings.isEmpty {
                     Text(L10n.string(.tripNoOpenBookings))
                         .foregroundStyle(.secondary)
                 } else {
-                    sidebarOpenMailbox(
-                        selectionValue: .openBookings,
-                        bookings: openBookings,
-                        isExpanded: $expandedOpenMailbox,
-                        iconSystemName: "calendar.badge.plus",
-                        createTripFromAll: {
-                            selection = .openBookings
-                            selectedOpenBookingIDs = Set(openBookings.map(\.id))
-                            OpenBookingCreateTripAction.assignSeedFromAll(
-                                in: allBookings,
-                                seed: $tripCreateSeed,
-                                showFailed: $showCreateTripFromBookingsFailed
-                            )
-                        }
+                    let visibleIDs = SidebarOpenSectionOutline.visibleBookingIDs(
+                        from: openBookings.map(\.id),
+                        isExpanded: expandedOpenMailbox
                     )
+                    ForEach(openBookings.filter { visibleIDs.contains($0.id) }) { booking in
+                        sidebarOpenBookingRow(booking: booking, mailboxSelection: .openBookings)
+                    }
                 }
+            } header: {
+                sidebarOpenSectionHeader(
+                    title: L10n.string(.tripOpenBookings),
+                    isExpanded: $expandedOpenMailbox,
+                    hasBookings: !openBookings.isEmpty,
+                    selectionValue: .openBookings,
+                    createTripFromAll: {
+                        selection = .openBookings
+                        selectedOpenBookingIDs = Set(openBookings.map(\.id))
+                        OpenBookingCreateTripAction.assignSeedFromAll(
+                            in: allBookings,
+                            seed: $tripCreateSeed,
+                            showFailed: $showCreateTripFromBookingsFailed
+                        )
+                    }
+                )
             }
 
             Section {
@@ -554,24 +562,15 @@ struct ContentView: View {
                 }
             }
             if !elapsedTrips.isEmpty || !elapsedOpenBookings.isEmpty {
-                Section(L10n.string(.bookingElapsed)) {
+                Section {
                     if !elapsedOpenBookings.isEmpty {
-                        sidebarOpenMailbox(
-                            selectionValue: .elapsedOpenBookings,
-                            bookings: elapsedOpenBookings,
-                            isExpanded: $expandedElapsedOpenMailbox,
-                            iconSystemName: "calendar.badge.clock",
-                            createTripFromAll: {
-                                selection = .elapsedOpenBookings
-                                selectedOpenBookingIDs = Set(elapsedOpenBookings.map(\.id))
-                                OpenBookingCreateTripAction.assignSeed(
-                                    fromIDs: Set(elapsedOpenBookings.map(\.id)),
-                                    in: elapsedOpenBookings,
-                                    seed: $tripCreateSeed,
-                                    showFailed: $showCreateTripFromBookingsFailed
-                                )
-                            }
+                        let visibleIDs = SidebarOpenSectionOutline.visibleBookingIDs(
+                            from: elapsedOpenBookings.map(\.id),
+                            isExpanded: expandedElapsedOpenMailbox
                         )
+                        ForEach(elapsedOpenBookings.filter { visibleIDs.contains($0.id) }) { booking in
+                            sidebarOpenBookingRow(booking: booking, mailboxSelection: .elapsedOpenBookings)
+                        }
                     }
                     ForEach(elapsedTrips) { trip in
                         sidebarTripEntry(
@@ -581,6 +580,23 @@ struct ContentView: View {
                             tripMenuKind: .elapsedTrip
                         )
                     }
+                } header: {
+                    sidebarOpenSectionHeader(
+                        title: L10n.string(.bookingElapsed),
+                        isExpanded: $expandedElapsedOpenMailbox,
+                        hasBookings: !elapsedOpenBookings.isEmpty,
+                        selectionValue: .elapsedOpenBookings,
+                        createTripFromAll: {
+                            selection = .elapsedOpenBookings
+                            selectedOpenBookingIDs = Set(elapsedOpenBookings.map(\.id))
+                            OpenBookingCreateTripAction.assignSeed(
+                                fromIDs: Set(elapsedOpenBookings.map(\.id)),
+                                in: elapsedOpenBookings,
+                                seed: $tripCreateSeed,
+                                showFailed: $showCreateTripFromBookingsFailed
+                            )
+                        }
+                    )
                 }
             }
         }
@@ -590,65 +606,54 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private func sidebarOpenMailbox(
-        selectionValue: SidebarSelection,
-        bookings: [SDBooking],
+    private func sidebarOpenSectionHeader(
+        title: String,
         isExpanded: Binding<Bool>,
-        iconSystemName: String,
+        hasBookings: Bool,
+        selectionValue: SidebarSelection,
         createTripFromAll: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 4) {
-                if !bookings.isEmpty {
-                    Button {
-                        isExpanded.wrappedValue.toggle()
-                    } label: {
-                        Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20, height: 20)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(isExpanded.wrappedValue
-                        ? L10n.string(.tripCollapseBookings)
-                        : L10n.string(.tripExpandBookings))
-                    .accessibilityLabel(isExpanded.wrappedValue
-                        ? L10n.string(.tripCollapseBookings)
-                        : L10n.string(.tripExpandBookings))
+        HStack(spacing: 4) {
+            if hasBookings {
+                Button {
+                    isExpanded.wrappedValue.toggle()
+                } label: {
+                    Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, height: 16)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .help(isExpanded.wrappedValue
+                    ? L10n.string(.tripCollapseBookings)
+                    : L10n.string(.tripExpandBookings))
+                .accessibilityLabel(isExpanded.wrappedValue
+                    ? L10n.string(.tripCollapseBookings)
+                    : L10n.string(.tripExpandBookings))
+            }
 
+            if hasBookings {
                 Button {
                     selection = selectionValue
                 } label: {
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(L10n.string(.tripOpenBookings))
-                            Text(L10n.format(.tripOpenEntries, bookings.count))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    } icon: {
-                        Image(systemName: iconSystemName)
-                    }
+                    Text(title)
                 }
                 .buttonStyle(.plain)
+            } else {
+                Text(title)
             }
-            .tag(selectionValue)
-            .contextMenu {
-                let actions = SidebarEntryContextActions.actions(for: selectionValue == .elapsedOpenBookings
-                    ? .elapsedOpenBookingMailbox
-                    : .openBookingMailbox)
-                if actions.contains(.createTripFromAllOpen), !bookings.isEmpty {
-                    Button(action: createTripFromAll) {
-                        CreateTripFromAllOpenBookingsLabel(count: bookings.count)
-                    }
-                }
-            }
-
-            if isExpanded.wrappedValue {
-                ForEach(bookings) { booking in
-                    sidebarOpenBookingRow(booking: booking, mailboxSelection: selectionValue)
+        }
+        .contextMenu {
+            let bookingCount = selectionValue == .elapsedOpenBookings
+                ? elapsedOpenBookings.count
+                : openBookings.count
+            let actions = SidebarEntryContextActions.actions(for: selectionValue == .elapsedOpenBookings
+                ? .elapsedOpenBookingMailbox
+                : .openBookingMailbox)
+            if actions.contains(.createTripFromAllOpen), bookingCount > 0 {
+                Button(action: createTripFromAll) {
+                    CreateTripFromAllOpenBookingsLabel(count: bookingCount)
                 }
             }
         }
