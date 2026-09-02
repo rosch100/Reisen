@@ -105,8 +105,9 @@ Eingabe: chronologisch sortierte **reale** Buchungen der Reise (Trip-Fenster wie
 
 **Ortsextraktion (SSOT, analog `GapContext`-Hints):**
 
-- Ende der vorherigen Buchung (`fromEndPlace`): erste nicht-leere normalisierbare Quelle in Reihenfolge `locationTo` → `locationToAddress` → `locationFrom` → `locationFromAddress`
-- Start der nächsten Buchung (`toStartPlace`): `locationFrom` → `locationFromAddress` → `locationTo` → `locationToAddress`
+- Ende der vorherigen Buchung (`fromEndPlace`, nur PlaceKey): erste nicht-leere normalisierbare Quelle in Reihenfolge `locationTo` → `locationToAddress` → `locationFrom` → `locationFromAddress`
+- Start der nächsten Buchung (`toStartPlace`, nur PlaceKey): `locationFrom` → `locationFromAddress` → `locationTo` → `locationToAddress`
+- **Label / Auto-Gap-Orte** (`fromEndPlaceLabel` / `toStartPlaceLabel`): nur `locationTo`→`locationFrom` bzw. `locationFrom`→`locationTo` — **nie** `*Address`. Fehlt die Stadt → leere Orte / Titel ohne Route (kein Adress-Ersatz).
 
 - Ungleiche nicht-leere `PlaceKey`s → Transportbedarf.
 - Beide Keys leer → **kein** räumliches Auto (fehlende Daten sichtbar, kein Raten).
