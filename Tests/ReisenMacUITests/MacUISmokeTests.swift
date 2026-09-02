@@ -25,7 +25,8 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.seededTripRow).click()
         ui.waitFor(UITestingIdentifiers.detail)
-        ui.waitFor(UITestingIdentifiers.seededBookingRow).click()
+        // timelineBookingRow ist nur in der Trip-Timeline verdrahtet (nicht Sidebar).
+        ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow).click()
         ui.waitFor(UITestingIdentifiers.inspector)
     }
 
@@ -51,6 +52,28 @@ final class MacUISmokeTests: XCTestCase {
         XCTAssertTrue(
             ui.app.menuItems[UITestingIdentifiers.deleteBookingMenu].waitForExistence(timeout: 3),
             "Buchungs-Kontextmenü (Löschen) fehlt in der Sidebar\n\(ui.app.debugDescription)"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
+    }
+
+    /// Trip-Timeline Selection-Context-Menu Reach-only (kein Confirm).
+    ///
+    /// Zuerst Selektion per Klick (sonst öffnet Rechtsklick ggf. das falsche Menü).
+    /// `contextMenu(forSelectionType:)`: MenuItem-IDs sind auf macOS `menuAction:` — Reach über L10n-Titel
+    /// „Von Reise entfernen“ (buchungsspezifisch, nicht Sidebar-Reise).
+    func testTripTimelineBookingContextMenu() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.seededTripRow).click()
+        ui.waitFor(UITestingIdentifiers.detail)
+
+        let timelineBooking = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
+        timelineBooking.click()
+        timelineBooking.rightClick()
+
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.removeFromTripMenuTitleDE].waitForExistence(timeout: 3),
+            "Timeline-Kontextmenü (Von Reise entfernen) fehlt\n\(ui.app.debugDescription)"
         )
         ui.app.typeKey(.escape, modifierFlags: [])
     }

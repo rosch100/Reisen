@@ -26,6 +26,11 @@ public enum UITestingIdentifiers {
         "reisen.booking.\(id.uuidString)"
     }
 
+    /// Trip-Timeline booking row (detail list) — distinct from sidebar/open `bookingRow`.
+    public static func timelineBookingRow(_ id: UUID) -> String {
+        "reisen.timeline.booking.\(id.uuidString)"
+    }
+
     public static func providerRow(_ rawValue: String) -> String {
         "reisen.provider.\(rawValue)"
     }
@@ -37,4 +42,15 @@ public enum UITestingIdentifiers {
     public static var seededBookingRow: String {
         bookingRow(UITestingSeed.bookingID)
     }
+
+    public static var seededTimelineBookingRow: String {
+        timelineBookingRow(UITestingSeed.bookingID)
+    }
+
+    /// Menütitel für Timeline-`forSelectionType`-Reach.
+    ///
+    /// Nicht `L10n.string` im Test-Host: der Runner kann en_US sein, während die
+    /// UITesting-App deutsch startet — sonst schlägt Title-Match auf CI fehl.
+    public static let deleteBookingMenuTitleDE = "Löschen…"
+    public static let removeFromTripMenuTitleDE = "Von Reise entfernen…"
 }
