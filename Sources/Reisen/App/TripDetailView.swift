@@ -315,7 +315,7 @@ struct TripDetailView: View {
         let remaining = SelectionBatchDeletion.remainingIDs(from: ids, outcome: result.outcome)
         selectedTimelineIDs = Set(remaining.map(\.uuidString))
         pendingBatchDeleteBookingIDs = []
-        if case .failed(_, let errorDescription) = result.outcome {
+        if case .failed(_, let errorDescription, _) = result.outcome {
             persistErrorMessage = errorDescription
             return
         }

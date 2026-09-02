@@ -387,7 +387,7 @@ struct ContentView: View {
         selectedTripIDs = SelectionBatchDeletion.remainingIDs(from: ids, outcome: result.outcome)
         pendingDeleteTripIDs = []
 
-        if case .failed(_, let errorDescription) = result.outcome {
+        if case .failed(_, let errorDescription, _) = result.outcome {
             persistErrorMessage = errorDescription
         }
         updateTripSelectionAfterDeletion(excluding: ids.subtracting(selectedTripIDs))
@@ -414,14 +414,20 @@ struct ContentView: View {
             try BookingDeletion.perform(booking: booking, in: modelContext)
         }
         recordBatchDeleteEvents(result.events)
+        let liveIDs = Set(
+            (selection == .elapsedOpenBookings ? elapsedOpenBookings : openBookings).map(\.id)
+        )
         selectedOpenBookingIDs = SelectionBatchDeletion.remainingIDs(from: ids, outcome: result.outcome)
+            .intersection(liveIDs)
         pendingDeleteOpenBookingIDs = []
 
-        if case .failed(_, let errorDescription) = result.outcome {
+        if case .failed(_, let errorDescription, _) = result.outcome {
             persistErrorMessage = errorDescription
+            openSelectionAnchor = selectedOpenBookingIDs.first
             return
         }
-        let mailboxBookings = selection == .elapsedOpenBookings ? elapsedOpenBookings : openBookings
+        let mailboxBookings = (selection == .elapsedOpenBookings ? elapsedOpenBookings : openBookings)
+            .filter { !ids.contains($0.id) }
         selectedOpenBookingIDs = mailboxBookings.first.map { [$0.id] } ?? []
         openSelectionAnchor = selectedOpenBookingIDs.first
     }
@@ -678,8 +684,23 @@ struct ContentView: View {
         )
     }
 
+    private var sidebarSelection: Binding<SidebarSelection?> {
+        Binding(
+            get: { selection },
+            set: { newValue in
+                // Outline-Kinder (Open/Elapsed) sind absichtlich ungetaggt. List würde
+                // den Klick sonst auf nil zurücksetzen und die Mailbox-Content-Spalte verlieren.
+                if newValue == nil,
+                   selection == .openBookings || selection == .elapsedOpenBookings {
+                    return
+                }
+                selection = newValue
+            }
+        )
+    }
+
     private var sidebar: some View {
-        List(selection: $selection) {
+        List(selection: sidebarSelection) {
             Section(L10n.string(.syncProvider)) {
                 ForEach(registeredProviderIDs, id: \.self) { providerID in
                     ProviderSidebarRow(providerID: providerID)
@@ -887,6 +908,9 @@ struct ContentView: View {
         .contentShape(Rectangle())
         .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
         .accessibilityAddTraits(isBookingSelected ? [.isSelected] : [])
+        // Gleicher Mailbox-Tag für alle Outline-Kinder: sonst setzt List(selection:)
+        // den Klick auf nil und die Content-Spalte verschwindet. Visuelles Highlight
+        // bleibt die eigene isBookingSelected-Fläche.
         .tag(mailboxSelection)
         .contextMenu {
             let effective = MenuEffectiveSelection.resolve(
@@ -1796,11 +1820,21 @@ struct ContentView: View {
             anchor: timelineSelectionAnchor,
             click: currentOutlineClick
         )
+        let tripChanged = selection?.tripID != trip.id
         selectedTripIDs = [trip.id]
         tripSelectionAnchor = trip.id
         selection = .trip(trip.id)
-        selectedTimelineIDs = result.selected
-        timelineSelectionAnchor = result.newAnchor
+        // onChange(selection?.tripID) leert die Timeline — Selektion danach setzen.
+        if tripChanged {
+            Task { @MainActor in
+                await Task.yield()
+                selectedTimelineIDs = result.selected
+                timelineSelectionAnchor = result.newAnchor
+            }
+        } else {
+            selectedTimelineIDs = result.selected
+            timelineSelectionAnchor = result.newAnchor
+        }
     }
 
     private var currentOutlineClick: OutlineMultiSelectClick {

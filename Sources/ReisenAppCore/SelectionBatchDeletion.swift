@@ -3,7 +3,7 @@ import Foundation
 public enum SelectionBatchDeletion {
     public enum Outcome: Equatable, Sendable {
         case succeeded
-        case failed(index: Int, errorDescription: String)
+        case failed(index: Int, errorDescription: String, errorType: String)
     }
 
     /// Deletes IDs in ascending `String(describing:)` order. Fail-stop on first error.
@@ -16,7 +16,11 @@ public enum SelectionBatchDeletion {
             do {
                 try deleteOne(id)
             } catch {
-                return .failed(index: index, errorDescription: error.localizedDescription)
+                return .failed(
+                    index: index,
+                    errorDescription: error.localizedDescription,
+                    errorType: String(describing: type(of: error))
+                )
             }
         }
         return .succeeded
@@ -30,7 +34,7 @@ public enum SelectionBatchDeletion {
         switch outcome {
         case .succeeded:
             return []
-        case .failed(let index, _):
+        case .failed(let index, _, _):
             return Set(orderedIDs(ids).dropFirst(index))
         }
     }

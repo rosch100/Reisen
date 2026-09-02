@@ -22,7 +22,7 @@ struct SelectionBatchDeletionTests {
             if id == "b" { throw Boom() }
             deleted.append(id)
         }
-        #expect(outcome == .failed(index: 1, errorDescription: "boom"))
+        #expect(outcome == .failed(index: 1, errorDescription: "boom", errorType: "Boom"))
         #expect(deleted == ["a"])
     }
 
@@ -36,7 +36,7 @@ struct SelectionBatchDeletionTests {
         let outcome = SelectionBatchDeletion.run(ids: ids) { id in
             if id == "b" { throw Boom() }
         }
-        #expect(outcome == .failed(index: 1, errorDescription: "boom"))
+        #expect(outcome == .failed(index: 1, errorDescription: "boom", errorType: "Boom"))
         #expect(SelectionBatchDeletion.remainingIDs(from: ids, outcome: outcome) == ["b", "c"])
     }
 }
