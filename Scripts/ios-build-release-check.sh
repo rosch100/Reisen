@@ -2,13 +2,21 @@
 # Release-Build für Store/Private + Binary-Isolation-Check (ohne Archive/IPA).
 set -euo pipefail
 
+REISEN_CI_T0="$(date +%s)"
+trap 'echo "reisen-ci-duration: script=ios-build-release-check.sh seconds=$(( $(date +%s) - REISEN_CI_T0 ))" >&2' EXIT
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 SIMULATOR_NAME="${IOS_SIMULATOR:-iPad Pro 13-inch (M5)}"
 PROJECT="$ROOT/Reisen.xcodeproj"
 
-bash "$ROOT/Scripts/generate-ios-project.sh"
+if [[ "${REISEN_SKIP_GENERATE_IOS_PROJECT:-}" != "1" ]]; then
+  bash "$ROOT/Scripts/generate-ios-project.sh"
+elif [[ ! -d "$ROOT/Reisen.xcodeproj" ]]; then
+  echo "Fehler: REISEN_SKIP_GENERATE_IOS_PROJECT=1 aber Reisen.xcodeproj fehlt." >&2
+  exit 1
+fi
 
 resolve_udid() {
   local name="$1"
@@ -42,7 +50,9 @@ build_and_verify() {
   local mode="$3"
   local derived="$ROOT/DerivedData/ios-release-check-${scheme}"
 
-  rm -rf "$derived"
+  if [[ "${REISEN_CI_CLEAN_DERIVED:-}" == "true" ]]; then
+    rm -rf "$derived"
+  fi
 
   echo "Release-Build: ${scheme} …" >&2
   xcodebuild \

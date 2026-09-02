@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+REISEN_CI_T0="$(date +%s)"
+trap 'echo "reisen-ci-duration: script=ci-test.sh seconds=$(( $(date +%s) - REISEN_CI_T0 ))" >&2' EXIT
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
@@ -221,6 +224,7 @@ fi
 REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash "$ROOT/Scripts/embed-github-issue-token.sh"
 
 python3 -m unittest discover -s "$ROOT/Scripts/tests/ingest-gmail-feedback" -v
+python3 -m unittest discover -s "$ROOT/Scripts/tests" -p 'test_ci_*.py' -v
 
 if [[ "$SKIP_BUILD" == "true" ]]; then
   swift test -v --skip-build
