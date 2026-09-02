@@ -14,25 +14,18 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-ALL_SUITES: tuple[str, ...] = (
-    "suite-swiftpm",
-    "suite-ios-sim",
-    "suite-ios-release",
-    "suite-macos-ui",
-)
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 
-SUITE_OUTPUT_KEYS: dict[str, str] = {
-    "suite-swiftpm": "run_swiftpm",
-    "suite-ios-sim": "run_ios_sim",
-    "suite-ios-release": "run_ios_release",
-    "suite-macos-ui": "run_macos_ui",
-}
+from ci_suite_constants import ALL_SUITES, SUITE_OUTPUT_KEYS  # noqa: E402
 
 HARNESS_EXACT: frozenset[str] = frozenset(
     {
         ".github/workflows/ci.yml",
         "Scripts/ci-select-suites.py",
         "Scripts/ci-enforce-suite-gate.py",
+        "Scripts/ci_suite_constants.py",
         "Scripts/ci-test.sh",
         "Scripts/generate-ios-project.sh",
         "project.yml",

@@ -10,14 +10,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
-ALL_SUITES: tuple[str, ...] = (
-    "suite-swiftpm",
-    "suite-ios-sim",
-    "suite-ios-release",
-    "suite-macos-ui",
-)
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 
-ALLOWED_SKIP_REASONS: frozenset[str] = frozenset({"docs-only"})
+from ci_suite_constants import ALLOWED_SKIP_REASONS, ALL_SUITES  # noqa: E402
 
 
 def load_selection(path: Path) -> dict[str, Any]:
@@ -70,22 +67,7 @@ def enforce_suite_gate(
             )
             return 1
 
-    if mode == "full":
-        for suite in ALL_SUITES:
-            if suite_results[suite] != "success":
-                print(f"Gate fail: mode=full erfordert success für {suite}", file=sys.stderr)
-                return 1
-
     all_skipped = all(suite_results[s] == "skipped" for s in ALL_SUITES)
-    if all_skipped:
-        if mode == "empty-allowed" and reason in ALLOWED_SKIP_REASONS and not selected:
-            print("Gate ok: empty-allowed docs-only", file=sys.stderr)
-            return 0
-        print(
-            f"Gate fail: alle Suites skipped bei mode={mode} reason={reason}",
-            file=sys.stderr,
-        )
-        return 1
 
     if mode == "empty-allowed":
         if reason not in ALLOWED_SKIP_REASONS or selected:
@@ -94,6 +76,31 @@ def enforce_suite_gate(
                 file=sys.stderr,
             )
             return 1
+        if not all_skipped:
+            print(
+                "Gate fail: empty-allowed erfordert alle Suites skipped",
+                file=sys.stderr,
+            )
+            return 1
+        print("Gate ok: empty-allowed docs-only", file=sys.stderr)
+        return 0
+
+    if mode == "affected" and not selected:
+        print("Gate fail: affected mit leerer Suite-Liste", file=sys.stderr)
+        return 1
+
+    if all_skipped:
+        print(
+            f"Gate fail: alle Suites skipped bei mode={mode} reason={reason}",
+            file=sys.stderr,
+        )
+        return 1
+
+    if mode == "full":
+        for suite in ALL_SUITES:
+            if suite_results[suite] != "success":
+                print(f"Gate fail: mode=full erfordert success für {suite}", file=sys.stderr)
+                return 1
 
     print(
         f"Gate ok: mode={mode} reason={reason} suites={sorted(selected)}",

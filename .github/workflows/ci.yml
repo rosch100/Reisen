@@ -144,7 +144,6 @@ jobs:
           key: ${{ runner.os }}-ios-sim-${{ steps.xcode_key.outputs.key }}-${{ hashFiles('Package.swift', 'project.yml', '**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-ios-sim-${{ steps.xcode_key.outputs.key }}-
-            ${{ runner.os }}-ios-sim-
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -194,7 +193,6 @@ jobs:
           key: ${{ runner.os }}-ios-rel-${{ steps.xcode_key.outputs.key }}-${{ hashFiles('Package.swift', 'project.yml', '**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-ios-rel-${{ steps.xcode_key.outputs.key }}-
-            ${{ runner.os }}-ios-rel-
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -241,7 +239,6 @@ jobs:
           key: ${{ runner.os }}-macos-ui-${{ steps.xcode_key.outputs.key }}-${{ hashFiles('Package.swift', 'project.yml', '**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-macos-ui-${{ steps.xcode_key.outputs.key }}-
-            ${{ runner.os }}-macos-ui-
 
       - name: Install XcodeGen
         run: brew install xcodegen
