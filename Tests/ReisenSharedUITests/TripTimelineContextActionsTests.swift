@@ -26,7 +26,7 @@ struct TripTimelineContextActionsTests {
         #expect(actions.contains(.edit))
     }
 
-    @Test func multipleBookingsOnly_batchRemoveWithoutDelete() {
+    @Test func multipleBookingsOnly_batchRemoveAndBatchDelete() {
         let kind = TripTimelineContextActions.kind(
             selectedIDs: [UUID().uuidString, UUID().uuidString],
             isBookingID: isBooking,
@@ -35,6 +35,7 @@ struct TripTimelineContextActionsTests {
         #expect(kind == .multipleBookingsOnly)
         let actions = TripTimelineContextActions.actions(for: kind)
         #expect(actions.contains(.batchRemoveFromTrip))
+        #expect(actions.contains(.batchDeleteBooking))
         #expect(!actions.contains(.deleteBooking))
         #expect(!actions.contains(.removeFromTrip))
     }
