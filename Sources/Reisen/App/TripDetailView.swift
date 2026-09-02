@@ -84,9 +84,12 @@ struct TripDetailView: View {
         bookingEditorSession = .edit(bookingID: booking.id)
     }
 
-    private func startCreateBooking(prefillStart: Date?, prefillEnd: Date?, selectID: String?) {
-        if let selectID { selectTimelineID(selectID) }
+    private func startCreateBooking(prefillStart: Date?, prefillEnd: Date?) {
+        var selection = selectedTimelineID
+        BookingCreateDraftSelection.selectCreateDraft(into: &selection)
+        selectedTimelineID = selection
         bookingEditorSession = .create(prefillStart: prefillStart, prefillEnd: prefillEnd)
+        BookingCreateDraftDiagnostics.recordSelected(reason: "timeline_create_draft")
     }
 
     private func removeBookingFromTrip(_ booking: SDBooking, fallbackTimelineID: String?) {
@@ -175,7 +178,15 @@ struct TripDetailView: View {
     }
 
     var body: some View {
-        let timelineItems = timelineItems(gaps: gaps, bookings: sortedBookings)
+        let isCreatingBooking: Bool = {
+            if case .create = bookingEditorSession { return true }
+            return false
+        }()
+        let timelineItems = timelineItems(
+            gaps: gaps,
+            bookings: sortedBookings,
+            includesCreateDraft: isCreatingBooking
+        )
         let selectedTimelineItem: TripTimelineItem? = {
             guard let selectedTimelineID else { return nil }
             return timelineItems.first { $0.id == selectedTimelineID }
@@ -212,7 +223,7 @@ struct TripDetailView: View {
                         Text(L10n.string(.tripNoFutureBookings))
                     } actions: {
                         Button(L10n.string(.actionAddBooking)) {
-                            startCreateBooking(prefillStart: nil, prefillEnd: nil, selectID: nil)
+                            startCreateBooking(prefillStart: nil, prefillEnd: nil)
                         }
                         Button(L10n.string(.actionAssignBookings)) {
                             showAssignBookings = true
@@ -238,7 +249,7 @@ struct TripDetailView: View {
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(L10n.string(.actionAddBooking)) {
-                        startCreateBooking(prefillStart: nil, prefillEnd: nil, selectID: nil)
+                        startCreateBooking(prefillStart: nil, prefillEnd: nil)
                     }
                     .help(L10n.string(.tripAddBookingHelp))
                     .accessibilityIdentifier(UITestingIdentifiers.addBooking)
@@ -275,13 +286,6 @@ struct TripDetailView: View {
                 if !isPresented {
                     assignPreselectedBookingIDs = []
                 }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .reisenAddBooking)) { _ in
-                startCreateBooking(
-                    prefillStart: nil,
-                    prefillEnd: nil,
-                    selectID: selectedTimelineID
-                )
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenRequestRemoveBookingFromTrip)) { note in
                 guard let bookingID = note.object as? UUID,
@@ -397,16 +401,15 @@ struct TripDetailView: View {
                         .buttonStyle(.plain)
                         .id(item.id)
                         .accessibilityIdentifier(timelineItemIdentifier(item))
+                        .accessibilityAddTraits(
+                            selectedTimelineID == item.id ? [.isSelected] : []
+                        )
                         .contextMenu {
                             switch item {
                             case .booking(let booking):
                                 Button(L10n.string(.commonEdit)) { editBooking(booking) }
                                 Button(L10n.string(.actionAddBooking)) {
-                                    startCreateBooking(
-                                        prefillStart: nil,
-                                        prefillEnd: nil,
-                                        selectID: booking.id.uuidString
-                                    )
+                                    startCreateBooking(prefillStart: nil, prefillEnd: nil)
                                 }
                                 BookingCopyConfirmationMenuItems(booking: booking)
                                 if let url = booking.browserURL {
@@ -446,10 +449,11 @@ struct TripDetailView: View {
                                 Button(L10n.string(.actionAddBooking)) {
                                     startCreateBooking(
                                         prefillStart: gap.gapStart,
-                                        prefillEnd: gap.gapEnd,
-                                        selectID: item.id
+                                        prefillEnd: gap.gapEnd
                                     )
                                 }
+                            case .createDraft:
+                                EmptyView()
                             }
                         }
 
@@ -479,15 +483,27 @@ struct TripDetailView: View {
         }
     }
 
-    private func timelineItems(gaps: [ComputedGap], bookings: [SDBooking]) -> [TripTimelineItem] {
-        TripTimelineItem.sorted(bookings: bookings, gaps: gaps)
+    private func timelineItems(
+        gaps: [ComputedGap],
+        bookings: [SDBooking],
+        includesCreateDraft: Bool
+    ) -> [TripTimelineItem] {
+        TripTimelineItem.displayItems(
+            bookings: bookings,
+            gaps: gaps,
+            includesCreateDraft: includesCreateDraft
+        )
     }
 
     private func timelineItemIdentifier(_ item: TripTimelineItem) -> String {
-        if case .booking(let booking) = item {
+        switch item {
+        case .booking(let booking):
             return UITestingIdentifiers.bookingRow(booking.id)
+        case .createDraft:
+            return UITestingIdentifiers.bookingCreateDraftTimeline
+        case .gap:
+            return "reisen.gap.\(item.id)"
         }
-        return "reisen.gap.\(item.id)"
     }
 
     private func gapPresentation(for gap: ComputedGap) -> GapPresentation {
@@ -604,6 +620,10 @@ private struct TimelineRowLabel: View {
                 onEdit: { onEditGap(presentation.editorPayload(for: gap)) },
                 onSelect: nil
             )
+
+        case .createDraft:
+            Label(L10n.string(.editorCreateTitle), systemImage: "plus.circle")
+                .font(.body.weight(.medium))
         }
     }
 }
@@ -685,6 +705,11 @@ private struct BookingDetailPanel: View {
         .onChange(of: selectedBookingID) { _, newID in
             guard case .edit(let editingID, _) = bookingEditorSession else { return }
             guard newID != editingID else { return }
+            clearEditor()
+        }
+        .onChange(of: selectedTimelineID) { _, newID in
+            guard case .create = bookingEditorSession else { return }
+            guard !BookingCreateDraftSelection.isCreateDraft(newID) else { return }
             clearEditor()
         }
         .onChange(of: trip.id) { _, _ in
@@ -791,6 +816,8 @@ private struct BookingDetailPanel: View {
                                     onEditGap(presentation.editorPayload(for: gap))
                                 }
                             )
+                        case .createDraft:
+                            EmptyView()
                         }
                     }
                     .id(selectedTimelineItem.id)
@@ -819,10 +846,17 @@ private struct BookingDetailPanel: View {
     }
 
     private func clearEditor() {
+        let wasCreateDraft = {
+            if case .create = bookingEditorSession { return true }
+            return false
+        }()
         bookingEditorSession = nil
         bookingEditorDraft = nil
         pendingPeriodExpand = nil
         showPeriodExpandConfirm = false
+        if wasCreateDraft, BookingCreateDraftSelection.isCreateDraft(selectedTimelineID) {
+            selectedTimelineID = trip.timelineBookings().first?.id.uuidString
+        }
     }
 
     private func saveEditor() throws {

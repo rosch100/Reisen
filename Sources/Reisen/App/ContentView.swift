@@ -842,6 +842,13 @@ struct ContentView: View {
         }
 
         if isExpanded {
+            if case .create = bookingEditorSession, selection == .trip(trip.id) {
+                BookingCreateDraftSidebarRow(
+                    isSelected: BookingCreateDraftSelection.isCreateDraft(selectedTimelineID)
+                ) {
+                    selectedTimelineID = BookingCreateDraftSelection.timelineID
+                }
+            }
             ForEach(tripBookings) { booking in
                 sidebarTripBookingRow(booking: booking, trip: trip)
             }
@@ -891,7 +898,7 @@ struct ContentView: View {
             }
             if actions.contains(.addBooking) {
                 Button(L10n.string(.actionAddBooking)) {
-                    startCreateBooking(in: trip, selectBookingID: booking.id)
+                    startCreateBooking(in: trip)
                 }
             }
             BookingCopyConfirmationMenuItems(booking: booking)
@@ -1007,6 +1014,9 @@ struct ContentView: View {
                     gapEditorPayload: $gapEditorPayload,
                     bookingEditorSession: $bookingEditorSession
                 )
+                .onReceive(NotificationCenter.default.publisher(for: .reisenAddBooking)) { _ in
+                    startCreateBooking(in: trip)
+                }
                 .id(id)
             } else {
                 ContentUnavailableView(
@@ -1625,12 +1635,14 @@ struct ContentView: View {
         selectedOpenBookingIDs = [id]
     }
 
-    private func startCreateBooking(in trip: SDTrip, selectBookingID: UUID? = nil) {
+    private func startCreateBooking(in trip: SDTrip) {
         applyAfterTripFocus(trip: trip) {
-            if let selectBookingID {
-                selectedTimelineID = selectBookingID.uuidString
-            }
+            expandedTripIDs.insert(trip.id)
+            var selection = selectedTimelineID
+            BookingCreateDraftSelection.selectCreateDraft(into: &selection)
+            selectedTimelineID = selection
             bookingEditorSession = .create(prefillStart: nil, prefillEnd: nil)
+            BookingCreateDraftDiagnostics.recordSelected(reason: "menu_or_sidebar_create_draft")
         }
     }
 

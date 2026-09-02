@@ -9,6 +9,8 @@ import ReisenData
     #expect(UITestingIdentifiers.deleteTripMenu == "reisen.action.delete-trip")
     #expect(UITestingIdentifiers.deleteBookingMenu == "reisen.action.delete-booking")
     #expect(UITestingIdentifiers.sidebarExpandBookings == "reisen.action.expand-sidebar-bookings")
+    #expect(UITestingIdentifiers.bookingCreateDraftTimeline == "reisen.booking.create-draft.timeline")
+    #expect(UITestingIdentifiers.bookingCreateDraftSidebar == "reisen.booking.create-draft.sidebar")
     #expect(UITestingIdentifiers.seededTripRow == UITestingIdentifiers.tripRow(UITestingSeed.tripID))
     #expect(UITestingIdentifiers.seededBookingRow == UITestingIdentifiers.bookingRow(UITestingSeed.bookingID))
 }

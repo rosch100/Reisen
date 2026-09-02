@@ -55,6 +55,51 @@ final class MacUISmokeTests: XCTestCase {
         ui.app.typeKey(.escape, modifierFlags: [])
     }
 
+    func testAddBookingSelectsCreateDraftRow() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.app.activate()
+        ui.waitFor(UITestingIdentifiers.seededTripRow).click()
+        ui.waitFor(UITestingIdentifiers.detail)
+        ui.app.activate()
+
+        let ablagemenu = ui.app.menuBars.menuBarItems["Ablage"].firstMatch
+        XCTAssertTrue(ablagemenu.waitForExistence(timeout: 5), "Ablage-Menü fehlt")
+        ablagemenu.click()
+        let addMenu = ui.app.menuItems["Buchung hinzufügen…"].firstMatch
+        XCTAssertTrue(addMenu.waitForExistence(timeout: 5), "Menüeintrag Buchung hinzufügen fehlt")
+        addMenu.click()
+
+        // Surface-IDs sind eindeutig (Timeline ≠ Sidebar); App-weit suchen wie bei Seeded-Booking-Rows.
+        let timelineDraft = ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline, timeout: 8)
+        XCTAssertTrue(
+            timelineDraft.isSelected,
+            "Create-Draft in Timeline nicht selektiert\n\(ui.app.debugDescription)"
+        )
+
+        let seededBookings = ui.app.descendants(matching: .any)
+            .matching(identifier: UITestingIdentifiers.seededBookingRow)
+        for index in 0..<seededBookings.count {
+            let row = seededBookings.element(boundBy: index)
+            guard row.exists else { continue }
+            XCTAssertFalse(
+                row.isSelected,
+                "Alte Buchung bleibt während Create hervorgehoben (index \(index))\n\(ui.app.debugDescription)"
+            )
+        }
+
+        let sidebarDraft = ui.waitFor(UITestingIdentifiers.bookingCreateDraftSidebar, timeout: 5)
+        XCTAssertTrue(
+            sidebarDraft.isSelected,
+            "Create-Draft in Sidebar nicht selektiert\n\(ui.app.debugDescription)"
+        )
+
+        XCTAssertTrue(
+            ui.element(UITestingIdentifiers.inspector).waitForExistence(timeout: 5),
+            "Inspector fehlt trotz Create-Draft\n\(ui.app.debugDescription)"
+        )
+    }
+
     func testAccessibilityAuditAllowlist() throws {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
