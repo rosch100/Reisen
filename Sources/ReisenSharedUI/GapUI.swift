@@ -85,12 +85,12 @@ public struct GapPresentation: Equatable {
         )
     }
 
-    /// Transport-Lücken: Kind + Start-/Zielstadt, wenn ableitbar.
+    /// Transport-Lücken: Kind + Start-/Zielstadt, wenn ableitbar (nie volle Adresse).
     private static func defaultDisplayTitle(for gap: ComputedGap) -> String {
         let base = gap.kind.defaultDisplayTitle
         guard gap.kind == .transport else { return base }
-        guard let from = SpatialGapDetector.fromEndPlace(gap.fromBooking),
-              let to = SpatialGapDetector.toStartPlace(gap.toBooking)
+        guard let from = SpatialGapDetector.fromEndPlaceLabel(gap.fromBooking),
+              let to = SpatialGapDetector.toStartPlaceLabel(gap.toBooking)
         else { return base }
         return "\(base) · \(from) → \(to)"
     }
