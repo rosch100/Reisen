@@ -3,12 +3,19 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "Scripts" / "ci-enforce-suite-gate.py"
+SCRIPTS = ROOT / "Scripts"
+SCRIPT = SCRIPTS / "ci-enforce-suite-gate.py"
+
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+import ci_suite_constants  # noqa: E402
 
 
 def load_module():
@@ -95,6 +102,25 @@ class CiEnforceSuiteGateTests(unittest.TestCase):
             suite_results=self._results(),
         )
         self.assertEqual(code, 1)
+
+    def test_empty_allowed_with_suite_success_fails(self) -> None:
+        code = self.mod.enforce_suite_gate(
+            selection=self._selection("empty-allowed", "docs-only", []),
+            detect_result="success",
+            suite_results=self._results(**{"suite-swiftpm": "success"}),
+        )
+        self.assertEqual(code, 1)
+
+    def test_affected_empty_suites_with_success_fails(self) -> None:
+        code = self.mod.enforce_suite_gate(
+            selection=self._selection("affected", "affected", []),
+            detect_result="success",
+            suite_results=self._results(**{"suite-swiftpm": "success"}),
+        )
+        self.assertEqual(code, 1)
+
+    def test_all_suites_match_constants_ssot(self) -> None:
+        self.assertEqual(self.mod.ALL_SUITES, ci_suite_constants.ALL_SUITES)
 
     def test_missing_selection_file_fails_main(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
