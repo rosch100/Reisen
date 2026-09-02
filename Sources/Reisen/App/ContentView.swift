@@ -1481,7 +1481,8 @@ struct ContentView: View {
                                 seed: $tripCreateSeed,
                                 showFailed: $showCreateTripFromBookingsFailed
                             )
-                        }
+                        },
+                        onDelete: { requestOpenBookingBatchDeletion(selectedOpenBookingIDs) }
                     )
                     .padding(16)
                 }
@@ -1540,7 +1541,8 @@ struct ContentView: View {
                                 seed: $tripCreateSeed,
                                 showFailed: $showCreateTripFromBookingsFailed
                             )
-                        }
+                        },
+                        onDelete: { requestOpenBookingBatchDeletion(selectedOpenBookingIDs) }
                     )
                     .padding(16)
                 }

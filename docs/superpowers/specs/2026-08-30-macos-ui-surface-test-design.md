@@ -151,7 +151,7 @@ Diese Punkte sind **nicht vergessen**, sondern außerhalb von v1. Ein Implementi
 - **A11y-Breite:** kein VoiceOver-Durchlauf; Contrast/Dynamic Type/Text Clipped/Trait nicht im Gate; Apples Hit-Region nicht im Gate.
 - **HIG als Code:** Menü-Abdeckung, Empty-State-CTAs, destruktive Confirms sind AI + bestehende Unit-Tests, kein XCUI-Assert.
 - **Daten/Netz:** keine echten Provider, kein WebView-Inhalt, Keychain nur dadurch vermieden, dass die Probe skippt.
-- **Betrieb:** ein CI-Job (nicht parallel); 45 min kann knapp werden, dann Timeout oder Split als Folgespec.
+- **Betrieb:** Suite-Jobs dürfen parallel laufen; Merge-Gate bleibt ein Aggregator-Check **`CI`** (siehe [`../plans/2026-09-02-reisen-ci-performance.md`](../plans/2026-09-02-reisen-ci-performance.md)). 45 min Timeout gilt pro Suite-Job.
 - **Generate-Skript-Name** bleibt iOS-lastig.
 - **Crash-Reporter:** `GitHubIssueCrashCatcher` bleibt installiert; Token ist leer — kein Extra-Gate.
 - **Skill-Modell:** welches lokale/Cursor-Modell läuft, ist nicht festgelegt (Cursor-Session).

@@ -13,6 +13,8 @@ Workflows rufen Scripts auf — keine Copy/Paste-Build-Logik in YAML.
 | Pfad | Script |
 | --- | --- |
 | Unit/Swift Testing | `Scripts/ci-test.sh` |
+| Suite-Selection (Detect) | `Scripts/ci-select-suites.py` |
+| Suite-Aggregator-Gate | `Scripts/ci-enforce-suite-gate.py` |
 | Produkt-Build (CodeQL) | `Scripts/ci-build.sh` |
 | App-Bundle | `Scripts/build-app.sh` |
 | Sign/Notarize | `Scripts/sign-and-notarize.sh` |
@@ -20,6 +22,7 @@ Workflows rufen Scripts auf — keine Copy/Paste-Build-Logik in YAML.
 | macOS XCUI (lokal, nur Fallback) | `Scripts/macos-ui-test.sh` |
 | macOS UI-Review (advisory) | `Scripts/macos-ui-review.sh` |
 | iOS Tests | `Scripts/ios-test.sh` |
+| iOS Release Isolation | `Scripts/ios-build-release-check.sh` |
 
 ## Secrets
 

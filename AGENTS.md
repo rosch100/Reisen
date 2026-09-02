@@ -21,7 +21,12 @@ Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
 
 ### CI
 - Root-Cause vor Fix; Scripts nicht in YAML duplizieren.
+<<<<<<< HEAD
 - Gate lokal: `bash ./Scripts/ci-test.sh`. UI-Diff: Agents **müssen** `bash ./Scripts/macos-ui-test-remote.sh` (iMac) nutzen; `macos-ui-test.sh` lokal nur nach nachgewiesenem Remote-Ausfall.
+=======
+- Gate lokal: `bash ./Scripts/ci-test.sh` (UI: zusätzlich `macos-ui-test.sh`).
+- Pflicht-Check auf GitHub: Aggregator-Job **`CI`** (parallele Suites + Selection — `docs/ci/README.md`, `docs/superpowers/plans/2026-09-02-reisen-ci-performance.md`).
+>>>>>>> origin/master
 
 ### Review
 - Domain-Grenzen und keine stillen Fallbacks.
@@ -62,6 +67,7 @@ importiert `UniformTypeIdentifiers`/`ImageIO`). Daher gilt in Cloud Agents:
 - **Lauffähig auf Linux (SSOT-Teilmenge von `ci-test.sh`):** die Python-/Bash-Prüfungen der CI.
   Nützlich für Arbeiten an `Scripts/`, `.github/workflows/` und dem Gmail-Ingress-Tooling:
   - `REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true bash ./Scripts/embed-github-issue-token.sh`
+  - `python3 -m unittest discover -s Scripts/tests -p 'test_ci_*.py'`
   - `python3 Scripts/tests/check-app-store-check-workflow.py .github/workflows/app-store-check.yml`
   - `python3 -m unittest Scripts/tests/test_coverage_diff.py`
   - `python3 -m unittest Scripts/tests/test_ios_validate_appstore_report.py`

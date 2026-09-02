@@ -5,6 +5,12 @@ on:
     branches: [ "master" ]
   push:
     branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      force_full:
+        description: Force full suite selection
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,20 +18,66 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 defaults:
   run:
     shell: bash --noprofile --norc -eo pipefail {0}
 
 jobs:
-  ci:
-    name: CI
-    runs-on: xcode-27
-    timeout-minutes: 45
-
+  detect-suites:
+    name: detect-suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      mode: ${{ steps.select.outputs.mode }}
+      reason: ${{ steps.select.outputs.reason }}
+      run_swiftpm: ${{ steps.select.outputs.run_swiftpm }}
+      run_ios_sim: ${{ steps.select.outputs.run_ios_sim }}
+      run_ios_release: ${{ steps.select.outputs.run_ios_release }}
+      run_macos_ui: ${{ steps.select.outputs.run_macos_ui }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Contract tests (selection + gate)
+        run: python3 -m unittest discover -s Scripts/tests -p 'test_ci_*.py' -v
+
+      - name: Select suites
+        id: select
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REISEN_CI_SELECTION: ${{ github.event_name == 'workflow_dispatch' && inputs.force_full && 'full' || '' }}
+          REISEN_CI_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          python3 Scripts/ci-select-suites.py \
+            --repo "$GITHUB_WORKSPACE" \
+            --out selection.json \
+            --repo-slug "$GITHUB_REPOSITORY" \
+            --event-name "$GITHUB_EVENT_NAME" \
+            --ref-name "$GITHUB_REF_NAME" \
+            --branch "${REISEN_CI_BRANCH}"
+
+      - name: Upload selection artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: selection
+          path: selection.json
+          if-no-files-found: error
+
+  suite-swiftpm:
+    name: suite-swiftpm
+    needs: detect-suites
+    if: needs.detect-suites.outputs.run_swiftpm == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
 
       - name: Select Xcode 27
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -60,26 +112,147 @@ jobs:
           CI: "true"
         run: bash ./Scripts/ci-test.sh
 
+  suite-ios-sim:
+    name: suite-ios-sim
+    needs: detect-suites
+    if: needs.detect-suites.outputs.run_ios_sim == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Select Xcode 27
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest
+
+      - name: Xcode cache key
+        id: xcode_key
+        run: |
+          key="$(xcodebuild -version | tr '\n' ' ' | shasum -a 256 | awk '{print substr($1,1,16)}')"
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache iOS Debug DerivedData
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            DerivedData/ReiseniOS
+            DerivedData/ReiseniOSPrivate
+          key: ${{ runner.os }}-ios-sim-${{ steps.xcode_key.outputs.key }}-${{ hashFiles('Package.swift', 'project.yml', '**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-ios-sim-${{ steps.xcode_key.outputs.key }}-
+
       - name: Install XcodeGen
         run: brew install xcodegen
+
+      - name: Generate Xcode project
+        env:
+          REISEN_GITHUB_ISSUE_TOKEN_EMPTY: "true"
+        run: bash ./Scripts/generate-ios-project.sh
 
       - name: iOS Simulator tests
         env:
           CI: "true"
           REISEN_CLOUDKIT: "0"
           IOS_SCHEME: all
+          REISEN_SKIP_GENERATE_IOS_PROJECT: "1"
         run: bash ./Scripts/ios-test.sh
+
+  suite-ios-release:
+    name: suite-ios-release
+    needs: detect-suites
+    if: needs.detect-suites.outputs.run_ios_release == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Select Xcode 27
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest
+
+      - name: Xcode cache key
+        id: xcode_key
+        run: |
+          key="$(xcodebuild -version | tr '\n' ' ' | shasum -a 256 | awk '{print substr($1,1,16)}')"
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache iOS Release DerivedData
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            DerivedData/ios-release-check-ReiseniOS
+            DerivedData/ios-release-check-ReiseniOSPrivate
+          key: ${{ runner.os }}-ios-rel-${{ steps.xcode_key.outputs.key }}-${{ hashFiles('Package.swift', 'project.yml', '**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-ios-rel-${{ steps.xcode_key.outputs.key }}-
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        env:
+          REISEN_GITHUB_ISSUE_TOKEN_EMPTY: "true"
+        run: bash ./Scripts/generate-ios-project.sh
 
       - name: iOS Release binary isolation check
         env:
           CI: "true"
           REISEN_CLOUDKIT: "0"
+          REISEN_SKIP_GENERATE_IOS_PROJECT: "1"
         run: bash ./Scripts/ios-build-release-check.sh
+
+  suite-macos-ui:
+    name: suite-macos-ui
+    needs: detect-suites
+    if: needs.detect-suites.outputs.run_macos_ui == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Select Xcode 27
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest
+
+      - name: Xcode cache key
+        id: xcode_key
+        run: |
+          key="$(xcodebuild -version | tr '\n' ' ' | shasum -a 256 | awk '{print substr($1,1,16)}')"
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache macOS UI DerivedData
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: DerivedData/ReisenMacUITests
+          key: ${{ runner.os }}-macos-ui-${{ steps.xcode_key.outputs.key }}-${{ hashFiles('Package.swift', 'project.yml', '**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-macos-ui-${{ steps.xcode_key.outputs.key }}-
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        env:
+          REISEN_GITHUB_ISSUE_TOKEN_EMPTY: "true"
+        run: bash ./Scripts/generate-ios-project.sh
 
       - name: macOS UI tests
         env:
           CI: "true"
           REISEN_CLOUDKIT: "0"
+          REISEN_SKIP_GENERATE_IOS_PROJECT: "1"
         run: bash ./Scripts/macos-ui-test.sh
 
       - name: Upload macOS UI xcresult
@@ -89,3 +262,36 @@ jobs:
           name: macos-ui-xcresult
           path: DerivedData/ReisenMacUITests/*.xcresult
           if-no-files-found: ignore
+
+  CI:
+    name: CI
+    runs-on: ubuntu-latest
+    needs:
+      - detect-suites
+      - suite-swiftpm
+      - suite-ios-sim
+      - suite-ios-release
+      - suite-macos-ui
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Download selection artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: selection
+          path: .
+
+      - name: Enforce selection exit contract
+        env:
+          SELECTION_PATH: selection.json
+          DETECT_RESULT: ${{ needs.detect-suites.result }}
+          SUITE_SWIFTPM_RESULT: ${{ needs.suite-swiftpm.result }}
+          SUITE_IOS_SIM_RESULT: ${{ needs.suite-ios-sim.result }}
+          SUITE_IOS_RELEASE_RESULT: ${{ needs.suite-ios-release.result }}
+          SUITE_MACOS_UI_RESULT: ${{ needs.suite-macos-ui.result }}
+        run: python3 Scripts/ci-enforce-suite-gate.py

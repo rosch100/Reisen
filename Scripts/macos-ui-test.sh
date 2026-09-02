@@ -122,10 +122,18 @@ fi
 
 cd "$ROOT"
 
+REISEN_CI_T0="$(date +%s)"
+trap 'echo "reisen-ci-duration: script=macos-ui-test.sh seconds=$(( $(date +%s) - REISEN_CI_T0 ))" >&2' EXIT
+
 export REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true
 unset REISEN_EMBED_GITHUB_ISSUE_TOKEN
 unset REISEN_REQUIRE_GITHUB_ISSUE_TOKEN
-bash "$ROOT/Scripts/generate-ios-project.sh"
+if [[ "${REISEN_SKIP_GENERATE_IOS_PROJECT:-}" != "1" ]]; then
+  bash "$ROOT/Scripts/generate-ios-project.sh"
+elif [[ ! -d "$ROOT/Reisen.xcodeproj" ]]; then
+  echo "Fehler: REISEN_SKIP_GENERATE_IOS_PROJECT=1 aber Reisen.xcodeproj fehlt." >&2
+  exit 1
+fi
 
 PROJECT="$ROOT/Reisen.xcodeproj"
 SCHEME="ReisenMac"

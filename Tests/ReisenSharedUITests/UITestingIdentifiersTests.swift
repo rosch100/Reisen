@@ -42,6 +42,8 @@ import ReisenData
     #expect(UITestingIdentifiers.tripDeleteDialog == "reisen.dialog.delete-trip")
     #expect(UITestingIdentifiers.splitDivider == "reisen.split.divider")
     #expect(UITestingIdentifiers.tripMultiSelectionSummary == "reisen.trip.multi-selection-summary")
+    #expect(UITestingIdentifiers.openBookingMultiSelectionSummary == "reisen.open.multi-selection-summary")
+    #expect(UITestingIdentifiers.tripBookingMultiSelectionSummary == "reisen.trip-booking.multi-selection-summary")
     #expect(UITestingIdentifiers.openBookingsContent == "reisen.open-bookings.content")
     #expect(UITestingIdentifiers.deleteBookingMenuTitleDE == "Löschen…")
     #expect(UITestingIdentifiers.removeFromTripMenuTitleDE == "Von Reise entfernen…")
@@ -51,6 +53,7 @@ import ReisenData
     #expect(UITestingIdentifiers.editGapMenuTitleDE == "Lücke bearbeiten…")
     #expect(UITestingIdentifiers.seededTripRow == UITestingIdentifiers.tripRow(UITestingSeed.tripID))
     #expect(UITestingIdentifiers.seededBookingRow == UITestingIdentifiers.bookingRow(UITestingSeed.bookingID))
+    #expect(UITestingIdentifiers.seededBookingRow2 == UITestingIdentifiers.bookingRow(UITestingSeed.bookingID2))
     #expect(UITestingIdentifiers.seededTimelineBookingRow == UITestingIdentifiers.timelineBookingRow(UITestingSeed.bookingID))
     #expect(UITestingIdentifiers.seededOpenBookingRow == UITestingIdentifiers.bookingRow(UITestingSeed.openBookingID))
     #expect(UITestingIdentifiers.seededGapRow == UITestingIdentifiers.gapRow(
