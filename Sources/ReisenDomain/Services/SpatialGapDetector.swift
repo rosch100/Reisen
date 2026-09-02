@@ -45,8 +45,8 @@ public enum SpatialGapDetector {
             bookingType: type,
             startAt: start,
             endAt: end,
-            locationFrom: fromEndPlace(from),
-            locationTo: toStartPlace(to),
+            locationFrom: fromEndPlaceLabel(from),
+            locationTo: toStartPlaceLabel(to),
             fromBookingID: from.id,
             toBookingID: to.id
         )
@@ -69,7 +69,7 @@ public enum SpatialGapDetector {
         return nil
     }
 
-    /// Spec: locationTo → locationToAddress → locationFrom → locationFromAddress
+    /// PlaceKey-Quelle (Spec): locationTo → locationToAddress → locationFrom → locationFromAddress
     public static func fromEndPlace(_ booking: Booking) -> String? {
         firstNonEmpty(
             booking.locationTo,
@@ -79,7 +79,7 @@ public enum SpatialGapDetector {
         )
     }
 
-    /// Spec: locationFrom → locationFromAddress → locationTo → locationToAddress
+    /// PlaceKey-Quelle (Spec): locationFrom → locationFromAddress → locationTo → locationToAddress
     public static func toStartPlace(_ booking: Booking) -> String? {
         firstNonEmpty(
             booking.locationFrom,
@@ -87,6 +87,16 @@ public enum SpatialGapDetector {
             booking.locationTo,
             booking.locationToAddress
         )
+    }
+
+    /// Stadt/Ort für Transport-Anzeige und Auto-Gap-Orte — nie Adressfelder.
+    public static func fromEndPlaceLabel(_ booking: Booking) -> String? {
+        firstNonEmpty(booking.locationTo, booking.locationFrom)
+    }
+
+    /// Stadt/Ort für Transport-Anzeige und Auto-Gap-Orte — nie Adressfelder.
+    public static func toStartPlaceLabel(_ booking: Booking) -> String? {
+        firstNonEmpty(booking.locationFrom, booking.locationTo)
     }
 
     private static func firstNonEmpty(_ values: String?...) -> String? {
