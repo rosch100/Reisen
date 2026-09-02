@@ -52,4 +52,14 @@ struct SidebarEntryContextActionsTests {
         #expect(elapsed == open)
         #expect(elapsed.contains(.createTripFromAllOpen))
     }
+
+    @Test func openBookingMulti_createTripAndDeleteOnly() {
+        let actions = SidebarEntryContextActions.actions(for: .openBooking, selectionCount: 3)
+        #expect(actions == [.createTripFromSelection, .deleteBooking])
+    }
+
+    @Test func tripMulti_deleteTripOnly() {
+        let actions = SidebarEntryContextActions.actions(for: .trip, selectionCount: 2)
+        #expect(actions == [.deleteTrip])
+    }
 }

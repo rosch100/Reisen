@@ -8,6 +8,7 @@ public enum TripTimelineContextAction: String, Equatable, Sendable, CaseIterable
     case deleteBooking
     case removeFromTrip
     case batchRemoveFromTrip
+    case batchDeleteBooking
     case copy
     case openPortal
 }
@@ -49,7 +50,7 @@ public enum TripTimelineContextActions {
         case .singleGap:
             return [.editGap, .addBooking]
         case .multipleBookingsOnly:
-            return [.batchRemoveFromTrip]
+            return [.batchRemoveFromTrip, .batchDeleteBooking]
         }
     }
 }

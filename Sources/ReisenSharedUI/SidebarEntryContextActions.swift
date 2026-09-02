@@ -38,6 +38,22 @@ public enum SidebarEntryContextActions {
         }
     }
 
+    public static func actions(for kind: SidebarEntryKind, selectionCount: Int) -> Set<SidebarContextAction> {
+        guard selectionCount > 1 else {
+            return actions(for: kind)
+        }
+        switch kind {
+        case .openBooking, .elapsedOpenBooking:
+            return [.createTripFromSelection, .deleteBooking]
+        case .trip, .elapsedTrip:
+            return [.deleteTrip]
+        case .tripBooking:
+            return [.deleteBooking, .removeFromTrip]
+        case .openBookingMailbox, .elapsedOpenBookingMailbox:
+            return actions(for: kind)
+        }
+    }
+
     public static func includes(_ action: SidebarContextAction, for kind: SidebarEntryKind) -> Bool {
         actions(for: kind).contains(action)
     }
