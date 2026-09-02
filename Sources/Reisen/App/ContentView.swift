@@ -688,10 +688,12 @@ struct ContentView: View {
         Binding(
             get: { selection },
             set: { newValue in
-                // Outline-Kinder sind absichtlich ungetaggt. List würde den Klick sonst
-                // auf nil zurücksetzen und die zugehörige Content-Spalte verlieren.
+                // List(selection:) schreibt bei Klick auf ungetaggte Trip-Kinder nil.
+                // Open-/Elapsed-Kinder teilen den Mailbox-Tag; nil trotzdem absichern.
                 if newValue == nil,
-                   selection == .openBookings || selection == .elapsedOpenBookings || selection?.tripID != nil {
+                   selection == .openBookings
+                    || selection == .elapsedOpenBookings
+                    || selection?.tripID != nil {
                     return
                 }
                 selection = newValue

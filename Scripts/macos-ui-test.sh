@@ -82,7 +82,6 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   local destination="$3"
   local derived="$4"
   local result="$5"
-  local build_status
   local -a common
   while IFS= read -r line; do
     common+=("$line")
@@ -91,11 +90,7 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   echo "macOS-UI-Tests: build-for-testing (unsigned) …" >&2
   xcodebuild "${common[@]}" \
     CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
-    build-for-testing
-  build_status=$?
-  if [[ "$build_status" -ne 0 ]]; then
-    return "$build_status"
-  fi
+    build-for-testing || return $?
 
   echo "macOS-UI-Tests: Ad-hoc codesign + xattr -cr …" >&2
   reisen_macos_ui_clear_gatekeeper_attrs "$derived"
