@@ -574,8 +574,8 @@ reisen_ui_remote_run_ui_tests() {
   # Continuity/AirPlay-Dialog („MacBook Pro …“) blockiert XCUI-Hit-Tests.
   reisen_ui_remote_ssh "$host" 'killall AirPlayUIAgent 2>/dev/null || true'
   reisen_ui_remote_ensure_terminal_profile "$host"
-  # Safety-net falls SSH-Session vor Restore abbricht
-  trap 'reisen_ui_remote_restore_terminal_default "'"$host"'" || true' EXIT
+  # EXIT: Terminal-Default zurücksetzen UND Lock freigeben (kein Ersatz der Main-Trap).
+  trap 'reisen_ui_remote_restore_terminal_default "'"$host"'" || true; if [[ "${lock_held:-0}" -eq 1 ]]; then reisen_ui_remote_release_lock "'"$HOST"'" "'"$RUN_ID"'"; fi' EXIT
   # Kein osascript/AppleScript: Default-Profil nur bis open, dann sofort restore.
   # Fenster erbt Profil beim open; kein Automation-TCC, kein close-Dialog.
   reisen_ui_remote_ssh_stdin "$host" <<EOF
@@ -628,8 +628,9 @@ fi
 exit "\$status"
 EOF
   test_status=$?
-  trap - EXIT
   reisen_ui_remote_restore_terminal_default "$host" || true
+  # Main-Lock-Trap wiederherstellen (Terminal bereits restored).
+  trap 'if [[ "${lock_held:-0}" -eq 1 ]]; then reisen_ui_remote_release_lock "'"$HOST"'" "'"$RUN_ID"'"; fi' EXIT
   return "$test_status"
 }
 
@@ -700,6 +701,19 @@ reisen_ui_remote_self_test() {
   grep -Fq 'StrictHostKeyChecking=' "$script_path"
   # Positive: Restore unmittelbar nach open (Race-Fenster klein)
   grep -Fq 'open -a Terminal "\$cmd_file"' "$script_path"
+  # EXIT während UI-Lauf muss Lock freigeben (kein reines Terminal-Restore).
+  grep -Fq 'reisen_ui_remote_release_lock' "$script_path"
+  awk '
+    /reisen_ui_remote_run_ui_tests\(\)/ { in_fn=1 }
+    in_fn && /^}/ { in_fn=0 }
+    in_fn && /trap .*EXIT/ {
+      line=$0
+      if (line ~ /reisen_ui_remote_restore_terminal_default/ && line !~ /reisen_ui_remote_release_lock/) {
+        print "self-test: EXIT-Trap in run_ui_tests ohne Lock-Release: " line > "/dev/stderr"
+        exit 1
+      }
+    }
+  ' "$script_path"
   grep -Fq 'reisen_ui_remote_assert_git_source' "$script_path"
   grep -Fq "excludes+=(--exclude='.git')" "$script_path"
   # Lock vor Sync im Main (Aufrufe mit $HOST)

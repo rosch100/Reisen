@@ -4,7 +4,7 @@
 
 **Goal:** Working-Tree-`rsync` + Remote-`macos-ui-test.sh` auf dem iMac (kein CI-Runner).
 
-**Architecture:** Ein Wrapper `Scripts/macos-ui-test-remote.sh` resolved Host (altanis → Bonjour), spiegelt den Tree, gated Xcode≥27, startet XCUI via `launchctl asuser`.
+**Architecture:** Ein Wrapper `Scripts/macos-ui-test-remote.sh` resolved Host (altanis → Bonjour), spiegelt den Tree, gated Xcode≥27, startet XCUI via `open -a Terminal` (isolierte Run-Dirs + Lock).
 
 **Tech Stack:** bash 3.2, ssh, rsync, dns-sd, ping, bestehende `macos-ui-test.sh`.
 
@@ -21,7 +21,7 @@
 
 **Files:** Create `Scripts/macos-ui-test-remote.sh`
 
-- [x] Host-Resolve, rsync, Gates, `launchctl asuser`, optional xcresult-fetch
+- [x] Host-Resolve, rsync, Gates, `open -a Terminal`, optional xcresult-fetch
 - [x] `--self-test` ohne Netz
 - [x] `bash ./Scripts/macos-ui-test-remote.sh --self-test` → Exit 0
 
