@@ -663,6 +663,7 @@ public struct BookingEditorForm: View {
     @Binding var draft: BookingEditorDraft
     let providerReadOnly: Bool
     var chrome: Chrome
+    let saveAccessibilityIdentifier: String
     var onCancel: () -> Void
     var onSave: () throws -> Void
 
@@ -681,6 +682,7 @@ public struct BookingEditorForm: View {
         draft: Binding<BookingEditorDraft>,
         providerReadOnly: Bool,
         chrome: Chrome = .footer,
+        saveAccessibilityIdentifier: String = UITestingIdentifiers.bookingEditorSave,
         onCancel: @escaping () -> Void,
         onSave: @escaping () throws -> Void
     ) {
@@ -689,6 +691,7 @@ public struct BookingEditorForm: View {
         self._draft = draft
         self.providerReadOnly = providerReadOnly
         self.chrome = chrome
+        self.saveAccessibilityIdentifier = saveAccessibilityIdentifier
         self.onCancel = onCancel
         self.onSave = onSave
     }
@@ -722,6 +725,7 @@ public struct BookingEditorForm: View {
                         )
                     }
                     TextField(L10n.string(.editorTitle), text: $draft.title)
+                        .accessibilityIdentifier(UITestingIdentifiers.bookingEditorTitle)
                         .editorFocus(.title, $focusedField)
                     Picker(L10n.string(.editorType), selection: $draft.bookingType) {
                         ForEach(BookingType.allCases) { type in
@@ -943,6 +947,7 @@ public struct BookingEditorForm: View {
                         Button(L10n.string(.commonSave)) {
                             attemptSave(using: proxy)
                         }
+                        .accessibilityIdentifier(saveAccessibilityIdentifier)
                     }
                 }
             }
@@ -958,6 +963,7 @@ public struct BookingEditorForm: View {
                     Button(L10n.string(.commonSave)) {
                         attemptSave(using: proxy)
                     }
+                    .accessibilityIdentifier(saveAccessibilityIdentifier)
                     .keyboardShortcut(.defaultAction)
                 }
                 .padding(.horizontal, 16)
@@ -967,6 +973,7 @@ public struct BookingEditorForm: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.background)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(UITestingIdentifiers.bookingEditor)
     }
 

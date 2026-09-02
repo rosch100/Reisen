@@ -26,7 +26,7 @@ Observability/Tests:
 - [ ] Unit-/Swift-Testing-Assert trifft Spec
 - [ ] UI: UITestingIdentifiers + MacUI/XCUI (wenn Oberfläche betroffen)
 - [ ] bash ./Scripts/ci-test.sh
-- [ ] UI-Diff: bash ./Scripts/macos-ui-test.sh
+- [ ] UI-Diff (Agents): bash ./Scripts/macos-ui-test-remote.sh — lokal macos-ui-test.sh nur nach Remote-Ausfall
 ```
 
 ## Logging-SSOT
@@ -74,7 +74,8 @@ Referenz-Beispiele: `NavigationSettlePoll`, `ProviderLoginAssistance`, Tests in 
 | Identifier-SSOT | `Sources/ReisenSharedUI/UITestingIdentifiers.swift` |
 | Page Object | `Tests/ReisenMacUITests/MacUI.swift` |
 | Smokes | `Tests/ReisenMacUITests/MacUISmokeTests.swift` |
-| Script | `bash ./Scripts/macos-ui-test.sh` |
+| Script (Agents) | `bash ./Scripts/macos-ui-test-remote.sh` (iMac; Spec `docs/superpowers/specs/2026-09-02-macos-ui-test-remote-design.md`) |
+| Script (lokal, Fallback) | `bash ./Scripts/macos-ui-test.sh` nur wenn Remote unerreichbar |
 | Advisory Tour | `bash ./Scripts/macos-ui-review.sh` + Skill `ui-surface-review` |
 
 Pflichten bei UI-Diff:

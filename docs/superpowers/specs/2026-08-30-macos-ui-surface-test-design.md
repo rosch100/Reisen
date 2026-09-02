@@ -101,7 +101,7 @@ UI-Test-App = eigener Prozess, Bundle-ID `de.reisen.Reisen`. Bei `-UITesting` / 
 - **Target:** `ReisenMacUITests` (`bundle.ui-testing`) in [`project.yml`](../../../project.yml); Scheme `ReisenMac` bekommt `test:`. Host `ReisenMac`.
 - **Page Objects:** `Tests/ReisenMacUITests/MacUI.swift`.
 - **CI-Script:** [`Scripts/macos-ui-test.sh`](../../../Scripts/macos-ui-test.sh): Generate, dann `xcodebuild test -scheme ReisenMac -destination 'platform=macOS' -only-testing:ReisenMacUITests -resultBundlePath …`. Token-Stub wie iOS. CI-Signing: `CODE_SIGNING_ALLOWED=NO`; wenn Attach an die Sandbox-App scheitert: Ad-hoc `CODE_SIGN_IDENTITY=-`, kein Skip.
-- **CI-Wiring:** Step in [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) nach iOS-Tests. **Timeout 45.** Bei Fehlschlag xcresult als Artifact. [`AGENTS.md`](../../../AGENTS.md): `bash ./Scripts/macos-ui-test.sh`.
+- **CI-Wiring:** Step in [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) nach iOS-Tests. **Timeout 45.** Bei Fehlschlag xcresult als Artifact. Agents-Verifikation: [`AGENTS.md`](../../../AGENTS.md) → `bash ./Scripts/macos-ui-test-remote.sh` (iMac); lokal `macos-ui-test.sh` nur nach nachgewiesenem Remote-Ausfall. CI-Job bleibt auf `macos-ui-test.sh`.
 - **Review-Script:** `REISEN_UI_REVIEW=1`, `$REISEN_UI_REVIEW_DIR` (Default `/tmp` oder gitignored `DerivedData/ui-review`). Tour per `XCTSkipUnless`.
 - **Skill + Rubrik:** [`.cursor/skills/ui-surface-review/SKILL.md`](../../../.cursor/skills/ui-surface-review/SKILL.md), [`docs/qa/ui-review-rubric.md`](../../qa/ui-review-rubric.md).
 
@@ -155,6 +155,49 @@ Diese Punkte sind **nicht vergessen**, sondern außerhalb von v1. Ein Implementi
 - **Generate-Skript-Name** bleibt iOS-lastig.
 - **Crash-Reporter:** `GitHubIssueCrashCatcher` bleibt installiert; Token ist leer — kein Extra-Gate.
 - **Skill-Modell:** welches lokale/Cursor-Modell läuft, ist nicht festgelegt (Cursor-Session).
+
+
+## v2 functional smoke
+
+Die funktionelle v2-Abdeckung erweitert den CI-Gate um isolierte macOS-Happy-Paths
+mit In-Memory-Persistenz. Jede Testmethode startet genau eine
+`XCUIApplication`-Session; bei einem CI-Timeout wird der macOS-UI-Test in einen
+eigenen Job ausgelagert, statt das bestehende Timeout still zu erhöhen.
+
+Abgedeckt werden:
+
+- Empty-State-CTA und Create-Trip mit gespeichertem Titel
+- Neue Reise über Menü, Booking-Inspector-Feld und Add-Booking-Toolbar
+- Trip-Delete-Dialog als Reach-only-Test
+- Open-Booking-Auswahl und Assign-to-Trip mit sichtbarer Folgezeile
+- Gap-Editor mit gespeichertem Titel-Override
+- isolierte Settings-Notification-Toggle
+- Provider-Sync-Chrome ohne Login oder WebView-Inhalt
+- Paste-Import über `-UITestingPasteImport` mit vorgefertigtem Candidate und
+  persistiertem Booking nach Bestätigung
+
+Neue Controls verwenden ausschließlich Identifier aus
+`UITestingIdentifiers`. Die Open-Booking-Outline verwendet `bookingRow`; die
+Content-`OpenBookingRow` bleibt ohne Identifier, damit keine AX-ID parallel in
+Sidebar und Timeline doppelt vorkommt. Gap-Zeilen verwenden die stabile
+`ComputedGap.timelineItemID`, nicht die zufällige `ComputedGap.id`.
+
+Nicht Bestandteil des v2-Gates bleiben iOS-XCUI, echte Provider-Anmeldung,
+CloudKit/Netzwerk, Portal-Cancel, Delete-Confirm, Multi-Select-Batch-Aktionen,
+Trip-Edit, Sync-Erfolg, Paste-from-file/Drag-and-Drop sowie StoreFailure.
+
+1. **iOS-Adapter-Spec:** `ReiseniOSUITests` + `ios-ui-test.sh`/`ios-ui-review.sh`, gleiches Manifest `schemaVersion`, gleiche Identifier wo SharedUI. Private-App getrennt oder `IOS_SCHEME`.
+2. **macOS-Hit-Target-CI:** nach v1-Baseline eigene Heuristik (interaktive Elemente, Mindestframe **20pt**, nicht 44pt). Das ist die Best-Practice-Erfüllung des ursprünglichen Hit-Target-Wunsches.
+3. **Funktionelle XCUI-Smokes:** Neue Reise via Command, Delete-Dialog erscheint (nicht ausführen), Inspector-Feld der Seed-Buchung sichtbar.
+4. **Audit-Ausweitung:** `.contrast` / `.trait` nach gemessener False-Positive-Rate; dokumentierte Skips.
+5. **Appearance-Tour:** Light und Dark, feste Locale (`en`+`de` optional) im Review-Dump.
+6. **Pixel-Regression:** nur on-demand oder Nightly, nicht PR-Gate, bis Identifier-Stabilität da ist.
+7. **Kodierte HIG-Regeln:** Menü „Neue Reise“, Empty-State-CTA, Confirm bei Trip-Delete — als XCUI, sobald die Produkt-UI das herstellt (heute laut HIG-Spec teilweise fehlend; Tests würden rot ohne Produktfix).
+8. **CI-Split:** eigener Job für macOS-UI, wenn Timeout 45 nicht hält.
+9. **Rename** `generate-ios-project.sh` → `generate-xcode-project.sh` (rein dokumentarisch/SSOT-Name).
+10. **Paste-Import-Fenster** und Provider-Sync-Happy-Path in die Tour, sobald Fixtures ohne Netz reichen.
+
+Punkt 7 nicht vor Produkt-HIG-Fixes als Gate schalten — sonst testet CI absichtlich den bekannten Spec-Ist.
 
 ## Künftige Erweiterungen (empfohlene Reihenfolge)
 

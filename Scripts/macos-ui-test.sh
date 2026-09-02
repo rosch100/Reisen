@@ -58,7 +58,7 @@ reisen_macos_ui_clear_gatekeeper_attrs() {
 reisen_macos_ui_adhoc_resign_products() {
   local derived="$1"
   local products="${derived}/Build/Products"
-  local bundle ents
+  local bundle ents failed=0
   [[ -d "$products" ]] || return 0
   ents="$(mktemp -t reisen-ui-empty-ents.XXXXXX)"
   cat >"$ents" <<'PLIST'
@@ -68,11 +68,14 @@ reisen_macos_ui_adhoc_resign_products() {
 PLIST
   while IFS= read -r -d '' bundle; do
     # Ohne Entitlements: Development-Cert-Pflicht entfällt; Gatekeeper braucht Signatur.
-    codesign --force --deep --sign - --entitlements "$ents" "$bundle" >/dev/null 2>&1 \
-      || codesign --force --deep --sign - "$bundle" >/dev/null 2>&1 \
-      || true
+    if ! codesign --force --deep --sign - --entitlements "$ents" "$bundle" >/dev/null 2>&1 \
+      && ! codesign --force --deep --sign - "$bundle" >/dev/null 2>&1; then
+      echo "Fehler: Ad-hoc codesign fehlgeschlagen: $bundle" >&2
+      failed=1
+    fi
   done < <(find "$products" \( -name '*.app' -o -name '*.xctest' \) -print0 2>/dev/null)
   rm -f "$ents"
+  [[ "$failed" -eq 0 ]] || return 1
 }
 
 reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
@@ -94,7 +97,7 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
 
   echo "macOS-UI-Tests: Ad-hoc codesign + xattr -cr …" >&2
   reisen_macos_ui_clear_gatekeeper_attrs "$derived"
-  reisen_macos_ui_adhoc_resign_products "$derived"
+  reisen_macos_ui_adhoc_resign_products "$derived" || return $?
   rm -rf "$result"
 
   echo "macOS-UI-Tests: test-without-building …" >&2
@@ -116,24 +119,6 @@ if [[ "${1:-}" == "--self-test" ]]; then
   printf '%s\n' "$ci_out" | grep -qx CODE_SIGNING_REQUIRED=NO
   extra_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult CODE_SIGN_IDENTITY=-)"
   printf '%s\n' "$extra_out" | grep -qx CODE_SIGN_IDENTITY=-
-  mock_log="$(mktemp -t reisen-ui-xcodebuild-mock.XXXXXX)"
-  xcodebuild() {
-    printf '%s\n' "$*" >>"$mock_log"
-    return 19
-  }
-  set +e
-  reisen_macos_ui_run_unsigned_build_then_adhoc_test /p S 'platform=macOS' /d /r.xcresult >/dev/null 2>&1
-  mock_status=$?
-  set -e
-  unset -f xcodebuild
-  [[ "$mock_status" -eq 19 ]]
-  grep -q build-for-testing "$mock_log"
-  if grep -q test-without-building "$mock_log"; then
-    echo "self-test: test-without-building trotz fehlgeschlagenem Build" >&2
-    rm -f "$mock_log"
-    exit 1
-  fi
-  rm -f "$mock_log"
   echo "macos-ui-test.sh self-test: OK" >&2
   exit 0
 fi

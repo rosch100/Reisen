@@ -5,11 +5,19 @@ import ReisenAppCore
 @Test func uiTestingLaunch_detectsPopulatedAndEmptyFlags() {
     #expect(UITestingLaunch.argument == "-UITesting")
     #expect(UITestingLaunch.emptyArgument == "-UITestingEmpty")
+    #expect(UITestingLaunch.pasteImportArgument == "-UITestingPasteImport")
     #expect(UITestingLaunch.isActive(arguments: ["-UITesting"]))
     #expect(UITestingLaunch.shouldSeed(arguments: ["-UITesting"]))
     #expect(UITestingLaunch.isActive(arguments: ["-UITestingEmpty"]))
     #expect(!UITestingLaunch.shouldSeed(arguments: ["-UITestingEmpty"]))
     #expect(!UITestingLaunch.isActive(arguments: []))
+    #expect(UITestingLaunch.shouldInjectPasteImportFixture(arguments: [
+        UITestingLaunch.argument,
+        UITestingLaunch.pasteImportArgument,
+    ]))
+    #expect(!UITestingLaunch.shouldInjectPasteImportFixture(arguments: [
+        UITestingLaunch.pasteImportArgument,
+    ]))
     #expect(UITestingMode.from(arguments: ["-UITesting"]) == .populated)
     #expect(UITestingMode.from(arguments: ["-UITestingEmpty"]) == .empty)
     #expect(UITestingMode.from(arguments: []).skipsSideEffects == false)

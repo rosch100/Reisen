@@ -397,6 +397,7 @@ struct TripDetailView: View {
                     .help(openBookingsCandidates().isEmpty
                         ? L10n.string(.tripNoOpenInRange)
                         : L10n.string(.tripAssignOpenHelp))
+                    .accessibilityIdentifier(UITestingIdentifiers.assignBookingsAction)
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(L10n.string(.actionAddBooking)) {
@@ -673,6 +674,7 @@ struct TripDetailView: View {
                         selectTimelineID(item.id)
                         gapEditorPayload = editPayload
                     }
+                    .accessibilityIdentifier(UITestingIdentifiers.gapEditAction)
                 }
                 if actions.contains(.addBooking) {
                     Button(L10n.string(.actionAddBooking)) {
@@ -720,7 +722,7 @@ struct TripDetailView: View {
         case .createDraft:
             return UITestingIdentifiers.bookingCreateDraftTimeline
         case .gap:
-            return "reisen.gap.\(item.id)"
+            return UITestingIdentifiers.gapRow(timelineItemID: item.id)
         }
     }
 
@@ -1757,6 +1759,7 @@ private struct GapRow: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityIdentifier(UITestingIdentifiers.gapEditAction)
             }
 
             CopyableLabeledValue(

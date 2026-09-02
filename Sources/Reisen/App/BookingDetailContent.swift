@@ -129,6 +129,7 @@ struct BookingDetailContent: View {
                 .buttonStyle(.link)
                 .padding(.top, 4)
                 .help(L10n.string(.tripEditBookingHelp))
+                .accessibilityIdentifier(UITestingIdentifiers.bookingDetailEdit)
             }
 
             if let onRequestDeleteBooking {

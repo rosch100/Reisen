@@ -34,6 +34,7 @@ public enum UITestingMode: Equatable, Sendable {
 public enum UITestingLaunch {
     public static let argument = "-UITesting"
     public static let emptyArgument = "-UITestingEmpty"
+    public static let pasteImportArgument = "-UITestingPasteImport"
     public static let environmentKey = "REISEN_UITESTING"
     public static let environmentPopulated = "1"
     public static let environmentEmpty = "empty"
@@ -49,12 +50,21 @@ public enum UITestingLaunch {
         UITestingMode.fromProcess == .populated
     }
 
+    public static var shouldInjectPasteImportFixture: Bool {
+        isActive && ProcessInfo.processInfo.arguments.contains(pasteImportArgument)
+    }
+
     public static func isActive(arguments: [String]) -> Bool {
         UITestingMode.from(arguments: arguments) != .off
     }
 
     public static func shouldSeed(arguments: [String]) -> Bool {
         UITestingMode.from(arguments: arguments) == .populated
+    }
+
+    public static func shouldInjectPasteImportFixture(arguments: [String]) -> Bool {
+        UITestingMode.from(arguments: arguments) != .off
+            && arguments.contains(pasteImportArgument)
     }
 
     public static func makeIsolatedDefaults(

@@ -18,7 +18,8 @@ Workflows rufen Scripts auf — keine Copy/Paste-Build-Logik in YAML.
 | Produkt-Build (CodeQL) | `Scripts/ci-build.sh` |
 | App-Bundle | `Scripts/build-app.sh` |
 | Sign/Notarize | `Scripts/sign-and-notarize.sh` |
-| macOS XCUI | `Scripts/macos-ui-test.sh` |
+| macOS XCUI (Agents → iMac) | `Scripts/macos-ui-test-remote.sh` |
+| macOS XCUI (lokal, nur Fallback) | `Scripts/macos-ui-test.sh` |
 | macOS UI-Review (advisory) | `Scripts/macos-ui-review.sh` |
 | iOS Tests | `Scripts/ios-test.sh` |
 | iOS Release Isolation | `Scripts/ios-build-release-check.sh` |
@@ -32,4 +33,4 @@ Workflows rufen Scripts auf — keine Copy/Paste-Build-Logik in YAML.
 ## Konsistenz
 
 - `build-app.sh --configuration release` muss Binärpfad und Resource-Bundles finden.
-- Nach Cache/Path-Änderungen: `ci-test.sh` (und bei UI `macos-ui-test.sh`) lokal vor Push.
+- Nach Cache/Path-Änderungen: `ci-test.sh`; bei UI-Diff Agents: `macos-ui-test-remote.sh` (nicht lokal).

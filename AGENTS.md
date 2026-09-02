@@ -21,7 +21,7 @@ Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
 
 ### CI
 - Root-Cause vor Fix; Scripts nicht in YAML duplizieren.
-- Gate lokal: `bash ./Scripts/ci-test.sh` (UI: zusätzlich `macos-ui-test.sh`).
+- Gate lokal: `bash ./Scripts/ci-test.sh`. UI-Diff: Agents **müssen** `bash ./Scripts/macos-ui-test-remote.sh` (iMac) nutzen; `macos-ui-test.sh` lokal nur nach nachgewiesenem Remote-Ausfall.
 - Pflicht-Check auf GitHub: Aggregator-Job **`CI`** (parallele Suites + Selection — `docs/ci/README.md`, `docs/superpowers/plans/2026-09-02-reisen-ci-performance.md`).
 
 ### Review
@@ -44,7 +44,8 @@ Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
 | Produkt-Build | `bash ./Scripts/ci-build.sh --arch arm64` |
 | macOS bauen | `bash ./Scripts/build-app.sh` |
 | macOS starten | `bash ./Scripts/run-app.sh` |
-| macOS XCUI | `bash ./Scripts/macos-ui-test.sh` |
+| macOS XCUI (Agents, iMac) | `bash ./Scripts/macos-ui-test-remote.sh` |
+| macOS XCUI (lokal, nur Fallback) | `bash ./Scripts/macos-ui-test.sh` |
 | macOS UI-Review | `bash ./Scripts/macos-ui-review.sh` |
 | iOS Simulator starten | `bash ./Scripts/ios-run.sh` |
 | iOS Simulator testen | `bash ./Scripts/ios-test.sh` |

@@ -1,5 +1,6 @@
 import XCTest
 import ReisenAppCore
+import ReisenData
 import ReisenSharedUI
 
 @MainActor
@@ -12,6 +13,13 @@ struct MacUI {
 
     static func launchEmpty() -> MacUI {
         launch(arguments: [UITestingLaunch.emptyArgument])
+    }
+
+    static func launchPasteImportFixture() -> MacUI {
+        launch(arguments: [
+            UITestingLaunch.argument,
+            UITestingLaunch.pasteImportArgument,
+        ])
     }
 
     static func launch(arguments: [String]) -> MacUI {
@@ -50,6 +58,22 @@ struct MacUI {
         return match
     }
 
+    /// Sidebar-/Timeline-Titel sind oft Button-Labels mit Datums-Suffix, nicht exakte StaticTexts.
+    @discardableResult
+    func waitForLabelContaining(_ text: String, timeout: TimeInterval = 8) -> XCUIElement {
+        let predicate = NSPredicate(
+            format: "label CONTAINS %@ OR value CONTAINS %@",
+            text,
+            text
+        )
+        let match = app.descendants(matching: .any).matching(predicate).firstMatch
+        XCTAssertTrue(
+            match.waitForExistence(timeout: timeout),
+            "Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)"
+        )
+        return match
+    }
+
     func waitForWindow(timeout: TimeInterval = 15) {
         app.activate()
         _ = app.wait(for: .runningForeground, timeout: min(timeout, 5))
@@ -58,5 +82,140 @@ struct MacUI {
         if element(UITestingIdentifiers.sidebar).waitForExistence(timeout: 6) { return }
         if element(UITestingIdentifiers.emptyState).waitForExistence(timeout: 2) { return }
         XCTFail("Hauptfenster fehlt\n\(app.debugDescription)")
+    }
+
+    @discardableResult
+    func waitUntilSelected(
+        _ element: XCUIElement,
+        timeout: TimeInterval = 2,
+        message: String
+    ) -> XCUIElement {
+        var selected = element.isSelected
+        if !selected {
+            let deadline = Date().addingTimeInterval(timeout)
+            while !selected, Date() < deadline {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+                selected = element.isSelected
+            }
+        }
+        XCTAssertTrue(selected, "\(message)\n\(app.debugDescription)")
+        return element
+    }
+
+    @discardableResult
+    func openSeededTrip() -> XCUIElement {
+        waitFor(UITestingIdentifiers.seededTripRow).click()
+        return waitFor(UITestingIdentifiers.detail)
+    }
+
+    func expandSidebarBookings() {
+        let expand = waitFor(UITestingIdentifiers.sidebarExpandBookings)
+        if expand.label.contains("ausklappen") {
+            expand.click()
+        }
+    }
+
+    @discardableResult
+    func selectSeededOpenBooking() -> XCUIElement {
+        return waitFor(UITestingIdentifiers.seededOpenBookingRow)
+    }
+
+    @discardableResult
+    func openSettings() -> XCUIElement {
+        app.typeKey(",", modifierFlags: [.command])
+        return waitFor(UITestingIdentifiers.settings)
+    }
+
+    @discardableResult
+    func openProviderSyncCheck24() -> XCUIElement {
+        app.typeKey("1", modifierFlags: [.command])
+        return waitFor(UITestingIdentifiers.syncChrome)
+    }
+
+    func clickAblageMenuItem(_ title: String) {
+        app.activate()
+        let ablagemenu = app.menuBars.menuBarItems["Ablage"].firstMatch
+        XCTAssertTrue(ablagemenu.waitForExistence(timeout: 5), "Ablage-Menü fehlt")
+        ablagemenu.click()
+        let item = app.menuItems[title].firstMatch
+        XCTAssertTrue(
+            item.waitForExistence(timeout: 5),
+            "Menüeintrag fehlt: \(title)\n\(app.debugDescription)"
+        )
+        item.click()
+    }
+
+    func createTripViaEmptyCTA(title: String) {
+        waitFor(UITestingIdentifiers.emptyStateNewTrip).click()
+        fillAndSaveTripEditor(title: title)
+    }
+
+    func createTripViaMenu(title: String) {
+        clickAblageMenuItem(UITestingIdentifiers.newTripMenuTitleDE)
+        fillAndSaveTripEditor(title: title)
+    }
+
+    func openSeededBookingEditor() {
+        openSeededTrip()
+        waitFor(UITestingIdentifiers.seededTimelineBookingRow).click()
+        waitFor(UITestingIdentifiers.inspector)
+        waitFor(UITestingIdentifiers.bookingDetailEdit).click()
+        // Container-ID `bookingEditor` fehlt oft in der macOS-AX-Hierarchie; Title-Feld ist stabil.
+        waitFor(UITestingIdentifiers.bookingEditorTitle)
+    }
+
+    /// Assign läuft am Trip (Sheet), nicht über Ablage bei Offene-Selektion.
+    func assignSeededOpenBookingToSeededTrip() {
+        openSeededTrip()
+        waitFor(UITestingIdentifiers.assignBookingsAction).click()
+        let sheet = app.sheets.firstMatch
+        XCTAssertTrue(
+            sheet.waitForExistence(timeout: 12),
+            "Assign-Sheet fehlt\n\(app.debugDescription)"
+        )
+        let candidateID = UITestingIdentifiers.assignBookingsCandidate(UITestingSeed.openBookingID)
+        let candidate = sheet.descendants(matching: .any)[candidateID].firstMatch
+        XCTAssertTrue(
+            candidate.waitForExistence(timeout: 5),
+            "Assign-Kandidat fehlt: \(candidateID)\n\(sheet.debugDescription)"
+        )
+        candidate.click()
+        let confirm = sheet.descendants(matching: .any)[UITestingIdentifiers.assignBookingsConfirm].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Zuordnen-Button fehlt")
+        let enabledDeadline = Date().addingTimeInterval(3)
+        while !confirm.isEnabled, Date() < enabledDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        XCTAssertTrue(confirm.isEnabled, "Zuordnen bleibt disabled — keine Auswahl")
+        confirm.click()
+    }
+
+    func editSeededGapTitle(_ title: String) {
+        openSeededTrip()
+        waitFor(UITestingIdentifiers.seededGapRow).click()
+        waitFor(UITestingIdentifiers.inspector)
+        waitFor(UITestingIdentifiers.gapEditAction).click()
+        let field = waitFor(UITestingIdentifiers.gapEditorTitleField)
+        field.click()
+        field.typeText(title)
+        waitFor(UITestingIdentifiers.gapEditorSave).click()
+    }
+
+    func acceptPasteImportFixture() {
+        waitFor(UITestingIdentifiers.pasteImportReview)
+        let accept = waitFor(UITestingIdentifiers.pasteImportAccept)
+        if accept.isHittable {
+            accept.click()
+            return
+        }
+        // Review-Fenster kann höher als der Screen sein; Default-Action = Sichern.
+        app.typeKey(.return, modifierFlags: [])
+    }
+
+    private func fillAndSaveTripEditor(title: String) {
+        let titleField = waitFor(UITestingIdentifiers.tripEditorTitleField)
+        titleField.click()
+        titleField.typeText(title)
+        waitFor(UITestingIdentifiers.tripEditorSave).click()
     }
 }

@@ -86,6 +86,7 @@ public struct TripEditorSheet: View {
             Form {
                 Section(L10n.string(.tripTripSection)) {
                     TextField(L10n.string(.tripNameField), text: $title)
+                        .accessibilityIdentifier(UITestingIdentifiers.tripEditorTitleField)
                         .focused($focusedField, equals: .title)
                     DatePicker(L10n.string(.tripStartDate), selection: $startDate, displayedComponents: .date)
                     DatePicker(L10n.string(.tripEndDate), selection: $endDate, displayedComponents: .date)
@@ -117,6 +118,7 @@ public struct TripEditorSheet: View {
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button(L10n.string(.commonSave)) { save() }
+                    .accessibilityIdentifier(UITestingIdentifiers.tripEditorSave)
                     .disabled(!isValid)
                     .keyboardShortcut(.defaultAction)
             }
@@ -150,6 +152,8 @@ public struct TripEditorSheet: View {
                 Text(TripPeriodExpandPrompt.message(for: pendingPeriodExpand))
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(UITestingIdentifiers.tripEditor)
     }
 
     private func save() {
