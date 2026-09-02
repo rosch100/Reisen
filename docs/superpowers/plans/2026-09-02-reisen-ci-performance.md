@@ -50,10 +50,12 @@
 
 ## Remessung (nach CI)
 
-| Lauf | Run-URL | Compute-Wall | Queue | mode |
+| Lauf | Run-URL | Workflow-Wall | Längste Suite (Compute) | mode |
 | --- | --- | --- | --- | --- |
-| Full (erster PR) | _pending_ | _pending_ | _pending_ | `full` (kein Last-Green) |
-| Docs-only Folge | _pending_ | _pending_ | _pending_ | `empty-allowed` erwartet |
+| Full (PR #122, erster Lauf) | [33658814825](https://github.com/rosch100/Reisen/actions/runs/33658814825) | **~14,5 min** (17:04–17:19 UTC) | `suite-ios-release` **~14,2 min**; `ios-sim` ~10,8 min; `swiftpm` ~3,5 min; `macos-ui` ~4,1 min (Start +~3,5 min Queue) | `full` (kein Last-Green) |
+| Docs-only Folge | _pending_ | _pending_ | n/a (Suites skipped erwartet) | `empty-allowed` erwartet |
+
+Baseline serial war ~22–23 min. Full parallel: ~14,5 min Wall (**−~8 min**). Ziel &lt;~12 min Compute noch nicht erreicht (`ios-release` dominiert); Queue sichtbar bei `macos-ui`.
 
 ## Out of Scope
 
