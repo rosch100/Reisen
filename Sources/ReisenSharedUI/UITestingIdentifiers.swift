@@ -52,4 +52,8 @@ public enum UITestingIdentifiers {
     public static var deleteBookingMenuTitle: String {
         L10n.string(.actionDeleteEllipsis)
     }
+
+    public static var removeFromTripMenuTitle: String {
+        L10n.string(.actionRemoveFromTrip)
+    }
 }
