@@ -25,7 +25,8 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.seededTripRow).click()
         ui.waitFor(UITestingIdentifiers.detail)
-        ui.waitFor(UITestingIdentifiers.seededBookingRow).click()
+        // timelineBookingRow ist nur in der Trip-Timeline verdrahtet (nicht Sidebar).
+        ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow).click()
         ui.waitFor(UITestingIdentifiers.inspector)
     }
 
@@ -51,6 +52,30 @@ final class MacUISmokeTests: XCTestCase {
         XCTAssertTrue(
             ui.app.menuItems[UITestingIdentifiers.deleteBookingMenu].waitForExistence(timeout: 3),
             "Buchungs-Kontextmenü (Löschen) fehlt in der Sidebar\n\(ui.app.debugDescription)"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
+    }
+
+    /// Trip-Timeline Selection-Context-Menu Reach-only (kein Confirm).
+    ///
+    /// `contextMenu(forSelectionType:)` setzt auf macOS MenuItem-Identifier auf `menuAction:`
+    /// (AccessibilityIdentifier am Button kommt nicht an). Reach daher über den Menütitel;
+    /// `deleteBookingMenu` bleibt am Button verdrahtet (Sidebar-`.contextMenu` liefert die ID).
+    func testTripTimelineBookingContextMenu() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.seededTripRow).click()
+        ui.waitFor(UITestingIdentifiers.detail)
+
+        let timelineBooking = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
+        timelineBooking.rightClick()
+
+        let deleteByIdentifier = ui.app.menuItems[UITestingIdentifiers.deleteBookingMenu]
+        let deleteByTitle = ui.app.menuItems["Löschen…"]
+        XCTAssertTrue(
+            deleteByIdentifier.waitForExistence(timeout: 2)
+                || deleteByTitle.waitForExistence(timeout: 2),
+            "Timeline-Kontextmenü (Löschen) fehlt\n\(ui.app.debugDescription)"
         )
         ui.app.typeKey(.escape, modifierFlags: [])
     }
