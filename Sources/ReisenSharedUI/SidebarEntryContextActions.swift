@@ -38,7 +38,6 @@ public enum SidebarEntryContextActions {
         }
     }
 
-    /// Selection-Menü abhängig von der Anzahl selektierter gleichartiger Einträge.
     public static func actions(for kind: SidebarEntryKind, selectionCount: Int) -> Set<SidebarContextAction> {
         guard selectionCount > 1 else {
             return actions(for: kind)

@@ -1,6 +1,5 @@
 import Foundation
 
-/// Filter shared open-booking selection when switching Offen ↔ Abgelaufen mailboxes.
 public enum OpenBookingMailboxSelectionFilter {
     public static func filter(
         selected: Set<UUID>,

@@ -312,7 +312,7 @@ struct TripDetailView: View {
             }
         }
 
-        let remaining = remainingBatchDeleteIDs(from: ids, outcome: result.outcome)
+        let remaining = SelectionBatchDeletion.remainingIDs(from: ids, outcome: result.outcome)
         selectedTimelineIDs = Set(remaining.map(\.uuidString))
         pendingBatchDeleteBookingIDs = []
         if case .failed(_, let errorDescription) = result.outcome {
@@ -324,19 +324,6 @@ struct TripDetailView: View {
         }
         if case .edit(let editingID, _) = bookingEditorSession, ids.contains(editingID) {
             bookingEditorSession = nil
-        }
-    }
-
-    private func remainingBatchDeleteIDs(
-        from ids: Set<UUID>,
-        outcome: SelectionBatchDeletion.Outcome
-    ) -> Set<UUID> {
-        switch outcome {
-        case .succeeded:
-            return []
-        case .failed(let index, _):
-            let ordered = ids.sorted { $0.uuidString < $1.uuidString }
-            return Set(ordered.dropFirst(index))
         }
     }
 

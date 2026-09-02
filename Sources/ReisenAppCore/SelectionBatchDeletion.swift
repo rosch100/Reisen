@@ -11,7 +11,7 @@ public enum SelectionBatchDeletion {
         ids: Set<ID>,
         deleteOne: (ID) throws -> Void
     ) -> Outcome {
-        let ordered = ids.sorted { String(describing: $0) < String(describing: $1) }
+        let ordered = orderedIDs(ids)
         for (index, id) in ordered.enumerated() {
             do {
                 try deleteOne(id)
@@ -20,5 +20,22 @@ public enum SelectionBatchDeletion {
             }
         }
         return .succeeded
+    }
+
+    /// IDs still present after a fail-stop run (failed index inclusive). Empty on success.
+    public static func remainingIDs<ID: Hashable>(
+        from ids: Set<ID>,
+        outcome: Outcome
+    ) -> Set<ID> {
+        switch outcome {
+        case .succeeded:
+            return []
+        case .failed(let index, _):
+            return Set(orderedIDs(ids).dropFirst(index))
+        }
+    }
+
+    private static func orderedIDs<ID: Hashable>(_ ids: Set<ID>) -> [ID] {
+        ids.sorted { String(describing: $0) < String(describing: $1) }
     }
 }

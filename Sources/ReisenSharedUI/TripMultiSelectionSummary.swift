@@ -1,7 +1,6 @@
 import SwiftUI
 import ReisenDomain
 
-/// Summary when multiple trips are selected in the sidebar.
 public struct TripMultiSelectionSummary: View {
     let selectedCount: Int
     var onDelete: (() -> Void)?

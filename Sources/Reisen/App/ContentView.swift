@@ -143,7 +143,7 @@ struct ContentView: View {
     @AppStorage(AppSettingsKeys.bookingListColumnWidth) private var bookingListColumnWidth: Double = 420
 
     var body: some View {
-        presentedContent
+        focusedContent
     }
 
     private var rootContent: some View {
@@ -278,10 +278,6 @@ struct ContentView: View {
         }
     }
 
-    private var presentedContent: some View {
-        focusedContent
-    }
-
     private var sheetedContent: some View {
         rootContent
             .sheet(isPresented: $showCreateTrip) {
@@ -388,7 +384,7 @@ struct ContentView: View {
             try TripDeletion.perform(trip: trip, in: modelContext, bookings: policy)
         }
         recordBatchDeleteEvents(result.events)
-        selectedTripIDs = remainingIDs(from: ids, outcome: result.outcome)
+        selectedTripIDs = SelectionBatchDeletion.remainingIDs(from: ids, outcome: result.outcome)
         pendingDeleteTripIDs = []
 
         if case .failed(_, let errorDescription) = result.outcome {
@@ -418,7 +414,7 @@ struct ContentView: View {
             try BookingDeletion.perform(booking: booking, in: modelContext)
         }
         recordBatchDeleteEvents(result.events)
-        selectedOpenBookingIDs = remainingIDs(from: ids, outcome: result.outcome)
+        selectedOpenBookingIDs = SelectionBatchDeletion.remainingIDs(from: ids, outcome: result.outcome)
         pendingDeleteOpenBookingIDs = []
 
         if case .failed(_, let errorDescription) = result.outcome {
@@ -435,19 +431,6 @@ struct ContentView: View {
             for event in events {
                 await DiagnosticLogger.shared.record(event)
             }
-        }
-    }
-
-    private func remainingIDs<ID: Hashable>(
-        from ids: Set<ID>,
-        outcome: SelectionBatchDeletion.Outcome
-    ) -> Set<ID> {
-        switch outcome {
-        case .succeeded:
-            return []
-        case .failed(let index, _):
-            let ordered = ids.sorted { String(describing: $0) < String(describing: $1) }
-            return Set(ordered.dropFirst(index))
         }
     }
 

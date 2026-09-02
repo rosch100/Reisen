@@ -25,6 +25,20 @@ struct SelectionBatchDeletionTests {
         #expect(outcome == .failed(index: 1, errorDescription: "boom"))
         #expect(deleted == ["a"])
     }
+
+    @Test func remainingIDsEmptyOnSuccess() {
+        let outcome = SelectionBatchDeletion.run(ids: ["b", "a"]) { _ in }
+        #expect(SelectionBatchDeletion.remainingIDs(from: ["b", "a"], outcome: outcome).isEmpty)
+    }
+
+    @Test func remainingIDsIncludesFailedIndexAndLater() {
+        let ids: Set<String> = ["c", "a", "b"]
+        let outcome = SelectionBatchDeletion.run(ids: ids) { id in
+            if id == "b" { throw Boom() }
+        }
+        #expect(outcome == .failed(index: 1, errorDescription: "boom"))
+        #expect(SelectionBatchDeletion.remainingIDs(from: ids, outcome: outcome) == ["b", "c"])
+    }
 }
 
 struct SelectionBatchDeleteHandlersTests {
