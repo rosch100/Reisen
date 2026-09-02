@@ -1,8 +1,8 @@
 # Design: Einheitliche Menü- und Aktionsbeschriftungen (HIG)
 
-Datum: 2026-09-02  
-Status: draft — Freigabe Ansatz A durch Nutzer  
-Scope: alle sichtbaren Menü-/Context-/Toolbar-Aktionen (`action.*`, `menu.*`, Create-/Edit-Editor-Titel)
+**Datum:** 2026-09-02
+**Status:** approved (Ansatz A)
+**Scope:** Alle sichtbaren Labels aus `action.*`, `menu.*`, plus `editor.create_title` / `editor.edit_title` und `common.edit` / `common.delete` / `common.remove`, soweit als Menü-/Toolbar-/Context-Aktion genutzt.
 
 ## Problem
 
@@ -13,140 +13,180 @@ Aktions- und Menütexte mischen Wortstämme und Längen:
 - Ellipsis (`…`) nicht durchgängig an Dialog/Sheet gekoppelt
 - EN Title Case vs. sentence case uneinheitlich zwischen `menu.*` und `action.*`
 
-Das wirkt unpräzise und nicht HIG-konform.
-
 ## Ziele
 
 1. Kurze, prägnante, parallele Labels (DE + EN).
-2. HIG: **New/Neu + Objekt** für Neuanlage; **Add/Hinzufügen** nur für echte Add-Semantik (bestehendes/Anhang/Listenfeld).
+2. HIG: **New/Neu + Objekt** für Neuanlage; **Add/Hinzufügen** nur für echte Add-Semantik.
 3. Ellipsis **nur**, wenn Dialog, Sheet, Open-Panel oder Confirm-Alert folgt.
-4. Eine SSOT-Wortlaut-Tabelle; Duplikat-Keys auf denselben String legen, wo sinnvoll.
-5. XCUI-Reach über stabile Identifier wo möglich; wo Titel-Reach nötig ist, DE/EN mitziehen.
+4. Eine SSOT-Wortlaut-Tabelle für **alle** Keys im Scope.
+5. XCUI: Identifier bevorzugen; Titel-Reach DE/EN mitziehen, wo heute Titel genutzt werden.
 
 ## Nicht-Ziele
 
-- Fließtexte (Help, Dialog-Bodies, Sync-Statuszeilen).
-- Settings-Formulierungen außer klaren Aktionsbuttons, die wie Menüeinträge wirken (optionaler Follow-up).
+- Help-/Dialog-Fließtexte (`*_help`, Confirm-Bodies, Sync-Statuszeilen wie `action.sync_provider`).
+- Settings-Formulare (Kalender anlegen etc.), außer sie teilen Keys aus diesem Scope.
 - i18n jenseits de/en.
-- Umbenennung von Accessibility-Identifiern, die keine User-sichtbaren Titel sind.
+- Rename von L10n-Key-Identifiern (nur sichtbarer String; Key-Rename = YAGNI).
+- Accessibility-Identifier (nicht User-Titel).
 
-## HIG-Grundlage (Best Practice)
+## HIG-Grundlage
 
-Apple-Produktivitätsapps erzeugen Container-Inhalte mit **New**, nicht Add:
-
-- Mail: New Message  
-- Calendar: New Event  
-- Reminders: New Reminder  
-
-**Add** typisch für „bestehendes in Sammlung“ (Add to Album, Add Account).
+Apple erzeugt Container-Inhalte mit **New** (New Message / New Event / New Reminder). **Add** für „bestehendes in Sammlung“.
 
 Reisen:
 
-- Neue Reise / New Trip — neues Top-Level-Objekt  
-- Neue Buchung / New Booking — neues Buchungsobjekt (auch wenn der Trip der Container ist)  
-- Buchungen zuordnen / Assign Bookings — bestehende Offene einer Reise zuweisen (= Add-Semantik ohne „Neue“)
+- Neue Reise / New Trip — Top-Level-Objekt
+- Neue Buchung / New Booking — neues Buchungsobjekt
+- Zuordnen / Assign — bestehende Offene zuweisen
+- Einfügen / Paste — Import-Metapher
 
-## Namensregeln
+## Verbindliche Namensregeln
 
 | Regel | DE | EN |
 | --- | --- | --- |
-| Neuanlage Objekt | `Neue {Objekt}` | `New {Object}` (Menu Title Case) |
-| Mutation | kurzes Verb (+ Objekt nur wenn nötig) | Title Case Verb (+ Object) |
-| Zuordnen bestehender | `… zuordnen` | `Assign …` |
-| Paste-Import | `… einfügen` | `Paste …` |
-| Öffnen / Sync sofort | ohne Ausschmückung | ohne Ausschmückung |
+| Neuanlage Objekt | `Neue {Objekt}` | `New {Object}` |
+| Mutation | kurzes Verb (+ Objekt wenn nötig) | Title Case |
+| Zuordnen | `… zuordnen` | `Assign …` |
+| Paste | `… einfügen` | `Paste …` |
+| Sofort-Aktion | ohne Füllwörter | ohne Füllwörter |
 | Ellipsis | nur Dialog/Sheet/Panel/Confirm | gleich |
-| DE Orthografie | Erster Buchstabe groß, sonst klein (außer Eigennamen) | — |
-| EN Menüs | Title Case | — |
+| DE | Erster Buchstabe groß | — |
+| EN Menü/Action-Titel | Title Case | — |
+| EN Fenstertitel / Editor-Chrome | Title Case (wie Menü, eine Regel) | — |
 
-Toolbar: darf denselben **kurzen** Wortlaut **ohne** `…` nutzen, wenn der Menüeintrag `…` hat (Platz/HIG-Toolbar-Praxis). Keys können getrennt bleiben (`menu.*` vs `action.*`), Inhalt parallel.
+### Entschiedene Offene Punkte
 
-## Zielwortlaut (Kern-SSOT)
+| Thema | Entscheidung |
+| --- | --- |
+| Toolbar „Neue Buchung“ / „Neue Reise“ | **ohne** `…` (Menü **mit** `…`, wenn Sheet/Editor folgt) |
+| `action.open_in_browser` | **Im Browser öffnen** / **Open in Browser** |
+| Storno-Menü | **mit** `…` — Pfad kann In-App-Sheet öffnen (`BookingPortalCancelRequest.presentSheet`) |
+| `action.create_trip_from_bookings` | **Neue Reise aus Auswahl** / **New Trip from Selection** (nur Selection-/Swipe-/Context) |
+| `action.create_trip_from_all_open_bookings` | eigener Plural-String (nicht mit „Auswahl“ vermischen) |
+
+## Vollständige Zielwortlaut-Tabelle
+
+Legende `…`: ja = Zielstring endet auf `…`; nein = ohne.
 
 ### Neuanlage
 
-| Rolle | Key(s) | DE | EN | `…` |
+| Key | DE | EN | `…` | Hinweis |
 | --- | --- | --- | --- | --- |
-| Menü neue Reise | `menu.new_trip` | Neue Reise | New Trip | ja (Sheet) |
-| Toolbar/Empty neue Reise | `action.new_trip`, `action.new_trip_short`, `action.create_trip` | Neue Reise | New Trip | nein (Toolbar) bzw. Keys auf denselben Text legen |
-| Neue Reise aus Auswahl | `menu.new_trip_from_selection` | Neue Reise aus Auswahl | New Trip from Selection | ja |
-| Neue Reise aus offenen (plural) | `action.create_trip_from_all_open_bookings` | Neue Reise aus allen %lld offenen Buchungen | New Trip from All %lld Open Bookings | ja |
-| Aus Buchungen (Label) | `action.create_trip_from_bookings` | Neue Reise aus Auswahl | New Trip from Selection | angleichen an Selection-Variante; kein „erstellen“ |
-| Menü/Context/Toolbar Buchung | `menu.add_booking`, `action.add_booking` | Neue Buchung | New Booking | Menü ja; Toolbar optional ohne |
-| Editor-/Draft-Titel Create | `editor.create_title` | Neue Buchung | New Booking | nein |
-
-Hinweis: Key-Namen `add_booking` dürfen vorerst bleiben (Wire-Stabilität); **sichtbarer** String folgt „Neue Buchung“. Rename der Keys ist optional/YAGNI.
+| `menu.new_trip` | Neue Reise | New Trip | ja | Sheet |
+| `action.new_trip` | Neue Reise | New Trip | nein | Toolbar/Empty |
+| `action.new_trip_short` | Neue Reise | New Trip | nein | = `action.new_trip` |
+| `action.create_trip` | Neue Reise | New Trip | nein | sichtbarer Text = `action.new_trip` |
+| `menu.new_trip_from_selection` | Neue Reise aus Auswahl | New Trip from Selection | ja | |
+| `action.create_trip_from_bookings` | Neue Reise aus Auswahl… | New Trip from Selection… | ja | Selection öffnet Trip-Create-Sheet |
+| `action.create_trip_from_all_open_bookings` | Neue Reise aus allen %lld offenen Buchungen | New Trip from All %lld Open Bookings | ja | |
+| `menu.add_booking` | Neue Buchung | New Booking | ja | Editor/Create |
+| `action.add_booking` | Neue Buchung | New Booking | nein | Toolbar/Context |
+| `editor.create_title` | Neue Buchung | New Booking | nein | Draft/Inspector |
 
 ### Bearbeiten / Löschen / Entfernen
 
-| Rolle | Key(s) | DE | EN | `…` |
-| --- | --- | --- | --- | --- |
-| Reise bearbeiten | `menu.edit_trip` | Reise bearbeiten | Edit Trip | ja (Sheet) |
-| Buchung bearbeiten (Titel) | `editor.edit_title` | Buchung bearbeiten | Edit Booking | nein |
-| Lücke bearbeiten | `action.edit_gap` | Lücke bearbeiten | Edit Gap | ja (Sheet) |
-| Common Edit (Context) | `common.edit` | Bearbeiten | Edit | nein |
-| Löschen mit Confirm | `action.delete_ellipsis`, `action.delete_trip` | Löschen / Reise löschen | Delete / Delete Trip | ja |
-| Common Delete ohne Dialog | `common.delete` | Löschen | Delete | nein |
-| Von Reise entfernen (Confirm) | `action.remove_from_trip` | Von Reise entfernen | Remove from Trip | ja |
+| Key | DE | EN | `…` |
+| --- | --- | --- | --- |
+| `menu.edit_trip` | Reise bearbeiten | Edit Trip | ja |
+| `editor.edit_title` | Buchung bearbeiten | Edit Booking | nein |
+| `action.edit_gap` | Lücke bearbeiten | Edit Gap | ja |
+| `common.edit` | Bearbeiten | Edit | nein |
+| `action.delete_ellipsis` | Löschen | Delete | ja |
+| `action.delete_trip` | Reise löschen | Delete Trip | ja |
+| `action.delete_trip_confirm` | Reise löschen? | Delete Trip? | nein |
+| `common.delete` | Löschen | Delete | nein |
+| `common.remove` | Entfernen | Remove | nein |
+| `action.remove_from_trip` | Von Reise entfernen | Remove from Trip | ja |
 
-### Zuordnen / Einfügen / Öffnen / Sync
+### Zuordnen / Einfügen
 
-| Rolle | Key(s) | DE | EN | `…` |
-| --- | --- | --- | --- | --- |
-| Buchungen zuordnen | `menu.assign_bookings`, `action.assign_bookings` | Buchungen zuordnen | Assign Bookings | ja |
-| In Reise zuordnen | `action.assign_to_trip` | In Reise zuordnen | Assign to Trip | ja |
-| Zuordnen (kurz) | `action.assign` | Zuordnen | Assign | kontextabhängig |
-| Buchung einfügen | `menu.paste_booking` | Buchung einfügen | Paste Booking | ja |
-| Aus Datei / Foto | `menu.paste_booking_from_file`, `…_photo` | Buchung aus Datei/Foto einfügen | Paste Booking from File/Photo | ja |
-| Provider Sync (Menü) | `menu.provider_sync` | Provider Sync | Provider Sync | nein (nur Navigation) |
-| Alle synchronisieren | `menu.sync_all_providers`, `action.sync_all` | Alle synchronisieren | Sync All | nein |
-| Aktuellen Provider sync | `menu.sync_current_provider` | Aktuellen Provider synchronisieren | Sync Current Provider | nein |
-| Jetzt synchronisieren | `action.sync_now` | Jetzt synchronisieren | Sync Now | nein |
-| Browser öffnen | `action.open_in_browser` | Im Browser öffnen | Open in Browser | nein |
-| Stornieren im Portal | `action.cancel_in_portal_menu` | Stornieren im Portal | Cancel in Portal | nein (öffnet URL/Sheet — wenn Sheet: `…`) |
+| Key | DE | EN | `…` |
+| --- | --- | --- | --- |
+| `menu.assign_bookings` | Buchungen zuordnen | Assign Bookings | ja |
+| `action.assign_bookings` | Buchungen zuordnen | Assign Bookings | ja |
+| `action.assign_to_trip` | In Reise zuordnen | Assign to Trip | ja |
+| `action.assign` | Zuordnen | Assign | nein |
+| `menu.paste_booking` | Buchung einfügen | Paste Booking | ja |
+| `menu.paste_booking_from_file` | Buchung aus Datei einfügen | Paste Booking from File | ja |
+| `menu.paste_booking_from_photo` | Buchung aus Foto einfügen | Paste Booking from Photo | ja |
 
-### Editor-interne „Hinzufügen“ (bleiben Add-Semantik)
+### Öffnen / Navigation / Sync
 
-Unverändert im Sinne von *Add row to form*:
+| Key | DE | EN | `…` |
+| --- | --- | --- | --- |
+| `menu.provider_sync` | Provider Sync | Provider Sync | nein |
+| `action.open_provider_sync` | Provider Sync | Provider Sync | nein |
+| `action.open_sync` | Provider Sync | Provider Sync | nein |
+| `action.open_sync_short` | Sync öffnen | Open Sync | nein |
+| `action.sync_open` | Sync öffnen | Open Sync | nein |
+| `menu.sync_all_providers` | Alle synchronisieren | Sync All | nein |
+| `action.sync_all` | Alle synchronisieren | Sync All | nein |
+| `menu.sync_current_provider` | Aktuellen Provider synchronisieren | Sync Current Provider | nein |
+| `action.sync_now` | Jetzt synchronisieren | Sync Now | nein |
+| `action.open_booking` | Buchung öffnen | Open Booking | nein |
+| `action.open_in_browser` | Im Browser öffnen | Open in Browser | nein |
+| `action.open_in_provider_app` | In %1$@-App öffnen | Open in %1$@ App | nein |
+| `action.open_short` | Öffnen | Open | nein |
+| `action.open_keychain` | Schlüsselbundverwaltung | Keychain Access | nein |
+| `action.open_passwords` | Passwords öffnen | Open Passwords | nein |
+| `action.go_to_settings` | Zu den Einstellungen | Go to Settings | nein |
+| `action.reload` | Erneut laden | Reload | nein |
 
-- `editor.add_passenger` / `editor.add_hint` / `editor.add_baggage` / `editor.add_cancellation_deadline`
+### Portal / Credentials / Stores / Misc
 
-Das ist korrektes *Add*, nicht *New Object*.
+| Key | DE | EN | `…` |
+| --- | --- | --- | --- |
+| `action.cancel_in_portal_menu` | Stornieren im Portal | Cancel in Portal | ja |
+| `action.cancel_in_portal` | Stornieren | Cancel | nein |
+| `action.copy_cancellation_link` | Storno-Link kopieren | Copy Cancellation Link | nein |
+| `action.copy_confirmation` | Buchungsnr. kopieren | Copy Confirmation Number | nein |
+| `action.copy_link` | Link kopieren | Copy Link | nein |
+| `action.check_provider_sessions` | Provider-Sitzungen prüfen | Check Provider Sessions | ja |
+| `action.remember_login` | Anmeldung merken | Remember Login | ja |
+| `action.fill_credentials` | Ausfüllen | Autofill | nein |
+| `action.save_credential` | Speichern | Save | nein |
+| `action.clear_icloud` | Auch iCloud-Daten leeren | Also Wipe iCloud Data | ja |
+| `action.clear_icloud_and_local` | iCloud und lokal leeren | Wipe iCloud and Local | nein |
+| `action.delete_local_stores` | Lokale Stores löschen | Delete Local Stores | nein |
+| `action.reset_local_stores` | Lokale Stores zurücksetzen | Reset Local Stores | ja |
+| `action.understood` | Verstanden | Got It | nein |
 
-## Ellipsis-Audit (verbindlich)
+### Out-of-Scope (keine Label-Änderung in diesem Feature)
 
-Vor Ship jede `action.*`/`menu.*`-Nutzung gegen UI-Pfad prüfen:
+| Key | Grund |
+| --- | --- |
+| `action.cancel_in_portal_help` | Fließtext |
+| `action.open_in_browser_help` | Fließtext |
+| `action.sync_all_help` | Fließtext |
+| `action.sync_provider` | Statuszeile, kein Menübefehl |
+| `trip.*_help` und ähnliche Help-Keys | Fließtext |
 
-- Sheet / Editor / Open-Panel / Confirm → `…`  
-- Sofortige Side-Effect (Sync, URL öffnen, Copy) → kein `…`  
-- Navigation zu bestehender Spalte/Ansicht → kein `…`
+### Editor-Feld-Add (unverändert, Add-Semantik)
 
-Abweichungen nur mit Kommentar in der Spec-Tabelle.
+`editor.add_passenger`, `editor.add_hint`, `editor.add_baggage`, `editor.add_cancellation_deadline` — weiterhin „… hinzufügen“ / „Add …“.
+
+## Ellipsis-Audit (DoD)
+
+Vor Ship jede Call-Site der Tabelle gegen UI-Pfad prüfen. Abweichungen nur mit Begründung in der Implementierungs-PR.
 
 ## Implementierungsrichtung
 
-1. `Localizable.xcstrings` DE/EN an Zielwortlaut anpassen.  
-2. Doppelte Create-Trip-Keys (`action.create_trip`, `action.new_trip`, `action.new_trip_short`) auf identischen sichtbaren String.  
-3. Call-Sites nur ändern, wenn falscher Key (z. B. Help statt Action) — kein unnötiges Key-Rename.  
-4. Tests: String-Asserts / XCUI-Titel-Reach (z. B. „Buchung hinzufügen…“ → „Neue Buchung…“); Identifier-basierte Tests unberührt.  
-5. Kurzer Hinweis in `docs/dev` oder bestehendem HIG-Review optional; Spec hier ist SSOT.
+1. `Localizable.xcstrings` DE/EN exakt nach Tabelle.
+2. Doppelte Create-Trip-Toolbar-Keys auf identischen sichtbaren String.
+3. Call-Sites nur bei falschem Key; kein Key-Rename.
+4. Tests: XCUI/String-Reach anpassen; Identifier-Tests unverändert.
+5. Diese Spec ist Label-SSOT.
 
 ## Risiken
 
-- Nutzer gewohnt an „Buchung hinzufügen…“ — kurz, parallel zu Reise, HIG-begründet.  
-- XCUI flaky bei Titel-Reach — bevorzugt Identifier; Titel nur wo heute schon so.  
-- Confirm vs. sofortiges Entfernen: falsches Ellipsis → Audit-Pflicht.
+- Gewöhnung an „Buchung hinzufügen…“ — bewusst HIG-parallel.
+- XCUI Titel-Reach — Identifier bevorzugen.
+- `check_provider_sessions`: Ellipsis bei Impl. gegen Call-Site bestätigen.
 
 ## Akzeptanzkriterien
 
-1. Kein sichtbares „anlegen“ / „erstellen“ / „hinzufügen“ mehr für **Neue Reise** / **Neue Buchung** (außer Editor-Feld-Add und Paste „einfügen“).  
-2. Parallelität: Neue Reise ↔ Neue Buchung; Edit Trip ↔ Edit Booking / Edit Gap.  
-3. Ellipsis-Regel für alle `menu.*`/`action.*` im Scope verifiziert.  
-4. Unit-/XCUI grün; keine geschwächten Asserts.  
-5. EN Menu Title Case konsistent in `menu.*`.
-
-## Offene Punkte (bewusst klein)
-
-- Ob Toolbar-Buttons für Neue Buchung `…` weglassen (Empfehlung: ja, ohne `…`).  
-- Ob `action.open_in_browser` von „Buchung im Browser öffnen“ auf „Im Browser öffnen“ gekürzt wird (Empfehlung: ja, Context klar).  
-- Storno-Sheet: Confirm-Ellipsis an tatsächlichen UI-Pfad koppeln.
+1. Kein sichtbares „anlegen“ / „erstellen“ / „hinzufügen“ für **Neue Reise** / **Neue Buchung** (Ausnahme Editor-Feld-Add; Paste = „einfügen“).
+2. Parallelität Neue Reise ↔ Neue Buchung; Edit Trip ↔ Edit Booking / Edit Gap.
+3. Alle Keys der vollständigen Tabelle umgesetzt; Ellipsis-Spalte eingehalten.
+4. Unit-/XCUI grün; Asserts nicht geschwächt.
+5. EN Title Case für alle Menü-/Action-Titel der Tabelle.
