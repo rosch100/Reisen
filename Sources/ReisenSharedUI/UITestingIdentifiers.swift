@@ -1,6 +1,5 @@
 import Foundation
 import ReisenData
-import ReisenDomain
 
 /// Stabile Accessibility-Identifier für XCUI (nicht L10n).
 public enum UITestingIdentifiers {
@@ -48,12 +47,10 @@ public enum UITestingIdentifiers {
         timelineBookingRow(UITestingSeed.bookingID)
     }
 
-    /// Menütitel für Timeline-`forSelectionType`-Reach (macOS liefert dort keine a11y-IDs).
-    public static var deleteBookingMenuTitle: String {
-        L10n.string(.actionDeleteEllipsis)
-    }
-
-    public static var removeFromTripMenuTitle: String {
-        L10n.string(.actionRemoveFromTrip)
-    }
+    /// Menütitel für Timeline-`forSelectionType`-Reach.
+    ///
+    /// Nicht `L10n.string` im Test-Host: der Runner kann en_US sein, während die
+    /// UITesting-App deutsch startet — sonst schlägt Title-Match auf CI fehl.
+    public static let deleteBookingMenuTitleDE = "Löschen…"
+    public static let removeFromTripMenuTitleDE = "Von Reise entfernen…"
 }

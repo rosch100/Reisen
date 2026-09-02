@@ -72,7 +72,7 @@ final class MacUISmokeTests: XCTestCase {
         timelineBooking.rightClick()
 
         XCTAssertTrue(
-            ui.app.menuItems[UITestingIdentifiers.removeFromTripMenuTitle].waitForExistence(timeout: 3),
+            ui.app.menuItems[UITestingIdentifiers.removeFromTripMenuTitleDE].waitForExistence(timeout: 3),
             "Timeline-Kontextmenü (Von Reise entfernen) fehlt\n\(ui.app.debugDescription)"
         )
         ui.app.typeKey(.escape, modifierFlags: [])
