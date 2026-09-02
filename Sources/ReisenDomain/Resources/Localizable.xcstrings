@@ -9153,6 +9153,38 @@
         }
       }
     },
+    "trip.selected_timeline_bookings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Buchungen ausgewählt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d bookings selected"
+          }
+        }
+      }
+    },
+    "trip.batch_remove_from_trip_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Buchungen aus der Reise lösen und unter „Offene Buchungen“ anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %d bookings from the trip and show them under “Open bookings”"
+          }
+        }
+      }
+    },
     "trip.start_date": {
       "localizations": {
         "de": {

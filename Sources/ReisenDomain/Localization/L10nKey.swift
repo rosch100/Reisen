@@ -496,6 +496,8 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case tripSelectOpenBooking = "trip.select_open_booking"
     case tripSelectOpenBookingList = "trip.select_open_booking_list"
     case tripSelectedOpenBookings = "trip.selected_open_bookings"
+    case tripSelectedTimelineBookings = "trip.selected_timeline_bookings"
+    case tripBatchRemoveFromTripHelp = "trip.batch_remove_from_trip_help"
     case tripSelectSidebarOrProvider = "trip.select_sidebar_or_provider"
     case tripSelectTrip = "trip.select_trip"
     case tripSelectSidebar = "trip.select_sidebar"

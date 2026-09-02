@@ -11,4 +11,9 @@ import ReisenData
     #expect(UITestingIdentifiers.sidebarExpandBookings == "reisen.action.expand-sidebar-bookings")
     #expect(UITestingIdentifiers.seededTripRow == UITestingIdentifiers.tripRow(UITestingSeed.tripID))
     #expect(UITestingIdentifiers.seededBookingRow == UITestingIdentifiers.bookingRow(UITestingSeed.bookingID))
+    #expect(UITestingIdentifiers.seededTimelineBookingRow == UITestingIdentifiers.timelineBookingRow(UITestingSeed.bookingID))
+    #expect(
+        UITestingIdentifiers.timelineBookingRow(UITestingSeed.bookingID)
+            != UITestingIdentifiers.bookingRow(UITestingSeed.bookingID)
+    )
 }

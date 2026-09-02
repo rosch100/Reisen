@@ -26,6 +26,11 @@ public enum UITestingIdentifiers {
         "reisen.booking.\(id.uuidString)"
     }
 
+    /// Trip-Timeline booking row (detail list) — distinct from sidebar/open `bookingRow`.
+    public static func timelineBookingRow(_ id: UUID) -> String {
+        "reisen.timeline.booking.\(id.uuidString)"
+    }
+
     public static func providerRow(_ rawValue: String) -> String {
         "reisen.provider.\(rawValue)"
     }
@@ -36,5 +41,9 @@ public enum UITestingIdentifiers {
 
     public static var seededBookingRow: String {
         bookingRow(UITestingSeed.bookingID)
+    }
+
+    public static var seededTimelineBookingRow: String {
+        timelineBookingRow(UITestingSeed.bookingID)
     }
 }

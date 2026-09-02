@@ -40,7 +40,7 @@ struct ContentView: View {
     @State private var cancelRequest: BookingPortalCancelRequest?
 
     /// Selektion der mittleren Buchungsliste → rechte Detailspalte.
-    @State private var selectedTimelineID: String? = nil
+    @State private var selectedTimelineIDs: Set<String> = []
     @State private var bookingEditorSession: BookingEditorSession? = nil
     /// Payload des aktiven Gap-Editors (Sheet in Detailspalte).
     @State private var gapEditorPayload: GapEditorPayload? = nil
@@ -200,7 +200,7 @@ struct ContentView: View {
         .onChange(of: selection?.tripID) { _, newTripID in
             guard newTripID != activeTripID else { return }
             activeTripID = newTripID
-            selectedTimelineID = nil
+            selectedTimelineIDs = []
             gapEditorPayload = nil
         }
         .sheet(isPresented: $showCreateTrip) {
@@ -305,8 +305,9 @@ struct ContentView: View {
             }
             return elapsedOpenBookings.first(where: { $0.id == id })
         case .trip(let tripID):
-            guard let trip = trips.first(where: { $0.id == tripID }),
-                  let timelineID = selectedTimelineID,
+            guard selectedTimelineIDs.count == 1,
+                  let trip = trips.first(where: { $0.id == tripID }),
+                  let timelineID = selectedTimelineIDs.first,
                   let bookingUUID = UUID(uuidString: timelineID) else {
                 return nil
             }
@@ -851,10 +852,10 @@ struct ContentView: View {
     @ViewBuilder
     private func sidebarTripBookingRow(booking: SDBooking, trip: SDTrip) -> some View {
         let isBookingSelected = selection == .trip(trip.id)
-            && selectedTimelineID == booking.id.uuidString
+            && selectedTimelineIDs.contains(booking.id.uuidString)
         Button {
             selection = .trip(trip.id)
-            selectedTimelineID = booking.id.uuidString
+            selectedTimelineIDs = [booking.id.uuidString]
             if !expandedTripIDs.contains(trip.id) {
                 expandedTripIDs.insert(trip.id)
             }
@@ -918,7 +919,7 @@ struct ContentView: View {
             if actions.contains(.removeFromTrip) {
                 Button(role: .destructive) {
                     applyAfterTripFocus(trip: trip) {
-                        selectedTimelineID = booking.id.uuidString
+                        selectedTimelineIDs = [booking.id.uuidString]
                         NotificationCenter.default.post(
                             name: .reisenRequestRemoveBookingFromTrip,
                             object: booking.id
@@ -931,7 +932,7 @@ struct ContentView: View {
             if actions.contains(.deleteBooking) {
                 Button(role: .destructive) {
                     applyAfterTripFocus(trip: trip) {
-                        selectedTimelineID = booking.id.uuidString
+                        selectedTimelineIDs = [booking.id.uuidString]
                         NotificationCenter.default.post(
                             name: .reisenRequestDeleteBooking,
                             object: booking.id
@@ -1003,7 +1004,7 @@ struct ContentView: View {
                 TripDetailView(
                     mode: .list,
                     trip: trip,
-                    selectedTimelineID: $selectedTimelineID,
+                    selectedTimelineIDs: $selectedTimelineIDs,
                     gapEditorPayload: $gapEditorPayload,
                     bookingEditorSession: $bookingEditorSession
                 )
@@ -1258,7 +1259,7 @@ struct ContentView: View {
                 TripDetailView(
                     mode: .detail,
                     trip: trip,
-                    selectedTimelineID: $selectedTimelineID,
+                    selectedTimelineIDs: $selectedTimelineIDs,
                     gapEditorPayload: $gapEditorPayload,
                     bookingEditorSession: $bookingEditorSession
                 )
@@ -1473,7 +1474,7 @@ struct ContentView: View {
 
     private func editBooking(_ booking: SDBooking, in trip: SDTrip) {
         applyAfterTripFocus(trip: trip) {
-            selectedTimelineID = booking.id.uuidString
+            selectedTimelineIDs = [booking.id.uuidString]
             bookingEditorSession = .edit(bookingID: booking.id)
         }
     }
@@ -1616,7 +1617,7 @@ struct ContentView: View {
         }
         if let trip = booking.trip {
             selection = .trip(trip.id)
-            selectedTimelineID = id.uuidString
+            selectedTimelineIDs = [id.uuidString]
             return
         }
         selection = OpenBookingMatching.unassignedList(endAt: booking.endAt) == .elapsed
@@ -1628,7 +1629,7 @@ struct ContentView: View {
     private func startCreateBooking(in trip: SDTrip, selectBookingID: UUID? = nil) {
         applyAfterTripFocus(trip: trip) {
             if let selectBookingID {
-                selectedTimelineID = selectBookingID.uuidString
+                selectedTimelineIDs = [selectBookingID.uuidString]
             }
             bookingEditorSession = .create(prefillStart: nil, prefillEnd: nil)
         }
