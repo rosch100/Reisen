@@ -5,10 +5,11 @@ import ReisenData
 import ReisenSharedUI
 import ReisenProviders
 import ReisenAppCore
+import ReisenDiagnostics
 import AppKit
 import Foundation
 
-private enum TripTimelineBatchRemoveError: LocalizedError {
+private enum TripTimelineBatchError: LocalizedError {
     case bookingMissing
 
     var errorDescription: String? {
@@ -172,6 +173,12 @@ struct TripDetailView: View {
         showBatchRemoveConfirmation = true
     }
 
+    private func requestBatchDeleteBookings(_ bookingIDs: Set<UUID>) {
+        guard bookingIDs.count > 1 else { return }
+        pendingBatchDeleteBookingIDs = bookingIDs
+        showBatchDeleteConfirmation = true
+    }
+
     @State private var showAssignBookings = false
     @State private var assignPreselectedBookingIDs: Set<UUID> = []
     @State private var pendingDeleteBookingID: UUID?
@@ -180,6 +187,8 @@ struct TripDetailView: View {
     @State private var showRemoveFromTripConfirmation = false
     @State private var pendingBatchRemoveBookingIDs: [UUID] = []
     @State private var showBatchRemoveConfirmation = false
+    @State private var pendingBatchDeleteBookingIDs: Set<UUID> = []
+    @State private var showBatchDeleteConfirmation = false
     @State private var persistErrorMessage: String?
 
     private var pendingDeleteBooking: SDBooking? {
@@ -231,7 +240,7 @@ struct TripDetailView: View {
         do {
             bookings = try ids.map { id in
                 guard let booking = trip.resolvedBookings.first(where: { $0.id == id }) else {
-                    throw TripTimelineBatchRemoveError.bookingMissing
+                    throw TripTimelineBatchError.bookingMissing
                 }
                 return booking
             }
@@ -285,6 +294,49 @@ struct TripDetailView: View {
                     )
                 )
             }
+        }
+    }
+
+    private func confirmBatchDeleteBookings() {
+        let ids = pendingBatchDeleteBookingIDs
+        let bookingsByID = Dictionary(uniqueKeysWithValues: trip.resolvedBookings.map { ($0.id, $0) })
+        let result = SelectionBatchDeleteHandlers.deleteTripBookings(ids: ids) { id in
+            guard let booking = bookingsByID[id] else {
+                throw TripTimelineBatchError.bookingMissing
+            }
+            try BookingDeletion.perform(booking: booking, in: modelContext)
+        }
+        Task {
+            for event in result.events {
+                await DiagnosticLogger.shared.record(event)
+            }
+        }
+
+        let remaining = remainingBatchDeleteIDs(from: ids, outcome: result.outcome)
+        selectedTimelineIDs = Set(remaining.map(\.uuidString))
+        pendingBatchDeleteBookingIDs = []
+        if case .failed(_, let errorDescription) = result.outcome {
+            persistErrorMessage = errorDescription
+            return
+        }
+        if let first = trip.timelineBookings().first?.id.uuidString {
+            selectedTimelineIDs = [first]
+        }
+        if case .edit(let editingID, _) = bookingEditorSession, ids.contains(editingID) {
+            bookingEditorSession = nil
+        }
+    }
+
+    private func remainingBatchDeleteIDs(
+        from ids: Set<UUID>,
+        outcome: SelectionBatchDeletion.Outcome
+    ) -> Set<UUID> {
+        switch outcome {
+        case .succeeded:
+            return []
+        case .failed(let index, _):
+            let ordered = ids.sorted { $0.uuidString < $1.uuidString }
+            return Set(ordered.dropFirst(index))
         }
     }
 
@@ -407,14 +459,20 @@ struct TripDetailView: View {
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenRequestRemoveBookingFromTrip)) { note in
-                guard let bookingID = note.object as? UUID,
-                      let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
-                requestRemoveBookingFromTrip(booking)
+                if let bookingIDs = note.object as? [UUID], bookingIDs.count > 1 {
+                    requestBatchRemoveFromTrip(Set(bookingIDs.map(\.uuidString)))
+                } else if let bookingID = (note.object as? [UUID])?.first ?? note.object as? UUID,
+                          let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) {
+                    requestRemoveBookingFromTrip(booking)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenRequestDeleteBooking)) { note in
-                guard let bookingID = note.object as? UUID,
-                      let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
-                requestDeleteBooking(booking)
+                if let bookingIDs = note.object as? [UUID], bookingIDs.count > 1 {
+                    requestBatchDeleteBookings(Set(bookingIDs))
+                } else if let bookingID = (note.object as? [UUID])?.first ?? note.object as? UUID,
+                          let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) {
+                    requestDeleteBooking(booking)
+                }
             }
         } else if selectedTimelineIDs.count > 1 {
             let selectionKind = TripTimelineContextActions.kind(
@@ -506,6 +564,16 @@ struct TripDetailView: View {
             }
         } message: {
             Text(L10n.format(.tripBatchRemoveFromTripHelp, pendingBatchRemoveBookingIDs.count))
+        }
+        .confirmationDialog(
+            L10n.format(.tripSelectedTimelineBookings, pendingBatchDeleteBookingIDs.count),
+            isPresented: $showBatchDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string(.commonDelete), role: .destructive, action: confirmBatchDeleteBookings)
+            Button(L10n.string(.commonCancel), role: .cancel) {
+                pendingBatchDeleteBookingIDs = []
+            }
         }
         .persistFailureAlert(message: $persistErrorMessage)
         .bookingPortalCancelSheet($cancelRequest)
@@ -627,6 +695,11 @@ struct TripDetailView: View {
                     requestBatchRemoveFromTrip(ids)
                 } label: {
                     Text(L10n.string(.actionRemoveFromTrip))
+                }
+            }
+            if actions.contains(.batchDeleteBooking) {
+                Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
+                    requestBatchDeleteBookings(Set(ids.compactMap(UUID.init(uuidString:))))
                 }
             }
         case .empty, .mixedOrGapsOnly:

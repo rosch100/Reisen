@@ -9169,6 +9169,22 @@
         }
       }
     },
+    "trip.selected_trips": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Reisen ausgewählt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d trips selected"
+          }
+        }
+      }
+    },
     "trip.batch_remove_from_trip_help": {
       "localizations": {
         "de": {

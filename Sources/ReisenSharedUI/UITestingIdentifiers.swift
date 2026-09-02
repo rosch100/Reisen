@@ -21,6 +21,7 @@ public enum UITestingIdentifiers {
     public static let sidebarExpandBookings = "reisen.action.expand-sidebar-bookings"
     public static let splitDivider = "reisen.split.divider"
     public static let tripDeleteDialog = "reisen.dialog.delete-trip"
+    public static let tripMultiSelectionSummary = "reisen.trip.multi-selection-summary"
 
     public static func tripRow(_ id: UUID) -> String {
         "reisen.trip.\(id.uuidString)"
@@ -43,12 +44,32 @@ public enum UITestingIdentifiers {
         tripRow(UITestingSeed.tripID)
     }
 
+    public static var seededTripRow2: String {
+        tripRow(UITestingSeed.tripID2)
+    }
+
     public static var seededBookingRow: String {
         bookingRow(UITestingSeed.bookingID)
     }
 
+    public static var seededOpenBookingRow: String {
+        bookingRow(UITestingSeed.openBookingID)
+    }
+
+    public static var seededOpenBookingRow2: String {
+        bookingRow(UITestingSeed.openBookingID2)
+    }
+
+    public static var seededOpenBookingRow3: String {
+        bookingRow(UITestingSeed.openBookingID3)
+    }
+
     public static var seededTimelineBookingRow: String {
         timelineBookingRow(UITestingSeed.bookingID)
+    }
+
+    public static var seededTimelineBookingRow2: String {
+        timelineBookingRow(UITestingSeed.bookingID2)
     }
 
     /// Menütitel für Timeline-`forSelectionType`-Reach.
@@ -57,4 +78,5 @@ public enum UITestingIdentifiers {
     /// UITesting-App deutsch startet — sonst schlägt Title-Match auf CI fehl.
     public static let deleteBookingMenuTitleDE = "Löschen…"
     public static let removeFromTripMenuTitleDE = "Von Reise entfernen…"
+    public static let copyConfirmationMenuTitleDE = "Buchungsnr. kopieren"
 }

@@ -25,7 +25,6 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.seededTripRow).click()
         ui.waitFor(UITestingIdentifiers.detail)
-        // timelineBookingRow ist nur in der Trip-Timeline verdrahtet (nicht Sidebar).
         ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow).click()
         ui.waitFor(UITestingIdentifiers.inspector)
     }
@@ -72,7 +71,6 @@ final class MacUISmokeTests: XCTestCase {
         addMenu.click()
 
         let timelineDraft = ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline, timeout: 8)
-        // List(selection:) setzt AX-Selected ggf. einen Runloop später.
         var selected = timelineDraft.isSelected
         if !selected {
             let deadline = Date().addingTimeInterval(2)
@@ -110,10 +108,6 @@ final class MacUISmokeTests: XCTestCase {
     }
 
     /// Trip-Timeline Selection-Context-Menu Reach-only (kein Confirm).
-    ///
-    /// Zuerst Selektion per Klick (sonst öffnet Rechtsklick ggf. das falsche Menü).
-    /// `contextMenu(forSelectionType:)`: MenuItem-IDs sind auf macOS `menuAction:` — Reach über L10n-Titel
-    /// „Von Reise entfernen“ (buchungsspezifisch, nicht Sidebar-Reise).
     func testTripTimelineBookingContextMenu() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
@@ -131,15 +125,105 @@ final class MacUISmokeTests: XCTestCase {
         ui.app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// Mitte Offen ⌘Multi → Sidebar `isSelected` Sync + Menu-Effective Copy-Differenz.
+    func testOpenBookingMultiSelectionSyncAndEffectiveSidebarMenus() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        let sidebar = ui.waitFor(UITestingIdentifiers.sidebar)
+        let sidebarOpenA = sidebar.descendants(matching: .any)[UITestingIdentifiers.seededOpenBookingRow].firstMatch
+        let sidebarOpenB = sidebar.descendants(matching: .any)[UITestingIdentifiers.seededOpenBookingRow2].firstMatch
+        let sidebarOpenC = sidebar.descendants(matching: .any)[UITestingIdentifiers.seededOpenBookingRow3].firstMatch
+        XCTAssertTrue(sidebarOpenA.waitForExistence(timeout: 5))
+        XCTAssertTrue(sidebarOpenB.waitForExistence(timeout: 5))
+        XCTAssertTrue(sidebarOpenC.waitForExistence(timeout: 5))
+
+        sidebarOpenA.click()
+        let openBMatches = ui.app.descendants(matching: .any)
+            .matching(identifier: UITestingIdentifiers.seededOpenBookingRow2)
+        XCTAssertGreaterThanOrEqual(openBMatches.count, 2, "Mittlere Open-Buchungszeile fehlt")
+        let contentOpenB = openBMatches.element(boundBy: 1)
+        contentOpenB.perform(withKeyModifiers: .command) {
+            contentOpenB.click()
+        }
+
+        let deadline = Date().addingTimeInterval(3)
+        var bothSelected = sidebarOpenA.isSelected && sidebarOpenB.isSelected
+        while !bothSelected, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            bothSelected = sidebarOpenA.isSelected && sidebarOpenB.isSelected
+        }
+        XCTAssertTrue(bothSelected, "Sidebar-Highlights nicht synchron nach ⌘Multi")
+
+        sidebarOpenB.rightClick()
+        XCTAssertFalse(
+            ui.app.menuItems[UITestingIdentifiers.copyConfirmationMenuTitleDE]
+                .waitForExistence(timeout: 1),
+            "Multi-Menü enthält unerwartet eine Einzel-Copy-Aktion"
+        )
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenuTitleDE]
+                .waitForExistence(timeout: 3),
+            "Multi-Menü enthält Löschen nicht"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
+
+        sidebarOpenC.rightClick()
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.copyConfirmationMenuTitleDE]
+                .waitForExistence(timeout: 3),
+            "Singleton-Effective-Menü enthält Copy nicht"
+        )
+        XCTAssertTrue(sidebarOpenA.isSelected)
+        XCTAssertTrue(sidebarOpenB.isSelected)
+        ui.app.typeKey(.escape, modifierFlags: [])
+    }
+
+    func testTripParentMultiSelectionShowsSummary() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        let firstTrip = ui.waitFor(UITestingIdentifiers.seededTripRow)
+        let secondTrip = ui.waitFor(UITestingIdentifiers.seededTripRow2)
+        firstTrip.click()
+        secondTrip.perform(withKeyModifiers: .command) {
+            secondTrip.click()
+        }
+
+        let deadline = Date().addingTimeInterval(3)
+        var bothSelected = firstTrip.isSelected && secondTrip.isSelected
+        while !bothSelected, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            bothSelected = firstTrip.isSelected && secondTrip.isSelected
+        }
+        XCTAssertTrue(bothSelected)
+        ui.waitFor(UITestingIdentifiers.tripMultiSelectionSummary)
+    }
+
+    func testTripTimelineMultiSelectionOffersBatchDelete() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.seededTripRow).click()
+        let first = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
+        let second = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow2)
+        first.click()
+        second.perform(withKeyModifiers: .command) {
+            second.click()
+        }
+        second.rightClick()
+
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenuTitleDE]
+                .waitForExistence(timeout: 3),
+            "Timeline-Multi-Menü enthält Batch-Löschen nicht"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
+    }
+
     func testAccessibilityAuditAllowlist() throws {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.sidebar)
         _ = ui.app.wait(for: .runningForeground, timeout: 5)
 
-        // Nur `.action`: die übrigen v1-Typen werden in `AccessibilityAuditSkipList`
-        // ohnehin vollständig geskippt — deren Audit-Scan verursachte auf CI-Runnern
-        // wiederholt Timeouts (Code -56) ohne zusätzlichen Gate-Wert.
         var lastError: Error?
         for attempt in 1...2 {
             do {
