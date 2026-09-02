@@ -25,7 +25,8 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.seededTripRow).click()
         ui.waitFor(UITestingIdentifiers.detail)
-        ui.waitFor(UITestingIdentifiers.seededBookingRow).click()
+        // timelineBookingRow ist nur in der Trip-Timeline verdrahtet (nicht Sidebar).
+        ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow).click()
         ui.waitFor(UITestingIdentifiers.inspector)
     }
 
@@ -70,15 +71,23 @@ final class MacUISmokeTests: XCTestCase {
         XCTAssertTrue(addMenu.waitForExistence(timeout: 5), "Menüeintrag Buchung hinzufügen fehlt")
         addMenu.click()
 
-        // Surface-IDs sind eindeutig (Timeline ≠ Sidebar); App-weit suchen wie bei Seeded-Booking-Rows.
         let timelineDraft = ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline, timeout: 8)
+        // List(selection:) setzt AX-Selected ggf. einen Runloop später.
+        var selected = timelineDraft.isSelected
+        if !selected {
+            let deadline = Date().addingTimeInterval(2)
+            while !selected, Date() < deadline {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+                selected = timelineDraft.isSelected
+            }
+        }
         XCTAssertTrue(
-            timelineDraft.isSelected,
+            selected,
             "Create-Draft in Timeline nicht selektiert\n\(ui.app.debugDescription)"
         )
 
         let seededBookings = ui.app.descendants(matching: .any)
-            .matching(identifier: UITestingIdentifiers.seededBookingRow)
+            .matching(identifier: UITestingIdentifiers.seededTimelineBookingRow)
         for index in 0..<seededBookings.count {
             let row = seededBookings.element(boundBy: index)
             guard row.exists else { continue }
@@ -98,6 +107,28 @@ final class MacUISmokeTests: XCTestCase {
             ui.element(UITestingIdentifiers.inspector).waitForExistence(timeout: 5),
             "Inspector fehlt trotz Create-Draft\n\(ui.app.debugDescription)"
         )
+    }
+
+    /// Trip-Timeline Selection-Context-Menu Reach-only (kein Confirm).
+    ///
+    /// Zuerst Selektion per Klick (sonst öffnet Rechtsklick ggf. das falsche Menü).
+    /// `contextMenu(forSelectionType:)`: MenuItem-IDs sind auf macOS `menuAction:` — Reach über L10n-Titel
+    /// „Von Reise entfernen“ (buchungsspezifisch, nicht Sidebar-Reise).
+    func testTripTimelineBookingContextMenu() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.seededTripRow).click()
+        ui.waitFor(UITestingIdentifiers.detail)
+
+        let timelineBooking = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
+        timelineBooking.click()
+        timelineBooking.rightClick()
+
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.removeFromTripMenuTitleDE].waitForExistence(timeout: 3),
+            "Timeline-Kontextmenü (Von Reise entfernen) fehlt\n\(ui.app.debugDescription)"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
     }
 
     func testAccessibilityAuditAllowlist() throws {

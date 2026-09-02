@@ -9,8 +9,16 @@ public enum BookingCreateDraftSelection {
         timelineID == Self.timelineID
     }
 
+    public static func isCreateDraftSelection(_ selectedTimelineIDs: Set<String>) -> Bool {
+        selectedTimelineIDs.count == 1 && selectedTimelineIDs.contains(timelineID)
+    }
+
     public static func selectCreateDraft(into selectedTimelineID: inout String?) {
         selectedTimelineID = timelineID
+    }
+
+    public static func selectCreateDraft(into selectedTimelineIDs: inout Set<String>) {
+        selectedTimelineIDs = [timelineID]
     }
 
     /// Listen-/Inspector-Titel: Platzhalter „Neue Buchung“, sobald getippt der Entwurfstitel.

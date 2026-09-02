@@ -13,4 +13,9 @@ import ReisenData
     #expect(UITestingIdentifiers.bookingCreateDraftSidebar == "reisen.booking.create-draft.sidebar")
     #expect(UITestingIdentifiers.seededTripRow == UITestingIdentifiers.tripRow(UITestingSeed.tripID))
     #expect(UITestingIdentifiers.seededBookingRow == UITestingIdentifiers.bookingRow(UITestingSeed.bookingID))
+    #expect(UITestingIdentifiers.seededTimelineBookingRow == UITestingIdentifiers.timelineBookingRow(UITestingSeed.bookingID))
+    #expect(
+        UITestingIdentifiers.timelineBookingRow(UITestingSeed.bookingID)
+            != UITestingIdentifiers.bookingRow(UITestingSeed.bookingID)
+    )
 }

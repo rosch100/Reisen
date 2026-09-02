@@ -17,11 +17,11 @@ private func sampleBooking() -> SDBooking {
 }
 
 @Test func bookingCreateDraftSelection_replacesPriorTimelineSelection() {
-    var selectedTimelineID: String? = "existing-booking-uuid"
-    BookingCreateDraftSelection.selectCreateDraft(into: &selectedTimelineID)
-    #expect(selectedTimelineID == BookingCreateDraftSelection.timelineID)
-    #expect(BookingCreateDraftSelection.isCreateDraft(selectedTimelineID))
-    #expect(selectedTimelineID != "existing-booking-uuid")
+    var selectedTimelineIDs: Set<String> = ["existing-booking-uuid"]
+    BookingCreateDraftSelection.selectCreateDraft(into: &selectedTimelineIDs)
+    #expect(selectedTimelineIDs == [BookingCreateDraftSelection.timelineID])
+    #expect(BookingCreateDraftSelection.isCreateDraftSelection(selectedTimelineIDs))
+    #expect(!selectedTimelineIDs.contains("existing-booking-uuid"))
 }
 
 @Test func bookingCreateDraftSelection_displayTitle_usesPlaceholderUntilTyped() {

@@ -8,6 +8,17 @@ import ReisenAppCore
 import AppKit
 import Foundation
 
+private enum TripTimelineBatchRemoveError: LocalizedError {
+    case bookingMissing
+
+    var errorDescription: String? {
+        switch self {
+        case .bookingMissing:
+            return L10n.string(.tripBookingMissing)
+        }
+    }
+}
+
 struct TripDetailView: View {
     enum Mode {
         case list
@@ -16,7 +27,7 @@ struct TripDetailView: View {
 
     let mode: Mode
     @Bindable var trip: SDTrip
-    @Binding var selectedTimelineID: String?
+    @Binding var selectedTimelineIDs: Set<String>
     @Binding var gapEditorPayload: GapEditorPayload?
     @Binding var bookingEditorSession: BookingEditorSession?
     @Binding var createDraftTypedTitle: String
@@ -77,7 +88,15 @@ struct TripDetailView: View {
     }
 
     private func selectTimelineID(_ id: String) {
-        selectedTimelineID = id
+        selectedTimelineIDs = [id]
+    }
+
+    private func isTimelineBookingID(_ id: String) -> Bool {
+        UUID(uuidString: id) != nil
+    }
+
+    private func isTimelineGapID(_ id: String) -> Bool {
+        id.hasPrefix("gap|")
     }
 
     private func editBooking(_ booking: SDBooking) {
@@ -86,31 +105,47 @@ struct TripDetailView: View {
     }
 
     private func startCreateBooking(prefillStart: Date?, prefillEnd: Date?) {
-        var selection = selectedTimelineID
-        BookingCreateDraftSelection.selectCreateDraft(into: &selection)
-        selectedTimelineID = selection
         createDraftTypedTitle = ""
         bookingEditorSession = .create(prefillStart: prefillStart, prefillEnd: prefillEnd)
         BookingCreateDraftDiagnostics.recordSelected(reason: "timeline_create_draft")
+        // List kennt den Create-Draft-Tag erst nach dem Session-Update.
+        Task { @MainActor in
+            await Task.yield()
+            guard case .create = bookingEditorSession else { return }
+            var selection = selectedTimelineIDs
+            BookingCreateDraftSelection.selectCreateDraft(into: &selection)
+            selectedTimelineIDs = selection
+        }
+    }
+
+    private func performRemoveBookingFromTrip(_ booking: SDBooking) throws {
+        let oldTripID = booking.trip?.id
+        booking.trip = nil
+        try modelContext.save()
+        if let oldTripID {
+            try AutoGapReconcileTrigger.run(tripIDs: [oldTripID], in: modelContext)
+            try modelContext.save()
+        }
+    }
+
+    private func clearSelectionAfterRemoving(_ removedID: String, fallbackTimelineID: String?) {
+        guard selectedTimelineIDs.contains(removedID) else { return }
+        selectedTimelineIDs.remove(removedID)
+        if selectedTimelineIDs.isEmpty,
+           let fallbackTimelineID,
+           fallbackTimelineID != removedID {
+            selectedTimelineIDs = [fallbackTimelineID]
+        }
     }
 
     private func removeBookingFromTrip(_ booking: SDBooking, fallbackTimelineID: String?) {
-        let oldTripID = booking.trip?.id
-        booking.trip = nil
         do {
-            try modelContext.save()
-            if let oldTripID {
-                try AutoGapReconcileTrigger.run(tripIDs: [oldTripID], in: modelContext)
-                try modelContext.save()
-            }
+            try performRemoveBookingFromTrip(booking)
         } catch {
             persistErrorMessage = error.localizedDescription
         }
 
-        let removedID = booking.id.uuidString
-        if selectedTimelineID == removedID {
-            selectedTimelineID = (removedID == fallbackTimelineID) ? nil : fallbackTimelineID
-        }
+        clearSelectionAfterRemoving(booking.id.uuidString, fallbackTimelineID: fallbackTimelineID)
 
         if case .edit(let editingID, _) = bookingEditorSession,
            editingID == booking.id {
@@ -130,12 +165,21 @@ struct TripDetailView: View {
         showRemoveFromTripConfirmation = true
     }
 
+    private func requestBatchRemoveFromTrip(_ timelineIDs: Set<String>) {
+        let bookingIDs = timelineIDs.compactMap { UUID(uuidString: $0) }
+        guard !bookingIDs.isEmpty else { return }
+        pendingBatchRemoveBookingIDs = bookingIDs
+        showBatchRemoveConfirmation = true
+    }
+
     @State private var showAssignBookings = false
     @State private var assignPreselectedBookingIDs: Set<UUID> = []
     @State private var pendingDeleteBookingID: UUID?
     @State private var showDeleteConfirmation = false
     @State private var pendingRemoveFromTripBookingID: UUID?
     @State private var showRemoveFromTripConfirmation = false
+    @State private var pendingBatchRemoveBookingIDs: [UUID] = []
+    @State private var showBatchRemoveConfirmation = false
     @State private var persistErrorMessage: String?
 
     private var pendingDeleteBooking: SDBooking? {
@@ -158,9 +202,9 @@ struct TripDetailView: View {
         }
 
         let newSelection = trip.timelineBookings().first?.id.uuidString
-
-        if selectedTimelineID == bookingIDToDelete.uuidString {
-            selectedTimelineID = newSelection
+        selectedTimelineIDs.remove(bookingIDToDelete.uuidString)
+        if selectedTimelineIDs.isEmpty, let newSelection {
+            selectedTimelineIDs = [newSelection]
         }
 
         if case .edit(let editingID, _) = bookingEditorSession,
@@ -179,6 +223,71 @@ struct TripDetailView: View {
         pendingRemoveFromTripBookingID = nil
     }
 
+    private func confirmBatchRemoveFromTrip() {
+        let ids = pendingBatchRemoveBookingIDs
+        pendingBatchRemoveBookingIDs = []
+
+        let bookings: [SDBooking]
+        do {
+            bookings = try ids.map { id in
+                guard let booking = trip.resolvedBookings.first(where: { $0.id == id }) else {
+                    throw TripTimelineBatchRemoveError.bookingMissing
+                }
+                return booking
+            }
+        } catch {
+            persistErrorMessage = error.localizedDescription
+            Task {
+                await DiagnosticLogger.shared.record(
+                    TripBookingListDiagnostics.removeFromTripBatch(
+                        result: .failed,
+                        count: 0,
+                        errorType: String(describing: type(of: error))
+                    )
+                )
+            }
+            return
+        }
+
+        let requestedCount = bookings.count
+        Task {
+            await DiagnosticLogger.shared.record(
+                TripBookingListDiagnostics.removeFromTripBatch(result: .started, count: requestedCount)
+            )
+        }
+
+        var removedCount = 0
+        do {
+            for booking in bookings {
+                try performRemoveBookingFromTrip(booking)
+                removedCount += 1
+                selectedTimelineIDs.remove(booking.id.uuidString)
+                if case .edit(let editingID, _) = bookingEditorSession, editingID == booking.id {
+                    bookingEditorSession = nil
+                }
+            }
+            if selectedTimelineIDs.isEmpty, let first = sortedBookings.first?.id.uuidString {
+                selectedTimelineIDs = [first]
+            }
+            Task {
+                await DiagnosticLogger.shared.record(
+                    TripBookingListDiagnostics.removeFromTripBatch(result: .succeeded, count: removedCount)
+                )
+            }
+        } catch {
+            persistErrorMessage = error.localizedDescription
+            Task {
+                await DiagnosticLogger.shared.record(
+                    TripBookingListDiagnostics.removeFromTripBatch(
+                        result: .failed,
+                        count: removedCount,
+                        errorType: String(describing: type(of: error))
+                    )
+                )
+            }
+        }
+    }
+
     var body: some View {
         let isCreatingBooking: Bool = {
             if case .create = bookingEditorSession { return true }
@@ -189,9 +298,10 @@ struct TripDetailView: View {
             bookings: sortedBookings,
             includesCreateDraft: isCreatingBooking
         )
+        let primaryTimelineID = TimelineSelection.primaryID(in: selectedTimelineIDs)
         let selectedTimelineItem: TripTimelineItem? = {
-            guard let selectedTimelineID else { return nil }
-            return timelineItems.first { $0.id == selectedTimelineID }
+            guard let primaryTimelineID else { return nil }
+            return timelineItems.first { $0.id == primaryTimelineID }
         }()
 
         // Für Mail-ähnliches UX: bei leerer Selektion automatisch erste passende Buchung auswählen.
@@ -234,7 +344,7 @@ struct TripDetailView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    bookingsList(timelineItems: timelineItems, fallbackTimelineID: firstBookingTimelineID)
+                    bookingsList(timelineItems: timelineItems)
                 }
             }
             .accessibilityIdentifier(UITestingIdentifiers.detail)
@@ -265,13 +375,20 @@ struct TripDetailView: View {
                 )
             }
             .onAppear {
-                guard selectedTimelineID == nil else { return }
-                selectedTimelineID = firstBookingTimelineID
+                guard selectedTimelineIDs.isEmpty, let firstBookingTimelineID else { return }
+                selectedTimelineIDs = [firstBookingTimelineID]
+            }
+            .onChange(of: bookingEditorSession) { _, session in
+                guard case .create = session else { return }
+                guard !BookingCreateDraftSelection.isCreateDraftSelection(selectedTimelineIDs) else { return }
+                var selection = selectedTimelineIDs
+                BookingCreateDraftSelection.selectCreateDraft(into: &selection)
+                selectedTimelineIDs = selection
             }
             .onChange(of: trip.id) { _, _ in
                 bookingEditorSession = nil
-                guard selectedTimelineID == nil else { return }
-                selectedTimelineID = firstBookingTimelineID
+                guard selectedTimelineIDs.isEmpty, let firstBookingTimelineID else { return }
+                selectedTimelineIDs = [firstBookingTimelineID]
             }
             .onReceive(NotificationCenter.default.publisher(for: .reisenAssignBookings)) { note in
                 let candidates = openBookingsCandidates()
@@ -299,13 +416,26 @@ struct TripDetailView: View {
                       let booking = trip.resolvedBookings.first(where: { $0.id == bookingID }) else { return }
                 requestDeleteBooking(booking)
             }
+        } else if selectedTimelineIDs.count > 1 {
+            let selectionKind = TripTimelineContextActions.kind(
+                selectedIDs: selectedTimelineIDs,
+                isBookingID: isTimelineBookingID,
+                isGapID: isTimelineGapID
+            )
+            TripBookingMultiSelectionSummary(
+                selectedCount: selectedTimelineIDs.count,
+                onRemoveFromTrip: selectionKind == .multipleBookingsOnly
+                    ? { requestBatchRemoveFromTrip(selectedTimelineIDs) }
+                    : nil
+            )
+            .navigationTitle(trip.title)
         } else {
             BookingDetailPanel(
                 selectedTimelineItem: selectedTimelineItem,
                 trip: trip,
                 overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
                 bookingEditorSession: $bookingEditorSession,
-                selectedTimelineID: $selectedTimelineID,
+                selectedTimelineIDs: $selectedTimelineIDs,
                 createDraftTypedTitle: $createDraftTypedTitle,
                 onEditGap: { payload in gapEditorPayload = payload },
                     gapPresentation: gapPresentation(for:),
@@ -365,127 +495,142 @@ struct TripDetailView: View {
             onCancelDelete: { pendingDeleteBookingID = nil },
             onCancelRemove: { pendingRemoveFromTripBookingID = nil }
         )
+        .confirmationDialog(
+            BookingTripActions.removeFromTripTitle,
+            isPresented: $showBatchRemoveConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string(.commonRemove), role: .destructive, action: confirmBatchRemoveFromTrip)
+            Button(L10n.string(.commonCancel), role: .cancel) {
+                pendingBatchRemoveBookingIDs = []
+            }
+        } message: {
+            Text(L10n.format(.tripBatchRemoveFromTripHelp, pendingBatchRemoveBookingIDs.count))
+        }
         .persistFailureAlert(message: $persistErrorMessage)
         .bookingPortalCancelSheet($cancelRequest)
     }
 
     @ViewBuilder
-    private func bookingsList(
-        timelineItems: [TripTimelineItem],
-        fallbackTimelineID: String?
-    ) -> some View {
-        // Keine SwiftUI-List/Table: deren Scroll-vs.-Tap-Erkennung verzögert Klicks
-        // und lässt sie manchmal ausfallen. ScrollView + plain Button = sofortige Selektion.
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(timelineItems) { item in
-                        Button {
-                            selectedTimelineID = item.id
-                        } label: {
-                            TimelineRowLabel(
-                                item: item,
-                                createDraftTitle: BookingCreateDraftSelection.displayTitle(
-                                    typedTitle: createDraftTypedTitle
-                                ),
-                                overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
-                                gapPresentation: gapPresentation(for:),
-                                onEditGap: { payload in
-                                    gapEditorPayload = payload
-                                }
-                            )
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                selectedTimelineID == item.id
-                                    ? Color.accentColor.opacity(0.12)
-                                    : Color.clear
-                            )
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .id(item.id)
-                        .accessibilityIdentifier(timelineItemIdentifier(item))
-                        .accessibilityAddTraits(
-                            selectedTimelineID == item.id ? [.isSelected] : []
-                        )
-                        .contextMenu {
-                            switch item {
-                            case .booking(let booking):
-                                Button(L10n.string(.commonEdit)) { editBooking(booking) }
-                                Button(L10n.string(.actionAddBooking)) {
-                                    startCreateBooking(prefillStart: nil, prefillEnd: nil)
-                                }
-                                BookingCopyConfirmationMenuItems(booking: booking)
-                                if let url = booking.browserURL {
-                                    BookingPortalOpenButton(browserURL: url)
-                                    CopyLinkMenuItem(url: url)
-                                }
-                                BookingPortalCancelMenuItems(
-                                    booking: booking,
-                                    hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
-                                    onPresentCancel: { presentation, url in
-                                        BookingPortalCancelRequest.route(
-                                            presentation,
-                                            url: url,
-                                            booking: booking,
-                                            openURL: { openURL($0) },
-                                            setCancelRequest: { cancelRequest = $0 }
-                                        )
-                                    }
-                                )
-                                Button(role: .destructive) {
-                                    requestRemoveBookingFromTrip(booking)
-                                } label: {
-                                    Text(L10n.string(.actionRemoveFromTrip))
-                                }
-
-                                Button(role: .destructive) { requestDeleteBooking(booking) } label: {
-                                    Text(L10n.string(.actionDeleteEllipsis))
-                                }
-
-                            case .gap(let gap):
-                                let editPayload = gapPresentation(for: gap).editorPayload(for: gap)
-
-                                Button(L10n.string(.actionEditGap)) {
-                                    selectTimelineID(item.id)
-                                    gapEditorPayload = editPayload
-                                }
-                                Button(L10n.string(.actionAddBooking)) {
-                                    startCreateBooking(
-                                        prefillStart: gap.gapStart,
-                                        prefillEnd: gap.gapEnd
-                                    )
-                                }
-                            case .createDraft:
-                                EmptyView()
-                            }
-                        }
-
-                        Divider()
-                            .padding(.leading, 12)
+    private func bookingsList(timelineItems: [TripTimelineItem]) -> some View {
+        List(selection: $selectedTimelineIDs) {
+            ForEach(timelineItems) { item in
+                TimelineRowLabel(
+                    item: item,
+                    createDraftTitle: BookingCreateDraftSelection.displayTitle(
+                        typedTitle: createDraftTypedTitle
+                    ),
+                    overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
+                    gapPresentation: gapPresentation(for:),
+                    onEditGap: { payload in
+                        gapEditorPayload = payload
                     }
-                }
+                )
+                .tag(item.id)
+                .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                .accessibilityIdentifier(timelineItemIdentifier(item))
+                .accessibilityAddTraits(
+                    selectedTimelineIDs.contains(item.id) ? [.isSelected] : []
+                )
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onChange(of: selectedTimelineID) { _, newID in
-                scrollBookingsList(to: newID, proxy: proxy)
-            }
-            .onAppear {
-                scrollBookingsList(to: selectedTimelineID, proxy: proxy)
-            }
+        }
+        .listStyle(.inset(alternatesRowBackgrounds: true))
+        .contextMenu(forSelectionType: String.self) { ids in
+            timelineSelectionContextMenu(ids: ids, timelineItems: timelineItems)
         }
     }
 
-    private func scrollBookingsList(to timelineID: String?, proxy: ScrollViewProxy) {
-        guard let timelineID else { return }
-        // LazyVStack: Zielzeile ggf. erst nach Layout-Pass vorhanden.
-        Task { @MainActor in
-            await Task.yield()
-            withAnimation(.easeInOut(duration: 0.25)) {
-                proxy.scrollTo(timelineID, anchor: .center)
+    @ViewBuilder
+    private func timelineSelectionContextMenu(
+        ids: Set<String>,
+        timelineItems: [TripTimelineItem]
+    ) -> some View {
+        let kind = TripTimelineContextActions.kind(
+            selectedIDs: ids,
+            isBookingID: isTimelineBookingID,
+            isGapID: isTimelineGapID
+        )
+        let actions = TripTimelineContextActions.actions(for: kind)
+        switch kind {
+        case .singleBooking:
+            if let id = ids.first,
+               let item = timelineItems.first(where: { $0.id == id }),
+               case .booking(let booking) = item {
+                if actions.contains(.edit) {
+                    Button(L10n.string(.commonEdit)) { editBooking(booking) }
+                }
+                if actions.contains(.addBooking) {
+                    Button(L10n.string(.actionAddBooking)) {
+                        startCreateBooking(
+                            prefillStart: nil,
+                            prefillEnd: nil
+                        )
+                    }
+                }
+                if actions.contains(.copy) {
+                    BookingCopyConfirmationMenuItems(booking: booking)
+                }
+                if actions.contains(.openPortal), let url = booking.browserURL {
+                    BookingPortalOpenButton(browserURL: url)
+                    CopyLinkMenuItem(url: url)
+                }
+                BookingPortalCancelMenuItems(
+                    booking: booking,
+                    hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
+                    onPresentCancel: { presentation, url in
+                        BookingPortalCancelRequest.route(
+                            presentation,
+                            url: url,
+                            booking: booking,
+                            openURL: { openURL($0) },
+                            setCancelRequest: { cancelRequest = $0 }
+                        )
+                    }
+                )
+                if actions.contains(.removeFromTrip) {
+                    Button(role: .destructive) {
+                        requestRemoveBookingFromTrip(booking)
+                    } label: {
+                        Text(L10n.string(.actionRemoveFromTrip))
+                    }
+                }
+                if actions.contains(.deleteBooking) {
+                    Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
+                        requestDeleteBooking(booking)
+                    }
+                    .accessibilityIdentifier(UITestingIdentifiers.deleteBookingMenu)
+                }
             }
+        case .singleGap:
+            if let id = ids.first,
+               let item = timelineItems.first(where: { $0.id == id }),
+               case .gap(let gap) = item {
+                let editPayload = gapPresentation(for: gap).editorPayload(for: gap)
+                if actions.contains(.editGap) {
+                    Button(L10n.string(.actionEditGap)) {
+                        selectTimelineID(item.id)
+                        gapEditorPayload = editPayload
+                    }
+                }
+                if actions.contains(.addBooking) {
+                    Button(L10n.string(.actionAddBooking)) {
+                        startCreateBooking(
+                            prefillStart: gap.gapStart,
+                            prefillEnd: gap.gapEnd
+                        )
+                    }
+                }
+            }
+        case .multipleBookingsOnly:
+            if actions.contains(.batchRemoveFromTrip) {
+                Button(role: .destructive) {
+                    requestBatchRemoveFromTrip(ids)
+                } label: {
+                    Text(L10n.string(.actionRemoveFromTrip))
+                }
+            }
+        case .empty, .mixedOrGapsOnly:
+            EmptyView()
         }
     }
 
@@ -504,7 +649,7 @@ struct TripDetailView: View {
     private func timelineItemIdentifier(_ item: TripTimelineItem) -> String {
         switch item {
         case .booking(let booking):
-            return UITestingIdentifiers.bookingRow(booking.id)
+            return UITestingIdentifiers.timelineBookingRow(booking.id)
         case .createDraft:
             return UITestingIdentifiers.bookingCreateDraftTimeline
         case .gap:
@@ -654,7 +799,7 @@ private struct BookingDetailPanel: View {
     let trip: SDTrip
     let overlapPartnerTitlesByBookingID: [UUID: [String]]
     @Binding var bookingEditorSession: BookingEditorSession?
-    @Binding var selectedTimelineID: String?
+    @Binding var selectedTimelineIDs: Set<String>
     @Binding var createDraftTypedTitle: String
     let onEditGap: (GapEditorPayload) -> Void
     let gapPresentation: (ComputedGap) -> GapPresentation
@@ -715,9 +860,9 @@ private struct BookingDetailPanel: View {
             guard newID != editingID else { return }
             clearEditor()
         }
-        .onChange(of: selectedTimelineID) { _, newID in
+        .onChange(of: selectedTimelineIDs) { _, newIDs in
             guard case .create = bookingEditorSession else { return }
-            guard !BookingCreateDraftSelection.isCreateDraft(newID) else { return }
+            guard !BookingCreateDraftSelection.isCreateDraftSelection(newIDs) else { return }
             clearEditor()
         }
         .onChange(of: trip.id) { _, _ in
@@ -873,8 +1018,12 @@ private struct BookingDetailPanel: View {
         showPeriodExpandConfirm = false
         if wasCreateDraft {
             createDraftTypedTitle = ""
-            if BookingCreateDraftSelection.isCreateDraft(selectedTimelineID) {
-                selectedTimelineID = trip.timelineBookings().first?.id.uuidString
+            if BookingCreateDraftSelection.isCreateDraftSelection(selectedTimelineIDs) {
+                if let first = trip.timelineBookings().first?.id.uuidString {
+                    selectedTimelineIDs = [first]
+                } else {
+                    selectedTimelineIDs = []
+                }
             }
         }
     }
@@ -929,7 +1078,7 @@ private struct BookingDetailPanel: View {
             trip: trip,
             in: modelContext
         )
-        selectedTimelineID = newID.uuidString
+        selectedTimelineIDs = [newID.uuidString]
         clearEditor()
     }
 }
