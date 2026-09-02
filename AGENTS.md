@@ -21,12 +21,8 @@ Nur Reisen-Spezifika hier; universelle Hygiene bleibt in User-Rules.
 
 ### CI
 - Root-Cause vor Fix; Scripts nicht in YAML duplizieren.
-<<<<<<< HEAD
 - Gate lokal: `bash ./Scripts/ci-test.sh`. UI-Diff: Agents **müssen** `bash ./Scripts/macos-ui-test-remote.sh` (iMac) nutzen; `macos-ui-test.sh` lokal nur nach nachgewiesenem Remote-Ausfall.
-=======
-- Gate lokal: `bash ./Scripts/ci-test.sh` (UI: zusätzlich `macos-ui-test.sh`).
 - Pflicht-Check auf GitHub: Aggregator-Job **`CI`** (parallele Suites + Selection — `docs/ci/README.md`, `docs/superpowers/plans/2026-09-02-reisen-ci-performance.md`).
->>>>>>> origin/master
 
 ### Review
 - Domain-Grenzen und keine stillen Fallbacks.
