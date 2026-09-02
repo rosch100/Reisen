@@ -1,7 +1,7 @@
 import SwiftUI
 import ReisenDomain
 
-/// SSOT label for „Neue Reise erstellen“ in menus, swipes and context menus.
+/// SSOT label for „Neue Reise aus Auswahl…“ in menus, swipes and context menus.
 public struct CreateTripFromBookingsLabel: View {
     public init() {}
 
