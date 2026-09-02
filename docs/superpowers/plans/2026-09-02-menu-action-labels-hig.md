@@ -24,10 +24,10 @@
 **Files:**
 - Modify: `Sources/ReisenDomain/Resources/Localizable.xcstrings`
 
-- [ ] Script/Python: alle Spec-Keys DE/EN/`…` setzen (inkl. Ellipsis-Zeichen `…`)
-- [ ] `editor.create_title` EN → `New Booking`; übrige Tabelle 1:1
-- [ ] Out-of-scope-Keys unberührt lassen
-- [ ] Commit: `i18n: HIG-konforme Menü-/Aktionslabels`
+- [x] Script/Python: alle Spec-Keys DE/EN/`…` setzen (inkl. Ellipsis-Zeichen `…`)
+- [x] `editor.create_title` EN → `New Booking`; übrige Tabelle 1:1
+- [x] Out-of-scope-Keys unberührt lassen
+- [x] Commit: `i18n: HIG-konforme Menü-/Aktionslabels`
 
 ## Task 2: Code-Kommentare / Hardcoded-Titel in Tests
 
@@ -36,15 +36,15 @@
 - Modify: `Sources/ReisenSharedUI/CreateTripFromBookingsLabel.swift` Kommentar
 - Modify: ggf. `UITestingIdentifiers` nur wenn Titel-Konstanten existieren (z. B. `removeFromTripMenuTitleDE`)
 
-- [ ] `rg` nach alten Literalen; auf Spec-Wortlaut aktualisieren
-- [ ] Commit: `test: Menü-Titel-Reach an HIG-Labels anpassen`
+- [x] `rg` nach alten Literalen; auf Spec-Wortlaut aktualisieren
+- [x] Commit: `test: Menü-Titel-Reach an HIG-Labels anpassen`
 
 ## Task 3: Verifikation
 
-- [ ] `bash ./Scripts/ci-test.sh`
-- [ ] `bash ./Scripts/ci-build.sh --arch arm64`
-- [ ] Bei UI-Titel-Diff: `bash ./Scripts/macos-ui-test.sh` (oder remote laut AGENTS)
-- [ ] Kurz Ellipsis-Stichprobe: `menu.add_booking` hat `…`, `action.add_booking` nicht
+- [x] `bash ./Scripts/ci-test.sh`
+- [x] `bash ./Scripts/ci-build.sh --arch arm64`
+- [x] Bei UI-Titel-Diff: `bash ./Scripts/macos-ui-test-remote.sh` (iMac; lokal nur nach Remote-Ausfall)
+- [x] Kurz Ellipsis-Stichprobe: `menu.add_booking` hat `…`, `action.add_booking` nicht
 
 ## Task 4: Ship
 
