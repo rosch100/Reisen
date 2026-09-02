@@ -67,8 +67,8 @@ final class MacUISmokeTests: XCTestCase {
         let ablagemenu = ui.app.menuBars.menuBarItems["Ablage"].firstMatch
         XCTAssertTrue(ablagemenu.waitForExistence(timeout: 5), "Ablage-Menü fehlt")
         ablagemenu.click()
-        let addMenu = ui.app.menuItems["Buchung hinzufügen…"].firstMatch
-        XCTAssertTrue(addMenu.waitForExistence(timeout: 5), "Menüeintrag Buchung hinzufügen fehlt")
+        let addMenu = ui.app.menuItems["Neue Buchung…"].firstMatch
+        XCTAssertTrue(addMenu.waitForExistence(timeout: 5), "Menüeintrag Neue Buchung fehlt")
         addMenu.click()
 
         let timelineDraft = ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline, timeout: 8)

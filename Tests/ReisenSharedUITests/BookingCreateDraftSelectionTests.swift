@@ -34,7 +34,7 @@ private func sampleBooking() -> SDBooking {
             == L10n.string(.editorCreateTitle)
     )
     #expect(BookingCreateDraftSelection.displayTitle(typedTitle: "Hotel Roma") == "Hotel Roma")
-    #expect(L10n.string(.editorCreateTitle) == "Neue Buchung" || L10n.string(.editorCreateTitle) == "New booking")
+    #expect(L10n.string(.editorCreateTitle) == "Neue Buchung" || L10n.string(.editorCreateTitle) == "New Booking")
 }
 
 @Test func tripTimelineItem_displayItems_prependsCreateDraftWhenCreating() {
