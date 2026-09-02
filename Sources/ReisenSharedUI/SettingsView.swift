@@ -102,7 +102,8 @@ public struct SettingsView: View {
             }
 
             Section {
-                Toggle(L10n.string(.settingsLocalNotifications), isOn: $notificationEnabled)
+                    Toggle(L10n.string(.settingsLocalNotifications), isOn: $notificationEnabled)
+                        .accessibilityIdentifier(UITestingIdentifiers.settingsNotificationToggle)
             } header: {
                 Text(L10n.string(.settingsReminders))
             } footer: {

@@ -190,6 +190,8 @@ public struct PasteImportReviewSheet: View {
             }
         }
         .persistFailureAlert(message: $persistErrorMessage)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(UITestingIdentifiers.pasteImportReview)
     }
 
     #if os(macOS)
@@ -199,10 +201,11 @@ public struct PasteImportReviewSheet: View {
             showsSyncOverwriteHint: showsSyncOverwriteHint,
             draft: $draft,
             providerReadOnly: payload.isEnriching,
+            saveAccessibilityIdentifier: UITestingIdentifiers.pasteImportAccept,
             onCancel: requestCancel,
             onSave: save
         )
-        .frame(minWidth: 520, minHeight: 620)
+        .frame(minWidth: 520, idealHeight: 720, maxHeight: 900)
         .navigationTitle(progressTitle ?? editorTitle)
     }
     #endif

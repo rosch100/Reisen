@@ -34,25 +34,27 @@ public struct AssignBookingsSheet: View {
                         description: Text(L10n.string(.assignNoOpenInRange))
                     )
                 } else {
-                    List(candidates, id: \.id) { booking in
-                        Button {
-                            toggleSelection(for: booking.id)
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(booking.presentationTitle)
-                                        .font(.headline)
-                                    Text("\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Image(systemName: selectedBookingIDs.contains(booking.id) ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(selectedBookingIDs.contains(booking.id) ? Color.accentColor : .secondary)
+                    // List(selection:) statt Button-Toggle: macOS-XCUI trifft Selection zuverlässig.
+                    List(candidates, id: \.id, selection: $selectedBookingIDs) { booking in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(booking.presentationTitle)
+                                    .font(.headline)
+                                Text("\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
+                            Spacer()
+                            Image(systemName: selectedBookingIDs.contains(booking.id) ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(selectedBookingIDs.contains(booking.id) ? Color.accentColor : .secondary)
+                                .accessibilityHidden(true)
                         }
-                        .buttonStyle(.plain)
+                        .tag(booking.id)
+                        .accessibilityIdentifier(UITestingIdentifiers.assignBookingsCandidate(booking.id))
                     }
+#if os(iOS)
+                    .environment(\.editMode, .constant(.active))
+#endif
                 }
             }
             .navigationTitle(L10n.string(.assignTitle))
@@ -65,6 +67,7 @@ public struct AssignBookingsSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L10n.string(.commonAssign)) { assignSelectedBookings() }
+                        .accessibilityIdentifier(UITestingIdentifiers.assignBookingsConfirm)
                         .disabled(selectedBookingIDs.isEmpty)
                 }
             }
@@ -85,14 +88,9 @@ public struct AssignBookingsSheet: View {
 #if os(macOS)
         .frame(width: 520, height: 420)
 #endif
-    }
-
-    private func toggleSelection(for id: UUID) {
-        if selectedBookingIDs.contains(id) {
-            selectedBookingIDs.remove(id)
-        } else {
-            selectedBookingIDs.insert(id)
-        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(UITestingIdentifiers.assignBookingsSheet)
+        .accessibilityLabel(L10n.string(.assignTitle))
     }
 
     private func assignSelectedBookings() {

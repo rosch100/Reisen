@@ -70,6 +70,7 @@ public struct GapEditorSheet: View {
             Form {
                 Section(L10n.string(.gapDisplay)) {
                     TextField(L10n.string(.editorTitle), text: $editedTitle)
+                        .accessibilityIdentifier(UITestingIdentifiers.gapEditorTitleField)
                     Picker(L10n.string(.editorType), selection: $editedKind) {
                         ForEach(GapKind.allCases) { kind in
                             Text(L10n.gapKindDisplay(kind)).tag(kind)
@@ -116,6 +117,7 @@ public struct GapEditorSheet: View {
                         onSave(editedTitle, editedKind, parsedPrice, currencyCode)
                         dismiss()
                     }
+                    .accessibilityIdentifier(UITestingIdentifiers.gapEditorSave)
                     .disabled(!isValid)
                 }
             }
@@ -129,5 +131,7 @@ public struct GapEditorSheet: View {
 #if os(macOS)
         .frame(width: 480, height: 360)
 #endif
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(UITestingIdentifiers.gapEditor)
     }
 }

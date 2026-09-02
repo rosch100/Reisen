@@ -25,7 +25,7 @@ Bei **Feature-, Bugfix- und Verhaltensänderungen** gehören Logging und Tests *
 
 - Bestehende Asserts nicht schwächen/skippen.
 - UI: stabile Identifier (nicht L10n); Page Objects in `MacUI`; Seed über `-UITesting`.
-- Verifikation: `bash ./Scripts/ci-test.sh`; bei UI-Diff zusätzlich `bash ./Scripts/macos-ui-test.sh`.
+- Verifikation: `bash ./Scripts/ci-test.sh`; bei UI-Diff **Pflicht für Agents:** `bash ./Scripts/macos-ui-test-remote.sh` (iMac). Lokal `macos-ui-test.sh` nur nach nachgewiesenem Remote-Ausfall.
 - iOS: Build/Test nur über `Scripts/ios-*.sh`; XCUI-iOS erst wenn Target/Script existieren — Identifier trotzdem in SharedUI pflegen.
 
 ## DoD vor „fertig“

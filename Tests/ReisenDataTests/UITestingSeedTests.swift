@@ -5,11 +5,9 @@ import ReisenData
 import ReisenDomain
 
 @MainActor
-@Test func uiTestingSeed_insertsStableTripsBookingsAndOpen() throws {
+@Test func uiTestingSeed_insertsStableTripsBookingsOpenAndGap() throws {
     let container = try PersistenceBootstrap.makeInMemoryContainer()
-    let earliestOpenBookingReference = Calendar.current.startOfDay(for: Date())
     try UITestingSeed.insertPopulated(into: container.mainContext)
-    let latestOpenBookingReference = Calendar.current.startOfDay(for: Date())
 
     let trips = try container.mainContext.fetch(FetchDescriptor<SDTrip>())
     let bookings = try container.mainContext.fetch(FetchDescriptor<SDBooking>())
@@ -24,14 +22,34 @@ import ReisenDomain
     ])
     #expect(bookings.first(where: { $0.id == UITestingSeed.bookingID })?.trip?.id == UITestingSeed.tripID)
     #expect(bookings.first(where: { $0.id == UITestingSeed.openBookingID })?.trip == nil)
-    let firstOpenBooking = try #require(openBookings.first)
-    #expect(firstOpenBooking.startAt >= earliestOpenBookingReference.addingTimeInterval(86_400 * 10))
-    #expect(firstOpenBooking.startAt <= latestOpenBookingReference.addingTimeInterval(86_400 * 10))
-    #expect(openBookings.map { $0.endAt.timeIntervalSince($0.startAt) } == [86_400, 86_400, 86_400])
-    let openBookingOffsets = openBookings.dropFirst().map {
-        $0.startAt.timeIntervalSince(firstOpenBooking.startAt)
+    #expect(openBookings.map(\.startAt) == [
+        UITestingSeed.firstBookingEnd.addingTimeInterval(3_600),
+        UITestingSeed.firstBookingEnd.addingTimeInterval(10_800),
+        UITestingSeed.firstBookingEnd.addingTimeInterval(18_000),
+    ])
+    #expect(openBookings.map { $0.endAt.timeIntervalSince($0.startAt) } == [3_600, 3_600, 3_600])
+
+    let trip = try #require(trips.first(where: { $0.id == UITestingSeed.tripID }))
+    for open in openBookings {
+        #expect(OpenBookingMatching.isCandidate(open, for: trip))
     }
-    #expect(openBookingOffsets == [172_800, 345_600])
+
+    let tripBookings = bookings
+        .filter { $0.trip?.id == UITestingSeed.tripID }
+        .map { DomainMapper.booking(from: $0) }
+    let gaps = GapDetector().computeGaps(
+        bookings: tripBookings,
+        tripStart: UITestingSeed.firstBookingStart,
+        tripEnd: UITestingSeed.secondBookingEnd
+    )
+    #expect(gaps.contains { $0.timelineItemID == UITestingSeed.seededGapTimelineItemID })
+
+    let planned = AutoGapPlanner.plan(
+        tripStart: UITestingSeed.firstBookingStart,
+        tripEnd: UITestingSeed.secondBookingEnd,
+        bookings: tripBookings
+    )
+    #expect(planned.isEmpty)
 
     try UITestingSeed.insertPopulated(into: container.mainContext)
     #expect(try container.mainContext.fetch(FetchDescriptor<SDTrip>()).count == 2)

@@ -120,6 +120,7 @@ struct ContentView: View {
     /// Paste-Import: Lauf-Zustand; Review läuft im eigenen Fenster (Presenter).
     @State private var pasteImport = PasteImportSession()
     @State private var pasteImportReviewQueue = PasteImportReviewQueue()
+    @State private var didInjectPasteImportFixture = false
     @Environment(\.openWindow) private var openWindow
 
     /// HIG: Spalten per dünnem Divider ziehbar (keine sichtbaren Slider-Knöpfe).
@@ -248,6 +249,11 @@ struct ContentView: View {
         }
         .onAppear {
             applyUITestingLaunchSelectionIfNeeded()
+            if !didInjectPasteImportFixture {
+                didInjectPasteImportFixture = true
+                pasteImport.injectTestingFixture()
+                advancePasteImportQueue()
+            }
             if !didInitExpanded {
                 // Reisen standardmäßig eingeklappt; Nutzer kann aufklappen.
                 expandedTripIDs = []
@@ -256,13 +262,16 @@ struct ContentView: View {
 
             if !didRunTimeRepair {
                 didRunTimeRepair = true
-                do {
-                    let repo = SwiftDataBookingRepository(modelContext: modelContext)
-                    try TimeNormalizationRepair(bookingRepository: repo).repairIfNeeded()
-                } catch {
-                    #if DEBUG
-                    print("[Reisen] TimeNormalizationRepair fehlgeschlagen: \(error)")
-                    #endif
+                // UITesting-Seed bleibt zeitstabil; Repair würde Hotels upserten und AutoGap triggern.
+                if !UITestingLaunch.isActive {
+                    do {
+                        let repo = SwiftDataBookingRepository(modelContext: modelContext)
+                        try TimeNormalizationRepair(bookingRepository: repo).repairIfNeeded()
+                    } catch {
+                        #if DEBUG
+                        print("[Reisen] TimeNormalizationRepair fehlgeschlagen: \(error)")
+                        #endif
+                    }
                 }
             }
         }
@@ -558,10 +567,12 @@ struct ContentView: View {
                     Button(L10n.string(.actionCreateTrip)) {
                         showCreateTrip = true
                     }
+                    .accessibilityIdentifier(UITestingIdentifiers.emptyStateNewTrip)
                     Button(L10n.string(.actionOpenSync)) {
                         selection = .providerSync(enabledProviderIDs.first ?? .check24)
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier(UITestingIdentifiers.emptyState)
             }
         }
@@ -1662,6 +1673,8 @@ struct ContentView: View {
                 onConfirm: deletePendingBooking,
                 onCancel: { pendingDeleteBookingID = nil }
             )
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(UITestingIdentifiers.inspector)
             .onChange(of: booking.id) { _, _ in
                 isEditing = false
                 bookingEditorDraft = nil

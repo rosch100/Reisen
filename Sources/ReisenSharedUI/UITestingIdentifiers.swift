@@ -9,6 +9,7 @@ public enum UITestingIdentifiers {
     public static let settings = "reisen.settings"
     public static let syncChrome = "reisen.sync.chrome"
     public static let bookingEditor = "reisen.booking.editor"
+    public static let bookingEditorSave = "reisen.booking.editor.save"
     public static let emptyState = "reisen.empty-state"
     public static let addBooking = "reisen.action.add-booking"
     /// Create-Draft in der mittleren Timeline (AX ≠ Selection-ID, Surface-getrennt).
@@ -23,6 +24,28 @@ public enum UITestingIdentifiers {
     public static let tripDeleteDialog = "reisen.dialog.delete-trip"
     public static let tripMultiSelectionSummary = "reisen.trip.multi-selection-summary"
     public static let openBookingsContent = "reisen.open-bookings.content"
+    public static let openBookingsMailbox = "reisen.open-bookings.mailbox"
+    public static let elapsedOpenBookingsMailbox = "reisen.elapsed-open-bookings.mailbox"
+    public static let tripEditor = "reisen.trip.editor"
+    public static let tripEditorTitleField = "reisen.trip.editor.title"
+    public static let tripEditorSave = "reisen.trip.editor.save"
+    public static let assignBookingsSheet = "reisen.assign-bookings.sheet"
+    public static let assignBookingsConfirm = "reisen.assign-bookings.confirm"
+    public static let assignBookingsAction = "reisen.action.assign-bookings"
+
+    public static func assignBookingsCandidate(_ id: UUID) -> String {
+        "reisen.assign-bookings.candidate.\(id.uuidString)"
+    }
+    public static let gapEditor = "reisen.gap.editor"
+    public static let gapEditorTitleField = "reisen.gap.editor.title"
+    public static let gapEditAction = "reisen.gap.edit"
+    public static let gapEditorSave = "reisen.gap.editor.save"
+    public static let emptyStateNewTrip = "reisen.empty-state.new-trip"
+    public static let bookingEditorTitle = "reisen.booking.editor.title"
+    public static let settingsNotificationToggle = "reisen.settings.notification-toggle"
+    public static let pasteImportReview = "reisen.paste-import.review"
+    public static let pasteImportAccept = "reisen.paste-import.accept"
+    public static let bookingDetailEdit = "reisen.booking.detail.edit"
 
     public static func tripRow(_ id: UUID) -> String {
         "reisen.trip.\(id.uuidString)"
@@ -44,6 +67,10 @@ public enum UITestingIdentifiers {
 
     public static func providerRow(_ rawValue: String) -> String {
         "reisen.provider.\(rawValue)"
+    }
+
+    public static func gapRow(timelineItemID: String) -> String {
+        "reisen.gap.\(timelineItemID)"
     }
 
     public static var seededTripRow: String {
@@ -87,6 +114,10 @@ public enum UITestingIdentifiers {
         timelineBookingRow(UITestingSeed.bookingID2)
     }
 
+    public static var seededGapRow: String {
+        gapRow(timelineItemID: UITestingSeed.seededGapTimelineItemID)
+    }
+
     /// Menütitel für Timeline-`forSelectionType`-Reach.
     ///
     /// Nicht `L10n.string` im Test-Host: der Runner kann en_US sein, während die
@@ -94,4 +125,7 @@ public enum UITestingIdentifiers {
     public static let deleteBookingMenuTitleDE = "Löschen…"
     public static let removeFromTripMenuTitleDE = "Von Reise entfernen…"
     public static let copyConfirmationMenuTitleDE = "Buchungsnr. kopieren"
+    public static let newTripMenuTitleDE = "Neue Reise…"
+    public static let assignBookingsMenuTitleDE = "Buchungen zuordnen…"
+    public static let editGapMenuTitleDE = "Lücke bearbeiten…"
 }

@@ -7,7 +7,8 @@ alwaysApply: false
 # macOS Cursor Workflow
 
 - App bauen/starten: `bash ./Scripts/build-app.sh` bzw. `bash ./Scripts/run-app.sh` (optional `--logging` → `-ReisenDiagnosticsDebug`).
-- XCUI-Smokes: `bash ./Scripts/macos-ui-test.sh` (Scheme `ReisenMac`, Target `ReisenMacUITests`).
+- XCUI-Verifikation durch Agents: **immer** `bash ./Scripts/macos-ui-test-remote.sh` (Working-Tree → iMac; Host `imac.altanis.de`, Bonjour-Fallback; Spec `docs/superpowers/specs/2026-09-02-macos-ui-test-remote-design.md`). Parallel laufende Agents serialisieren per Remote-Lock und nutzen isolierte Run-Dirs unter `~/Entwicklung/Reisen-ui-runs/<run-id>/`. Lokal `macos-ui-test.sh` **verboten**, außer Remote ist nachgewiesen unerreichbar (Exit/Connect-Fehler dokumentieren).
+- XCUI-Smokes (lokal, nur Fallback): `bash ./Scripts/macos-ui-test.sh` (Scheme `ReisenMac`, Target `ReisenMacUITests`).
 - Advisory UI-Tour: `bash ./Scripts/macos-ui-review.sh` + Skill `ui-surface-review`.
 - Xcode-Projekt: `bash ./Scripts/generate-ios-project.sh` (erzeugt auch macOS-Targets aus `project.yml`).
 - Kein ad-hoc-`xcodebuild` mit losen Flags im Standard-Agent-Workflow.

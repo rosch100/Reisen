@@ -1,4 +1,6 @@
 import XCTest
+import ReisenAppCore
+import ReisenData
 import ReisenSharedUI
 
 @MainActor
@@ -275,5 +277,98 @@ final class MacUISmokeTests: XCTestCase {
             }
         }
         throw lastError!
+    }
+
+    func testEmptyStateCreatesTripAndPersistsTitle() {
+        let ui = MacUI.launchEmpty()
+        ui.waitForWindow()
+        let title = "UI Test Created Trip"
+        ui.createTripViaEmptyCTA(title: title)
+        XCTAssertFalse(ui.element(UITestingIdentifiers.tripEditor).waitForExistence(timeout: 3))
+        ui.waitForLabelContaining(title)
+    }
+
+    func testNewTripMenuCreatesTrip() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.createTripViaMenu(title: "UI Test Menu Trip")
+        ui.waitForLabelContaining("UI Test Menu Trip")
+    }
+
+    func testTripDeleteDialogIsReachableWithoutDeletingTrip() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        let trip = ui.waitFor(UITestingIdentifiers.seededTripRow)
+        trip.rightClick()
+        ui.app.menuItems[UITestingIdentifiers.deleteTripMenu].click()
+        ui.waitFor(UITestingIdentifiers.tripDeleteDialog)
+        ui.app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(ui.waitFor(UITestingIdentifiers.seededTripRow).exists)
+    }
+
+    func testBookingEditorExposesSeededTitleField() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openSeededBookingEditor()
+        let title = ui.waitFor(UITestingIdentifiers.bookingEditorTitle)
+        XCTAssertEqual(title.value as? String, UITestingSeed.bookingTitle)
+    }
+
+    func testToolbarAddBookingCreatesDraftSelection() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openSeededTrip()
+        ui.waitFor(UITestingIdentifiers.addBooking).click()
+        XCTAssertTrue(ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline).isSelected)
+        ui.expandSidebarBookings()
+        XCTAssertTrue(ui.waitFor(UITestingIdentifiers.bookingCreateDraftSidebar).isSelected)
+        ui.waitFor(UITestingIdentifiers.inspector)
+    }
+
+    func testOpenBookingShowsDetail() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.selectSeededOpenBooking().click()
+        ui.waitFor(UITestingIdentifiers.inspector)
+    }
+
+    func testOpenBookingCanBeAssignedToSeededTrip() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.assignSeededOpenBookingToSeededTrip()
+        ui.openSeededTrip()
+        XCTAssertTrue(
+            ui.waitFor(UITestingIdentifiers.timelineBookingRow(UITestingSeed.openBookingID)).exists
+        )
+    }
+
+    func testGapEditorIsReachableForSeededGap() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.editSeededGapTitle("UI Testing Edited Gap")
+        ui.waitForLabelContaining("UI Testing Edited Gap")
+    }
+
+    func testSettingsNotificationToggleIsIsolated() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openSettings()
+        let toggle = ui.waitFor(UITestingIdentifiers.settingsNotificationToggle)
+        let before = String(describing: toggle.value)
+        toggle.click()
+        XCTAssertNotEqual(String(describing: toggle.value), before)
+    }
+
+    func testProviderSyncChromeIsReachable() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openProviderSyncCheck24()
+    }
+
+    func testPasteImportFixturePersistsBooking() {
+        let ui = MacUI.launchPasteImportFixture()
+        ui.waitForWindow()
+        ui.acceptPasteImportFixture()
+        ui.waitForLabelContaining("UI Testing Imported Booking", timeout: 10)
     }
 }

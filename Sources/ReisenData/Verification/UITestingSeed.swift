@@ -19,6 +19,18 @@ public enum UITestingSeed {
     public static let openBookingTitle2 = "UI Testing Open B"
     public static let openBookingTitle3 = "UI Testing Open C"
     public static let confirmationCode = "UI-TEST-CONF"
+    public static let firstBookingStart = Date(timeIntervalSince1970: 1_800_000_000)
+    public static let firstBookingEnd = Date(timeIntervalSince1970: 1_800_086_400)
+    public static let secondBookingStart = Date(timeIntervalSince1970: 1_800_172_800)
+    public static let secondBookingEnd = Date(timeIntervalSince1970: 1_800_259_200)
+
+    /// Inter-Gap zwischen Seed-Hotel und Seed-Flight (`ComputedGap.timelineItemID`).
+    public static var seededGapTimelineItemID: String {
+        let start = Int(firstBookingEnd.timeIntervalSince1970)
+        let end = Int(secondBookingStart.timeIntervalSince1970)
+        let identityKey = "\(bookingID.uuidString)|\(bookingID2.uuidString)|\(start)|\(end)"
+        return "gap|\(identityKey)"
+    }
 
     @MainActor
     public static func insertPopulated(into context: ModelContext) throws {
@@ -27,9 +39,8 @@ public enum UITestingSeed {
         )
         if !existing.isEmpty { return }
 
-        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let start = firstBookingStart
         let end = start.addingTimeInterval(86_400 * 3)
-        let openBookingReference = Calendar.current.startOfDay(for: Date())
         let trip = SDTrip(
             id: tripID,
             title: tripTitle,
@@ -55,34 +66,39 @@ public enum UITestingSeed {
             bookingTypeRaw: BookingType.hotel.rawValue,
             title: bookingTitle,
             confirmationCode: confirmationCode,
-            startAt: start,
-            endAt: start.addingTimeInterval(86_400),
+            startAt: firstBookingStart,
+            endAt: firstBookingEnd,
+            locationTo: "Berlin",
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: trip
         )
         context.insert(booking)
 
+        // Gleicher Ort wie Hotel → kein Spatial-AutoGap, Inter-Gap bleibt für XCUI sichtbar.
         let booking2 = SDBooking(
             id: bookingID2,
             providerRaw: ProviderID.manual.rawValue,
             bookingTypeRaw: BookingType.flight.rawValue,
             title: bookingTitle2,
             confirmationCode: "UI-TEST-CONF-2",
-            startAt: start.addingTimeInterval(86_400),
-            endAt: start.addingTimeInterval(86_400 * 2),
+            startAt: secondBookingStart,
+            endAt: secondBookingEnd,
+            locationFrom: "Berlin",
+            locationTo: "Berlin",
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: trip
         )
         context.insert(booking2)
 
+        // Offene Buchungen im Trip-Fenster, damit Assign-Sheet Candidates hat.
         let openA = SDBooking(
             id: openBookingID,
             providerRaw: ProviderID.manual.rawValue,
             bookingTypeRaw: BookingType.hotel.rawValue,
             title: openBookingTitle,
             confirmationCode: confirmationCode,
-            startAt: openBookingReference.addingTimeInterval(86_400 * 10),
-            endAt: openBookingReference.addingTimeInterval(86_400 * 11),
+            startAt: firstBookingEnd.addingTimeInterval(3_600),
+            endAt: firstBookingEnd.addingTimeInterval(7_200),
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: nil
         )
@@ -94,8 +110,8 @@ public enum UITestingSeed {
             bookingTypeRaw: BookingType.hotel.rawValue,
             title: openBookingTitle2,
             confirmationCode: "UI-TEST-OPEN-B",
-            startAt: openBookingReference.addingTimeInterval(86_400 * 12),
-            endAt: openBookingReference.addingTimeInterval(86_400 * 13),
+            startAt: firstBookingEnd.addingTimeInterval(10_800),
+            endAt: firstBookingEnd.addingTimeInterval(14_400),
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: nil
         )
@@ -107,8 +123,8 @@ public enum UITestingSeed {
             bookingTypeRaw: BookingType.hotel.rawValue,
             title: openBookingTitle3,
             confirmationCode: "UI-TEST-OPEN-C",
-            startAt: openBookingReference.addingTimeInterval(86_400 * 14),
-            endAt: openBookingReference.addingTimeInterval(86_400 * 15),
+            startAt: firstBookingEnd.addingTimeInterval(18_000),
+            endAt: firstBookingEnd.addingTimeInterval(21_600),
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: nil
         )

@@ -35,6 +35,24 @@ public final class PasteImportSession: PasteImportSessionControlling {
 
     public init() {}
 
+    /// Stellt für die isolierte macOS-XCUI-Suite einen vollständigen Candidate bereit.
+    /// Der produktive Extractor wird dabei nicht aufgerufen.
+    public func injectTestingFixture(enabled: Bool = UITestingLaunch.shouldInjectPasteImportFixture) {
+        guard enabled else { return }
+
+        let startAt = Date(timeIntervalSince1970: 1_800_345_600)
+        let draft = PasteImportDraft(
+            bookingType: .hotel,
+            startAt: startAt,
+            endAt: startAt.addingTimeInterval(86_400),
+            endAtIsPlaceholder: false,
+            title: "UI Testing Imported Booking",
+            status: .confirmed
+        )
+        reset()
+        pending = [PasteImportCandidate(draft: draft, match: .none)]
+    }
+
     public var isConfirmingPrivateCloudCompute: Bool { phase == .confirmingPrivateCloudCompute }
 
     /// Modellstufe des laufenden Imports; `nil`, solange kein Lauf offen ist.
