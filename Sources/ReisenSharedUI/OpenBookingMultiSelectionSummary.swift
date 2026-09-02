@@ -6,13 +6,16 @@ import ReisenData
 public struct OpenBookingMultiSelectionSummary: View {
     let selected: [SDBooking]
     var onCreateTrip: () -> Void
+    var onDelete: (() -> Void)?
 
     public init(
         selected: [SDBooking],
-        onCreateTrip: @escaping () -> Void
+        onCreateTrip: @escaping () -> Void,
+        onDelete: (() -> Void)? = nil
     ) {
         self.selected = selected
         self.onCreateTrip = onCreateTrip
+        self.onDelete = onDelete
     }
 
     public var body: some View {
@@ -39,8 +42,17 @@ public struct OpenBookingMultiSelectionSummary: View {
             }
             .buttonStyle(.borderedProminent)
             #endif
+
+            if let onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Text(L10n.string(.actionDeleteEllipsis))
+                }
+                .controlSize(.large)
+                .accessibilityIdentifier(UITestingIdentifiers.deleteBookingMenu)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier(UITestingIdentifiers.openBookingMultiSelectionSummary)
     }
 
     private var dateRangeText: String? {

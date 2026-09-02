@@ -471,6 +471,13 @@ struct TripDetailView: View {
                 selectedCount: selectedTimelineIDs.count,
                 onRemoveFromTrip: selectionKind == .multipleBookingsOnly
                     ? { requestBatchRemoveFromTrip(selectedTimelineIDs) }
+                    : nil,
+                onDelete: selectionKind == .multipleBookingsOnly
+                    ? {
+                        requestBatchDeleteBookings(
+                            Set(selectedTimelineIDs.compactMap(UUID.init(uuidString:)))
+                        )
+                    }
                     : nil
             )
             .navigationTitle(trip.title)

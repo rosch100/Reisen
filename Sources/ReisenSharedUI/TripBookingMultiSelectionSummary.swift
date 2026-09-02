@@ -5,13 +5,16 @@ import ReisenDomain
 public struct TripBookingMultiSelectionSummary: View {
     let selectedCount: Int
     var onRemoveFromTrip: (() -> Void)?
+    var onDelete: (() -> Void)?
 
     public init(
         selectedCount: Int,
-        onRemoveFromTrip: (() -> Void)? = nil
+        onRemoveFromTrip: (() -> Void)? = nil,
+        onDelete: (() -> Void)? = nil
     ) {
         self.selectedCount = selectedCount
         self.onRemoveFromTrip = onRemoveFromTrip
+        self.onDelete = onDelete
     }
 
     public var body: some View {
@@ -25,9 +28,17 @@ public struct TripBookingMultiSelectionSummary: View {
                 }
                 .controlSize(.large)
             }
+
+            if let onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Text(L10n.string(.actionDeleteEllipsis))
+                }
+                .controlSize(.large)
+                .accessibilityIdentifier(UITestingIdentifiers.deleteBookingMenu)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .accessibilityIdentifier(UITestingIdentifiers.inspector)
+        .accessibilityIdentifier(UITestingIdentifiers.tripBookingMultiSelectionSummary)
     }
 }
