@@ -11,6 +11,10 @@ public enum UITestingIdentifiers {
     public static let bookingEditor = "reisen.booking.editor"
     public static let emptyState = "reisen.empty-state"
     public static let addBooking = "reisen.action.add-booking"
+    /// Create-Draft in der mittleren Timeline (AX ≠ Selection-ID, Surface-getrennt).
+    public static let bookingCreateDraftTimeline = "reisen.booking.create-draft.timeline"
+    /// Create-Draft unter dem Trip in der Sidebar.
+    public static let bookingCreateDraftSidebar = "reisen.booking.create-draft.sidebar"
     public static let deleteTripMenu = "reisen.action.delete-trip"
     public static let deleteBookingMenu = "reisen.action.delete-booking"
     /// Chevron zum Ausklappen von Sidebar-Outline-Kindern (Trip oder Offene-Mailbox).

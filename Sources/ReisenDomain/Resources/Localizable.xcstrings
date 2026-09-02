@@ -3430,13 +3430,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchung hinzufügen"
+            "value": "Neue Buchung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add booking"
+            "value": "New booking"
           }
         }
       }

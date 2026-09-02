@@ -47,6 +47,8 @@ public struct TripTimelineSection<BookingRow: View>: View {
                         bookingRow(booking)
                     case .gap(let gap):
                         gapButton(for: gap)
+                    case .createDraft:
+                        EmptyView()
                     }
                 }
             }

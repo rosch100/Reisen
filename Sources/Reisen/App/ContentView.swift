@@ -42,6 +42,8 @@ struct ContentView: View {
     /// Selektion der mittleren Buchungsliste → rechte Detailspalte.
     @State private var selectedTimelineIDs: Set<String> = []
     @State private var bookingEditorSession: BookingEditorSession? = nil
+    /// Getippter Titel während Create — live in Draft-Zeilen (leer = „Neue Buchung“).
+    @State private var createDraftTypedTitle = ""
     /// Payload des aktiven Gap-Editors (Sheet in Detailspalte).
     @State private var gapEditorPayload: GapEditorPayload? = nil
 
@@ -842,6 +844,14 @@ struct ContentView: View {
         }
 
         if isExpanded {
+            if case .create = bookingEditorSession, selection == .trip(trip.id) {
+                BookingCreateDraftSidebarRow(
+                    title: BookingCreateDraftSelection.displayTitle(typedTitle: createDraftTypedTitle),
+                    isSelected: BookingCreateDraftSelection.isCreateDraftSelection(selectedTimelineIDs)
+                ) {
+                    selectedTimelineIDs = [BookingCreateDraftSelection.timelineID]
+                }
+            }
             ForEach(tripBookings) { booking in
                 sidebarTripBookingRow(booking: booking, trip: trip)
             }
@@ -891,7 +901,7 @@ struct ContentView: View {
             }
             if actions.contains(.addBooking) {
                 Button(L10n.string(.actionAddBooking)) {
-                    startCreateBooking(in: trip, selectBookingID: booking.id)
+                    startCreateBooking(in: trip)
                 }
             }
             BookingCopyConfirmationMenuItems(booking: booking)
@@ -1005,8 +1015,12 @@ struct ContentView: View {
                     trip: trip,
                     selectedTimelineIDs: $selectedTimelineIDs,
                     gapEditorPayload: $gapEditorPayload,
-                    bookingEditorSession: $bookingEditorSession
+                    bookingEditorSession: $bookingEditorSession,
+                    createDraftTypedTitle: $createDraftTypedTitle
                 )
+                .onReceive(NotificationCenter.default.publisher(for: .reisenAddBooking)) { _ in
+                    startCreateBooking(in: trip)
+                }
                 .id(id)
             } else {
                 ContentUnavailableView(
@@ -1260,7 +1274,8 @@ struct ContentView: View {
                     trip: trip,
                     selectedTimelineIDs: $selectedTimelineIDs,
                     gapEditorPayload: $gapEditorPayload,
-                    bookingEditorSession: $bookingEditorSession
+                    bookingEditorSession: $bookingEditorSession,
+                    createDraftTypedTitle: $createDraftTypedTitle
                 )
                 .id(id)
             } else {
@@ -1625,12 +1640,19 @@ struct ContentView: View {
         selectedOpenBookingIDs = [id]
     }
 
-    private func startCreateBooking(in trip: SDTrip, selectBookingID: UUID? = nil) {
+    private func startCreateBooking(in trip: SDTrip) {
         applyAfterTripFocus(trip: trip) {
-            if let selectBookingID {
-                selectedTimelineIDs = [selectBookingID.uuidString]
-            }
+            expandedTripIDs.insert(trip.id)
+            createDraftTypedTitle = ""
             bookingEditorSession = .create(prefillStart: nil, prefillEnd: nil)
+            BookingCreateDraftDiagnostics.recordSelected(reason: "menu_or_sidebar_create_draft")
+            Task { @MainActor in
+                await Task.yield()
+                guard case .create = bookingEditorSession else { return }
+                var selection = selectedTimelineIDs
+                BookingCreateDraftSelection.selectCreateDraft(into: &selection)
+                selectedTimelineIDs = selection
+            }
         }
     }
 
