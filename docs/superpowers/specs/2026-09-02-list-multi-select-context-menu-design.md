@@ -138,6 +138,7 @@ rg -n '@AppStorage|AppStorage\(|UserDefaults\.standard|fromUserDefaults|supportD
 - Multi-Drag (F16)
 - Batch-Löschen (Hartlöschen) mehrerer Buchungen in v1
 - Persistenz der Selection über App-Neustart
+- macOS `contextMenu(forSelectionType:)`: MenuItem-`accessibilityIdentifier` kommt nicht an (System setzt `menuAction:`) — XCUI-Reach über L10n-Menütitel; `deleteBookingMenu` bleibt am Button verdrahtet für Sidebar-`.contextMenu`
 
 ## Schnittstellen-Inventar
 

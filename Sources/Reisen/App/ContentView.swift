@@ -305,9 +305,8 @@ struct ContentView: View {
             }
             return elapsedOpenBookings.first(where: { $0.id == id })
         case .trip(let tripID):
-            guard selectedTimelineIDs.count == 1,
-                  let trip = trips.first(where: { $0.id == tripID }),
-                  let timelineID = selectedTimelineIDs.first,
+            guard let trip = trips.first(where: { $0.id == tripID }),
+                  let timelineID = TimelineSelection.primaryID(in: selectedTimelineIDs),
                   let bookingUUID = UUID(uuidString: timelineID) else {
                 return nil
             }

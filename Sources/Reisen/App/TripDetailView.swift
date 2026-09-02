@@ -215,21 +215,44 @@ struct TripDetailView: View {
 
     private func confirmBatchRemoveFromTrip() {
         let ids = pendingBatchRemoveBookingIDs
-        let count = ids.count
         pendingBatchRemoveBookingIDs = []
-        Task {
-            await DiagnosticLogger.shared.record(
-                TripBookingListDiagnostics.removeFromTripBatch(result: .started, count: count)
-            )
-        }
+
+        let bookings: [SDBooking]
         do {
-            for id in ids {
+            bookings = try ids.map { id in
                 guard let booking = trip.resolvedBookings.first(where: { $0.id == id }) else {
                     throw TripTimelineBatchRemoveError.bookingMissing
                 }
+                return booking
+            }
+        } catch {
+            persistErrorMessage = error.localizedDescription
+            Task {
+                await DiagnosticLogger.shared.record(
+                    TripBookingListDiagnostics.removeFromTripBatch(
+                        result: .failed,
+                        count: 0,
+                        errorType: String(describing: type(of: error))
+                    )
+                )
+            }
+            return
+        }
+
+        let requestedCount = bookings.count
+        Task {
+            await DiagnosticLogger.shared.record(
+                TripBookingListDiagnostics.removeFromTripBatch(result: .started, count: requestedCount)
+            )
+        }
+
+        var removedCount = 0
+        do {
+            for booking in bookings {
                 try performRemoveBookingFromTrip(booking)
-                selectedTimelineIDs.remove(id.uuidString)
-                if case .edit(let editingID, _) = bookingEditorSession, editingID == id {
+                removedCount += 1
+                selectedTimelineIDs.remove(booking.id.uuidString)
+                if case .edit(let editingID, _) = bookingEditorSession, editingID == booking.id {
                     bookingEditorSession = nil
                 }
             }
@@ -238,7 +261,7 @@ struct TripDetailView: View {
             }
             Task {
                 await DiagnosticLogger.shared.record(
-                    TripBookingListDiagnostics.removeFromTripBatch(result: .succeeded, count: count)
+                    TripBookingListDiagnostics.removeFromTripBatch(result: .succeeded, count: removedCount)
                 )
             }
         } catch {
@@ -247,7 +270,7 @@ struct TripDetailView: View {
                 await DiagnosticLogger.shared.record(
                     TripBookingListDiagnostics.removeFromTripBatch(
                         result: .failed,
-                        count: count,
+                        count: removedCount,
                         errorType: String(describing: type(of: error))
                     )
                 )

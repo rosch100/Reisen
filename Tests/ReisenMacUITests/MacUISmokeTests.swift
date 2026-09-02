@@ -59,7 +59,7 @@ final class MacUISmokeTests: XCTestCase {
     /// Trip-Timeline Selection-Context-Menu Reach-only (kein Confirm).
     ///
     /// `contextMenu(forSelectionType:)` setzt auf macOS MenuItem-Identifier auf `menuAction:`
-    /// (AccessibilityIdentifier am Button kommt nicht an). Reach daher über den Menütitel;
+    /// (AccessibilityIdentifier am Button kommt nicht an). Reach daher über L10n-Menütitel;
     /// `deleteBookingMenu` bleibt am Button verdrahtet (Sidebar-`.contextMenu` liefert die ID).
     func testTripTimelineBookingContextMenu() {
         let ui = MacUI.launchPopulated()
@@ -70,11 +70,8 @@ final class MacUISmokeTests: XCTestCase {
         let timelineBooking = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
         timelineBooking.rightClick()
 
-        let deleteByIdentifier = ui.app.menuItems[UITestingIdentifiers.deleteBookingMenu]
-        let deleteByTitle = ui.app.menuItems["Löschen…"]
         XCTAssertTrue(
-            deleteByIdentifier.waitForExistence(timeout: 2)
-                || deleteByTitle.waitForExistence(timeout: 2),
+            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenuTitle].waitForExistence(timeout: 3),
             "Timeline-Kontextmenü (Löschen) fehlt\n\(ui.app.debugDescription)"
         )
         ui.app.typeKey(.escape, modifierFlags: [])

@@ -1,5 +1,6 @@
 import Foundation
 import ReisenData
+import ReisenDomain
 
 /// Stabile Accessibility-Identifier für XCUI (nicht L10n).
 public enum UITestingIdentifiers {
@@ -45,5 +46,10 @@ public enum UITestingIdentifiers {
 
     public static var seededTimelineBookingRow: String {
         timelineBookingRow(UITestingSeed.bookingID)
+    }
+
+    /// Menütitel für Timeline-`forSelectionType`-Reach (macOS liefert dort keine a11y-IDs).
+    public static var deleteBookingMenuTitle: String {
+        L10n.string(.actionDeleteEllipsis)
     }
 }
