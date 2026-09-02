@@ -24,6 +24,19 @@ private func sampleBooking() -> SDBooking {
     #expect(selectedTimelineID != "existing-booking-uuid")
 }
 
+@Test func bookingCreateDraftSelection_displayTitle_usesPlaceholderUntilTyped() {
+    #expect(
+        BookingCreateDraftSelection.displayTitle(typedTitle: nil)
+            == L10n.string(.editorCreateTitle)
+    )
+    #expect(
+        BookingCreateDraftSelection.displayTitle(typedTitle: "   ")
+            == L10n.string(.editorCreateTitle)
+    )
+    #expect(BookingCreateDraftSelection.displayTitle(typedTitle: "Hotel Roma") == "Hotel Roma")
+    #expect(L10n.string(.editorCreateTitle) == "Neue Buchung" || L10n.string(.editorCreateTitle) == "New booking")
+}
+
 @Test func tripTimelineItem_displayItems_prependsCreateDraftWhenCreating() {
     let booking = sampleBooking()
     let withDraft = TripTimelineItem.displayItems(

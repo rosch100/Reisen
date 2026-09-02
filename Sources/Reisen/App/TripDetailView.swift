@@ -19,6 +19,7 @@ struct TripDetailView: View {
     @Binding var selectedTimelineID: String?
     @Binding var gapEditorPayload: GapEditorPayload?
     @Binding var bookingEditorSession: BookingEditorSession?
+    @Binding var createDraftTypedTitle: String
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.providerSessionHub) private var sessionHub
@@ -88,6 +89,7 @@ struct TripDetailView: View {
         var selection = selectedTimelineID
         BookingCreateDraftSelection.selectCreateDraft(into: &selection)
         selectedTimelineID = selection
+        createDraftTypedTitle = ""
         bookingEditorSession = .create(prefillStart: prefillStart, prefillEnd: prefillEnd)
         BookingCreateDraftDiagnostics.recordSelected(reason: "timeline_create_draft")
     }
@@ -304,6 +306,7 @@ struct TripDetailView: View {
                 overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
                 bookingEditorSession: $bookingEditorSession,
                 selectedTimelineID: $selectedTimelineID,
+                createDraftTypedTitle: $createDraftTypedTitle,
                 onEditGap: { payload in gapEditorPayload = payload },
                     gapPresentation: gapPresentation(for:),
                     onRequestDeleteBooking: { bookingID in
@@ -382,6 +385,9 @@ struct TripDetailView: View {
                         } label: {
                             TimelineRowLabel(
                                 item: item,
+                                createDraftTitle: BookingCreateDraftSelection.displayTitle(
+                                    typedTitle: createDraftTypedTitle
+                                ),
                                 overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
                                 gapPresentation: gapPresentation(for:),
                                 onEditGap: { payload in
@@ -595,6 +601,7 @@ private enum TimelineRowDisplayMode {
 
 private struct TimelineRowLabel: View {
     let item: TripTimelineItem
+    let createDraftTitle: String
     let overlapPartnerTitlesByBookingID: [UUID: [String]]
     let gapPresentation: (ComputedGap) -> GapPresentation
     let onEditGap: (GapEditorPayload) -> Void
@@ -622,7 +629,7 @@ private struct TimelineRowLabel: View {
             )
 
         case .createDraft:
-            Label(L10n.string(.editorCreateTitle), systemImage: "plus.circle")
+            Label(createDraftTitle, systemImage: "plus.circle")
                 .font(.body.weight(.medium))
         }
     }
@@ -648,6 +655,7 @@ private struct BookingDetailPanel: View {
     let overlapPartnerTitlesByBookingID: [UUID: [String]]
     @Binding var bookingEditorSession: BookingEditorSession?
     @Binding var selectedTimelineID: String?
+    @Binding var createDraftTypedTitle: String
     let onEditGap: (GapEditorPayload) -> Void
     let gapPresentation: (ComputedGap) -> GapPresentation
     let onRequestDeleteBooking: (UUID) -> Void
@@ -737,11 +745,13 @@ private struct BookingDetailPanel: View {
         switch bookingEditorSession {
         case .create(let prefillStart, let prefillEnd, let prefilledDraft):
             guard resetDraft || bookingEditorDraft == nil else { return }
-            bookingEditorDraft = prefilledDraft ?? BookingEditorDraft.createDefault(
+            let draft = prefilledDraft ?? BookingEditorDraft.createDefault(
                 tripStartDate: trip.startDate,
                 prefillStart: prefillStart,
                 prefillEnd: prefillEnd
             )
+            bookingEditorDraft = draft
+            createDraftTypedTitle = draft.title
         case .edit(let bookingID, let prefilledDraft):
             guard resetDraft || bookingEditorDraft == nil else { return }
             if let booking = selectedBooking, booking.id == bookingID {
@@ -751,12 +761,14 @@ private struct BookingDetailPanel: View {
             }
         case nil:
             bookingEditorDraft = nil
+            createDraftTypedTitle = ""
         }
     }
 
     private var editorTitle: String {
         switch bookingEditorSession {
-        case .create: return L10n.string(.editorCreateTitle)
+        case .create:
+            return BookingCreateDraftSelection.displayTitle(typedTitle: bookingEditorDraft?.title)
         case .edit: return L10n.string(.editorEditTitle)
         case nil: return L10n.string(.editorBooking)
         }
@@ -779,7 +791,12 @@ private struct BookingDetailPanel: View {
         guard bookingEditorDraft != nil else { return nil }
         return Binding(
             get: { bookingEditorDraft! },
-            set: { bookingEditorDraft = $0 }
+            set: { newDraft in
+                bookingEditorDraft = newDraft
+                if case .create = bookingEditorSession {
+                    createDraftTypedTitle = newDraft.title
+                }
+            }
         )
     }
 
@@ -854,8 +871,11 @@ private struct BookingDetailPanel: View {
         bookingEditorDraft = nil
         pendingPeriodExpand = nil
         showPeriodExpandConfirm = false
-        if wasCreateDraft, BookingCreateDraftSelection.isCreateDraft(selectedTimelineID) {
-            selectedTimelineID = trip.timelineBookings().first?.id.uuidString
+        if wasCreateDraft {
+            createDraftTypedTitle = ""
+            if BookingCreateDraftSelection.isCreateDraft(selectedTimelineID) {
+                selectedTimelineID = trip.timelineBookings().first?.id.uuidString
+            }
         }
     }
 

@@ -42,6 +42,8 @@ struct ContentView: View {
     /// Selektion der mittleren Buchungsliste → rechte Detailspalte.
     @State private var selectedTimelineID: String? = nil
     @State private var bookingEditorSession: BookingEditorSession? = nil
+    /// Getippter Titel während Create — live in Draft-Zeilen (leer = „Neue Buchung“).
+    @State private var createDraftTypedTitle = ""
     /// Payload des aktiven Gap-Editors (Sheet in Detailspalte).
     @State private var gapEditorPayload: GapEditorPayload? = nil
 
@@ -844,6 +846,7 @@ struct ContentView: View {
         if isExpanded {
             if case .create = bookingEditorSession, selection == .trip(trip.id) {
                 BookingCreateDraftSidebarRow(
+                    title: BookingCreateDraftSelection.displayTitle(typedTitle: createDraftTypedTitle),
                     isSelected: BookingCreateDraftSelection.isCreateDraft(selectedTimelineID)
                 ) {
                     selectedTimelineID = BookingCreateDraftSelection.timelineID
@@ -1012,7 +1015,8 @@ struct ContentView: View {
                     trip: trip,
                     selectedTimelineID: $selectedTimelineID,
                     gapEditorPayload: $gapEditorPayload,
-                    bookingEditorSession: $bookingEditorSession
+                    bookingEditorSession: $bookingEditorSession,
+                    createDraftTypedTitle: $createDraftTypedTitle
                 )
                 .onReceive(NotificationCenter.default.publisher(for: .reisenAddBooking)) { _ in
                     startCreateBooking(in: trip)
@@ -1270,7 +1274,8 @@ struct ContentView: View {
                     trip: trip,
                     selectedTimelineID: $selectedTimelineID,
                     gapEditorPayload: $gapEditorPayload,
-                    bookingEditorSession: $bookingEditorSession
+                    bookingEditorSession: $bookingEditorSession,
+                    createDraftTypedTitle: $createDraftTypedTitle
                 )
                 .id(id)
             } else {
@@ -1641,6 +1646,7 @@ struct ContentView: View {
             var selection = selectedTimelineID
             BookingCreateDraftSelection.selectCreateDraft(into: &selection)
             selectedTimelineID = selection
+            createDraftTypedTitle = ""
             bookingEditorSession = .create(prefillStart: nil, prefillEnd: nil)
             BookingCreateDraftDiagnostics.recordSelected(reason: "menu_or_sidebar_create_draft")
         }

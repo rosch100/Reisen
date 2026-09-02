@@ -1,19 +1,20 @@
 import SwiftUI
-import ReisenDomain
 
 /// Provisorische Sidebar-Zeile während Create (Selection = Inspector-Objekt).
 public struct BookingCreateDraftSidebarRow: View {
+    public let title: String
     public let isSelected: Bool
     public let onSelect: () -> Void
 
-    public init(isSelected: Bool, onSelect: @escaping () -> Void) {
+    public init(title: String, isSelected: Bool, onSelect: @escaping () -> Void) {
+        self.title = title
         self.isSelected = isSelected
         self.onSelect = onSelect
     }
 
     public var body: some View {
         Button(action: onSelect) {
-            Label(L10n.string(.editorCreateTitle), systemImage: "plus.circle")
+            Label(title, systemImage: "plus.circle")
                 .font(.body.weight(.medium))
                 .padding(.leading, 28)
                 .padding(.vertical, 4)
