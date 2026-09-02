@@ -6,13 +6,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchung hinzufügen…"
+            "value": "Neue Buchung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add booking…"
+            "value": "New Booking"
           }
         }
       }
@@ -44,7 +44,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Assign bookings…"
+            "value": "Assign Bookings…"
           }
         }
       }
@@ -60,7 +60,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Assign to trip…"
+            "value": "Assign to Trip…"
           }
         }
       }
@@ -76,7 +76,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancel in portal"
+            "value": "Cancel"
           }
         }
       }
@@ -102,13 +102,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stornieren im Portal"
+            "value": "Stornieren im Portal…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancel in portal"
+            "value": "Cancel in Portal…"
           }
         }
       }
@@ -124,7 +124,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Checking provider sessions…"
+            "value": "Check Provider Sessions…"
           }
         }
       }
@@ -140,7 +140,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Also wipe iCloud data…"
+            "value": "Also Wipe iCloud Data…"
           }
         }
       }
@@ -156,7 +156,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wipe iCloud and local"
+            "value": "Wipe iCloud and Local"
           }
         }
       }
@@ -172,7 +172,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy cancellation link"
+            "value": "Copy Cancellation Link"
           }
         }
       }
@@ -188,7 +188,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy confirmation number"
+            "value": "Copy Confirmation Number"
           }
         }
       }
@@ -214,13 +214,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neue Reise anlegen"
+            "value": "Neue Reise"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create new trip"
+            "value": "New Trip"
           }
         }
       }
@@ -246,13 +246,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neue Reise erstellen"
+            "value": "Neue Reise aus Auswahl…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create trip from bookings"
+            "value": "New Trip from Selection…"
           }
         }
       }
@@ -284,7 +284,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete local stores"
+            "value": "Delete Local Stores"
           }
         }
       }
@@ -300,7 +300,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete trip…"
+            "value": "Delete Trip…"
           }
         }
       }
@@ -316,7 +316,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete trip?"
+            "value": "Delete Trip?"
           }
         }
       }
@@ -332,7 +332,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edit gap…"
+            "value": "Edit Gap…"
           }
         }
       }
@@ -364,7 +364,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Go to settings"
+            "value": "Go to Settings"
           }
         }
       }
@@ -380,7 +380,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New trip"
+            "value": "New Trip"
           }
         }
       }
@@ -396,7 +396,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New trip"
+            "value": "New Trip"
           }
         }
       }
@@ -412,7 +412,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open booking"
+            "value": "Open Booking"
           }
         }
       }
@@ -422,13 +422,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchung im Browser öffnen"
+            "value": "Im Browser öffnen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open booking in browser"
+            "value": "Open in Browser"
           }
         }
       }
@@ -460,7 +460,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open in %1$@ app"
+            "value": "Open in %1$@ App"
           }
         }
       }
@@ -502,13 +502,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync öffnen"
+            "value": "Provider Sync"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open provider sync"
+            "value": "Provider Sync"
           }
         }
       }
@@ -534,13 +534,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync öffnen"
+            "value": "Provider Sync"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open provider sync"
+            "value": "Provider Sync"
           }
         }
       }
@@ -556,7 +556,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open sync"
+            "value": "Open Sync"
           }
         }
       }
@@ -588,7 +588,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remember login…"
+            "value": "Remember Login…"
           }
         }
       }
@@ -604,7 +604,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove from trip…"
+            "value": "Remove from Trip…"
           }
         }
       }
@@ -620,7 +620,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset local stores…"
+            "value": "Reset Local Stores…"
           }
         }
       }
@@ -652,7 +652,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync all"
+            "value": "Sync All"
           }
         }
       }
@@ -684,7 +684,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync now"
+            "value": "Sync Now"
           }
         }
       }
@@ -700,7 +700,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open sync"
+            "value": "Open Sync"
           }
         }
       }
@@ -732,7 +732,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Got it"
+            "value": "Got It"
           }
         }
       }
@@ -3436,7 +3436,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New booking"
+            "value": "New Booking"
           }
         }
       }
@@ -3468,7 +3468,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edit booking"
+            "value": "Edit Booking"
           }
         }
       }
@@ -4662,13 +4662,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchung hinzufügen…"
+            "value": "Neue Buchung…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add Booking…"
+            "value": "New Booking…"
           }
         }
       }
@@ -4790,13 +4790,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync…"
+            "value": "Provider Sync"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync…"
+            "value": "Provider Sync"
           }
         }
       }
@@ -4806,13 +4806,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle Provider synchronisieren"
+            "value": "Alle synchronisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync All Providers"
+            "value": "Sync All"
           }
         }
       }
