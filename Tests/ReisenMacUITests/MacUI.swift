@@ -85,6 +85,24 @@ struct MacUI {
     }
 
     @discardableResult
+    func waitUntilSelected(
+        _ element: XCUIElement,
+        timeout: TimeInterval = 2,
+        message: String
+    ) -> XCUIElement {
+        var selected = element.isSelected
+        if !selected {
+            let deadline = Date().addingTimeInterval(timeout)
+            while !selected, Date() < deadline {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+                selected = element.isSelected
+            }
+        }
+        XCTAssertTrue(selected, "\(message)\n\(app.debugDescription)")
+        return element
+    }
+
+    @discardableResult
     func openSeededTrip() -> XCUIElement {
         waitFor(UITestingIdentifiers.seededTripRow).click()
         return waitFor(UITestingIdentifiers.detail)

@@ -58,7 +58,7 @@ reisen_macos_ui_clear_gatekeeper_attrs() {
 reisen_macos_ui_adhoc_resign_products() {
   local derived="$1"
   local products="${derived}/Build/Products"
-  local bundle ents
+  local bundle ents failed=0
   [[ -d "$products" ]] || return 0
   ents="$(mktemp -t reisen-ui-empty-ents.XXXXXX)"
   cat >"$ents" <<'PLIST'
@@ -68,11 +68,14 @@ reisen_macos_ui_adhoc_resign_products() {
 PLIST
   while IFS= read -r -d '' bundle; do
     # Ohne Entitlements: Development-Cert-Pflicht entfällt; Gatekeeper braucht Signatur.
-    codesign --force --deep --sign - --entitlements "$ents" "$bundle" >/dev/null 2>&1 \
-      || codesign --force --deep --sign - "$bundle" >/dev/null 2>&1 \
-      || true
+    if ! codesign --force --deep --sign - --entitlements "$ents" "$bundle" >/dev/null 2>&1 \
+      && ! codesign --force --deep --sign - "$bundle" >/dev/null 2>&1; then
+      echo "Fehler: Ad-hoc codesign fehlgeschlagen: $bundle" >&2
+      failed=1
+    fi
   done < <(find "$products" \( -name '*.app' -o -name '*.xctest' \) -print0 2>/dev/null)
   rm -f "$ents"
+  [[ "$failed" -eq 0 ]] || return 1
 }
 
 reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
@@ -90,11 +93,11 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   echo "macOS-UI-Tests: build-for-testing (unsigned) …" >&2
   xcodebuild "${common[@]}" \
     CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
-    build-for-testing
+    build-for-testing || return $?
 
   echo "macOS-UI-Tests: Ad-hoc codesign + xattr -cr …" >&2
   reisen_macos_ui_clear_gatekeeper_attrs "$derived"
-  reisen_macos_ui_adhoc_resign_products "$derived"
+  reisen_macos_ui_adhoc_resign_products "$derived" || return $?
   rm -rf "$result"
 
   echo "macOS-UI-Tests: test-without-building …" >&2

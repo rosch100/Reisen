@@ -93,17 +93,10 @@ final class MacUISmokeTests: XCTestCase {
         addMenu.click()
 
         let timelineDraft = ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline, timeout: 8)
-        var selected = timelineDraft.isSelected
-        if !selected {
-            let deadline = Date().addingTimeInterval(2)
-            while !selected, Date() < deadline {
-                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
-                selected = timelineDraft.isSelected
-            }
-        }
-        XCTAssertTrue(
-            selected,
-            "Create-Draft in Timeline nicht selektiert\n\(ui.app.debugDescription)"
+        // List(selection:) setzt AX-Selected ggf. einen Runloop später.
+        ui.waitUntilSelected(
+            timelineDraft,
+            message: "Create-Draft in Timeline nicht selektiert"
         )
 
         let seededBookings = ui.app.descendants(matching: .any)
@@ -118,9 +111,9 @@ final class MacUISmokeTests: XCTestCase {
         }
 
         let sidebarDraft = ui.waitFor(UITestingIdentifiers.bookingCreateDraftSidebar, timeout: 5)
-        XCTAssertTrue(
-            sidebarDraft.isSelected,
-            "Create-Draft in Sidebar nicht selektiert\n\(ui.app.debugDescription)"
+        ui.waitUntilSelected(
+            sidebarDraft,
+            message: "Create-Draft in Sidebar nicht selektiert"
         )
 
         XCTAssertTrue(
@@ -355,9 +348,15 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         ui.openSeededTrip()
         ui.waitFor(UITestingIdentifiers.addBooking).click()
-        XCTAssertTrue(ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline).isSelected)
+        ui.waitUntilSelected(
+            ui.waitFor(UITestingIdentifiers.bookingCreateDraftTimeline),
+            message: "Create-Draft in Timeline nicht selektiert"
+        )
         ui.expandSidebarBookings()
-        XCTAssertTrue(ui.waitFor(UITestingIdentifiers.bookingCreateDraftSidebar).isSelected)
+        ui.waitUntilSelected(
+            ui.waitFor(UITestingIdentifiers.bookingCreateDraftSidebar),
+            message: "Create-Draft in Sidebar nicht selektiert"
+        )
         ui.waitFor(UITestingIdentifiers.inspector)
     }
 

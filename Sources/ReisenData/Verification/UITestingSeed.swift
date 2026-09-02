@@ -19,10 +19,11 @@ public enum UITestingSeed {
     public static let openBookingTitle2 = "UI Testing Open B"
     public static let openBookingTitle3 = "UI Testing Open C"
     public static let confirmationCode = "UI-TEST-CONF"
-    public static let firstBookingStart = Date(timeIntervalSince1970: 1_800_000_000)
-    public static let firstBookingEnd = Date(timeIntervalSince1970: 1_800_086_400)
-    public static let secondBookingStart = Date(timeIntervalSince1970: 1_800_172_800)
-    public static let secondBookingEnd = Date(timeIntervalSince1970: 1_800_259_200)
+    /// Stabile Far-Future-Epoch (~2030-03) — absolut für Gap-Timeline-IDs.
+    public static let firstBookingStart = Date(timeIntervalSince1970: 1_900_000_000)
+    public static let firstBookingEnd = Date(timeIntervalSince1970: 1_900_086_400)
+    public static let secondBookingStart = Date(timeIntervalSince1970: 1_900_172_800)
+    public static let secondBookingEnd = Date(timeIntervalSince1970: 1_900_259_200)
 
     /// Inter-Gap zwischen Seed-Hotel und Seed-Flight (`ComputedGap.timelineItemID`).
     public static var seededGapTimelineItemID: String {

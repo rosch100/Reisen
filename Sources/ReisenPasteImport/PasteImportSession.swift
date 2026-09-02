@@ -40,7 +40,7 @@ public final class PasteImportSession: PasteImportSessionControlling {
     public func injectTestingFixture(enabled: Bool = UITestingLaunch.shouldInjectPasteImportFixture) {
         guard enabled else { return }
 
-        let startAt = Date(timeIntervalSince1970: 1_800_345_600)
+        let startAt = Date(timeIntervalSince1970: 1_900_345_600)
         let draft = PasteImportDraft(
             bookingType: .hotel,
             startAt: startAt,
