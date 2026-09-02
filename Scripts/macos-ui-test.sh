@@ -82,6 +82,7 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   local destination="$3"
   local derived="$4"
   local result="$5"
+  local build_status
   local -a common
   while IFS= read -r line; do
     common+=("$line")
@@ -91,6 +92,10 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   xcodebuild "${common[@]}" \
     CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
     build-for-testing
+  build_status=$?
+  if [[ "$build_status" -ne 0 ]]; then
+    return "$build_status"
+  fi
 
   echo "macOS-UI-Tests: Ad-hoc codesign + xattr -cr …" >&2
   reisen_macos_ui_clear_gatekeeper_attrs "$derived"
@@ -116,6 +121,24 @@ if [[ "${1:-}" == "--self-test" ]]; then
   printf '%s\n' "$ci_out" | grep -qx CODE_SIGNING_REQUIRED=NO
   extra_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult CODE_SIGN_IDENTITY=-)"
   printf '%s\n' "$extra_out" | grep -qx CODE_SIGN_IDENTITY=-
+  mock_log="$(mktemp -t reisen-ui-xcodebuild-mock.XXXXXX)"
+  xcodebuild() {
+    printf '%s\n' "$*" >>"$mock_log"
+    return 19
+  }
+  set +e
+  reisen_macos_ui_run_unsigned_build_then_adhoc_test /p S 'platform=macOS' /d /r.xcresult >/dev/null 2>&1
+  mock_status=$?
+  set -e
+  unset -f xcodebuild
+  [[ "$mock_status" -eq 19 ]]
+  grep -q build-for-testing "$mock_log"
+  if grep -q test-without-building "$mock_log"; then
+    echo "self-test: test-without-building trotz fehlgeschlagenem Build" >&2
+    rm -f "$mock_log"
+    exit 1
+  fi
+  rm -f "$mock_log"
   echo "macos-ui-test.sh self-test: OK" >&2
   exit 0
 fi

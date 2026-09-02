@@ -55,6 +55,26 @@ final class MacUISmokeTests: XCTestCase {
         ui.app.typeKey(.escape, modifierFlags: [])
     }
 
+    func testSidebarTripBookingKeepsTripDetail() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.seededTripRow).click()
+        let detail = ui.waitFor(UITestingIdentifiers.detail)
+        ui.waitFor(UITestingIdentifiers.sidebarExpandBookings).click()
+
+        let sidebarBooking = ui.element(UITestingIdentifiers.sidebar)
+            .descendants(matching: .any)[UITestingIdentifiers.seededBookingRow]
+            .firstMatch
+        XCTAssertTrue(sidebarBooking.waitForExistence(timeout: 5))
+        sidebarBooking.click()
+
+        XCTAssertTrue(
+            detail.waitForExistence(timeout: 3),
+            "Trip-Detail verschwindet nach Klick auf Sidebar-Buchung\n\(ui.app.debugDescription)"
+        )
+        ui.waitFor(UITestingIdentifiers.inspector)
+    }
+
     func testAddBookingSelectsCreateDraftRow() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()

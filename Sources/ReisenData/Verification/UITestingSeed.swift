@@ -29,6 +29,7 @@ public enum UITestingSeed {
 
         let start = Date(timeIntervalSince1970: 1_800_000_000)
         let end = start.addingTimeInterval(86_400 * 3)
+        let openBookingReference = Calendar.current.startOfDay(for: Date())
         let trip = SDTrip(
             id: tripID,
             title: tripTitle,
@@ -80,8 +81,8 @@ public enum UITestingSeed {
             bookingTypeRaw: BookingType.hotel.rawValue,
             title: openBookingTitle,
             confirmationCode: confirmationCode,
-            startAt: start.addingTimeInterval(86_400 * 10),
-            endAt: start.addingTimeInterval(86_400 * 11),
+            startAt: openBookingReference.addingTimeInterval(86_400 * 10),
+            endAt: openBookingReference.addingTimeInterval(86_400 * 11),
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: nil
         )
@@ -93,8 +94,8 @@ public enum UITestingSeed {
             bookingTypeRaw: BookingType.hotel.rawValue,
             title: openBookingTitle2,
             confirmationCode: "UI-TEST-OPEN-B",
-            startAt: start.addingTimeInterval(86_400 * 12),
-            endAt: start.addingTimeInterval(86_400 * 13),
+            startAt: openBookingReference.addingTimeInterval(86_400 * 12),
+            endAt: openBookingReference.addingTimeInterval(86_400 * 13),
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: nil
         )
@@ -106,8 +107,8 @@ public enum UITestingSeed {
             bookingTypeRaw: BookingType.hotel.rawValue,
             title: openBookingTitle3,
             confirmationCode: "UI-TEST-OPEN-C",
-            startAt: start.addingTimeInterval(86_400 * 14),
-            endAt: start.addingTimeInterval(86_400 * 15),
+            startAt: openBookingReference.addingTimeInterval(86_400 * 14),
+            endAt: openBookingReference.addingTimeInterval(86_400 * 15),
             statusRaw: BookingStatus.confirmed.rawValue,
             trip: nil
         )
