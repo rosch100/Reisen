@@ -4,7 +4,7 @@ Dieser Ordner dokumentiert die CI/CD-Infrastruktur im Repo.
 
 ## Verfügbare Workflows
 
-- `ci.yml`: Build+Test auf **jedem PR gegen `master`** und Push auf `master` (macOS-Tests, iOS-Simulator Store **und** Private, Release-Binary-Isolation). Pflicht-Check für Merges.
+- `ci.yml`: Build+Test auf **jedem PR gegen `master`** und Push auf `master`. Parallele Suite-Jobs (`suite-swiftpm`, `suite-ios-sim`, `suite-ios-release`, `suite-macos-ui`) hinter Detect (`Scripts/ci-select-suites.py`); Merge-Gate bleibt der Aggregator-Check **`CI`**. Details: [`../superpowers/plans/2026-09-02-reisen-ci-performance.md`](../superpowers/plans/2026-09-02-reisen-ci-performance.md).
 - `app-store-check.yml`: manueller **App Store Check** zur Release-Vorbereitung (Store-IPA-Archive, Isolation, Apple ITMS-Validierung). Nicht auf PRs. Siehe [`app-store-check.md`](app-store-check.md).
 - `codeql.yml`: CodeQL auf Push nach `master` und wöchentlichem Schedule (nicht auf jedem PR — der instrumentierte Swift-Build kostet ~30 min macOS)
 - `gitleaks.yml`: Secret-Scan auf PR, Push und täglichem Schedule
