@@ -1,9 +1,31 @@
 #!/usr/bin/env bash
 # macOS XCUI-Smokes (SSOT). Host: XcodeGen-Scheme ReisenMac.
 # bash 3.2 + set -u: niemals ein leeres Array via "${arr[@]}" expandieren.
+#
+# REISEN_MAC_UI_CODE_SIGNING_OFF=true (Remote ohne Developer-Profile):
+#   build-for-testing ohne Signatur → Ad-hoc codesign + xattr -cr →
+#   test-without-building.
+#   CODE_SIGNING_ALLOWED=NO allein + Start unter Gatekeeper → Dialog
+#   „… ist beschädigt und kann nicht geöffnet werden“.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+reisen_macos_ui_common_args() {
+  local project="$1"
+  local scheme="$2"
+  local destination="$3"
+  local derived="$4"
+  local result="$5"
+  printf '%s\n' \
+    -project "$project" \
+    -scheme "$scheme" \
+    -destination "$destination" \
+    -derivedDataPath "$derived" \
+    -configuration Debug \
+    -only-testing:ReisenMacUITests/MacUISmokeTests \
+    -resultBundlePath "$result"
+}
 
 reisen_macos_ui_xcodebuild_args() {
   local project="$1"
@@ -13,15 +35,9 @@ reisen_macos_ui_xcodebuild_args() {
   local result="$5"
   shift 5
   local -a args
-  args=(
-    -project "$project"
-    -scheme "$scheme"
-    -destination "$destination"
-    -derivedDataPath "$derived"
-    -configuration Debug
-    -only-testing:ReisenMacUITests/MacUISmokeTests
-    -resultBundlePath "$result"
-  )
+  while IFS= read -r line; do
+    args+=("$line")
+  done < <(reisen_macos_ui_common_args "$project" "$scheme" "$destination" "$derived" "$result")
   if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
     args+=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO)
   fi
@@ -32,8 +48,61 @@ reisen_macos_ui_xcodebuild_args() {
   printf '%s\n' "${args[@]}"
 }
 
+reisen_macos_ui_clear_gatekeeper_attrs() {
+  local derived="$1"
+  local products="${derived}/Build/Products"
+  [[ -d "$products" ]] || return 0
+  xattr -cr "$products" 2>/dev/null || true
+}
+
+reisen_macos_ui_adhoc_resign_products() {
+  local derived="$1"
+  local products="${derived}/Build/Products"
+  local bundle ents
+  [[ -d "$products" ]] || return 0
+  ents="$(mktemp -t reisen-ui-empty-ents.XXXXXX)"
+  cat >"$ents" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict/></plist>
+PLIST
+  while IFS= read -r -d '' bundle; do
+    # Ohne Entitlements: Development-Cert-Pflicht entfällt; Gatekeeper braucht Signatur.
+    codesign --force --deep --sign - --entitlements "$ents" "$bundle" >/dev/null 2>&1 \
+      || codesign --force --deep --sign - "$bundle" >/dev/null 2>&1 \
+      || true
+  done < <(find "$products" \( -name '*.app' -o -name '*.xctest' \) -print0 2>/dev/null)
+  rm -f "$ents"
+}
+
+reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
+  # Remote-Pfad: unsigned build (Entitlements ok) → Ad-hoc sign → test ohne Rebuild.
+  local project="$1"
+  local scheme="$2"
+  local destination="$3"
+  local derived="$4"
+  local result="$5"
+  local -a common
+  while IFS= read -r line; do
+    common+=("$line")
+  done < <(reisen_macos_ui_common_args "$project" "$scheme" "$destination" "$derived" "$result")
+
+  echo "macOS-UI-Tests: build-for-testing (unsigned) …" >&2
+  xcodebuild "${common[@]}" \
+    CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+    build-for-testing
+
+  echo "macOS-UI-Tests: Ad-hoc codesign + xattr -cr …" >&2
+  reisen_macos_ui_clear_gatekeeper_attrs "$derived"
+  reisen_macos_ui_adhoc_resign_products "$derived"
+  rm -rf "$result"
+
+  echo "macOS-UI-Tests: test-without-building …" >&2
+  xcodebuild "${common[@]}" test-without-building
+}
+
 if [[ "${1:-}" == "--self-test" ]]; then
-  unset CI GITHUB_ACTIONS
+  unset CI GITHUB_ACTIONS REISEN_MAC_UI_CODE_SIGNING_OFF
   local_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult)"
   printf '%s\n' "$local_out" | grep -qx -- -project
   printf '%s\n' "$local_out" | grep -qx test
@@ -78,18 +147,28 @@ run_ui_tests() {
 
 echo "macOS-UI-Tests: ${SCHEME} (${DESTINATION}) …" >&2
 set +e
-run_ui_tests 2>&1 | tee "$LOG"
-status=${PIPESTATUS[0]}
+if [[ "${REISEN_MAC_UI_CODE_SIGNING_OFF:-}" == "true" ]]; then
+  reisen_macos_ui_run_unsigned_build_then_adhoc_test \
+    "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" 2>&1 | tee "$LOG"
+  status=${PIPESTATUS[0]}
+else
+  run_ui_tests 2>&1 | tee "$LOG"
+  status=${PIPESTATUS[0]}
+fi
 set -e
 
-if [[ "$status" -ne 0 ]]; then
-  if grep -Eiq 'failed to attach|could not attach|not code signed|errSec|DTServiceHub' "$LOG"; then
-    echo "Hinweis: Signing/Attach fehlgeschlagen — Retry mit Ad-hoc CODE_SIGN_IDENTITY=-" >&2
+reisen_macos_ui_clear_gatekeeper_attrs "$DERIVED"
+
+if [[ "$status" -ne 0 && "${REISEN_MAC_UI_CODE_SIGNING_OFF:-}" != "true" ]]; then
+  if grep -Eiq 'failed to attach|could not attach|not code signed|errSec|DTServiceHub|bootstrapping|signal kill|Early unexpected exit|beschädigt|damaged|cannot be opened' "$LOG"; then
+    echo "Hinweis: Signing/Attach/Gatekeeper — Retry mit Ad-hoc-Resign-Pfad" >&2
     rm -rf "$RESULT"
     set +e
-    run_ui_tests CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO 2>&1 | tee -a "$LOG"
+    REISEN_MAC_UI_CODE_SIGNING_OFF=true reisen_macos_ui_run_unsigned_build_then_adhoc_test \
+      "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" 2>&1 | tee -a "$LOG"
     status=${PIPESTATUS[0]}
     set -e
+    reisen_macos_ui_clear_gatekeeper_attrs "$DERIVED"
   fi
 fi
 

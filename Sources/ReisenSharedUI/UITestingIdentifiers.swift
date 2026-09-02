@@ -22,6 +22,7 @@ public enum UITestingIdentifiers {
     public static let splitDivider = "reisen.split.divider"
     public static let tripDeleteDialog = "reisen.dialog.delete-trip"
     public static let tripMultiSelectionSummary = "reisen.trip.multi-selection-summary"
+    public static let openBookingsContent = "reisen.open-bookings.content"
 
     public static func tripRow(_ id: UUID) -> String {
         "reisen.trip.\(id.uuidString)"
@@ -34,6 +35,11 @@ public enum UITestingIdentifiers {
     /// Trip-Timeline booking row (detail list) — distinct from sidebar/open `bookingRow`.
     public static func timelineBookingRow(_ id: UUID) -> String {
         "reisen.timeline.booking.\(id.uuidString)"
+    }
+
+    /// Open-/Elapsed-Mailbox-Zeile in der mittleren Liste — getrennt von Sidebar-`bookingRow`.
+    public static func contentOpenBookingRow(_ id: UUID) -> String {
+        "reisen.content.open-booking.\(id.uuidString)"
     }
 
     public static func providerRow(_ rawValue: String) -> String {
@@ -62,6 +68,15 @@ public enum UITestingIdentifiers {
 
     public static var seededOpenBookingRow3: String {
         bookingRow(UITestingSeed.openBookingID3)
+    }
+
+    public static var seededContentOpenBookingRow2: String {
+        contentOpenBookingRow(UITestingSeed.openBookingID2)
+    }
+
+    /// Seed-Titel für Content-Queries (nicht L10n; UITesting-Fixture).
+    public static var seededOpenBookingTitle2: String {
+        UITestingSeed.openBookingTitle2
     }
 
     public static var seededTimelineBookingRow: String {

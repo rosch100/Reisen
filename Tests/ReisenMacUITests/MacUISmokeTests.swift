@@ -138,11 +138,25 @@ final class MacUISmokeTests: XCTestCase {
         XCTAssertTrue(sidebarOpenC.waitForExistence(timeout: 5))
 
         sidebarOpenA.click()
-        let openBMatches = ui.app.descendants(matching: .any)
-            .matching(identifier: UITestingIdentifiers.seededOpenBookingRow2)
-        XCTAssertGreaterThanOrEqual(openBMatches.count, 2, "Mittlere Open-Buchungszeile fehlt")
-        let contentOpenB = openBMatches.element(boundBy: 1)
-        contentOpenB.perform(withKeyModifiers: .command) {
+        let openContent = ui.waitFor(UITestingIdentifiers.openBookingsContent)
+        let contentOpenBByID = openContent.descendants(matching: .any)[
+            UITestingIdentifiers.seededContentOpenBookingRow2
+        ].firstMatch
+        let contentOpenB: XCUIElement
+        if contentOpenBByID.waitForExistence(timeout: 2) {
+            contentOpenB = contentOpenBByID
+        } else {
+            let titleMatches = openContent.staticTexts.matching(
+                NSPredicate(format: "label == %@", UITestingIdentifiers.seededOpenBookingTitle2)
+            )
+            XCTAssertGreaterThanOrEqual(
+                titleMatches.count,
+                1,
+                "Mittlere Open-B-Zeile (Titel) fehlt\n\(ui.app.debugDescription)"
+            )
+            contentOpenB = titleMatches.element(boundBy: 0)
+        }
+        XCUIElement.perform(withKeyModifiers: .command) {
             contentOpenB.click()
         }
 
@@ -184,7 +198,7 @@ final class MacUISmokeTests: XCTestCase {
         let firstTrip = ui.waitFor(UITestingIdentifiers.seededTripRow)
         let secondTrip = ui.waitFor(UITestingIdentifiers.seededTripRow2)
         firstTrip.click()
-        secondTrip.perform(withKeyModifiers: .command) {
+        XCUIElement.perform(withKeyModifiers: .command) {
             secondTrip.click()
         }
 
@@ -205,7 +219,7 @@ final class MacUISmokeTests: XCTestCase {
         let first = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
         let second = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow2)
         first.click()
-        second.perform(withKeyModifiers: .command) {
+        XCUIElement.perform(withKeyModifiers: .command) {
             second.click()
         }
         second.rightClick()

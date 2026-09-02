@@ -904,6 +904,7 @@ struct ContentView: View {
         .contentShape(Rectangle())
         .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
         .accessibilityAddTraits(isBookingSelected ? [.isSelected] : [])
+        .tag(mailboxSelection)
         .contextMenu {
             let effective = MenuEffectiveSelection.resolve(
                 clicked: booking.id,
@@ -1316,9 +1317,15 @@ struct ContentView: View {
                             partnerTitles: overlapPartnerTitles(for: booking.id)
                         )
                             .tag(booking.id)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                            .accessibilityElement(children: .combine)
+                            .accessibilityIdentifier(
+                                UITestingIdentifiers.contentOpenBookingRow(booking.id)
+                            )
                     }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
+                .accessibilityIdentifier(UITestingIdentifiers.openBookingsContent)
                 .navigationTitle(L10n.string(.tripOpenBookings))
                 .contextMenu(forSelectionType: UUID.self) { selectedIDs in
                     if selectedIDs.count == 1,
@@ -1376,6 +1383,11 @@ struct ContentView: View {
                             partnerTitles: overlapPartnerTitles(for: booking.id)
                         )
                             .tag(booking.id)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                            .accessibilityElement(children: .combine)
+                            .accessibilityIdentifier(
+                                UITestingIdentifiers.contentOpenBookingRow(booking.id)
+                            )
                     }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
