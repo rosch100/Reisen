@@ -22,6 +22,8 @@ public enum UITestingIdentifiers {
     public static let splitDivider = "reisen.split.divider"
     public static let tripDeleteDialog = "reisen.dialog.delete-trip"
     public static let tripMultiSelectionSummary = "reisen.trip.multi-selection-summary"
+    public static let openBookingMultiSelectionSummary = "reisen.open.multi-selection-summary"
+    public static let tripBookingMultiSelectionSummary = "reisen.trip-booking.multi-selection-summary"
     public static let openBookingsContent = "reisen.open-bookings.content"
 
     public static func tripRow(_ id: UUID) -> String {
@@ -56,6 +58,10 @@ public enum UITestingIdentifiers {
 
     public static var seededBookingRow: String {
         bookingRow(UITestingSeed.bookingID)
+    }
+
+    public static var seededBookingRow2: String {
+        bookingRow(UITestingSeed.bookingID2)
     }
 
     public static var seededOpenBookingRow: String {

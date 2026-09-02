@@ -252,6 +252,42 @@ final class MacUISmokeTests: XCTestCase {
         ui.app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// Timeline ⌘Multi → Sidebar-Trip-Buchungskinder `isSelected` + Detail-Summary.
+    func testTripTimelineMultiSelectionSyncsSidebarBookings() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        let sidebar = ui.waitFor(UITestingIdentifiers.sidebar)
+        let tripRow = ui.waitFor(UITestingIdentifiers.seededTripRow)
+        tripRow.click()
+
+        let expand = sidebar.descendants(matching: .any)[UITestingIdentifiers.sidebarExpandBookings].firstMatch
+        if expand.waitForExistence(timeout: 2), expand.isHittable {
+            expand.click()
+        }
+
+        let first = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
+        let second = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow2)
+        first.click()
+        XCUIElement.perform(withKeyModifiers: .command) {
+            second.click()
+        }
+
+        ui.waitFor(UITestingIdentifiers.tripBookingMultiSelectionSummary)
+
+        let sidebarBookingA = sidebar.descendants(matching: .any)[UITestingIdentifiers.seededBookingRow].firstMatch
+        let sidebarBookingB = sidebar.descendants(matching: .any)[UITestingIdentifiers.seededBookingRow2].firstMatch
+        XCTAssertTrue(sidebarBookingA.waitForExistence(timeout: 5))
+        XCTAssertTrue(sidebarBookingB.waitForExistence(timeout: 5))
+
+        let deadline = Date().addingTimeInterval(3)
+        var bothSelected = sidebarBookingA.isSelected && sidebarBookingB.isSelected
+        while !bothSelected, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            bothSelected = sidebarBookingA.isSelected && sidebarBookingB.isSelected
+        }
+        XCTAssertTrue(bothSelected, "Sidebar-Trip-Buchungen nicht synchron nach Timeline-⌘Multi")
+    }
+
     func testAccessibilityAuditAllowlist() throws {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
