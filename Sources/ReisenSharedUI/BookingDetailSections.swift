@@ -2,116 +2,6 @@ import SwiftUI
 import ReisenDomain
 import ReisenData
 
-/// Ein Tarif-Feld (Label/Wert) für Detail-UIs.
-public struct BookingRateField: Identifiable, Equatable, Sendable {
-    public let id: String
-    public let label: String
-    public let value: String
-    public let copyKind: FieldCopyKind
-
-    public init(id: String, label: String, value: String, copyKind: FieldCopyKind = .standard) {
-        self.id = id
-        self.label = label
-        self.value = value
-        self.copyKind = copyKind
-    }
-}
-
-/// SSOT für Preis-/Tarif-Zeilen (ohne Zimmerpositionen).
-public enum BookingRateFields {
-    public static func make(rate: SDBookingRateDetails, booking: SDBooking) -> [BookingRateField] {
-        var fields: [BookingRateField] = []
-        let bookingType = booking.bookingType
-
-        if let amount = rate.totalPriceAmount {
-            fields.append(
-                BookingRateField(
-                    id: "rate.price",
-                    label: BookingDetailLabels.price,
-                    value: Formatting.formatCurrencyAmount(amount, currencyCode: rate.totalPriceCurrency)
-                )
-            )
-        }
-        if let currency = rate.totalPriceCurrency, !currency.isEmpty {
-            fields.append(
-                BookingRateField(id: "rate.currency", label: BookingDetailLabels.currency, value: currency)
-            )
-        }
-        if rate.resolvedRoomItems.isEmpty,
-           let room = rate.roomCategory,
-           !room.isEmpty,
-           let roomLabel = bookingType.roomCategoryLabel {
-            fields.append(BookingRateField(id: "rate.roomCategory", label: roomLabel, value: room))
-        }
-        if let breakfast = rate.includedBreakfast {
-            fields.append(
-                BookingRateField(
-                    id: "rate.breakfast",
-                    label: BookingDetailLabels.breakfastIncluded,
-                    value: BookingDetailLabels.yesNo(breakfast)
-                )
-            )
-        }
-        if let guests = rate.guestCount {
-            fields.append(
-                BookingRateField(id: "rate.guests", label: BookingDetailLabels.guests, value: "\(guests)")
-            )
-        }
-        if let rooms = rate.roomCount, let roomCountLabel = bookingType.roomCountLabel {
-            fields.append(BookingRateField(id: "rate.roomCount", label: roomCountLabel, value: "\(rooms)"))
-        }
-        if let airline = rate.airline, !airline.isEmpty {
-            fields.append(
-                BookingRateField(id: "rate.airline", label: BookingDetailLabels.airline, value: airline)
-            )
-        }
-
-        let names = booking.passengerDisplayNames
-        if !names.isEmpty {
-            fields.append(
-                BookingRateField(
-                    id: "rate.passengers.names",
-                    label: BookingDetailLabels.passengers,
-                    value: names.joined(separator: ", ")
-                )
-            )
-        } else if let passengers = rate.passengerCount {
-            fields.append(
-                BookingRateField(
-                    id: "rate.passengers.count",
-                    label: BookingDetailLabels.passengers,
-                    value: "\(passengers)"
-                )
-            )
-        }
-
-        if let baggage = rate.baggageInfoRaw, !baggage.isEmpty {
-            fields.append(
-                BookingRateField(id: "rate.baggage", label: BookingDetailLabels.baggage, value: baggage)
-            )
-        }
-        if let rawBoardType = rate.boardTypeRaw,
-           !rawBoardType.isEmpty,
-           let boardType = BookingBoardType(rawValue: rawBoardType),
-           let boardLabel = boardType.displayLabelIfKnown {
-            fields.append(
-                BookingRateField(id: "rate.boardType", label: BookingDetailLabels.boardType, value: boardLabel)
-            )
-        }
-        if let parsed = rate.lastParsedAt {
-            fields.append(
-                BookingRateField(
-                    id: "rate.lastParsed",
-                    label: BookingDetailLabels.rateLastParsed,
-                    value: parsed.formatted(date: .abbreviated, time: .shortened)
-                )
-            )
-        }
-
-        return fields
-    }
-}
-
 /// SSOT für Status, Orte und Start/Ende/Check-in/out.
 public enum BookingScheduleFields {
     public static func make(booking: SDBooking) -> [BookingRateField] {
@@ -444,7 +334,7 @@ public struct BookingCancellationDeadlineRow: View {
         if let feeText {
             listLabeled(L10n.string(.editorFee), feeText)
         }
-        if deadline.isStrict {
+        if BookingCancellationDeadlineUserFacing.showsStrictBadgeInDetail, deadline.isStrict {
             Text(BookingDetailLabels.strictDeadline)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -490,7 +380,7 @@ public struct BookingCancellationDeadlineRow: View {
                 )
             }
 
-            if deadline.isStrict {
+            if BookingCancellationDeadlineUserFacing.showsStrictBadgeInDetail, deadline.isStrict {
                 Text(BookingDetailLabels.strictDeadline)
                     .font(style.detailValueTextStyle.swiftUIFont)
                     .foregroundStyle(.secondary)
@@ -541,21 +431,38 @@ public struct BookingGuestHintRow: View {
     }
 
     public var body: some View {
+        let display = BookingGuestHintPresentation.make(title: hint.title, detail: hint.detail)
         VStack(alignment: .leading, spacing: 4) {
-            CopyableLabeledValue(
-                label: L10n.string(.editorHintTitle),
-                value: hint.title,
-                style: style,
-                valueTextStyle: style.titleValueTextStyle
-            )
-            if !hint.detail.isEmpty {
+            if BookingGuestHintPresentation.usesEditorFieldLabels {
                 CopyableLabeledValue(
-                    label: L10n.string(.editorHintDetail),
-                    value: hint.detail,
+                    label: L10n.string(.editorHintTitle),
+                    value: display.title,
                     style: style,
-                    valueTextStyle: style.detailValueTextStyle,
-                    valueLineLimit: 8
+                    valueTextStyle: style.titleValueTextStyle
                 )
+                if let detail = display.detail {
+                    CopyableLabeledValue(
+                        label: L10n.string(.editorHintDetail),
+                        value: detail,
+                        style: style,
+                        valueTextStyle: style.detailValueTextStyle,
+                        valueLineLimit: 8
+                    )
+                }
+            } else {
+                CopyableFieldValue(
+                    value: display.title,
+                    textStyle: style.titleValueTextStyle,
+                    lineLimit: 3
+                )
+                if let detail = display.detail {
+                    CopyableFieldValue(
+                        value: detail,
+                        textStyle: style.detailValueTextStyle,
+                        foregroundStyle: .secondary,
+                        lineLimit: 8
+                    )
+                }
             }
         }
         .bookingDetailRowPadding(style)
