@@ -1347,7 +1347,11 @@ struct ContentView: View {
                 .listStyle(.inset(alternatesRowBackgrounds: true))
                 .accessibilityIdentifier(UITestingIdentifiers.openBookingsContent)
                 .navigationTitle(L10n.string(.tripOpenBookings))
-                .contextMenu(forSelectionType: UUID.self) { selectedIDs in
+                .contextMenu(forSelectionType: UUID.self) { menuIDs in
+                    let selectedIDs = MenuEffectiveSelection.resolve(
+                        menu: menuIDs,
+                        bound: selectedOpenBookingIDs
+                    )
                     if selectedIDs.count == 1,
                        let bookingID = selectedIDs.first,
                        let booking = openBookings.first(where: { $0.id == bookingID }) {
@@ -1412,7 +1416,11 @@ struct ContentView: View {
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
                 .navigationTitle(L10n.string(.bookingElapsed))
-                .contextMenu(forSelectionType: UUID.self) { selectedIDs in
+                .contextMenu(forSelectionType: UUID.self) { menuIDs in
+                    let selectedIDs = MenuEffectiveSelection.resolve(
+                        menu: menuIDs,
+                        bound: selectedOpenBookingIDs
+                    )
                     if selectedIDs.count == 1,
                        let bookingID = selectedIDs.first,
                        let booking = elapsedOpenBookings.first(where: { $0.id == bookingID }) {

@@ -224,6 +224,44 @@ final class MacUISmokeTests: XCTestCase {
         ui.app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// Mittel-List ⌘Multi + Rechtsklick: Bound-Merge → Batch-Menü (kein Einzel-Copy).
+    func testOpenBookingMiddleListMultiContextUsesBoundSelection() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        let sidebar = ui.waitFor(UITestingIdentifiers.sidebar)
+        let sidebarOpenA = sidebar.descendants(matching: .any)[UITestingIdentifiers.seededOpenBookingRow].firstMatch
+        XCTAssertTrue(sidebarOpenA.waitForExistence(timeout: 5))
+        sidebarOpenA.click()
+
+        let openContent = ui.waitFor(UITestingIdentifiers.openBookingsContent)
+        let contentOpenA = openContent.descendants(matching: .any)[
+            UITestingIdentifiers.contentOpenBookingRow(UITestingSeed.openBookingID)
+        ].firstMatch
+        let contentOpenB = openContent.descendants(matching: .any)[
+            UITestingIdentifiers.seededContentOpenBookingRow2
+        ].firstMatch
+        XCTAssertTrue(contentOpenA.waitForExistence(timeout: 5))
+        XCTAssertTrue(contentOpenB.waitForExistence(timeout: 5))
+
+        contentOpenA.click()
+        XCUIElement.perform(withKeyModifiers: .command) {
+            contentOpenB.click()
+        }
+
+        contentOpenB.rightClick()
+        XCTAssertFalse(
+            ui.app.menuItems[UITestingIdentifiers.copyConfirmationMenuTitleDE]
+                .waitForExistence(timeout: 1),
+            "Mittel-Multi-Menü enthält unerwartet Einzel-Copy (Bound-Merge fehlt?)"
+        )
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenuTitleDE]
+                .waitForExistence(timeout: 3),
+            "Mittel-Multi-Menü enthält Löschen nicht"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
+    }
+
     func testTripParentMultiSelectionShowsSummary() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
