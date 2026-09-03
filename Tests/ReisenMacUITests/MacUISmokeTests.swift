@@ -68,7 +68,7 @@ final class MacUISmokeTests: XCTestCase {
         sidebarBooking.rightClick()
 
         XCTAssertTrue(
-            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenu].waitForExistence(timeout: 3),
+            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenuTitleDE].waitForExistence(timeout: 3),
             "Buchungs-Kontextmenü (Löschen) fehlt in der Sidebar\n\(ui.app.debugDescription)"
         )
         ui.app.typeKey(.escape, modifierFlags: [])
@@ -418,7 +418,7 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         let trip = ui.waitFor(UITestingIdentifiers.seededTripRow)
         trip.rightClick()
-        ui.app.menuItems[UITestingIdentifiers.deleteTripMenu].click()
+        ui.app.menuItems[UITestingIdentifiers.deleteTripMenuTitleDE].click()
         ui.waitFor(UITestingIdentifiers.tripDeleteDialog)
         ui.app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(ui.waitFor(UITestingIdentifiers.seededTripRow).exists)

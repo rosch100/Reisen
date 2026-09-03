@@ -131,6 +131,7 @@ public enum UITestingIdentifiers {
     /// Nicht `L10n.string` im Test-Host: der Runner kann en_US sein, während die
     /// UITesting-App deutsch startet — sonst schlägt Title-Match auf CI fehl.
     public static let deleteBookingMenuTitleDE = "Löschen…"
+    public static let deleteTripMenuTitleDE = "Reise löschen…"
     public static let removeFromTripMenuTitleDE = "Von Reise entfernen…"
     public static let copyConfirmationMenuTitleDE = "Buchungsnr. kopieren"
     public static let newTripMenuTitleDE = "Neue Reise…"
