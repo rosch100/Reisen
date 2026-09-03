@@ -22,6 +22,23 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitFor(UITestingIdentifiers.detail)
     }
 
+    func testSeededTripShowsOverview() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        // Produktpfad: applyUITestingLaunchSelectionIfNeeded auto-selektiert den Seed-Trip.
+        ui.waitFor(UITestingIdentifiers.detail)
+        ui.waitFor(UITestingIdentifiers.tripOverview)
+        ui.waitFor(UITestingIdentifiers.tripOverviewTitle)
+        XCTAssertEqual(
+            ui.app.descendants(matching: .any).matching(identifier: UITestingIdentifiers.tripOverview).count,
+            1
+        )
+        XCTAssertEqual(
+            ui.app.descendants(matching: .any).matching(identifier: UITestingIdentifiers.tripOverviewTitle).count,
+            1
+        )
+    }
+
     func testBookingRowOpensInspector() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()

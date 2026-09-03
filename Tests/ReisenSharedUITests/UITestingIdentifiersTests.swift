@@ -5,6 +5,8 @@ import ReisenData
 @Test func uiTestingIdentifiers_areStableAndSeeded() {
     #expect(UITestingIdentifiers.sidebar == "reisen.sidebar")
     #expect(UITestingIdentifiers.detail == "reisen.detail")
+    #expect(UITestingIdentifiers.tripOverview == "reisen.trip.overview")
+    #expect(UITestingIdentifiers.tripOverviewTitle == "reisen.trip.overview.title")
     #expect(UITestingIdentifiers.inspector == "reisen.inspector")
     #expect(UITestingIdentifiers.settings == "reisen.settings")
     #expect(UITestingIdentifiers.syncChrome == "reisen.sync.chrome")

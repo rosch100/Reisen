@@ -7,6 +7,7 @@ import AppKit
 /// Textstil für `CopyableFieldValue` (explizit, ohne Font-Gleichheit).
 public enum CopyableValueTextStyle: Sendable, Equatable {
     case body
+    case callout
     case subheadline
     case caption
     case caption2
@@ -15,6 +16,7 @@ public enum CopyableValueTextStyle: Sendable, Equatable {
     var swiftUIFont: Font {
         switch self {
         case .body: .body
+        case .callout: .callout
         case .subheadline: .subheadline
         case .caption: .caption
         case .caption2: .caption2
@@ -27,6 +29,8 @@ public enum CopyableValueTextStyle: Sendable, Equatable {
         switch self {
         case .body:
             return NSFont.preferredFont(forTextStyle: .body)
+        case .callout:
+            return NSFont.preferredFont(forTextStyle: .callout)
         case .subheadline:
             return NSFont.preferredFont(forTextStyle: .subheadline)
         case .caption:

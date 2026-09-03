@@ -9328,6 +9328,22 @@
           }
         }
       }
+    },
+    "trip.notes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notizen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
