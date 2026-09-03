@@ -479,6 +479,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case tripNoTrips = "trip.no_trips"
     case tripNoTripsHint = "trip.no_trips_hint"
     case tripNoTripsYet = "trip.no_trips_yet"
+    case tripNotes = "trip.notes"
     case tripNotSyncedYet = "trip.not_synced_yet"
     case tripOpenBookings = "trip.open_bookings"
     case tripOpenEntries = "trip.open_entries"
