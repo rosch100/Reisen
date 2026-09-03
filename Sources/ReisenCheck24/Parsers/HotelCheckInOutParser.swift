@@ -4,6 +4,36 @@ import ReisenDomain
 public struct HotelCheckInOut {
     public let checkInMinutes: Int?
     public let checkOutMinutes: Int?
+    public let locationTo: String?
+    public let locationToAddress: String?
+
+    public init(
+        checkInMinutes: Int?,
+        checkOutMinutes: Int?,
+        locationTo: String? = nil,
+        locationToAddress: String? = nil
+    ) {
+        self.checkInMinutes = checkInMinutes
+        self.checkOutMinutes = checkOutMinutes
+        self.locationTo = locationTo
+        self.locationToAddress = locationToAddress
+    }
+
+    func merging(place: ParsedHotelInfo?) -> HotelCheckInOut {
+        HotelCheckInOut(
+            checkInMinutes: checkInMinutes,
+            checkOutMinutes: checkOutMinutes,
+            locationTo: place?.locationTo ?? locationTo,
+            locationToAddress: place?.locationToAddress ?? locationToAddress
+        )
+    }
+
+    var hasPersistableFields: Bool {
+        checkInMinutes != nil
+            || checkOutMinutes != nil
+            || locationTo != nil
+            || locationToAddress != nil
+    }
 }
 
 /// Parses hotel check-in/out times from the hotel booking detail HTML.
