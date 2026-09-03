@@ -59,7 +59,7 @@ Booking.com Policy-Deadline-Offset kommt aus `ISODateTime.offsetSeconds(from: st
 - Traveloka-Tag-Listen (`itineraryTags`, `userTripStatus`) bleiben Extract: Rohstrings → `statusRaw`.
 - `TravellerType.parse`: Token/Label (`adult`/`adt`, `child`/`chd`/`youth`, `infant`/`inf`/`baby`); sonst `unknown`.
 - `BaggageType.parse`: `CHECKED_IN`/`CHECKED`/`CHECKED_BAG`/`checked-bag` → checkedBag; `HAND`/`CABIN`/`CABIN_BAG`/`carry-on` → cabinBag; `PERSONAL_ITEM`/`carry-on-small` → personalItem.
-- `BookingBoardType.parse`: Enum-RawValues plus Opodo-Codes `BB`/`HB`/`FB`/`RO`. `parse(breakfastIncluded:)` für API-Bool (`true` → Frühstück, `false` → nur Zimmer, `nil` → unbekannt).
+- `BookingBoardType.parse`: Enum-RawValues plus Opodo-Codes `BB`/`HB`/`FB`/`RO`/`NONE`, Check24-Labels (`ohne Verpflegung`, `kein Frühstück`, `Frühstück nicht inklusive`, `without breakfast`, `Breakfast not included`, `Frühstück`, `Halbpension`, `Vollpension`). `parse(breakfastIncluded:)` für API-Bool (`true` → Frühstück, `false` → nur Zimmer, `nil` → unbekannt).
 - `PlaceLabel.make(city:iata:)` — `"City (IATA)"`.
 - `ClockTime.minutes(hours:minute:)` / `minutes(fromHHMM:)` — gültige Uhrzeit → Minuten seit Mitternacht; sonst `nil`.
 - `HotelStayDate.parse` / `parseGerman` — `yyyy-MM-dd` bzw. `dd.MM.yyyy` → GMT-Datumsanker.

@@ -17,11 +17,15 @@ public struct BookingDetailsParser {
 
         let roomCountAndCategory = parseRoomCountAndCategory(from: normalized)
         let guestCount = parseGuestCount(from: normalized)
-
-        // Meal/Breakfast ist in den vorhandenen Snapshots nicht immer eindeutig als Klartext enthalten.
-        // Daher initial nil lassen und später aus anderen Quellen (z.B. Activity-JSON) füllen.
-        let includedBreakfast: Bool? = nil
-        let boardTypeRaw: String? = nil
+        let offerFacts = bookingType == .hotel
+            ? Check24HotelOfferFactsParser.parse(from: normalized)
+            : nil
+        let roomCategory = NonEmpty.first(
+            roomCountAndCategory.roomCategory,
+            offerFacts?.roomCategory
+        )
+        let boardTypeRaw = offerFacts?.boardTypeRaw
+        let includedBreakfast = offerFacts?.includedBreakfast
 
         // Flights/Fähren: erste Implementierung (fail-soft) – wenn es im HTML nicht vorkommt, bleibt es nil.
         let airline: String?
@@ -42,15 +46,16 @@ public struct BookingDetailsParser {
             bookingType.rawValue,
             String(describing: totalPrice),
             String(describing: roomCountAndCategory.roomCount),
-            String(describing: roomCountAndCategory.roomCategory),
-            String(describing: guestCount)
+            String(describing: roomCategory),
+            String(describing: guestCount),
+            String(describing: boardTypeRaw)
         ].joined(separator: "|")
 
         return ParsedBookingDetails(
             rawDetailsFingerprint: fingerprint,
             totalPriceAmount: totalPrice,
             totalPriceCurrency: currency,
-            roomCategory: roomCountAndCategory.roomCategory,
+            roomCategory: roomCategory,
             boardTypeRaw: boardTypeRaw,
             includedBreakfast: includedBreakfast,
             guestCount: guestCount,

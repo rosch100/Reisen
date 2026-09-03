@@ -98,15 +98,11 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         }()
 
         return DraftAssembler.enrichment(
-            from: ProviderBookingFacts(
-                provider: .airbnb,
+            from: AirbnbStayEnrichment.facts(
                 bookingType: ref.bookingType,
-                statusRaw: tripDetails.reservationStatus,
-                deadlines: scheduledParsed.deadlines,
-                rateDetails: scheduledParsed.rateDetails,
+                tripDetails: tripDetails,
+                scheduled: scheduledParsed,
                 hotelOffsetSeconds: hotelOffsetSeconds,
-                hotelCheckInMinutes: scheduledParsed.hotelCheckInMinutes,
-                hotelCheckOutMinutes: scheduledParsed.hotelCheckOutMinutes,
                 guestHints: guestHints
             )
         )

@@ -48,9 +48,19 @@ enum AirbnbTripDetailsParser {
             schedulableType: edge.node.details?.schedulableType,
             confirmationCode: confirmationCode,
             guestAdults: reservation.guestAdults ?? node.travelerCapacity?.numberOfAdults,
-            oneLineAddress: edge.node.guestFacingLocation?.oneLineAddress,
+            oneLineAddress: NonEmpty.first(
+                edge.node.guestFacingLocation?.oneLineAddress,
+                joinedMultiLineAddress(edge.node.guestFacingLocation?.multiLineAddress)
+            ),
             roomCount: reservation.roomCount,
             reservationStatus: reservation.status
         )
+    }
+
+    private static func joinedMultiLineAddress(_ lines: [String]?) -> String? {
+        guard let lines else { return nil }
+        let parts = lines.compactMap { NonEmpty.string($0) }
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: ", ")
     }
 }

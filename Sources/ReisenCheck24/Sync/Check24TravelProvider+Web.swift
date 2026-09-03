@@ -60,6 +60,8 @@ extension Check24TravelProvider {
                         "booking_info=\(html.contains("bookingInfo"))",
                         "third_view_data=\(html.contains("thirdViewData"))",
                         "basket=\(html.contains("basketContainer"))",
+                        "hotel_info=\(html.contains(Check24HotelInfoParser.hotelInfoKey))",
+                        "city_street=\(html.contains(Check24HotelInfoParser.cityStreetKey))",
                     ].joined(separator: ","),
                     visibility: .localDebugOnly
                 )

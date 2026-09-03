@@ -142,6 +142,106 @@ func bmDetailParsesEnrichmentWithoutNaiveDeadline() throws {
     #expect(enrichment.passengers?.first?.givenName == "<REDACTED>")
 }
 
+@Test("BM Detail: FLOYT-Street-Blob ohne Leading-Comma und ohne doppelten Ort/Land")
+func bmDetailCleansPreformattedStationStreet() throws {
+    // Live-Shape (BER Opel Adam): street enthält schon Ort/Land/PLZ; city/country separat.
+    let json = """
+    {
+      "reservation": { "id": "762905790", "status": "confirmed" },
+      "offer": { "model": "Opel Adam", "supplier": "Dollar", "currency": "EUR", "price": 1 },
+      "rental": {
+        "pickUp": {
+          "address": {
+            "street": ", Flughafen Berlin Brandenburg - 1 Melli-Beese-Ring, Schönefeld, Berlin, Germany, 12529, Berlin",
+            "postalCode": "",
+            "city": "Berlin",
+            "country": "DE"
+          },
+          "datetime": "2026-10-19T12:00:00"
+        },
+        "dropOff": {
+          "address": {
+            "street": ", Flughafen Berlin Brandenburg - 1 Melli-Beese-Ring, Schönefeld, Berlin, Germany, 12529, Berlin",
+            "postalCode": "",
+            "city": "Berlin",
+            "country": "DE"
+          },
+          "datetime": "2026-10-22T09:00:00"
+        }
+      }
+    }
+    """
+    let enrichment = try BilligerMietwagenBookingDetailParser.parse(from: json)
+    let expected = """
+    Flughafen Berlin Brandenburg - 1 Melli-Beese-Ring
+    Schönefeld, Berlin, Germany, 12529
+    """
+    #expect(enrichment.locationFromAddress == expected)
+    #expect(enrichment.locationToAddress == expected)
+    #expect(enrichment.locationFromAddress?.hasPrefix(",") != true)
+    #expect(enrichment.locationFromAddress?.contains("Berlin, Berlin") != true)
+    #expect(enrichment.locationFromAddress?.hasSuffix(", DE") != true)
+}
+
+@Test("BM Detail: kurze Street + structured city/country bleibt PostalAddress-SSOT")
+func bmDetailShortStreetUsesPostalAddressLines() throws {
+    let json = """
+    {
+      "reservation": { "id": "r-short", "status": "confirmed" },
+      "offer": { "model": "X", "supplier": "Y", "currency": "EUR", "price": 1 },
+      "rental": {
+        "pickUp": {
+          "address": { "city": "Berlin", "street": "BER", "country": "DE", "postalCode": "" },
+          "datetime": "2026-10-19T12:00:00"
+        },
+        "dropOff": {
+          "address": { "city": "Berlin", "street": "BER", "country": "DE", "postalCode": "" },
+          "datetime": "2026-10-20T12:00:00"
+        }
+      }
+    }
+    """
+    let enrichment = try BilligerMietwagenBookingDetailParser.parse(from: json)
+    #expect(enrichment.locationFromAddress == "BER, Berlin, DE")
+    #expect(enrichment.locationToAddress == "BER, Berlin, DE")
+}
+
+@Test("BM Detail: Mehr-Komma-Straße ohne FLOYT-Leading-Separator behält PLZ/Ort/Land")
+func bmDetailMultiCommaStreetWithoutLeadingSeparatorUsesPostalAddress() throws {
+    let json = """
+    {
+      "reservation": { "id": "r-structured", "status": "confirmed" },
+      "offer": { "model": "X", "supplier": "Y", "currency": "EUR", "price": 1 },
+      "rental": {
+        "pickUp": {
+          "address": {
+            "street": "Terminal 1, Car Rental Center, Main Street",
+            "postalCode": "10115",
+            "city": "Berlin",
+            "country": "DE"
+          },
+          "datetime": "2026-10-19T12:00:00"
+        },
+        "dropOff": {
+          "address": {
+            "street": "Terminal 1, Car Rental Center, Main Street",
+            "postalCode": "10115",
+            "city": "Berlin",
+            "country": "DE"
+          },
+          "datetime": "2026-10-20T12:00:00"
+        }
+      }
+    }
+    """
+    let enrichment = try BilligerMietwagenBookingDetailParser.parse(from: json)
+    #expect(
+        enrichment.locationFromAddress
+            == "Terminal 1, Car Rental Center, Main Street, 10115 Berlin, DE"
+    )
+    #expect(enrichment.locationFromAddress?.contains("\n") != true)
+}
+
 @Test("BilligerMietwagenBookingDetailParser nutzt cancelUntil als Stornofrist")
 func bmDetailDeadlineFromCancelUntil() throws {
     let json = """

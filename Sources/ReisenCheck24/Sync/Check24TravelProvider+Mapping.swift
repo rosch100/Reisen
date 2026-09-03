@@ -38,9 +38,9 @@ extension Check24TravelProvider {
             confirmationCode: parsed.confirmationCode,
             externalUrl: parsed.externalUrl,
             locationFrom: parsed.locationFrom,
-            locationTo: NonEmpty.first(parsed.locationTo, stay?.locationTo),
+            locationTo: preferStayLocation(stay?.locationTo, over: parsed.locationTo),
             locationFromAddress: parsed.locationFromAddress,
-            locationToAddress: NonEmpty.first(parsed.locationToAddress, stay?.locationToAddress),
+            locationToAddress: preferStayLocation(stay?.locationToAddress, over: parsed.locationToAddress),
             statusRaw: parsed.statusRaw,
             deadlines: deadlines,
             rateDetails: catalogRates,
@@ -51,5 +51,10 @@ extension Check24TravelProvider {
         )
         carRentalDetail?.apply(to: &facts)
         return DraftAssembler.draft(from: facts)
+    }
+
+    /// hotelInfo-Ort/Adresse haben Vorrang vor Katalog-`line2`.
+    func preferStayLocation(_ stayValue: String?, over catalogValue: String?) -> String? {
+        NonEmpty.first(stayValue, catalogValue)
     }
 }

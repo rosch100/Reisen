@@ -1370,3 +1370,92 @@ private func travelokaProductDetailCancelledEntry(
     let expected = try #require(Calendar(identifier: .gregorian).date(byAdding: .hour, value: -24, to: pickup))
     #expect(abs((draft.deadlines.first?.deadlineAt.timeIntervalSince(expected) ?? 99)) < 0.01)
 }
+
+@Test("Traveloka Flight confirmationCode bevorzugt pnrCode aus Single-Itinerary")
+func travelokaFlightConfirmationPrefersPNR() throws {
+    let text = try TravelokaFixtureLoader.load("traveloka_itinerary_single_flight_redacted.json")
+    let root = try #require(try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+    let data = try #require(root["data"] as? [String: Any])
+    let entries = try #require(data["itineraryEntryList"] as? [[String: Any]])
+    let entry = try #require(entries.first)
+    let draft = try #require(try TravelokaItineraryEntryParser.draft(from: entry))
+    #expect(draft.confirmationCode == "REDACTED")
+    #expect(draft.confirmationCode != TravelokaFixtureLoader.redactedFlightBookingId)
+}
+
+@Test("Traveloka Experience-Hints aus howToUse/importantNote")
+func travelokaExperienceHintsFromHowToUseAndImportantNote() {
+    let hints = TravelokaGuestHintMapper.experienceHints(
+        experienceDetail: [
+            "howToUse": "Show this voucher at the entrance.",
+            "importantNote": "Bring your own linen for the overnight trip.",
+            "makeYourOwnWayInfo": [
+                "extraInformation": [
+                    ["text": "Just a location blurb without prep keywords."],
+                ],
+            ],
+        ]
+    )
+    #expect(hints.contains { $0.title == "Anleitung" && $0.detail.contains("voucher") })
+    #expect(hints.contains { $0.title == "Wichtig" && $0.detail.localizedCaseInsensitiveContains("linen") })
+    #expect(!hints.contains { $0.title == "Zusatzinfo" })
+}
+
+@Test("Traveloka Experience extraInformation dedupliziert Display-Keys ohne Doppelzeilen")
+func travelokaExperienceExtraInfoSkipsRedisplayingDisplayKeys() throws {
+    let hints = TravelokaGuestHintMapper.experienceHints(
+        experienceDetail: [
+            "makeYourOwnWayInfo": [
+                "extraInformation": [
+                    "text": "Please bring your own towel to check-in.",
+                    "note": "Also prepare for early arrival.",
+                ],
+            ],
+        ]
+    )
+    let detail = try #require(hints.first { $0.title == "Zusatzinfo" }?.detail)
+    #expect(detail.contains("Please bring your own towel to check-in."))
+    #expect(detail.contains("Also prepare for early arrival."))
+    #expect(detail.components(separatedBy: "bring your own towel").count - 1 == 1)
+}
+
+@Test("Traveloka Experience: prep-extraInformation gewinnt gegen non-prep experienceExtraInformation")
+func travelokaExperiencePrepExtraInformationWinsOverNonPrepExtra() {
+    let hints = TravelokaGuestHintMapper.experienceHints(
+        experienceDetail: [
+            "makeYourOwnWayInfo": [
+                "experienceExtraInformation": "Scenic viewpoint overlooking the bay.",
+                "extraInformation": [
+                    "text": "Please bring your own towel at the venue.",
+                ],
+            ],
+        ]
+    )
+    #expect(hints.contains {
+        $0.title == "Zusatzinfo" && $0.detail.localizedCaseInsensitiveContains("towel")
+    })
+    #expect(!hints.contains {
+        $0.title == "Zusatzinfo" && $0.detail.localizedCaseInsensitiveContains("viewpoint")
+    })
+}
+
+@Test("Traveloka Experience extraInformation Display-Keys in stabiler Reihenfolge")
+func travelokaExperienceExtraInfoDisplayKeysStableOrder() throws {
+    let hints = TravelokaGuestHintMapper.experienceHints(
+        experienceDetail: [
+            "makeYourOwnWayInfo": [
+                "extraInformation": [
+                    "description": "Towels are not included.",
+                    "text": "Please bring your own linen.",
+                    "title": "Prep note",
+                ],
+            ],
+        ]
+    )
+    let detail = try #require(hints.first { $0.title == "Zusatzinfo" }?.detail)
+    let textIdx = try #require(detail.range(of: "Please bring your own linen")?.lowerBound)
+    let titleIdx = try #require(detail.range(of: "Prep note")?.lowerBound)
+    let descIdx = try #require(detail.range(of: "Towels are not included")?.lowerBound)
+    #expect(textIdx < titleIdx)
+    #expect(titleIdx < descIdx)
+}

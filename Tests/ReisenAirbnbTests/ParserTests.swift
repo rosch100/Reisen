@@ -103,6 +103,37 @@ func airbnbTripDetailsParsesAddressGuestsAndTimezone() throws {
     #expect(details.confirmationCode == confirmationCode)
 }
 
+@Test("AirbnbStayEnrichment schreibt Adresse, Gäste und Zimmer aus TripDetails")
+func airbnbStayEnrichmentWritesAddressGuestsAndRooms() throws {
+    let json = try fixtureJSON("trip_details_sample.json")
+    let confirmationCode = "HMSN84QMWF"
+    let details = try AirbnbTripDetailsParser.parse(
+        responseText: json,
+        bookingType: .hotel,
+        confirmationCode: confirmationCode
+    )
+    let scheduled = AirbnbScheduledEventsParseResult(
+        deadlines: [],
+        rateDetails: BookingRateDetails(totalPriceAmount: 120, totalPriceCurrency: "EUR"),
+        hotelCheckInMinutes: 15 * 60,
+        hotelCheckOutMinutes: 10 * 60
+    )
+    let enrichment = DraftAssembler.enrichment(
+        from: AirbnbStayEnrichment.facts(
+            bookingType: .hotel,
+            tripDetails: details,
+            scheduled: scheduled,
+            hotelOffsetSeconds: 3600,
+            guestHints: []
+        )
+    )
+    #expect(enrichment.locationToAddress == details.oneLineAddress)
+    #expect(enrichment.rateDetails?.guestCount == 1)
+    #expect(enrichment.rateDetails?.roomCount == 1)
+    #expect(enrichment.rateDetails?.totalPriceAmount == 120)
+    #expect(enrichment.hotelCheckInMinutes == 15 * 60)
+}
+
 @Test func airbnbExperienceCancellationURLEncodesPathSegment() {
     #expect(
         AirbnbAPI.experienceCancellationURL(confirmationCode: "TAJ8FMXK")

@@ -568,3 +568,77 @@ func check24NormalizeUsesBookingTypeWhenHostAmbiguous() {
     #expect(flight == "https://flug.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
     #expect(ferry == "https://ferry.check24.de/kundenbereich/buchung/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 }
+
+@Test("ActivityListParser: Hotel line2 Zimmertyp → roomCategory, nicht Ort")
+func activityListHotelRoomLine2IsNotLocation() throws {
+    let json = """
+    {
+      "activities": [
+        {
+          "startDate": "2099-10-01T14:00:00",
+          "endDate": "2099-10-02T11:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "hotel" },
+          "detail": {
+            "line1": "Heart of Gold Hostel",
+            "line2": "Kapsel mit Kingsize-Bett und Gemeinschaftsbad"
+          },
+          "link": { "link": "https://hotel.check24.de/kundenbereich/buchung/01a0531c-0906-70d5-909c-93f93d8afe10" },
+          "payment": { "amount": "39,32", "suffix": "€" },
+          "product_specific_data": { "orderId": "x" }
+        },
+        {
+          "startDate": "2099-11-01T14:00:00",
+          "endDate": "2099-11-03T11:00:00",
+          "status": { "key": "upcoming" },
+          "product": { "key": "hotel" },
+          "detail": {
+            "line1": "Hotel Jakarta",
+            "line2": "Jakarta, Indonesien"
+          },
+          "link": { "link": "https://hotel.check24.de/kundenbereich/buchung/019e73fc-1937-7210-8959-820e50d66410" },
+          "payment": { "amount": "100,00", "suffix": "€" },
+          "product_specific_data": { "orderId": "y" }
+        }
+      ]
+    }
+    """
+    let parsed = try ActivityListParser().parseActivityListHTML(json)
+    #expect(parsed.bookings.count == 2)
+    let hostel = try #require(parsed.bookings.first { $0.title == "Heart of Gold Hostel" })
+    #expect(hostel.locationTo == nil)
+    #expect(hostel.details?.roomCategory == "Kapsel mit Kingsize-Bett und Gemeinschaftsbad")
+    #expect(hostel.details?.roomCount == nil)
+    #expect(hostel.catalogRoomCategory == "Kapsel mit Kingsize-Bett und Gemeinschaftsbad")
+
+    let jakarta = try #require(parsed.bookings.first { $0.title == "Hotel Jakarta" })
+    #expect(jakarta.locationTo == "Jakarta, Indonesien")
+    #expect(jakarta.details?.roomCategory == nil)
+}
+
+@Test("Check24CatalogDetailLine erkennt Zimmertyp vs. Ort")
+func check24CatalogDetailLineClassifiesRoomVsPlace() {
+    #expect(Check24CatalogDetailLine.looksLikeRoomCategory("Kapsel mit Kingsize-Bett und Gemeinschaftsbad"))
+    #expect(Check24CatalogDetailLine.looksLikeRoomCategory("1x Doppelzimmer"))
+    #expect(Check24CatalogDetailLine.looksLikeRoomCategory("Studio Apartment Meerblick"))
+    #expect(Check24CatalogDetailLine.looksLikeRoomCategory("Hotel Apartment Zentrum"))
+    #expect(!Check24CatalogDetailLine.looksLikeRoomCategory("Jakarta, Indonesien"))
+    #expect(!Check24CatalogDetailLine.looksLikeRoomCategory("Berlin"))
+    #expect(!Check24CatalogDetailLine.looksLikeRoomCategory("Studio City, Los Angeles"))
+    #expect(!Check24CatalogDetailLine.looksLikeRoomCategory("Apartmentviertel Mitte, Berlin"))
+}
+
+@Test("Check24HotelOfferFactsParser: früheres fremdes mealType gewinnt nicht über mealTypeLabel-Offer")
+func check24HotelOfferFactsPrefersMealTypeLabelObject() {
+    let html = """
+    <html>
+    {"mealType":"BB","room":{"categoryTitle":"Wrong early fragment"}}
+    {"effectiveFormatted":"39,32\\u00a0\\u20ac","room":{"categoryTitle":"Kapsel mit Kingsize-Bett"},
+    "mealType":"none","mealTypeLabel":"ohne Verpflegung"}
+    </html>
+    """
+    let facts = Check24HotelOfferFactsParser.parse(from: html)
+    #expect(facts.boardTypeRaw == BookingBoardType.roomOnly.rawValue)
+    #expect(facts.includedBreakfast == false)
+    #expect(facts.roomCategory == "Kapsel mit Kingsize-Bett")
+}
