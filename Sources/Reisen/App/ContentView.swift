@@ -695,29 +695,51 @@ struct ContentView: View {
         )
     }
 
-    private var sidebarSelection: Binding<SidebarSelection?> {
+    private var sidebarMailbox: SidebarOpenBookingMailbox? {
+        switch selection {
+        case .openBookings: return .current
+        case .elapsedOpenBookings: return .elapsed
+        default: return nil
+        }
+    }
+
+    private var sidebarProviderID: ProviderID? {
+        if case .providerSync(let id) = selection { return id }
+        return nil
+    }
+
+    private var currentSidebarListIDs: Set<SidebarListItemID> {
+        SidebarListSelectionBridge.listIDs(
+            providerID: sidebarProviderID,
+            mailbox: sidebarMailbox,
+            openBookingIDs: selectedOpenBookingIDs,
+            selectedTripIDs: selectedTripIDs,
+            tripBookingIDs: Set(selectedTimelineIDs.compactMap(UUID.init(uuidString:)))
+        )
+    }
+
+    private var sidebarListSelection: Binding<Set<SidebarListItemID>> {
         Binding(
-            get: { selection },
+            get: { currentSidebarListIDs },
             set: { newValue in
-                // List(selection:) schreibt bei Klick auf ungetaggte Trip-Kinder nil.
-                // Open-/Elapsed-Kinder teilen den Mailbox-Tag; nil trotzdem absichern.
-                if newValue == nil,
-                   selection == .openBookings
-                    || selection == .elapsedOpenBookings
-                    || selection?.tripID != nil {
-                    return
-                }
-                selection = newValue
+                if newValue.isEmpty { return }
+                guard let result = SidebarListSelectionBridge.apply(
+                    listIDs: newValue,
+                    tripIDForBooking: { bookingID in
+                        allBookings.first(where: { $0.id == bookingID })?.trip?.id
+                    }
+                ) else { return }
+                applySidebarListResult(result)
             }
         )
     }
 
     private var sidebar: some View {
-        List(selection: sidebarSelection) {
+        List(selection: sidebarListSelection) {
             Section(L10n.string(.syncProvider)) {
                 ForEach(registeredProviderIDs, id: \.self) { providerID in
                     ProviderSidebarRow(providerID: providerID)
-                        .tag(SidebarSelection.providerSync(providerID))
+                        .tag(SidebarListItemID.provider(providerID))
                 }
             }
 
@@ -823,6 +845,9 @@ struct ContentView: View {
         .listStyle(.sidebar)
         .navigationTitle(L10n.string(.tripTrips))
         .accessibilityIdentifier(UITestingIdentifiers.sidebar)
+        .contextMenu(forSelectionType: SidebarListItemID.self) { menuIDs in
+            sidebarListContextMenu(menuIDs: menuIDs)
+        }
     }
 
     @ViewBuilder
@@ -887,56 +912,33 @@ struct ContentView: View {
     ) -> some View {
         let isBookingSelected = selection == mailboxSelection
             && selectedOpenBookingIDs.contains(booking.id)
-        let mailboxBookings = mailboxSelection == .elapsedOpenBookings
-            ? elapsedOpenBookings
-            : openBookings
-        Button {
-            outlineOpenBookingClick(
-                bookingID: booking.id,
-                mailboxSelection: mailboxSelection,
-                orderedVisible: mailboxBookings.map(\.id)
-            )
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(booking.presentationTitle)
-                    .lineLimit(1)
-                Text(BookingScheduleRangeText.make(for: booking))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                if BookingOverlapCaption.isVisible(partnerTitles: overlapPartnerTitles(for: booking.id)) {
-                    BookingOverlapCaption(partnerTitles: overlapPartnerTitles(for: booking.id))
-                }
+        VStack(alignment: .leading, spacing: 2) {
+            Text(booking.presentationTitle)
+                .lineLimit(1)
+            Text(BookingScheduleRangeText.make(for: booking))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            if BookingOverlapCaption.isVisible(partnerTitles: overlapPartnerTitles(for: booking.id)) {
+                BookingOverlapCaption(partnerTitles: overlapPartnerTitles(for: booking.id))
             }
-            .padding(.leading, 28)
-            .padding(.vertical, 4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                isBookingSelected
-                    ? Color.accentColor.opacity(0.15)
-                    : Color.clear
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .padding(.leading, 28)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            isBookingSelected
+                ? Color.accentColor.opacity(0.15)
+                : Color.clear
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
         .accessibilityAddTraits(isBookingSelected ? [.isSelected] : [])
-        // Gleicher Mailbox-Tag für alle Outline-Kinder: sonst setzt List(selection:)
-        // den Klick auf nil und die Content-Spalte verschwindet. Visuelles Highlight
-        // bleibt die eigene isBookingSelected-Fläche.
-        .tag(mailboxSelection)
-        .contextMenu {
-            let effective = MenuEffectiveSelection.resolve(
-                clicked: booking.id,
-                selected: selectedOpenBookingIDs
-            )
-            openBookingContextMenuItems(
-                for: booking,
-                effectiveIDs: effective,
-                in: mailboxBookings,
-                kind: mailboxSelection == .elapsedOpenBookings ? .elapsedOpenBooking : .openBooking
-            )
-        }
+        .tag(
+            mailboxSelection == .elapsedOpenBookings
+                ? SidebarListItemID.elapsedBooking(booking.id)
+                : SidebarListItemID.openBooking(booking.id)
+        )
     }
 
     @ViewBuilder
@@ -1012,11 +1014,10 @@ struct ContentView: View {
         trip: SDTrip,
         tripBookings: [SDBooking],
         gapCount: Int?,
-        tripMenuKind: SidebarEntryKind
+        tripMenuKind _: SidebarEntryKind
     ) -> some View {
         let isExpanded = expandedTripIDs.contains(trip.id)
         let isTripSelected = selectedTripIDs.contains(trip.id)
-        let orderedTripIDs = (tripMenuKind == .elapsedTrip ? elapsedTrips : currentTrips).map(\.id)
         // Sibling List-Rows (nicht nested VStack): sonst kein macOS-Kontextmenü auf Kindern.
         HStack(spacing: 4) {
             if !tripBookings.isEmpty {
@@ -1039,30 +1040,25 @@ struct ContentView: View {
                 .accessibilityIdentifier(UITestingIdentifiers.sidebarExpandBookings)
             }
 
-            Button {
-                outlineTripClick(tripID: trip.id, orderedVisible: orderedTripIDs)
-            } label: {
-                Label {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(trip.title)
-                        Text(dateRange(trip))
-                            .font(.caption)
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(trip.title)
+                    Text(dateRange(trip))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let meta = L10n.tripCompletenessListMeta(
+                        futureBookingCount: tripBookings.count,
+                        gapCount: gapCount
+                    ) {
+                        Text(meta)
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
-                        if let meta = L10n.tripCompletenessListMeta(
-                            futureBookingCount: tripBookings.count,
-                            gapCount: gapCount
-                        ) {
-                            Text(meta)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
                     }
-                } icon: {
-                    Image(systemName: "airplane")
                 }
-                .contentShape(Rectangle())
+            } icon: {
+                Image(systemName: "airplane")
             }
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
             .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
         }
         .background(
@@ -1072,41 +1068,7 @@ struct ContentView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .accessibilityAddTraits(isTripSelected ? [.isSelected] : [])
-        .tag(SidebarSelection.trip(trip.id))
-        .contextMenu {
-            let effective = MenuEffectiveSelection.resolve(
-                clicked: trip.id,
-                selected: selectedTripIDs
-            )
-            let actions = SidebarEntryContextActions.actions(
-                for: tripMenuKind,
-                selectionCount: effective.count
-            )
-            if actions.contains(.edit) {
-                Button(L10n.string(.commonEdit)) {
-                    tripToEdit = trip
-                }
-            }
-            if actions.contains(.addBooking) {
-                Button(L10n.string(.actionAddBooking)) {
-                    startCreateBooking(in: trip)
-                }
-            }
-            if actions.contains(.deleteTrip) {
-                Divider()
-                Button(role: .destructive) {
-                    if effective.count > 1 {
-                        requestTripBatchDeletion(effective)
-                    } else {
-                        tripPendingDelete = trip
-                        showTripDeleteConfirmation = true
-                    }
-                } label: {
-                    Text(L10n.string(.actionDeleteTrip))
-                }
-                .accessibilityIdentifier(UITestingIdentifiers.deleteTripMenu)
-            }
-        }
+        .tag(SidebarListItemID.trip(trip.id))
 
         if isExpanded {
             if case .create = bookingEditorSession, selection == .trip(trip.id) {
@@ -1128,110 +1090,29 @@ struct ContentView: View {
         let bookingID = booking.id.uuidString
         let isBookingSelected = selection == .trip(trip.id)
             && selectedTimelineIDs.contains(bookingID)
-        Button {
-            outlineTripBookingClick(
-                bookingID: bookingID,
-                trip: trip,
-                orderedVisible: trip.sidebarChildBookings(tripIsElapsed: trip.isElapsed()).map { $0.id.uuidString }
-            )
-            if !expandedTripIDs.contains(trip.id) {
-                expandedTripIDs.insert(trip.id)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(booking.presentationTitle)
+                .lineLimit(1)
+            Text(BookingScheduleRangeText.make(for: booking))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            if BookingOverlapCaption.isVisible(partnerTitles: overlapPartnerTitles(for: booking.id)) {
+                BookingOverlapCaption(partnerTitles: overlapPartnerTitles(for: booking.id))
             }
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(booking.presentationTitle)
-                    .lineLimit(1)
-                Text(BookingScheduleRangeText.make(for: booking))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                if BookingOverlapCaption.isVisible(partnerTitles: overlapPartnerTitles(for: booking.id)) {
-                    BookingOverlapCaption(partnerTitles: overlapPartnerTitles(for: booking.id))
-                }
-            }
-            .padding(.leading, 28)
-            .padding(.vertical, 4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                isBookingSelected
-                    ? Color.accentColor.opacity(0.15)
-                    : Color.clear
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .padding(.leading, 28)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            isBookingSelected
+                ? Color.accentColor.opacity(0.15)
+                : Color.clear
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
         .accessibilityAddTraits(isBookingSelected ? [.isSelected] : [])
-        .contextMenu {
-            let effective = MenuEffectiveSelection.resolve(
-                clicked: bookingID,
-                selected: selectedTimelineIDs
-            )
-            let actions = SidebarEntryContextActions.actions(
-                for: .tripBooking,
-                selectionCount: effective.count
-            )
-            if actions.contains(.edit), effective.count == 1 {
-                Button(L10n.string(.commonEdit)) {
-                    editBooking(booking, in: trip)
-                }
-            }
-            if actions.contains(.addBooking), effective.count == 1 {
-                Button(L10n.string(.actionAddBooking)) {
-                    startCreateBooking(in: trip)
-                }
-            }
-            if effective.count == 1 {
-                BookingCopyConfirmationMenuItems(booking: booking)
-                if let url = booking.browserURL {
-                    BookingPortalOpenButton(browserURL: url)
-                    CopyLinkMenuItem(url: url)
-                }
-                BookingPortalCancelMenuItems(
-                    booking: booking,
-                    hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
-                    onPresentCancel: { presentation, url in
-                        BookingPortalCancelRequest.route(
-                            presentation,
-                            url: url,
-                            booking: booking,
-                            openURL: { openURL($0) },
-                            setCancelRequest: { cancelRequest = $0 }
-                        )
-                    }
-                )
-            }
-            if actions.contains(.removeFromTrip) || actions.contains(.deleteBooking) {
-                Divider()
-            }
-            if actions.contains(.removeFromTrip) {
-                Button(role: .destructive) {
-                    applyAfterTripFocus(trip: trip) {
-                        selectedTimelineIDs = effective
-                        NotificationCenter.default.post(
-                            name: .reisenRequestRemoveBookingFromTrip,
-                            object: effective.compactMap(UUID.init(uuidString:))
-                        )
-                    }
-                } label: {
-                    Text(L10n.string(.actionRemoveFromTrip))
-                }
-            }
-            if actions.contains(.deleteBooking) {
-                Button(role: .destructive) {
-                    applyAfterTripFocus(trip: trip) {
-                        selectedTimelineIDs = effective
-                        NotificationCenter.default.post(
-                            name: .reisenRequestDeleteBooking,
-                            object: effective.compactMap(UUID.init(uuidString:))
-                        )
-                    }
-                } label: {
-                    Text(L10n.string(.actionDeleteEllipsis))
-                }
-                .accessibilityIdentifier(UITestingIdentifiers.deleteBookingMenu)
-            }
-        }
+        .tag(SidebarListItemID.tripBooking(booking.id))
     }
 
     private func applyUITestingLaunchSelectionIfNeeded() {
@@ -1791,83 +1672,196 @@ struct ContentView: View {
         expandedTripIDs.insert(trip.id)
     }
 
-    private func outlineOpenBookingClick(
-        bookingID: UUID,
-        mailboxSelection: SidebarSelection,
-        orderedVisible: [UUID]
-    ) {
-        let available = Set(orderedVisible)
-        let current = selection == mailboxSelection
-            ? selectedOpenBookingIDs.intersection(available)
-            : []
-        let result = OutlineMultiSelect.apply(
-            clicked: bookingID,
-            current: current,
-            orderedVisible: orderedVisible,
-            anchor: openSelectionAnchor,
-            click: currentOutlineClick
-        )
-        selection = mailboxSelection
-        selectedOpenBookingIDs = result.selected
-        openSelectionAnchor = result.newAnchor
-    }
-
-    private func outlineTripClick(tripID: UUID, orderedVisible: [UUID]) {
-        let result = OutlineMultiSelect.apply(
-            clicked: tripID,
-            current: selectedTripIDs.intersection(orderedVisible),
-            orderedVisible: orderedVisible,
-            anchor: tripSelectionAnchor,
-            click: currentOutlineClick
-        )
-        selectedTripIDs = result.selected
-        tripSelectionAnchor = result.newAnchor
-        if let primaryID = TripMultiSelectionPrimary.primaryID(
-            in: result.selected,
-            anchor: result.newAnchor
-        ) {
-            selection = .trip(primaryID)
+    private func applySidebarListResult(_ result: SidebarListApplyResult) {
+        if let providerID = result.providerID {
+            selection = .providerSync(providerID)
+            return
         }
-    }
-
-    private func outlineTripBookingClick(
-        bookingID: String,
-        trip: SDTrip,
-        orderedVisible: [String]
-    ) {
-        let current = selection == .trip(trip.id)
-            ? selectedTimelineIDs.intersection(orderedVisible)
-            : []
-        let result = OutlineMultiSelect.apply(
-            clicked: bookingID,
-            current: current,
-            orderedVisible: orderedVisible,
-            anchor: timelineSelectionAnchor,
-            click: currentOutlineClick
-        )
-        let tripChanged = selection?.tripID != trip.id
-        selectedTripIDs = [trip.id]
-        tripSelectionAnchor = trip.id
-        selection = .trip(trip.id)
-        // onChange(selection?.tripID) leert die Timeline — Selektion danach setzen.
-        if tripChanged {
-            Task { @MainActor in
-                await Task.yield()
-                selectedTimelineIDs = result.selected
-                timelineSelectionAnchor = result.newAnchor
+        if let mailbox = result.mailbox {
+            selection = mailbox == .elapsed ? .elapsedOpenBookings : .openBookings
+            selectedOpenBookingIDs = result.openBookingIDs
+            if let anchor = result.openBookingIDs.min(by: { $0.uuidString < $1.uuidString }) {
+                openSelectionAnchor = anchor
             }
-        } else {
-            selectedTimelineIDs = result.selected
-            timelineSelectionAnchor = result.newAnchor
+            return
+        }
+        if !result.tripBookingIDs.isEmpty, let tripID = result.focusedTripID {
+            let tripChanged = selection?.tripID != tripID
+            selectedTripIDs = [tripID]
+            tripSelectionAnchor = tripID
+            selection = .trip(tripID)
+            let timelineIDs = Set(result.tripBookingIDs.map(\.uuidString))
+            let timelineAnchor = result.tripBookingIDs
+                .map(\.uuidString)
+                .min()
+            if tripChanged {
+                Task { @MainActor in
+                    await Task.yield()
+                    selectedTimelineIDs = timelineIDs
+                    timelineSelectionAnchor = timelineAnchor
+                }
+            } else {
+                selectedTimelineIDs = timelineIDs
+                timelineSelectionAnchor = timelineAnchor
+            }
+            return
+        }
+        if !result.tripIDs.isEmpty {
+            selectedTripIDs = result.tripIDs
+            selectedTimelineIDs = []
+            timelineSelectionAnchor = nil
+            if let primaryID = TripMultiSelectionPrimary.primaryID(
+                in: result.tripIDs,
+                anchor: tripSelectionAnchor
+            ) {
+                selection = .trip(primaryID)
+                if tripSelectionAnchor.map(result.tripIDs.contains) != true {
+                    tripSelectionAnchor = primaryID
+                }
+            }
         }
     }
 
-    private var currentOutlineClick: OutlineMultiSelectClick {
-        let flags = NSEvent.modifierFlags
-        return OutlineMultiSelect.clickKind(
-            shiftPressed: flags.contains(.shift),
-            commandPressed: flags.contains(.command)
+    @ViewBuilder
+    private func sidebarListContextMenu(menuIDs: Set<SidebarListItemID>) -> some View {
+        let effective = MenuEffectiveSelection.resolve(
+            menu: menuIDs,
+            bound: currentSidebarListIDs
         )
+        switch SidebarListSelectionBridge.menuKind(for: effective) {
+        case .openBookings:
+            sidebarOpenBookingsMenu(ids: Set(effective.compactMap(\.bookingUUID)), mailbox: .openBookings)
+        case .elapsedBookings:
+            sidebarOpenBookingsMenu(ids: Set(effective.compactMap(\.bookingUUID)), mailbox: .elapsedOpenBookings)
+        case .tripBookings:
+            sidebarTripBookingsMenu(ids: Set(effective.compactMap(\.bookingUUID)))
+        case .trips:
+            sidebarTripsMenu(ids: Set(effective.compactMap(\.tripUUID)))
+        case .empty, .mixed, .provider:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private func sidebarOpenBookingsMenu(ids: Set<UUID>, mailbox: SidebarSelection) -> some View {
+        let mailboxBookings = mailbox == .elapsedOpenBookings ? elapsedOpenBookings : openBookings
+        let kind: SidebarEntryKind = mailbox == .elapsedOpenBookings ? .elapsedOpenBooking : .openBooking
+        if let booking = mailboxBookings.first(where: { ids.contains($0.id) }) {
+            openBookingContextMenuItems(
+                for: booking,
+                effectiveIDs: ids,
+                in: mailboxBookings,
+                kind: kind
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func sidebarTripBookingsMenu(ids: Set<UUID>) -> some View {
+        let stringIDs = Set(ids.map(\.uuidString))
+        if let bookingID = ids.min(by: { $0.uuidString < $1.uuidString }),
+           let booking = allBookings.first(where: { $0.id == bookingID }),
+           let trip = booking.trip {
+        let actions = SidebarEntryContextActions.actions(
+            for: .tripBooking,
+            selectionCount: stringIDs.count
+        )
+        if actions.contains(.edit), stringIDs.count == 1 {
+            Button(L10n.string(.commonEdit)) {
+                editBooking(booking, in: trip)
+            }
+        }
+        if actions.contains(.addBooking), stringIDs.count == 1 {
+            Button(L10n.string(.actionAddBooking)) {
+                startCreateBooking(in: trip)
+            }
+        }
+        if stringIDs.count == 1 {
+            BookingCopyConfirmationMenuItems(booking: booking)
+            if let url = booking.browserURL {
+                BookingPortalOpenButton(browserURL: url)
+                CopyLinkMenuItem(url: url)
+            }
+            BookingPortalCancelMenuItems(
+                booking: booking,
+                hasSessionWebView: sessionHub.hasSessionWebView(for: booking),
+                onPresentCancel: { presentation, url in
+                    BookingPortalCancelRequest.route(
+                        presentation,
+                        url: url,
+                        booking: booking,
+                        openURL: { openURL($0) },
+                        setCancelRequest: { cancelRequest = $0 }
+                    )
+                }
+            )
+        }
+        if actions.contains(.removeFromTrip) || actions.contains(.deleteBooking) {
+            Divider()
+        }
+        if actions.contains(.removeFromTrip) {
+            Button(role: .destructive) {
+                applyAfterTripFocus(trip: trip) {
+                    selectedTimelineIDs = stringIDs
+                    NotificationCenter.default.post(
+                        name: .reisenRequestRemoveBookingFromTrip,
+                        object: Array(ids)
+                    )
+                }
+            } label: {
+                Text(L10n.string(.actionRemoveFromTrip))
+            }
+        }
+        if actions.contains(.deleteBooking) {
+            Button(role: .destructive) {
+                applyAfterTripFocus(trip: trip) {
+                    selectedTimelineIDs = stringIDs
+                    NotificationCenter.default.post(
+                        name: .reisenRequestDeleteBooking,
+                        object: Array(ids)
+                    )
+                }
+            } label: {
+                Text(L10n.string(.actionDeleteEllipsis))
+            }
+            .accessibilityIdentifier(UITestingIdentifiers.deleteBookingMenu)
+        }
+        }
+    }
+
+    @ViewBuilder
+    private func sidebarTripsMenu(ids: Set<UUID>) -> some View {
+        if let tripID = ids.min(by: { $0.uuidString < $1.uuidString }),
+           let trip = trips.first(where: { $0.id == tripID }) {
+        let kind: SidebarEntryKind = elapsedTrips.contains(where: { $0.id == tripID })
+            ? .elapsedTrip
+            : .trip
+        let actions = SidebarEntryContextActions.actions(for: kind, selectionCount: ids.count)
+        if actions.contains(.edit) {
+            Button(L10n.string(.commonEdit)) {
+                tripToEdit = trip
+            }
+        }
+        if actions.contains(.addBooking) {
+            Button(L10n.string(.actionAddBooking)) {
+                startCreateBooking(in: trip)
+            }
+        }
+        if actions.contains(.deleteTrip) {
+            Divider()
+            Button(role: .destructive) {
+                if ids.count > 1 {
+                    requestTripBatchDeletion(ids)
+                } else {
+                    tripPendingDelete = trip
+                    showTripDeleteConfirmation = true
+                }
+            } label: {
+                Text(L10n.string(.actionDeleteTrip))
+            }
+            .accessibilityIdentifier(UITestingIdentifiers.deleteTripMenu)
+        }
+        }
     }
 
     private func handleSelectionChange(

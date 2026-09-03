@@ -48,6 +48,7 @@ import ReisenData
     #expect(UITestingIdentifiers.tripBookingMultiSelectionSummary == "reisen.trip-booking.multi-selection-summary")
     #expect(UITestingIdentifiers.openBookingsContent == "reisen.open-bookings.content")
     #expect(UITestingIdentifiers.deleteBookingMenuTitleDE == "Löschen…")
+    #expect(UITestingIdentifiers.deleteTripMenuTitleDE == "Reise löschen…")
     #expect(UITestingIdentifiers.removeFromTripMenuTitleDE == "Von Reise entfernen…")
     #expect(UITestingIdentifiers.copyConfirmationMenuTitleDE == "Buchungsnr. kopieren")
     #expect(UITestingIdentifiers.newTripMenuTitleDE == "Neue Reise…")
