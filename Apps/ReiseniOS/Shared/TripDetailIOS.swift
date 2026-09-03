@@ -65,33 +65,59 @@ struct TripDetailIOS: View {
             if let trip {
                 List {
                     Section(L10n.string(.tripOverview)) {
-                        CopyableLabeledValue(
-                            label: L10n.string(.editorTitle),
-                            value: trip.title,
-                            kind: .standard,
-                            style: .list,
-                            valueTextStyle: .headline
+                        let destination = trip.destination.flatMap { $0.isEmpty ? nil : $0 }
+                        let notes = trip.notes.flatMap { $0.isEmpty ? nil : $0 }
+                        let completeness = trip.completeness()
+                        let fields = TripOverviewPresentation.visibleFields(
+                            hasDestination: destination != nil,
+                            hasBookings: completeness.hasBookings,
+                            hasNotes: notes != nil
                         )
-                        CopyableLabeledValue(
-                            label: L10n.string(.tripPeriod),
-                            value: L10n.format(
-                                .tripPeriodRange,
-                                trip.startDate.formatted(date: .abbreviated, time: .omitted),
-                                trip.endDate.formatted(date: .abbreviated, time: .omitted)
-                            ),
-                            kind: .standard,
-                            style: .list
-                        )
-                        if let destination = trip.destination, !destination.isEmpty {
-                            CopyableLabeledValue(
-                                label: L10n.string(.tripDestination),
-                                value: destination,
-                                kind: .standard,
-                                style: .list
-                            )
+                        ForEach(fields, id: \.self) { field in
+                            switch field {
+                            case .title:
+                                CopyableLabeledValue(
+                                    label: L10n.string(.editorTitle),
+                                    value: trip.title,
+                                    kind: .standard,
+                                    style: .list,
+                                    valueTextStyle: .headline
+                                )
+                            case .destination:
+                                if let destination {
+                                    CopyableLabeledValue(
+                                        label: L10n.string(.tripDestination),
+                                        value: destination,
+                                        kind: .standard,
+                                        style: .list
+                                    )
+                                }
+                            case .period:
+                                CopyableLabeledValue(
+                                    label: L10n.string(.tripPeriod),
+                                    value: L10n.format(
+                                        .tripPeriodRange,
+                                        trip.startDate.formatted(date: .abbreviated, time: .omitted),
+                                        trip.endDate.formatted(date: .abbreviated, time: .omitted)
+                                    ),
+                                    kind: .standard,
+                                    style: .list
+                                )
+                            case .cost:
+                                TripCostOverviewIOSRows(trip: trip)
+                            case .completeness:
+                                TripCompletenessOverviewRow(completeness: completeness)
+                            case .notes:
+                                if let notes {
+                                    CopyableLabeledValue(
+                                        label: L10n.string(.tripNotes),
+                                        value: notes,
+                                        kind: .standard,
+                                        style: .list
+                                    )
+                                }
+                            }
                         }
-                        TripCostOverviewIOSRows(trip: trip)
-                        TripCompletenessOverviewRow(completeness: trip.completeness())
                         if trip.resolvedBookings.isEmpty {
                             Button(L10n.string(.actionAssignBookings)) {
                                 showAssignBookings = true

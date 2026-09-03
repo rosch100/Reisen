@@ -5,6 +5,8 @@ import ReisenData
 public enum UITestingIdentifiers {
     public static let sidebar = "reisen.sidebar"
     public static let detail = "reisen.detail"
+    public static let tripOverview = "reisen.trip.overview"
+    public static let tripOverviewTitle = "reisen.trip.overview.title"
     public static let inspector = "reisen.inspector"
     public static let settings = "reisen.settings"
     public static let syncChrome = "reisen.sync.chrome"

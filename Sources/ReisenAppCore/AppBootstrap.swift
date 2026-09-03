@@ -15,16 +15,31 @@ public final class AppBootstrap {
 
     public private(set) var state: State
     public private(set) var isResetting = false
+    private let uiTesting: UITestingMode
 
-    public init(registry: ProviderRegistry = .empty) {
-        GitHubIssueCrashCatcher.install()
+    public init(
+        registry: ProviderRegistry = .empty,
+        uiTesting: UITestingMode = .fromProcess,
+        crashCatcherInstall: (() -> Void)? = nil,
+        crashCatcherFlush: (() async -> Void)? = nil
+    ) {
+        self.uiTesting = uiTesting
+        let install = crashCatcherInstall ?? { GitHubIssueCrashCatcher.install() }
+        let flush = crashCatcherFlush ?? { await GitHubIssueCrashCatcher.flushPending() }
+        if !uiTesting.skipsSideEffects {
+            install()
+        }
         do {
-            self.state = try Self.makeReadyState(registry: registry)
+            self.state = try Self.makeReadyState(registry: registry, uiTesting: uiTesting)
             startCloudSideEffectObserverIfReady()
-            Task { await GitHubIssueCrashCatcher.flushPending() }
+            if !uiTesting.skipsSideEffects {
+                Task { await flush() }
+            }
         } catch {
             self.state = .failed(error.localizedDescription)
-            Task { await GitHubIssueCrashCatcher.flushPending() }
+            if !uiTesting.skipsSideEffects {
+                Task { await flush() }
+            }
         }
     }
 
@@ -45,7 +60,7 @@ public final class AppBootstrap {
             stopCloudSideEffectObserverIfReady()
 
             // UI-Tests laufen nur In-Memory: keine Disk-SQLite löschen, nur Ready-State neu aufbauen.
-            if UITestingMode.fromProcess.skipsSideEffects {
+            if uiTesting.skipsSideEffects {
                 try activateReadyState()
                 return
             }
@@ -63,7 +78,7 @@ public final class AppBootstrap {
 
     /// Cloud wipe works from `.ready` (delete+export) or `.failed` (reopen → import → delete → export).
     private func wipeCloudThenResetLocal() async throws {
-        if UITestingMode.fromProcess.skipsSideEffects {
+        if uiTesting.skipsSideEffects {
             try activateReadyState()
             return
         }
@@ -77,7 +92,7 @@ public final class AppBootstrap {
 
         // Store could not open: recreate local files, pull cloud data, then tombstone it.
         try PersistenceBootstrap.resetStoreFiles()
-        let provisional = try Self.makeReadyState(registry: currentRegistry)
+        let provisional = try Self.makeReadyState(registry: currentRegistry, uiTesting: uiTesting)
         guard case .ready(let container, _, _, _) = provisional else {
             throw PersistenceStoreError.storeIncompatible(
                 "Cloud-Wipe nach Store-Fehler: Container konnte nicht geöffnet werden."
@@ -102,12 +117,12 @@ public final class AppBootstrap {
     }
 
     private func activateReadyState() throws {
-        state = try Self.makeReadyState(registry: currentRegistry)
+        state = try Self.makeReadyState(registry: currentRegistry, uiTesting: uiTesting)
         startCloudSideEffectObserverIfReady()
     }
 
     private func startCloudSideEffectObserverIfReady() {
-        guard !UITestingMode.fromProcess.skipsSideEffects else { return }
+        guard !uiTesting.skipsSideEffects else { return }
         if case .ready(_, _, let syncStore, _) = state {
             syncStore.startObservingCloudSideEffects()
         }

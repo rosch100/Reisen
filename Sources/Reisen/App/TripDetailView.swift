@@ -354,7 +354,7 @@ struct TripDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 tripOverviewSection
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 12)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Divider()
@@ -382,11 +382,12 @@ struct TripDetailView: View {
                         .disabled(openBookingsCandidates().isEmpty)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier(UITestingIdentifiers.detail)
                 } else {
                     bookingsList(timelineItems: timelineItems)
+                        .accessibilityIdentifier(UITestingIdentifiers.detail)
                 }
             }
-            .accessibilityIdentifier(UITestingIdentifiers.detail)
             .navigationTitle(trip.title)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -732,69 +733,21 @@ struct TripDetailView: View {
 
     @ViewBuilder
     private var tripOverviewSection: some View {
-        // Kompakte Einzeiler — kein LabeledContent/NSView (das blähte die Übersicht auf).
-        let completeness = trip.completeness()
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 16) {
-                overviewFact(label: L10n.string(.tripPeriod), value: dateRange)
-                VStack(alignment: .leading, spacing: 2) {
-                    overviewFact(
-                        label: L10n.string(.bookingDetailPrice),
-                        value: TripCostDisplayText.primaryLine(for: tripCostResult)
-                    )
-                    if let secondary = TripCostDisplayText.secondaryLine(for: tripCostResult) {
-                        Text(secondary)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .help(secondary)
-                    }
-                }
-                .accessibilityElement(children: .combine)
-                .onAppear { refreshTripCost() }
-                .onChange(of: convertAmountsToPreferredCurrency) { _, _ in refreshTripCost() }
-                .onChange(of: preferredCurrencyCodeStored) { _, _ in refreshTripCost() }
-                .onChange(of: tripCostSummary.costFingerprint) { _, _ in refreshTripCost() }
-                if let destination = trip.destination, !destination.isEmpty {
-                    overviewFact(label: L10n.string(.tripDestination), value: destination)
-                }
-                if completeness.hasBookings {
-                    overviewFact(
-                        label: L10n.string(.tripCompletenessLabel),
-                        value: L10n.tripCompletenessOverviewFactValue(completeness)
-                    )
-                    .help(L10n.string(.tripCompletenessHelp))
-                }
-                Spacer(minLength: 0)
-            }
-            if completeness.hasBookings {
-                TripCompletenessMacDetailCaption(completeness: completeness)
-            }
-            if let notes = trip.notes, !notes.isEmpty {
-                CopyableFieldValue(
-                    value: notes,
-                    kind: .standard,
-                    textStyle: .caption,
-                    foregroundStyle: .secondary,
-                    lineLimit: 2
-                )
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func overviewFact(label: String, value: String) -> some View {
-        HStack(spacing: 6) {
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            CopyableFieldValue(
-                value: value,
-                kind: .standard,
-                textStyle: .subheadline,
-                lineLimit: 1
-            )
-        }
+        let destination = trip.destination.flatMap { $0.isEmpty ? nil : $0 }
+        let notes = trip.notes.flatMap { $0.isEmpty ? nil : $0 }
+        TripOverviewMacHeader(
+            title: trip.title,
+            destination: destination,
+            periodText: dateRange,
+            costPrimary: TripCostDisplayText.primaryLine(for: tripCostResult),
+            costSecondary: TripCostDisplayText.secondaryLine(for: tripCostResult),
+            completeness: trip.completeness(),
+            notes: notes
+        )
+        .onAppear { refreshTripCost() }
+        .onChange(of: convertAmountsToPreferredCurrency) { _, _ in refreshTripCost() }
+        .onChange(of: preferredCurrencyCodeStored) { _, _ in refreshTripCost() }
+        .onChange(of: tripCostSummary.costFingerprint) { _, _ in refreshTripCost() }
     }
 
     private var dateRange: String {
