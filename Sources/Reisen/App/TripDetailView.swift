@@ -462,35 +462,40 @@ struct TripDetailView: View {
                     requestDeleteBooking(booking)
                 }
             }
-        } else if selectedTimelineIDs.count > 1 {
-            let selectionKind = TripTimelineContextActions.kind(
-                selectedIDs: selectedTimelineIDs,
-                isBookingID: isTimelineBookingID,
-                isGapID: isTimelineGapID
-            )
-            TripBookingMultiSelectionSummary(
-                selectedCount: selectedTimelineIDs.count,
-                onRemoveFromTrip: selectionKind == .multipleBookingsOnly
-                    ? { requestBatchRemoveFromTrip(selectedTimelineIDs) }
-                    : nil,
-                onDelete: selectionKind == .multipleBookingsOnly
-                    ? {
-                        requestBatchDeleteBookings(
-                            Set(selectedTimelineIDs.compactMap(UUID.init(uuidString:)))
-                        )
-                    }
-                    : nil
-            )
-            .navigationTitle(trip.title)
         } else {
-            BookingDetailPanel(
-                selectedTimelineItem: selectedTimelineItem,
-                trip: trip,
-                overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
-                bookingEditorSession: $bookingEditorSession,
-                selectedTimelineIDs: $selectedTimelineIDs,
-                createDraftTypedTitle: $createDraftTypedTitle,
-                onEditGap: { payload in gapEditorPayload = payload },
+            let bookingIDs = TripTimelineContextActions.bookingIDs(
+                in: selectedTimelineIDs,
+                isBookingID: isTimelineBookingID
+            )
+            if bookingIDs.count > 1 {
+                let selectionKind = TripTimelineContextActions.kind(
+                    selectedIDs: selectedTimelineIDs,
+                    isBookingID: isTimelineBookingID,
+                    isGapID: isTimelineGapID
+                )
+                TripBookingMultiSelectionSummary(
+                    selectedCount: bookingIDs.count,
+                    onRemoveFromTrip: selectionKind == .multipleBookings
+                        ? { requestBatchRemoveFromTrip(bookingIDs) }
+                        : nil,
+                    onDelete: selectionKind == .multipleBookings
+                        ? {
+                            requestBatchDeleteBookings(
+                                Set(bookingIDs.compactMap(UUID.init(uuidString:)))
+                            )
+                        }
+                        : nil
+                )
+                .navigationTitle(trip.title)
+            } else {
+                BookingDetailPanel(
+                    selectedTimelineItem: selectedTimelineItem,
+                    trip: trip,
+                    overlapPartnerTitlesByBookingID: overlapPartnerTitlesByBookingID,
+                    bookingEditorSession: $bookingEditorSession,
+                    selectedTimelineIDs: $selectedTimelineIDs,
+                    createDraftTypedTitle: $createDraftTypedTitle,
+                    onEditGap: { payload in gapEditorPayload = payload },
                     gapPresentation: gapPresentation(for:),
                     onRequestDeleteBooking: { bookingID in
                         pendingDeleteBookingID = bookingID
@@ -512,26 +517,27 @@ struct TripDetailView: View {
                             setCancelRequest: { cancelRequest = $0 }
                         )
                     }
-            )
-            .navigationTitle(trip.title)
-            .sheet(item: $gapEditorPayload) { payload in
-                GapEditorSheet(payload: payload) { newTitle, newKind, newPriceAmount, newCurrencyCode in
-                    do {
-                        try GapPersistence.upsert(
-                            payload: payload,
-                            title: newTitle,
-                            kind: newKind,
-                            price: newPriceAmount,
-                            currency: newCurrencyCode,
-                            trip: trip,
-                            bookings: sortedBookings,
-                            existing: savedGapsByKey[payload.key],
-                            context: modelContext
-                        )
-                    } catch {
-                        assertionFailure("Gap save failed: \(error)")
+                )
+                .navigationTitle(trip.title)
+                .sheet(item: $gapEditorPayload) { payload in
+                    GapEditorSheet(payload: payload) { newTitle, newKind, newPriceAmount, newCurrencyCode in
+                        do {
+                            try GapPersistence.upsert(
+                                payload: payload,
+                                title: newTitle,
+                                kind: newKind,
+                                price: newPriceAmount,
+                                currency: newCurrencyCode,
+                                trip: trip,
+                                bookings: sortedBookings,
+                                existing: savedGapsByKey[payload.key],
+                                context: modelContext
+                            )
+                        } catch {
+                            assertionFailure("Gap save failed: \(error)")
+                        }
+                        gapEditorPayload = nil
                     }
-                    gapEditorPayload = nil
                 }
             }
         }
@@ -685,17 +691,21 @@ struct TripDetailView: View {
                     }
                 }
             }
-        case .multipleBookingsOnly:
+        case .multipleBookings:
+            let bookingIDs = TripTimelineContextActions.bookingIDs(
+                in: ids,
+                isBookingID: isTimelineBookingID
+            )
             if actions.contains(.batchRemoveFromTrip) {
                 Button(role: .destructive) {
-                    requestBatchRemoveFromTrip(ids)
+                    requestBatchRemoveFromTrip(bookingIDs)
                 } label: {
                     Text(L10n.string(.actionRemoveFromTrip))
                 }
             }
             if actions.contains(.batchDeleteBooking) {
                 Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
-                    requestBatchDeleteBookings(Set(ids.compactMap(UUID.init(uuidString:))))
+                    requestBatchDeleteBookings(Set(bookingIDs.compactMap(UUID.init(uuidString:))))
                 }
             }
         case .empty, .mixedOrGapsOnly:
