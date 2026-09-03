@@ -52,7 +52,7 @@ extension Check24TravelProvider {
             deadlinesByBookingURL[bookingURLString] = policyDeadlines
         }
 
-        if stay.checkInMinutes != nil || stay.checkOutMinutes != nil {
+        if stay.hasPersistableFields {
             hotelStayByBasketId[basketId] = stay
             hotelStayByBookingURL[bookingURLString] = stay
         }
@@ -82,7 +82,7 @@ extension Check24TravelProvider {
             bookingDetailsByBookingKey[key] = parsedDetails
         }
 
-        if stay.checkInMinutes != nil || stay.checkOutMinutes != nil {
+        if stay.hasPersistableFields {
             hotelStayByBookingURL[bookingURLString] = stay
         }
 

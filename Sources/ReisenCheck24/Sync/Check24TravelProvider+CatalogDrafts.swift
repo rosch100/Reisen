@@ -66,9 +66,12 @@ extension Check24TravelProvider {
                         : basketConfirmation,
                     externalUrl: canonicalExternalUrl,
                     locationFrom: canonicalBooking.locationFrom,
-                    locationTo: canonicalBooking.locationTo,
+                    locationTo: NonEmpty.first(canonicalBooking.locationTo, stay?.locationTo),
                     locationFromAddress: canonicalBooking.locationFromAddress,
-                    locationToAddress: canonicalBooking.locationToAddress,
+                    locationToAddress: NonEmpty.first(
+                        canonicalBooking.locationToAddress,
+                        stay?.locationToAddress
+                    ),
                     statusRaw: canonicalBooking.statusRaw,
                     deadlines: deadlines,
                     rateDetails: rateDetails,
