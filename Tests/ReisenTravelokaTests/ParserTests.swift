@@ -786,15 +786,57 @@ func travelokaStatusMapperKeepsSuccessActiveDespiteFailedLatestPayment(itinerary
     )
 }
 
+/// Live Car Rental: SUCCESS + Voucher issued, aber product-detail `cancelled=true`.
+@Test(arguments: ["vehicleRentalDetailInfo", "experienceDetail"])
+func travelokaStatusMapperReadsProductDetailCancelledDespiteVoucherIssued(detailKey: String) {
+    let entry = travelokaProductDetailCancelledEntry(detailKey: detailKey, nestedWithoutDriver: false)
+    let statusRaw = TravelokaStatusMapper.statusRaw(from: entry)
+    #expect(BookingStatus.parse(statusRaw) == .cancelled)
+    #expect(CatalogListing.shouldDrop(statusRaw))
+}
+
+/// Live Vehicle nested `withoutDriverDetailInfo.cancelled` (Catalog fetch enthält beides).
+@Test func travelokaStatusMapperReadsNestedVehicleWithoutDriverCancelled() {
+    let entry = travelokaProductDetailCancelledEntry(
+        detailKey: "vehicleRentalDetailInfo",
+        nestedWithoutDriver: true
+    )
+    #expect(BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: entry)) == .cancelled)
+}
+
+/// Aktive Experience-Fixture: `isActiveBooking=false` ohne `cancelled` bleibt confirmed.
+@Test func travelokaStatusMapperIgnoresInactiveBookingFlagsWithoutCancelled() {
+    let entry = travelokaCatalogStatusEntry(
+        itineraryType: "EXPERIENCE",
+        tagText: "Voucher issued",
+        tagStatus: "STATUS_OK",
+        itineraryBookingStatus: "SUCCESS",
+        userTripStatus: "ETICKET_PUBLISHED",
+        latestPaymentStatus: "FAILED",
+        isActiveBooking: false
+    )
+    #expect(BookingStatus.parse(TravelokaStatusMapper.statusRaw(from: entry)) == .confirmed)
+    #expect(!CatalogListing.shouldDrop(TravelokaStatusMapper.statusRaw(from: entry)))
+}
+
 private func travelokaCatalogStatusEntry(
     itineraryType: String,
     tagText: String,
     tagStatus: String,
     itineraryBookingStatus: String,
     userTripStatus: String,
-    latestPaymentStatus: String
+    latestPaymentStatus: String,
+    isActiveBooking: Bool? = nil
 ) -> [String: Any] {
-    [
+    var common: [String: Any] = [
+        "itineraryBookingStatus": itineraryBookingStatus,
+        "sectionType": "ACTIVE_BOOKING",
+    ]
+    if let isActiveBooking {
+        common["isActiveBooking"] = isActiveBooking
+        common["activeBooking"] = isActiveBooking
+    }
+    return [
         "itineraryType": itineraryType,
         "itineraryTags": [
             ["text": tagText, "status": tagStatus],
@@ -804,12 +846,37 @@ private func travelokaCatalogStatusEntry(
             "latestPaymentStatus": latestPaymentStatus,
         ],
         "cardSummaryInfo": [
-            "commonSummary": [
-                "itineraryBookingStatus": itineraryBookingStatus,
-                "sectionType": "ACTIVE_BOOKING",
-            ],
+            "commonSummary": common,
         ],
     ]
+}
+
+private func travelokaProductDetailCancelledEntry(
+    detailKey: String,
+    nestedWithoutDriver: Bool
+) -> [String: Any] {
+    var productDetail: [String: Any] = [
+        "cancelled": true,
+        "cancellationType": "CUSTOMER_CANCEL",
+        "cancellationMessage":
+            "You have cancelled this booking. Therefore, this voucher is no longer usable.",
+    ]
+    if nestedWithoutDriver {
+        productDetail = [
+            "withoutDriverDetailInfo": productDetail,
+        ]
+    }
+    var entry = travelokaCatalogStatusEntry(
+        itineraryType: detailKey == "experienceDetail" ? "EXPERIENCE" : "VEHICLE_RENTAL",
+        tagText: "Voucher issued",
+        tagStatus: "STATUS_OK",
+        itineraryBookingStatus: "SUCCESS",
+        userTripStatus: "ETICKET_PUBLISHED",
+        latestPaymentStatus: "FAILED",
+        isActiveBooking: false
+    )
+    entry["cardDetailInfo"] = [detailKey: productDetail]
+    return entry
 }
 
 @Test func travelokaEnrichmentTimeZoneIdentifierFromFixture() throws {
