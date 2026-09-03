@@ -55,6 +55,7 @@ extension Check24TravelProvider {
         let policy = CancellationPolicyParser().parseCancellationPolicy(from: html)
         let parsedDetails = BookingDetailsParser().parse(from: html, bookingType: parsedBooking.type)
         let stay = HotelCheckInOutParser().parse(from: html)
+            .merging(place: Check24HotelInfoParser.parse(from: html))
         let guestHints = StayHintHTMLExtractor.extract(
             from: html,
             providerRaw: ProviderID.check24.rawValue
@@ -103,7 +104,8 @@ extension Check24TravelProvider {
             "hotel_detail",
             event: "completed",
             result: .succeeded,
-            url: bookingURL
+            url: bookingURL,
+            reason: stay.locationToAddress == nil ? "hotel_info_address_missing" : "hotel_info_address_present"
         )
     }
 

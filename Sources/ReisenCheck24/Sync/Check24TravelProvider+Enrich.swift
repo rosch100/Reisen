@@ -48,6 +48,7 @@ extension Check24TravelProvider {
         let policy = CancellationPolicyParser().parseCancellationPolicy(from: snapshot.html)
         let details = BookingDetailsParser().parse(from: snapshot.html, bookingType: ref.bookingType)
         let stay = HotelCheckInOutParser().parse(from: snapshot.html)
+            .merging(place: Check24HotelInfoParser.parse(from: snapshot.html))
         var passengers: [BookingPassenger]? = nil
         if ref.bookingType == .flight {
             let parser = Check24FlightPassengersAndLuggageParser()
@@ -97,6 +98,8 @@ extension Check24TravelProvider {
             from: ProviderBookingFacts(
                 provider: .check24,
                 bookingType: ref.bookingType,
+                locationTo: stay.locationTo,
+                locationToAddress: stay.locationToAddress,
                 deadlines: mappedDeadlines,
                 rateDetails: rate,
                 hotelCheckInMinutes: stay.checkInMinutes,
@@ -109,7 +112,8 @@ extension Check24TravelProvider {
             "enrichment",
             event: "completed",
             result: .succeeded,
-            url: url
+            url: url,
+            reason: stay.locationToAddress == nil ? "hotel_info_address_missing" : "hotel_info_address_present"
         )
         return enrichment
     }
