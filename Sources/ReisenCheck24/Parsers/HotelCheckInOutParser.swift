@@ -21,8 +21,9 @@ public struct HotelCheckInOut {
 
     func merging(place: ParsedHotelInfo?) -> HotelCheckInOut {
         HotelCheckInOut(
-            checkInMinutes: checkInMinutes,
-            checkOutMinutes: checkOutMinutes,
+            // JSON `hotelInfo.checkInCheckOut` hat Vorrang vor HTML-Regex.
+            checkInMinutes: place?.checkInMinutes ?? checkInMinutes,
+            checkOutMinutes: place?.checkOutMinutes ?? checkOutMinutes,
             locationTo: place?.locationTo ?? locationTo,
             locationToAddress: place?.locationToAddress ?? locationToAddress
         )

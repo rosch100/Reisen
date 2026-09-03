@@ -7,17 +7,54 @@ extension BookingBoardType {
             return exact
         }
         switch trimmed.uppercased() {
-        case "BB", "BREAKFAST":
+        case "BB", "BREAKFAST", "BREAKFAST_INCLUDED":
             return .breakfastIncluded
-        case "HB":
+        case "HB", "HALF_BOARD", "HALFBOARD":
             return .halfBoard
-        case "FB":
+        case "FB", "FULL_BOARD", "FULLBOARD":
             return .fullBoard
-        case "RO", "ROOM_ONLY":
+        case "RO", "ROOM_ONLY", "ROOMONLY", "NONE":
             return .roomOnly
         default:
-            return .unknown
+            return parseGermanOrFreeText(trimmed)
         }
+    }
+
+    /// Check24 `mealTypeLabel` und ähnliche Freitexte (DE).
+    private static func parseGermanOrFreeText(_ raw: String) -> BookingBoardType {
+        let folded = raw
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "de_DE"))
+            .lowercased()
+        if isRoomOnlyFreeText(folded) {
+            return .roomOnly
+        }
+        if folded.contains("vollpension") || folded.contains("full board") {
+            return .fullBoard
+        }
+        if folded.contains("halbpension") || folded.contains("half board") {
+            return .halfBoard
+        }
+        if folded.contains("fruhstuck") || folded.contains("breakfast") {
+            return .breakfastIncluded
+        }
+        return .unknown
+    }
+
+    /// Negationen vor positivem „Frühstück“/„breakfast“-Substring (folded Input).
+    private static let roomOnlyFreeTextNeedles = [
+        "ohne verpflegung",
+        "ohne fruhstuck",
+        "kein fruhstuck",
+        "fruhstuck nicht inklusive",
+        "nur ubernachtung",
+        "room only",
+        "without breakfast",
+        "no breakfast",
+        "breakfast not included",
+    ]
+
+    private static func isRoomOnlyFreeText(_ folded: String) -> Bool {
+        roomOnlyFreeTextNeedles.contains { folded.contains($0) }
     }
 
     /// Explizites API-Bool: `true` → Frühstück, `false` → nur Zimmer, fehlend → unbekannt.

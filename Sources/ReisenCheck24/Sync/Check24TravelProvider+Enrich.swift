@@ -44,6 +44,10 @@ extension Check24TravelProvider {
             )
             return Self.carRentalEnrichment(html: snapshot.html)
         }
+        if ref.bookingType == .hotel {
+            _ = try await waitForHotelDetailReady(in: webView)
+            _ = try await waitForHotelInfoAddressPayload(in: webView)
+        }
         let snapshot = try await snapshotHTML(from: webView)
         let policy = CancellationPolicyParser().parseCancellationPolicy(from: snapshot.html)
         let details = BookingDetailsParser().parse(from: snapshot.html, bookingType: ref.bookingType)
@@ -113,7 +117,9 @@ extension Check24TravelProvider {
             event: "completed",
             result: .succeeded,
             url: url,
-            reason: stay.locationToAddress == nil ? "hotel_info_address_missing" : "hotel_info_address_present"
+            reason: ref.bookingType == .hotel
+                ? hotelDetailCompletionReason(stay: stay, details: details)
+                : nil
         )
         return enrichment
     }

@@ -46,7 +46,7 @@ extension ActivityListParser {
             startAt: startAt,
             endAt: endAt,
             locationFrom: nil,
-            locationTo: activityLocation(from: activity),
+            locationTo: activityLocation(from: activity, bookingType: bookingType),
             locationFromAddress: nil,
             locationToAddress: activityAddress(from: activity),
             statusRaw: statusKey,

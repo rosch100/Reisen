@@ -45,6 +45,8 @@ extension Check24TravelProvider {
             )
             return
         }
+        // Soft: Preis/Storno kann vor hotelInfo (Adresse oder Check-in/out) im DOM stehen.
+        _ = try await waitForHotelInfoAddressPayload(in: webView)
 
         let detailSnapshot = try await snapshotHTML(from: webView)
         let html = detailSnapshot.html
@@ -105,8 +107,22 @@ extension Check24TravelProvider {
             event: "completed",
             result: .succeeded,
             url: bookingURL,
-            reason: stay.locationToAddress == nil ? "hotel_info_address_missing" : "hotel_info_address_present"
+            reason: hotelDetailCompletionReason(stay: stay, details: parsedDetails)
         )
+    }
+
+    func hotelDetailCompletionReason(stay: HotelCheckInOut, details: ParsedBookingDetails) -> String {
+        [
+            presenceFlag("hotel_info_address", stay.locationToAddress != nil),
+            presenceFlag("check_in_minutes", stay.checkInMinutes != nil),
+            presenceFlag("check_out_minutes", stay.checkOutMinutes != nil),
+            presenceFlag("board_type", details.boardTypeRaw != nil),
+            presenceFlag("room_category", details.roomCategory != nil),
+        ].joined(separator: "|")
+    }
+
+    private func presenceFlag(_ key: String, _ present: Bool) -> String {
+        present ? "\(key)_present" : "\(key)_missing"
     }
 
     func waitForHotelDetailReady(in webView: WKWebView) async throws -> Bool {
@@ -123,6 +139,14 @@ extension Check24TravelProvider {
             document.documentElement.outerHTML.includes('€')
             """,
             timeoutSeconds: 12
+        ).asReadyFlag()
+    }
+
+    /// Wartet auf eingebettetes `hotelInfo` inkl. Straße. Timeout → false (Parse trotzdem versuchen).
+    func waitForHotelInfoAddressPayload(in webView: WKWebView) async throws -> Bool {
+        try await webView.waitForJavaScriptCondition(
+            Check24HotelInfoParser.domAddressPayloadCondition,
+            timeoutSeconds: 8
         ).asReadyFlag()
     }
 }

@@ -107,9 +107,11 @@ public enum BilligerMietwagenBookingDetailParser {
             || BilligerMietwagenAuthConstants.isPortalHost(host)
     }
 
+    /// FLOYT legt oft die komplette Display-Adresse in `street` (inkl. Ort/Land/PLZ)
+    /// und liefert `city`/`country` zusätzlich — ohne Dedup entsteht `, …, Berlin, Berlin, DE`.
     private static func formatAddress(_ address: StationAddress?) -> String? {
         guard let address else { return nil }
-        return PostalAddress.lines(
+        return BilligerMietwagenStationAddressFormat.lines(
             street: address.street,
             postalCode: address.postalCode,
             city: address.city,

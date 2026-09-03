@@ -93,7 +93,7 @@ enum TravelokaItineraryEntryParser {
             start: times.start,
             end: times.end,
             title: fields.title,
-            confirmationCode: bookingId,
+            confirmationCode: NonEmpty.first(fields.confirmationCode, bookingId),
             externalUrl: externalUrl,
             cancellationUrl: cancellationUrl,
             locationFrom: TravelokaJSON.string(fields.locationFrom),
@@ -132,6 +132,7 @@ enum TravelokaItineraryEntryParser {
         var start: Date
         var end: Date
         var title: String?
+        var confirmationCode: String?
         var locationFrom: String?
         var locationTo: String?
         var locationFromAddress: String?
@@ -222,6 +223,7 @@ enum TravelokaItineraryEntryParser {
         if let beginTZ = context.tzBegin {
             fields.deadlines = experienceDeadlines(from: expDetail, timeZone: beginTZ)
         }
+        fields.guestHints = TravelokaGuestHintMapper.experienceHints(experienceDetail: expDetail)
         return fields
     }
 
@@ -477,6 +479,7 @@ enum TravelokaItineraryEntryParser {
             bookingDetail: bookingDetail,
             timeZone: context.tzBegin
         )
+        fields.confirmationCode = NonEmpty.string(TravelokaJSON.string(eTicket["pnrCode"]))
         return fields
     }
 

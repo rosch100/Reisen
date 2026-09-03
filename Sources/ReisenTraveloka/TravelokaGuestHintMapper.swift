@@ -35,6 +35,88 @@ enum TravelokaGuestHintMapper {
         )
     }
 
+    /// Experience: `howToUse` / `importantNote` sowie prep-relevante Freitexte aus MYOW-Infos.
+    static func experienceHints(experienceDetail: [String: Any]) -> [BookingGuestHint] {
+        let provider = ProviderID.traveloka.rawValue
+        let myow = TravelokaJSON.dictionary(experienceDetail["makeYourOwnWayInfo"])
+        let singles = [
+            freeTextHint(
+                title: "Anleitung",
+                detail: plainText(experienceDetail["howToUse"]),
+                sourceKey: "\(provider):experience:how_to_use",
+                provider: provider,
+                requirePrepKeywords: false
+            ),
+            freeTextHint(
+                title: "Wichtig",
+                detail: plainText(experienceDetail["importantNote"]),
+                sourceKey: "\(provider):experience:important_note",
+                provider: provider,
+                requirePrepKeywords: false
+            ),
+            freeTextHint(
+                title: "Zusatzinfo",
+                detail: plainText(
+                    myow["experienceExtraInformation"],
+                    flattenComponentTree(myow["extraInformation"])
+                ),
+                sourceKey: "\(provider):experience:extra_information",
+                provider: provider,
+                requirePrepKeywords: true
+            ),
+        ].compactMap { $0 }
+        return BookingGuestHint.dedupedByNormalizedDetail(singles)
+    }
+
+    private static func freeTextHint(
+        title: String,
+        detail: String?,
+        sourceKey: String,
+        provider: String,
+        requirePrepKeywords: Bool
+    ) -> BookingGuestHint? {
+        guard let detail else { return nil }
+        if requirePrepKeywords, !BookingGuestHintPrepKeywords.matches(detail) {
+            return nil
+        }
+        return makeHint(title: title, detail: detail, sourceKey: sourceKey, provider: provider)
+    }
+
+    /// Traveloka Experience-UI-Bäume: sichtbare Strings aus verschachtelten Components sammeln.
+    private static func flattenComponentTree(_ value: Any?) -> String? {
+        var parts: [String] = []
+        collectPlainStrings(from: value, into: &parts)
+        return NonEmpty.string(parts.joined(separator: "\n"))
+    }
+
+    private static let componentDisplayKeys: Set<String> = [
+        "text", "value", "content", "title", "description",
+    ]
+
+    private static func collectPlainStrings(from value: Any?, into parts: inout [String]) {
+        switch value {
+        case let text as String:
+            if let trimmed = NonEmpty.string(HTMLPlainText.flatten(text)) {
+                parts.append(trimmed)
+            }
+        case let dict as [String: Any]:
+            for key in componentDisplayKeys {
+                if let trimmed = NonEmpty.string(HTMLPlainText.flatten(TravelokaJSON.string(dict[key]) ?? "")) {
+                    parts.append(trimmed)
+                }
+            }
+            for (key, nested) in dict where !componentDisplayKeys.contains(key) {
+                collectPlainStrings(from: nested, into: &parts)
+            }
+        case let list as [Any]:
+            for nested in list {
+                collectPlainStrings(from: nested, into: &parts)
+            }
+        default:
+            break
+        }
+    }
+
     private static func noticePolicies(
         from display: [String: Any],
         provider: String

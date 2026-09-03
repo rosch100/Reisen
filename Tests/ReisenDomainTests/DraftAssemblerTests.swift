@@ -87,6 +87,16 @@ import ReisenDomain
     #expect(BookingBoardType.parse("HB") == .halfBoard)
     #expect(BookingBoardType.parse("FB") == .fullBoard)
     #expect(BookingBoardType.parse("RO") == .roomOnly)
+    #expect(BookingBoardType.parse("NONE") == .roomOnly)
+    #expect(BookingBoardType.parse("ohne Verpflegung") == .roomOnly)
+    #expect(BookingBoardType.parse("kein Frühstück") == .roomOnly)
+    #expect(BookingBoardType.parse("Frühstück nicht inklusive") == .roomOnly)
+    #expect(BookingBoardType.parse("without breakfast") == .roomOnly)
+    #expect(BookingBoardType.parse("no breakfast") == .roomOnly)
+    #expect(BookingBoardType.parse("Breakfast not included") == .roomOnly)
+    #expect(BookingBoardType.parse("Frühstück") == .breakfastIncluded)
+    #expect(BookingBoardType.parse("Halbpension") == .halfBoard)
+    #expect(BookingBoardType.parse("Vollpension") == .fullBoard)
     #expect(BookingBoardType.parse("") == .unknown)
     #expect(BookingBoardType.parse(nil) == .unknown)
 }
@@ -144,6 +154,16 @@ import ReisenDomain
     )
     #expect(PostalAddress.cityLine(city: "Berlin", postalCode: nil) == "Berlin")
     #expect(PostalAddress.lines(street: "  ", postalCode: nil, city: nil, country: nil) == nil)
+    #expect(
+        PostalAddress.lines(
+            street: ", Flughafen BER",
+            postalCode: nil,
+            city: "Berlin",
+            country: "DE"
+        ) == "Flughafen BER, Berlin, DE"
+    )
+    #expect(PostalAddress.stripLeadingSeparators(",  Foo") == "Foo")
+    #expect(PostalAddress.stripLeadingSeparators("  ") == nil)
 }
 
 @Test func bookingIdentityKey_prefersURLThenConfirmation() {
