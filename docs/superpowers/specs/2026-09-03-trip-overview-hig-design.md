@@ -1,7 +1,7 @@
 # Design: Reise-Übersicht HIG (mittleres Pane)
 
 **Datum:** 2026-09-03
-**Status:** P1 Judge-Korrekturen (Rev 2)
+**Status:** Implemented (PR #130)
 **Scope:** macOS Trip-Übersicht im mittleren Detail-Pane; iOS Overview-Reihenfolge über dieselbe Presentation-SSOT; Identifier + XCUI; UI-Testing Skip für Crash-Catcher in `AppBootstrap` (Isolation).
 **Nicht-Ziele:** Vollständige App-weite HIG-Sanierung; Sidebar-/Menü-/Toolbar-Discoverability aus [2026-07-20-hig-core-ux-review.md](2026-07-20-hig-core-ux-review.md); Kosten-Semantik ([2026-09-01-trip-cost-currency-design.md](2026-09-01-trip-cost-currency-design.md)); neue Domänenfelder außer L10n `trip.notes`; Repo-weites `@AppStorage`-Rewrite.
 

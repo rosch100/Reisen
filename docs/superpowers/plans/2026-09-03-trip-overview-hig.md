@@ -1,12 +1,14 @@
 # Trip-Overview HIG Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
 **Goal:** macOS-Reise-Übersicht mit klarer Hierarchie; iOS nutzt dieselbe `TripOverviewPresentation`; Identifier + XCUI.
 
 **Architecture:** SharedUI Presentation + MacHeader; TripDetailView verdrahtet Cost-Refresh am Wrapper; iOS Section `switch`/`ForEach` über `visibleFields`; neuer L10n-Key `trip.notes`; AppBootstrap skippt CrashCatcher unter UI-Testing.
 
 **Tech Stack:** Swift 6, SwiftUI, Swift Testing, XCUI, L10n xcstrings.
+
+**Execution status:** complete (shipped on `feat/trip-overview-hig`, PR #130).
 
 ## Global Constraints
 
@@ -45,11 +47,11 @@
 **Interfaces:**
 - Produces: `TripOverviewField`, `TripOverviewPresentation.visibleFields(hasDestination:Bool, hasBookings:Bool, hasNotes:Bool) -> [TripOverviewField]`
 
-- [ ] **Step 1: Failing tests** (order full / omits optional / completeness requires bookings) — siehe Spec-Reihenfolge title→destination→period→cost→completeness→notes
+- [x] **Step 1: Failing tests** (order full / omits optional / completeness requires bookings) — siehe Spec-Reihenfolge title→destination→period→cost→completeness→notes
 
-- [ ] **Step 2:** `swift test --filter tripOverviewPresentation` → FAIL
+- [x] **Step 2:** `swift test --filter tripOverviewPresentation` → FAIL
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```swift
 import Foundation
@@ -74,9 +76,9 @@ public enum TripOverviewPresentation {
 }
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
-- [ ] **Step 5: Commit** `feat(ui): TripOverviewPresentation field order SSOT`
+- [x] **Step 5: Commit** `feat(ui): TripOverviewPresentation field order SSOT`
 
 ---
 
@@ -91,7 +93,7 @@ public enum TripOverviewPresentation {
 - Production-Default: `uiTesting: .fromProcess`.
 - Optional Closures nur zum Zählen von Install/Flush in Tests.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
 
 ```swift
 @Test @MainActor
@@ -115,11 +117,11 @@ func appBootstrap_uiTesting_skipsCrashCatcherAndUsesInMemory() {
 }
 ```
 
-- [ ] **Step 2: Implement** — Property `uiTesting`; Guard; `makeReadyState(..., uiTesting:)`; Observer/Reset nutzen `uiTesting.skipsSideEffects` statt `.fromProcess`.
+- [x] **Step 2: Implement** — Property `uiTesting`; Guard; `makeReadyState(..., uiTesting:)`; Observer/Reset nutzen `uiTesting.skipsSideEffects` statt `.fromProcess`.
 
-- [ ] **Step 3: GREEN**
+- [x] **Step 3: GREEN**
 
-- [ ] **Step 4: Commit** `fix(appcore): skip crash catcher under UI testing`
+- [x] **Step 4: Commit** `fix(appcore): skip crash catcher under UI testing`
 
 ---
 
@@ -235,10 +237,10 @@ public struct TripOverviewMacHeader: View {
 
 Make `TripOverviewField` already `Hashable` in Task 1.
 
-- [ ] **Step 1:** Identifier + L10n tests RED
-- [ ] **Step 2:** Keys + Identifiers + Header
-- [ ] **Step 3:** GREEN Identifier/L10n tests
-- [ ] **Step 4: Commit** `feat(ui): TripOverviewMacHeader, notes L10n, identifiers`
+- [x] **Step 1:** Identifier + L10n tests RED
+- [x] **Step 2:** Keys + Identifiers + Header
+- [x] **Step 3:** GREEN Identifier/L10n tests
+- [x] **Step 4: Commit** `feat(ui): TripOverviewMacHeader, notes L10n, identifiers`
 
 ---
 
@@ -246,11 +248,11 @@ Make `TripOverviewField` already `Hashable` in Task 1.
 
 **Files:** `Sources/Reisen/App/TripDetailView.swift`
 
-- [ ] Replace `tripOverviewSection` with `TripOverviewMacHeader(...)` + Cost `.onAppear`/`.onChange` am Wrapper
-- [ ] Parent padding Overview: `.padding(.vertical, 12)` (horizontal 16 bleibt)
-- [ ] Remove unused private `overviewFact` from TripDetailView
-- [ ] `bash ./Scripts/ci-build.sh --arch arm64` EXIT 0
-- [ ] Commit `feat(macos): wire hierarchical trip overview header`
+- [x] Replace `tripOverviewSection` with `TripOverviewMacHeader(...)` + Cost `.onAppear`/`.onChange` am Wrapper
+- [x] Parent padding Overview: `.padding(.vertical, 12)` (horizontal 16 bleibt)
+- [x] Remove unused private `overviewFact` from TripDetailView
+- [x] `bash ./Scripts/ci-build.sh --arch arm64` EXIT 0
+- [x] Commit `feat(macos): wire hierarchical trip overview header`
 
 ---
 
@@ -258,11 +260,11 @@ Make `TripOverviewField` already `Hashable` in Task 1.
 
 **Files:** `Apps/ReiseniOS/Shared/TripDetailIOS.swift`
 
-- [ ] Compute `fields = TripOverviewPresentation.visibleFields(...)`
-- [ ] Build Section content by switching fields (title CopyableLabeledValue, destination, period, `TripCostOverviewIOSRows` for `.cost`, `TripCompletenessOverviewRow` for `.completeness`, notes with `L10n.string(.tripNotes)`)
-- [ ] Empty-bookings Assign-Button bleibt **nach** den Presentation-Feldern
-- [ ] `bash ./Scripts/ios-test.sh` → EXIT 0
-- [ ] Commit `feat(ios): drive trip overview rows from TripOverviewPresentation`
+- [x] Compute `fields = TripOverviewPresentation.visibleFields(...)`
+- [x] Build Section content by switching fields (title CopyableLabeledValue, destination, period, `TripCostOverviewIOSRows` for `.cost`, `TripCompletenessOverviewRow` for `.completeness`, notes with `L10n.string(.tripNotes)`)
+- [x] Empty-bookings Assign-Button bleibt **nach** den Presentation-Feldern
+- [x] `bash ./Scripts/ios-test.sh` → EXIT 0
+- [x] Commit `feat(ios): drive trip overview rows from TripOverviewPresentation`
 
 ---
 
@@ -285,10 +287,10 @@ func testSeededTripShowsOverview() {
 
 Identifier `tripOverview` am Overview-Wrapper in `TripDetailView` (`.accessibilityElement(children: .contain)`), nicht nur am Header-Root.
 
-- [ ] Isolation: vollständiger Grep wie Spec; Diff-Scope: keine neuen Defaults-Sites
-- [ ] `bash ./Scripts/macos-ui-test-remote.sh` EXIT 0
-- [ ] `bash ./Scripts/ci-test.sh` EXIT 0
-- [ ] Commit `test(macos): assert unique trip overview identifiers`
+- [x] Isolation: vollständiger Grep wie Spec; Diff-Scope: keine neuen Defaults-Sites
+- [x] `bash ./Scripts/macos-ui-test-remote.sh` EXIT 0
+- [x] `bash ./Scripts/ci-test.sh` EXIT 0
+- [x] Commit `test(macos): assert unique trip overview identifiers`
 
 ---
 
