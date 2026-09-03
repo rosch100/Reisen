@@ -244,6 +244,33 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitFor(UITestingIdentifiers.tripMultiSelectionSummary)
     }
 
+    func testTripTimelineShiftRangeWithGapOffersBatchMenu() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.seededTripRow).click()
+        let first = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow)
+        let second = ui.waitFor(UITestingIdentifiers.seededTimelineBookingRow2)
+        first.click()
+        XCUIElement.perform(withKeyModifiers: .shift) {
+            second.click()
+        }
+        // Seed-Gap liegt zwischen den beiden Buchungen; ⇧-Range enthält typischerweise die Gap.
+        ui.waitFor(UITestingIdentifiers.tripBookingMultiSelectionSummary)
+        second.rightClick()
+
+        XCTAssertTrue(
+            ui.app.menuItems[UITestingIdentifiers.deleteBookingMenuTitleDE]
+                .waitForExistence(timeout: 3),
+            "⇧-Range inkl. Zwischen-Gap muss Batch-Löschen anbieten"
+        )
+        XCTAssertFalse(
+            ui.app.menuItems[UITestingIdentifiers.copyConfirmationMenuTitleDE]
+                .waitForExistence(timeout: 1),
+            "⇧-Range inkl. Zwischen-Gap darf kein Einzel-Copy zeigen"
+        )
+        ui.app.typeKey(.escape, modifierFlags: [])
+    }
+
     func testTripTimelineMultiSelectionOffersBatchDelete() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
@@ -254,12 +281,19 @@ final class MacUISmokeTests: XCTestCase {
         XCUIElement.perform(withKeyModifiers: .command) {
             second.click()
         }
+        ui.waitFor(UITestingIdentifiers.tripBookingMultiSelectionSummary)
         second.rightClick()
 
         XCTAssertTrue(
             ui.app.menuItems[UITestingIdentifiers.deleteBookingMenuTitleDE]
                 .waitForExistence(timeout: 3),
             "Timeline-Multi-Menü enthält Batch-Löschen nicht"
+        )
+        // Bei gültiger Multi-Selektion darf kein Einzel-Copy erscheinen.
+        XCTAssertFalse(
+            ui.app.menuItems[UITestingIdentifiers.copyConfirmationMenuTitleDE]
+                .waitForExistence(timeout: 1),
+            "Timeline-Multi zeigt unerwartet Einzel-Copy"
         )
         ui.app.typeKey(.escape, modifierFlags: [])
     }

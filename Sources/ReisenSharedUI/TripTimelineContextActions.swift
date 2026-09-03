@@ -17,26 +17,35 @@ public enum TripTimelineSelectionKind: Equatable, Sendable {
     case empty
     case singleBooking
     case singleGap
-    case multipleBookingsOnly
+    case multipleBookings
     case mixedOrGapsOnly
 }
 
 public enum TripTimelineContextActions {
+    /// Booking-IDs in der Selektion (Gaps und sonstige Tags ausgefiltert).
+    public static func bookingIDs(
+        in selectedIDs: Set<String>,
+        isBookingID: (String) -> Bool
+    ) -> Set<String> {
+        Set(selectedIDs.filter(isBookingID))
+    }
+
     public static func kind(
         selectedIDs: Set<String>,
         isBookingID: (String) -> Bool,
         isGapID: (String) -> Bool
     ) -> TripTimelineSelectionKind {
         guard !selectedIDs.isEmpty else { return .empty }
-        let bookings = selectedIDs.filter(isBookingID)
+        let bookings = bookingIDs(in: selectedIDs, isBookingID: isBookingID)
         let gaps = selectedIDs.filter(isGapID)
+        // Native List-⇧-Range schließt Zwischen-Gaps mit; Batch gilt für ≥2 Bookings.
+        if bookings.count >= 2 {
+            return .multipleBookings
+        }
         if selectedIDs.count == 1 {
             if bookings.count == 1 { return .singleBooking }
             if gaps.count == 1 { return .singleGap }
             return .mixedOrGapsOnly
-        }
-        if bookings.count == selectedIDs.count {
-            return .multipleBookingsOnly
         }
         return .mixedOrGapsOnly
     }
@@ -49,7 +58,7 @@ public enum TripTimelineContextActions {
             return [.edit, .addBooking, .copy, .openPortal, .removeFromTrip, .deleteBooking]
         case .singleGap:
             return [.editGap, .addBooking]
-        case .multipleBookingsOnly:
+        case .multipleBookings:
             return [.batchRemoveFromTrip, .batchDeleteBooking]
         }
     }
