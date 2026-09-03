@@ -206,6 +206,42 @@ func bmDetailShortStreetUsesPostalAddressLines() throws {
     #expect(enrichment.locationToAddress == "BER, Berlin, DE")
 }
 
+@Test("BM Detail: Mehr-Komma-Straße ohne FLOYT-Leading-Separator behält PLZ/Ort/Land")
+func bmDetailMultiCommaStreetWithoutLeadingSeparatorUsesPostalAddress() throws {
+    let json = """
+    {
+      "reservation": { "id": "r-structured", "status": "confirmed" },
+      "offer": { "model": "X", "supplier": "Y", "currency": "EUR", "price": 1 },
+      "rental": {
+        "pickUp": {
+          "address": {
+            "street": "Terminal 1, Car Rental Center, Main Street",
+            "postalCode": "10115",
+            "city": "Berlin",
+            "country": "DE"
+          },
+          "datetime": "2026-10-19T12:00:00"
+        },
+        "dropOff": {
+          "address": {
+            "street": "Terminal 1, Car Rental Center, Main Street",
+            "postalCode": "10115",
+            "city": "Berlin",
+            "country": "DE"
+          },
+          "datetime": "2026-10-20T12:00:00"
+        }
+      }
+    }
+    """
+    let enrichment = try BilligerMietwagenBookingDetailParser.parse(from: json)
+    #expect(
+        enrichment.locationFromAddress
+            == "Terminal 1, Car Rental Center, Main Street, 10115 Berlin, DE"
+    )
+    #expect(enrichment.locationFromAddress?.contains("\n") != true)
+}
+
 @Test("BilligerMietwagenBookingDetailParser nutzt cancelUntil als Stornofrist")
 func bmDetailDeadlineFromCancelUntil() throws {
     let json = """

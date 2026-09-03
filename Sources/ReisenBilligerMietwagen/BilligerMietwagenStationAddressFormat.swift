@@ -10,7 +10,9 @@ enum BilligerMietwagenStationAddressFormat {
         country: String?
     ) -> String? {
         let cleanedStreet = PostalAddress.stripLeadingSeparators(street)
-        if let cleanedStreet, isPreformatted(cleanedStreet) {
+        // Nur FLOYT-Leading-Separator-Blobs (`, Flughafen …`); reine Mehr-Komma-Straßen
+        // bleiben bei PostalAddress.lines inkl. PLZ/Ort/Land.
+        if let cleanedStreet, isFloytDisplayBlob(rawStreet: street) {
             return multiline(
                 street: stripTrailingDuplicateCity(cleanedStreet, city: city)
             )
@@ -23,9 +25,10 @@ enum BilligerMietwagenStationAddressFormat {
         )
     }
 
-    /// Mehrere Komma-Segmente = Portal-Displayblob, keine reine Straße.
-    private static func isPreformatted(_ street: String) -> Bool {
-        street.split(separator: ",", omittingEmptySubsequences: false).count >= 3
+    /// Live-FLOYT: leerer Stationsname vor dem Komma (`", …"` / `"; …"`).
+    private static func isFloytDisplayBlob(rawStreet: String?) -> Bool {
+        guard let raw = NonEmpty.string(rawStreet), let first = raw.first else { return false }
+        return first == "," || first == ";"
     }
 
     private static func stripTrailingDuplicateCity(_ street: String, city: String?) -> String {

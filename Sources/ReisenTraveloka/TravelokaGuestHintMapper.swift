@@ -56,7 +56,7 @@ enum TravelokaGuestHintMapper {
             ),
             freeTextHint(
                 title: "Zusatzinfo",
-                detail: plainText(
+                detail: firstPrepMatchingText(
                     myow["experienceExtraInformation"],
                     flattenComponentTree(myow["extraInformation"])
                 ),
@@ -66,6 +66,17 @@ enum TravelokaGuestHintMapper {
             ),
         ].compactMap { $0 }
         return BookingGuestHint.dedupedByNormalizedDetail(singles)
+    }
+
+    /// Ersten Kandidaten mit Prep-Keywords wählen (nicht nur „erster non-empty“).
+    private static func firstPrepMatchingText(_ values: Any?...) -> String? {
+        for value in values {
+            guard let text = plainText(value), BookingGuestHintPrepKeywords.matches(text) else {
+                continue
+            }
+            return text
+        }
+        return nil
     }
 
     private static func freeTextHint(
@@ -89,9 +100,10 @@ enum TravelokaGuestHintMapper {
         return NonEmpty.string(parts.joined(separator: "\n"))
     }
 
-    private static let componentDisplayKeys: Set<String> = [
+    private static let componentDisplayKeyOrder = [
         "text", "value", "content", "title", "description",
     ]
+    private static let componentDisplayKeys = Set(componentDisplayKeyOrder)
 
     private static func collectPlainStrings(from value: Any?, into parts: inout [String]) {
         switch value {
@@ -100,13 +112,13 @@ enum TravelokaGuestHintMapper {
                 parts.append(trimmed)
             }
         case let dict as [String: Any]:
-            for key in componentDisplayKeys {
+            for key in componentDisplayKeyOrder {
                 if let trimmed = NonEmpty.string(HTMLPlainText.flatten(TravelokaJSON.string(dict[key]) ?? "")) {
                     parts.append(trimmed)
                 }
             }
-            for (key, nested) in dict where !componentDisplayKeys.contains(key) {
-                collectPlainStrings(from: nested, into: &parts)
+            for key in dict.keys.sorted() where !componentDisplayKeys.contains(key) {
+                collectPlainStrings(from: dict[key], into: &parts)
             }
         case let list as [Any]:
             for nested in list {
