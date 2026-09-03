@@ -94,7 +94,7 @@ Layout-only → DiagnosticLogger **begründet entbehrlich**.
 | Overview sichtbar | `TripDetailView` list-mode + `TripOverviewMacHeader` | nein (Anzeige) |
 | Optional: anderer Trip | Sidebar-Click → Outline-Selection (`outlineTripClick` / Selection-Binding) | nur Navigation |
 
-**Smoke v1:** Seed-Trip anklicken, dann `waitFor(detail)` + `waitFor(tripOverview)` + `waitFor(tripOverviewTitle)`. `tripOverview` liegt auf einem expliziten 1×1-`Color.clear`-AX-Anker im Header (macOS XCUI findet Identifier an reinen VStacks/Padding-Wrappern oft nicht); Titel-ID am Title-Text.
+**Smoke v1:** nach `launchPopulated()` **ohne** Extra-Klick (Auto-Select Seed-Trip), dann `waitFor(detail)` + `waitFor(tripOverview)` + `waitFor(tripOverviewTitle)`. `tripOverview` liegt auf dem Section-Label-Text `trip.overview`; Titel-ID am Title-Text. `reisen.detail` nur an Buchungsliste/Empty — nicht am äußeren VStack.
 
 ## Identifier
 
