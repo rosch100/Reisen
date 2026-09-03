@@ -266,24 +266,6 @@ struct BookingDetailIOS: View {
         }
     }
 
-    @ViewBuilder
-    private func bookingSyncStatusSection(for booking: SDBooking) -> some View {
-        Section(L10n.string(.bookingDetailSyncStatusSection)) {
-            if let synced = booking.lastSyncedAt {
-                let syncedText = synced.formatted(date: .abbreviated, time: .shortened)
-                CopyableLabeledValue(
-                    label: L10n.string(.tripLastSynced),
-                    value: syncedText,
-                    kind: .standard,
-                    style: .list
-                )
-            } else {
-                Text(L10n.string(.tripNotSyncedYet))
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
     var body: some View {
         Group {
             if let booking {
@@ -325,11 +307,15 @@ struct BookingDetailIOS: View {
 
                     bookingLinksSection(for: booking)
 
-                    bookingSyncStatusSection(for: booking)
-
                     bookingActionsSection(for: booking)
                 }
                 .id(booking.id)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if let synced = booking.lastSyncedAt {
+                        BookingLastSyncedBar(synced: synced)
+                            .frame(height: BookingLastSyncedBar.barHeight)
+                    }
+                }
             } else {
                 ContentUnavailableView(
                     L10n.string(.tripBookingMissing),

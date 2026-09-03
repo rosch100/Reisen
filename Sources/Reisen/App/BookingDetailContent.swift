@@ -3,7 +3,7 @@ import ReisenDomain
 import ReisenData
 import ReisenSharedUI
 
-/// Vollständige Buchungsdetails (alle persistierten Felder) — gleiche Ansicht für zugeordnete und offene Buchungen.
+/// Nutzerrelevante Buchungsdetails — gleiche Ansicht für zugeordnete und offene Buchungen.
 struct BookingDetailContent: View {
     let booking: SDBooking
     let partnerTitles: [String]

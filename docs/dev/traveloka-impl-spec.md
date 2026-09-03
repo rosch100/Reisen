@@ -63,7 +63,7 @@ Aus laufender WebView-Session (keine Fixture-Hardcodings):
 | `TRAIN` / `TRAIN_GLOBAL` | `.train` |
 | Airport Transport, Flight Facilities, Insurance, unbekannt | `.other` |
 
-Status-SSOT: Tag/Text `Voucher issued` / `E-ticket issued` / `userTripStatus: ETICKET_PUBLISHED` → `.confirmed`; cancelled/refunded → `.cancelled`; sonst `.unknown`.
+Status-SSOT: Tag/Text `Voucher issued` / `E-ticket issued` / `userTripStatus: ETICKET_PUBLISHED` → `.confirmed`; `itineraryBookingStatus` REFUNDED/CANCELLED oder product-detail `cardDetailInfo.*.cancelled=true` (Vehicle/Experience; nested `withoutDriverDetailInfo`) → `.cancelled` (vor Confirmed); **nicht** `latestPaymentStatus` / alleiniges `isActiveBooking`; sonst `.unknown`.
 
 ## Feld-Mapping (Kurz)
 
