@@ -167,7 +167,7 @@ struct ContentView: View {
             if let providerID = note.object as? ProviderID {
                 selection = .providerSync(providerID)
             } else {
-                selection = .providerSync(enabledProviderIDs.first ?? .check24)
+                selectFirstEnabledProviderSyncIfAvailable()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenSyncAllProviders)) { _ in
@@ -377,7 +377,7 @@ struct ContentView: View {
                 tripSelectionAnchor = fallback.id
                 selection = .trip(fallback.id)
             } else {
-                selection = .providerSync(enabledProviderIDs.first ?? .check24)
+                clearSelectionOrSelectFirstEnabledProviderSync()
             }
         }
         tripPendingDelete = nil
@@ -462,7 +462,7 @@ struct ContentView: View {
             tripSelectionAnchor = fallback.id
             selection = .trip(fallback.id)
         } else {
-            selection = .providerSync(enabledProviderIDs.first ?? .check24)
+            clearSelectionOrSelectFirstEnabledProviderSync()
         }
     }
 
@@ -562,14 +562,20 @@ struct ContentView: View {
                 ContentUnavailableView {
                     Label(L10n.string(.tripWelcome), systemImage: "airplane")
                 } description: {
-                    Text(L10n.string(.tripSelectSidebarOrProvider))
+                    Text(
+                        enabledProviderIDs.isEmpty
+                            ? L10n.string(.syncProviderDisabledHint)
+                            : L10n.string(.tripSelectSidebarOrProvider)
+                    )
                 } actions: {
                     Button(L10n.string(.actionCreateTrip)) {
                         showCreateTrip = true
                     }
                     .accessibilityIdentifier(UITestingIdentifiers.emptyStateNewTrip)
-                    Button(L10n.string(.actionOpenSync)) {
-                        selection = .providerSync(enabledProviderIDs.first ?? .check24)
+                    if enabledProviderIDs.first != nil {
+                        Button(L10n.string(.actionOpenSync)) {
+                            selectFirstEnabledProviderSyncIfAvailable()
+                        }
                     }
                 }
                 .accessibilityElement(children: .contain)
@@ -679,8 +685,10 @@ struct ContentView: View {
             selection = .providerSync(firstLogin)
         } else if let trip = trips.first {
             selection = .trip(trip.id)
+        } else if let firstEnabled = enabledProviderIDs.first {
+            selection = .providerSync(firstEnabled)
         } else {
-            selection = .providerSync(enabledProviderIDs.first ?? .check24)
+            selection = nil
         }
     }
 
@@ -689,10 +697,25 @@ struct ContentView: View {
         Binding(
             get: {
                 if case .providerSync(let id) = selection { return id }
-                return enabledProviderIDs.first ?? .check24
+                return enabledProviderIDs.first
+                    ?? registeredProviderIDs.first
+                    ?? .manual
             },
             set: { selection = .providerSync($0) }
         )
+    }
+
+    private func selectFirstEnabledProviderSyncIfAvailable() {
+        guard let providerID = enabledProviderIDs.first else { return }
+        selection = .providerSync(providerID)
+    }
+
+    private func clearSelectionOrSelectFirstEnabledProviderSync() {
+        if let providerID = enabledProviderIDs.first {
+            selection = .providerSync(providerID)
+        } else {
+            selection = nil
+        }
     }
 
     private var sidebarMailbox: SidebarOpenBookingMailbox? {
@@ -1201,8 +1224,10 @@ struct ContentView: View {
                 } description: {
                     Text(L10n.string(.tripNoOpenBookingsCurrent))
                 } actions: {
-                    Button(L10n.string(.actionOpenSync)) {
-                        selection = .providerSync(enabledProviderIDs.first ?? .check24)
+                    if enabledProviderIDs.first != nil {
+                        Button(L10n.string(.actionOpenSync)) {
+                            selectFirstEnabledProviderSyncIfAvailable()
+                        }
                     }
                 }
             } else {
@@ -1351,7 +1376,7 @@ struct ContentView: View {
                 .frame(width: 0)
                 .clipped()
         case .none:
-            ProviderSyncContainer(selectedProviderID: .constant(.check24))
+            EmptyView()
         case .trips:
             ContentUnavailableView(
                 L10n.string(.tripTrips),

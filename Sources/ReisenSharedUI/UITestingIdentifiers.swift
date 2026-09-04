@@ -10,6 +10,7 @@ public enum UITestingIdentifiers {
     public static let inspector = "reisen.inspector"
     public static let settings = "reisen.settings"
     public static let syncChrome = "reisen.sync.chrome"
+    public static let syncBrowserCollapse = "reisen.sync.browser-collapse"
     public static let bookingEditor = "reisen.booking.editor"
     public static let bookingEditorSave = "reisen.booking.editor.save"
     public static let emptyState = "reisen.empty-state"
