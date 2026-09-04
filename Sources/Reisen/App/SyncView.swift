@@ -400,43 +400,15 @@ struct SyncView: View {
     /// Eine HIG-Fläche: Status, Guidance und Credential-CTAs oberhalb der Login-WebView.
     private var loginChrome: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "person.crop.circle.badge.questionmark")
-                    .foregroundStyle(loginTrafficLight.color)
-                    .imageScale(.large)
-                    .padding(.top, 2)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(loginTrafficLight.displayLabel)
-                        .font(.headline)
-                        .accessibilityIdentifier(UITestingIdentifiers.syncLoginChrome)
-                    Text(sessionBannerSubtitle)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if showsApplePasskeyHint {
-                        SyncApplePasskeyHintLabel()
+            SyncLoginChromeAdaptiveLayout {
+                loginChromeStatusColumn
+            } credentials: {
+                VStack(alignment: .leading, spacing: 8) {
+                    credentialControls
+                    if let keychainMessage {
+                        keychainEmptyAssistance(message: keychainMessage)
                     }
                 }
-
-                Spacer(minLength: 8)
-
-                if let lastURLString {
-                    Text(lastURLString)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: 220, alignment: .trailing)
-                        .textSelection(.enabled)
-                        .help(lastURLString)
-                }
-            }
-
-            credentialControls
-
-            if let keychainMessage {
-                keychainEmptyAssistance(message: keychainMessage)
             }
 
             syncStatusMessages
@@ -447,10 +419,41 @@ struct SyncView: View {
         .background(.bar)
     }
 
+    private var loginChromeStatusColumn: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "person.crop.circle.badge.questionmark")
+                .foregroundStyle(loginTrafficLight.color)
+                .imageScale(.large)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(loginTrafficLight.displayLabel)
+                    .font(.headline)
+                    .accessibilityIdentifier(UITestingIdentifiers.syncLoginChrome)
+                Text(sessionBannerSubtitle)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if showsApplePasskeyHint {
+                    SyncApplePasskeyHintLabel()
+                }
+                if let lastURLString {
+                    Text(lastURLString)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                        .help(lastURLString)
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private var credentialControls: some View {
         HStack(spacing: 8) {
-            if keychainAccounts.count > 1 {
+            if SyncBrowserChrome.showsAccountPicker(accountCount: keychainAccounts.count) {
                 Picker(L10n.string(.syncAccountPicker), selection: selectedAccountBinding) {
                     Text(L10n.string(.syncChooseAccount)).tag(Optional<KeychainCredentialAccount>.none)
                     ForEach(keychainAccounts) { account in
@@ -460,7 +463,8 @@ struct SyncView: View {
                 .labelsHidden()
                 .frame(maxWidth: 260)
                 .controlSize(.regular)
-            } else if let selectedKeychainAccount {
+            } else if SyncBrowserChrome.showsSelectedAccountLabel(accountCount: keychainAccounts.count),
+                      let selectedKeychainAccount {
                 Text(selectedKeychainAccount.username)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -468,19 +472,22 @@ struct SyncView: View {
                     .help(L10n.format(.syncAccountLabel, selectedKeychainAccount.username, selectedKeychainAccount.serverHost))
             }
 
-            Button {
-                insertKeychainCredentials()
-            } label: {
-                Label(L10n.string(.actionFillCredentials), systemImage: "key.fill")
+            if SyncBrowserChrome.showsFillCredentialsControl(accountCount: keychainAccounts.count) {
+                Button {
+                    insertKeychainCredentials()
+                } label: {
+                    Label(L10n.string(.actionFillCredentials), systemImage: "key.fill")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .disabled(!canInsertKeychainCredentials)
+                .accessibilityIdentifier(UITestingIdentifiers.syncFillCredentials)
+                .help(
+                    canInsertKeychainCredentials
+                        ? L10n.string(.syncFillCredentialsHelp)
+                        : (keychainMessage ?? L10n.string(.syncNoAccountSelected))
+                )
             }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .disabled(!canInsertKeychainCredentials)
-            .help(
-                canInsertKeychainCredentials
-                    ? L10n.string(.syncFillCredentialsHelp)
-                    : (keychainMessage ?? L10n.string(.syncNoAccountSelected))
-            )
 
             Button {
                 openRememberLoginSheet()
@@ -490,6 +497,7 @@ struct SyncView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
             .disabled(keychainServerHost == nil)
+            .accessibilityIdentifier(UITestingIdentifiers.syncRememberLogin)
             .help(L10n.string(.syncRememberLoginHelp))
 
             Spacer(minLength: 0)
@@ -595,6 +603,19 @@ struct SyncView: View {
             syncStatusMessages
 
             HStack(alignment: .center, spacing: 12) {
+                if SyncBrowserChrome.showsRememberLoginInBottomBar(isSessionReady: isSessionReady) {
+                    Button {
+                        openRememberLoginSheet()
+                    } label: {
+                        Label(L10n.string(.actionRememberLogin), systemImage: "plus")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .disabled(keychainServerHost == nil)
+                    .accessibilityIdentifier(UITestingIdentifiers.syncRememberLogin)
+                    .help(L10n.string(.syncRememberLoginHelp))
+                }
+
                 Spacer(minLength: 0)
 
                 if showsBrowserCollapseControl {
