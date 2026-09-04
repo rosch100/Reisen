@@ -9,7 +9,7 @@ public enum ProviderWebViewNavigationPolicy: Sendable {
     }
 
     private static let allowedSchemes: Set<String> = [
-        "http", "https", "about", "blob", "data",
+        "http", "https", "about", "blob",
     ]
 
     private static let blockedStoreHostSuffixes = [
@@ -23,6 +23,9 @@ public enum ProviderWebViewNavigationPolicy: Sendable {
 
     public static func decision(for url: URL, isMainFrame: Bool) -> Decision {
         guard let scheme = url.scheme?.lowercased() else { return .cancel }
+        // data: und Main-Frame-blob: öffnen lokale Script-Kontexte neben Message-Handlern.
+        if scheme == "data" { return .cancel }
+        if isMainFrame, scheme == "blob" { return .cancel }
         guard allowedSchemes.contains(scheme) else { return .cancel }
         if isMainFrame, scheme == "https", isBlockedStoreHost(url) {
             return .cancel

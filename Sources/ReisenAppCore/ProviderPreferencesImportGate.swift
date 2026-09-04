@@ -35,29 +35,62 @@ public enum ProviderPreferencesImportGate {
         recordPrefsImport(result: .started, reason: "gate_start")
 
         if shouldSkipCloudKitWait {
-            let snap = applyImport(from: context, into: defaults)
-            recordPrefsImport(
-                result: .succeeded,
-                reason: snap == nil ? "gate_immediate_empty" : "gate_immediate"
-            )
-            return snap
+            do {
+                let snap = try applyImport(from: context, into: defaults)
+                if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                    context: context,
+                    defaults: defaults
+                ) {
+                    return nil
+                }
+                recordPrefsImport(
+                    result: .succeeded,
+                    reason: snap == nil ? "gate_immediate_empty" : "gate_immediate"
+                )
+                return snap
+            } catch {
+                recordPrefsImport(result: .failed, reason: "gate_immediate_import_failed")
+                return nil
+            }
         }
 
-        if let existing = applyImport(from: context, into: defaults),
-           existing.setupCompleted {
-            recordPrefsImport(result: .succeeded, reason: "gate_already_present")
-            return existing
+        do {
+            if let existing = try applyImport(from: context, into: defaults),
+               existing.setupCompleted {
+                if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                    context: context,
+                    defaults: defaults
+                ) {
+                    return nil
+                }
+                recordPrefsImport(result: .succeeded, reason: "gate_already_present")
+                return existing
+            }
+        } catch {
+            recordPrefsImport(result: .failed, reason: "gate_precheck_import_failed")
+            return nil
         }
 
         await PersistenceBootstrap.awaitCloudKitImportIfNeeded(timeout: timeout)
 
-        let snap = applyImport(from: context, into: defaults)
-        if snap == nil {
-            recordPrefsImport(result: .timedOut, reason: "gate_timeout_empty")
-        } else {
-            recordPrefsImport(result: .succeeded, reason: "gate_after_wait")
+        do {
+            let snap = try applyImport(from: context, into: defaults)
+            if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                context: context,
+                defaults: defaults
+            ) {
+                return nil
+            }
+            if snap == nil {
+                recordPrefsImport(result: .timedOut, reason: "gate_timeout_empty")
+            } else {
+                recordPrefsImport(result: .succeeded, reason: "gate_after_wait")
+            }
+            return snap
+        } catch {
+            recordPrefsImport(result: .failed, reason: "gate_after_wait_import_failed")
+            return nil
         }
-        return snap
     }
 
     public static func exportFromDefaults(
@@ -74,14 +107,21 @@ public enum ProviderPreferencesImportGate {
         isExporting = true
         defer { isExporting = false }
         do {
-            try ProviderPreferencesMirror.export(from: defaults, into: context)
-            recordPrefsExport(result: .succeeded, reason: "export")
+            let didWrite = try ProviderPreferencesMirror.export(from: defaults, into: context)
+            if didWrite {
+                recordPrefsExport(result: .succeeded, reason: "export")
+            } else {
+                recordPrefsExport(result: .skipped, reason: "export_unchanged")
+            }
         } catch {
-            recordPrefsExport(result: .failed, reason: "export_failed")
+            recordPrefsExport(
+                result: .failed,
+                reason: "export_failed_\(String(describing: type(of: error)))"
+            )
         }
     }
 
-    /// Apply remote prefs; returns snapshot if a record existed.
+    /// Apply remote prefs; returns snapshot nur wenn lokale Defaults sich geändert haben (sonst kein Notify-Echo).
     /// Kein-op während eigenem Export oder ohne CloudKit-Observer-Kontext.
     public static func applyRemoteChange(
         context: ModelContext,
@@ -90,7 +130,22 @@ public enum ProviderPreferencesImportGate {
         guard shouldObserveRemoteChanges else { return nil }
         guard !isExporting else { return nil }
         guard !isApplyingRemote else { return nil }
-        return applyImport(from: context, into: defaults)
+        do {
+            let before = ProviderPreferencesSnapshot.read(from: defaults)
+            let snap = try applyImport(from: context, into: defaults)
+            if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                context: context,
+                defaults: defaults
+            ) {
+                return nil
+            }
+            guard let snap else { return nil }
+            guard snap != before else { return nil }
+            return snap
+        } catch {
+            recordPrefsImport(result: .failed, reason: "remote_apply_import_failed")
+            return nil
+        }
     }
 
     /// UI nach Import aktualisieren, ohne den Mirror erneut zu exportieren.
@@ -111,10 +166,43 @@ public enum ProviderPreferencesImportGate {
     private static func applyImport(
         from context: ModelContext,
         into defaults: UserDefaults
-    ) -> ProviderPreferencesSnapshot? {
+    ) throws -> ProviderPreferencesSnapshot? {
         isApplyingRemote = true
         defer { isApplyingRemote = false }
-        return try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+        return try ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+    }
+
+    /// Nach lokalem False-Positive-Repair: Import darf den Mirror-Poison nicht dauerhaft zurückschreiben.
+    /// - Returns: `true`, wenn Mirror bereinigt wurde (Caller soll Snapshot verwerfen).
+    @discardableResult
+    private static func clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+        context: ModelContext,
+        defaults: UserDefaults
+    ) -> Bool {
+        let needsExport = defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+        let reinfectedAfterRepair =
+            defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey)
+            && ProviderEnabledDefaultsMigration.isFalsePositiveAllOn(defaults: defaults)
+
+        guard needsExport || reinfectedAfterRepair else {
+            return false
+        }
+
+        ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(defaults: defaults)
+        do {
+            try ProviderPreferencesMirror.deleteAll(in: context)
+            defaults.set(false, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+            recordPrefsImport(
+                result: .succeeded,
+                reason: needsExport
+                    ? "false_positive_mirror_cleared"
+                    : "false_positive_mirror_reinfection_cleared"
+            )
+            return true
+        } catch {
+            recordPrefsImport(result: .failed, reason: "false_positive_mirror_clear_failed")
+            return true
+        }
     }
 
     private static func recordPrefsImport(result: DiagnosticResult, reason: String) {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Baut und startet Reisen.app (nicht: rohes swift run).
+# Baut und startet Voyenna.app (nicht: rohes swift run).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -23,8 +23,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "Baue Reisen.app..." >&2
-# build-app.sh beendet bereits eine laufende .build/Reisen.app-Instanz vor rm -rf.
+echo "Baue Voyenna.app..." >&2
+# build-app.sh beendet bereits eine laufende .build/Voyenna.app-Instanz vor rm -rf.
 APP="$("$ROOT/Scripts/build-app.sh")"
 
 # Launch Services trifft bei gleicher Bundle-ID oft /Applications (ältere Kopie).

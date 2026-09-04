@@ -66,7 +66,7 @@ public enum GitHubRepository {
     /// GitHub REST: `X-GitHub-Api-Version` (https://docs.github.com/en/rest).
     public static let restAPIVersion = "2022-11-28"
     /// GitHub REST: Pflicht-`User-Agent` (Anwendungsname).
-    public static let restUserAgent = "Reisen"
+    public static let restUserAgent = "Voyenna"
     /// GitHub-Validierung: `title is too long (maximum is 256 characters)`.
     public static let issueTitleMaxLength = 256
     /// Kürzung der Titel-Zusammenfassung (erste Zeile / Betreff) vor dem API-Limit.

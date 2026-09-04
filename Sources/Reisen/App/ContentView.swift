@@ -136,8 +136,8 @@ struct ContentView: View {
 
     @AppStorage(AppSettingsKeys.notificationEnabled) private var notificationEnabled: Bool = true
     @AppStorage(AppSettingsKeys.eventKitEnabled) private var eventKitEnabled: Bool = false
-    @AppStorage(AppSettingsKeys.calendarTitle) private var calendarTitle: String = "Reisen"
-    @AppStorage(AppSettingsKeys.reminderCalendarTitle) private var reminderCalendarTitle: String = "Reisen"
+    @AppStorage(AppSettingsKeys.calendarTitle) private var calendarTitle: String = "Voyenna"
+    @AppStorage(AppSettingsKeys.reminderCalendarTitle) private var reminderCalendarTitle: String = "Voyenna"
     @AppStorage(AppSettingsKeys.leadTimesDays) private var leadTimesDaysRaw: String = "7,3,1"
     @AppStorage(AppSettingsKeys.calendarTripTimesEnabled) private var calendarTripTimesEnabled: Bool = false
     @AppStorage(AppSettingsKeys.calendarFlightTimesEnabled) private var calendarFlightTimesEnabled: Bool = false
@@ -971,7 +971,8 @@ struct ContentView: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle(L10n.string(.tripTrips))
+        // Titelleiste = Produktmarke; Sidebar-Sektion bleibt `trip.trips` („Reisen“ = Trip-Liste).
+        .navigationTitle(VoyennaBrand.displayName)
         .accessibilityIdentifier(UITestingIdentifiers.sidebar)
         .contextMenu(forSelectionType: SidebarListItemID.self) { menuIDs in
             sidebarListContextMenu(menuIDs: menuIDs)

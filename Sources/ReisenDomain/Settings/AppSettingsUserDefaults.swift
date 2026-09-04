@@ -8,8 +8,8 @@ public enum AppSettingsUserDefaults {
         return AppSettings(
             notificationEnabled: defaults.object(forKey: AppSettingsKeys.notificationEnabled) as? Bool ?? true,
             eventKitEnabled: defaults.bool(forKey: AppSettingsKeys.eventKitEnabled),
-            calendarTitle: defaults.string(forKey: AppSettingsKeys.calendarTitle) ?? "Reisen",
-            reminderCalendarTitle: defaults.string(forKey: AppSettingsKeys.reminderCalendarTitle) ?? "Reisen",
+            calendarTitle: defaults.string(forKey: AppSettingsKeys.calendarTitle) ?? "Voyenna",
+            reminderCalendarTitle: defaults.string(forKey: AppSettingsKeys.reminderCalendarTitle) ?? "Voyenna",
             leadTimesDaysRaw: defaults.string(forKey: AppSettingsKeys.leadTimesDays) ?? "7,3,1",
             calendarTitleMode: CalendarTitleMode(rawValue: titleModeRaw) ?? .tripTitle,
             calendarTripTimesEnabled: defaults.bool(forKey: AppSettingsKeys.calendarTripTimesEnabled),

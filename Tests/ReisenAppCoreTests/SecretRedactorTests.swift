@@ -150,3 +150,16 @@ import Testing
     #expect(redacted.contains("/home/[redacted]/app/lib.so"))
     #expect(redacted.contains("0x0000000102a3c000"))
 }
+
+@Test func secretRedactor_redactsBareJWTAndBearerWithoutAuthorizationHeader() {
+    let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature"
+    let input = """
+    access=\(jwt)
+    Bearer \(jwt)
+    """
+    let redacted = SecretRedactor.redact(input)
+    #expect(!redacted.contains(jwt))
+    #expect(!redacted.contains("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"))
+    #expect(redacted.contains("Bearer [redacted]"))
+    #expect(redacted.contains("[redacted]"))
+}

@@ -9,12 +9,19 @@ public enum LoginFormCapture {
         webView.evaluateJavaScript(LoginFormCaptureScript.build()) { _, _ in }
     }
 
-    /// Nur Main-Frame und Provider-Login-URLs (keine IdP-/iframe-Injection).
+    /// Nur Main-Frame und Provider-Login-URLs auf erlaubten Hosts (keine IdP-/iframe-Injection).
     @MainActor
-    public static func accepts(message: WKScriptMessage, webView: WKWebView?) -> Bool {
+    public static func accepts(
+        message: WKScriptMessage,
+        webView: WKWebView?,
+        allowedServerHosts: [String]
+    ) -> Bool {
         guard message.frameInfo.isMainFrame else { return false }
         guard let absolute = webView?.url?.absoluteString, !absolute.isEmpty else { return false }
-        return AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute)
+        return AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+            absolute,
+            allowedServerHosts: allowedServerHosts
+        )
     }
 
     public static func parseCredentials(from body: Any) -> ProviderCredentials? {
@@ -37,10 +44,11 @@ public enum LoginFormCapture {
     public static func handleScriptMessage(
         _ message: WKScriptMessage,
         webView: WKWebView?,
+        allowedServerHosts: [String],
         onCredentials: (ProviderCredentials) -> Void
     ) {
         guard message.name == messageHandlerName else { return }
-        guard accepts(message: message, webView: webView) else { return }
+        guard accepts(message: message, webView: webView, allowedServerHosts: allowedServerHosts) else { return }
         guard let credentials = parseCredentials(from: message.body) else { return }
         onCredentials(credentials)
     }

@@ -13,6 +13,17 @@ import Foundation
     #expect(text.contains("2023-11-14"))
 }
 
+@Test func syncLog_appendRedactsSecretsAtWriteTime() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-sync-log-redact-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+    SyncLog.append("Bearer eyJhbGciOiJIUzI1NiJ9.payload.sig leak@example.com", to: url, now: Date())
+    let text = try String(contentsOf: url, encoding: .utf8)
+    #expect(!text.contains("eyJhbGciOiJIUzI1NiJ9.payload.sig"))
+    #expect(!text.contains("leak@example.com"))
+    #expect(text.contains("[redacted]"))
+}
+
 @Test func syncLog_recentTailMissingWhenFileAbsent() {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("reisen-sync-log-missing-\(UUID().uuidString).txt")

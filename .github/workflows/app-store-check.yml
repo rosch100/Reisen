@@ -1,5 +1,5 @@
 # Manuelles Store-IPA-Archive zur Release-Vorbereitung (nicht auf PRs).
-# Nur Store-Target ReiseniOS (de.roschmac.Reisen.ios) — nicht ReiseniOSPrivate.
+# Nur Store-Target ReiseniOS (app.voyenna.reisen.ios) — nicht ReiseniOSPrivate.
 # IPA: Scripts/ios-archive-appstore.sh
 # Prüft Signing, Store-Isolation und Apple ITMS-Validierung (altool --validate-app), nicht Review-Guidelines.
 name: App Store Check

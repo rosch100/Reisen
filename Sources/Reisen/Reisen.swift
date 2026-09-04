@@ -17,7 +17,7 @@ struct ReisenApp: App {
     var body: some Scene {
         // Ein festes Hauptfenster, kein WindowGroup: Document-Types + Ignore-State
         // unterdrücken sonst die automatische Szene (nur Menüleiste, kein AX-Fenster).
-        Window("Reisen", id: Self.mainWindowID) {
+        Window(VoyennaBrand.displayName, id: Self.mainWindowID) {
             Group {
                 if let bootstrap {
                     switch bootstrap.state {

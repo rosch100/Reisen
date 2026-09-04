@@ -2,20 +2,25 @@ import Testing
 import ReisenProviders
 
 @Test
-func loginAutofillScriptFillsUsernameWithoutPasswordField() {
-    let script = LoginAutofillScript.build(username: "a@b.de", password: "geheim")
+func loginAutofillScriptDoesNotEmbedCredentialLiterals() {
+    let script = LoginAutofillScript.build()
 
-    #expect(script.contains("a@b.de"))
-    #expect(script.contains("geheim"))
+    #expect(!script.contains("geheim"))
+    #expect(!script.contains("a@b.de"))
     #expect(script.contains("looksLikeUsername"))
     #expect(script.contains("looksLikePassword"))
     #expect(script.contains("userFilled"))
     #expect(script.contains("passFilled"))
+    #expect(script.contains("fill(el, username)"))
+    #expect(script.contains("fill(el, password)"))
+    // callAsyncJavaScript erwartet Top-Level-Return, kein IIFE.
+    #expect(!script.contains("(function()"))
+    #expect(script.contains("return {"))
 }
 
 @Test
 func loginAutofillScriptRecognizesGermanFieldHints() {
-    let script = LoginAutofillScript.build(username: "u", password: "p")
+    let script = LoginAutofillScript.build()
 
     #expect(script.contains("kennwort") || script.contains("Kennwort") || script.contains("passwort"))
     #expect(script.contains("e-mail") || script.contains("email"))
@@ -25,7 +30,7 @@ func loginAutofillScriptRecognizesGermanFieldHints() {
 
 @Test
 func loginAutofillScriptDoesNotOverwriteMatchingFilledFields() {
-    let script = LoginAutofillScript.build(username: "u", password: "p")
+    let script = LoginAutofillScript.build()
 
     // Bewusst jedes sichtbare Feld setzen (inkl. Duplikate) — Opodo hat oft 2 Forms.
     #expect(script.contains("_valueTracker"))
@@ -34,7 +39,7 @@ func loginAutofillScriptDoesNotOverwriteMatchingFilledFields() {
 
 @Test
 func loginAutofillScriptFillsAllVisibleDuplicatesInDialog() {
-    let script = LoginAutofillScript.build(username: "u", password: "p")
+    let script = LoginAutofillScript.build()
 
     #expect(script.contains("role=\"dialog\""))
     #expect(script.contains("aria-modal"))
@@ -53,7 +58,7 @@ func loginAutofillScriptFillsAllVisibleDuplicatesInDialog() {
 
 @Test
 func loginAutofillScriptDoesNotClickSocialIdPSubmit() {
-    let script = LoginAutofillScript.build(username: "u", password: "p")
+    let script = LoginAutofillScript.build()
     #expect(script.contains("isSocialSubmit"))
     #expect(script.contains("sign.?in.?with.?(apple|google|facebook)"))
     #expect(script.contains("anmelden.?mit.?(apple|google|facebook)"))
@@ -61,15 +66,13 @@ func loginAutofillScriptDoesNotClickSocialIdPSubmit() {
 }
 
 @Test
-func loginAutofillScriptUsesSentinelCredentialsAndReturnsSubmitIdentifier() {
-    let username = "unique-user-sentinel@example.invalid"
-    let password = "unique-password-sentinel"
-    let script = LoginAutofillScript.build(username: username, password: password)
+func loginAutofillScriptReturnsSubmitIdentifierFields() {
+    let script = LoginAutofillScript.build()
 
-    #expect(script.contains(username))
-    #expect(script.contains(password))
     #expect(script.contains("submitId"))
     #expect(script.contains("submitClicked"))
+    #expect(script.contains("fill(el, username)"))
+    #expect(script.contains("fill(el, password)"))
 }
 
 @Test
@@ -78,8 +81,5 @@ func providerLoginAttemptPolicyCapsAttemptsAndRequiresRetryDelay() {
     #expect(ProviderLoginAttemptPolicy.maximumAttempts(requested: 0) == 1)
     #expect(
         ProviderLoginAttemptPolicy.retryDelay(after: 0, delays: [0.1, 0.2]) == nil
-    )
-    #expect(
-        ProviderLoginAttemptPolicy.retryDelay(after: 1, delays: [0.1, 0.2]) == 0.1
     )
 }

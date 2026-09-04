@@ -1,9 +1,9 @@
 import Foundation
 
-/// SSOT für das Application-Support-Verzeichnis der App (`…/Application Support/Reisen`).
+/// SSOT für das Application-Support-Verzeichnis der App (`…/Application Support/Voyenna`).
 public enum ReisenApplicationSupport {
     public static func directoryURL() -> URL? {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("Reisen", isDirectory: true)
+            .appendingPathComponent("Voyenna", isDirectory: true)
     }
 }

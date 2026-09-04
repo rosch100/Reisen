@@ -3,7 +3,7 @@ import SwiftData
 
 @MainActor
 public enum PersistenceBootstrap {
-    nonisolated public static let cloudKitContainerID = "iCloud.de.roschmac.Reisen"
+    nonisolated public static let cloudKitContainerID = "iCloud.app.voyenna.reisen"
     nonisolated static let cloudKitServiceEntitlement = "CloudKit"
     nonisolated static let cloudKitContainerEnvironmentDevelopment = "Development"
     nonisolated static let cloudKitContainerEnvironmentProduction = "Production"

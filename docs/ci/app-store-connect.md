@@ -1,6 +1,6 @@
 # App Store Connect — Checkliste (ReiseniOS, Store)
 
-Technische Voraussetzungen im Repo sind in [apple-signing.md](apple-signing.md) und `Scripts/ios-archive-appstore.sh` beschrieben. Diese Checkliste gilt für die **App-Store-Variante** (`de.roschmac.Reisen.ios`) — **ohne** Provider-Abruf im Binary.
+Technische Voraussetzungen im Repo sind in [apple-signing.md](apple-signing.md) und `Scripts/ios-archive-appstore.sh` beschrieben. Diese Checkliste gilt für die **App-Store-Variante** (`app.voyenna.reisen.ios`) — **ohne** Provider-Abruf im Binary.
 
 Vollständiger Provider-Sync: separate Private-iOS-App, siehe [ios-private-distribution.md](ios-private-distribution.md).
 
@@ -8,8 +8,8 @@ Vollständiger Provider-Sync: separate Private-iOS-App, siehe [ios-private-distr
 
 | Feld | Wert / Hinweis |
 |------|----------------|
-| Name (App Store Connect) | **Reisen Buchungen** (Listung, max. 30 Zeichen). Home-Screen bleibt `CFBundleDisplayName` = `Reisen` (`Apps/ReiseniOS/Info.plist`). Bundle-ID unverändert. |
-| Bundle-ID | `de.roschmac.Reisen.ios` (siehe `project.yml` → `ReiseniOS`) |
+| Name (App Store Connect) | **Voyenna** (Listung, max. 30 Zeichen; Untertitel z. B. *Gebuchte Reisen aus allen Anbietern*). Home-Screen: `CFBundleDisplayName` = `Voyenna`. |
+| Bundle-ID | `app.voyenna.reisen.ios` (siehe `project.yml` → `ReiseniOS`) |
 | Kategorie | Reisen |
 | Privacy Policy URL (DE) | `https://rosch100.github.io/Reisen/privacy.html` (`LegalURLs.privacyPolicyGerman`) |
 | Privacy Policy URL (EN) | `https://rosch100.github.io/Reisen/en/privacy.html` (`LegalURLs.privacyPolicyEnglish`) |
@@ -73,7 +73,7 @@ Nur Funktionen beschreiben, die **in dieser App-Store-Version** vorhanden sind. 
 Vorschlag für das Review-Feld:
 
 ```
-Reisen is a personal trip manager for trips and bookings.
+Voyenna is a personal trip manager for trips and bookings.
 
 Users create bookings manually or receive trip and booking data synced via iCloud (same Apple ID, shared CloudKit container).
 
@@ -86,23 +86,23 @@ Background mode "remote-notification" is used only for CloudKit silent sync mirr
 
 Calendar and Reminders use full access so cancellation-deadline events can be created, updated, and removed. Both are opt-in in Settings.
 
-No in-app purchases. No Reisen user account. CloudKit uses the reviewer's iCloud account if signed in.
+No in-app purchases. No Voyenna user account. CloudKit uses the reviewer's iCloud account if signed in.
 ```
 
 ## CloudKit (Developer Portal)
 
-- Container `iCloud.de.roschmac.Reisen` an **drei** App-IDs binden: macOS, Store-iOS (`de.roschmac.Reisen.ios`), Private-iOS (`de.roschmac.Reisen.ios.private`).
+- Container `iCloud.app.voyenna.reisen` an **drei** App-IDs binden: macOS, Store-iOS (`app.voyenna.reisen.ios`), Private-iOS (`app.voyenna.reisen.ios.private`).
 - Distribution-Builds: **Production**-Umgebung (Release-Entitlements `aps-environment` = `production`).
 
 ## App-Eintrag in App Store Connect
 
 Signing und IPA brauchen nur die **App-ID** im Developer Portal. `altool --validate-app` und der Upload brauchen zusätzlich den **App-Eintrag** unter [My Apps](https://appstoreconnect.apple.com/apps):
 
-1. Zuerst unter [My Apps](https://appstoreconnect.apple.com/apps) prüfen, ob **dieses** Team schon einen iOS-Eintrag für `de.roschmac.Reisen.ios` hat — dann diesen nutzen, keine zweite App anlegen.
-2. Sonst **+** → New App → Plattform **iOS**, Name **Reisen Buchungen**, Bundle-ID **`de.roschmac.Reisen.ios`**, SKU z. B. `reisen-ios`, Sprache Deutsch.
-3. Icon-Name auf dem Gerät bleibt `Reisen` (`CFBundleDisplayName`). Der App-Store-Name „Reisen“ ist vergeben; Trademark-Claim nur mit eingetragener Marke.
+1. Zuerst unter [My Apps](https://appstoreconnect.apple.com/apps) prüfen, ob **dieses** Team schon einen iOS-Eintrag für `app.voyenna.reisen.ios` hat — dann diesen nutzen, keine zweite App anlegen.
+2. Sonst **+** → New App → Plattform **iOS**, Name **Voyenna**, Bundle-ID **`app.voyenna.reisen.ios`**, SKU z. B. `voyenna-ios`, Sprache Deutsch.
+3. Icon-Name auf dem Gerät: `Voyenna` (`CFBundleDisplayName`). Domain `voyenna.app` für Reverse-DNS-Ownership sichern.
 
-Ohne diesen Eintrag: `Unable to find Apple ID for Bundle ID 'de.roschmac.Reisen.ios'`. Die numerische Apple-ID steht danach unter App Information; lokal optional `APP_STORE_CONNECT_APPLE_ID`, falls der API-Key die App nicht per Bundle-ID sieht.
+Ohne diesen Eintrag: `Unable to find Apple ID for Bundle ID 'app.voyenna.reisen.ios'`. Die numerische Apple-ID steht danach unter App Information; lokal optional `APP_STORE_CONNECT_APPLE_ID`, falls der API-Key die App nicht per Bundle-ID sieht.
 
 ## Build hochladen
 
@@ -118,8 +118,8 @@ Vor dem Upload: manueller Workflow **App Store Check** (Store-IPA-Archive, Isola
 
 | App | Bundle-ID | Provider-Abruf | Distribution |
 |-----|-----------|----------------|--------------|
-| Reisen (Store) | `de.roschmac.Reisen.ios` | Nein | App Store |
-| Reisen Sync (Private) | `de.roschmac.Reisen.ios.private` | Ja | Ad Hoc / Internal TestFlight |
-| Reisen (Mac) | `de.roschmac.Reisen` | Ja | Developer ID / direkt |
+| Voyenna (Store) | `app.voyenna.reisen.ios` | Nein | App Store |
+| Voyenna Sync (Private) | `app.voyenna.reisen.ios.private` | Ja | Ad Hoc / Internal TestFlight |
+| Voyenna (Mac) | `app.voyenna.reisen` | Ja | Developer ID / direkt |
 
 Module: `ReisenProviders`, Provider-**Adapter** (`ReisenCheck24`, `ReisenBookingCom`, …) und `ReisenProviderSync` werden **nicht** vom Store-Target verlinkt. Store nutzt `ReisenAppCore` + `ReisenSharedUI` + Domain/Data (iCloud, manuelle Buchungen, Kalender/Erinnerungen). CI prüft Release-Binaries auf PRs gegen `master` via `Scripts/ios-build-release-check.sh` — verboten sind u. a. Adapter-API-Strings, Session-Probe-URLs (Opodo/Traveloka) und Provider-Symbole (siehe `Scripts/ios-verify-binary-isolation.sh`).

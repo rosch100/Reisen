@@ -16,7 +16,7 @@ BUNDLE_ID="$(reisen_ios_bundle_id)"
 SCHEME="ReiseniOS"
 PROJECT="$ROOT/Reisen.xcodeproj"
 DERIVED="$ROOT/DerivedData/ReiseniOS"
-RESULT_REL="Library/Application Support/Reisen/verify-two-device-result.json"
+RESULT_REL="Library/Application Support/Voyenna/verify-two-device-result.json"
 
 DEVICE_A_NAME="${IOS_SIMULATOR_A:-iPad Pro 13-inch (M5)}"
 DEVICE_B_NAME="${IOS_SIMULATOR_B:-iPhone 17 Pro}"

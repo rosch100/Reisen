@@ -1,12 +1,12 @@
-# Reisen
+# Voyenna
 
-Persönliche Reiseverwaltung für **iPhone, iPad und Mac**. Flüge, Hotels, Erlebnisse und mehr an einem Ort — importiert von Buchungsportalen oder manuell eingetragen. Stornofristen im Blick, optional synchronisiert über iCloud.
+Persönliche Reiseverwaltung für **iPhone, iPad und Mac** (Repo/Module weiterhin *Reisen*). Flüge, Hotels, Erlebnisse und mehr an einem Ort — importiert von Buchungsportalen oder manuell eingetragen. Stornofristen im Blick, optional synchronisiert über iCloud.
 
 Website: [rosch100.github.io/Reisen](https://rosch100.github.io/Reisen/)
 
 ## Unterstützte Anbieter (Sync)
 
-Anmeldung mit deinem bestehenden Konto beim jeweiligen Portal; Reisen importiert die Buchungen. SSOT im Code: `ProviderID.syncProviderIDs` in [`Sources/ReisenDomain/Entities/ProviderID.swift`](Sources/ReisenDomain/Entities/ProviderID.swift).
+Anmeldung mit deinem bestehenden Konto beim jeweiligen Portal; Voyenna importiert die Buchungen. SSOT im Code: `ProviderID.syncProviderIDs` in [`Sources/ReisenDomain/Entities/ProviderID.swift`](Sources/ReisenDomain/Entities/ProviderID.swift).
 
 | Anbieter | Typische Buchungen |
 |----------|-------------------|

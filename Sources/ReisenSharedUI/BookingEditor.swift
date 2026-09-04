@@ -289,12 +289,12 @@ public struct BookingEditorDraft: Equatable, Sendable {
         guard endAt >= startAt else { throw ValidationError.endBeforeStart }
 
         if !externalUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            guard URL(string: externalUrl) != nil else {
+            guard BookingExternalURL.isValidStoredURL(externalUrl) else {
                 throw ValidationError.invalidUrl(focusField: .externalUrl)
             }
         }
         if !cancellationUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            guard URL(string: cancellationUrl) != nil else {
+            guard BookingExternalURL.isValidStoredURL(cancellationUrl) else {
                 throw ValidationError.invalidUrl(focusField: .cancellationUrl)
             }
         }

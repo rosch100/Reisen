@@ -16,6 +16,8 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
 
     public var keychainServerHost: String { "airbnb.de" }
 
+    public var passwordAutofillAllowedHosts: [String] { ["airbnb.de", "airbnb.com"] }
+
     public var onProgress: (@MainActor (String) -> Void)?
 
     nonisolated static func isAirbnbHost(_ host: String?) -> Bool {

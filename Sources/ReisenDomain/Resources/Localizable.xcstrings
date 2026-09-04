@@ -2305,22 +2305,6 @@
         }
       }
     },
-    "booking.overlap.with_two_partners": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Überschneidung mit %1$@ und %2$@"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Overlap with %1$@ and %2$@"
-          }
-        }
-      }
-    },
     "booking.overlap.with_partner_and_others": {
       "localizations": {
         "de": {
@@ -2333,6 +2317,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Overlap with %1$@ and %2$d others"
+          }
+        }
+      }
+    },
+    "booking.overlap.with_two_partners": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überschneidung mit %1$@ und %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overlap with %1$@ and %2$@"
           }
         }
       }
@@ -5302,13 +5302,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In Reisen öffnen"
+            "value": "In Voyenna öffnen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open in Reisen"
+            "value": "Open in Voyenna"
           }
         }
       }
@@ -5661,6 +5661,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "System Settings"
+          }
+        }
+      }
+    },
+    "settings.app_icon.footer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dunkles Icon ist die Standarddarstellung. Hell eignet sich für helle Homescreens."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark is the default. Light works well on bright Home Screens."
+          }
+        }
+      }
+    },
+    "settings.app_icon.light": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hell"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "settings.app_icon.section": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Icon"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Icon"
+          }
+        }
+      }
+    },
+    "settings.app_icon.standard": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dunkel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
           }
         }
       }
@@ -7969,6 +8033,22 @@
         }
       }
     },
+    "trip.batch_remove_from_trip_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Buchungen aus der Reise lösen und unter „Offene Buchungen“ anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %d bookings from the trip and show them under “Open bookings”"
+          }
+        }
+      }
+    },
     "trip.booking_count": {
       "localizations": {
         "de": {
@@ -8801,6 +8881,22 @@
         }
       }
     },
+    "trip.notes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notizen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
     "trip.open_bookings": {
       "localizations": {
         "de": {
@@ -9169,22 +9265,6 @@
         }
       }
     },
-    "trip.batch_remove_from_trip_help": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%d Buchungen aus der Reise lösen und unter „Offene Buchungen“ anzeigen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remove %d bookings from the trip and show them under “Open bookings”"
-          }
-        }
-      }
-    },
     "trip.start_date": {
       "localizations": {
         "de": {
@@ -9309,22 +9389,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Welcome"
-          }
-        }
-      }
-    },
-    "trip.notes": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notizen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notes"
           }
         }
       }

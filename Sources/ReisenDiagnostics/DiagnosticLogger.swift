@@ -8,7 +8,7 @@ public actor DiagnosticLogger {
     private let debugEnabled: Bool
     private let maxQueueSize: Int
     private let logger = Logger(
-        subsystem: "de.roschmac.Reisen",
+        subsystem: "app.voyenna.reisen",
         category: "diagnostics"
     )
     private var recentEvents: [RateLimitKey: RateLimitEntry] = [:]

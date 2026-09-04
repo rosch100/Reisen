@@ -99,10 +99,14 @@ public enum ProviderLoginAssistance {
     @MainActor
     public static func installOnLoginPage(
         in webView: WKWebView,
+        allowedServerHosts: [String],
         diagnosticContext: DiagnosticContext? = nil
     ) {
         guard let absolute = webView.url?.absoluteString,
-              AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute)
+              AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+                absolute,
+                allowedServerHosts: allowedServerHosts
+              )
         else { return }
         webView.evaluateJavaScript(LoginMethodClickScript.build()) { _, error in
             recordJavaScriptError(
@@ -131,6 +135,7 @@ public enum ProviderLoginAssistance {
     public static func applyCredentials(
         in webView: WKWebView,
         credentials: ProviderCredentials,
+        allowedServerHosts: [String],
         maxAttempts: Int = 3,
         retryDelays: [TimeInterval] = [0.25, 0.75],
         diagnosticContext: DiagnosticContext? = nil,
@@ -161,7 +166,11 @@ public enum ProviderLoginAssistance {
                     )
                 }
             }
-            clickLoginMethodIfNeeded(in: webView, diagnosticContext: diagnosticContext) { _ in
+            clickLoginMethodIfNeeded(
+                in: webView,
+                allowedServerHosts: allowedServerHosts,
+                diagnosticContext: diagnosticContext
+            ) { _ in
                 guard !cancellation.isCancelled else { return }
                 LoginAutofill.apply(in: webView, credentials: credentials) { filled in
                     guard !cancellation.isCancelled else { return }
@@ -229,11 +238,15 @@ public enum ProviderLoginAssistance {
     @MainActor
     private static func clickLoginMethodIfNeeded(
         in webView: WKWebView,
+        allowedServerHosts: [String],
         diagnosticContext: DiagnosticContext?,
         completion: @escaping (Bool) -> Void
     ) {
         guard let absolute = webView.url?.absoluteString,
-              AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute)
+              AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+                absolute,
+                allowedServerHosts: allowedServerHosts
+              )
         else {
             completion(false)
             return

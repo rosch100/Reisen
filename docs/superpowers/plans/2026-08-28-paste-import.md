@@ -30,7 +30,7 @@
   - TDD: zuerst kompilierende Stubs, dann Test, RED = Assert-Fail.
   - Ein Payload-Typ (`PasteImportPayloadDTO`), Felder = `PasteImportExtraction`; Session nutzt `@Generable` auf **diesem** Typ oder einem 1:1-Zwilling gleichen Namenspräfixes, Mapper eine Quelle.
   - Bool: `isErgaenzen` / `showsAmbiguousHint`. EN-Badge: Enrich.
-  - Share: Store und Private mit **getrennten** Handoff-Identitäten (`PasteImportHandoffIdentity`): App Groups `group.de.roschmac.Reisen.pasteimport` / `group.de.roschmac.Reisen.private.pasteimport`, URL-Schemes `reisen` / `reisen-private`, Host `paste-import`. Zwei Extension-Targets, eine Implementierung unter `Apps/ReisenPasteImportShare/`.
+  - Share: Store und Private mit **getrennten** Handoff-Identitäten (`PasteImportHandoffIdentity`): App Groups `group.app.voyenna.reisen.pasteimport` / `group.app.voyenna.reisen.private.pasteimport`, URL-Schemes `reisen` / `reisen-private`, Host `paste-import`. Zwei Extension-Targets, eine Implementierung unter `Apps/ReisenPasteImportShare/`.
   - Extract-Fehler: ein Lauf, kein Retry. Test mit Fake-Extractor.
   - `validated()` ohne `now:`. Fehlendes status = `.unknown` mit Test.
 
@@ -825,8 +825,8 @@ Flow macOS: PCC-Alert nur bei kind PCC; Progress; 0 Kandidaten Leerzustand; Queu
 
 **Files:**
 - Modify: `project.yml` — **zwei** Extension-Targets mit gemeinsamer Source unter `Apps/ReisenPasteImportShare/`:
-  - `ReisenPasteImportShare` — Bundle `de.roschmac.Reisen.ios.share`, Entitlements `ReisenPasteImportShare.entitlements` (Store-App-Group), eingebettet in `ReiseniOS`.
-  - `ReisenPasteImportSharePrivate` — Bundle `de.roschmac.Reisen.ios.private.share`, Entitlements `ReisenPasteImportSharePrivate.entitlements` (Private-App-Group), eingebettet in `ReiseniOSPrivate`; Compile-Flag `REISEN_IOS_PRIVATE`.
+  - `ReisenPasteImportShare` — Bundle `app.voyenna.reisen.ios.share`, Entitlements `ReisenPasteImportShare.entitlements` (Store-App-Group), eingebettet in `ReiseniOS`.
+  - `ReisenPasteImportSharePrivate` — Bundle `app.voyenna.reisen.ios.private.share`, Entitlements `ReisenPasteImportSharePrivate.entitlements` (Private-App-Group), eingebettet in `ReiseniOSPrivate`; Compile-Flag `REISEN_IOS_PRIVATE`.
 - Create: `Apps/ReisenPasteImportShare/ShareViewController.swift` — `NSExtensionItem` → App Group Dateien `payload.bin` + `meta.json`; öffnet Handoff-URL laut `PasteImportHandoff` (`reisen://paste-import` bzw. `reisen-private://paste-import`). Kein SwiftData.
 - Create: `Apps/Shared/PasteImportHandoff.swift` — Write/Consume mit App-Group-Lock; Identitäten aus `PasteImportHandoffIdentity`.
 - Modify: `Apps/ReiseniOS/Info.plist` — URL-Scheme `reisen`; `Apps/ReiseniOSPrivate/Info.plist` — URL-Scheme `reisen-private`.

@@ -248,7 +248,7 @@ private func issueQueryValue(_ url: URL, name: String) -> String? {
 
 @Test func githubRepository_restContractMatchesGitHubDocs() {
     #expect(GitHubRepository.restAPIVersion == "2022-11-28")
-    #expect(GitHubRepository.restUserAgent == "Reisen")
+    #expect(GitHubRepository.restUserAgent == "Voyenna")
     #expect(GitHubRepository.issueTitleMaxLength == 256)
     #expect(GitHubRepository.issueBodyMaxLength == 65_536)
     #expect(GitHubRepository.issueMarkdownH2Prefix == "## ")

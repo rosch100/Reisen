@@ -60,6 +60,7 @@ enum KeychainCredentialSyncMigrationRunner {
                     migrated += 1
                 }
             } catch {
+                recordMigration(result: .failed, reason: "item_save_failed")
                 continue
             }
         }

@@ -338,7 +338,7 @@ public final class LocalEventKitBridge: CalendarSyncing {
             event.title = "Stornofrist: \(info.bookingTitle)"
             event.calendar = eventCalendar
             event.timeZone = info.timeZone
-            event.url = info.booking.externalUrl.flatMap { URL(string: $0) }
+            event.url = BookingExternalURL.browserURL(from: info.booking.externalUrl)
             event.startDate = info.fireAt
             event.endDate = info.fireAt.addingTimeInterval(calendarDuration)
 

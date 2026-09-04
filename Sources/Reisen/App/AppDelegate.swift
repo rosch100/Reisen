@@ -13,9 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
-        if let icon = NSImage(named: "AppIcon") ?? loadBundledAppIcon() {
-            NSApp.applicationIconImage = icon
-        }
+        // Dock/Finder-Icon nur über CFBundleIconFile (AppIcon.icns).
+        // Ein manuelles Setzen des Application-Icons als Bitmap umgeht die System-Squircle-Maske.
         NSApp.activate(ignoringOtherApps: true)
         if UITestingLaunch.isActive {
             placeWindowsOnPrimaryScreen(NSApp.windows)
@@ -81,16 +80,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         PasteImportExternalFileInbox.offer(urls)
         NSApp.activate(ignoringOtherApps: true)
-    }
-
-    private func loadBundledAppIcon() -> NSImage? {
-        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns") {
-            return NSImage(contentsOf: url)
-        }
-        // Zusätzlicher Pfad für Bundle-Layouts ohne Image-Asset-Katalog.
-        let exe = URL(fileURLWithPath: Bundle.main.executablePath ?? CommandLine.arguments[0])
-        let resources = exe.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources")
-        let icns = resources.appendingPathComponent("AppIcon.icns")
-        return NSImage(contentsOf: icns)
     }
 }

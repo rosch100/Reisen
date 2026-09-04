@@ -83,7 +83,7 @@ import ReisenProviders
 @Test func appleAccountHostIsNotSessionReady() {
     let url = "https://account.apple.com/account/manage"
     #expect(!AuthPageURLHeuristic.looksLikeAccountPage(url))
-    #expect(!AuthPageURLHeuristic.shouldApplyPasswordAutofill(url))
+    #expect(!AuthPageURLHeuristic.shouldApplyPasswordAutofill(url, allowedServerHosts: ["apple.com"]))
 }
 
 @Test func appleIdAuthIsLoginButNoPasswordAutofill() {
@@ -102,7 +102,7 @@ import ReisenProviders
         )
     )
     #expect(AuthPageURLHeuristic.looksLikeLoginPage(url))
-    #expect(!AuthPageURLHeuristic.shouldApplyPasswordAutofill(url))
+    #expect(!AuthPageURLHeuristic.shouldApplyPasswordAutofill(url, allowedServerHosts: ["apple.com"]))
     #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(url))
     #expect(!AuthIdentityProviderHost.matchesApple(urlAbsoluteString: "https://accounts.google.com/signin"))
 }
@@ -158,4 +158,38 @@ import ReisenProviders
     #expect(AuthPageURLHeuristic.looksLikeAccountPage(en))
     #expect(!AuthPageURLHeuristic.looksLikeLoginPage(de))
     #expect(!AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(de))
+}
+
+@Test func passwordAutofillRequiresProviderHostAllowlist() {
+    let login = "https://kundenbereich.check24.de/user/login.html"
+    #expect(
+        AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+            login,
+            allowedServerHosts: ["check24.de"]
+        )
+    )
+    #expect(
+        !AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+            login,
+            allowedServerHosts: []
+        )
+    )
+    #expect(
+        !AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+            "https://evilcheck24.de/user/login.html",
+            allowedServerHosts: ["check24.de"]
+        )
+    )
+    #expect(
+        !AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+            "https://example.com/anmelden",
+            allowedServerHosts: ["check24.de"]
+        )
+    )
+    #expect(
+        AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+            "https://www.airbnb.com/login",
+            allowedServerHosts: ["airbnb.de", "airbnb.com"]
+        )
+    )
 }

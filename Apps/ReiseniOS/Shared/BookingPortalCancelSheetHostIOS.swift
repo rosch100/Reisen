@@ -3,6 +3,9 @@ import WebKit
 import ReisenAppCore
 import ReisenDomain
 import ReisenSharedUI
+#if REISEN_PROVIDER_SYNC
+import ReisenProviders
+#endif
 
 extension View {
     func bookingPortalCancelSheet(_ request: Binding<BookingPortalCancelRequest?>) -> some View {
@@ -130,6 +133,22 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
             withError error: Error
         ) {
             onLoadFailed()
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationAction: WKNavigationAction,
+            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        ) {
+            #if REISEN_PROVIDER_SYNC
+            let isMain = navigationAction.targetFrame?.isMainFrame ?? false
+            if let requestURL = navigationAction.request.url,
+               !ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: isMain) {
+                decisionHandler(.cancel)
+                return
+            }
+            #endif
+            decisionHandler(.allow)
         }
     }
 }

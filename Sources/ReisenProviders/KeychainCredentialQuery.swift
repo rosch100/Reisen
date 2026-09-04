@@ -7,7 +7,7 @@ import Security
 /// lösen den Login-Schlüsselbund-Dialog aus; „Immer erlauben“ hält dort nicht.
 /// App-GenericPasswords nutzen `kSecAttrSynchronizable=true` (iCloud-Keychain), nicht Safari-Einträge.
 enum KeychainCredentialQuery {
-    static let service = "de.roschmac.Reisen.provider-credential"
+    static let service = "app.voyenna.reisen.provider-credential"
 
     static func genericBase(account: String? = nil, synchronizable: Bool = true) -> [CFString: Any] {
         var query: [CFString: Any] = [

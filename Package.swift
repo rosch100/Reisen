@@ -24,7 +24,7 @@ let package = Package(
         .library(name: "ReisenGetYourGuide", targets: ["ReisenGetYourGuide"]),
         .library(name: "ReisenTraveloka", targets: ["ReisenTraveloka"]),
         .library(name: "ReisenBilligerMietwagen", targets: ["ReisenBilligerMietwagen"]),
-        .executable(name: "Reisen", targets: ["Reisen"]),
+        .executable(name: "Voyenna", targets: ["Reisen"]),
         .executable(name: "SyncIOSQuerySchemes", targets: ["SyncIOSQuerySchemes"]),
     ],
     targets: [
@@ -117,6 +117,7 @@ let package = Package(
                 "ReisenDomain",
                 "ReisenData",
                 "ReisenAppCore",
+                "ReisenDiagnostics",
             ],
             path: "Sources/ReisenSharedUI",
             swiftSettings: [

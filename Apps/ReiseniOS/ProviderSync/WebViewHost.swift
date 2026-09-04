@@ -38,6 +38,7 @@ struct WebViewHost: View {
     let loginURL: URL?
     let providerID: ProviderID
     var diagnosticContext: DiagnosticContext?
+    var passwordAutofillAllowedHosts: [String] = []
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
@@ -49,6 +50,7 @@ struct WebViewHost: View {
             loginURL: loginURL,
             providerID: providerID,
             diagnosticContext: diagnosticContext,
+            passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
             webView: $webView,
             allowsEmbed: allowsEmbed,
             onDidFinish: onDidFinish,
@@ -64,6 +66,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
     let loginURL: URL?
     let providerID: ProviderID
     var diagnosticContext: DiagnosticContext?
+    var passwordAutofillAllowedHosts: [String]
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
@@ -76,7 +79,8 @@ struct ProviderSessionWebView: UIViewRepresentable {
             onDidFinish: onDidFinish,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
-            diagnosticContext: diagnosticContext
+            diagnosticContext: diagnosticContext,
+            passwordAutofillAllowedHosts: passwordAutofillAllowedHosts
         )
     }
 
@@ -107,6 +111,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
     func updateUIView(_ uiView: WebViewHostUIView, context: Context) {
         let view = resolveWebView(context: context)
         context.coordinator.diagnosticContext = diagnosticContext
+        context.coordinator.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
         if ProviderAuthPopupPolicy.bindProvider(
             providerID,
             previous: &context.coordinator.boundProviderID
@@ -217,6 +222,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         let onCapturedCredentials: ((ProviderCredentials) -> Void)?
         let onNavigationBlocked: (() -> Void)?
         var diagnosticContext: DiagnosticContext?
+        var passwordAutofillAllowedHosts: [String]
         var loadedLoginURL: URL?
         var boundProviderID: ProviderID?
         private weak var authPopupWebView: WKWebView?
@@ -227,12 +233,14 @@ struct ProviderSessionWebView: UIViewRepresentable {
             onDidFinish: @escaping (WKWebView) -> Void,
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
             onNavigationBlocked: (() -> Void)?,
-            diagnosticContext: DiagnosticContext?
+            diagnosticContext: DiagnosticContext?,
+            passwordAutofillAllowedHosts: [String]
         ) {
             self.onDidFinish = onDidFinish
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
             self.diagnosticContext = diagnosticContext
+            self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
         }
 
         func tearDown(from webView: WKWebView?) {
@@ -243,7 +251,11 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            LoginFormCapture.handleScriptMessage(message, webView: message.webView) { credentials in
+            LoginFormCapture.handleScriptMessage(
+                message,
+                webView: message.webView,
+                allowedServerHosts: passwordAutofillAllowedHosts
+            ) { credentials in
                 onCapturedCredentials?(credentials)
             }
         }
@@ -469,6 +481,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
             }
             ProviderLoginAssistance.installOnLoginPage(
                 in: webView,
+                allowedServerHosts: passwordAutofillAllowedHosts,
                 diagnosticContext: diagnosticContext
             )
         }

@@ -84,8 +84,8 @@ fi
 
 if [[ "$ALTOOL_STATUS" -ne 0 ]]; then
   if grep -q "Unable to find Apple ID for Bundle ID" "$JSON_OUT"; then
-    echo "Fehler: In App Store Connect fehlt eine iOS-App für Bundle-ID de.roschmac.Reisen.ios." >&2
-    echo "Developer-Portal-App-ID reicht nicht. Unter https://appstoreconnect.apple.com/apps eine neue iOS-App anlegen (Bundle-ID de.roschmac.Reisen.ios)." >&2
+    echo "Fehler: In App Store Connect fehlt eine iOS-App für Bundle-ID app.voyenna.reisen.ios." >&2
+    echo "Developer-Portal-App-ID reicht nicht. Unter https://appstoreconnect.apple.com/apps eine neue iOS-App anlegen (Bundle-ID app.voyenna.reisen.ios)." >&2
     echo "Falls die App existiert: API-Key auf „All Apps“ stellen oder die numerische Apple-ID (App Information) als APP_STORE_CONNECT_APPLE_ID setzen." >&2
   fi
   echo "Fehler: altool --validate-app ist fehlgeschlagen (Exit ${ALTOOL_STATUS})." >&2

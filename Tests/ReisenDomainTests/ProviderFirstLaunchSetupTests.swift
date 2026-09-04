@@ -83,7 +83,7 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
     #expect(defaults.bool(forKey: AppSettingsKeys.providerEnabledKey(for: .opodo)) == false)
 }
 
-@Test func providerFirstLaunchSetup_bootstrap_marksCompletedWhenProviderKeyExists() {
+@Test func providerFirstLaunchSetup_bootstrap_skipsWhenOnlyExplicitFalseKeysExist() {
     guard let (defaults, suiteName) = makeIsolatedDefaults() else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")
         return
@@ -97,9 +97,9 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
         syncProviderIDs: [.check24, .opodo]
     )
 
-    #expect(didBootstrap)
-    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
-    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    #expect(!didBootstrap)
+    #expect(!defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
 }
 
 @Test func providerFirstLaunchSetup_bootstrap_marksCompletedWhenProviderEnabled() {

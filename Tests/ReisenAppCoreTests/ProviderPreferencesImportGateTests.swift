@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import SwiftData
 import ReisenAppCore
 import ReisenData
 import ReisenDomain
@@ -84,6 +85,66 @@ struct ProviderPreferencesImportGateTests {
             context: container.mainContext,
             defaults: suite
         )
+        #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) == nil)
+    }
+
+    @Test("importApplying returns equal snapshot without rewriting defaults")
+    func importApplyingSkipsRewriteWhenUnchanged() throws {
+        let schema = Schema([SDProviderPreferences.self])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [configuration])
+        let context = ModelContext(container)
+
+        let suiteName = "test.prefs.gate.unchanged.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        suite.set(true, forKey: AppSettingsKeys.providerSetupCompleted)
+        suite.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: .check24))
+        #expect(try ProviderPreferencesMirror.export(from: suite, into: context) == true)
+
+        let before = ProviderPreferencesSnapshot.read(from: suite)
+        let imported = try ProviderPreferencesMirror.importApplying(from: context, into: suite)
+        #expect(imported == before)
+        #expect(ProviderPreferencesSnapshot.read(from: suite) == before)
+    }
+
+    @Test("false-positive repair clears poisoned mirror instead of re-infecting defaults")
+    func clearsPoisonedMirrorAfterFalsePositiveRepair() async throws {
+        let container = try PersistenceBootstrap.makeInMemoryContainer()
+        let suiteName = "test.prefs.gate.poison.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        let syncIDs = ProviderID.syncProviderIDs
+        ProviderFirstLaunchSetup.applySelection(
+            enabledIDs: Set(syncIDs),
+            syncProviderIDs: syncIDs,
+            defaults: suite
+        )
+        ProviderFirstLaunchSetup.markCompleted(defaults: suite)
+        try ProviderPreferencesMirror.export(from: suite, into: container.mainContext)
+
+        // Lokal bereits repariert; Mirror noch mit All-On + setupCompleted.
+        ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(
+            syncProviderIDs: syncIDs,
+            defaults: suite
+        )
+        suite.set(true, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+
+        let snap = await ProviderPreferencesImportGate.awaitAndApply(
+            context: container.mainContext,
+            defaults: suite,
+            timeout: .milliseconds(50)
+        )
+
+        #expect(snap == nil)
+        #expect(!suite.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
+        #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: suite))
+        for providerID in syncIDs {
+            #expect(!AppSettingsKeys.isProviderEnabled(providerID, defaults: suite))
+            #expect(suite.object(forKey: AppSettingsKeys.providerEnabledKey(for: providerID)) == nil)
+        }
         #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) == nil)
     }
 }

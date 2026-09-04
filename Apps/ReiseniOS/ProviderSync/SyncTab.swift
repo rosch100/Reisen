@@ -177,6 +177,7 @@ struct SyncTab: View {
                     providerID: selectedProviderID,
                     operation: "ios_sync"
                 ),
+                passwordAutofillAllowedHosts: loginConfiguration?.passwordAutofillAllowedHosts ?? [],
                 webView: webViewBinding,
                 allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false,
                 onDidFinish: { finishedWebView in

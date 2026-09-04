@@ -26,20 +26,11 @@ extension WKWebView {
         }
 
         let cookies = await allHTTPCookies()
-        let matching = cookies.filter { cookie in
-            cookieMatches(cookie, url: url)
-        }
+        let matching = cookies.filter { HTTPCookieHostMatching.matches($0, url: url) }
         if !matching.isEmpty {
             let header = matching.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
             request.setValue(header, forHTTPHeaderField: "Cookie")
         }
         return request
-    }
-
-    private func cookieMatches(_ cookie: HTTPCookie, url: URL) -> Bool {
-        guard let host = url.host?.lowercased() else { return false }
-        let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
-        // Domain-Match: cookie für check24.de gilt auch für kundenbereich.check24.de
-        return host == domain || host.hasSuffix("." + domain) || host.hasSuffix(domain)
     }
 }

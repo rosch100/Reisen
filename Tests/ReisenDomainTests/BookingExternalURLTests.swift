@@ -22,3 +22,17 @@ import ReisenDomain
     #expect(BookingExternalURL.browserURL(from: "") == nil)
     #expect(BookingExternalURL.browserURL(from: "   ") == nil)
 }
+
+@Test func bookingExternalURL_browserURL_rejectsDangerousSchemes() {
+    #expect(BookingExternalURL.browserURL(from: "javascript:alert(1)") == nil)
+    #expect(BookingExternalURL.browserURL(from: "file:///etc/passwd") == nil)
+    #expect(BookingExternalURL.browserURL(from: "data:text/html,hi") == nil)
+    #expect(BookingExternalURL.browserURL(from: "booking://open") == nil)
+}
+
+@Test func bookingExternalURL_isValidStoredURL_allowsManualAndHttps() {
+    #expect(BookingExternalURL.isValidStoredURL(BookingExternalURL.makeManual()))
+    #expect(BookingExternalURL.isValidStoredURL("https://example.com/x"))
+    #expect(!BookingExternalURL.isValidStoredURL("javascript:alert(1)"))
+    #expect(!BookingExternalURL.isValidStoredURL(""))
+}

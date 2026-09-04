@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Baut Reisen als echtes .app-Bundle (Dock-Icon, Tastatur/Menü, Berechtigungsdialoge).
+# Baut Voyenna als echtes .app-Bundle (Dock-Icon, Tastatur/Menü, Berechtigungsdialoge).
+# SPM-Target bleibt `Reisen`; Produkt-/Binary-Name ist `Voyenna` (CFBundleExecutable).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+
+APP_PRODUCT_NAME="Voyenna"
 
 # shellcheck source=apple-developer.sh
 source "$ROOT/Scripts/apple-developer.sh"
@@ -48,15 +51,12 @@ bash "$ROOT/Scripts/embed-github-issue-token.sh"
 
 swift build -c "$CONFIG" >/dev/null
 
-BIN="$ROOT/.build/$CONFIG/Reisen"
+BIN="$ROOT/.build/$CONFIG/$APP_PRODUCT_NAME"
 if [[ ! -x "$BIN" ]]; then
-  BIN="$(find "$ROOT/.build" -path '*/Products/Debug/Reisen' -type f | head -1)"
-  if [[ "$CONFIG" == "release" && ! -x "$BIN" ]]; then
-    BIN="$(find "$ROOT/.build" -path '*/Products/Release/Reisen' -type f | head -1)"
-  fi
+  BIN="$(find "$ROOT/.build" -path "*/Products/$OUT_CONFIG/$APP_PRODUCT_NAME" -type f | head -1)"
 fi
 if [[ -z "${BIN}" || ! -x "$BIN" ]]; then
-  echo "Fehler: Reisen-Binary nicht gefunden." >&2
+  echo "Fehler: $APP_PRODUCT_NAME-Binary nicht gefunden (Config $CONFIG / $OUT_CONFIG)." >&2
   exit 1
 fi
 
@@ -104,10 +104,11 @@ sign_spm_resource_bundles() {
   done
 }
 
-APP="$ROOT/.build/Reisen.app"
+APP="$ROOT/.build/${APP_PRODUCT_NAME}.app"
 CONTENTS="$APP/Contents"
 MACOS="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
+EXECUTABLE="$MACOS/$APP_PRODUCT_NAME"
 
 # Laufende Instanz dieses Bundle-Pfads vor rm -rf beenden. Sonst zeigt Bundle.main
 # weiter auf gelöschte Resources → ProviderLogo fällt auf questionmark.circle zurück
@@ -116,10 +117,10 @@ if [[ -d "$APP" ]]; then
   while read -r pid; do
     [[ -n "${pid:-}" ]] || continue
     kill "$pid" 2>/dev/null || true
-  done < <(pgrep -f "$APP/Contents/MacOS/Reisen" || true)
+  done < <(pgrep -f "$EXECUTABLE" || true)
   # Kurz warten, bis der Prozess die Dateien freigibt (kein hangendes unlink).
   for _ in 1 2 3 4 5; do
-    pgrep -f "$APP/Contents/MacOS/Reisen" >/dev/null 2>&1 || break
+    pgrep -f "$EXECUTABLE" >/dev/null 2>&1 || break
     sleep 0.1
   done
 fi
@@ -127,8 +128,8 @@ fi
 rm -rf "$APP"
 mkdir -p "$MACOS" "$RESOURCES"
 
-cp "$BIN" "$MACOS/Reisen"
-chmod +x "$MACOS/Reisen"
+cp "$BIN" "$EXECUTABLE"
+chmod +x "$EXECUTABLE"
 cp "$ROOT/Resources/Info.plist" "$CONTENTS/Info.plist"
 cp "$ROOT/Resources/AppIcon.icns" "$RESOURCES/AppIcon.icns"
 ENTITLEMENTS="$ROOT/Resources/Reisen.entitlements"

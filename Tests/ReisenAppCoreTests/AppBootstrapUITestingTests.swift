@@ -42,18 +42,5 @@ import ReisenDomain
     #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
 }
 
-/// Empty skips `seedProviderSetup`; existing `providerEnabled_*` must still complete via bootstrap hook.
-@MainActor
-@Test func appBootstrap_marksSetupCompletedWhenExistingProviderKey() throws {
-    let defaults = UITestingLaunch.isolatedDefaults
-    defaults.removeObject(forKey: AppSettingsKeys.providerSetupCompleted)
-    defaults.removeObject(forKey: AppSettingsKeys.providerSetupDeferred)
-    defaults.set(false, forKey: AppSettingsKeys.providerEnabledKey(for: .check24))
-    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.migratedKey)
-    defer { AppSettingsDefaults.installOverride(nil) }
-
-    _ = try AppBootstrap.makeReadyState(registry: .empty, uiTesting: .empty)
-
-    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
-    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
-}
+/// Bootstrap-Heuristik (nur explizit aktive Portale) liegt in `ProviderFirstLaunchSetupTests`;
+/// Empty-UITesting seedet Setup nicht — siehe `UITestingLaunchTests`.

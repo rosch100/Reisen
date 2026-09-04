@@ -91,4 +91,31 @@ final class AppStoreComplianceInfoPlistTests: XCTestCase {
             .appendingPathComponent("Apps/ReiseniOS/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png")
         XCTAssertTrue(FileManager.default.fileExists(atPath: iconPNG.path))
     }
+
+    func testAppIconLightAssetCatalogExists() throws {
+        let iconPNG = repoRoot
+            .appendingPathComponent("Apps/ReiseniOS/Assets.xcassets/AppIconLight.appiconset/AppIcon-1024.png")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: iconPNG.path))
+    }
+
+    func testAlternateAppIconDeclaredInInfoPlist() throws {
+        try assertAlternateAppIconLight(inPlistRelativePath: "Apps/ReiseniOS/Info.plist")
+        try assertAlternateAppIconLight(inPlistRelativePath: "Apps/ReiseniOSPrivate/Info.plist")
+    }
+
+    private func assertAlternateAppIconLight(inPlistRelativePath relativePath: String) throws {
+        let plistURL = repoRoot.appendingPathComponent(relativePath)
+        let data = try Data(contentsOf: plistURL)
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        )
+        for iconsKey in ["CFBundleIcons", "CFBundleIcons~ipad"] {
+            let icons = try XCTUnwrap(plist[iconsKey] as? [String: Any], "missing \(iconsKey) in \(relativePath)")
+            let alternate = try XCTUnwrap(
+                icons["CFBundleAlternateIcons"] as? [String: Any],
+                "missing CFBundleAlternateIcons in \(iconsKey) (\(relativePath))"
+            )
+            XCTAssertNotNil(alternate["AppIconLight"], "\(relativePath) \(iconsKey)")
+        }
+    }
 }

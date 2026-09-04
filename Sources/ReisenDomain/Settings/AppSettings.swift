@@ -61,6 +61,9 @@ public struct AppSettingsKeys {
     /// Summen in die bevorzugte Währung umrechnen (Default aus).
     public static let convertAmountsToPreferredCurrency = "reisen_convertAmountsToPreferredCurrency"
 
+    /// Gewähltes Homescreen-Icon (`AppIconStyle.rawValue`); Default `standard`.
+    public static let appIconStyle = "reisen_appIconStyle"
+
     public static func providerEnabledKey(for providerID: ProviderID) -> String {
         "\(providerEnabledPrefix)\(providerID.rawValue)"
     }
@@ -155,8 +158,8 @@ public struct AppSettings: Equatable, Sendable {
     public init(
         notificationEnabled: Bool = true,
         eventKitEnabled: Bool = false,
-        calendarTitle: String = "Reisen",
-        reminderCalendarTitle: String = "Reisen",
+        calendarTitle: String = "Voyenna",
+        reminderCalendarTitle: String = "Voyenna",
         leadTimesDaysRaw: String = "7,3,1",
         calendarTitleMode: CalendarTitleMode = .tripTitle,
         calendarTripTimesEnabled: Bool = false,

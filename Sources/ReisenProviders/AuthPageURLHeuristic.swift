@@ -39,11 +39,20 @@ public enum AuthPageURLHeuristic {
         return looksLikeLoginPage(absoluteURL) || looksLikeOneTimeCodeChallenge(absoluteURL)
     }
 
-    /// Keychain password autofill only on non-IdP pages (Sign in with Apple/Google must stay untouched).
-    public static func shouldApplyPasswordAutofill(_ absoluteURL: String) -> Bool {
+    /// Keychain password autofill only on non-IdP pages whose host matches the provider allowlist.
+    public static func shouldApplyPasswordAutofill(
+        _ absoluteURL: String,
+        allowedServerHosts: [String]
+    ) -> Bool {
         if AuthIdentityProviderHost.matches(urlAbsoluteString: absoluteURL) {
             return false
         }
-        return looksLikeLoginPage(absoluteURL)
+        guard looksLikeLoginPage(absoluteURL) else { return false }
+        guard let host = URL(string: absoluteURL)?.host, !host.isEmpty else { return false }
+        let hosts = allowedServerHosts
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .filter { !$0.isEmpty }
+        guard !hosts.isEmpty else { return false }
+        return hosts.contains { KeychainHostMatching.server(host, matches: $0) }
     }
 }

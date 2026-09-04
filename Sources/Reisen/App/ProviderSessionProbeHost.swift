@@ -38,6 +38,7 @@ struct ProviderSessionProbeHost: View {
                     lastURLString: backgroundLastURLBinding(for: backgroundProviderID),
                     webView: backgroundWebViewBinding(for: backgroundProviderID),
                     autofillCredentials: nil,
+                    passwordAutofillAllowedHosts: passwordAutofillAllowedHosts(for: backgroundProviderID),
                     allowsEmbed: hub?.allowsEmbed(on: .probe) ?? false,
                     diagnosticContext: DiagnosticContext(
                         runID: diagnosticRunID,
@@ -235,6 +236,12 @@ struct ProviderSessionProbeHost: View {
         guard let provider = providerRegistry?.provider(id: providerID),
               let loginConfig = provider as? TravelProviderLoginConfiguration else { return nil }
         return loginConfig.loginURL
+    }
+
+    private func passwordAutofillAllowedHosts(for providerID: ProviderID) -> [String] {
+        guard let provider = providerRegistry?.provider(id: providerID),
+              let loginConfig = provider as? TravelProviderLoginConfiguration else { return [] }
+        return loginConfig.passwordAutofillAllowedHosts
     }
 
     private func backgroundSessionStatusBinding(for providerID: ProviderID) -> Binding<ProviderSessionStatus> {

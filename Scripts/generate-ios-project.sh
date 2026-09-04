@@ -29,6 +29,9 @@ fi
 echo "Sync LSApplicationQueriesSchemes aus ProviderNativeApp-SSOT (nur Private-iOS) …"
 swift run --package-path "$ROOT" SyncIOSQuerySchemes "$ROOT/Apps/ReiseniOSPrivate/Info.plist"
 
+echo "CFBundleAlternateIcons (AppIconLight) in iOS Info.plist …"
+python3 "$ROOT/Scripts/patch-ios-alternate-icons-plist.py"
+
 # shellcheck source=apple-developer.sh
 source "$ROOT/Scripts/apple-developer.sh"
 if TEAM_ID="$(reisen_apple_team_id 2>/dev/null)"; then

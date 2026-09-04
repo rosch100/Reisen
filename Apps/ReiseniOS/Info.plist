@@ -5,17 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>de</string>
 	<key>CFBundleDisplayName</key>
-	<string>Reisen</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
+	<string>Voyenna</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -33,8 +23,64 @@
 			</array>
 		</dict>
 	</array>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<false/>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>AppIconLight</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIconLight</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+		</dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+			<key>CFBundleIconName</key>
+			<string>AppIcon</string>
+		</dict>
+	</dict>
+	<key>CFBundleIcons~ipad</key>
+	<dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>AppIconLight</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIconLight</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+		</dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+			<key>CFBundleIconName</key>
+			<string>AppIcon</string>
+		</dict>
+	</dict>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>0.2.2</string>
 	<key>CFBundleURLTypes</key>
@@ -43,10 +89,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>de.roschmac.Reisen.pasteimport</string>
+			<string>app.voyenna.reisen.pasteimport</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>reisen</string>
+				<string>voyenna</string>
 			</array>
 		</dict>
 	</array>
@@ -56,20 +102,22 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
 	<key>MinimumOSVersion</key>
 	<string>26.0</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
+	<string>Voyenna legt Termine für Stornofristen in deinem Kalender an.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
+	<string>Voyenna legt Termine für Stornofristen in deinem Kalender an.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Reisen. Alle Rechte vorbehalten.</string>
+	<string>Copyright © 2026 Voyenna. Alle Rechte vorbehalten.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Reisen benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
+	<string>Voyenna benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
 	<key>NSRemindersUsageDescription</key>
-	<string>Reisen legt Erinnerungen in deiner Erinnerungen-App an.</string>
+	<string>Voyenna legt Erinnerungen in deiner Erinnerungen-App an.</string>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>Reisen erinnert dich an bevorstehende Stornofristen.</string>
+	<string>Voyenna erinnert dich an bevorstehende Stornofristen.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

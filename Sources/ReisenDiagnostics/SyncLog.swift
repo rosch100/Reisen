@@ -7,7 +7,7 @@ public enum SyncLog {
     public static let keepBytes = 65_536
     private static let fileAccessLock = NSLock()
     private static let logger = Logger(
-        subsystem: "de.roschmac.Reisen",
+        subsystem: "app.voyenna.reisen",
         category: "sync-log"
     )
 
@@ -33,7 +33,8 @@ public enum SyncLog {
         let base = logURL.deletingLastPathComponent()
         do {
             try fm.createDirectory(at: base, withIntermediateDirectories: true)
-            let fullLine = "[\(ISO8601DateFormatter().string(from: now))] \(line)\n"
+            let redactedLine = SecretRedactor.redact(line)
+            let fullLine = "[\(ISO8601DateFormatter().string(from: now))] \(redactedLine)\n"
             guard let data = fullLine.data(using: .utf8) else {
                 logger.error("Sync-Log konnte nicht als UTF-8 kodiert werden.")
                 return false
