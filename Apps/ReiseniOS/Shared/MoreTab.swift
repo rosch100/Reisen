@@ -7,7 +7,7 @@ import ReisenSharedUI
 struct MoreTab: View {
     let onResetLocalStores: () -> Void
     let onWipeCloudAndReset: () -> Void
-    let onApplyICloudSyncPreference: (Bool, Bool) -> Void
+    let onApplyICloudSyncPreference: (Bool, Bool) async -> Void
 
     @State private var statusMessage: String?
 
@@ -37,7 +37,8 @@ struct MoreTab: View {
                     statusMessage = enabled
                         ? "iCloud-Sync wird eingeschaltet…"
                         : (wipe ? "iCloud-Sync wird gestoppt und geleert…" : "iCloud-Sync wird gestoppt…")
-                    onApplyICloudSyncPreference(enabled, wipe)
+                    await onApplyICloudSyncPreference(enabled, wipe)
+                    statusMessage = nil
                 }
             )
             .navigationTitle("Mehr")

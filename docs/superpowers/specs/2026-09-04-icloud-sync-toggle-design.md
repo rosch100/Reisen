@@ -129,7 +129,7 @@ Ablauf (MainActor, `isResetting`-Guard wie Reset):
 | component | `ICloudSyncPreference` |
 | phase | `apply` |
 | event | `apply_started` / `apply_succeeded` / `apply_failed` |
-| reason | `user_disable_keep_local` \| `user_disable_wipe` \| `user_enable` \| `env_forced_off` |
+| reason | `user_disable_keep_local` \| `user_disable_wipe` \| `user_enable` |
 | visibility | `.publicDiagnostic` |
 
 Keine PII; keine Klartext-Secrets.

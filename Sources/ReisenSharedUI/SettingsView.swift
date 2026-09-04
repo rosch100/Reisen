@@ -11,14 +11,14 @@ public struct SettingsView: View {
     private let showsDataManagement: Bool
     private let onResetLocalStores: (() -> Void)?
     private let onWipeCloudAndReset: (() -> Void)?
-    private let onApplyICloudSyncPreference: ((Bool, Bool) -> Void)?
+    private let onApplyICloudSyncPreference: ((Bool, Bool) async -> Void)?
 
     public init(
         showsProviderSyncSettings: Bool = false,
         showsDataManagement: Bool = false,
         onResetLocalStores: (() -> Void)? = nil,
         onWipeCloudAndReset: (() -> Void)? = nil,
-        onApplyICloudSyncPreference: ((Bool, Bool) -> Void)? = nil
+        onApplyICloudSyncPreference: ((Bool, Bool) async -> Void)? = nil
     ) {
         self.showsProviderSyncSettings = showsProviderSyncSettings
         self.showsDataManagement = showsDataManagement
@@ -433,8 +433,13 @@ public struct SettingsView: View {
     }
 
     private func applyICloudSyncPreference(enabled: Bool, wipeCloud: Bool) {
+        guard let onApplyICloudSyncPreference else { return }
+        // Optimistic UI; always re-sync from defaults after apply (revert on failure).
         iCloudSyncEnabled = enabled
-        onApplyICloudSyncPreference?(enabled, wipeCloud)
+        Task {
+            await onApplyICloudSyncPreference(enabled, wipeCloud)
+            iCloudSyncEnabled = AppSettingsKeys.isICloudSyncEnabled()
+        }
     }
 
     private var cloudAccountStatusText: String {

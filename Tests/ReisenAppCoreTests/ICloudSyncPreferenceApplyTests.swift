@@ -52,4 +52,28 @@ struct ICloudSyncPreferenceApplyTests {
             return
         }
     }
+
+    @MainActor
+    @Test func wipe_setsPreferenceOffAndStaysReady() async throws {
+        let defaults = UITestingLaunch.isolatedDefaults
+        AppSettingsKeys.setICloudSyncEnabled(true, defaults: defaults)
+        defer {
+            defaults.removeObject(forKey: AppSettingsKeys.icloudSyncEnabled)
+            AppSettingsDefaults.installOverride(nil)
+        }
+
+        let bootstrap = AppBootstrap(
+            registry: .empty,
+            uiTesting: .empty,
+            crashCatcherInstall: {},
+            crashCatcherFlush: {}
+        )
+        await bootstrap.applyICloudSyncPreference(enabled: false, wipeCloud: true)
+
+        #expect(AppSettingsKeys.isICloudSyncEnabled(defaults: defaults) == false)
+        guard case .ready = bootstrap.state else {
+            Issue.record("expected ready after wipe disable; got \(String(describing: bootstrap.state))")
+            return
+        }
+    }
 }

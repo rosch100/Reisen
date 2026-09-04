@@ -18,7 +18,7 @@ import ReisenProviders
 struct RootTabView: View {
     let onResetLocalStores: () -> Void
     let onWipeCloudAndReset: () -> Void
-    let onApplyICloudSyncPreference: (Bool, Bool) -> Void
+    let onApplyICloudSyncPreference: (Bool, Bool) async -> Void
 
     @State private var sessionChromeEpoch = 0
     @State private var providerEnableEpoch = 0
