@@ -9,9 +9,18 @@ import ReisenData
 public enum ProviderPreferencesImportGate {
     public static let defaultTimeout: Duration = .seconds(8)
 
+    /// Reentrancy: eigener Export darf keinen Remote-Apply-Loop auslösen; Import kein Re-Export.
+    private static var isExporting = false
+    private static var isApplyingRemote = false
+
     public static var shouldSkipCloudKitWait: Bool {
         !PersistenceBootstrap.isCloudKitEnabledByEnvironment()
             || UITestingLaunch.isActive
+    }
+
+    /// Remote-Change-Observer nur bei echtem CloudKit (nicht UITesting / CloudKit-off).
+    public static var shouldObserveRemoteChanges: Bool {
+        !shouldSkipCloudKitWait
     }
 
     /// - Returns: angewandter Snapshot falls Prefs-Record vorhanden; sonst nil.
@@ -24,7 +33,7 @@ public enum ProviderPreferencesImportGate {
         recordPrefsImport(result: .started, reason: "gate_start")
 
         if shouldSkipCloudKitWait {
-            let snap = try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+            let snap = applyImport(from: context, into: defaults)
             recordPrefsImport(
                 result: .succeeded,
                 reason: snap == nil ? "gate_immediate_empty" : "gate_immediate"
@@ -32,7 +41,7 @@ public enum ProviderPreferencesImportGate {
             return snap
         }
 
-        if let existing = try? ProviderPreferencesMirror.importApplying(from: context, into: defaults),
+        if let existing = applyImport(from: context, into: defaults),
            existing.setupCompleted {
             recordPrefsImport(result: .succeeded, reason: "gate_already_present")
             return existing
@@ -40,7 +49,7 @@ public enum ProviderPreferencesImportGate {
 
         await PersistenceBootstrap.awaitCloudKitImportIfNeeded(timeout: timeout)
 
-        let snap = try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+        let snap = applyImport(from: context, into: defaults)
         if snap == nil {
             recordPrefsImport(result: .timedOut, reason: "gate_timeout_empty")
         } else {
@@ -53,6 +62,11 @@ public enum ProviderPreferencesImportGate {
         context: ModelContext,
         defaults: UserDefaults = AppSettingsDefaults.current
     ) {
+        // UITesting: In-Memory ohne CloudKit — Mirror-Save würde Remote-Change/AX-Idle stören.
+        guard !UITestingLaunch.isActive else { return }
+        guard !isApplyingRemote else { return }
+        isExporting = true
+        defer { isExporting = false }
         do {
             try ProviderPreferencesMirror.export(from: defaults, into: context)
             recordPrefsExport(result: .succeeded, reason: "export")
@@ -62,11 +76,24 @@ public enum ProviderPreferencesImportGate {
     }
 
     /// Apply remote prefs; returns snapshot if a record existed.
+    /// Kein-op während eigenem Export oder ohne CloudKit-Observer-Kontext.
     public static func applyRemoteChange(
         context: ModelContext,
         defaults: UserDefaults = AppSettingsDefaults.current
     ) -> ProviderPreferencesSnapshot? {
-        try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+        guard shouldObserveRemoteChanges else { return nil }
+        guard !isExporting else { return nil }
+        guard !isApplyingRemote else { return nil }
+        return applyImport(from: context, into: defaults)
+    }
+
+    private static func applyImport(
+        from context: ModelContext,
+        into defaults: UserDefaults
+    ) -> ProviderPreferencesSnapshot? {
+        isApplyingRemote = true
+        defer { isApplyingRemote = false }
+        return try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
     }
 
     private static func recordPrefsImport(result: DiagnosticResult, reason: String) {

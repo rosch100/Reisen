@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import CoreData
+import Combine
 #if REISEN_PROVIDER_SYNC
 import WebKit
 #endif
@@ -98,7 +99,11 @@ struct RootTabView: View {
         .task {
             await runProviderSetupGateIfNeeded()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)) { _ in
+        .onReceive(
+            NotificationCenter.default
+                .publisher(for: .NSPersistentStoreRemoteChange)
+                .receive(on: RunLoop.main)
+        ) { _ in
             handleProviderPrefsRemoteChange()
         }
         #if REISEN_PROVIDER_SYNC
@@ -133,7 +138,9 @@ struct RootTabView: View {
         guard !didRunProviderSetupGate else { return }
         didRunProviderSetupGate = true
         #if REISEN_PROVIDER_SYNC
-        _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
+        if !UITestingLaunch.isActive {
+            _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
+        }
         #endif
         let snap = await ProviderPreferencesImportGate.awaitAndApply(context: modelContext)
         if let snap, snap.setupCompleted {
@@ -150,6 +157,7 @@ struct RootTabView: View {
     }
 
     private func handleProviderPrefsRemoteChange() {
+        guard ProviderPreferencesImportGate.shouldObserveRemoteChanges else { return }
         guard let snap = ProviderPreferencesImportGate.applyRemoteChange(context: modelContext) else {
             return
         }
