@@ -56,6 +56,9 @@ public struct AppSettingsKeys {
     /// Summen in die bevorzugte Währung umrechnen (Default aus).
     public static let convertAmountsToPreferredCurrency = "reisen_convertAmountsToPreferredCurrency"
 
+    /// Gewähltes Homescreen-Icon (`AppIconStyle.rawValue`); Default `standard`.
+    public static let appIconStyle = "reisen_appIconStyle"
+
     public static func providerEnabledKey(for providerID: ProviderID) -> String {
         "\(providerEnabledPrefix)\(providerID.rawValue)"
     }

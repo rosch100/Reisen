@@ -48,7 +48,12 @@ targets:
     sources:
       - path: Apps/ReiseniOS/Shared
       - path: Apps/Shared
+        excludes:
+          - AppIcon.icon
+          - AppIconLight.icon
       - path: Apps/ReiseniOS/Assets.xcassets
+      - path: Apps/Shared/AppIcon.icon
+      - path: Apps/Shared/AppIconLight.icon
     resources:
       - path: Apps/ReiseniOS/PrivacyInfo.xcprivacy
     settings:
@@ -60,6 +65,7 @@ targets:
         CURRENT_PROJECT_VERSION: 4
         MARKETING_VERSION: 0.2.2
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: Apps/ReiseniOS/ReiseniOS.entitlements
@@ -84,7 +90,12 @@ targets:
       - path: Apps/ReiseniOS/Shared
       - path: Apps/ReiseniOS/ProviderSync
       - path: Apps/Shared
+        excludes:
+          - AppIcon.icon
+          - AppIconLight.icon
       - path: Apps/ReiseniOS/Assets.xcassets
+      - path: Apps/Shared/AppIcon.icon
+      - path: Apps/Shared/AppIconLight.icon
     resources:
       - path: Apps/ReiseniOSPrivate/PrivacyInfo.xcprivacy
     settings:
@@ -96,6 +107,7 @@ targets:
         CURRENT_PROJECT_VERSION: 4
         MARKETING_VERSION: 0.2.2
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC REISEN_IOS_PRIVATE
       configs:
         Debug:
@@ -167,6 +179,8 @@ targets:
       - path: Sources/Reisen
         excludes:
           - "**/*.plist"
+      - path: Apps/Shared/AppIcon.icon
+      - path: Apps/Shared/AppIconLight.icon
     resources:
       - path: Resources/PrivacyInfo.xcprivacy
     settings:
@@ -180,6 +194,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Resources/Reisen.entitlements
         COMBINE_HIDPI_IMAGES: true
         ENABLE_DEBUG_DYLIB: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_PROVIDER_SYNC
     dependencies:
       - package: Reisen

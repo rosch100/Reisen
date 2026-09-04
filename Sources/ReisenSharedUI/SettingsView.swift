@@ -40,6 +40,7 @@ public struct SettingsView: View {
     @AppStorage(AppSettingsKeys.feedbackGitHubUsername) private var feedbackGitHubUsername = ""
     @AppStorage(AppSettingsKeys.preferredCurrencyCode) private var preferredCurrencyCode: String = ""
     @AppStorage(AppSettingsKeys.convertAmountsToPreferredCurrency) private var convertAmountsToPreferredCurrency: Bool = false
+    @AppStorage(AppSettingsKeys.appIconStyle) private var appIconStyleRaw: String = AppIconStyle.standard.rawValue
 
     @State private var eventCalendarNames: [String] = []
     @State private var reminderCalendarNames: [String] = []
@@ -102,13 +103,38 @@ public struct SettingsView: View {
             }
 
             Section {
-                    Toggle(L10n.string(.settingsLocalNotifications), isOn: $notificationEnabled)
+                Toggle(L10n.string(.settingsLocalNotifications), isOn: $notificationEnabled)
                         .accessibilityIdentifier(UITestingIdentifiers.settingsNotificationToggle)
             } header: {
                 Text(L10n.string(.settingsReminders))
             } footer: {
                 Text(L10n.string(.settingsRemindersFooter))
             }
+
+            #if os(iOS)
+            Section {
+                Picker(L10n.string(.settingsAppIconSection), selection: $appIconStyleRaw) {
+                    Text(L10n.string(.settingsAppIconStandard)).tag(AppIconStyle.standard.rawValue)
+                    Text(L10n.string(.settingsAppIconLight)).tag(AppIconStyle.light.rawValue)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .accessibilityIdentifier(UITestingIdentifiers.settingsAppIconPicker)
+                .onChange(of: appIconStyleRaw) { oldValue, newValue in
+                    let style = AppIconStyle.from(stored: newValue)
+                    Task {
+                        let ok = await AppIconApplicator.apply(style)
+                        if !ok {
+                            appIconStyleRaw = oldValue
+                        }
+                    }
+                }
+            } header: {
+                Text(L10n.string(.settingsAppIconSection))
+            } footer: {
+                Text(L10n.string(.settingsAppIconFooter))
+            }
+            #endif
 
             Section {
                 Toggle(L10n.string(.settingsCurrencyConvertToggle), isOn: $convertAmountsToPreferredCurrency)

@@ -172,6 +172,7 @@ fi
 rm -f "$_reisen_private_ipa"
 python3 -m unittest "$ROOT/Scripts/tests/test_ios_validate_appstore_report.py" -v
 python3 -m unittest "$ROOT/Scripts/tests/test_coverage_diff.py" -v
+python3 -m unittest "$ROOT/Scripts/tests/test_install_voyenna_app_icon.py" -v
 if ! grep -q 'reisen_xcodebuild_asc_auth_args' "$ROOT/Scripts/ios-archive-appstore.sh"; then
   echo "Fehler: App-Store-Archive muss xcodebuild mit App-Store-Connect-API-Key authentifizieren." >&2
   exit 1

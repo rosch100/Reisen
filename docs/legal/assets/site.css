@@ -121,7 +121,8 @@ button:focus-visible {
 .site-brand__icon {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  /* iOS continuous corner ≈ 22.37% — PNG already masked; CSS as fallback */
+  border-radius: 22.37%;
   box-shadow: var(--shadow);
 }
 
@@ -220,6 +221,16 @@ button:focus-visible {
 .hero {
   padding: 4rem 0 5rem;
   text-align: center;
+}
+
+.hero__icon {
+  width: clamp(7.5rem, 22vw, 10rem);
+  height: auto;
+  margin: 0 auto 1.5rem;
+  border-radius: 22.37%;
+  box-shadow:
+    0 12px 40px rgba(8, 26, 52, 0.28),
+    0 2px 8px rgba(8, 26, 52, 0.12);
 }
 
 .hero__badge {

@@ -107,3 +107,19 @@ enum VoyennaBrandingConfig {
     let plist = try VoyennaBrandingConfig.plist("Resources/Info.plist")
     #expect(plist["CFBundleDisplayName"] as? String == VoyennaBrand.displayName)
 }
+
+@Test func voyennaBranding_macIconUsesCFBundleIconFile() throws {
+    let plist = try VoyennaBrandingConfig.plist("Resources/Info.plist")
+    #expect(plist["CFBundleIconFile"] as? String == "AppIcon")
+    let icns = VoyennaBrandingConfig.repoRoot.appendingPathComponent("Resources/AppIcon.icns")
+    #expect(FileManager.default.fileExists(atPath: icns.path))
+}
+
+@Test func voyennaBranding_macAppDelegateDoesNotOverrideDockIconImage() throws {
+    let source = try String(
+        contentsOf: VoyennaBrandingConfig.repoRoot.appendingPathComponent("Sources/Reisen/App/AppDelegate.swift"),
+        encoding: .utf8
+    )
+    #expect(!source.contains("NSApp.applicationIconImage"))
+    #expect(!source.contains("applicationIconImage ="))
+}

@@ -117,6 +117,7 @@ let package = Package(
                 "ReisenDomain",
                 "ReisenData",
                 "ReisenAppCore",
+                "ReisenDiagnostics",
             ],
             path: "Sources/ReisenSharedUI",
             swiftSettings: [
