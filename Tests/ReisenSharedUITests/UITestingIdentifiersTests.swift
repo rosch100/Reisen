@@ -35,6 +35,7 @@ import ReisenDomain
     #expect(UITestingIdentifiers.emptyStateNewTrip == "reisen.empty-state.new-trip")
     #expect(UITestingIdentifiers.bookingEditorTitle == "reisen.booking.editor.title")
     #expect(UITestingIdentifiers.settingsNotificationToggle == "reisen.settings.notification-toggle")
+    #expect(UITestingIdentifiers.settingsICloudSyncToggle == "reisen.settings.icloud-sync-toggle")
     #expect(UITestingIdentifiers.pasteImportReview == "reisen.paste-import.review")
     #expect(UITestingIdentifiers.pasteImportAccept == "reisen.paste-import.accept")
     #expect(UITestingIdentifiers.bookingDetailEdit == "reisen.booking.detail.edit")

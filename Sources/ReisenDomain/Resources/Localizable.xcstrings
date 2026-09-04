@@ -6342,13 +6342,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud-Account verfügbar — Sync aktiv, sofern nicht per Umgebung deaktiviert."
+            "value": "iCloud-Account verfügbar — Sync aktiv."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud account available — sync active unless disabled by environment."
+            "value": "iCloud account available — sync active."
           }
         }
       }
@@ -9469,6 +9469,182 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose Portals…"
+          }
+        }
+      }
+    },
+    "settings.icloud.apply_status.disabling": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync wird gestoppt…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning off iCloud sync…"
+          }
+        }
+      }
+    },
+    "settings.icloud.apply_status.disabling_wipe": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync wird gestoppt und geleert…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning off iCloud sync and wiping cloud data…"
+          }
+        }
+      }
+    },
+    "settings.icloud.apply_status.enabling": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync wird eingeschaltet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning on iCloud sync…"
+          }
+        }
+      }
+    },
+    "settings.icloud.disable_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync ausschalten?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off iCloud sync?"
+          }
+        }
+      }
+    },
+    "settings.icloud.disable_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync stoppt auf diesem Gerät. iCloud-Daten bleiben, bis du sie leerst — bei erneutem Einschalten können sie zurückkommen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync stops on this device. iCloud data remains until you wipe it — turning sync back on may restore it."
+          }
+        }
+      }
+    },
+    "settings.icloud.disable_keep_local": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Sync stoppen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop sync only"
+          }
+        }
+      }
+    },
+    "settings.icloud.disable_wipe": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync stoppen und iCloud leeren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop sync and wipe iCloud"
+          }
+        }
+      }
+    },
+    "settings.icloud.enable_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync einschalten?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on iCloud sync?"
+          }
+        }
+      }
+    },
+    "settings.icloud.enable_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reisen und Buchungen können von anderen Geräten mit demselben iCloud-Account geladen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trips and bookings may load from other devices using the same iCloud account."
+          }
+        }
+      }
+    },
+    "settings.icloud.env_forced_off_footer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CloudKit ist in dieser Umgebung deaktiviert (z. B. Tests oder REISEN_CLOUDKIT=0)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CloudKit is disabled in this environment (e.g. tests or REISEN_CLOUDKIT=0)."
+          }
+        }
+      }
+    },
+    "settings.icloud.status.user_disabled": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync ist in den Einstellungen ausgeschaltet. Daten bleiben nur lokal auf diesem Gerät."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud sync is turned off in Settings. Data stays local on this device only."
           }
         }
       }

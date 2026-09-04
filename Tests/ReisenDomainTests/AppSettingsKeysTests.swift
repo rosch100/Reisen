@@ -59,3 +59,18 @@ import ReisenDomain
     #expect(AppSettingsKeys.bookingListColumnWidth == "reisen_bookingListColumnWidth")
 }
 
+@Test func icloudSyncEnabledKey_isStableAndPrefixed() {
+    #expect(AppSettingsKeys.icloudSyncEnabled == "reisen_icloudSyncEnabled")
+}
+
+@Test func isICloudSyncEnabled_defaultsToTrueWhenUnset() {
+    let suite = "ReisenTests.icloudSyncEnabled"
+    let defaults = UserDefaults(suiteName: suite)!
+    defaults.removePersistentDomain(forName: suite)
+    #expect(AppSettingsKeys.isICloudSyncEnabled(defaults: defaults) == true)
+    AppSettingsKeys.setICloudSyncEnabled(false, defaults: defaults)
+    #expect(AppSettingsKeys.isICloudSyncEnabled(defaults: defaults) == false)
+    AppSettingsKeys.setICloudSyncEnabled(true, defaults: defaults)
+    #expect(AppSettingsKeys.isICloudSyncEnabled(defaults: defaults) == true)
+}
+

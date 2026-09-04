@@ -63,6 +63,7 @@ public enum UITestingIdentifiers {
     public static let bookingEditorTitle = "reisen.booking.editor.title"
     public static let settingsNotificationToggle = "reisen.settings.notification-toggle"
     public static let settingsAppIconPicker = "reisen.settings.app-icon-picker"
+    public static let settingsICloudSyncToggle = "reisen.settings.icloud-sync-toggle"
     public static let pasteImportReview = "reisen.paste-import.review"
     public static let pasteImportAccept = "reisen.paste-import.accept"
     public static let bookingDetailEdit = "reisen.booking.detail.edit"

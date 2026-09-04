@@ -16,7 +16,9 @@ public enum ProviderPreferencesImportGate {
     private static var suppressExportsAfterImportNotify = false
 
     public static var shouldSkipCloudKitWait: Bool {
-        !PersistenceBootstrap.isCloudKitEnabledByEnvironment()
+        !PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+            iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+        )
             || UITestingLaunch.isActive
     }
 
@@ -71,7 +73,10 @@ public enum ProviderPreferencesImportGate {
             return nil
         }
 
-        await PersistenceBootstrap.awaitCloudKitImportIfNeeded(timeout: timeout)
+        await PersistenceBootstrap.awaitCloudKitImportIfNeeded(
+            timeout: timeout,
+            cloudKitEnabled: true
+        )
 
         do {
             let snap = try applyImport(from: context, into: defaults)

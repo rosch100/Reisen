@@ -2,17 +2,16 @@ import Foundation
 import SwiftData
 
 extension PersistenceBootstrap {
-    public static func makeContainer(cloudKitEnabled: Bool? = nil) throws -> ModelContainer {
-        let useCloudKit = cloudKitEnabled ?? isCloudKitEnabledByEnvironment()
+    public static func makeContainer(cloudKitEnabled: Bool) throws -> ModelContainer {
         try migrateLegacyMonolithicStoreIfNeeded()
 
         do {
-            return try openDualContainer(cloudKitEnabled: useCloudKit)
+            return try openDualContainer(cloudKitEnabled: cloudKitEnabled)
         } catch {
             // Incompatible leftover stores (e.g. failed VersionedSchema checksums) → wipe once and retry.
             try resetStoreFiles()
             do {
-                return try openDualContainer(cloudKitEnabled: useCloudKit)
+                return try openDualContainer(cloudKitEnabled: cloudKitEnabled)
             } catch {
                 throw PersistenceStoreError.storeIncompatible(String(describing: error))
             }
