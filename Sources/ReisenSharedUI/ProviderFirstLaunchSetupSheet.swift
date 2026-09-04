@@ -10,25 +10,11 @@ public struct ProviderFirstLaunchSetupSheet: View {
     private let syncProviderIDsOverride: [ProviderID]?
     private let onContinue: (Set<ProviderID>) -> Void
     private let onLater: () -> Void
-    private let externalSelection: Binding<Set<ProviderID>>?
 
     @Environment(\.providerRegistry) private var providerRegistry
     @Environment(\.providerNativeAppPresence) private var nativeAppPresence
 
-    @State private var ownedSelection: Set<ProviderID>
-
-    public init(
-        syncProviderIDs: [ProviderID]? = nil,
-        selection: Binding<Set<ProviderID>>,
-        onContinue: @escaping (Set<ProviderID>) -> Void,
-        onLater: @escaping () -> Void
-    ) {
-        self.syncProviderIDsOverride = syncProviderIDs
-        self.externalSelection = selection
-        self._ownedSelection = State(initialValue: selection.wrappedValue)
-        self.onContinue = onContinue
-        self.onLater = onLater
-    }
+    @State private var selection: Set<ProviderID>
 
     public init(
         syncProviderIDs: [ProviderID]? = nil,
@@ -37,14 +23,9 @@ public struct ProviderFirstLaunchSetupSheet: View {
         onLater: @escaping () -> Void
     ) {
         self.syncProviderIDsOverride = syncProviderIDs
-        self.externalSelection = nil
-        self._ownedSelection = State(initialValue: initialSelection)
+        self._selection = State(initialValue: initialSelection)
         self.onContinue = onContinue
         self.onLater = onLater
-    }
-
-    private var selection: Binding<Set<ProviderID>> {
-        externalSelection ?? $ownedSelection
     }
 
     private var syncProviderIDs: [ProviderID] {
@@ -58,7 +39,7 @@ public struct ProviderFirstLaunchSetupSheet: View {
     }
 
     private var canContinue: Bool {
-        !selection.wrappedValue.isEmpty
+        ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: selection)
     }
 
     public var body: some View {
@@ -133,7 +114,7 @@ public struct ProviderFirstLaunchSetupSheet: View {
             Spacer()
 
             Button(L10n.string(.setupProvidersContinue)) {
-                onContinue(selection.wrappedValue)
+                onContinue(selection)
             }
             .buttonStyle(.borderedProminent)
             .disabled(!canContinue)
@@ -145,15 +126,13 @@ public struct ProviderFirstLaunchSetupSheet: View {
 
     private func binding(for providerID: ProviderID) -> Binding<Bool> {
         Binding(
-            get: { selection.wrappedValue.contains(providerID) },
+            get: { selection.contains(providerID) },
             set: { isOn in
-                var next = selection.wrappedValue
                 if isOn {
-                    next.insert(providerID)
+                    selection.insert(providerID)
                 } else {
-                    next.remove(providerID)
+                    selection.remove(providerID)
                 }
-                selection.wrappedValue = next
             }
         )
     }

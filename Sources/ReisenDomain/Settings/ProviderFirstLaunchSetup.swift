@@ -8,6 +8,11 @@ public enum ProviderFirstLaunchSetup: Sendable {
             && !defaults.bool(forKey: AppSettingsKeys.providerSetupDeferred)
     }
 
+    /// Continue nur mit mindestens einem Provider; leere Auswahl darf Host nicht abschließen.
+    public static func acceptsContinue(enabledIDs: Set<ProviderID>) -> Bool {
+        !enabledIDs.isEmpty
+    }
+
     public static func markCompleted(defaults: UserDefaults = AppSettingsDefaults.current) {
         defaults.set(true, forKey: AppSettingsKeys.providerSetupCompleted)
     }

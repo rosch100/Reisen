@@ -8,6 +8,11 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
     return (defaults, suiteName)
 }
 
+@Test func providerFirstLaunchSetup_acceptsContinue_rejectsEmptySelection() {
+    #expect(!ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: []))
+    #expect(ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: [.check24]))
+}
+
 @Test func providerFirstLaunchSetup_shouldPresent_whenNeitherFlagSet() {
     guard let (defaults, suiteName) = makeIsolatedDefaults() else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")

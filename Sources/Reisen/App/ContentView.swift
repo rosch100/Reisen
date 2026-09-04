@@ -324,6 +324,7 @@ struct ContentView: View {
                     onContinue: completeProviderSetup,
                     onLater: deferProviderSetup
                 )
+                .interactiveDismissDisabled(true)
             }
             .bookingPortalCancelSheet($cancelRequest)
     }
@@ -753,6 +754,7 @@ struct ContentView: View {
     }
 
     private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
+        guard ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: enabledIDs) else { return }
         let defaults = AppSettingsDefaults.current
         ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
         ProviderEnabledChange.notify()
