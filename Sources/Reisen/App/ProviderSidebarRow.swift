@@ -3,6 +3,7 @@ import AppKit
 import ReisenDomain
 import ReisenAppCore
 import ReisenSharedUI
+import ReisenDiagnostics
 
 struct ProviderSidebarRow: View {
     let providerID: ProviderID
@@ -65,7 +66,7 @@ struct ProviderSidebarRow: View {
             .accessibilityLabel(Text(providerDisplayName))
 
             Button {
-                isEnabled.toggle()
+                toggleEnabled(reason: "sidebar_toggle")
             } label: {
                 Image(systemName: isEnabled ? "checkmark.square.fill" : "square")
                     .foregroundStyle(isEnabled ? Color.accentColor : Color.secondary)
@@ -73,6 +74,7 @@ struct ProviderSidebarRow: View {
             }
             .buttonStyle(.plain)
             .disabled(isSyncingThisProvider)
+            .accessibilityIdentifier(UITestingIdentifiers.providerEnableToggle(providerID.rawValue))
             .accessibilityLabel(Text(
                 isEnabled
                     ? L10n.format(.providerDeactivateNamed, providerDisplayName)
@@ -81,10 +83,11 @@ struct ProviderSidebarRow: View {
             .accessibilityAddTraits(isEnabled ? .isSelected : [])
             .help(isEnabled ? L10n.string(.providerDeactivateHelp) : L10n.string(.providerActivateHelp))
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(UITestingIdentifiers.providerRow(providerID.rawValue))
         .contextMenu {
             Button(isEnabled ? L10n.string(.providerDeactivate) : L10n.string(.providerActivate)) {
-                isEnabled.toggle()
+                toggleEnabled(reason: "sidebar_context_menu")
             }
             .disabled(isSyncingThisProvider)
 
@@ -94,6 +97,28 @@ struct ProviderSidebarRow: View {
                     object: providerID
                 )
             }
+        }
+    }
+
+    private func toggleEnabled(reason: String) {
+        isEnabled.toggle()
+        ProviderEnabledChange.notify()
+        let enabled = isEnabled
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: providerID,
+                        operation: reason
+                    ),
+                    component: "ProviderSidebarRow",
+                    phase: "enable",
+                    event: enabled ? "enabled" : "disabled",
+                    result: .succeeded,
+                    reason: reason
+                )
+            )
         }
     }
 }

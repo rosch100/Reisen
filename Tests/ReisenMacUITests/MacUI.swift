@@ -150,6 +150,15 @@ struct MacUI {
         return waitFor(UITestingIdentifiers.syncChrome)
     }
 
+    /// Deaktiviert Provider per Sidebar-Checkbox, selektiert die Zeile → Login/Sync muss erscheinen.
+    @discardableResult
+    func activateDisabledProviderViaSidebarSelection(_ rawValue: String) -> XCUIElement {
+        let toggle = waitFor(UITestingIdentifiers.providerEnableToggle(rawValue))
+        toggle.click()
+        waitFor(UITestingIdentifiers.providerRow(rawValue)).click()
+        return waitFor(UITestingIdentifiers.syncChrome)
+    }
+
     @discardableResult
     func waitForSyncLoginChrome() -> XCUIElement {
         waitFor(UITestingIdentifiers.syncLoginChrome)

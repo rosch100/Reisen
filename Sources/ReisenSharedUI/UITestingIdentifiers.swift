@@ -90,6 +90,11 @@ public enum UITestingIdentifiers {
         "reisen.provider.\(rawValue)"
     }
 
+    /// Sidebar-Checkbox: Provider für Login/Sync aktivieren/deaktivieren.
+    public static func providerEnableToggle(_ rawValue: String) -> String {
+        "reisen.provider.enable.\(rawValue)"
+    }
+
     public static func gapRow(timelineItemID: String) -> String {
         "reisen.gap.\(timelineItemID)"
     }
