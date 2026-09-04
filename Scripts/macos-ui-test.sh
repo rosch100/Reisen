@@ -2,6 +2,11 @@
 # macOS XCUI-Smokes (SSOT). Host: XcodeGen-Scheme ReisenMac.
 # bash 3.2 + set -u: niemals ein leeres Array via "${arr[@]}" expandieren.
 #
+# Selection (SSOT: docs/superpowers/specs/2026-09-04-macos-ui-diff-select-design.md):
+#   Default lokal = Diff → -only-testing je Treffer; leer → Skip stderr + Exit 0
+#   --full | CI/GITHUB_ACTIONS → ganze MacUISmokeTests
+#   --reisen-ui-only-testing <args…> → Passthrough (Remote), keine Diff-Selektion
+#
 # REISEN_MAC_UI_CODE_SIGNING_OFF=true (Remote ohne Developer-Profile):
 #   build-for-testing ohne Signatur → Ad-hoc codesign + xattr -cr →
 #   test-without-building.
@@ -10,6 +15,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Keep in sync with Scripts/macos_ui_select_tests.py SKIP_STDERR.
+REISEN_MAC_UI_SKIP_STDERR='macos-ui-test: no smoke selection (diff); skip XCUI. DoD: UI-Verhalten erfordert Smoke-Edit in MacUISmokeTests.'
+REISEN_MAC_UI_CLASS_FILTER='-only-testing:ReisenMacUITests/MacUISmokeTests'
 
 reisen_macos_ui_common_args() {
   local project="$1"
@@ -23,7 +32,6 @@ reisen_macos_ui_common_args() {
     -destination "$destination" \
     -derivedDataPath "$derived" \
     -configuration Debug \
-    -only-testing:ReisenMacUITests/MacUISmokeTests \
     -resultBundlePath "$result"
 }
 
@@ -85,10 +93,14 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   local destination="$3"
   local derived="$4"
   local result="$5"
+  shift 5
   local -a common
   while IFS= read -r line; do
     common+=("$line")
   done < <(reisen_macos_ui_common_args "$project" "$scheme" "$destination" "$derived" "$result")
+  if (($#)); then
+    common+=("$@")
+  fi
 
   echo "macOS-UI-Tests: build-for-testing (unsigned) …" >&2
   xcodebuild "${common[@]}" \
@@ -104,24 +116,126 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   xcodebuild "${common[@]}" test-without-building
 }
 
+reisen_macos_ui_emit_skip() {
+  printf '%s\n' "$REISEN_MAC_UI_SKIP_STDERR" >&2
+}
+
 if [[ "${1:-}" == "--self-test" ]]; then
   unset CI GITHUB_ACTIONS REISEN_MAC_UI_CODE_SIGNING_OFF
-  local_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult)"
+  local_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult "$REISEN_MAC_UI_CLASS_FILTER")"
   printf '%s\n' "$local_out" | grep -qx -- -project
   printf '%s\n' "$local_out" | grep -qx test
+  printf '%s\n' "$local_out" | grep -qx -- "$REISEN_MAC_UI_CLASS_FILTER"
   if printf '%s\n' "$local_out" | grep -q CODE_SIGNING_ALLOWED=NO; then
     echo "self-test: lokales Signing-Flag ohne CI" >&2
     exit 1
   fi
   CI=true
-  ci_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult)"
+  ci_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult "$REISEN_MAC_UI_CLASS_FILTER")"
   printf '%s\n' "$ci_out" | grep -qx CODE_SIGNING_ALLOWED=NO
   printf '%s\n' "$ci_out" | grep -qx CODE_SIGNING_REQUIRED=NO
-  extra_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult CODE_SIGN_IDENTITY=-)"
+  extra_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult "$REISEN_MAC_UI_CLASS_FILTER" CODE_SIGN_IDENTITY=-)"
   printf '%s\n' "$extra_out" | grep -qx CODE_SIGN_IDENTITY=-
+
+  grep -Fq "$REISEN_MAC_UI_SKIP_STDERR" "$ROOT/Scripts/macos-ui-test.sh"
+  grep -Fq 'macos_ui_select_tests.py' "$ROOT/Scripts/macos-ui-test.sh"
+  grep -Fq -e '--reisen-ui-only-testing' "$ROOT/Scripts/macos-ui-test.sh"
+  grep -Fq 'MODE=full' "$ROOT/Scripts/macos-ui-test.sh"
+  # Skip-Stderr must match Python SSOT constant.
+  py_skip="$(
+    python3 -c "
+import importlib.util
+from pathlib import Path
+p = Path(r'$ROOT') / 'Scripts' / 'macos_ui_select_tests.py'
+spec = importlib.util.spec_from_file_location('macos_ui_select_tests', p)
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+print(mod.SKIP_STDERR)
+"
+  )"
+  [[ "$py_skip" == "$REISEN_MAC_UI_SKIP_STDERR" ]]
+
+  grep -Fq 'keine -only-testing-Args vor xcodebuild' "$ROOT/Scripts/macos-ui-test.sh"
+
   echo "macos-ui-test.sh self-test: OK" >&2
   exit 0
 fi
+
+MODE=diff
+ONLY_ARGS=()
+while (($#)); do
+  case "$1" in
+    --full)
+      MODE=full
+      shift
+      ;;
+    --reisen-ui-only-testing)
+      MODE=passthrough
+      shift
+      while (($#)); do
+        ONLY_ARGS+=("$1")
+        shift
+      done
+      ;;
+    *)
+      echo "Fehler: unbekanntes Argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  MODE=full
+fi
+
+case "$MODE" in
+  full)
+    ONLY_ARGS=("$REISEN_MAC_UI_CLASS_FILTER")
+    ;;
+  passthrough)
+    if ((${#ONLY_ARGS[@]} == 0)); then
+      echo "Fehler: --reisen-ui-only-testing ohne -only-testing-Args" >&2
+      exit 2
+    fi
+    for arg in "${ONLY_ARGS[@]}"; do
+      case "$arg" in
+        -only-testing:ReisenMacUITests/MacUISmokeTests*)
+          ;;
+        *)
+          echo "Fehler: ungültiger Passthrough-Arg: $arg" >&2
+          exit 2
+          ;;
+      esac
+    done
+    ;;
+  diff)
+    ONLY_ARGS=()
+    select_status=0
+    select_out="$(python3 "$ROOT/Scripts/macos_ui_select_tests.py" --repo-root "$ROOT")" || select_status=$?
+    if [[ "$select_status" -ne 0 ]]; then
+      exit "$select_status"
+    fi
+    while IFS= read -r line; do
+      [[ -n "$line" ]] && ONLY_ARGS+=("$line")
+    done <<<"$select_out"
+    if ((${#ONLY_ARGS[@]} == 0)); then
+      reisen_macos_ui_emit_skip
+      exit 0
+    fi
+    ;;
+  *)
+    echo "Fehler: unbekannter MODE=$MODE" >&2
+    exit 2
+    ;;
+esac
+
+# Guard: ohne -only-testing würde xcodebuild (bash≥5) die ganze Scheme-Suite fahren.
+if ((${#ONLY_ARGS[@]} == 0)); then
+  echo "Fehler: keine -only-testing-Args vor xcodebuild" >&2
+  exit 2
+fi
+
+echo "macOS-UI-Tests filter (${MODE}): ${ONLY_ARGS[*]}" >&2
 
 cd "$ROOT"
 
@@ -152,7 +266,7 @@ run_ui_tests() {
   local -a args
   while IFS= read -r line; do
     args+=("$line")
-  done < <(reisen_macos_ui_xcodebuild_args "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" "$@")
+  done < <(reisen_macos_ui_xcodebuild_args "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" "${ONLY_ARGS[@]}")
   xcodebuild "${args[@]}"
 }
 
@@ -160,7 +274,7 @@ echo "macOS-UI-Tests: ${SCHEME} (${DESTINATION}) …" >&2
 set +e
 if [[ "${REISEN_MAC_UI_CODE_SIGNING_OFF:-}" == "true" ]]; then
   reisen_macos_ui_run_unsigned_build_then_adhoc_test \
-    "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" 2>&1 | tee "$LOG"
+    "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" "${ONLY_ARGS[@]}" 2>&1 | tee "$LOG"
   status=${PIPESTATUS[0]}
 else
   run_ui_tests 2>&1 | tee "$LOG"
@@ -176,7 +290,7 @@ if [[ "$status" -ne 0 && "${REISEN_MAC_UI_CODE_SIGNING_OFF:-}" != "true" ]]; the
     rm -rf "$RESULT"
     set +e
     REISEN_MAC_UI_CODE_SIGNING_OFF=true reisen_macos_ui_run_unsigned_build_then_adhoc_test \
-      "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" 2>&1 | tee -a "$LOG"
+      "$PROJECT" "$SCHEME" "$DESTINATION" "$DERIVED" "$RESULT" "${ONLY_ARGS[@]}" 2>&1 | tee -a "$LOG"
     status=${PIPESTATUS[0]}
     set -e
     reisen_macos_ui_clear_gatekeeper_attrs "$DERIVED"

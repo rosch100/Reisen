@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Remote macOS XCUI-Smokes: Working-Tree-rsync + macos-ui-test.sh auf dem iMac.
 # Spec: docs/superpowers/specs/2026-09-02-macos-ui-test-remote-design.md
+# Selection lokal (Diff/--full/Skip); Remote nur Passthrough — siehe
+# docs/superpowers/specs/2026-09-04-macos-ui-diff-select-design.md
 # bash 3.2 + set -u: keine Associative Arrays; leere "${arr[@]}" vermeiden.
 set -euo pipefail
 
@@ -12,6 +14,9 @@ REISEN_UI_REMOTE_DIR_DEFAULT="~/Entwicklung/Reisen-ui-runs"
 REISEN_UI_REMOTE_LOCK_DIR="/tmp/reisen-macos-ui-run.lock"
 REISEN_UI_REMOTE_LOCK_STALE_SEC=2700
 REISEN_UI_REMOTE_LOCK_WAIT_MAX=360
+
+# Keep in sync with Scripts/macos_ui_select_tests.py SKIP_STDERR.
+REISEN_MAC_UI_SKIP_STDERR='macos-ui-test: no smoke selection (diff); skip XCUI. DoD: UI-Verhalten erfordert Smoke-Edit in MacUISmokeTests.'
 
 reisen_ui_remote_user() {
   printf '%s\n' "${REISEN_UI_REMOTE_USER:-$REISEN_UI_REMOTE_USER_DEFAULT}"
@@ -564,12 +569,25 @@ reisen_ui_remote_run_ui_tests() {
   local host="$1"
   local abs_dir="$2"
   local run_id="$3"
-  local qdir q_exit q_log q_cmd
-  local test_status
+  shift 3
+  local -a remote_test_args=("$@")
+  local qdir q_exit q_log q_cmd q_test_line
+  local test_status test_line arg
   qdir="$(printf '%q' "$abs_dir")"
   q_exit="$(printf '%q' "/tmp/reisen-macos-ui-run-${run_id}.exit")"
   q_log="$(printf '%q' "/tmp/reisen-macos-ui-run-${run_id}.log")"
   q_cmd="$(printf '%q' "/tmp/reisen-macos-ui-run-${run_id}.command")"
+  # Bare macos-ui-test.sh on remote would re-run Diff-Selektion (kein/.git) — Passthrough Pflicht.
+  if ((${#remote_test_args[@]} == 0)); then
+    echo "Fehler: remote test args fehlen (Passthrough/--full Pflicht)" >&2
+    return 2
+  fi
+  test_line='bash ./Scripts/macos-ui-test.sh'
+  for arg in "${remote_test_args[@]}"; do
+    test_line+=" $(printf '%q' "$arg")"
+  done
+  test_line+=' > ${log_file} 2>&1'
+  q_test_line="$(printf '%q' "$test_line")"
   echo "macOS-UI-Tests remote auf ${host} (via Terminal/open, auto-close, run-id=${run_id}) …" >&2
   # Continuity/AirPlay-Dialog („MacBook Pro …“) blockiert XCUI-Hit-Tests.
   reisen_ui_remote_ssh "$host" 'killall AirPlayUIAgent 2>/dev/null || true'
@@ -593,7 +611,7 @@ rm -f "\$exit_file" "\$log_file" "\$cmd_file"
   echo 'cd ${qdir}'
   echo 'rm -rf DerivedData/ReisenMacUITests'
   echo 'set +e'
-  echo "bash ./Scripts/macos-ui-test.sh > \${log_file} 2>&1"
+  echo $q_test_line
   echo 'status=\$?'
   echo 'set -e'
   echo "printf '%s\\n' \"\\\$status\" > \${exit_file}"
@@ -666,7 +684,9 @@ reisen_ui_remote_self_test() {
   opts="$(reisen_ui_remote_ssh_base_opts)"
   printf '%s\n' "$opts" | grep -Fqx -- 'StrictHostKeyChecking=yes'
 
-  out="$(printf 'cd %q && exec bash ./Scripts/macos-ui-test.sh' '/Users/roschmac/Entwicklung/Reisen')"
+  out="$(printf 'cd %q && exec bash ./Scripts/macos-ui-test.sh --reisen-ui-only-testing %q' \
+    '/Users/roschmac/Entwicklung/Reisen' \
+    '-only-testing:ReisenMacUITests/MacUISmokeTests/testFoo')"
   case "$out" in
     *'/Users/roschmac/Entwicklung/Reisen'*) ;;
     *)
@@ -677,6 +697,13 @@ reisen_ui_remote_self_test() {
   case "$out" in
     *'$REMOTE_DIR'*)
       echo "self-test: \$REMOTE_DIR darf nicht im Invoke stehen" >&2
+      return 1
+      ;;
+  esac
+  case "$out" in
+    *'-only-testing:ReisenMacUITests/MacUISmokeTests/testFoo'*) ;;
+    *)
+      echo "self-test: Passthrough -only-testing fehlt: $out" >&2
       return 1
       ;;
   esac
@@ -703,6 +730,16 @@ reisen_ui_remote_self_test() {
   grep -Fq 'open -a Terminal "\$cmd_file"' "$script_path"
   # EXIT während UI-Lauf muss Lock freigeben (kein reines Terminal-Restore).
   grep -Fq 'reisen_ui_remote_release_lock' "$script_path"
+  grep -Fq -e '--reisen-ui-only-testing' "$script_path"
+  grep -Fq 'macos_ui_select_tests.py' "$script_path"
+  grep -Fq "$REISEN_MAC_UI_SKIP_STDERR" "$script_path"
+  grep -Fq 'q_test_line' "$script_path"
+  grep -Fq 'Passthrough/--full Pflicht' "$script_path"
+  # Kein bare Invoke ohne Selection-Args mehr (Pre-Rev-7 Regression).
+  if grep -E 'echo "bash \./Scripts/macos-ui-test\.sh >' "$script_path"; then
+    echo "self-test: bare macos-ui-test.sh Invoke ohne Passthrough" >&2
+    return 1
+  fi
   awk '
     /reisen_ui_remote_run_ui_tests\(\)/ { in_fn=1 }
     in_fn && /^}/ { in_fn=0 }
@@ -716,10 +753,33 @@ reisen_ui_remote_self_test() {
   ' "$script_path"
   grep -Fq 'reisen_ui_remote_assert_git_source' "$script_path"
   grep -Fq "excludes+=(--exclude='.git')" "$script_path"
-  # Lock vor Sync im Main (Aufrufe mit $HOST)
-  acquire_line="$(grep -n 'reisen_ui_remote_acquire_lock "$HOST"' "$script_path" | head -1 | cut -d: -f1)"
-  sync_line="$(grep -n 'reisen_ui_remote_sync "$HOST"' "$script_path" | head -1 | cut -d: -f1)"
+  # Lock vor Sync im Main — Needles aus Teilen, Self-Test-Strings matchen nicht.
+  acquire_a='reisen_ui_remote_acquire_lock "$HOST" '
+  acquire_b='"$RUN_ID"'
+  sync_a='reisen_ui_remote_sync "$HOST" '
+  sync_b='"$ABS_DIR"'
+  acquire_matches="$(grep -nF "${acquire_a}${acquire_b}" "$script_path" || true)"
+  sync_matches="$(grep -nF "${sync_a}${sync_b}" "$script_path" || true)"
+  acquire_count="$(printf '%s\n' "$acquire_matches" | grep -c . || true)"
+  sync_count="$(printf '%s\n' "$sync_matches" | grep -c . || true)"
+  [[ "$acquire_count" -eq 1 && "$sync_count" -eq 1 ]] || {
+    echo "self-test: acquire/sync Runtime-Invoke unklar (acquire=${acquire_count} sync=${sync_count})" >&2
+    return 1
+  }
+  acquire_line="$(printf '%s\n' "$acquire_matches" | head -1 | cut -d: -f1)"
+  sync_line="$(printf '%s\n' "$sync_matches" | head -1 | cut -d: -f1)"
   [[ -n "$acquire_line" && -n "$sync_line" && "$acquire_line" -lt "$sync_line" ]]
+  # Selection-Invoke (genau einmal) vor Lock; Needle aus Teilen, damit Self-Test nicht matcht.
+  select_needle_a='select_out="$(python3 "$ROOT/Scripts/'
+  select_needle_b='macos_ui_select_tests.py" --repo-root "$ROOT")"'
+  select_matches="$(grep -nF "${select_needle_a}${select_needle_b}" "$script_path" || true)"
+  select_count="$(printf '%s\n' "$select_matches" | grep -c . || true)"
+  [[ "$select_count" -eq 1 ]] || {
+    echo "self-test: erwartet genau einen macos_ui_select_tests.py Runtime-Invoke, fand ${select_count}" >&2
+    return 1
+  }
+  select_line="$(printf '%s\n' "$select_matches" | head -1 | cut -d: -f1)"
+  [[ -n "$select_line" && "$select_line" -lt "$acquire_line" ]]
 
   echo "macos-ui-test-remote.sh self-test: OK" >&2
   echo "Resolve-Reihenfolge: REISEN_UI_REMOTE_HOST → ${REISEN_UI_REMOTE_PRIMARY_HOST} → Bonjour imac*.local (niedrigste RTT)" >&2
@@ -730,8 +790,44 @@ if [[ "${1:-}" == "--self-test" ]]; then
   exit 0
 fi
 
+MODE=diff
+while (($#)); do
+  case "$1" in
+    --full)
+      MODE=full
+      shift
+      ;;
+    *)
+      echo "Fehler: unbekanntes Argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
 cd "$ROOT"
 reisen_ui_remote_assert_git_source
+
+REMOTE_TEST_ARGS=()
+if [[ "$MODE" == "full" ]]; then
+  REMOTE_TEST_ARGS=(--full)
+  echo "macOS-UI-Tests remote: MODE=full" >&2
+else
+  select_status=0
+  select_out="$(python3 "$ROOT/Scripts/macos_ui_select_tests.py" --repo-root "$ROOT")" || select_status=$?
+  if [[ "$select_status" -ne 0 ]]; then
+    exit "$select_status"
+  fi
+  ONLY_LINES=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && ONLY_LINES+=("$line")
+  done <<<"$select_out"
+  if ((${#ONLY_LINES[@]} == 0)); then
+    printf '%s\n' "$REISEN_MAC_UI_SKIP_STDERR" >&2
+    exit 0
+  fi
+  REMOTE_TEST_ARGS=(--reisen-ui-only-testing "${ONLY_LINES[@]}")
+  echo "macOS-UI-Tests remote filter: ${ONLY_LINES[*]}" >&2
+fi
 
 HOST="$(reisen_ui_remote_resolve_host)"
 if [[ "${REISEN_UI_REMOTE_HOST:-}" == "$HOST" ]]; then
@@ -758,7 +854,7 @@ trap 'if [[ "${lock_held:-0}" -eq 1 ]]; then reisen_ui_remote_release_lock "'"$H
 reisen_ui_remote_sync "$HOST" "$ABS_DIR"
 
 set +e
-reisen_ui_remote_run_ui_tests "$HOST" "$ABS_DIR" "$RUN_ID"
+reisen_ui_remote_run_ui_tests "$HOST" "$ABS_DIR" "$RUN_ID" "${REMOTE_TEST_ARGS[@]}"
 status=$?
 set -e
 
