@@ -499,6 +499,13 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
         ui.openProviderSyncCheck24()
+        // UITesting ohne echte Session → needsLogin: eine Login-Chrome-Fläche oberhalb.
+        _ = ui.waitForSyncLoginChrome()
+        ui.waitForLabelContaining("Anmeldung erforderlich")
+        XCTAssertFalse(
+            ui.element(UITestingIdentifiers.syncBrowserCollapse).exists,
+            "Browser-Collapse gehört nicht in die Login-Chrome"
+        )
     }
 
     func testPasteImportFixturePersistsBooking() {

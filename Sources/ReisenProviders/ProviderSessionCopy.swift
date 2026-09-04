@@ -14,7 +14,7 @@ public enum ProviderSessionCopy: Sendable {
 
     public static let macSessionReady = "Du kannst jetzt die Buchungen synchronisieren."
     public static let macNeedsLogin =
-        "Melde dich im Browser unten beim Provider an (inkl. 2FA falls nötig)."
+        "Melde dich im Browser beim Provider an (inkl. 2FA falls nötig)."
 
     public static func iosSubtitle(
         navigationWasBlocked: Bool,

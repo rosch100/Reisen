@@ -11,6 +11,7 @@ import ReisenDomain
     #expect(UITestingIdentifiers.inspector == "reisen.inspector")
     #expect(UITestingIdentifiers.settings == "reisen.settings")
     #expect(UITestingIdentifiers.syncChrome == "reisen.sync.chrome")
+    #expect(UITestingIdentifiers.syncLoginChrome == "reisen.sync.login-chrome")
     #expect(UITestingIdentifiers.bookingEditor == "reisen.booking.editor")
     #expect(UITestingIdentifiers.bookingEditorSave == "reisen.booking.editor.save")
     #expect(UITestingIdentifiers.emptyState == "reisen.empty-state")

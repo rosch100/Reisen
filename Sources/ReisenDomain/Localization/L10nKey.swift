@@ -393,7 +393,6 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case syncSyncNowHelp = "sync.sync_now_help"
     case syncUnavailableHelp = "sync.unavailable_help"
     case syncAccountPicker = "sync.account_picker"
-    case syncAfterLoginHint = "sync.after_login_hint"
     case syncChooseAccount = "sync.choose_account"
     case syncEnablePortalsHint = "sync.enable_portals_hint"
     case syncNoPortals = "sync.no_portals"
