@@ -57,6 +57,89 @@ public final class AppBootstrap {
         }
     }
 
+    /// Live CloudKit on/off: persists preference, optionally wipes iCloud, reopens the hybrid store.
+    public func applyICloudSyncPreference(enabled: Bool, wipeCloud: Bool) async {
+        guard !isResetting else { return }
+        isResetting = true
+        defer { isResetting = false }
+        await performApplyICloudSyncPreference(enabled: enabled, wipeCloud: wipeCloud)
+    }
+
+    private func performApplyICloudSyncPreference(enabled: Bool, wipeCloud: Bool) async {
+        let defaults = AppSettingsDefaults.current
+        let previous = AppSettingsKeys.isICloudSyncEnabled(defaults: defaults)
+        let reason: String
+        if enabled {
+            reason = "user_enable"
+        } else if wipeCloud {
+            reason = "user_disable_wipe"
+        } else {
+            reason = "user_disable_keep_local"
+        }
+        let runID = UUID()
+        await recordICloudSyncPreference(
+            runID: runID,
+            event: "apply_started",
+            result: .started,
+            reason: reason
+        )
+
+        AppSettingsKeys.setICloudSyncEnabled(enabled, defaults: defaults)
+
+        do {
+            stopCloudSideEffectObserverIfReady()
+
+            if uiTesting.skipsSideEffects {
+                try activateReadyState()
+            } else if !enabled && wipeCloud {
+                try await wipeCloudThenResetLocal()
+            } else {
+                // Keep local store files; makeContainer reads preference for CloudKit on/off.
+                try activateReadyState()
+            }
+
+            await recordICloudSyncPreference(
+                runID: runID,
+                event: "apply_succeeded",
+                result: .succeeded,
+                reason: reason
+            )
+        } catch {
+            AppSettingsKeys.setICloudSyncEnabled(previous, defaults: defaults)
+            state = .failed(error.localizedDescription)
+            await recordICloudSyncPreference(
+                runID: runID,
+                event: "apply_failed",
+                result: .failed,
+                reason: reason
+            )
+        }
+    }
+
+    private func recordICloudSyncPreference(
+        runID: UUID,
+        event: String,
+        result: DiagnosticResult,
+        reason: String
+    ) async {
+        guard !uiTesting.skipsSideEffects else { return }
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: DiagnosticContext(
+                    runID: runID,
+                    providerID: .manual,
+                    operation: "icloud_sync_preference"
+                ),
+                component: "ICloudSyncPreference",
+                phase: "apply",
+                event: event,
+                result: result,
+                reason: reason,
+                visibility: .publicDiagnostic
+            )
+        )
+    }
+
     private func performReset(wipeCloudDataBeforeReset: Bool) async {
         do {
             stopCloudSideEffectObserverIfReady()
