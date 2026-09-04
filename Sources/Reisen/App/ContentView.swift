@@ -749,11 +749,7 @@ struct ContentView: View {
 
     private func presentProviderSetupFromReopen() {
         showProviderSetup = true
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_presented",
-            result: .started,
-            reason: "reopen"
-        )
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: "reopen")
     }
 
     private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
@@ -763,55 +759,19 @@ struct ContentView: View {
         ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
         showProviderSetup = false
         selectFirstEnabledProviderSyncIfAvailable()
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_completed",
-            result: .succeeded,
-            reason: "continue_count_\(enabledIDs.count)"
-        )
+        ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
     }
 
     private func deferProviderSetup() {
         ProviderFirstLaunchSetup.markDeferred()
         showProviderSetup = false
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_deferred",
-            result: .cancelled,
-            reason: "later"
-        )
+        ProviderFirstLaunchSetupDiagnostics.recordDeferred()
     }
 
     private func recordProviderSetupPresentedIfNeeded(reason: String) {
         guard !didRecordProviderSetupPresented else { return }
         didRecordProviderSetupPresented = true
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_presented",
-            result: .started,
-            reason: reason
-        )
-    }
-
-    private func recordProviderSetupDiagnostic(
-        event: String,
-        result: DiagnosticResult,
-        reason: String
-    ) {
-        let context = DiagnosticContext(
-            runID: UUID(),
-            providerID: .manual,
-            operation: "provider_first_launch_setup"
-        )
-        Task {
-            await DiagnosticLogger.shared.record(
-                DiagnosticEvent(
-                    context: context,
-                    component: "ProviderFirstLaunchSetup",
-                    phase: "setup",
-                    event: event,
-                    result: result,
-                    reason: reason
-                )
-            )
-        }
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: reason)
     }
 
     private var sidebarMailbox: SidebarOpenBookingMailbox? {

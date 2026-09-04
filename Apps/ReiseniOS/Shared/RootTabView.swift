@@ -9,7 +9,6 @@ import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
-import ReisenDiagnostics
 #if REISEN_PROVIDER_SYNC
 import ReisenProviders
 #endif
@@ -123,11 +122,7 @@ struct RootTabView: View {
 
     private func presentProviderSetupFromReopen() {
         showProviderSetup = true
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_presented",
-            result: .started,
-            reason: "reopen"
-        )
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: "reopen")
     }
 
     private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
@@ -139,55 +134,19 @@ struct RootTabView: View {
         #if REISEN_PROVIDER_SYNC
         selectedTab = .sync
         #endif
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_completed",
-            result: .succeeded,
-            reason: "continue_count_\(enabledIDs.count)"
-        )
+        ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
     }
 
     private func deferProviderSetup() {
         ProviderFirstLaunchSetup.markDeferred()
         showProviderSetup = false
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_deferred",
-            result: .cancelled,
-            reason: "later"
-        )
+        ProviderFirstLaunchSetupDiagnostics.recordDeferred()
     }
 
     private func recordProviderSetupPresentedIfNeeded(reason: String) {
         guard !didRecordProviderSetupPresented else { return }
         didRecordProviderSetupPresented = true
-        recordProviderSetupDiagnostic(
-            event: "provider_setup_presented",
-            result: .started,
-            reason: reason
-        )
-    }
-
-    private func recordProviderSetupDiagnostic(
-        event: String,
-        result: DiagnosticResult,
-        reason: String
-    ) {
-        let context = DiagnosticContext(
-            runID: UUID(),
-            providerID: .manual,
-            operation: "provider_first_launch_setup"
-        )
-        Task {
-            await DiagnosticLogger.shared.record(
-                DiagnosticEvent(
-                    context: context,
-                    component: "ProviderFirstLaunchSetup",
-                    phase: "setup",
-                    event: event,
-                    result: result,
-                    reason: reason
-                )
-            )
-        }
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: reason)
     }
 
     private func focusCreatedTrip(_ tripID: UUID) {

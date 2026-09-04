@@ -147,13 +147,13 @@
 
 **Files:** touched sites only
 
-- [ ] **Step 1: Full Grep** Setup-Keys + neue Call-Sites: nur `AppSettingsDefaults.current` / isolated suite. Residual `.standard` (Disclosure, SyncTab, CrashCatcher) **nicht** „fixen“, sondern als Residual belassen; kein Continue-XCUI
+- [x] **Step 1: Full Grep** Setup-Keys + neue Call-Sites: nur `AppSettingsDefaults.current` / isolated suite. Residual `.standard` (Disclosure, SyncTab, CrashCatcher) **nicht** „fixen“, sondern als Residual belassen; kein Continue-XCUI
 
-- [ ] **Step 2: Confirm DiagnosticLogger** on present/complete/defer
+- [x] **Step 2: Confirm DiagnosticLogger** on present/complete/defer
 
-- [ ] **Step 3: `bash ./Scripts/ci-build.sh --arch arm64`** + `bash ./Scripts/ios-test.sh` wenn iOS-Dateien geändert
+- [x] **Step 3: `bash ./Scripts/ci-build.sh --arch arm64`** + `bash ./Scripts/ios-test.sh` wenn iOS-Dateien geändert
 
-- [ ] **Step 4: Commit** if fixes needed
+- [x] **Step 4: Commit** if fixes needed
 
 ---
 
