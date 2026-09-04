@@ -37,6 +37,7 @@ ReisenTraveloka      Traveloka-Adapter
 ReisenBilligerMietwagen  billiger-mietwagen.de-Adapter
 ReisenProviderSync   Produktions-Registry (ProviderSyncBootstrap)
 ReisenAppCore        Bootstrap, SyncStore, EventKit/Reminder Side Effects
+ReisenPasteImport    On-device Paste-Import (PDF/Bild/Text → Review)
 Reisen (macOS)       SwiftUI Composition Root + UI
 ReiseniOS            Universal App (iPhone + iPad)
 ```
@@ -60,6 +61,8 @@ Keine stillen Store-Fallbacks: bei Schema-/Store-Fehlern zeigt die App einen Res
 
 ```bash
 ./Scripts/run-app.sh
+# Diagnose-Logging (nur Debug-Build):
+./Scripts/run-app.sh --logging
 ```
 
 **iOS (Simulator):**
@@ -79,11 +82,11 @@ Cursor/Simulator-Workflow: [`docs/dev/ios-cursor.md`](docs/dev/ios-cursor.md)
 
 [![CI](https://github.com/rosch100/Reisen/actions/workflows/ci.yml/badge.svg)](https://github.com/rosch100/Reisen/actions/workflows/ci.yml)
 
-Für PRs und Pushs auf `master` läuft die CI automatisch:
-- `swift build --build-tests`
-- `swift test` über `bash ./Scripts/ci-test.sh`
+Für PRs und Pushs auf `master` laufen Suites parallel
+(`suite-swiftpm`, `suite-ios-sim`, `suite-ios-release`, `suite-macos-ui`);
+Merge-Gate ist der Check **CI**. Details: [`docs/ci/README.md`](docs/ci/README.md).
 
-Lokale CI-Parität:
+Lokal:
 
 ```bash
 bash ./Scripts/ci-test.sh
@@ -98,11 +101,16 @@ Beim Sync:
 
 Darüber hinaus:
 - Buchungstypen inkl. **Bahn** und **Mietwagen** (manuell und je nach Portal)
+- **Paste-Import** von Bestätigungen (PDF, Bild, Text) — prüfen, dann speichern
 - **Copy/Paste** für Info- und Editor-Felder (Bestätigungscodes per Tap)
-- **Trip-Vollständigkeit** aus Inter-Booking-Lücken
-- **Portal öffnen** und Gap-Suche Deep-Links zur Anbieter-Website
+- **Kostensumme** der Reise (je Währung; optional unverbindlich umgerechnet)
+- **Doppelbuchungen** am selben Tag und **fehlende Abschnitte** in der Reise
+- **Mehrere markieren** und gemeinsam zuordnen oder löschen
+- **Portal öffnen** / **Storno-Seite** und Suche nach fehlenden Abschnitten beim Anbieter
 
 Der Sync ist für **lokale, persönliche Nutzung** gedacht; Session-Cookies bleiben im WebView-Cookie-Store. Optional (Opt-in): Zugangsdaten in der Geräte-Keychain.
+
+Änderungen seit dem letzten Release: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Öffentliche Issues (Fehler und Feedback)
 

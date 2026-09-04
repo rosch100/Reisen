@@ -256,6 +256,56 @@ button:focus-visible {
   justify-content: center;
 }
 
+/* What's new */
+.whats-new {
+  padding: 3.5rem 0;
+  background: var(--bg-elevated);
+  border-block: 1px solid var(--border);
+}
+
+.whats-new__header {
+  max-width: 36rem;
+  margin: 0 auto 2rem;
+  text-align: center;
+}
+
+.whats-new__header h2 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  letter-spacing: -0.02em;
+}
+
+.whats-new__header p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.whats-new__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.whats-new__list li {
+  padding: 1.1rem 1.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.whats-new__list strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.whats-new__list span {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
 /* Device mockup (CSS-only) */
 .device-mockup {
   width: min(100%, 320px);
