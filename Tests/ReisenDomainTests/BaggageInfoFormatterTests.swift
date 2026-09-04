@@ -45,11 +45,13 @@ import ReisenDomain
     #expect(baggage.contains(L10n.string(.baggageShortCabin)) == true)
     #expect(baggage.contains("10KG") == true)
     #expect(baggage.contains("5KG") == true)
-    #expect(baggage.contains("Pax") == false)
+    #expect(baggage.contains("Passagier") == false)
     }
 }
 
-@Test func baggageInfoFormatterKeepsPaxLinesWhenPassengersDiffer() {
+@Test func baggageInfoFormatterKeepsPassengerLinesWhenPassengersDiffer() {
+    L10n.withLocale(Locale(identifier: "de")) {
+
     let passengers = [
         BookingPassenger(
             passengerNumber: 1,
@@ -68,9 +70,10 @@ import ReisenDomain
     ]
 
     let baggage = BaggageInfoFormatter.baggageInfoRaw(passengers: passengers)
-    #expect(baggage.contains("Pax 1:") == true)
-    #expect(baggage.contains("Pax 2:") == true)
+    #expect(baggage.contains("Passagier 1:") == true)
+    #expect(baggage.contains("Passagier 2:") == true)
     #expect(baggage.contains("checkedBag") == false)
     #expect(baggage.contains("cabinBag") == false)
+    }
 }
 

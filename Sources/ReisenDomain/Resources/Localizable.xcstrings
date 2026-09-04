@@ -54,7 +54,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In Reise zuordnen…"
+            "value": "Einer Reise zuordnen…"
           }
         },
         "en": {
@@ -86,13 +86,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Öffnet die Stornoseite beim Anbieter. Storniert die Buchung nicht in Reisen."
+            "value": "Öffnet die Stornoseite beim Anbieter. Storniert die Buchung nicht in Voyenna."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Opens the provider’s cancellation page. Does not cancel the booking in Reisen."
+            "value": "Opens the provider’s cancellation page. Does not cancel the booking in Voyenna."
           }
         }
       }
@@ -118,13 +118,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider-Sitzungen prüfen…"
+            "value": "Portal-Sitzungen prüfen…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Check Provider Sessions…"
+            "value": "Check Portal Sessions…"
           }
         }
       }
@@ -278,13 +278,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Stores löschen"
+            "value": "Lokale Daten löschen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Local Stores"
+            "value": "Delete Local Data"
           }
         }
       }
@@ -342,13 +342,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ausfüllen"
+            "value": "Zugangsdaten ausfüllen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Autofill"
+            "value": "Autofill credentials"
           }
         }
       }
@@ -486,7 +486,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passwords öffnen"
+            "value": "Passwörter öffnen"
           }
         },
         "en": {
@@ -502,13 +502,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal-Sync"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal Sync"
           }
         }
       }
@@ -534,13 +534,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal-Sync"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal Sync"
           }
         }
       }
@@ -614,13 +614,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Stores zurücksetzen…"
+            "value": "Lokale Daten zurücksetzen…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset Local Stores…"
+            "value": "Reset Local Data…"
           }
         }
       }
@@ -662,13 +662,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle aktivierten, angemeldeten Provider nacheinander synchronisieren"
+            "value": "Alle aktivierten, angemeldeten Portale nacheinander synchronisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync all enabled, signed-in providers one after another"
+            "value": "Sync all enabled, signed-in portals one after another"
           }
         }
       }
@@ -742,13 +742,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Einstellungen sind erst nach erfolgreichem Store-Start verfügbar."
+            "value": "Einstellungen sind erst nach erfolgreichem Start der Datenbank verfügbar."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Settings are available only after the store starts successfully."
+            "value": "Settings are available only after the database starts successfully."
           }
         }
       }
@@ -774,7 +774,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchungen zuordnen…"
+            "value": "Buchungen zuordnen"
           }
         },
         "en": {
@@ -822,13 +822,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pax %1$d: %2$@"
+            "value": "Passagier %1$d: %2$@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pax %1$d: %2$@"
+            "value": "Passenger %1$d: %2$@"
           }
         }
       }
@@ -886,7 +886,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Personal"
+            "value": "Pers."
           }
         },
         "en": {
@@ -1014,13 +1014,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fix (nicht mehr kostenlos stornierbar)"
+            "value": "Nicht mehr kostenlos stornierbar"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locked (no longer free to cancel)"
+            "value": "No longer free to cancel"
           }
         }
       }
@@ -1062,13 +1062,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt."
+            "value": "Die Buchung wird unwiderruflich aus Voyenna entfernt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The booking will be permanently removed from Reisen."
+            "value": "The booking will be permanently removed from Voyenna."
           }
         }
       }
@@ -1078,13 +1078,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Buchung wird unwiderruflich aus Reisen entfernt. Nach dem nächsten Provider-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert."
+            "value": "Die Buchung wird unwiderruflich aus Voyenna entfernt. Nach dem nächsten Portal-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The booking will be permanently removed from Reisen. After the next provider sync it may reappear if it still exists at the provider."
+            "value": "The booking will be permanently removed from Voyenna. After the next portal sync it may reappear if it still exists at the provider."
           }
         }
       }
@@ -1686,7 +1686,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abfahrtadresse"
+            "value": "Abfahrtsadresse"
           }
         },
         "en": {
@@ -2934,7 +2934,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sichern"
+            "value": "Speichern"
           }
         },
         "en": {
@@ -3014,7 +3014,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kopiere Benutzername und Kennwort aus der Passwords-App (oder einem anderen Manager) für %1$@ und speichere sie hier für automatisches Ausfüllen."
+            "value": "Kopiere Benutzername und Passwort aus der Passwörter-App (oder einem anderen Manager) für %1$@ und speichere sie hier für automatisches Ausfüllen."
           }
         },
         "en": {
@@ -3046,7 +3046,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine Anmeldung bei %1$@ (z. B. Sign in with Apple, Passkey, Google oder Facebook) wird über die Session in der App gespeichert — nicht als Kennwort."
+            "value": "Deine Anmeldung bei %1$@ (z. B. Sign in with Apple, Passkey, Google oder Facebook) wird über die Session in der App gespeichert — nicht als Passwort."
           }
         },
         "en": {
@@ -3062,7 +3062,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kennwort"
+            "value": "Passwort"
           }
         },
         "en": {
@@ -3078,13 +3078,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passwort-Konto für %1$@ — nach dem Speichern füllt Reisen die Felder beim nächsten Login automatisch aus."
+            "value": "Passwort-Konto für %1$@ — nach dem Speichern füllt Voyenna die Felder beim nächsten Login automatisch aus."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Password account for %1$@ — after saving, Reisen autofills the fields on the next login."
+            "value": "Password account for %1$@ — after saving, Voyenna autofills the fields on the next login."
           }
         }
       }
@@ -3126,13 +3126,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Beim nächsten Besuch bleibst du angemeldet, solange der Provider die Session akzeptiert. Ein erneuter Login kann trotzdem nötig sein (2FA, abgelaufene Session)."
+            "value": "Beim nächsten Besuch bleibst du angemeldet, solange das Portal die Session akzeptiert. Ein erneuter Login kann trotzdem nötig sein (2FA, abgelaufene Session)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You stay signed in on your next visit while the provider accepts the session. You may still need to sign in again (2FA, expired session)."
+            "value": "You stay signed in on your next visit while the portal accepts the session. You may still need to sign in again (2FA, expired session)."
           }
         }
       }
@@ -3174,7 +3174,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zielhinweis fehlt (Destination/Ort konnte nicht aus Buchungen abgeleitet werden)."
+            "value": "Zielhinweis fehlt (Ziel/Ort konnte nicht aus Buchungen abgeleitet werden)."
           }
         },
         "en": {
@@ -3270,7 +3270,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ankunft-Offset (s)"
+            "value": "Ankunftsversatz (s)"
           }
         },
         "en": {
@@ -3446,7 +3446,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abflug-Offset (s)"
+            "value": "Abflugversatz (s)"
           }
         },
         "en": {
@@ -3526,7 +3526,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ankunft-Offset"
+            "value": "Ankunftsversatz"
           }
         },
         "en": {
@@ -3558,7 +3558,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Storno[%1$d] Offset"
+            "value": "Storno[%1$d] Versatz"
           }
         },
         "en": {
@@ -3606,7 +3606,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abflug-Offset"
+            "value": "Abflugversatz"
           }
         },
         "en": {
@@ -3638,7 +3638,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hotel-Offset"
+            "value": "Hotelversatz"
           }
         },
         "en": {
@@ -3814,7 +3814,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hotel-Offset (s)"
+            "value": "Hotelversatz (s)"
           }
         },
         "en": {
@@ -3830,7 +3830,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Offset (s)"
+            "value": "Versatz (s)"
           }
         },
         "en": {
@@ -3878,13 +3878,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Policy-Text"
+            "value": "Stornobedingungen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Policy text"
+            "value": "Cancellation policy"
           }
         }
       }
@@ -3894,13 +3894,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider"
+            "value": "Portal"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider"
+            "value": "Portal"
           }
         }
       }
@@ -4230,7 +4230,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zwischen-Transport"
+            "value": "Zwischentransport"
           }
         },
         "en": {
@@ -4502,7 +4502,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein neues Kommentar in dieser Stunde."
+            "value": "Kein neuer Kommentar in dieser Stunde."
           }
         },
         "en": {
@@ -4534,13 +4534,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reisen: %1$@"
+            "value": "Voyenna: %1$@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reisen: %1$@"
+            "value": "Voyenna: %1$@"
           }
         }
       }
@@ -4598,13 +4598,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reisen: %1$@"
+            "value": "Voyenna: %1$@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reisen: %1$@"
+            "value": "Voyenna: %1$@"
           }
         }
       }
@@ -4614,13 +4614,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider deaktiviert"
+            "value": "Portal deaktiviert"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider disabled"
+            "value": "Portal disabled"
           }
         }
       }
@@ -4790,13 +4790,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal-Sync"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal Sync"
           }
         }
       }
@@ -4822,13 +4822,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktuellen Provider synchronisieren"
+            "value": "Aktuelles Portal synchronisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync Current Provider"
+            "value": "Sync Current Portal"
           }
         }
       }
@@ -5174,13 +5174,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "On-Device"
+            "value": "Auf dem Gerät"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "On-Device"
+            "value": "On Device"
           }
         }
       }
@@ -5382,13 +5382,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kalenderzugriff wurde verweigert.\n\nBitte aktiviere unter „%1$@ → Kalender“ für „Reisen“ den Schalter."
+            "value": "Kalenderzugriff wurde verweigert.\n\nBitte aktiviere unter „%1$@ → Kalender“ für „Voyenna“ den Schalter."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calendar access was denied.\n\nPlease enable Reisen under “%1$@ → Calendars”."
+            "value": "Calendar access was denied.\n\nPlease enable Voyenna under “%1$@ → Calendars”."
           }
         }
       }
@@ -5398,13 +5398,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Benachrichtigungen wurden nicht autorisiert.\n\nBitte aktiviere unter „%1$@“ die Mitteilungen für „Reisen“."
+            "value": "Benachrichtigungen wurden nicht autorisiert.\n\nBitte aktiviere unter „%1$@“ die Mitteilungen für „Voyenna“."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notifications were not authorized.\n\nPlease enable notifications for Reisen under “%1$@”."
+            "value": "Notifications were not authorized.\n\nPlease enable notifications for Voyenna under “%1$@”."
           }
         }
       }
@@ -5414,13 +5414,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erinnerungen-Zugriff wurde verweigert.\n\nBitte aktiviere unter „%1$@ → Erinnerungen“ für „Reisen“ den Schalter."
+            "value": "Erinnerungen-Zugriff wurde verweigert.\n\nBitte aktiviere unter „%1$@ → Erinnerungen“ für „Voyenna“ den Schalter."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reminders access was denied.\n\nPlease enable Reisen under “%1$@ → Reminders”."
+            "value": "Reminders access was denied.\n\nPlease enable Voyenna under “%1$@ → Reminders”."
           }
         }
       }
@@ -5494,13 +5494,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider aktivieren"
+            "value": "Portal aktivieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enable provider"
+            "value": "Enable portal"
           }
         }
       }
@@ -5558,13 +5558,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider deaktivieren"
+            "value": "Portal deaktivieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disable provider"
+            "value": "Disable portal"
           }
         }
       }
@@ -5846,7 +5846,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Global („Reisen“)"
+            "value": "Gemeinsam („Reisen“)"
           }
         },
         "en": {
@@ -5958,7 +5958,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neue Reminder-Liste anlegen…"
+            "value": "Neue Erinnerungsliste anlegen…"
           }
         },
         "en": {
@@ -5974,7 +5974,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reminder-Liste automatisch anlegen"
+            "value": "Erinnerungsliste automatisch anlegen"
           }
         },
         "en": {
@@ -6006,13 +6006,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bei aktivierter Option werden Summen mit Referenzkursen der Europäischen Zentralbank (über Frankfurter) umgerechnet. Die Werte sind unverbindlich und kein Wechselkursangebot. Dafür wird eine Netzwerkanfrage gestellt."
+            "value": "Bei aktivierter Option werden Summen mit Referenzkursen der Europäischen Zentralbank (über den Frankfurter-Kursdienst) umgerechnet. Die Werte sind unverbindlich und kein Wechselkursangebot. Dafür wird eine Netzwerkanfrage gestellt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "When enabled, totals use European Central Bank reference rates (via Frankfurter). Values are indicative, not a trading quote. This uses a network request."
+            "value": "When enabled, totals use European Central Bank reference rates (via the Frankfurter rate service). Values are indicative, not a trading quote. This uses a network request."
           }
         }
       }
@@ -6070,13 +6070,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokales Zurücksetzen entfernt nur Store-Dateien auf diesem Gerät. iCloud kann Daten danach erneut laden. „Auch iCloud-Daten leeren“ löscht synchronisierte Datensätze geräteübergreifend."
+            "value": "Lokales Zurücksetzen entfernt nur Datendateien auf diesem Gerät. iCloud kann Daten danach erneut laden. „Auch iCloud-Daten leeren“ löscht synchronisierte Datensätze geräteübergreifend."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local reset removes store files on this device only. iCloud may reload data afterward. “Also wipe iCloud data” deletes synced records across devices."
+            "value": "Local reset removes data files on this device only. iCloud may reload data afterward. “Also wipe iCloud data” deletes synced records across devices."
           }
         }
       }
@@ -6310,13 +6310,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Melde dich in den Systemeinstellungen bei iCloud an, damit Reisen zwischen Geräten synchronisiert."
+            "value": "Melde dich in den Systemeinstellungen bei iCloud an, damit Voyenna zwischen Geräten synchronisiert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign in to iCloud in System Settings to sync Reisen across devices."
+            "value": "Sign in to iCloud in System Settings to sync Voyenna across devices."
           }
         }
       }
@@ -6502,7 +6502,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vorläufe in Tagen"
+            "value": "Vorlaufzeiten in Tagen"
           }
         },
         "en": {
@@ -6598,13 +6598,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Beschreibt Provider-Logins, iCloud, Kalender, Diagnosen und lokale Speicherung."
+            "value": "Beschreibt Portal-Logins, iCloud, Kalender, Diagnosen und lokale Speicherung."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Describes provider logins, iCloud, calendar, diagnostics, and local storage."
+            "value": "Describes portal logins, iCloud, calendar, diagnostics, and local storage."
           }
         }
       }
@@ -6710,7 +6710,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neue Reminder-Liste"
+            "value": "Neue Erinnerungsliste"
           }
         },
         "en": {
@@ -6758,13 +6758,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider-Anmeldung"
+            "value": "Portal-Anmeldung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider sign-in"
+            "value": "Portal sign-in"
           }
         }
       }
@@ -6774,13 +6774,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Speichert E-Mail und Kennwort nach erfolgreichem Passwort-Login automatisch in Reisen. Apple-, Passkey- und OAuth-Anmeldungen werden nicht als Kennwort gespeichert."
+            "value": "Speichert E-Mail und Passwort nach erfolgreichem Passwort-Login automatisch in Voyenna. Apple-, Passkey- und OAuth-Anmeldungen werden nicht als Passwort gespeichert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatically saves email and password in Reisen after a successful password login. Apple, passkey, and OAuth sign-ins are not stored as passwords."
+            "value": "Automatically saves email and password in Voyenna after a successful password login. Apple, passkey, and OAuth sign-ins are not stored as passwords."
           }
         }
       }
@@ -6806,7 +6806,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reminder-Liste"
+            "value": "Erinnerungsliste"
           }
         },
         "en": {
@@ -6854,13 +6854,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Stores zurücksetzen?"
+            "value": "Lokale Daten zurücksetzen?"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset local stores?"
+            "value": "Reset local data?"
           }
         }
       }
@@ -6902,13 +6902,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zeitzonen werden aus vorhandenen Zeit-/Offsets abgeleitet."
+            "value": "Zeitzonen werden aus vorhandenen Ortszeiten abgeleitet."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Time zones are derived from existing times and offsets."
+            "value": "Time zones are derived from existing local times."
           }
         }
       }
@@ -6966,13 +6966,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Stores werden neu angelegt, vorhandene iCloud-Daten importiert und anschließend geleert (inkl. Export der Löschungen)."
+            "value": "Lokale Daten werden neu angelegt, vorhandene iCloud-Daten importiert und anschließend geleert (inkl. Export der Löschungen)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local stores are recreated, existing iCloud data imported and then cleared (including exporting deletions)."
+            "value": "Local data is recreated, existing iCloud data imported and then cleared (including exporting deletions)."
           }
         }
       }
@@ -6998,13 +6998,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Store-Dateien werden gelöscht. Bei aktivem iCloud Sync können synchronisierte Daten erneut geladen werden."
+            "value": "Lokale Datendateien werden gelöscht. Bei aktivem iCloud Sync können synchronisierte Daten erneut geladen werden."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local store files will be deleted. With iCloud sync active, synced data may be reloaded."
+            "value": "Local data files will be deleted. With iCloud sync active, synced data may be reloaded."
           }
         }
       }
@@ -7062,13 +7062,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle Provider synchronisiert (%1$d)."
+            "value": "Alle Portale synchronisiert (%1$d)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All providers synced (%1$d)."
+            "value": "All portals synced (%1$d)."
           }
         }
       }
@@ -7254,13 +7254,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider-Registry fehlt in der App-Composition."
+            "value": "Interne Portal-Registry fehlt. Bitte App neu starten."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider registry is missing from the app composition."
+            "value": "Internal portal registry is missing. Please restart the app."
           }
         }
       }
@@ -7270,13 +7270,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "SyncStore fehlt in der App-Composition."
+            "value": "Sync-Speicher fehlt. Bitte App neu starten."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "SyncStore is missing from the app composition."
+            "value": "Sync store is missing. Please restart the app."
           }
         }
       }
@@ -7318,7 +7318,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "E-Mail und Kennwort des gewählten Kontos in die Login-Felder einfügen."
+            "value": "E-Mail und Passwort des gewählten Kontos in die Login-Felder einfügen."
           }
         },
         "en": {
@@ -7350,7 +7350,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$d lesbare Konten für '%2$@' gefunden.\nBitte das gewünschte Konto wählen. Fehlt ein Passwords-Konto: „Konto speichern…“."
+            "value": "%1$d lesbare Konten für '%2$@' gefunden.\nBitte das gewünschte Konto wählen. Fehlt ein Passwörter-Konto: „Konto speichern…“."
           }
         },
         "en": {
@@ -7382,13 +7382,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein Keychain-Host für diesen Provider konfiguriert."
+            "value": "Für dieses Portal ist kein Schlüsselbund-Host konfiguriert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No keychain host configured for this provider."
+            "value": "No keychain host configured for this portal."
           }
         }
       }
@@ -7398,13 +7398,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine angemeldeten Provider zum Synchronisieren."
+            "value": "Keine angemeldeten Portale zum Synchronisieren."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No signed-in providers to sync."
+            "value": "No signed-in portals to sync."
           }
         }
       }
@@ -7430,7 +7430,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Passwords-App wurde nicht gefunden."
+            "value": "Passwörter-App wurde nicht gefunden."
           }
         },
         "en": {
@@ -7478,13 +7478,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider"
+            "value": "Portal"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider"
+            "value": "Portal"
           }
         }
       }
@@ -7494,13 +7494,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider %1$@ ist deaktiviert."
+            "value": "Portal %1$@ ist deaktiviert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider %1$@ is disabled."
+            "value": "Portal %1$@ is disabled."
           }
         }
       }
@@ -7510,13 +7510,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiviere den Provider über die Checkbox in der Seitenleiste."
+            "value": "Aktiviere das Portal über die Checkbox in der Seitenleiste."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enable the provider via the checkbox in the sidebar."
+            "value": "Enable the portal via the checkbox in the sidebar."
           }
         }
       }
@@ -7526,13 +7526,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Login-Metadaten fehlen für Provider %1$@."
+            "value": "Login-Daten fehlen für Portal %1$@."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Login metadata is missing for provider %1$@."
+            "value": "Login metadata is missing for portal %1$@."
           }
         }
       }
@@ -7558,13 +7558,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider-Sitzungen prüfen…"
+            "value": "Portal-Sitzungen prüfen…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Checking provider sessions…"
+            "value": "Checking portal sessions…"
           }
         }
       }
@@ -7574,13 +7574,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal-Sync"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider Sync"
+            "value": "Portal Sync"
           }
         }
       }
@@ -7590,13 +7590,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider %1$@ ist nicht verfügbar."
+            "value": "Portal %1$@ ist nicht verfügbar."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provider %1$@ is not available."
+            "value": "Portal %1$@ is not available."
           }
         }
       }
@@ -7670,13 +7670,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchungen dieses Providers jetzt synchronisieren"
+            "value": "Buchungen dieses Portals jetzt synchronisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync this provider's bookings now"
+            "value": "Sync this portal's bookings now"
           }
         }
       }
@@ -7686,13 +7686,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktivitäten und Stornofristen dieses Providers lokal aktualisieren"
+            "value": "Aktivitäten und Stornofristen dieses Portals lokal aktualisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Update this provider's activities and cancellation deadlines locally"
+            "value": "Update this portal's activities and cancellation deadlines locally"
           }
         }
       }
@@ -7718,13 +7718,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync nicht möglich — Anmeldung und aktiven Provider prüfen"
+            "value": "Sync nicht möglich — Anmeldung und aktives Portal prüfen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync unavailable — check sign-in and active provider"
+            "value": "Sync unavailable — check sign-in and active portal"
           }
         }
       }
@@ -7798,13 +7798,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Stornofristen gefunden (foundBookings=%1$d)."
+            "value": "Keine Stornofristen gefunden (%1$d Buchungen)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No cancellation deadlines found (foundBookings=%1$d)."
+            "value": "No cancellation deadlines found (%1$d bookings)."
           }
         }
       }
@@ -8694,7 +8694,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Storno-Infos"
+            "value": "Keine Stornierungsinfos"
           }
         },
         "en": {
@@ -8790,13 +8790,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Buchungen ohne Reisezuordnung. Synchronisiere einen Provider oder lege eine Reise an."
+            "value": "Keine Buchungen ohne Reisezuordnung. Synchronisiere ein Portal oder lege eine Reise an."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No bookings without a trip assignment. Sync a provider or create a trip."
+            "value": "No bookings without a trip assignment. Sync a portal or create a trip."
           }
         }
       }
@@ -8838,13 +8838,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lege eine Reise an oder synchronisiere Buchungen von einem Provider."
+            "value": "Lege eine Reise an oder synchronisiere Buchungen von einem Portal."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create a trip or sync bookings from a provider."
+            "value": "Create a trip or sync bookings from a portal."
           }
         }
       }
@@ -9158,13 +9158,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wähle eine Reise oder einen Provider in der Seitenleiste."
+            "value": "Wähle eine Reise oder ein Portal in der Seitenleiste."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select a trip or a provider in the sidebar."
+            "value": "Select a trip or a portal in the sidebar."
           }
         }
       }
@@ -9206,13 +9206,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wähle eine Reise in der Seitenleiste oder synchronisiere zuerst einen Anbieter."
+            "value": "Wähle eine Reise in der Seitenleiste oder synchronisiere zuerst ein Portal."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select a trip in the sidebar or sync a provider first."
+            "value": "Select a trip in the sidebar or sync a portal first."
           }
         }
       }
@@ -9286,7 +9286,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Storno"
+            "value": "Stornierung"
           }
         },
         "en": {
@@ -9302,7 +9302,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Timeline"
+            "value": "Zeitachse"
           }
         },
         "en": {

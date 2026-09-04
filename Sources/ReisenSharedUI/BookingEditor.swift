@@ -80,16 +80,12 @@ public enum BookingEditorField: Hashable, Sendable {
     case externalUrl
     case cancellationUrl
     case end
-    case hotelOffset
-    case departureOffset
-    case arrivalOffset
     case checkInMinutes
     case checkOutMinutes
     case price
     case guests
     case rooms
     case passengers
-    case cancellationOffset(UUID)
     case cancellationFee(UUID)
 }
 
@@ -299,9 +295,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             }
         }
 
-        try ensureOptionalInt(L10n.string(.editorFieldHotelOffset), hotelOffsetSecondsText, focusField: .hotelOffset)
-        try ensureOptionalInt(L10n.string(.editorFieldDepartureOffset), flightDepartureOffsetSecondsText, focusField: .departureOffset)
-        try ensureOptionalInt(L10n.string(.editorFieldArrivalOffset), flightArrivalOffsetSecondsText, focusField: .arrivalOffset)
+        // Zeitzonen-Offsets bleiben interne Sync-/Berechnungsparameter und sind nicht editierbar.
         try ensureOptionalInt(L10n.string(.editorFieldCheckInMinutes), hotelCheckInMinutesText, focusField: .checkInMinutes)
         try ensureOptionalInt(L10n.string(.editorFieldCheckOutMinutes), hotelCheckOutMinutesText, focusField: .checkOutMinutes)
         try ensureOptionalDouble(L10n.string(.editorFieldPrice), totalPriceAmountText, focusField: .price)
@@ -310,11 +304,6 @@ public struct BookingEditorDraft: Equatable, Sendable {
         try ensureOptionalInt(L10n.string(.editorFieldPassengers), passengerCountText, focusField: .passengers)
 
         for (index, deadline) in cancellationDeadlines.enumerated() {
-            try ensureOptionalInt(
-                L10n.format(.editorFieldCancellationOffset, index + 1),
-                deadline.hotelOffsetSecondsText,
-                focusField: .cancellationOffset(deadline.id)
-            )
             try ensureOptionalDouble(
                 L10n.format(.editorFieldCancellationFee, index + 1),
                 deadline.cancellationFeeAmountText,
@@ -773,19 +762,10 @@ public struct BookingEditorForm: View {
 
                 if draft.bookingType == .hotel {
                     Section(L10n.string(.editorHotel)) {
-                        TextField(L10n.string(.editorHotelOffset), text: $draft.hotelOffsetSecondsText)
-                            .editorFocus(.hotelOffset, $focusedField)
                         TextField(L10n.string(.editorCheckInMinutes), text: $draft.hotelCheckInMinutesText)
                             .editorFocus(.checkInMinutes, $focusedField)
                         TextField(L10n.string(.editorCheckOutMinutes), text: $draft.hotelCheckOutMinutesText)
                             .editorFocus(.checkOutMinutes, $focusedField)
-                    }
-                } else if draft.bookingType == .flight {
-                    Section(L10n.string(.editorFlight)) {
-                        TextField(L10n.string(.editorDepartureOffset), text: $draft.flightDepartureOffsetSecondsText)
-                            .editorFocus(.departureOffset, $focusedField)
-                        TextField(L10n.string(.editorArrivalOffset), text: $draft.flightArrivalOffsetSecondsText)
-                            .editorFocus(.arrivalOffset, $focusedField)
                     }
                 }
 
@@ -877,8 +857,6 @@ public struct BookingEditorForm: View {
                             Toggle(L10n.string(.editorFreeCancellation), isOn: $deadline.isFreeCancellation)
                             Toggle(BookingDetailLabels.strictDeadline, isOn: $deadline.isStrict)
                             TextField(L10n.string(.editorPolicyText), text: $deadline.policyText)
-                            TextField(L10n.string(.editorOffsetSeconds), text: $deadline.hotelOffsetSecondsText)
-                                .editorFocus(.cancellationOffset(deadline.id), $focusedField)
                             TextField(L10n.string(.editorFee), text: $deadline.cancellationFeeAmountText)
                                 .editorFocus(.cancellationFee(deadline.id), $focusedField)
                             Button(L10n.string(.editorRemoveEntry), role: .destructive) {
