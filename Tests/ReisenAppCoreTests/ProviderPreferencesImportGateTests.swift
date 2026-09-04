@@ -54,4 +54,36 @@ struct ProviderPreferencesImportGateTests {
         ) == nil)
         #expect(!suite.bool(forKey: AppSettingsKeys.providerSetupCompleted))
     }
+
+    @Test("notifyEnabledAfterImport suppresses export")
+    func notifyAfterImportSuppressesExport() throws {
+        let container = try PersistenceBootstrap.makeInMemoryContainer()
+        let suiteName = "test.prefs.gate.suppress.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        ProviderPreferencesSnapshot(
+            setupCompleted: true,
+            enabledProviderIDs: [.check24]
+        ).apply(to: suite)
+
+        ProviderPreferencesImportGate.exportFromDefaults(
+            context: container.mainContext,
+            defaults: suite
+        )
+        #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) != nil)
+
+        if let existing = try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) {
+            container.mainContext.delete(existing)
+            try container.mainContext.save()
+        }
+        #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) == nil)
+
+        ProviderPreferencesImportGate.notifyEnabledAfterImport()
+        ProviderPreferencesImportGate.exportFromDefaults(
+            context: container.mainContext,
+            defaults: suite
+        )
+        #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) == nil)
+    }
 }

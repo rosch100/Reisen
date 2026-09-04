@@ -145,7 +145,7 @@ struct RootTabView: View {
         let snap = await ProviderPreferencesImportGate.awaitAndApply(context: modelContext)
         if let snap, snap.setupCompleted {
             ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs")
-            ProviderEnabledChange.notify()
+            ProviderPreferencesImportGate.notifyEnabledAfterImport()
             return
         }
         // Seed CloudKit only when no remote prefs arrived — never overwrite a known remote snapshot at startup.
@@ -166,7 +166,7 @@ struct RootTabView: View {
             showProviderSetup = false
             ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs_late")
         }
-        ProviderEnabledChange.notify()
+        ProviderPreferencesImportGate.notifyEnabledAfterImport()
     }
 
     private func presentProviderSetupFromReopen() {

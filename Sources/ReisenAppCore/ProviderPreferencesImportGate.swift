@@ -12,6 +12,8 @@ public enum ProviderPreferencesImportGate {
     /// Reentrancy: eigener Export darf keinen Remote-Apply-Loop auslösen; Import kein Re-Export.
     private static var isExporting = false
     private static var isApplyingRemote = false
+    /// Nach Import→notify: Exporte unterdrücken, bis SwiftUI-`onChange`-Handler gelaufen sind.
+    private static var suppressExportsAfterImportNotify = false
 
     public static var shouldSkipCloudKitWait: Bool {
         !PersistenceBootstrap.isCloudKitEnabledByEnvironment()
@@ -64,6 +66,10 @@ public enum ProviderPreferencesImportGate {
     ) {
         // UITesting: In-Memory ohne CloudKit — Mirror-Save würde Remote-Change/AX-Idle stören.
         guard !UITestingLaunch.isActive else { return }
+        if suppressExportsAfterImportNotify {
+            suppressExportsAfterImportNotify = false
+            return
+        }
         guard !isApplyingRemote else { return }
         isExporting = true
         defer { isExporting = false }
@@ -85,6 +91,21 @@ public enum ProviderPreferencesImportGate {
         guard !isExporting else { return nil }
         guard !isApplyingRemote else { return nil }
         return applyImport(from: context, into: defaults)
+    }
+
+    /// UI nach Import aktualisieren, ohne den Mirror erneut zu exportieren.
+    ///
+    /// `onProviderEnabledChange(bump:perform:)` exportiert oft erst im SwiftUI-`onChange`
+    /// (nicht synchron in `NotificationCenter`). Das Flag wird vom ersten Export-Versuch
+    /// verbraucht; doppeltes `async` räumt es sonst nach dem UI-Update wieder ab.
+    public static func notifyEnabledAfterImport() {
+        suppressExportsAfterImportNotify = true
+        ProviderEnabledChange.notify()
+        DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                suppressExportsAfterImportNotify = false
+            }
+        }
     }
 
     private static func applyImport(
