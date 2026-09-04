@@ -23,3 +23,22 @@ import ReisenSharedUI
         Issue.record("Es wurde ein unerwarteter Fehlertyp gemeldet.")
     }
 }
+
+@Test func bookingEditorValidation_ignoresInternalTimezoneOffsetText() throws {
+    var draft = BookingEditorDraft.createDefault(
+        tripStartDate: Date(timeIntervalSince1970: 1_800_000_000)
+    )
+    draft.title = "Hotel Lissabon"
+    draft.hotelOffsetSecondsText = "kein-offset"
+    draft.flightDepartureOffsetSecondsText = "xyz"
+    draft.flightArrivalOffsetSecondsText = "abc"
+    draft.cancellationDeadlines = [
+        CancellationDeadlineDraft(
+            deadlineAt: draft.startAt,
+            hotelOffsetSecondsText: "bad"
+        )
+    ]
+
+    try draft.validate()
+    #expect(BookingEditorDraft.parseIntOrNil(draft.hotelOffsetSecondsText) == nil)
+}
