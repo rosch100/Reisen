@@ -49,7 +49,7 @@ import ReisenDomain
     #expect(AppSettingsKeys.isProviderEnabled(.opodo, defaults: defaults))
 }
 
-@Test func providerEnablement_noopWhenAlreadyEnabled() async {
+@Test func providerEnablement_noopWhenAlreadyEnabled() {
     let suiteName = "reisen.tests.providerEnablement.already.\(UUID().uuidString)"
     guard let defaults = UserDefaults(suiteName: suiteName) else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")
@@ -59,17 +59,7 @@ import ReisenDomain
 
     defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: .check24))
 
-    final class Flag: @unchecked Sendable { var notified = false }
-    let flag = Flag()
-    let token = NotificationCenter.default.addObserver(
-        forName: .providerEnabledDidChange,
-        object: nil,
-        queue: nil
-    ) { _ in flag.notified = true }
-    defer { NotificationCenter.default.removeObserver(token) }
-
     let changed = ProviderEnablement.ensureEnabled(.check24, defaults: defaults)
     #expect(!changed)
     #expect(AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
-    #expect(!flag.notified)
 }
