@@ -19,6 +19,8 @@ struct RootTabView: View {
 
     @State private var sessionChromeEpoch = 0
     @State private var providerEnableEpoch = 0
+    @State private var showProviderSetup = false
+    @State private var didRecordProviderSetupPresented = false
     @State private var selectedTab: AppTab = .reisen
     @State private var selectedTripID: UUID?
     @State private var selectedOpenBookingID: UUID?
@@ -55,6 +57,13 @@ struct RootTabView: View {
         ) {
             tabsWithSessionProbe
         }
+        .sheet(isPresented: $showProviderSetup) {
+            ProviderFirstLaunchSetupSheet(
+                onContinue: completeProviderSetup,
+                onLater: deferProviderSetup
+            )
+            .interactiveDismissDisabled(true)
+        }
     }
 
     @ViewBuilder
@@ -79,16 +88,22 @@ struct RootTabView: View {
             .accessibilityHidden(true)
             #endif
         }
-        #if REISEN_PROVIDER_SYNC
         .onAppear {
+            presentProviderSetupIfNeeded()
+            #if REISEN_PROVIDER_SYNC
             refreshProviderAppPresence()
+            #endif
         }
+        #if REISEN_PROVIDER_SYNC
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 refreshProviderAppPresence()
+                presentProviderSetupIfNeeded()
             }
         }
-        .onProviderEnabledChange(bump: $providerEnableEpoch)
+        .onProviderEnabledChange(bump: $providerEnableEpoch) {
+            presentProviderSetupIfNeeded()
+        }
         #endif
     }
 
@@ -98,6 +113,43 @@ struct RootTabView: View {
         _ = ProviderNativeAppPresence.applyAutoEnableIfNeeded()
     }
     #endif
+
+    private func presentProviderSetupIfNeeded() {
+        guard ProviderFirstLaunchSetup.shouldPresent() else { return }
+        guard !showProviderSetup else { return }
+        showProviderSetup = true
+        recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
+    }
+
+    private func presentProviderSetupFromReopen() {
+        showProviderSetup = true
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: "reopen")
+    }
+
+    private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
+        guard ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: enabledIDs) else { return }
+        let defaults = AppSettingsDefaults.current
+        ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
+        ProviderEnabledChange.notify()
+        ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+        showProviderSetup = false
+        #if REISEN_PROVIDER_SYNC
+        selectedTab = .sync
+        #endif
+        ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
+    }
+
+    private func deferProviderSetup() {
+        ProviderFirstLaunchSetup.markDeferred()
+        showProviderSetup = false
+        ProviderFirstLaunchSetupDiagnostics.recordDeferred()
+    }
+
+    private func recordProviderSetupPresentedIfNeeded(reason: String) {
+        guard !didRecordProviderSetupPresented else { return }
+        didRecordProviderSetupPresented = true
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: reason)
+    }
 
     private func focusCreatedTrip(_ tripID: UUID) {
         selectedTripID = tripID
@@ -190,7 +242,8 @@ struct RootTabView: View {
             SyncTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
                 isSelected: selectedTab == .sync,
-                onOpenSettings: { selectedTab = .mehr }
+                onOpenSettings: { selectedTab = .mehr },
+                onReopenProviderSetup: presentProviderSetupFromReopen
             )
                 .tabItem { Label(L10n.string(.tabSync), systemImage: "arrow.triangle.2.circlepath") }
                 .tag(AppTab.sync)

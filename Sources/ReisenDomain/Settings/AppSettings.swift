@@ -32,6 +32,11 @@ public struct AppSettingsKeys {
     public static let providerEnabledPrefix = "reisen_providerEnabled_"
     public static let preferredKeychainAccountPrefix = "reisen_preferredKeychainAccount_"
 
+    /// Erststart-Setup: Weiter bestätigt (kein Auto-Sheet mehr).
+    public static let providerSetupCompleted = "reisen_providerSetupCompleted_v1"
+    /// Erststart-Setup: Später gewählt (kein Auto-Sheet mehr; Reopen möglich).
+    public static let providerSetupDeferred = "reisen_providerSetupDeferred_v1"
+
     /// Passwort-Konten nach erfolgreichem Login automatisch in der App-Keychain speichern.
     public static let rememberLoginAutomatically = "reisen_rememberLoginAutomatically"
 

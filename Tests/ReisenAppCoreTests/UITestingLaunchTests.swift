@@ -63,3 +63,33 @@ import ReisenDomain
     )
     #expect(AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
 }
+
+@Test func uiTestingLaunch_seedProviderSetupMarksCompletedForPopulated() {
+    let suite = "ReisenTests.uiTesting.providerSetup.populated.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suite) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+
+    UITestingLaunch.seedProviderSetupIfNeeded(mode: .populated, defaults: defaults)
+
+    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+}
+
+@Test func uiTestingLaunch_seedProviderSetupDoesNotMarkForEmpty() {
+    let suite = "ReisenTests.uiTesting.providerSetup.empty.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suite) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    UITestingLaunch.seedProviderSetupIfNeeded(mode: .empty, defaults: defaults)
+
+    #expect(!defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+}

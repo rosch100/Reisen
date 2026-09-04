@@ -166,7 +166,9 @@ public final class AppBootstrap {
         let defaults = AppSettingsDefaults.current
         let wasExistingInstall = ProviderEnabledDefaultsMigration.looksLikeExistingInstall(defaults: defaults)
         let didMigrate = ProviderEnabledDefaultsMigration.migrateIfNeeded(defaults: defaults)
+        ProviderFirstLaunchSetup.bootstrapCompletedIfExistingProviders(defaults: defaults)
         UITestingLaunch.seedProviderEnablementIfNeeded(mode: uiTesting, defaults: defaults)
+        UITestingLaunch.seedProviderSetupIfNeeded(mode: uiTesting, defaults: defaults)
         guard didMigrate, !uiTesting.skipsSideEffects else { return }
         let runID = UUID()
         Task {
