@@ -502,9 +502,14 @@ final class MacUISmokeTests: XCTestCase {
         // UITesting ohne echte Session → needsLogin: eine Login-Chrome-Fläche oberhalb.
         _ = ui.waitForSyncLoginChrome()
         ui.waitForLabelContaining("Anmeldung erforderlich")
+        ui.waitFor(UITestingIdentifiers.syncRememberLogin)
         XCTAssertFalse(
             ui.element(UITestingIdentifiers.syncBrowserCollapse).exists,
             "Browser-Collapse gehört nicht in die Login-Chrome"
+        )
+        XCTAssertFalse(
+            ui.element(UITestingIdentifiers.syncFillCredentials).exists,
+            "Ausfüllen erscheint erst mit Keychain-Konto"
         )
     }
 

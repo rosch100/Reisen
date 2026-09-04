@@ -38,6 +38,8 @@ struct SyncTab: View {
     @State private var showCredentialSheet = false
     @State private var isKeyboardVisible = false
     @State private var selectedKeychainAccount: KeychainCredentialAccount?
+    @State private var keychainAccounts: [KeychainCredentialAccount] = []
+    @State private var keychainMessage: String?
     @State private var keychainAutoFillTask: Task<Void, Never>?
     @State private var pendingRememberCredentials: ProviderCredentials?
     @State private var rememberLoginMode: ProviderRememberLoginMode = .passwordManual
@@ -158,8 +160,13 @@ struct SyncTab: View {
     }
 
     private var syncContent: some View {
-        VStack(spacing: 0) {
-            sessionBanner
+        let sessionReady = sessionStatus == .sessionReady
+        return VStack(spacing: 0) {
+            if SyncBrowserChrome.showsLoginChromeAboveWebView(isSessionReady: sessionReady) {
+                loginChrome
+            } else {
+                sessionBanner
+            }
             Divider()
 
             WebViewHost(
@@ -185,7 +192,8 @@ struct SyncTab: View {
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
             .clipped()
 
-            if !isKeyboardVisible {
+            if SyncBrowserChrome.showsBottomActionBar(isSessionReady: sessionReady),
+               !isKeyboardVisible {
                 actionBar
             }
         }
@@ -363,6 +371,121 @@ struct SyncTab: View {
         .background(.bar)
     }
 
+    /// HIG Login-Chrome: Status + Credential-CTAs oberhalb der WebView (wie macOS).
+    private var loginChrome: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SyncLoginChromeAdaptiveLayout {
+                loginChromeStatusColumn
+            } credentials: {
+                VStack(alignment: .leading, spacing: 8) {
+                    credentialControls
+                    if let keychainMessage {
+                        Text(keychainMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+
+            if let rememberLoginMessage {
+                Text(rememberLoginMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, isKeyboardVisible ? 6 : 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+    }
+
+    private var loginChromeStatusColumn: some View {
+        HStack(alignment: .top, spacing: 10) {
+            trafficLightDot(size: 14)
+                .padding(.top, 4)
+                .accessibilityLabel(Text(trafficLightAccessibilityLabel))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(trafficLight.displayLabel)
+                    .font(.headline)
+                    .accessibilityIdentifier(UITestingIdentifiers.syncLoginChrome)
+                if !isKeyboardVisible {
+                    Text(sessionBannerSubtitle)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if showsApplePasskeyHint {
+                        SyncApplePasskeyHintLabel()
+                    }
+                }
+            }
+        }
+    }
+
+    private var canInsertKeychainCredentials: Bool {
+        selectedKeychainAccount != nil && selectedSessionWebView != nil
+    }
+
+    private var selectedAccountBinding: Binding<KeychainCredentialAccount?> {
+        Binding(
+            get: { selectedKeychainAccount },
+            set: { newValue in
+                if let newValue {
+                    selectAccount(newValue, autoFill: false)
+                } else {
+                    selectedKeychainAccount = nil
+                    setPreferredKeychainAccountID("")
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var credentialControls: some View {
+        HStack(spacing: 8) {
+            if SyncBrowserChrome.showsAccountPicker(accountCount: keychainAccounts.count) {
+                Picker(L10n.string(.syncAccountPicker), selection: selectedAccountBinding) {
+                    Text(L10n.string(.syncChooseAccount)).tag(Optional<KeychainCredentialAccount>.none)
+                    ForEach(keychainAccounts) { account in
+                        Text(account.username).tag(Optional(account))
+                    }
+                }
+                .labelsHidden()
+            } else if SyncBrowserChrome.showsSelectedAccountLabel(accountCount: keychainAccounts.count),
+                      let selectedKeychainAccount {
+                Text(selectedKeychainAccount.username)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            if SyncBrowserChrome.showsFillCredentialsControl(accountCount: keychainAccounts.count) {
+                Button {
+                    insertKeychainCredentials()
+                } label: {
+                    Label(L10n.string(.actionFillCredentials), systemImage: "key.fill")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(!canInsertKeychainCredentials)
+                .accessibilityIdentifier(UITestingIdentifiers.syncFillCredentials)
+            }
+
+            Button {
+                openRememberLoginSheet()
+            } label: {
+                Label(L10n.string(.actionRememberLogin), systemImage: "key")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(credentialServerHost() == nil)
+            .accessibilityIdentifier(UITestingIdentifiers.syncRememberLogin)
+
+            Spacer(minLength: 0)
+        }
+    }
+
     private var actionBar: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let rememberLoginMessage {
@@ -381,14 +504,19 @@ struct SyncTab: View {
             }
 
             HStack(spacing: 12) {
-                Button {
-                    openRememberLoginSheet()
-                } label: {
-                    Label(L10n.string(.actionRememberLogin), systemImage: "key")
+                if SyncBrowserChrome.showsRememberLoginInBottomBar(
+                    isSessionReady: sessionStatus == .sessionReady
+                ) {
+                    Button {
+                        openRememberLoginSheet()
+                    } label: {
+                        Label(L10n.string(.actionRememberLogin), systemImage: "key")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(credentialServerHost() == nil)
+                    .accessibilityIdentifier(UITestingIdentifiers.syncRememberLogin)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(credentialServerHost() == nil)
 
                 Spacer()
 
@@ -532,6 +660,8 @@ struct SyncTab: View {
         keychainAutoFillTask?.cancel()
         keychainAutoFillTask = nil
         selectedKeychainAccount = nil
+        keychainAccounts = []
+        keychainMessage = nil
     }
 
     private func scheduleKeychainReloadIfLoginStillRequired() {
@@ -548,14 +678,21 @@ struct SyncTab: View {
     private func reloadKeychainAccounts(autoFill: Bool = false) {
         guard sessionStatus == .needsLogin else { return }
         selectedKeychainAccount = nil
+        keychainAccounts = []
+        keychainMessage = nil
 
-        guard let host = credentialServerHost() else { return }
+        guard let host = credentialServerHost() else {
+            keychainMessage = L10n.string(.syncNoKeychainHost)
+            return
+        }
 
         do {
             let accounts = try KeychainCredentialStore().accounts(serverHost: host)
+            keychainAccounts = accounts
             applyAccountSelection(accounts: accounts, autoFill: autoFill)
         } catch {
             selectedKeychainAccount = nil
+            keychainMessage = error.localizedDescription
             let context = DiagnosticContext(
                 runID: diagnosticRunID,
                 providerID: selectedProviderID,
@@ -585,6 +722,9 @@ struct SyncTab: View {
         if accounts.isEmpty {
             setPreferredKeychainAccountID("")
             selectedKeychainAccount = nil
+            keychainMessage = KeychainCredentialStore.CredentialStoreError
+                .noEntry(serverHost: credentialServerHost() ?? "")
+                .errorDescription
             return
         }
 
@@ -599,12 +739,18 @@ struct SyncTab: View {
 
         setPreferredKeychainAccountID("")
         selectedKeychainAccount = nil
+        keychainMessage = L10n.format(
+            .syncKeychainAccountsFound,
+            accounts.count,
+            credentialServerHost() ?? ""
+        )
     }
 
     @MainActor
     private func selectAccount(_ account: KeychainCredentialAccount, autoFill: Bool = false) {
         selectedKeychainAccount = account
         setPreferredKeychainAccountID(account.id)
+        keychainMessage = nil
         if autoFill {
             scheduleAutoFillFromKeychain()
         }

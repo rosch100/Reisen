@@ -12,6 +12,8 @@ public enum UITestingIdentifiers {
     public static let settings = "reisen.settings"
     public static let syncChrome = "reisen.sync.chrome"
     public static let syncLoginChrome = "reisen.sync.login-chrome"
+    public static let syncFillCredentials = "reisen.sync.fill-credentials"
+    public static let syncRememberLogin = "reisen.sync.remember-login"
     public static let syncBrowserCollapse = "reisen.sync.browser-collapse"
     public static let bookingEditor = "reisen.booking.editor"
     public static let bookingEditorSave = "reisen.booking.editor.save"
