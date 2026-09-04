@@ -11,17 +11,20 @@ public struct SettingsView: View {
     private let showsDataManagement: Bool
     private let onResetLocalStores: (() -> Void)?
     private let onWipeCloudAndReset: (() -> Void)?
+    private let onApplyICloudSyncPreference: ((Bool, Bool) async -> Void)?
 
     public init(
         showsProviderSyncSettings: Bool = false,
         showsDataManagement: Bool = false,
         onResetLocalStores: (() -> Void)? = nil,
-        onWipeCloudAndReset: (() -> Void)? = nil
+        onWipeCloudAndReset: (() -> Void)? = nil,
+        onApplyICloudSyncPreference: ((Bool, Bool) async -> Void)? = nil
     ) {
         self.showsProviderSyncSettings = showsProviderSyncSettings
         self.showsDataManagement = showsDataManagement
         self.onResetLocalStores = onResetLocalStores
         self.onWipeCloudAndReset = onWipeCloudAndReset
+        self.onApplyICloudSyncPreference = onApplyICloudSyncPreference
     }
 
     @AppStorage(AppSettingsKeys.notificationEnabled) private var notificationEnabled: Bool = true
@@ -50,6 +53,10 @@ public struct SettingsView: View {
     @State private var calendarNamesReloadToken = UUID()
     @State private var showLocalResetConfirm = false
     @State private var showCloudWipeConfirm = false
+    @State private var showDisableICloudConfirm = false
+    @State private var showEnableICloudConfirm = false
+    @State private var iCloudSyncEnabled = AppSettingsKeys.isICloudSyncEnabled()
+    @State private var isApplyingICloudSyncPreference = false
     @State private var cloudAccountStatus: CKAccountStatus?
     @State private var cloudAccountStatusError: String?
     @State private var feedbackText = ""
@@ -273,7 +280,17 @@ public struct SettingsView: View {
             }
 
             Section {
-                Label(L10n.string(.settingsIcloudSyncLabel), systemImage: "icloud")
+                Toggle(
+                    L10n.string(.settingsIcloudSyncLabel),
+                    isOn: iCloudSyncToggleBinding
+                )
+                .disabled(
+                    !cloudKitAllowedByEnvironment
+                        || onApplyICloudSyncPreference == nil
+                        || isApplyingICloudSyncPreference
+                )
+                .accessibilityIdentifier(UITestingIdentifiers.settingsICloudSyncToggle)
+
                 Text(cloudAccountStatusText)
                     .font(.footnote)
                     .foregroundStyle(cloudAccountStatusIsError ? .red : .secondary)
@@ -359,6 +376,33 @@ public struct SettingsView: View {
         } message: {
             Text(L10n.string(.settingsClearIcloudMessage))
         }
+        .confirmationDialog(
+            L10n.string(.settingsIcloudDisableTitle),
+            isPresented: $showDisableICloudConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string(.settingsIcloudDisableKeepLocal)) {
+                applyICloudSyncPreference(enabled: false, wipeCloud: false)
+            }
+            Button(L10n.string(.settingsIcloudDisableWipe), role: .destructive) {
+                applyICloudSyncPreference(enabled: false, wipeCloud: true)
+            }
+            Button(L10n.string(.commonCancel), role: .cancel) {}
+        } message: {
+            Text(L10n.string(.settingsIcloudDisableMessage))
+        }
+        .confirmationDialog(
+            L10n.string(.settingsIcloudEnableTitle),
+            isPresented: $showEnableICloudConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string(.commonOk)) {
+                applyICloudSyncPreference(enabled: true, wipeCloud: false)
+            }
+            Button(L10n.string(.commonCancel), role: .cancel) {}
+        } message: {
+            Text(L10n.string(.settingsIcloudEnableMessage))
+        }
         .task(id: eventKitEnabled) {
             guard eventKitEnabled else { return }
             guard CalendarTitleMode(rawValue: calendarTitleModeRaw) == .fixed else { return }
@@ -370,11 +414,49 @@ public struct SettingsView: View {
             await loadCalendarNamesIfNeeded(forceReload: true)
         }
         .task {
+            iCloudSyncEnabled = AppSettingsKeys.isICloudSyncEnabled()
             await refreshCloudAccountStatus()
         }
     }
 
+    private var cloudKitAllowedByEnvironment: Bool {
+        PersistenceBootstrap.isCloudKitAllowedByEnvironmentProcess()
+    }
+
+    private var iCloudSyncToggleBinding: Binding<Bool> {
+        Binding(
+            get: { iCloudSyncEnabled },
+            set: { newValue in
+                guard !isApplyingICloudSyncPreference else { return }
+                guard newValue != iCloudSyncEnabled else { return }
+                if newValue {
+                    showEnableICloudConfirm = true
+                } else {
+                    showDisableICloudConfirm = true
+                }
+            }
+        )
+    }
+
+    private func applyICloudSyncPreference(enabled: Bool, wipeCloud: Bool) {
+        guard let onApplyICloudSyncPreference else { return }
+        guard !isApplyingICloudSyncPreference else { return }
+        isApplyingICloudSyncPreference = true
+        // Optimistic UI; always re-sync from defaults after apply (revert on failure).
+        iCloudSyncEnabled = enabled
+        Task {
+            defer {
+                isApplyingICloudSyncPreference = false
+                iCloudSyncEnabled = AppSettingsKeys.isICloudSyncEnabled()
+            }
+            await onApplyICloudSyncPreference(enabled, wipeCloud)
+        }
+    }
+
     private var cloudAccountStatusText: String {
+        if !iCloudSyncEnabled {
+            return L10n.string(.settingsIcloudStatusUserDisabled)
+        }
         if let cloudAccountStatusError {
             return cloudAccountStatusError
         }
@@ -397,6 +479,7 @@ public struct SettingsView: View {
     }
 
     private var cloudAccountStatusIsError: Bool {
+        if !iCloudSyncEnabled { return false }
         switch cloudAccountStatus {
         case .some(.noAccount), .some(.restricted), .some(.couldNotDetermine), .some(.temporarilyUnavailable):
             return true
@@ -406,6 +489,12 @@ public struct SettingsView: View {
     }
 
     private var cloudAccountFooterText: String {
+        if !cloudKitAllowedByEnvironment {
+            return L10n.string(.settingsIcloudEnvForcedOffFooter)
+        }
+        if !iCloudSyncEnabled {
+            return L10n.string(.settingsIcloudDisableMessage)
+        }
         switch cloudAccountStatus {
         case .some(.noAccount):
             return L10n.string(.settingsIcloudFooterNoAccount)
@@ -419,7 +508,12 @@ public struct SettingsView: View {
     @MainActor
     private func refreshCloudAccountStatus() async {
         cloudAccountStatusError = nil
-        let status = await PersistenceBootstrap.fetchCloudKitAccountStatus()
+        let cloudKitEnabled = PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+            iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+        )
+        let status = await PersistenceBootstrap.fetchCloudKitAccountStatus(
+            cloudKitEnabled: cloudKitEnabled
+        )
         cloudAccountStatus = status
         if status == .couldNotDetermine {
             cloudAccountStatusError = nil

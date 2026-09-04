@@ -2,11 +2,13 @@ import SwiftUI
 import SwiftData
 
 import ReisenAppCore
+import ReisenDomain
 import ReisenSharedUI
 
 struct MoreTab: View {
     let onResetLocalStores: () -> Void
     let onWipeCloudAndReset: () -> Void
+    let onApplyICloudSyncPreference: (Bool, Bool) async -> Void
 
     @State private var statusMessage: String?
 
@@ -31,6 +33,15 @@ struct MoreTab: View {
                 onWipeCloudAndReset: {
                     statusMessage = "iCloud-Daten werden geleert…"
                     onWipeCloudAndReset()
+                },
+                onApplyICloudSyncPreference: { enabled, wipe in
+                    statusMessage = enabled
+                        ? L10n.string(.settingsIcloudApplyStatusEnabling)
+                        : (wipe
+                            ? L10n.string(.settingsIcloudApplyStatusDisablingWipe)
+                            : L10n.string(.settingsIcloudApplyStatusDisabling))
+                    await onApplyICloudSyncPreference(enabled, wipe)
+                    statusMessage = nil
                 }
             )
             .navigationTitle("Mehr")

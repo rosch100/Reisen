@@ -64,7 +64,10 @@ import ReisenDomain
 
 @MainActor
 @Test func cloudKitDisabledInTestEnvironment() {
-    #expect(PersistenceBootstrap.isCloudKitEnabledByEnvironment() == false)
+    #expect(
+        PersistenceBootstrap.isCloudKitEnabledByEnvironment(iCloudSyncPreferenceEnabled: true)
+            == false
+    )
 }
 
 @Test func cloudKitRequiresSigningTeamIdentifier() {
@@ -129,7 +132,8 @@ private func cloudKitGuardEnabled(
     appID: String? = "TEAMID0000.app.voyenna.reisen",
     containers: [String] = [PersistenceBootstrap.cloudKitContainerID],
     services: [String] = ["CloudKit"],
-    containerEnvironment: String? = "Development"
+    containerEnvironment: String? = "Development",
+    preferenceEnabled: Bool = true
 ) -> Bool {
     PersistenceBootstrap.isCloudKitEnabled(
         environment: env,
@@ -139,7 +143,8 @@ private func cloudKitGuardEnabled(
         applicationIdentifier: appID,
         icloudContainerIdentifiers: containers,
         icloudServices: services,
-        icloudContainerEnvironment: containerEnvironment
+        icloudContainerEnvironment: containerEnvironment,
+        iCloudSyncPreferenceEnabled: preferenceEnabled
     )
 }
 

@@ -84,8 +84,12 @@ public enum CloudKitTwoDeviceVerification {
 
     /// Writes a failure result and returns `nil` when CloudKit/account is not ready.
     private static func cloudKitAccountIfReady(mode: Mode) async throws -> CKAccountStatus? {
-        let account = await PersistenceBootstrap.fetchCloudKitAccountStatus()
-        let enabled = PersistenceBootstrap.isCloudKitEnabledByEnvironment()
+        let enabled = PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+            iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+        )
+        let account = await PersistenceBootstrap.fetchCloudKitAccountStatus(
+            cloudKitEnabled: enabled
+        )
         let statusName = accountStatusName(account)
 
         guard enabled else {
@@ -93,7 +97,7 @@ public enum CloudKitTwoDeviceVerification {
                 mode: mode,
                 ok: false,
                 message: mode == .seed
-                    ? "CloudKit disabled (REISEN_CLOUDKIT=0 / CI / XCTest)."
+                    ? "CloudKit disabled (env/entitlements gate or iCloud sync preference off)."
                     : "CloudKit disabled."
             )
             result.cloudKitEnabled = false
@@ -125,7 +129,10 @@ public enum CloudKitTwoDeviceVerification {
         try deleteVerificationEntities(in: modelContext)
         insertSeedGraph(into: modelContext)
         try modelContext.save()
-        await PersistenceBootstrap.awaitCloudKitExportIfNeeded(timeout: exportTimeout)
+        await PersistenceBootstrap.awaitCloudKitExportIfNeeded(
+            timeout: exportTimeout,
+            cloudKitEnabled: true
+        )
 
         var result = VerifyResult(
             mode: .seed,
@@ -179,7 +186,10 @@ public enum CloudKitTwoDeviceVerification {
         var cloud = CloudPresence()
         let deadline = Date().addingTimeInterval(expectTimeout)
         while Date() < deadline {
-            await PersistenceBootstrap.awaitCloudKitImportIfNeeded(timeout: .seconds(5))
+            await PersistenceBootstrap.awaitCloudKitImportIfNeeded(
+                timeout: .seconds(5),
+                cloudKitEnabled: true
+            )
             cloud.tripFound = try tripExists(tripID, in: context)
             cloud.bookingFromFound = try bookingExists(bookingFromID, in: context)
             cloud.bookingToFound = try bookingExists(bookingToID, in: context)

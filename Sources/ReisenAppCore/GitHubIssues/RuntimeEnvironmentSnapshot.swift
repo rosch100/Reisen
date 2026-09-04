@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import ReisenData
+import ReisenDomain
 
 struct RuntimeEnvironmentSnapshot: Equatable, Sendable {
     var architecture: String
@@ -67,7 +68,9 @@ struct RuntimeEnvironmentSnapshot: Equatable, Sendable {
             processorCount: info.processorCount,
             activeProcessorCount: info.activeProcessorCount,
             systemUptimeSeconds: info.systemUptime,
-            cloudKitEnabled: PersistenceBootstrap.isCloudKitEnabledByEnvironment()
+            cloudKitEnabled: PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+                iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+            )
         )
     }
 

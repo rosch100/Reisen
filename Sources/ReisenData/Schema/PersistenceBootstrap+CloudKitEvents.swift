@@ -4,23 +4,26 @@ import CloudKit
 
 extension PersistenceBootstrap {
     /// Waits for a CloudKit export event after local deletes, so wipe-before-reset can propagate.
-    /// No-ops when CloudKit is disabled by environment. Times out so offline devices still recover.
+    /// No-ops when `cloudKitEnabled` is false. Times out so offline devices still recover.
     public static func awaitCloudKitExportIfNeeded(
-        timeout: Duration = .seconds(20)
+        timeout: Duration = .seconds(20),
+        cloudKitEnabled: Bool
     ) async {
-        await awaitCloudKitEvent(type: .export, timeout: timeout)
+        await awaitCloudKitEvent(type: .export, timeout: timeout, cloudKitEnabled: cloudKitEnabled)
     }
 
     /// Waits for a CloudKit import after reopening an empty store (needed before wipe-from-failed).
     public static func awaitCloudKitImportIfNeeded(
-        timeout: Duration = .seconds(20)
+        timeout: Duration = .seconds(20),
+        cloudKitEnabled: Bool
     ) async {
-        await awaitCloudKitEvent(type: .import, timeout: timeout)
+        await awaitCloudKitEvent(type: .import, timeout: timeout, cloudKitEnabled: cloudKitEnabled)
     }
 
     /// Account status for Settings UX (`CKContainer` for `cloudKitContainerID`).
-    public static func fetchCloudKitAccountStatus() async -> CKAccountStatus {
-        guard isCloudKitEnabledByEnvironment() else { return .couldNotDetermine }
+    /// Pass the Effective CloudKit flag (Env × preference) from the caller.
+    public static func fetchCloudKitAccountStatus(cloudKitEnabled: Bool) async -> CKAccountStatus {
+        guard cloudKitEnabled else { return .couldNotDetermine }
         do {
             return try await CKContainer(identifier: cloudKitContainerID).accountStatus()
         } catch {
@@ -30,9 +33,10 @@ extension PersistenceBootstrap {
 
     static func awaitCloudKitEvent(
         type: NSPersistentCloudKitContainer.EventType,
-        timeout: Duration
+        timeout: Duration,
+        cloudKitEnabled: Bool
     ) async {
-        guard isCloudKitEnabledByEnvironment() else { return }
+        guard cloudKitEnabled else { return }
 
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
