@@ -1,7 +1,7 @@
 # Feature-Backlog (Konkurrenz-Analyse → Reisen)
 
 Status: **Backlog** (F02/F04/F05/F07/F14/F15 zurückgestellt; F08, F16/F17, F20–F24 aktiv; F10–F12 bedingt; F01/F03/F06/F09/F13/F18/F19 umgesetzt)
-Stand: 2026-09-01
+Stand: 2026-09-04
 
 ## Zweck und Leitlinie
 
@@ -180,7 +180,9 @@ Lokale Push laufen bereits für Storno (`cancellationDeadline`) und Pre-Travel (
 | EventKit schreiben | iCal-Feed-URL | F04 Datei-Share, kein Feed (X06) |
 | Offen-Tab / Zuordnung | TripIt merged nach Datum | Beibehalten; F16 als UX darauf |
 | Reiseübergreifende Tages-Überschneidungen (Typ-Occupancy, Caption macOS+iOS) | Oft nur Intra-Trip / Text-only | Kern halten; F24 bleibt Provider-Duplikat (geplant) |
-| Bahn-Typ, Paste-Import, Copy-Felder | — | Umgesetzt (Archiv) |
+| Bahn-Typ, Paste-Import, Copy-Felder, Kostensumme/FX | — | Umgesetzt (Archiv) |
+| Auto-Gap + Tagesüberschneidungen | Oft nur Intra-Trip / Text-only | Kern halten |
+| Mehrfachauswahl + Batch-Menüs (macOS) | Meist Einzelaktionen | Beibehalten; F16 als Drag darauf |
 
 ---
 
