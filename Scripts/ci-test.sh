@@ -81,6 +81,46 @@ if ! grep -q 'REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true' "$ROOT/Scripts/ios-archive
   echo "Fehler: Ad-hoc-Archive muss REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true setzen." >&2
   exit 1
 fi
+if grep -q 'REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive darf REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true nicht setzen." >&2
+  exit 1
+fi
+if ! grep -q 'REISEN_EMBED_GITHUB_ISSUE_TOKEN=true' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss REISEN_EMBED_GITHUB_ISSUE_TOKEN=true setzen." >&2
+  exit 1
+fi
+if ! grep -q 'REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true setzen." >&2
+  exit 1
+fi
+if ! grep -q 'SCHEME="ReiseniOSPrivate"' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss Scheme ReiseniOSPrivate verwenden." >&2
+  exit 1
+fi
+if ! grep -q 'ios-export-appstore.plist' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss app-store ExportOptions nutzen." >&2
+  exit 1
+fi
+if ! grep -q -- '--mode private --ipa' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss das IPA private-isolieren (--ipa)." >&2
+  exit 1
+fi
+if ! grep -q 'GITHUB_ACTIONS' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss ASC-Auth auf GitHub Actions beschränken (lokal Xcode-Account)." >&2
+  exit 1
+fi
+if ! grep -q 'reisen_xcodebuild_asc_auth_args' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss in CI xcodebuild mit App-Store-Connect-API-Key authentifizieren." >&2
+  exit 1
+fi
+if grep -q 'AUTH_OUT="$(reisen_xcodebuild_asc_auth_args)"' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: reisen_xcodebuild_asc_auth_args darf nicht in Command-Substitution laufen (Subshell löscht den Temp-Key)." >&2
+  exit 1
+fi
+if ! grep -q 'altool --upload-app' "$ROOT/Scripts/ios-upload-testflight.sh"; then
+  echo "Fehler: ios-upload-testflight.sh muss xcrun altool --upload-app aufrufen." >&2
+  exit 1
+fi
 if ! grep -q -- '--mode store --ipa' "$ROOT/Scripts/ios-archive-appstore.sh"; then
   echo "Fehler: App-Store-Archive muss das exportierte IPA store-isolieren (--ipa)." >&2
   exit 1

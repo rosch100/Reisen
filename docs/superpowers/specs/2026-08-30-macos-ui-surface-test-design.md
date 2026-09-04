@@ -1,8 +1,8 @@
 # macOS Oberflächen-Funktionstest (v1)
 
-**Datum:** 2026-08-30  
-**Status:** freigegeben (Plan-SSOT; zwei Review-Runden)  
-**Plattform v1:** macOS (`ReisenMac` / Bundle-ID `de.reisen.Reisen`)  
+**Datum:** 2026-08-30
+**Status:** freigegeben (Plan-SSOT; zwei Review-Runden)
+**Plattform v1:** macOS (`ReisenMac` / Bundle-ID `de.roschmac.Reisen`)
 **iOS:** eigene Folgespec; Identifier und Manifest-`schemaVersion` bleiben plattformneutral
 
 Dieses Dokument ist der Implementierungsvertrag. Es spiegelt den freigegebenen Plan 1:1.
@@ -25,7 +25,7 @@ Festgehalten und **unverändert gültig:**
 
 Korrigiert, weil der Erstentwurf so **nicht fehlerfrei** war:
 
-- **Store:** nicht `makeContainer()` + CloudKit-aus. UI-Test-App hat Bundle-ID `de.reisen.Reisen`; On-Disk würde den echten Store treffen. Pflicht: `makeInMemoryContainer()` bei `-UITesting`.
+- **Store:** nicht `makeContainer()` + CloudKit-aus. UI-Test-App hat Bundle-ID `de.roschmac.Reisen`; On-Disk würde den echten Store treffen. Pflicht: `makeInMemoryContainer()` bei `-UITesting`.
 - **Prozessgrenzen:** `XCTestConfigurationFilePath` / Runner-`CI=true` gelten nicht in der App. Launch-Env `REISEN_CLOUDKIT=0` zusätzlich.
 - **TCC:** `notificationEnabled` default true; `rebuildLocalSideEffects` und Cloud-Observer unter UI-Testing nicht starten.
 - **Audit:** nicht ungefiltertes `performAccessibilityAudit()`. Allowlist; `.hitRegion` raus (44pt-iOS-Engine).
@@ -85,7 +85,7 @@ flowchart LR
 
 ## Isolation — Vertrag
 
-UI-Test-App = eigener Prozess, Bundle-ID `de.reisen.Reisen`. Bei `-UITesting` / `-UITestingEmpty`:
+UI-Test-App = eigener Prozess, Bundle-ID `de.roschmac.Reisen`. Bei `-UITesting` / `-UITestingEmpty`:
 
 1. `AppBootstrap` nur `makeInMemoryContainer()` — nie `makeContainer()`.
 2. Launch-Env `REISEN_CLOUDKIT=0`.

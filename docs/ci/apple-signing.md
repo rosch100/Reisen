@@ -5,8 +5,8 @@ Team-ID und Bundle-IDs sind **keine Secrets**, werden aber nicht in dieser Doku 
 | Plattform | Bundle-ID | Container |
 |-----------|-----------|-----------|
 | macOS | siehe `project.yml` → ReisenMac | siehe `PersistenceBootstrap.cloudKitContainerID` |
-| iOS App Store | `de.reisen.Reisen.ios` (`ReiseniOS`) | gemeinsamer CloudKit-Container |
-| iOS Private | `de.reisen.Reisen.ios.private` (`ReiseniOSPrivate`) | gemeinsamer CloudKit-Container |
+| iOS App Store | `de.roschmac.Reisen.ios` (`ReiseniOS`) | gemeinsamer CloudKit-Container |
+| iOS Private | `de.roschmac.Reisen.ios.private` (`ReiseniOSPrivate`) | gemeinsamer CloudKit-Container |
 
 Team: **DEVELOPMENT_TEAM** aus `project.yml` oder Umgebungsvariable `APPLE_TEAM_ID` (Automatic Signing).
 
@@ -115,22 +115,22 @@ Ausgabe: `.build/ReiseniOS-ipa/*.ipa`. Upload per Transporter oder App Store Con
 
 Voraussetzungen:
 
-- Lokal: Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`
+- Lokal: Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.roschmac.Reisen.ios`
 - In GitHub Actions (**App Store Check**): App-Store-Connect-API-Key (`APP_STORE_CONNECT_API_KEY_*`) statt Xcode-Account; `ios-archive-appstore.sh` materialisiert das `.p8` über `reisen_xcodebuild_asc_auth_args`
 - Push Notifications + iCloud (CloudKit) in den Capabilities; Release-Entitlements `ReiseniOS-Release.entitlements` mit `aps-environment` = `production`
 - CloudKit-Container im Developer Portal an die iOS App-ID gebunden (Production)
 
 Checkliste für Metadaten, Screenshots und Review Notes: [`app-store-connect.md`](app-store-connect.md).
 
-Private-iOS (Ad Hoc): [`ios-private-distribution.md`](ios-private-distribution.md), `Scripts/ios-archive-adhoc.sh`.
+Private-iOS (Ad Hoc / Internal TestFlight): [`ios-private-distribution.md`](ios-private-distribution.md), `Scripts/ios-archive-adhoc.sh`, `Scripts/ios-archive-private-testflight.sh`, Upload `Scripts/ios-upload-testflight.sh`.
 
 ## Validierung / Troubleshooting
 
 - Keychain ohne „Apple Development“ zum Team: `setup-apple-developer.sh` bricht ab (kein stiller Ad-hoc-Pfad lokal)
 - Keychain Identity für Notary nicht gefunden: importiertes Zertifikat muss **Developer ID Application** sein; Keychain entsperrt/importiert
-- App Store Check `exportArchive` / **Cloud signing permission error**: der App-Store-Connect-API-Key braucht Zugriff auf **Cloud Managed Distribution Certificates** (Account Holder/Admin in [Users and Access](https://appstoreconnect.apple.com/access/users)). Ohne das findet Xcode kein iOS-App-Store-Profil für `de.reisen.Reisen.ios`. Developer-ID-`.p12` (macOS) ersetzt das nicht.
+- App Store Check `exportArchive` / **Cloud signing permission error**: der App-Store-Connect-API-Key braucht Zugriff auf **Cloud Managed Distribution Certificates** (Account Holder/Admin in [Users and Access](https://appstoreconnect.apple.com/access/users)). Ohne das findet Xcode kein iOS-App-Store-Profil für `de.roschmac.Reisen.ios`. Developer-ID-`.p12` (macOS) ersetzt das nicht.
 - App Store Check `altool --validate-app`: derselbe App-Store-Connect-API-Key wie beim Archive; `Scripts/ios-validate-appstore.sh` setzt `API_PRIVATE_KEYS_DIR` auf das materialisierte `.p8`. ITMS-`product-errors` (z. B. fehlendes Privacy Manifest) machen den Job rot. Das ist keine Review-Freigabe.
-- `Unable to find Apple ID for Bundle ID 'de.reisen.Reisen.ios'`: Auth war ok, aber in App Store Connect fehlt der iOS-App-Eintrag (oder der API-Key sieht ihn nicht). Anlegen: [`app-store-connect.md`](app-store-connect.md). Optional `APP_STORE_CONNECT_APPLE_ID` (numerische Apple-ID aus App Information, nicht die Login-E-Mail).
+- `Unable to find Apple ID for Bundle ID 'de.roschmac.Reisen.ios'`: Auth war ok, aber in App Store Connect fehlt der iOS-App-Eintrag (oder der API-Key sieht ihn nicht). Anlegen: [`app-store-connect.md`](app-store-connect.md). Optional `APP_STORE_CONNECT_APPLE_ID` (numerische Apple-ID aus App Information, nicht die Login-E-Mail).
 - ITMS **90534** (Unsupported SDK or Xcode version): das IPA wurde mit einer **älteren Xcode-27-Beta** gebaut. Apple akzeptiert nur die **neueste** 27-Beta oder RC ([Releases](https://developer.apple.com/news/releases/)). Lokal `xcodebuild -version` prüfen, Xcode-beta aktualisieren, IPA neu archivieren. Info.plist-Felder (`DTXcodeBuild`) nicht fälschen.
 - Notarization: `notarytool submit --wait` liefert die Apple-Antwort in den Workflow-Logs
 - CloudKit: Container laut `PersistenceBootstrap.cloudKitContainerID` muss im Portal an **drei** App-IDs gebunden sein (macOS, Store-iOS, Private-iOS)

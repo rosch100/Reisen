@@ -1,6 +1,6 @@
 # App Store Check (manuell)
 
-Zur **Release-Vorbereitung** erzeugt der Workflow **App Store Check** (`app-store-check.yml`) das Store-IPA (`ReiseniOS`, Bundle-ID `de.reisen.Reisen.ios`) und prüft Signing, Store-Isolation und Apples ITMS-Validierung (`xcrun altool --validate-app`). Private-iOS (`ReiseniOSPrivate` / `de.reisen.Reisen.ios.private`) wird nicht archiviert. Der Workflow ersetzt nicht die PR-CI.
+Zur **Release-Vorbereitung** erzeugt der Workflow **App Store Check** (`app-store-check.yml`) das Store-IPA (`ReiseniOS`, Bundle-ID `de.roschmac.Reisen.ios`) und prüft Signing, Store-Isolation und Apples ITMS-Validierung (`xcrun altool --validate-app`). Private-iOS (`ReiseniOSPrivate` / `de.roschmac.Reisen.ios.private`) wird nicht archiviert. Der Workflow ersetzt nicht die PR-CI.
 
 | Wann | Was |
 |------|-----|
@@ -37,12 +37,12 @@ Runner und Signing für `bash ./Scripts/ios-archive-appstore.sh`:
 
 - `xcode-27` mit XcodeGen (`brew install xcodegen`)
 - In GitHub Actions: App-Store-Connect-API-Key plus `APPLE_TEAM_ID`. Der Key braucht Zugriff auf **Cloud Managed Distribution Certificates** (Account Holder/Admin). Details: [`apple-signing.md`](apple-signing.md).
-- Lokal: Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.reisen.Reisen.ios`, oder derselbe API-Key wie in CI.
+- Lokal: Xcode mit angemeldeter Apple-ID und **Apple Distribution** für `de.roschmac.Reisen.ios`, oder derselbe API-Key wie in CI.
 - Automatic Signing (`-allowProvisioningUpdates`)
 
 Das Archive-Script archiviert ausschließlich Scheme `ReiseniOS`. Isolation muss greifen (sonst Abbruch):
 
-- Bundle-ID `de.reisen.Reisen.ios` (nicht `.private`)
+- Bundle-ID `de.roschmac.Reisen.ios` (nicht `.private`)
 - App-Name `ReiseniOS.app` (nicht `ReiseniOSPrivate.app`)
 - keine Provider-Adapter-Strings/Symbole im IPA (`ios-verify-binary-isolation.sh --mode store --ipa`)
 
@@ -57,7 +57,7 @@ Details: [`apple-signing.md`](apple-signing.md), [`app-store-connect.md`](app-st
 3. Apple ITMS-Validierung (`Scripts/ios-validate-appstore.sh` → `xcrun altool --validate-app`).
 4. IPA und Archive auf dem Runner löschen (kein GitHub-Artifact).
 
-Lokal: zuerst das Store-IPA erzeugen, dann denselben Pfad validieren (ASC-API-Key wie in CI). `.build/` von SwiftPM enthält kein IPA. In App Store Connect muss die iOS-App `de.reisen.Reisen.ios` existieren (Listename **Reisen Buchungen**), sonst bricht `altool` mit „Unable to find Apple ID for Bundle ID“ ab — siehe [`app-store-connect.md`](app-store-connect.md). ITMS 90534: Xcode 27 auf die **neueste** Beta/RC bringen, IPA neu bauen.
+Lokal: zuerst das Store-IPA erzeugen, dann denselben Pfad validieren (ASC-API-Key wie in CI). `.build/` von SwiftPM enthält kein IPA. In App Store Connect muss die iOS-App `de.roschmac.Reisen.ios` existieren (Listename **Reisen Buchungen**), sonst bricht `altool` mit „Unable to find Apple ID for Bundle ID“ ab — siehe [`app-store-connect.md`](app-store-connect.md). ITMS 90534: Xcode 27 auf die **neueste** Beta/RC bringen, IPA neu bauen.
 
 ```bash
 IPA="$(bash ./Scripts/ios-archive-appstore.sh)"
@@ -67,5 +67,5 @@ bash ./Scripts/ios-validate-appstore.sh "$IPA"
 ## Was der Workflow nicht prüft
 
 - App-Store-Review-Guidelines (Reviewer-Themen, nicht ITMS)
-- Private-iOS (`Scripts/ios-archive-adhoc.sh`, Bundle-ID `de.reisen.Reisen.ios.private`)
+- Private-iOS (`Scripts/ios-archive-adhoc.sh`, Bundle-ID `de.roschmac.Reisen.ios.private`)
 - macOS `.app` / DMG

@@ -38,7 +38,7 @@ public enum UITestingLaunch {
     public static let environmentKey = "REISEN_UITESTING"
     public static let environmentPopulated = "1"
     public static let environmentEmpty = "empty"
-    public static let defaultsSuiteName = "de.reisen.Reisen.uitesting"
+    public static let defaultsSuiteName = "de.roschmac.Reisen.uitesting"
     public static let persistenceIgnoreStateArgument = "-ApplePersistenceIgnoreState"
     public static let treatUnknownArgumentsAsOpenArgument = "-NSTreatUnknownArgumentsAsOpen"
 

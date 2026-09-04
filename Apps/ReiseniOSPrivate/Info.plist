@@ -41,7 +41,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>de.reisen.Reisen.private.pasteimport</string>
+			<string>de.roschmac.Reisen.private.pasteimport</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>reisen-private</string>

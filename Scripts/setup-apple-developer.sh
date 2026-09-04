@@ -64,7 +64,7 @@ provisioning_failed() {
   echo "Nächste Schritte:" >&2
   echo "  1. open $PROJECT" >&2
   echo "  2. Signing & Capabilities: passendes Team wählen (${TEAM_ID})" >&2
-  echo "  3. iCloud (CloudKit, Container ${ICLOUD_CONTAINER}) für ${IOS_BUNDLE_ID}, de.reisen.Reisen.ios.private und ${MACOS_BUNDLE_ID}" >&2
+  echo "  3. iCloud (CloudKit, Container ${ICLOUD_CONTAINER}) für ${IOS_BUNDLE_ID}, de.roschmac.Reisen.ios.private und ${MACOS_BUNDLE_ID}" >&2
   echo "  4. Für iOS-Geräteprofile: iPhone einschalten oder UDID im Developer Portal anlegen" >&2
   echo >&2
   echo "Danach erneut: bash ./Scripts/setup-apple-developer.sh" >&2
@@ -97,7 +97,7 @@ if [[ "$IOS_PRIVATE_SIM_STATUS" -ne 0 ]]; then
   provisioning_failed "Private-iOS-Simulator-Build fehlgeschlagen"
   exit 1
 fi
-echo "Private-iOS Simulator-Build ok (de.reisen.Reisen.ios.private)." >&2
+echo "Private-iOS Simulator-Build ok (de.roschmac.Reisen.ios.private)." >&2
 
 # Physisches Gerät (auch offline) anmelden, damit ein Development-Profil entstehen kann.
 if [[ -n "${IOS_DEVICE_UDID:-}" ]]; then
