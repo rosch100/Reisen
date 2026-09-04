@@ -105,7 +105,8 @@
       <ul>
         <li>Login auf Websites Dritter im <strong>WKWebView</strong> mit deinem eigenen Konto</li>
         <li>Session-Cookies verbleiben im WebView-Cookie-Store des Geräts</li>
-        <li>Optional (Opt-in, Standard aus): E-Mail und Kennwort nach Passwort-Login in der <strong>Geräte-Keychain</strong> der App — nicht für Apple-/Passkey-/OAuth-Logins. Diese Zugangsdaten verlassen das Gerät nicht.</li>
+        <li>Optional (Opt-in, Standard aus): E-Mail und Kennwort nach Passwort-Login in der App-Keychain — nicht für Apple-/Passkey-/OAuth-Logins. Speicherung und geräteübergreifende Synchronisation erfolgen über den <strong>iCloud-Schlüsselbund</strong> von Apple, sofern du iCloud-Schlüsselbund aktiviert hast (Verhaltensänderung gegenüber früherer nur-gerätelokaler Speicherung). Session-Cookies bleiben gerätegebunden und werden nicht synchronisiert.</li>
+        <li>Über CloudKit (privater Container): welche Buchungsportale aktiviert sind und ob die Erststart-Providerauswahl abgeschlossen ist — ohne Passwörter und ohne Benutzernamen.</li>
       </ul>
 
       <h3>Kalender und Erinnerungen (optional, Opt-in)</h3>
@@ -181,7 +182,7 @@
       <p>Einwilligungen kannst du in den App- bzw. Systemeinstellungen widerrufen; die Rechtmäßigkeit der Verarbeitung bis zum Widerruf bleibt unberührt.</p>
 
       <h2>iCloud / CloudKit</h2>
-      <p>Synchronisation nutzt Apple CloudKit in deinem iCloud-Account. Apple verarbeitet diese Daten gemäß den <a href="https://www.apple.com/legal/privacy/">Apple-Datenschutzrichtlinien</a>. Du kannst in den App-Einstellungen lokale Daten löschen oder iCloud-Daten leeren.</p>
+      <p>Synchronisation nutzt Apple CloudKit in deinem iCloud-Account (Reisen/Buchungen sowie Provider-Aktivierung und Setup-Status). Opt-in gespeicherte Portal-Kennwörter synchronisieren über den iCloud-Schlüsselbund, nicht als CloudKit-Records. Apple verarbeitet diese Daten gemäß den <a href="https://www.apple.com/legal/privacy/">Apple-Datenschutzrichtlinien</a>. Du kannst in den App-Einstellungen lokale Daten löschen oder iCloud-Daten leeren; Keychain-Einträge entfernst du in der Schlüsselbund-/Passwörter-App bzw. durch Deaktivieren der Merk-Funktion.</p>
 
       <h2>Stille Push-Benachrichtigungen (iOS)</h2>
       <p>Für CloudKit-Mirroring kann iOS stille Hintergrund-Benachrichtigungen empfangen (<code>remote-notification</code>). Es werden <strong>keine</strong> sichtbaren Remote-Push-Nachrichten an dich gesendet.</p>

@@ -7,8 +7,8 @@ extension PersistenceBootstrap {
         cloudURL: URL?,
         localURL: URL?
     ) throws -> (ModelConfiguration, ModelConfiguration) {
-        let cloudSchema = Schema(ReisenSchemaV10.cloudModels)
-        let localSchema = Schema(ReisenSchemaV10.localModels)
+        let cloudSchema = Schema(ReisenSchemaV11.cloudModels)
+        let localSchema = Schema(ReisenSchemaV11.localModels)
         let cloudKitDatabase: ModelConfiguration.CloudKitDatabase =
             cloudKitEnabled ? .private(cloudKitContainerID) : .none
         let cloud = ModelConfiguration(

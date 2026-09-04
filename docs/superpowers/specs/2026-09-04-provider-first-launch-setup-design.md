@@ -110,14 +110,23 @@ Jede ID höchstens **ein** Element im erwarteten Tree.
 
 **macOS `ContentView`:**
 
-- Nach Bootstrap / onAppear: wenn `shouldPresent` → Sheet.
-- Continue: `applySelection` → notify → `markCompleted` → dismiss → `selectFirstEnabledProviderSyncIfAvailable()`.
-- Later: `markDeferred` → dismiss; Selection bleibt nil / Empty-State.
+- Nach Bootstrap / onAppear: **Import-Gate** (siehe unten), dann wenn `shouldPresent` → Sheet.
+- Continue: `applySelection` → notify → `markCompleted` → Prefs-Export (CloudKit Mirror) → dismiss → `selectFirstEnabledProviderSyncIfAvailable()`.
+- Later: `markDeferred` → dismiss; Selection bleibt nil / Empty-State. (`setupDeferred` **nicht** nach CloudKit.)
 - Empty-State: wenn `!setupCompleted && enabledProviderIDs.isEmpty` → Button Reopen (neben/statt nur Disabled-Hint).
 
 **iOS `RootTabView`:** gleiches Sheet; Continue wechselt optional auf Sync-Tab wenn Provider-Sync verfügbar.
 
 **iOS Reopen:** `SyncTab.emptyProviders` erhält denselben Reopen-CTA (`setup.providers.reopen`), der das Sheet erneut präsentiert (Akzeptanz #3 gilt macOS **und** iOS Host, Evidence macOS-XCUI + iOS Compile).
+
+### CloudKit Import-Gate (Gapfill — iCloud Prefs)
+
+SSOT Detail: `docs/superpowers/specs/2026-09-04-icloud-provider-prefs-credentials-design.md`.
+
+1. **Vor Present:** kurzer Wait auf initialen CloudKit-Import der Prefs. Wenn synced `setupCompleted` → **kein** Sheet (`provider_setup_skipped` / `icloud_prefs`).
+2. **Timeout** ohne Prefs → Frischinstall-Sheet wie bisher.
+3. **UITesting / `REISEN_CLOUDKIT=0` / CI:** Gate **sofort complete** (kein Netz-Wait) — Empty-Launch-Vertrag unverändert.
+4. **Post-Present:** Sheet sichtbar, später Import mit `setupCompleted` → Apply Snapshot + dismiss (`icloud_prefs_late`); Teilauswahl verwerfen. Nur Enables ohne `setupCompleted` → Sheet bleibt.
 
 ### Session-Probe
 
@@ -156,6 +165,7 @@ Prozess-Hooks: `AppSettingsDefaults.installOverride` + `UITestingLaunch.isolated
 | `provider_setup_presented` | started | `fresh_launch` |
 | `provider_setup_completed` | succeeded | `continue_count_<n>` (nur Anzahl, keine Provider-Namen als PII-Risiko — raw IDs ok als stabile Machine-Strings) |
 | `provider_setup_deferred` | cancelled | `later` |
+| `provider_setup_skipped` | skipped | `icloud_prefs` / `icloud_prefs_late` |
 
 ## Tests
 
@@ -169,6 +179,7 @@ Prozess-Hooks: `AppSettingsDefaults.installOverride` + `UITestingLaunch.isolated
 
 - Kein iOS-XCUI: iOS-Optik manuell / `ios-test.sh` Compile; Identifier trotzdem gesetzt.
 - Keine Screenshot-Regression-Suite für Optik; HIG-Review optional via `macos-ui-review.sh` nach Implementierung.
+- Geräteübergreifende Prefs/Credentials: siehe iCloud-Prefs-Spec (separater Lieferumfang).
 
 ## Akzeptanz
 
@@ -177,3 +188,4 @@ Prozess-Hooks: `AppSettingsDefaults.installOverride` + `UITestingLaunch.isolated
 3. Später → kein Auto-Sheet mehr; Reopen-CTA im Empty-State.
 4. Bestandskunden nach #138-Migration → kein Sheet.
 5. Populated-XCUI unverändert nutzbar; Empty zeigt Setup-Sheet.
+6. Synced `setupCompleted` (CloudKit) → kein Sheet; Late-Import dismiss (iCloud-Prefs-Spec).

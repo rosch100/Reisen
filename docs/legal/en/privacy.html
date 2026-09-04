@@ -102,7 +102,8 @@
       <ul>
         <li>Sign-in on third-party websites in a <strong>WKWebView</strong> with your own account</li>
         <li>Session cookies remain in the device web view cookie store</li>
-        <li>Optional (opt-in, off by default): email and password after password login in the app <strong>device Keychain</strong> — not for Apple / passkey / OAuth sign-in. These credentials do not leave the device.</li>
+        <li>Optional (opt-in, off by default): email and password after password login in the app Keychain — not for Apple / passkey / OAuth sign-in. Storage and cross-device sync use Apple <strong>iCloud Keychain</strong> when you have iCloud Keychain enabled (behavior change from earlier device-only storage). Session cookies stay device-bound and are not synced.</li>
+        <li>Via CloudKit (private container): which booking portals are enabled and whether first-launch portal setup is completed — without passwords and without usernames.</li>
       </ul>
 
       <h3>Calendar and reminders (optional, opt-in)</h3>
@@ -175,7 +176,7 @@
       <p>You may withdraw consent in app or system settings; processing until withdrawal remains lawful.</p>
 
       <h2>iCloud / CloudKit</h2>
-      <p>Sync uses Apple CloudKit in your iCloud account. Apple processes this data under the <a href="https://www.apple.com/legal/privacy/">Apple Privacy Policy</a>. You can delete local data or wipe iCloud data in the app settings.</p>
+      <p>Sync uses Apple CloudKit in your iCloud account (trips/bookings plus provider enablement and setup status). Opt-in portal passwords sync via iCloud Keychain, not as CloudKit records. Apple processes this data under the <a href="https://www.apple.com/legal/privacy/">Apple Privacy Policy</a>. You can delete local data or wipe iCloud data in the app settings; remove Keychain entries in Keychain / Passwords or by disabling remember-login.</p>
 
       <h2>Silent push notifications (iOS)</h2>
       <p>For CloudKit mirroring, iOS may receive silent background notifications (<code>remote-notification</code>). <strong>No</strong> visible remote push messages are sent to you.</p>
