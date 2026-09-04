@@ -86,13 +86,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Öffnet die Stornoseite beim Anbieter. Storniert die Buchung nicht in Voyenna."
+            "value": "Öffnet die Stornoseite beim Portal. Storniert die Buchung nicht in Voyenna."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Opens the provider’s cancellation page. Does not cancel the booking in Voyenna."
+            "value": "Opens the portal’s cancellation page. Does not cancel the booking in Voyenna."
           }
         }
       }
@@ -1078,13 +1078,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Buchung wird unwiderruflich aus Voyenna entfernt. Nach dem nächsten Portal-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert."
+            "value": "Die Buchung wird unwiderruflich aus Voyenna entfernt. Nach dem nächsten Portal-Sync kann sie wieder erscheinen, wenn sie beim Portal noch existiert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The booking will be permanently removed from Voyenna. After the next portal sync it may reappear if it still exists at the provider."
+            "value": "The booking will be permanently removed from Voyenna. After the next portal sync it may reappear if it still exists at the portal."
           }
         }
       }

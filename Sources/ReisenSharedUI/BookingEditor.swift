@@ -263,6 +263,15 @@ public struct BookingEditorDraft: Equatable, Sendable {
         return Int(trimmed)
     }
 
+    /// Interne Offset-Parameter: gültige Zahlen übernehmen, sonst den bestehenden Wert behalten
+    /// (kein stilles Löschen bei ungültigem Text, nachdem die Felder nicht mehr editierbar sind).
+    public static func preservedInternalOffset(from text: String, existing: Int?) -> Int? {
+        if let parsed = parseIntOrNil(text) {
+            return parsed
+        }
+        return existing
+    }
+
     public static func parseDoubleOrNil(_ text: String) -> Double? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
@@ -408,9 +417,19 @@ public struct BookingEditorDraft: Equatable, Sendable {
         }
         booking.bookingTypeRaw = bookingType.rawValue
         booking.statusRaw = status.rawValue
-        booking.hotelOffsetSeconds = Self.parseIntOrNil(hotelOffsetSecondsText)
-        booking.flightDepartureOffsetSeconds = Self.parseIntOrNil(flightDepartureOffsetSecondsText)
-        booking.flightArrivalOffsetSeconds = Self.parseIntOrNil(flightArrivalOffsetSecondsText)
+        // Zeitzonen-Offsets sind intern: nur gültige Werte übernehmen, sonst Bestand behalten.
+        booking.hotelOffsetSeconds = Self.preservedInternalOffset(
+            from: hotelOffsetSecondsText,
+            existing: booking.hotelOffsetSeconds
+        )
+        booking.flightDepartureOffsetSeconds = Self.preservedInternalOffset(
+            from: flightDepartureOffsetSecondsText,
+            existing: booking.flightDepartureOffsetSeconds
+        )
+        booking.flightArrivalOffsetSeconds = Self.preservedInternalOffset(
+            from: flightArrivalOffsetSecondsText,
+            existing: booking.flightArrivalOffsetSeconds
+        )
         booking.hotelCheckInMinutes = Self.parseIntOrNil(hotelCheckInMinutesText)
         booking.hotelCheckOutMinutes = Self.parseIntOrNil(hotelCheckOutMinutesText)
 
@@ -486,6 +505,9 @@ public struct BookingEditorDraft: Equatable, Sendable {
             booking.rateDetails = nil
         }
 
+        let previousDeadlineOffsets = Dictionary(
+            uniqueKeysWithValues: booking.resolvedCancellationDeadlines.map { ($0.id, $0.hotelOffsetSeconds) }
+        )
         for existing in booking.resolvedCancellationDeadlines {
             modelContext.delete(existing)
         }
@@ -497,7 +519,10 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     policyText: Self.normalizeOptionalString(draft.policyText),
                     isStrict: draft.isStrict,
                     isFreeCancellation: draft.isFreeCancellation,
-                    hotelOffsetSeconds: Self.parseIntOrNil(draft.hotelOffsetSecondsText),
+                    hotelOffsetSeconds: Self.preservedInternalOffset(
+                        from: draft.hotelOffsetSecondsText,
+                        existing: previousDeadlineOffsets[draft.id] ?? nil
+                    ),
                     cancellationFeeAmount: Self.parseDoubleOrNil(draft.cancellationFeeAmountText),
                     booking: booking
                 )

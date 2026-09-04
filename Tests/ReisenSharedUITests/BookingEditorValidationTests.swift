@@ -42,3 +42,10 @@ import ReisenSharedUI
     try draft.validate()
     #expect(BookingEditorDraft.parseIntOrNil(draft.hotelOffsetSecondsText) == nil)
 }
+
+@Test func bookingEditorDraft_preservesInternalOffsetWhenTextMalformed() {
+    #expect(BookingEditorDraft.preservedInternalOffset(from: "7200", existing: 3_600) == 7_200)
+    #expect(BookingEditorDraft.preservedInternalOffset(from: "kein-offset", existing: 7_200) == 7_200)
+    #expect(BookingEditorDraft.preservedInternalOffset(from: "", existing: 7_200) == 7_200)
+    #expect(BookingEditorDraft.preservedInternalOffset(from: "bad", existing: nil) == nil)
+}

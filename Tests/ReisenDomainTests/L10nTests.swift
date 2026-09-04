@@ -64,5 +64,6 @@ import ReisenDomain
         #expect(L10n.string(.bookingDeleteConfirmMessage).contains("Voyenna"))
         #expect(L10n.string(.tabTrips) == "Reisen")
         #expect(!L10n.string(.actionOpenPasswords).localizedCaseInsensitiveContains("Passwords"))
+        #expect(L10n.string(.actionOpenPasswords) == "Passwörter öffnen")
     }
 }

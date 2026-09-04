@@ -1,8 +1,8 @@
 # Design: DE-Copy-Klarheit (Terminologie + Semantik)
 
 **Datum:** 2026-09-04
-**Status:** approved (Ansatz A — Katalog-only, keine Key-Renames)
-**Scope:** Sichtbare DE- (und parallel betroffene EN-) Strings in `Sources/ReisenDomain/Resources/Localizable.xcstrings`. Keine Key-Identifier-Renames. Menü-Aktionslabels aus [menu-action-labels-hig](2026-09-02-menu-action-labels-hig-design.md) bleiben strukturell (Neue Reise / Ellipsis); diese Spec ergänzt Klarheit und Begriffs-SSOT.
+**Status:** approved (Ansatz A — Katalog + Editor-Offset-Entfernung, keine Key-Renames)
+**Scope:** Sichtbare DE- (und parallel betroffene EN-) Strings in `Sources/ReisenDomain/Resources/Localizable.xcstrings`, plus Entfernen der Offset-Eingabefelder im Buchungseditor (`BookingEditor`). Keine Key-Identifier-Renames. Menü-Aktionslabels aus [menu-action-labels-hig](2026-09-02-menu-action-labels-hig-design.md) bleiben strukturell (Neue Reise / Ellipsis); diese Spec ergänzt Klarheit und Begriffs-SSOT.
 
 ## Problem
 
@@ -69,9 +69,9 @@ Nur Keys mit **sichtbarer** Änderung. Wert = neuer DE-String; EN nur wenn Spalt
 
 | Key | DE neu | EN neu |
 | --- | --- | --- |
-| `action.cancel_in_portal_help` | Öffnet die Stornoseite beim Anbieter. Storniert die Buchung nicht in Voyenna. | Opens the provider’s cancellation page. Does not cancel the booking in Voyenna. |
+| `action.cancel_in_portal_help` | Öffnet die Stornoseite beim Portal. Storniert die Buchung nicht in Voyenna. | Opens the portal’s cancellation page. Does not cancel the booking in Voyenna. |
 | `booking.delete_confirm_message` | Die Buchung wird unwiderruflich aus Voyenna entfernt. | The booking will be permanently removed from Voyenna. |
-| `booking.delete_confirm_message_synced` | Die Buchung wird unwiderruflich aus Voyenna entfernt. Nach dem nächsten Portal-Sync kann sie wieder erscheinen, wenn sie beim Anbieter noch existiert. | The booking will be permanently removed from Voyenna. After the next portal sync it may reappear if it still exists at the provider. |
+| `booking.delete_confirm_message_synced` | Die Buchung wird unwiderruflich aus Voyenna entfernt. Nach dem nächsten Portal-Sync kann sie wieder erscheinen, wenn sie beim Portal noch existiert. | The booking will be permanently removed from Voyenna. After the next portal sync it may reappear if it still exists at the portal. |
 | `credential.saved_account_footer` | Passwort-Konto für %1$@ — nach dem Speichern füllt Voyenna die Felder beim nächsten Login automatisch aus. | Password account for %1$@ — after saving, Voyenna autofills the fields on the next login. |
 | `privacy.denial.calendars` | … für „Voyenna“ den Schalter. | … enable Voyenna under … |
 | `privacy.denial.notifications` | … Mitteilungen für „Voyenna“. | … notifications for Voyenna … |
