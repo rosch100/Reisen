@@ -13,7 +13,7 @@ extension ProviderFirstLaunchSetup {
         }
     }
 
-    /// Bestandskunden: vorhandener `providerEnabled_*`-Key → `setupCompleted` (kein Sheet).
+    /// Bestandskunden: mindestens ein Portal explizit aktiv → `setupCompleted` (kein Sheet).
     /// - Returns: `true`, wenn completed in diesem Aufruf gesetzt wurde.
     @discardableResult
     public static func bootstrapCompletedIfExistingProviders(
@@ -22,10 +22,10 @@ extension ProviderFirstLaunchSetup {
     ) -> Bool {
         guard !defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted) else { return false }
 
-        let hasExistingProviderKey = syncProviderIDs.contains { providerID in
-            defaults.object(forKey: AppSettingsKeys.providerEnabledKey(for: providerID)) != nil
+        let hasEnabledProvider = syncProviderIDs.contains { providerID in
+            AppSettingsKeys.isProviderEnabled(providerID, defaults: defaults)
         }
-        guard hasExistingProviderKey else { return false }
+        guard hasEnabledProvider else { return false }
 
         markCompleted(defaults: defaults)
         return true

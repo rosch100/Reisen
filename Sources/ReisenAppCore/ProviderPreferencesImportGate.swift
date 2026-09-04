@@ -37,6 +37,12 @@ public enum ProviderPreferencesImportGate {
         if shouldSkipCloudKitWait {
             do {
                 let snap = try applyImport(from: context, into: defaults)
+                if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                    context: context,
+                    defaults: defaults
+                ) {
+                    return nil
+                }
                 recordPrefsImport(
                     result: .succeeded,
                     reason: snap == nil ? "gate_immediate_empty" : "gate_immediate"
@@ -51,6 +57,12 @@ public enum ProviderPreferencesImportGate {
         do {
             if let existing = try applyImport(from: context, into: defaults),
                existing.setupCompleted {
+                if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                    context: context,
+                    defaults: defaults
+                ) {
+                    return nil
+                }
                 recordPrefsImport(result: .succeeded, reason: "gate_already_present")
                 return existing
             }
@@ -63,6 +75,12 @@ public enum ProviderPreferencesImportGate {
 
         do {
             let snap = try applyImport(from: context, into: defaults)
+            if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                context: context,
+                defaults: defaults
+            ) {
+                return nil
+            }
             if snap == nil {
                 recordPrefsImport(result: .timedOut, reason: "gate_timeout_empty")
             } else {
@@ -114,12 +132,15 @@ public enum ProviderPreferencesImportGate {
         guard !isApplyingRemote else { return nil }
         do {
             let before = ProviderPreferencesSnapshot.read(from: defaults)
-            guard let snap = try applyImport(from: context, into: defaults) else {
+            let snap = try applyImport(from: context, into: defaults)
+            if clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+                context: context,
+                defaults: defaults
+            ) {
                 return nil
             }
-            guard snap != before else {
-                return nil
-            }
+            guard let snap else { return nil }
+            guard snap != before else { return nil }
             return snap
         } catch {
             recordPrefsImport(result: .failed, reason: "remote_apply_import_failed")
@@ -149,6 +170,39 @@ public enum ProviderPreferencesImportGate {
         isApplyingRemote = true
         defer { isApplyingRemote = false }
         return try ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+    }
+
+    /// Nach lokalem False-Positive-Repair: Import darf den Mirror-Poison nicht dauerhaft zurückschreiben.
+    /// - Returns: `true`, wenn Mirror bereinigt wurde (Caller soll Snapshot verwerfen).
+    @discardableResult
+    private static func clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
+        context: ModelContext,
+        defaults: UserDefaults
+    ) -> Bool {
+        let needsExport = defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+        let reinfectedAfterRepair =
+            defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey)
+            && ProviderEnabledDefaultsMigration.isFalsePositiveAllOn(defaults: defaults)
+
+        guard needsExport || reinfectedAfterRepair else {
+            return false
+        }
+
+        ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(defaults: defaults)
+        do {
+            try ProviderPreferencesMirror.deleteAll(in: context)
+            defaults.set(false, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+            recordPrefsImport(
+                result: .succeeded,
+                reason: needsExport
+                    ? "false_positive_mirror_cleared"
+                    : "false_positive_mirror_reinfection_cleared"
+            )
+            return true
+        } catch {
+            recordPrefsImport(result: .failed, reason: "false_positive_mirror_clear_failed")
+            return true
+        }
     }
 
     private static func recordPrefsImport(result: DiagnosticResult, reason: String) {

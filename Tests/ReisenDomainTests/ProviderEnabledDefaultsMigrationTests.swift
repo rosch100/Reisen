@@ -45,7 +45,7 @@ import ReisenDomain
     #expect(defaults.object(forKey: AppSettingsKeys.providerEnabledKey(for: .check24)) == nil)
 }
 
-@Test func providerEnabledDefaultsMigration_configuredAccountMaterializesFormerDefaultTrue() {
+@Test func providerEnabledDefaultsMigration_configuredAccountEnablesOnlyThatProvider() {
     let suiteName = "reisen.tests.providerEnabled.migration.configuredAccount.\(UUID().uuidString)"
     guard let defaults = UserDefaults(suiteName: suiteName) else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")
@@ -53,7 +53,7 @@ import ReisenDomain
     }
     defer { defaults.removePersistentDomain(forName: suiteName) }
 
-    // Bestandskunde: mind. ein Provider-Konto gewählt (Host\u{1F}Username).
+    // Bestandskunde: nur Portale mit Preferred-Konto materialisieren — kein All-On.
     defaults.set(
         "check24.de\u{1F}user@example.com",
         forKey: AppSettingsKeys.preferredKeychainAccountKey(for: .check24)
@@ -66,8 +66,8 @@ import ReisenDomain
 
     #expect(didMigrate)
     #expect(AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
-    #expect(AppSettingsKeys.isProviderEnabled(.opodo, defaults: defaults))
-    #expect(defaults.bool(forKey: AppSettingsKeys.providerEnabledKey(for: .check24)))
+    #expect(!AppSettingsKeys.isProviderEnabled(.opodo, defaults: defaults))
+    #expect(defaults.object(forKey: AppSettingsKeys.providerEnabledKey(for: .opodo)) == nil)
 }
 
 @Test func providerEnabledDefaultsMigration_preservesExplicitFalseOnUpgrade() {
@@ -126,6 +126,7 @@ import ReisenDomain
     }
     defaults.set("", forKey: AppSettingsKeys.preferredKeychainAccountKey(for: .check24))
     ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+    ProviderFirstLaunchSetup.markDeferred(defaults: defaults)
 
     let didRepair = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
         syncProviderIDs: syncIDs,
@@ -134,6 +135,7 @@ import ReisenDomain
 
     #expect(didRepair)
     #expect(defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey))
+    #expect(defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
     for providerID in syncIDs {
         #expect(!AppSettingsKeys.isProviderEnabled(providerID, defaults: defaults))
         #expect(defaults.object(forKey: AppSettingsKeys.providerEnabledKey(for: providerID)) == nil)
@@ -141,7 +143,76 @@ import ReisenDomain
     #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
 }
 
-@Test func providerEnabledDefaultsMigration_repairSkipsWhenPreferredAccountConfigured() {
+@Test func providerEnabledDefaultsMigration_repairsAllOnWithPartialPreferredAccounts() {
+    let suiteName = "reisen.tests.providerEnabled.migration.repairPartial.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suiteName) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    let syncIDs: [ProviderID] = [.check24, .opodo, .booking]
+    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.migratedKey)
+    for providerID in syncIDs {
+        defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: providerID))
+    }
+    defaults.set(
+        "check24.de\u{1F}user@example.com",
+        forKey: AppSettingsKeys.preferredKeychainAccountKey(for: .check24)
+    )
+    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+
+    let didRepair = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
+        syncProviderIDs: syncIDs,
+        defaults: defaults
+    )
+
+    #expect(didRepair)
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    for providerID in syncIDs {
+        #expect(!AppSettingsKeys.isProviderEnabled(providerID, defaults: defaults))
+    }
+}
+
+@Test func providerEnabledDefaultsMigration_repairNoOpDoesNotConsumeRepairKey() {
+    let suiteName = "reisen.tests.providerEnabled.migration.repairNoOp.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suiteName) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.migratedKey)
+
+    let didRepair = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
+        syncProviderIDs: [.check24, .opodo],
+        defaults: defaults
+    )
+
+    #expect(!didRepair)
+    #expect(!defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey))
+    #expect(!defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
+}
+
+@Test func providerEnabledDefaultsMigration_semanticsV3ResetsStaleRepairKey() {
+    let suiteName = "reisen.tests.providerEnabled.migration.semanticsV3.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suiteName) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey)
+    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+
+    #expect(ProviderEnabledDefaultsMigration.migrateFalsePositiveRepairSemanticsV3IfNeeded(defaults: defaults))
+    #expect(defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairSemanticsV3Key))
+    #expect(!defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey))
+    #expect(!defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
+    #expect(!ProviderEnabledDefaultsMigration.migrateFalsePositiveRepairSemanticsV3IfNeeded(defaults: defaults))
+}
+
+@Test func providerEnabledDefaultsMigration_repairSkipsWhenEveryProviderHasPreferredAccount() {
     let suiteName = "reisen.tests.providerEnabled.migration.repairSkip.\(UUID().uuidString)"
     guard let defaults = UserDefaults(suiteName: suiteName) else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")
@@ -155,6 +226,10 @@ import ReisenDomain
     defaults.set(
         "check24.de\u{1F}user@example.com",
         forKey: AppSettingsKeys.preferredKeychainAccountKey(for: .check24)
+    )
+    defaults.set(
+        "opodo.de\u{1F}user@example.com",
+        forKey: AppSettingsKeys.preferredKeychainAccountKey(for: .opodo)
     )
 
     let didRepair = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(

@@ -166,6 +166,9 @@ public final class AppBootstrap {
         let defaults = AppSettingsDefaults.current
         let wasExistingInstall = ProviderEnabledDefaultsMigration.looksLikeExistingInstall(defaults: defaults)
         let didMigrate = ProviderEnabledDefaultsMigration.migrateIfNeeded(defaults: defaults)
+        _ = ProviderEnabledDefaultsMigration.migrateFalsePositiveRepairSemanticsV3IfNeeded(
+            defaults: defaults
+        )
         let didRepairFalsePositive = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
             defaults: defaults
         )
@@ -207,7 +210,7 @@ public final class AppBootstrap {
                         phase: "settings",
                         event: "provider_enabled_false_positive_repaired",
                         result: .succeeded,
-                        reason: "all_on_without_configured_account"
+                        reason: "all_on_incomplete_preferred_accounts"
                     )
                 )
             }

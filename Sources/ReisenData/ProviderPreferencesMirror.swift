@@ -65,6 +65,16 @@ public enum ProviderPreferencesMirror {
         return try context.fetch(all).first
     }
 
+    /// Entfernt alle Prefs-Records (False-Positive-Poison / Mirror-Bereinigung nach lokalem Repair).
+    public static func deleteAll(in context: ModelContext) throws {
+        let all = try context.fetch(FetchDescriptor<SDProviderPreferences>())
+        guard !all.isEmpty else { return }
+        for row in all {
+            context.delete(row)
+        }
+        try context.save()
+    }
+
     private static func upsertSingleton(in context: ModelContext) throws -> SDProviderPreferences {
         if let existing = try fetchCanonical(in: context) {
             existing.id = ProviderPreferencesRecordID.singleton
