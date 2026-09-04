@@ -52,6 +52,26 @@ import ReisenDomain
     #expect(SyncBrowserChrome.prefersSideBySideLoginChrome(availableWidth: 900))
 }
 
+/// Regression #145: Arrangement nur über gemessene Breite (kein ViewThatFits+minWidth-Hack).
+@Test func syncBrowserChrome_loginChromeArrangementFollowsMeasuredWidth() {
+    #expect(
+        SyncBrowserChrome.loginChromeArrangement(availableWidth: 320) == .stacked
+    )
+    #expect(
+        SyncBrowserChrome.loginChromeArrangement(
+            availableWidth: SyncBrowserChrome.sideBySideMinimumWidth - 1
+        ) == .stacked
+    )
+    #expect(
+        SyncBrowserChrome.loginChromeArrangement(
+            availableWidth: SyncBrowserChrome.sideBySideMinimumWidth
+        ) == .sideBySide
+    )
+    #expect(
+        SyncBrowserChrome.loginChromeArrangement(availableWidth: 900) == .sideBySide
+    )
+}
+
 @Test func syncBrowserChrome_showsFillCredentialsOnlyWhenAccountsExist() {
     #expect(!SyncBrowserChrome.showsFillCredentialsControl(accountCount: 0))
     #expect(SyncBrowserChrome.showsFillCredentialsControl(accountCount: 1))

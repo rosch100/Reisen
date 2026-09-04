@@ -1,5 +1,11 @@
 import Foundation
 
+/// Anordnung der Login-Chrome-Spalten (Status vs. Credential-CTAs).
+public enum SyncLoginChromeArrangement: Equatable, Sendable {
+    case sideBySide
+    case stacked
+}
+
 /// Regeln für Provider-Sync-Browser-Chrome (macOS + iOS): Placement und progressive Login-UI.
 public enum SyncBrowserChrome: Sendable {
     /// Ab dieser Chrome-Breite liegen Status/Guidance und Credential-CTAs nebeneinander.
@@ -31,6 +37,11 @@ public enum SyncBrowserChrome: Sendable {
     /// Breite genug für Side-by-Side von Status und Anmelde-CTAs (macOS / iPad regular).
     public static func prefersSideBySideLoginChrome(availableWidth: Double) -> Bool {
         availableWidth >= sideBySideMinimumWidth
+    }
+
+    /// SSOT für Adaptive Login-Chrome: nur gemessene Breite, kein ViewThatFits+minWidth-Hack.
+    public static func loginChromeArrangement(availableWidth: Double) -> SyncLoginChromeArrangement {
+        prefersSideBySideLoginChrome(availableWidth: availableWidth) ? .sideBySide : .stacked
     }
 
     /// „Ausfüllen“ nur wenn mindestens ein Keychain-Konto da ist (leer → Speichern/Hilfe).
