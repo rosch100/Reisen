@@ -53,7 +53,7 @@ struct SyncView: View {
     init(providerID: ProviderID) {
         self.providerID = providerID
         self._isProviderEnabled = AppStorage(
-            wrappedValue: true,
+            wrappedValue: false,
             AppSettingsKeys.providerEnabledKey(for: providerID)
         )
         self._preferredKeychainAccountID = AppStorage(
@@ -141,6 +141,21 @@ struct SyncView: View {
         )
     }
 
+    private var isSessionReady: Bool {
+        sessionStatus == .sessionReady
+    }
+
+    private var browserExpanded: Bool {
+        SyncBrowserChrome.isBrowserExpanded(
+            isSessionReady: isSessionReady,
+            userExpanded: isBrowserExpanded
+        )
+    }
+
+    private var showsBrowserCollapseControl: Bool {
+        SyncBrowserChrome.showsCollapseControl(isSessionReady: isSessionReady)
+    }
+
     var body: some View {
         Group {
             if !isProviderEnabled {
@@ -160,6 +175,10 @@ struct SyncView: View {
                 VStack(spacing: 0) {
                     sessionBanner
                     Divider()
+                    if isSessionReady {
+                        actionBar
+                        Divider()
+                    }
                     ProviderSessionView(
                         providerID: providerID,
                         loginURL: providerLoginURL,
@@ -182,18 +201,19 @@ struct SyncView: View {
                     )
                     .frame(
                         maxWidth: .infinity,
-                        // Wenn Browser nicht benötigt wird, soll er im Layout kollabieren.
-                        minHeight: isBrowserExpanded ? 120 : 0,
-                        maxHeight: isBrowserExpanded ? .infinity : 0,
+                        minHeight: browserExpanded ? 120 : 0,
+                        maxHeight: browserExpanded ? .infinity : 0,
                         alignment: .top
                     )
-                    .opacity(isBrowserExpanded ? 1 : 0)
-                    .allowsHitTesting(isBrowserExpanded)
-                    .accessibilityHidden(!isBrowserExpanded)
+                    .opacity(browserExpanded ? 1 : 0)
+                    .allowsHitTesting(browserExpanded)
+                    .accessibilityHidden(!browserExpanded)
                     .clipped()
 
-                    Divider()
-                    actionBar
+                    if !isSessionReady {
+                        Divider()
+                        actionBar
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -215,8 +235,7 @@ struct SyncView: View {
         .onAppear {
             if UITestingLaunch.isActive { return }
             restoreSessionFromHub()
-            // Browser nur bei Login-Bedarf; sonst Sync-UI ohne Webseite.
-            isBrowserExpanded = (sessionStatus == .needsLogin)
+            isBrowserExpanded = false
             validateProviderAvailability()
             if sessionStatus == .needsLogin {
                 scheduleKeychainReloadIfLoginStillRequired()
@@ -249,7 +268,7 @@ struct SyncView: View {
             sessionHub?.updateStatus(providerID, status: newValue)
             switch newValue {
             case .needsLogin:
-                isBrowserExpanded = true
+                isBrowserExpanded = false
                 scheduleKeychainReloadIfLoginStillRequired()
             case .sessionReady:
                 isBrowserExpanded = false
@@ -383,7 +402,7 @@ struct SyncView: View {
                 }
                 .labelsHidden()
                 .frame(maxWidth: 260)
-                .controlSize(.small)
+                .controlSize(.regular)
             } else if let selectedKeychainAccount {
                 Text(selectedKeychainAccount.username)
                     .font(.caption)
@@ -398,7 +417,7 @@ struct SyncView: View {
                 Label(L10n.string(.actionFillCredentials), systemImage: "key.fill")
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+            .controlSize(.regular)
             .disabled(!canInsertKeychainCredentials)
             .help(
                 canInsertKeychainCredentials
@@ -412,7 +431,7 @@ struct SyncView: View {
                 Label(L10n.string(.actionRememberLogin), systemImage: "plus")
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+            .controlSize(.regular)
             .disabled(keychainServerHost == nil)
             .help(L10n.string(.syncRememberLoginHelp))
         }
@@ -492,7 +511,7 @@ struct SyncView: View {
                             Label(L10n.string(.actionRememberLogin), systemImage: "plus")
                         }
                         .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+                        .controlSize(.regular)
                         .disabled(keychainServerHost == nil)
 
                         Button {
@@ -503,7 +522,7 @@ struct SyncView: View {
                             Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .controlSize(.regular)
 
                         Button {
                             if !MacSystemApps.openKeychainAccess() {
@@ -513,47 +532,59 @@ struct SyncView: View {
                             Label(L10n.string(.actionOpenKeychain), systemImage: "arrow.up.forward.app")
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .controlSize(.regular)
                     }
                 }
             }
 
-            HStack {
-                Text(L10n.string(.syncAfterLoginHint))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button {
-                    isBrowserExpanded.toggle()
-                } label: {
-                    Label(
-                        isBrowserExpanded ? L10n.string(.syncBrowserHide) : L10n.string(.syncBrowserShow),
-                        systemImage: isBrowserExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical"
-                    )
+            HStack(alignment: .center, spacing: 12) {
+                if !isSessionReady {
+                    Text(L10n.string(.syncAfterLoginHint))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                } else {
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help(isBrowserExpanded
-                    ? L10n.string(.syncBrowserHideHelp)
-                    : L10n.string(.syncBrowserShowHelp))
 
-                Button {
-                    Task { await runSync() }
-                } label: {
-                    if store?.isSyncing == true {
-                        ProgressView()
-                            .controlSize(.small)
-                            .padding(.horizontal, 8)
-                    } else {
-                        Text(L10n.string(.actionSyncNow))
+                if showsBrowserCollapseControl {
+                    Button {
+                        isBrowserExpanded.toggle()
+                    } label: {
+                        Label(
+                            browserExpanded ? L10n.string(.syncBrowserHide) : L10n.string(.syncBrowserShow),
+                            systemImage: browserExpanded
+                                ? "rectangle.compress.vertical"
+                                : "rectangle.expand.vertical"
+                        )
                     }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .accessibilityIdentifier(UITestingIdentifiers.syncBrowserCollapse)
+                    .help(browserExpanded
+                        ? L10n.string(.syncBrowserHideHelp)
+                        : L10n.string(.syncBrowserShowHelp))
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(!canStartSync)
-                .help(canStartSync
-                    ? L10n.string(.syncSyncNowHelp)
-                    : L10n.string(.syncUnavailableHelp))
+
+                if isSessionReady {
+                    Button {
+                        Task { await runSync() }
+                    } label: {
+                        if store?.isSyncing == true {
+                            ProgressView()
+                                .controlSize(.small)
+                                .padding(.horizontal, 8)
+                        } else {
+                            Text(L10n.string(.actionSyncNow))
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                    .disabled(!canStartSync)
+                    .help(canStartSync
+                        ? L10n.string(.syncSyncNowHelp)
+                        : L10n.string(.syncUnavailableHelp))
+                }
             }
         }
         .padding(16)

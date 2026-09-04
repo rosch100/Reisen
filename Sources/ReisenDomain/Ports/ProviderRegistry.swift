@@ -25,7 +25,7 @@ public struct ProviderRegistry {
         providers.map(\.id)
     }
 
-    public func enabledSyncProviderIDs(defaults: UserDefaults = .standard) -> [ProviderID] {
+    public func enabledSyncProviderIDs(defaults: UserDefaults = AppSettingsDefaults.current) -> [ProviderID] {
         syncProviderIDs.filter { AppSettingsKeys.isProviderEnabled($0, defaults: defaults) }
     }
 
@@ -33,7 +33,7 @@ public struct ProviderRegistry {
         deepLinkBuilders.map(\.providerID)
     }
 
-    public func enabledGapSearchProviderIDs(defaults: UserDefaults = .standard) -> [ProviderID] {
+    public func enabledGapSearchProviderIDs(defaults: UserDefaults = AppSettingsDefaults.current) -> [ProviderID] {
         let enabled = Set(enabledSyncProviderIDs(defaults: defaults))
         return gapSearchProviderIDs.filter { enabled.contains($0) }
     }
