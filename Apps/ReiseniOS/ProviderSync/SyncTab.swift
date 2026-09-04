@@ -397,6 +397,7 @@ struct SyncTab: View {
         .padding(.horizontal, 16)
         .padding(.vertical, isKeyboardVisible ? 6 : 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
         .background(.bar)
     }
 
