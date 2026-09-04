@@ -18,7 +18,7 @@
 | ReisenTraveloka | Domain, Providers, WebKit | Traveloka Sync |
 | ReisenBilligerMietwagen | Domain, Providers, WebKit | billiger-mietwagen.de Sync |
 | ReisenProviderSync | Domain, Providers, Anbieter-Module | Produktions-Registry (`ProviderSyncBootstrap`) |
-| ReisenPasteImport | Domain, SharedUI (Flow) | On-device Paste-Import von Bestätigungen |
+| ReisenPasteImport | Domain, AppCore | On-device Paste-Import von Bestätigungen |
 | Reisen | alle | macOS Composition Root + UI |
 | ReiseniOS | alle | Universal iOS/iPadOS App |
 
