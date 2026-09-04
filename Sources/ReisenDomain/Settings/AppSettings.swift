@@ -1,11 +1,11 @@
 import Foundation
 
 extension Notification.Name {
-    /// Provider-Aktivierung in den Einstellungen geändert.
+    /// Provider-Aktivierung geändert (Einstellungen, Sidebar, Selektion, Auto-Enable).
     public static let providerEnabledDidChange = Notification.Name("reisen_providerEnabledDidChange")
 }
 
-/// SSOT für Provider-Aktivierungsänderungen (Toggle, Auto-Enable).
+/// SSOT für Provider-Aktivierungsänderungen (Toggle, Selektion, Auto-Enable).
 public enum ProviderEnabledChange {
     public static func notify() {
         NotificationCenter.default.post(name: .providerEnabledDidChange, object: nil)

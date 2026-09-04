@@ -520,6 +520,13 @@ final class MacUISmokeTests: XCTestCase {
         )
     }
 
+    func testSelectingDisabledProviderActivatesSyncChrome() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.activateDisabledProviderViaSidebarSelection("booking")
+        _ = ui.waitForSyncLoginChrome()
+    }
+
     func testPasteImportFixturePersistsBooking() {
         let ui = MacUI.launchPasteImportFixture()
         ui.waitForWindow()

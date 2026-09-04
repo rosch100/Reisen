@@ -172,7 +172,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
             if let providerID = note.object as? ProviderID {
-                selection = .providerSync(providerID)
+                activateProviderFromMainView(providerID, forceEnable: true)
             } else {
                 selectFirstEnabledProviderSyncIfAvailable()
             }
@@ -737,6 +737,42 @@ struct ContentView: View {
 
     private func selectFirstEnabledProviderSyncIfAvailable() {
         guard let providerID = enabledProviderIDs.first else { return }
+        selection = .providerSync(providerID)
+    }
+
+    /// Selektion in der Hauptansicht: Provider für Login/Sync aktivieren und anzeigen.
+    /// - Parameter forceEnable: `true` für explizite Aktionen (z. B. „Sync öffnen“), auch wenn
+    ///   derselbe Provider schon selektiert ist. List-Selektion lässt `false`, damit ein Toggle-Aus
+    ///   nicht durch denselben Klick sofort wieder enabelt wird.
+    private func activateProviderFromMainView(_ providerID: ProviderID, forceEnable: Bool = false) {
+        let alreadyShowingThisProvider: Bool = {
+            if case .providerSync(let selected) = selection {
+                return selected == providerID
+            }
+            return false
+        }()
+
+        if forceEnable || !alreadyShowingThisProvider {
+            let didEnable = ProviderEnablement.ensureEnabled(providerID)
+            if didEnable {
+                Task {
+                    await DiagnosticLogger.shared.record(
+                        DiagnosticEvent(
+                            context: DiagnosticContext(
+                                runID: UUID(),
+                                providerID: providerID,
+                                operation: forceEnable ? "main_view_open_sync" : "main_view_selection"
+                            ),
+                            component: "ProviderEnablement",
+                            phase: "enable",
+                            event: "ensured_enabled",
+                            result: .succeeded,
+                            reason: forceEnable ? "main_view_open_sync" : "main_view_selection"
+                        )
+                    )
+                }
+            }
+        }
         selection = .providerSync(providerID)
     }
 
@@ -1805,7 +1841,7 @@ struct ContentView: View {
 
     private func applySidebarListResult(_ result: SidebarListApplyResult) {
         if let providerID = result.providerID {
-            selection = .providerSync(providerID)
+            activateProviderFromMainView(providerID)
             return
         }
         if let mailbox = result.mailbox {
