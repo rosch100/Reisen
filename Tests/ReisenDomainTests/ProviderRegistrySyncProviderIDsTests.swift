@@ -49,6 +49,7 @@ private struct FakeTravelProvider: TravelProvider {
         FakeTravelProvider(id: .getYourGuide, displayName: "GetYourGuide"),
     ])
 
+    defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: .check24))
     defaults.set(false, forKey: AppSettingsKeys.providerEnabledKey(for: .getYourGuide))
 
     #expect(registry.enabledSyncProviderIDs(defaults: defaults) == [.check24])

@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import ReisenAppCore
+import ReisenDomain
 
 @Test func uiTestingLaunch_detectsPopulatedAndEmptyFlags() {
     #expect(UITestingLaunch.argument == "-UITesting")
@@ -38,4 +39,27 @@ import ReisenAppCore
     defaults.set(true, forKey: "probe")
     let wiped = UITestingLaunch.makeIsolatedDefaults(suiteName: suite)
     #expect(wiped.object(forKey: "probe") == nil)
+}
+
+@Test func uiTestingLaunch_seedProviderEnablementOnlyForPopulated() {
+    let suite = "ReisenTests.uiTesting.providerEnable.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suite) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    UITestingLaunch.seedProviderEnablementIfNeeded(
+        mode: .empty,
+        defaults: defaults,
+        syncProviderIDs: [.check24]
+    )
+    #expect(!AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
+
+    UITestingLaunch.seedProviderEnablementIfNeeded(
+        mode: .populated,
+        defaults: defaults,
+        syncProviderIDs: [.check24]
+    )
+    #expect(AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
 }

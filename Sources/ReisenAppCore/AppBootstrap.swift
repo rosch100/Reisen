@@ -1,6 +1,8 @@
+import Foundation
 import Observation
 import SwiftData
 import ReisenData
+import ReisenDiagnostics
 import ReisenDomain
 
 /// Plattformneutraler App- und Store-Bootstrap.
@@ -138,6 +140,7 @@ public final class AppBootstrap {
         registry: ProviderRegistry = .empty,
         uiTesting: UITestingMode = .fromProcess
     ) throws -> State {
+        applyProviderEnabledDefaultsMigration(uiTesting: uiTesting)
         let container: ModelContainer
         if uiTesting.skipsSideEffects {
             container = try PersistenceBootstrap.makeInMemoryContainer()
@@ -150,5 +153,39 @@ public final class AppBootstrap {
         let syncStore = SyncStore(modelContext: container.mainContext, registry: registry)
         let sessionHub = ProviderSessionHub()
         return .ready(container, registry, syncStore, sessionHub)
+    }
+
+    /// Frischinstall: Provider opt-in. Upgrade: frühere implizite Aktivierung materialisieren.
+    /// Populated-UITesting: Portale explizit an, damit Sync-Chrome/Cmd-1 erreichbar bleibt.
+    private static func applyProviderEnabledDefaultsMigration(uiTesting: UITestingMode) {
+        if uiTesting.skipsSideEffects {
+            AppSettingsDefaults.installOverride(UITestingLaunch.isolatedDefaults)
+        } else {
+            AppSettingsDefaults.installOverride(nil)
+        }
+        let defaults = AppSettingsDefaults.current
+        let wasExistingInstall = ProviderEnabledDefaultsMigration.looksLikeExistingInstall(defaults: defaults)
+        let didMigrate = ProviderEnabledDefaultsMigration.migrateIfNeeded(defaults: defaults)
+        UITestingLaunch.seedProviderEnablementIfNeeded(mode: uiTesting, defaults: defaults)
+        guard didMigrate, !uiTesting.skipsSideEffects else { return }
+        let runID = UUID()
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: runID,
+                        providerID: .manual,
+                        operation: "provider_enabled_defaults_migration"
+                    ),
+                    component: "AppBootstrap",
+                    phase: "settings",
+                    event: "provider_enabled_opt_in_migrated",
+                    result: .succeeded,
+                    reason: wasExistingInstall
+                        ? "existing_install_materialized"
+                        : "fresh_install_opt_in"
+                )
+            )
+        }
     }
 }

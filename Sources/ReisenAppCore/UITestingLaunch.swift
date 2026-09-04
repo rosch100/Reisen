@@ -1,4 +1,5 @@
 import Foundation
+import ReisenDomain
 
 /// Launch-Vertrag für XCUI (`-UITesting` / `-UITestingEmpty`).
 public enum UITestingMode: Equatable, Sendable {
@@ -75,6 +76,18 @@ public enum UITestingLaunch {
         }
         defaults.removePersistentDomain(forName: suiteName)
         return defaults
+    }
+
+    /// Populated-XCUI braucht aktive Portale (Cmd-1 / Sync-Chrome); Empty bleibt opt-in.
+    public static func seedProviderEnablementIfNeeded(
+        mode: UITestingMode,
+        defaults: UserDefaults,
+        syncProviderIDs: [ProviderID] = ProviderID.syncProviderIDs
+    ) {
+        guard mode == .populated else { return }
+        for providerID in syncProviderIDs {
+            defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: providerID))
+        }
     }
 
     @MainActor

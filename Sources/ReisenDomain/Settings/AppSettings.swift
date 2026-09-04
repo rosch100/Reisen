@@ -60,13 +60,13 @@ public struct AppSettingsKeys {
         "\(providerEnabledPrefix)\(providerID.rawValue)"
     }
 
-    /// Default: Provider ist aktiv, solange der User nichts deaktiviert hat.
+    /// Default: Provider opt-in (fehlender Key = aus). Upgrade: `ProviderEnabledDefaultsMigration`.
     public static func isProviderEnabled(
         _ providerID: ProviderID,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = AppSettingsDefaults.current
     ) -> Bool {
         let key = providerEnabledKey(for: providerID)
-        guard defaults.object(forKey: key) != nil else { return true }
+        guard defaults.object(forKey: key) != nil else { return false }
         return defaults.bool(forKey: key)
     }
 

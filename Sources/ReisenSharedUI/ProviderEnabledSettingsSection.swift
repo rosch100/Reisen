@@ -39,7 +39,7 @@ private struct ProviderEnabledToggle: View {
         self.providerID = providerID
         self.displayName = displayName
         self._isEnabled = AppStorage(
-            wrappedValue: true,
+            wrappedValue: false,
             AppSettingsKeys.providerEnabledKey(for: providerID)
         )
     }

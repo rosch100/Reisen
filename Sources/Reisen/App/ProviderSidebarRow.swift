@@ -15,7 +15,7 @@ struct ProviderSidebarRow: View {
     init(providerID: ProviderID) {
         self.providerID = providerID
         self._isEnabled = AppStorage(
-            wrappedValue: true,
+            wrappedValue: false,
             AppSettingsKeys.providerEnabledKey(for: providerID)
         )
     }
