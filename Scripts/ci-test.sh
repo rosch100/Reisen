@@ -172,7 +172,25 @@ fi
 rm -f "$_reisen_private_ipa"
 python3 -m unittest "$ROOT/Scripts/tests/test_ios_validate_appstore_report.py" -v
 python3 -m unittest "$ROOT/Scripts/tests/test_coverage_diff.py" -v
-python3 -m unittest "$ROOT/Scripts/tests/test_install_voyenna_app_icon.py" -v
+# install-voyenna-app-icon.py braucht Pillow; CI-Homebrew-Python oft ohne PIL (PEP 668 → ephemeral venv).
+_reisen_icon_py=python3
+_reisen_icon_venv=""
+if ! python3 -c 'from PIL import Image' >/dev/null 2>&1; then
+  _reisen_icon_venv="$(mktemp -d "${TMPDIR:-/tmp}/reisen-icon-venv.XXXXXX")"
+  python3 -m venv "$_reisen_icon_venv"
+  "$_reisen_icon_venv/bin/pip" install -q -r "$ROOT/Scripts/requirements-icon.txt"
+  _reisen_icon_py="$_reisen_icon_venv/bin/python"
+fi
+set +e
+"$_reisen_icon_py" -m unittest "$ROOT/Scripts/tests/test_install_voyenna_app_icon.py" -v
+_reisen_icon_ec=$?
+set -e
+if [[ -n "$_reisen_icon_venv" ]]; then
+  rm -rf "$_reisen_icon_venv"
+fi
+if [[ "$_reisen_icon_ec" -ne 0 ]]; then
+  exit "$_reisen_icon_ec"
+fi
 if ! grep -q 'reisen_xcodebuild_asc_auth_args' "$ROOT/Scripts/ios-archive-appstore.sh"; then
   echo "Fehler: App-Store-Archive muss xcodebuild mit App-Store-Connect-API-Key authentifizieren." >&2
   exit 1

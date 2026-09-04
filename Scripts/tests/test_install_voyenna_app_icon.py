@@ -27,6 +27,10 @@ class InstallVoyennaAppIconTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_install_module()
 
+    def test_requirements_icon_lists_pillow(self) -> None:
+        text = (ROOT / "Scripts" / "requirements-icon.txt").read_text(encoding="utf-8")
+        self.assertIn("Pillow", text)
+
     def test_web_masked_icon_has_transparent_corners(self) -> None:
         master = Image.new("RGB", (64, 64), (8, 26, 52))
         for y in range(64):
