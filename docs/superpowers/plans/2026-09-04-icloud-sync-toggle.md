@@ -4,7 +4,7 @@
 
 **Goal:** In-App Opt-out-Toggle für CloudKit-Sync (Default an), Live-Reopen des Hybrid-Stores, optional Wipe beim Ausschalten — Spec `docs/superpowers/specs/2026-09-04-icloud-sync-toggle-design.md`.
 
-**Architecture:** Preference in `AppSettingsKeys` (fehlender Key = an). `PersistenceBootstrap.isCloudKitEnabledByEnvironment` und der injizierbare `isCloudKitEnabled(... iCloudSyncPreferenceEnabled:)` multiplizieren Env-Gate × Preference. `AppBootstrap.applyICloudSyncPreference(enabled:wipeCloud:)` öffnet den Container live neu (Reuse Reset-/Wipe-Pfad). SharedUI-Toggle + Confirms; Hosts verdrahten Callback.
+**Architecture:** Preference in `AppSettingsKeys` (fehlender Key = an). `PersistenceBootstrap.isCloudKitEnabled(... iCloudSyncPreferenceEnabled:)` und `isCloudKitEnabledByEnvironment(iCloudSyncPreferenceEnabled:)` multiplizieren Env-Gate × Preference; Preference wird **außerhalb** von ReisenData aufgelöst und injiziert. `AppBootstrap.applyICloudSyncPreference(enabled:wipeCloud:)` öffnet den Container live neu (Reuse Reset-/Wipe-Pfad). SharedUI-Toggle + Confirms; Hosts verdrahten Callback.
 
 **Tech Stack:** Swift / SwiftData / SwiftUI, Swift Testing, macOS XCUI, `DiagnosticLogger`, `AppSettingsDefaults`.
 
@@ -14,7 +14,7 @@
 - Preference **nicht** in CloudKit; lokal only.
 - Default: fehlender Key ⇒ Sync erlaubt (`true`).
 - Env-Hard-Off (`REISEN_CLOUDKIT=0`, CI, Entitlements) bleibt dominant; Toggle dann disabled.
-- Keine stillen Fallbacks; bei Apply-Fail Preference revertieren.
+- Keine stillen Fallbacks; bei Apply-Fail Preference revertieren (außer nach erfolgreichem Cloud-Wipe).
 - Logging + Tests im selben Diff (`reisen-observability-tests`).
 - Identifier-SSOT: `UITestingIdentifiers`; Agents-UI: `bash ./Scripts/macos-ui-test-remote.sh`.
 - Worktree: `/Users/roschmac/Entwicklung/Reisen/.worktrees/feat-icloud-sync-toggle`, Branch `feat/icloud-sync-toggle`.
@@ -24,7 +24,7 @@
 | File | Responsibility |
 | --- | --- |
 | `Sources/ReisenDomain/Settings/AppSettings.swift` | Key + `isICloudSyncEnabled` / `setICloudSyncEnabled` |
-| `Sources/ReisenData/Schema/PersistenceBootstrap+CloudKitEnv.swift` | Preference-Parameter am Gate; ByEnvironment liest Defaults |
+| `Sources/ReisenData/Schema/PersistenceBootstrap+CloudKitEnv.swift` | Preference-Parameter am Gate; kein `AppSettingsKeys`-Read in Data |
 | `Sources/ReisenAppCore/AppBootstrap.swift` | `applyICloudSyncPreference` + Diagnostics |
 | `Sources/ReisenAppCore/GitHubIssues/RuntimeEnvironmentSnapshot.swift` | Effective iCloud an/aus inkl. Preference |
 | `Sources/ReisenSharedUI/SettingsView.swift` | Toggle + Confirms + disabled bei Env-off |
@@ -112,9 +112,9 @@ git commit -m "feat(domain): iCloud sync preference key (default on)"
 - Create: `Tests/ReisenDataTests/CloudKitPreferenceGateTests.swift`
 
 **Interfaces:**
-- Consumes: `AppSettingsKeys.isICloudSyncEnabled`
-- Produces: `isCloudKitEnabled(..., iCloudSyncPreferenceEnabled: Bool)` — wenn Preference `false` ⇒ `false` nach Env-Checks (oder vor Signing, sobald Env nicht schon false); `isCloudKitEnabledByEnvironment` übergibt Preference aus `AppSettingsDefaults.current`
-- Produces: `isCloudKitForcedOffByEnvironment(...)` optional helper für UI-disabled — **oder** UI ruft `isCloudKitEnabled` mit Preference `true` und prüft Env-only. Bevorzugt neuer pure Helper:
+- Consumes: Preference-Bool vom Aufrufer (`AppSettingsKeys.isICloudSyncEnabled` in AppCore/SharedUI/Verification)
+- Produces: `isCloudKitEnabled(..., iCloudSyncPreferenceEnabled: Bool)` — wenn Preference `false` ⇒ `false`; `isCloudKitEnabledByEnvironment(iCloudSyncPreferenceEnabled:)` nimmt denselben Wert (kein Domain-Import in CloudKitEnv)
+- Produces: `isCloudKitAllowedByEnvironmentProcess()` für UI-disabled (Env only)
 
 ```swift
 nonisolated public static func isCloudKitAllowedByEnvironment(
@@ -132,10 +132,12 @@ nonisolated public static func isCloudKitEnabled(
     return isCloudKitAllowedByEnvironment(...)
 }
 
-nonisolated public static func isCloudKitEnabledByEnvironment() -> Bool {
+nonisolated public static func isCloudKitEnabledByEnvironment(
+    iCloudSyncPreferenceEnabled: Bool
+) -> Bool {
     isCloudKitEnabled(
         ...,
-        iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+        iCloudSyncPreferenceEnabled: iCloudSyncPreferenceEnabled
     )
 }
 
@@ -210,13 +212,11 @@ Semantik laut Spec:
 2. Merke `previous = AppSettingsKeys.isICloudSyncEnabled()`
 3. reason: `user_enable` | `user_disable_keep_local` | `user_disable_wipe`
 4. `DiagnosticLogger` `component: "ICloudSyncPreference"`, `phase: "apply"`, `event: apply_started`
-5. `AppSettingsKeys.setICloudSyncEnabled(enabled)`
-6. `stopCloudSideEffectObserverIfReady()`
-7. UITesting `skipsSideEffects`: `activateReadyState()`; success log; return
-8. Wenn `!enabled && wipeCloud`: `wipeCloudThenResetLocal()` (wie Reset) — Preference bleibt false
-9. Wenn `!enabled && !wipeCloud`: **kein** `resetStoreFiles`; `activateReadyState()` (makeContainer liest Preference ⇒ CloudKit off, gleiche Dateien)
-10. Wenn `enabled`: `activateReadyState()`
-11. success log; bei catch: revert Preference auf `previous`, `state = .failed` oder retry-fähiger Fail, `apply_failed`
+5. `stopCloudSideEffectObserverIfReady()`
+6. UITesting `skipsSideEffects`: Preference schreiben + `activateReadyState()`; success log; return
+7. Wenn `!enabled && wipeCloud`: Wipe **zuerst** mit Preference noch an (failed-store Provisional braucht CloudKit); danach Preference `false`, immer `activateReadyState()` lokal-only. Nach erfolgreichem Wipe Preference bei Reopen-Fehler **nicht** revertieren
+8. Wenn Keep-Local / Enable: Preference schreiben, dann `activateReadyState()` (`makeContainer(cloudKitEnabled:)` mit Effective Gate)
+9. success log; bei catch: Preference auf `previous` revertieren **außer** nach erfolgreichem Wipe, `state = .failed`, `apply_failed`
 
 - [ ] **Step 1: Failing unit test** — In-Memory bootstrap: apply false keep-local ändert Preference und bleibt `.ready`; apply true setzt Preference an. (Kein echtes CloudKit.)
 

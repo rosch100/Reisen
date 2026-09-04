@@ -64,10 +64,10 @@ setICloudSyncEnabled(_:defaults:)
 
 ### CloudKit-Gate
 
-`PersistenceBootstrap.isCloudKitEnabled…` (bzw. Aufrufer von `makeContainer`) berücksichtigt Preference:
+`PersistenceBootstrap.isCloudKitEnabledByEnvironment(iCloudSyncPreferenceEnabled:)` (bzw. Aufrufer von `makeContainer(cloudKitEnabled:)`) berücksichtigt Preference — Preference wird außerhalb von ReisenData aus `AppSettingsKeys` gelesen und injiziert:
 
 ```text
-effectiveCloudKit = isCloudKitEnabledByEnvironment(...) && isICloudSyncEnabled(defaults)
+effectiveCloudKit = isCloudKitAllowedByEnvironment(...) && isICloudSyncEnabled(defaults)
 ```
 
 - Env hart aus → Effective aus; Toggle disabled mit Caption.

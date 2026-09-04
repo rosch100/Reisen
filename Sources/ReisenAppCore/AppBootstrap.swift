@@ -113,7 +113,7 @@ public final class AppBootstrap {
                 try activateReadyState()
             } else {
                 AppSettingsKeys.setICloudSyncEnabled(enabled, defaults: defaults)
-                // Keep local store files; makeContainer reads preference for CloudKit on/off.
+                // Keep local store files; makeContainer uses Effective CloudKit (Env × preference).
                 try activateReadyState()
             }
 
@@ -211,7 +211,9 @@ public final class AppBootstrap {
                 "Cloud-Wipe nach Store-Fehler: Container konnte nicht geöffnet werden."
             )
         }
-        await PersistenceBootstrap.awaitCloudKitImportIfNeeded()
+        await PersistenceBootstrap.awaitCloudKitImportIfNeeded(
+            cloudKitEnabled: Self.isEffectiveCloudKitEnabled()
+        )
         try await wipeCloud(from: container.mainContext)
         state = provisional
         startCloudSideEffectObserverIfReady()
@@ -227,12 +229,21 @@ public final class AppBootstrap {
 
     private func wipeCloud(from context: ModelContext) async throws {
         try PersistenceBootstrap.wipeSyncedEntities(in: context, includeLocal: true)
-        await PersistenceBootstrap.awaitCloudKitExportIfNeeded()
+        await PersistenceBootstrap.awaitCloudKitExportIfNeeded(
+            cloudKitEnabled: Self.isEffectiveCloudKitEnabled()
+        )
     }
 
     private func activateReadyState() throws {
         state = try Self.makeReadyState(registry: currentRegistry, uiTesting: uiTesting)
         startCloudSideEffectObserverIfReady()
+    }
+
+    /// Env × `AppSettingsKeys` preference — resolved in AppCore, never inside ReisenData.
+    private static func isEffectiveCloudKitEnabled() -> Bool {
+        PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+            iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+        )
     }
 
     private func startCloudSideEffectObserverIfReady() {
@@ -260,7 +271,9 @@ public final class AppBootstrap {
                 try UITestingSeed.insertPopulated(into: container.mainContext)
             }
         } else {
-            container = try PersistenceBootstrap.makeContainer()
+            container = try PersistenceBootstrap.makeContainer(
+                cloudKitEnabled: isEffectiveCloudKitEnabled()
+            )
         }
         let syncStore = SyncStore(modelContext: container.mainContext, registry: registry)
         let sessionHub = ProviderSessionHub()

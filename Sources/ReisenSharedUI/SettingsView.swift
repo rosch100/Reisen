@@ -508,7 +508,12 @@ public struct SettingsView: View {
     @MainActor
     private func refreshCloudAccountStatus() async {
         cloudAccountStatusError = nil
-        let status = await PersistenceBootstrap.fetchCloudKitAccountStatus()
+        let cloudKitEnabled = PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+            iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+        )
+        let status = await PersistenceBootstrap.fetchCloudKitAccountStatus(
+            cloudKitEnabled: cloudKitEnabled
+        )
         cloudAccountStatus = status
         if status == .couldNotDetermine {
             cloudAccountStatusError = nil

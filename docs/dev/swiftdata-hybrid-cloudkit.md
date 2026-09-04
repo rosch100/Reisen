@@ -9,7 +9,7 @@
 
 CloudKit is disabled when `REISEN_CLOUDKIT=0`, `CI=true`, an XCTest/`swift test` host is detected, the user turns off **iCloud sync** in Settings (`AppSettingsKeys.icloudSyncEnabled`, Opt-out: missing key = on), or (macOS) the process code signature lacks a Team ID, `application-identifier`, the configured iCloud container (`PersistenceBootstrap.cloudKitContainerID`), a CloudKit service entitlement (`CloudKit` or profile wildcard `*`), or a scalar `com.apple.developer.icloud-container-environment` of `Development` or `Production`. A provisioning-profile **array** of both values still aborts CloudKit (`CKException` in `NSCloudKitMirroringDelegate`). `Scripts/build-app.sh` writes the single string `Development`. Opening CloudKit without that aborts the process (`_os_crash` in `CKContainer`). Local `Scripts/run-app.sh` opens `.build/Voyenna.app` by path so Launch Services cannot pick an older ad-hoc copy (e.g. `/tmp`).
 
-Effective CloudKit = Env/Entitlements gate **and** user preference. Changing the preference calls `AppBootstrap.applyICloudSyncPreference` and reopens the hybrid store live (optional Cloud wipe on disable).
+Effective CloudKit = Env/Entitlements gate **and** user preference. Preference is resolved via `AppSettingsKeys` outside ReisenData and passed into `PersistenceBootstrap.isCloudKitEnabledByEnvironment(iCloudSyncPreferenceEnabled:)` / `makeContainer(cloudKitEnabled:)`. Changing the preference calls `AppBootstrap.applyICloudSyncPreference` and reopens the hybrid store live (optional Cloud wipe on disable).
 
 ## Migration plan (intentional empty stages)
 

@@ -64,7 +64,10 @@ import ReisenDomain
 
 @MainActor
 @Test func cloudKitDisabledInTestEnvironment() {
-    #expect(PersistenceBootstrap.isCloudKitEnabledByEnvironment() == false)
+    #expect(
+        PersistenceBootstrap.isCloudKitEnabledByEnvironment(iCloudSyncPreferenceEnabled: true)
+            == false
+    )
 }
 
 @Test func cloudKitRequiresSigningTeamIdentifier() {

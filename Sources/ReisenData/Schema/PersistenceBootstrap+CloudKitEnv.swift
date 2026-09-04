@@ -1,5 +1,4 @@
 import Foundation
-import ReisenDomain
 #if os(macOS)
 import Security
 #endif
@@ -25,8 +24,11 @@ extension PersistenceBootstrap {
         )
     }
 
-    /// Effective CloudKit: Env/Entitlements **and** user preference (Opt-out default on).
-    nonisolated public static func isCloudKitEnabledByEnvironment() -> Bool {
+    /// Effective CloudKit: Env/Entitlements **and** caller-supplied user preference.
+    /// Resolve `AppSettingsKeys.isICloudSyncEnabled()` outside ReisenData and pass it in.
+    nonisolated public static func isCloudKitEnabledByEnvironment(
+        iCloudSyncPreferenceEnabled: Bool
+    ) -> Bool {
         isCloudKitEnabled(
             environment: ProcessInfo.processInfo.environment,
             processName: ProcessInfo.processInfo.processName,
@@ -42,7 +44,7 @@ extension PersistenceBootstrap {
             icloudContainerEnvironment: stringEntitlement(
                 "com.apple.developer.icloud-container-environment"
             ),
-            iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+            iCloudSyncPreferenceEnabled: iCloudSyncPreferenceEnabled
         )
     }
 
