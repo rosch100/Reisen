@@ -3,7 +3,7 @@ import Foundation
 extension Notification.Name {
     /// Liegt, sobald Dateien von außen (Dock, „Öffnen mit“) angeboten wurden.
     public static let pasteImportExternalFilesOffered = Notification.Name(
-        "de.roschmac.Reisen.pasteImportExternalFilesOffered"
+        "app.voyenna.reisen.pasteImportExternalFilesOffered"
     )
 }
 

@@ -11,8 +11,8 @@ if [[ -z "${APPLE_TEAM_ID:-}" ]]; then
 fi
 
 usage() {
-  echo "Usage: $0 --app-path /abs/path/to/Reisen.app" >&2
-  echo "       $0 --dmg-path /abs/path/to/Reisen.dmg" >&2
+  echo "Usage: $0 --app-path /abs/path/to/Voyenna.app" >&2
+  echo "       $0 --dmg-path /abs/path/to/Voyenna.dmg" >&2
 }
 
 APP_PATH=""

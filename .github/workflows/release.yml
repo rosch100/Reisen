@@ -55,7 +55,7 @@ jobs:
         id: version
         run: |
           APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
-          DMG_PATH="$GITHUB_WORKSPACE/.build/Reisen-${APP_VERSION}.dmg"
+          DMG_PATH="$GITHUB_WORKSPACE/.build/Voyenna-${APP_VERSION}.dmg"
           echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
           echo "dmg_path=$DMG_PATH" >> "$GITHUB_OUTPUT"
 
@@ -63,7 +63,7 @@ jobs:
         id: zip_unsigned
         if: env.SIGNING_SECRETS_PRESENT != 'true'
         run: |
-          ZIP_PATH="$GITHUB_WORKSPACE/.build/Reisen-unsigned.zip"
+          ZIP_PATH="$GITHUB_WORKSPACE/.build/Voyenna-unsigned.zip"
           rm -f "$ZIP_PATH"
           mkdir -p "$(dirname "$ZIP_PATH")"
           ditto -c -k --sequesterRsrc --keepParent "${{ steps.build.outputs.app_path }}" "$ZIP_PATH"

@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF' >&2
-Usage: Scripts/create-dmg.sh --app-path /abs/path/to/Reisen.app --dmg-path /abs/path/to/Reisen-0.1.dmg [--volname Reisen]
+Usage: Scripts/create-dmg.sh --app-path /abs/path/to/Voyenna.app --dmg-path /abs/path/to/Voyenna-0.1.dmg [--volname Voyenna]
 
 Creates a macOS-installable DMG (UDZO) following common HIG expectations:
 - Copies the .app into the DMG root
@@ -77,7 +77,7 @@ trap cleanup EXIT
 srcdir="$tmpdir/dmg-src"
 mkdir -p "$srcdir"
 
-app_basename="$(basename "$app_path")" # e.g. Reisen.app
+app_basename="$(basename "$app_path")" # e.g. Voyenna.app
 ditto "$app_path" "$srcdir/$app_basename"
 
 ln -s /Applications "$srcdir/Applications"

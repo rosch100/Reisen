@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Bundle-ID: `de.roschmac.Reisen.ios`
+- Bundle-ID: `app.voyenna.reisen.ios`
 - Default-Simulator: exakt `iPad Pro 13-inch (M5)` via `IOS_SIMULATOR` (kein stiller Fallback)
 - Deployment Target iOS ≥ 17
 - Kein committed `.xcodeproj` / `buildServer.json`
@@ -52,7 +52,7 @@
 
 **Interfaces:**
 - Consumes: bestehende Shared-Targets in `Package.swift`
-- Produces: kein `ReiseniOS`-Product/Target mehr in SPM; Info.plist Keys für Bundle `de.roschmac.Reisen.ios`; Smoke-Test-Datei bereit für Task 2
+- Produces: kein `ReiseniOS`-Product/Target mehr in SPM; Info.plist Keys für Bundle `app.voyenna.reisen.ios`; Smoke-Test-Datei bereit für Task 2
 
 - [ ] **Step 1: Write failing smoke test (pipeline contract)**
 
@@ -216,7 +216,7 @@ targets:
           - "**/*.plist"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios
         PRODUCT_NAME: ReiseniOS
         INFOPLIST_FILE: Apps/ReiseniOS/Info.plist
         GENERATE_INFOPLIST_FILE: false
@@ -245,7 +245,7 @@ targets:
         product: ReisenDomain
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.tests
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios.tests
         GENERATE_INFOPLIST_FILE: true
 
 schemes:
@@ -328,7 +328,7 @@ EOF
 - Create: `Scripts/ios-run.sh`
 
 **Interfaces:**
-- Consumes: `Scripts/generate-ios-project.sh`, env `IOS_SIMULATOR` (default `iPad Pro 13-inch (M5)`), scheme `ReiseniOS`, bundle id `de.roschmac.Reisen.ios`
+- Consumes: `Scripts/generate-ios-project.sh`, env `IOS_SIMULATOR` (default `iPad Pro 13-inch (M5)`), scheme `ReiseniOS`, bundle id `app.voyenna.reisen.ios`
 - Produces: App running on booted simulator; exit 0 only after successful `simctl launch`
 
 - [ ] **Step 1: Create `Scripts/ios-run.sh`**
@@ -343,7 +343,7 @@ cd "$ROOT"
 
 SIMULATOR_NAME="${IOS_SIMULATOR:-iPad Pro 13-inch (M5)}"
 SCHEME="ReiseniOS"
-BUNDLE_ID="de.roschmac.Reisen.ios"
+BUNDLE_ID="app.voyenna.reisen.ios"
 PROJECT="$ROOT/Reisen.xcodeproj"
 DERIVED="$ROOT/DerivedData/ReiseniOS"
 
@@ -397,7 +397,7 @@ Expected: exit 1, lists available devices, does not boot a substitute.
 - [ ] **Step 3: Happy path on default iPad**
 
 Run: `bash ./Scripts/ios-run.sh`  
-Expected: exit 0, line `OK: de.roschmac.Reisen.ios on iPad Pro 13-inch (M5) (...)`, app visible in Simulator.
+Expected: exit 0, line `OK: app.voyenna.reisen.ios on iPad Pro 13-inch (M5) (...)`, app visible in Simulator.
 
 - [ ] **Step 4: Commit**
 
@@ -680,7 +680,7 @@ If Step 4 left a debug comment, revert it before finishing. No empty commit.
 |------------------|------|
 | XcodeGen SSOT `project.yml` | Task 2 |
 | `.xcodeproj` not committed / gitignore | Task 1 + 2 |
-| Bundle ID `de.roschmac.Reisen.ios` | Task 1 plist + Task 2 |
+| Bundle ID `app.voyenna.reisen.ios` | Task 1 plist + Task 2 |
 | Default simulator exact name, no fallback | Task 3 + 4 |
 | Scripts generate/run/test | Tasks 2–4 |
 | Remove SPM `ReiseniOS` executable | Task 1 |

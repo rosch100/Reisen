@@ -150,8 +150,8 @@ public struct AppSettings: Equatable, Sendable {
     public init(
         notificationEnabled: Bool = true,
         eventKitEnabled: Bool = false,
-        calendarTitle: String = "Reisen",
-        reminderCalendarTitle: String = "Reisen",
+        calendarTitle: String = "Voyenna",
+        reminderCalendarTitle: String = "Voyenna",
         leadTimesDaysRaw: String = "7,3,1",
         calendarTitleMode: CalendarTitleMode = .tripTitle,
         calendarTripTimesEnabled: Bool = false,

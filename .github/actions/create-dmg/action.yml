@@ -11,7 +11,7 @@ inputs:
   volname:
     description: Volume-Name im Finder (optional)
     required: false
-    default: Reisen
+    default: Voyenna
 
 runs:
   using: composite

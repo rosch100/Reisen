@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.de.roschmac.Reisen.private.pasteimport</string>
+		<string>group.app.voyenna.reisen.private.pasteimport</string>
 	</array>
 </dict>
 </plist>

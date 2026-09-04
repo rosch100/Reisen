@@ -1,4 +1,4 @@
-# Datenschutzerklärung — Reisen
+# Datenschutzerklärung — Voyenna
 
 Die **kanonische** Datenschutzerklärung liegt als HTML unter [`docs/legal/privacy.html`](privacy.html) (DE) bzw. [`en/privacy.html`](en/privacy.html) (EN).
 

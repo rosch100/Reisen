@@ -46,6 +46,26 @@
       "target": "SyncIOSQuerySchemes",
       "configuration": "release",
       "preLaunchTask": "swift: Build Release SyncIOSQuerySchemes"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Reisen}",
+      "name": "Debug Voyenna",
+      "target": "Voyenna",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug Voyenna"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Reisen}",
+      "name": "Release Voyenna",
+      "target": "Voyenna",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release Voyenna"
     }
   ]
 }

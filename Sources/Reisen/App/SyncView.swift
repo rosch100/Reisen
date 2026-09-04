@@ -19,8 +19,8 @@ struct SyncView: View {
 
     @AppStorage(AppSettingsKeys.notificationEnabled) private var notificationEnabled: Bool = true
     @AppStorage(AppSettingsKeys.eventKitEnabled) private var eventKitEnabled: Bool = false
-    @AppStorage(AppSettingsKeys.calendarTitle) private var calendarTitle: String = "Reisen"
-    @AppStorage(AppSettingsKeys.reminderCalendarTitle) private var reminderCalendarTitle: String = "Reisen"
+    @AppStorage(AppSettingsKeys.calendarTitle) private var calendarTitle: String = "Voyenna"
+    @AppStorage(AppSettingsKeys.reminderCalendarTitle) private var reminderCalendarTitle: String = "Voyenna"
     @AppStorage(AppSettingsKeys.eventCalendarCreateIfMissing) private var eventCalendarCreateIfMissing: Bool = false
     @AppStorage(AppSettingsKeys.reminderCalendarCreateIfMissing) private var reminderCalendarCreateIfMissing: Bool = false
     @AppStorage(AppSettingsKeys.leadTimesDays) private var leadTimesDaysRaw: String = "7,3,1"

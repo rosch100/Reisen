@@ -100,10 +100,9 @@ extension Check24TravelProvider {
     }
 
     func persistActivitiesJSONSnapshot(_ json: String) throws {
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        guard let base = ReisenApplicationSupport.directoryURL() else {
             throw Check24ProviderError.snapshotFailed
         }
-        let base = appSupport.appendingPathComponent("Reisen", isDirectory: true)
         let snapshots = base.appendingPathComponent("snapshots", isDirectory: true)
         try FileManager.default.createDirectory(at: snapshots, withIntermediateDirectories: true)
         let fileName = "activities-\(ISO8601DateFormatter().string(from: Date())).json"

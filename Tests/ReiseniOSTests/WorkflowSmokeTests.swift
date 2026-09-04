@@ -4,6 +4,6 @@ final class WorkflowSmokeTests: XCTestCase {
     func testHostBundleIdentifier() {
         let bundleIdentifier = Bundle.main.bundleIdentifier
         XCTAssertNotNil(bundleIdentifier)
-        XCTAssertTrue(bundleIdentifier?.hasSuffix(".Reisen.ios") == true)
+        XCTAssertEqual(bundleIdentifier, "app.voyenna.reisen.ios")
     }
 }

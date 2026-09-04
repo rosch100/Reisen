@@ -19,7 +19,7 @@ enum PasteImportShareError: LocalizedError {
     }
 }
 
-/// „In Reisen öffnen“: legt das geteilte Material in die App Group und übergibt an die App.
+/// „In Voyenna öffnen“: legt das geteilte Material in die App Group und übergibt an die App.
 ///
 /// Kein SwiftData und kein Modell-Lauf in der Extension — nur Bytes schreiben. Der Lauf startet in
 /// der App, wenn sie `reisen://paste-import` erhält oder die liegende Übergabe beim Aktivieren findet.

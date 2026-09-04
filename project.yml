@@ -1,6 +1,6 @@
 name: Reisen
 options:
-  bundleIdPrefix: de.roschmac
+  bundleIdPrefix: app.voyenna
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
@@ -53,7 +53,7 @@ targets:
       - path: Apps/ReiseniOS/PrivacyInfo.xcprivacy
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios
         PRODUCT_NAME: ReiseniOS
         INFOPLIST_FILE: Apps/ReiseniOS/Info.plist
         GENERATE_INFOPLIST_FILE: false
@@ -89,7 +89,7 @@ targets:
       - path: Apps/ReiseniOSPrivate/PrivacyInfo.xcprivacy
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.private
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios.private
         PRODUCT_NAME: ReiseniOSPrivate
         INFOPLIST_FILE: Apps/ReiseniOSPrivate/Info.plist
         GENERATE_INFOPLIST_FILE: false
@@ -122,7 +122,7 @@ targets:
       - PasteImportShareExtension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.share
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios.share
 
   # Private-App: eigenes Target wegen Bundle-ID, App Group und URL-Scheme.
   ReisenPasteImportSharePrivate:
@@ -130,7 +130,7 @@ targets:
       - PasteImportShareExtension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.private.share
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios.private.share
         CODE_SIGN_ENTITLEMENTS: Apps/ReisenPasteImportShare/ReisenPasteImportSharePrivate.entitlements
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: REISEN_IOS_PRIVATE
 
@@ -145,7 +145,7 @@ targets:
         product: ReisenProviderSync
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.private.tests
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios.private.tests
         GENERATE_INFOPLIST_FILE: true
 
   ReiseniOSTests:
@@ -157,7 +157,7 @@ targets:
       - target: ReiseniOS
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.ios.tests
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.ios.tests
         GENERATE_INFOPLIST_FILE: true
 
   ReisenMac:
@@ -171,8 +171,8 @@ targets:
       - path: Resources/PrivacyInfo.xcprivacy
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen
-        PRODUCT_NAME: Reisen
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen
+        PRODUCT_NAME: Voyenna
         INFOPLIST_FILE: Resources/Info.plist
         GENERATE_INFOPLIST_FILE: false
         CURRENT_PROJECT_VERSION: 4
@@ -215,7 +215,7 @@ targets:
         product: ReisenAppCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.roschmac.Reisen.mac.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: app.voyenna.reisen.mac.uitests
         GENERATE_INFOPLIST_FILE: true
         TEST_TARGET_NAME: ReisenMac
 

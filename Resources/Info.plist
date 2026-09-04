@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>de</string>
 	<key>CFBundleExecutable</key>
-	<string>Reisen</string>
+	<string>Voyenna</string>
 	<key>CFBundleIdentifier</key>
-	<string>de.roschmac.Reisen</string>
+	<string>app.voyenna.reisen</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Reisen</string>
+	<string>Voyenna</string>
 	<key>CFBundleDisplayName</key>
-	<string>Reisen</string>
+	<string>Voyenna</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleDocumentTypes</key>
@@ -56,16 +56,16 @@
 	<key>NSSupportsSuddenTermination</key>
 	<false/>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
+	<string>Voyenna legt Termine für Stornofristen in deinem Kalender an.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Reisen legt Termine für Stornofristen in deinem Kalender an.</string>
+	<string>Voyenna legt Termine für Stornofristen in deinem Kalender an.</string>
 	<key>NSRemindersUsageDescription</key>
-	<string>Reisen legt Erinnerungen in deiner Erinnerungen-App an.</string>
+	<string>Voyenna legt Erinnerungen in deiner Erinnerungen-App an.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Reisen benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
+	<string>Voyenna benötigt vollen Zugriff auf deine Erinnerungen-App, um Erinnerungen für Stornofristen zu erstellen, zu aktualisieren oder zu entfernen.</string>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>Reisen erinnert dich an bevorstehende Stornofristen.</string>
+	<string>Voyenna erinnert dich an bevorstehende Stornofristen.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Reisen. Alle Rechte vorbehalten.</string>
+	<string>Copyright © 2026 Voyenna. Alle Rechte vorbehalten.</string>
 </dict>
 </plist>
