@@ -10,9 +10,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 # SSOT: muss zu project.yml targets.ReiseniOS / ReiseniOSPrivate passen.
-STORE_BUNDLE_ID="de.reisen.Reisen.ios"
+STORE_BUNDLE_ID="de.roschmac.Reisen.ios"
 STORE_APP_NAME="ReiseniOS"
-PRIVATE_BUNDLE_ID="de.reisen.Reisen.ios.private"
+PRIVATE_BUNDLE_ID="de.roschmac.Reisen.ios.private"
 PRIVATE_APP_NAME="ReiseniOSPrivate"
 
 usage() {

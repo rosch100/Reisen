@@ -7,7 +7,7 @@ public enum SyncLog {
     public static let keepBytes = 65_536
     private static let fileAccessLock = NSLock()
     private static let logger = Logger(
-        subsystem: "de.reisen.Reisen",
+        subsystem: "de.roschmac.Reisen",
         category: "sync-log"
     )
 

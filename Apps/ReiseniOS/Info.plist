@@ -43,7 +43,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>de.reisen.Reisen.pasteimport</string>
+			<string>de.roschmac.Reisen.pasteimport</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>reisen</string>

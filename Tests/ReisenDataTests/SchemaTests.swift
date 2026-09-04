@@ -127,7 +127,7 @@ func leftoverCloudKitStoreOpensWithMirroringDisabled() throws {
 private func cloudKitGuardEnabled(
     env: [String: String] = [:],
     team: String? = "TEAMID0000",
-    appID: String? = "TEAMID0000.de.reisen.Reisen",
+    appID: String? = "TEAMID0000.de.roschmac.Reisen",
     containers: [String] = [PersistenceBootstrap.cloudKitContainerID],
     services: [String] = ["CloudKit"],
     containerEnvironment: String? = "Development"

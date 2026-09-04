@@ -1,12 +1,14 @@
 # Private iOS-Distribution (ReiseniOSPrivate)
 
-Die **Private-iOS-App** (`de.reisen.Reisen.ios.private`, Anzeigename „Reisen Sync“) enthält den vollständigen Provider-Abruf. Sie wird **nicht** im App Store gelistet.
+Die **Private-iOS-App** (`de.roschmac.Reisen.ios.private`, Anzeigename „Reisen Sync“) enthält den vollständigen Provider-Abruf. Sie wird **nicht** im App Store gelistet.
 
-Die **App-Store-App** (`de.reisen.Reisen.ios`) enthält keinen Provider-Sync-Code im Binary; Buchungen aus Mac/Private/iCloud erscheinen dort über CloudKit.
+Die **App-Store-App** (`de.roschmac.Reisen.ios`) enthält keinen Provider-Sync-Code im Binary; Buchungen aus Mac/Private/iCloud erscheinen dort über CloudKit.
 
-Beide Apps plus macOS nutzen denselben CloudKit-Container `iCloud.de.reisen.Reisen` (im Developer Portal an **drei** App-IDs binden).
+Beide Apps plus macOS nutzen denselben CloudKit-Container `iCloud.de.roschmac.Reisen` (im Developer Portal an **drei** App-IDs binden).
 
-## Build
+## Builds
+
+Ad Hoc (Geräte-UDID):
 
 ```bash
 bash ./Scripts/ios-archive-adhoc.sh
@@ -16,7 +18,15 @@ Ausgabe: `.build/ReiseniOSPrivate-ipa/*.ipa`
 
 Voraussetzung: Geräte-UDIDs im Developer Portal registriert (Ad-Hoc-Provisioning).
 
-App Store (ohne Provider):
+Internal TestFlight (App-Store-Connect-Export, kein Store-Listing):
+
+```bash
+bash ./Scripts/ios-archive-private-testflight.sh
+```
+
+Ausgabe: `.build/ReiseniOSPrivate-testflight-ipa/*.ipa`
+
+App Store (ohne Provider, separates Target):
 
 ```bash
 bash ./Scripts/ios-archive-appstore.sh
@@ -48,7 +58,43 @@ Ablauf:
 
 **Nicht** External TestFlight oder Public Link verwenden — dann greift Beta App Review (Guideline 5.2.2).
 
-Internal TestFlight-Upload: Release-Build der **Private**-App nach App Store Connect (wie App Store), nur der Gruppe „Internal Testing“ zuweisen — **nie** „External Testing“.
+### Einmalig in App Store Connect
+
+1. Neue iOS-App anlegen (UI, Account Holder/Admin): Bundle-ID `de.roschmac.Reisen.ios.private`, Name z. B. **Reisen Sync**, SKU z. B. `reisen-ios-private`.
+   - Der ASC-API-Key darf Apps typischerweise **nicht** anlegen (`CREATE` auf `apps` ist oft gesperrt) — Anlage nur in [App Store Connect → Meine Apps → +](https://appstoreconnect.apple.com/apps).
+2. **Kein** Store-Listing / keine Review-Einreichung nötig (nur TestFlight Internal).
+3. Unter [Users and Access](https://appstoreconnect.apple.com/access/users) Tester mit Rolle einladen (Admin, App Manager, Developer, Marketing, …).
+4. CloudKit-Container `iCloud.de.roschmac.Reisen` an diese App-ID gebunden (siehe [`apple-signing.md`](apple-signing.md)).
+
+### Release-Ablauf
+
+1. Build-Nummer eindeutig halten (`CURRENT_PROJECT_VERSION` in `project.yml` / `CFBundleVersion`) — jeder ASC-Upload braucht eine neue Build-Nummer für dieselbe Marketing-Version.
+2. IPA erzeugen:
+
+```bash
+IPA="$(bash ./Scripts/ios-archive-private-testflight.sh)"
+echo "$IPA"
+```
+
+3. Hochladen (ASC-API-Key wie Store-Pfad: `APP_STORE_CONNECT_API_KEY_*`):
+
+```bash
+bash ./Scripts/ios-upload-testflight.sh "$IPA"
+```
+
+   Alternativ: Transporter / Xcode Organizer mit demselben IPA.
+
+4. In App Store Connect → App **Reisen Sync** → **TestFlight** → warten bis Status **Ready to Test** (Processing).
+5. **Internal Testing**-Gruppe anlegen oder öffnen → Build zuweisen → Tester hinzufügen.
+6. **Nie** „External Testing“ oder Public Link für diese App.
+
+### Checkliste vor dem Upload
+
+- [ ] ASC-App für `de.roschmac.Reisen.ios.private` existiert
+- [ ] Tester haben ASC-Rollen und TestFlight-App
+- [ ] Neue Build-Nummer, falls dieselbe Version schon hochgeladen wurde
+- [ ] `ios-archive-private-testflight.sh` grün (Private-Isolation geprüft)
+- [ ] Upload nur Internal Testing zugewiesen
 
 ## Was Apple nicht bietet
 

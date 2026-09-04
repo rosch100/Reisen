@@ -1,6 +1,6 @@
 # In-App GitHub-Issues Token
 
-**Produkt-iOS-Archives** (`Scripts/ios-archive-appstore.sh`, `Scripts/ios-archive-adhoc.sh`) betten dasselbe Issues-only-PAT ein wie macOS-Tag-Releases. Feedback in der App legt ein öffentliches Issue an, ohne GitHub-Konto des Nutzers. Ein optional in den Einstellungen hinterlegter GitHub-Benutzername dient nur der **Zuordnung** im Issue-Text (Attribution).
+**Produkt-iOS-Archives** (`Scripts/ios-archive-appstore.sh`, `Scripts/ios-archive-adhoc.sh`, `Scripts/ios-archive-private-testflight.sh`) betten dasselbe Issues-only-PAT ein wie macOS-Tag-Releases. Feedback in der App legt ein öffentliches Issue an, ohne GitHub-Konto des Nutzers. Ein optional in den Einstellungen hinterlegter GitHub-Benutzername dient nur der **Zuordnung** im Issue-Text (Attribution).
 
 Zusätzlich: E-Mail an `reisenapp100@gmail.com` (`GitHubRepository.feedbackEmail`) wird per [gmail-feedback-ingress.md](gmail-feedback-ingress.md) zu einem Issue (`kind/feedback`, `source/email`).
 
@@ -30,6 +30,7 @@ printf '%s' "$PAT" | base64 | tr -d '\n'
 | `Scripts/ios-run.sh` / `ios-run-device.sh` | Ja (lokales Token aus Env, `Secrets/github-issues.token` oder Keychain). |
 | `Scripts/ios-archive-appstore.sh` | Ja (`REISEN_EMBED_GITHUB_ISSUE_TOKEN=true`, `REISEN_REQUIRE_GITHUB_ISSUE_TOKEN=true`). Workflow **App Store Check** reicht `REISEN_GITHUB_ISSUES_TOKEN_BASE64` durch; das IPA wird nicht als Artifact hochgeladen. |
 | `Scripts/ios-archive-adhoc.sh` | Ja (wie Store). |
+| `Scripts/ios-archive-private-testflight.sh` | Ja (wie Store; nur Internal TestFlight, kein Store-Listing). |
 | `Scripts/ci-test.sh` / `ci-build.sh` / `ios-test.sh` | Nein (`REISEN_GITHUB_ISSUE_TOKEN_EMPTY=true`). |
 
 Bei Builds ohne Token-Pflicht (CI, Tests) bleibt die Payload leer; die App baut, die API-Meldung schlägt explizit fehl. Store- und Ad-hoc-Archive sowie macOS-Release-CI brechen ohne Token vor dem Compile ab. Die UI kann ein vorausgefülltes Issue in Safari öffnen (GitHub-Konto des Nutzers) oder `mailto:reisenapp100@gmail.com`.

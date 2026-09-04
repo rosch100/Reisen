@@ -19,7 +19,7 @@ import ReisenDomain
 }
 
 @Test func privacySettingsURL_notifications_prefersAppSpecificPane() {
-    let bundleIdentifier = "de.reisen.Reisen"
+    let bundleIdentifier = "de.roschmac.Reisen"
     let urls = PrivacySettingsURL.macOSCandidates(
         for: .notifications,
         bundleIdentifier: bundleIdentifier

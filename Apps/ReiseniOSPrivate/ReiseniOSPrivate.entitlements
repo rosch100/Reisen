@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.de.reisen.Reisen</string>
+		<string>iCloud.de.roschmac.Reisen</string>
 	</array>
 	<key>com.apple.developer.icloud-services</key>
 	<array>
@@ -12,7 +12,7 @@
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.de.reisen.Reisen.private.pasteimport</string>
+		<string>group.de.roschmac.Reisen.private.pasteimport</string>
 	</array>
 	<key>aps-environment</key>
 	<string>development</string>
