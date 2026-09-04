@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import CoreData
+import Combine
 import ReisenDomain
 import ReisenData
 import ReisenProviders
@@ -284,7 +285,11 @@ struct ContentView: View {
         .task {
             await runProviderSetupGateIfNeeded()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)) { _ in
+        .onReceive(
+            NotificationCenter.default
+                .publisher(for: .NSPersistentStoreRemoteChange)
+                .receive(on: RunLoop.main)
+        ) { _ in
             handleProviderPrefsRemoteChange()
         }
         .onChange(of: selection?.tripID) { _, newTripID in
@@ -759,11 +764,13 @@ struct ContentView: View {
     private func runProviderSetupGateIfNeeded() async {
         guard !didRunProviderSetupGate else { return }
         didRunProviderSetupGate = true
-        _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
+        if !UITestingLaunch.isActive {
+            _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
+        }
         let snap = await ProviderPreferencesImportGate.awaitAndApply(context: modelContext)
         if let snap, snap.setupCompleted {
             ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs")
-            ProviderEnabledChange.notify()
+            ProviderPreferencesImportGate.notifyEnabledAfterImport()
             return
         }
         // Seed CloudKit only when no remote prefs arrived — never overwrite a known remote snapshot at startup.
@@ -775,6 +782,7 @@ struct ContentView: View {
     }
 
     private func handleProviderPrefsRemoteChange() {
+        guard ProviderPreferencesImportGate.shouldObserveRemoteChanges else { return }
         guard let snap = ProviderPreferencesImportGate.applyRemoteChange(context: modelContext) else {
             return
         }
@@ -783,7 +791,7 @@ struct ContentView: View {
             showProviderSetup = false
             ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs_late")
         }
-        ProviderEnabledChange.notify()
+        ProviderPreferencesImportGate.notifyEnabledAfterImport()
     }
 
     private func presentProviderSetupFromReopen() {

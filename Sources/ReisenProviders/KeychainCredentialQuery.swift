@@ -28,6 +28,7 @@ enum KeychainCredentialQuery {
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecUseDataProtectionKeychain: true,
+            kSecAttrSynchronizable: false,
         ]
         if let account {
             query[kSecAttrAccount] = account

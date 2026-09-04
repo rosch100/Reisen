@@ -41,15 +41,13 @@ enum KeychainCredentialSyncMigrationRunner {
                   let password = String(data: passwordData, encoding: .utf8)
             else { continue }
 
-            let syncExistsQuery = KeychainCredentialQuery.genericBase(
-                account: accountKey,
-                synchronizable: true
-            )
-            let (syncStatus, _) = keychain.itemCopyMatching(query: syncExistsQuery as CFDictionary)
+            let syncQuery = KeychainCredentialQuery.genericSecret(accountID: accountKey, synchronizable: true)
+            let (syncStatus, _) = keychain.itemCopyMatching(query: syncQuery as CFDictionary)
             if syncStatus == errSecSuccess {
-                // Sync-Item existiert bereits — lokales Duplikat entfernen, Sync nicht überschreiben.
-                let deleteQuery = KeychainCredentialQuery.genericLocalOnlyBase(account: accountKey)
-                _ = keychain.itemDelete(query: deleteQuery as CFDictionary)
+                // Synchronizable existiert bereits — lokales Duplikat nur aufräumen, nicht überschreiben.
+                if deleteLocalOnlySucceeded(keychain: keychain, accountKey: accountKey) {
+                    migrated += 1
+                }
                 continue
             }
 
@@ -58,9 +56,9 @@ enum KeychainCredentialSyncMigrationRunner {
                     ProviderCredentials(username: parsed.username, password: password),
                     parsed.serverHost
                 )
-                let deleteQuery = KeychainCredentialQuery.genericLocalOnlyBase(account: accountKey)
-                _ = keychain.itemDelete(query: deleteQuery as CFDictionary)
-                migrated += 1
+                if deleteLocalOnlySucceeded(keychain: keychain, accountKey: accountKey) {
+                    migrated += 1
+                }
             } catch {
                 recordMigration(result: .failed, reason: "item_save_failed")
                 continue
@@ -72,6 +70,15 @@ enum KeychainCredentialSyncMigrationRunner {
             reason: migrated == 0 ? "none" : "migrated_count_\(migrated)"
         )
         return migrated
+    }
+
+    private static func deleteLocalOnlySucceeded(
+        keychain: KeychainInternetPasswordKeychainAPI,
+        accountKey: String
+    ) -> Bool {
+        let deleteQuery = KeychainCredentialQuery.genericLocalOnlyBase(account: accountKey)
+        let deleteStatus = keychain.itemDelete(query: deleteQuery as CFDictionary)
+        return deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound
     }
 
     private static func recordMigration(result: DiagnosticResult, reason: String) {
