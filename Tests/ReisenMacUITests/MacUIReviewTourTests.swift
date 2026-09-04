@@ -58,6 +58,7 @@ final class MacUIReviewTourTests: XCTestCase {
 
         let empty = MacUI.launchEmpty()
         empty.waitForWindow()
+        empty.dismissProviderSetupIfPresent()
         empty.waitFor(UITestingIdentifiers.emptyState)
         try ReviewArtifactWriter.write(
             app: empty.app,

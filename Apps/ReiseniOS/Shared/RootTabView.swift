@@ -9,6 +9,7 @@ import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 #if REISEN_PROVIDER_SYNC
 import ReisenProviders
 #endif
@@ -19,6 +20,8 @@ struct RootTabView: View {
 
     @State private var sessionChromeEpoch = 0
     @State private var providerEnableEpoch = 0
+    @State private var showProviderSetup = false
+    @State private var didRecordProviderSetupPresented = false
     @State private var selectedTab: AppTab = .reisen
     @State private var selectedTripID: UUID?
     @State private var selectedOpenBookingID: UUID?
@@ -55,6 +58,12 @@ struct RootTabView: View {
         ) {
             tabsWithSessionProbe
         }
+        .sheet(isPresented: $showProviderSetup) {
+            ProviderFirstLaunchSetupSheet(
+                onContinue: completeProviderSetup,
+                onLater: deferProviderSetup
+            )
+        }
     }
 
     @ViewBuilder
@@ -79,16 +88,22 @@ struct RootTabView: View {
             .accessibilityHidden(true)
             #endif
         }
-        #if REISEN_PROVIDER_SYNC
         .onAppear {
+            presentProviderSetupIfNeeded()
+            #if REISEN_PROVIDER_SYNC
             refreshProviderAppPresence()
+            #endif
         }
+        #if REISEN_PROVIDER_SYNC
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 refreshProviderAppPresence()
+                presentProviderSetupIfNeeded()
             }
         }
-        .onProviderEnabledChange(bump: $providerEnableEpoch)
+        .onProviderEnabledChange(bump: $providerEnableEpoch) {
+            presentProviderSetupIfNeeded()
+        }
         #endif
     }
 
@@ -98,6 +113,82 @@ struct RootTabView: View {
         _ = ProviderNativeAppPresence.applyAutoEnableIfNeeded()
     }
     #endif
+
+    private func presentProviderSetupIfNeeded() {
+        guard ProviderFirstLaunchSetup.shouldPresent() else { return }
+        guard !showProviderSetup else { return }
+        showProviderSetup = true
+        recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
+    }
+
+    private func presentProviderSetupFromReopen() {
+        showProviderSetup = true
+        recordProviderSetupDiagnostic(
+            event: "provider_setup_presented",
+            result: .started,
+            reason: "reopen"
+        )
+    }
+
+    private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
+        let defaults = AppSettingsDefaults.current
+        ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
+        ProviderEnabledChange.notify()
+        ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+        showProviderSetup = false
+        #if REISEN_PROVIDER_SYNC
+        selectedTab = .sync
+        #endif
+        recordProviderSetupDiagnostic(
+            event: "provider_setup_completed",
+            result: .succeeded,
+            reason: "continue_count_\(enabledIDs.count)"
+        )
+    }
+
+    private func deferProviderSetup() {
+        ProviderFirstLaunchSetup.markDeferred()
+        showProviderSetup = false
+        recordProviderSetupDiagnostic(
+            event: "provider_setup_deferred",
+            result: .cancelled,
+            reason: "later"
+        )
+    }
+
+    private func recordProviderSetupPresentedIfNeeded(reason: String) {
+        guard !didRecordProviderSetupPresented else { return }
+        didRecordProviderSetupPresented = true
+        recordProviderSetupDiagnostic(
+            event: "provider_setup_presented",
+            result: .started,
+            reason: reason
+        )
+    }
+
+    private func recordProviderSetupDiagnostic(
+        event: String,
+        result: DiagnosticResult,
+        reason: String
+    ) {
+        let context = DiagnosticContext(
+            runID: UUID(),
+            providerID: .manual,
+            operation: "provider_first_launch_setup"
+        )
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: context,
+                    component: "ProviderFirstLaunchSetup",
+                    phase: "setup",
+                    event: event,
+                    result: result,
+                    reason: reason
+                )
+            )
+        }
+    }
 
     private func focusCreatedTrip(_ tripID: UUID) {
         selectedTripID = tripID
@@ -190,7 +281,8 @@ struct RootTabView: View {
             SyncTab(
                 sessionChromeEpoch: $sessionChromeEpoch,
                 isSelected: selectedTab == .sync,
-                onOpenSettings: { selectedTab = .mehr }
+                onOpenSettings: { selectedTab = .mehr },
+                onReopenProviderSetup: presentProviderSetupFromReopen
             )
                 .tabItem { Label(L10n.string(.tabSync), systemImage: "arrow.triangle.2.circlepath") }
                 .tag(AppTab.sync)

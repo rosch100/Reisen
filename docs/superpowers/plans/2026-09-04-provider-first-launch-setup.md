@@ -60,13 +60,13 @@
 - Consumes: `ProviderFirstLaunchSetup`, `UITestingMode`
 - Produces: `UITestingLaunch.seedProviderSetupIfNeeded(mode:defaults:)` — populated → `markCompleted`
 
-- [ ] **Step 1: Failing tests** populated seeds completed; empty does not; existing provider key → bootstrap marks completed
+- [x] **Step 1: Failing tests** populated seeds completed; empty does not; existing provider key → bootstrap marks completed
 
-- [ ] **Step 2: Run filter** Expected: FAIL
+- [x] **Step 2: Run filter** Expected: FAIL
 
-- [ ] **Step 3: Implement seeds + bootstrap call order** (Migration → bootstrap setup → seed enablement/setup)
+- [x] **Step 3: Implement seeds + bootstrap call order** (Migration → bootstrap setup → seed enablement/setup)
 
-- [ ] **Step 4: PASS + Commit** `feat(appcore): seed and bootstrap provider setup flags`
+- [x] **Step 4: PASS + Commit** `feat(appcore): seed and bootstrap provider setup flags`
 
 ---
 
@@ -83,13 +83,13 @@
 - Consumes: `ProviderRegistry` env / sync IDs; bindings for selection Set; callbacks `onContinue` / `onLater`
 - Produces: Sheet UI with identifiers from Spec; Weiter disabled wenn selection empty
 
-- [ ] **Step 1: Add Identifiers + L10n keys (DE/EN)**
+- [x] **Step 1: Add Identifiers + L10n keys (DE/EN)**
 
-- [ ] **Step 2: Implement Sheet** (Header Symbol + Title + Subtitle; Toggle-Liste; Weiter prominent / Später)
+- [x] **Step 2: Implement Sheet** (Header Symbol + Title + Subtitle; Toggle-Liste; Weiter prominent / Später)
 
-- [ ] **Step 3: Unit-smokebar** compile via `bash ./Scripts/ci-build.sh --arch arm64` or package filter SharedUI if available
+- [x] **Step 3: Unit-smokebar** compile via `bash ./Scripts/ci-build.sh --arch arm64` or package filter SharedUI if available
 
-- [ ] **Step 4: Commit** `feat(ui): ProviderFirstLaunchSetupSheet HIG layout`
+- [x] **Step 4: Commit** `feat(ui): ProviderFirstLaunchSetupSheet HIG layout`
 
 ---
 
@@ -103,13 +103,13 @@
 - Consumes: `ProviderFirstLaunchSetup.shouldPresent`, Sheet, `applySelection`, DiagnosticLogger
 - Produces: sheet presentation state; Reopen CTA on empty state; Continue → notify + select first enabled
 
-- [ ] **Step 1: Wire `@State showProviderSetup`**; present when shouldPresent after probe/bootstrap ready (avoid flash: onAppear + settings epoch)
+- [x] **Step 1: Wire `@State showProviderSetup`**; present when shouldPresent after probe/bootstrap ready (avoid flash: onAppear + settings epoch)
 
-- [ ] **Step 2: Continue/Later handlers + DiagnosticEvents** (`provider_setup_presented` / `_completed` / `_deferred`)
+- [x] **Step 2: Continue/Later handlers + DiagnosticEvents** (`provider_setup_presented` / `_completed` / `_deferred`)
 
-- [ ] **Step 3: Empty-State Reopen button** when `!completed && enabled.isEmpty`
+- [x] **Step 3: Empty-State Reopen button** when `!completed && enabled.isEmpty`
 
-- [ ] **Step 4: Commit** `feat(macos): host provider setup sheet and reopen CTA`
+- [x] **Step 4: Commit** `feat(macos): host provider setup sheet and reopen CTA`
 
 ---
 
@@ -131,15 +131,15 @@
 - Continue-XCUI out of scope (Disclosure residual)
 - Isolation: no new `UserDefaults.standard` for setup keys
 
-- [ ] **Step 1: iOS sheet host + SyncTab Reopen CTA**
+- [x] **Step 1: iOS sheet host + SyncTab Reopen CTA**
 
-- [ ] **Step 2: MacUI helpers** (`waitForWindow` + `dismissProviderSetupIfPresent`)
+- [x] **Step 2: MacUI helpers** (`waitForWindow` + `dismissProviderSetupIfPresent`)
 
-- [ ] **Step 3: Smokes** Empty existence sheet; Populated absent; wire dismiss into Empty-Create + ReviewTour Empty
+- [x] **Step 3: Smokes** Empty existence sheet; Populated absent; wire dismiss into Empty-Create + ReviewTour Empty
 
-- [ ] **Step 4: Run** `bash ./Scripts/ci-test.sh` then `bash ./Scripts/macos-ui-test-remote.sh`
+- [x] **Step 4: Run** `bash ./Scripts/ci-test.sh` then `bash ./Scripts/macos-ui-test-remote.sh`
 
-- [ ] **Step 5: Commit** `test: XCUI provider setup sheet on empty launch`
+- [x] **Step 5: Commit** `test: XCUI provider setup sheet on empty launch`
 
 ---
 

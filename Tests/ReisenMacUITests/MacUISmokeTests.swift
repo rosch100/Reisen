@@ -13,6 +13,18 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.sidebar)
+        XCTAssertEqual(
+            ui.app.descendants(matching: .any)
+                .matching(identifier: UITestingIdentifiers.providerSetupSheet)
+                .count,
+            0
+        )
+    }
+
+    func testEmptyLaunchShowsProviderSetupSheet() {
+        let ui = MacUI.launchEmpty()
+        ui.waitForWindow()
+        ui.waitFor(UITestingIdentifiers.providerSetupSheet)
     }
 
     func testSeededTripShowsDetail() {
