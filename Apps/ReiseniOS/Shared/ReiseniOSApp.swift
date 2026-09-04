@@ -34,6 +34,11 @@ struct ReiseniOSApp: App {
                         },
                         onWipeCloudAndReset: {
                             bootstrap.resetStoreAndRetry(wipeCloudDataBeforeReset: true)
+                        },
+                        onApplyICloudSyncPreference: { enabled, wipe in
+                            Task {
+                                await bootstrap.applyICloudSyncPreference(enabled: enabled, wipeCloud: wipe)
+                            }
                         }
                     )
                         .environment(\.providerRegistry, registry)

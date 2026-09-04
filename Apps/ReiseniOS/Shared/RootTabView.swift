@@ -18,6 +18,7 @@ import ReisenProviders
 struct RootTabView: View {
     let onResetLocalStores: () -> Void
     let onWipeCloudAndReset: () -> Void
+    let onApplyICloudSyncPreference: (Bool, Bool) -> Void
 
     @State private var sessionChromeEpoch = 0
     @State private var providerEnableEpoch = 0
@@ -300,7 +301,8 @@ struct RootTabView: View {
 
             MoreTab(
                 onResetLocalStores: onResetLocalStores,
-                onWipeCloudAndReset: onWipeCloudAndReset
+                onWipeCloudAndReset: onWipeCloudAndReset,
+                onApplyICloudSyncPreference: onApplyICloudSyncPreference
             )
                 .tabItem { Label(L10n.string(.tabMore), systemImage: "ellipsis.circle") }
                 .tag(AppTab.mehr)

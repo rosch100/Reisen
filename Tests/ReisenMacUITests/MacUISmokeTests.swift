@@ -495,6 +495,13 @@ final class MacUISmokeTests: XCTestCase {
         XCTAssertNotEqual(String(describing: toggle.value), before)
     }
 
+    func testSettingsICloudSyncToggleExists() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openSettings()
+        _ = ui.waitFor(UITestingIdentifiers.settingsICloudSyncToggle)
+    }
+
     func testProviderSyncChromeIsReachable() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
