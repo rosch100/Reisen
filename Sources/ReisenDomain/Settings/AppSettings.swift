@@ -64,6 +64,9 @@ public struct AppSettingsKeys {
     /// Gewähltes Homescreen-Icon (`AppIconStyle.rawValue`); Default `standard`.
     public static let appIconStyle = "reisen_appIconStyle"
 
+    /// Nutzer erlaubt CloudKit-Mirroring (Opt-out: fehlender Key = an).
+    public static let icloudSyncEnabled = "reisen_icloudSyncEnabled"
+
     public static func providerEnabledKey(for providerID: ProviderID) -> String {
         "\(providerEnabledPrefix)\(providerID.rawValue)"
     }
@@ -81,6 +84,16 @@ public struct AppSettingsKeys {
     /// Persistierte Account-Auswahl: `"serverHost\\u{1F}username"`.
     public static func preferredKeychainAccountKey(for providerID: ProviderID) -> String {
         "\(preferredKeychainAccountPrefix)\(providerID.rawValue)"
+    }
+
+    /// Default: iCloud-Sync an (Opt-out; fehlender Key = erlaubt).
+    public static func isICloudSyncEnabled(defaults: UserDefaults = AppSettingsDefaults.current) -> Bool {
+        guard defaults.object(forKey: icloudSyncEnabled) != nil else { return true }
+        return defaults.bool(forKey: icloudSyncEnabled)
+    }
+
+    public static func setICloudSyncEnabled(_ enabled: Bool, defaults: UserDefaults = AppSettingsDefaults.current) {
+        defaults.set(enabled, forKey: icloudSyncEnabled)
     }
 
     /// Default: automatisches Speichern aus (Opt-in in den Einstellungen).
