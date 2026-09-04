@@ -132,6 +132,11 @@ struct MacUI {
         return waitFor(UITestingIdentifiers.syncChrome)
     }
 
+    @discardableResult
+    func waitForSyncLoginChrome() -> XCUIElement {
+        waitFor(UITestingIdentifiers.syncLoginChrome)
+    }
+
     func clickAblageMenuItem(_ title: String) {
         app.activate()
         let ablagemenu = app.menuBars.menuBarItems["Ablage"].firstMatch

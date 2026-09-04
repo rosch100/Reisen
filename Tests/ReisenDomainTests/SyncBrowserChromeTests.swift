@@ -30,3 +30,13 @@ import ReisenDomain
         userExpanded: true
     ))
 }
+
+@Test func syncBrowserChrome_showsLoginChromeAboveWebViewWhileLoginRequired() {
+    #expect(SyncBrowserChrome.showsLoginChromeAboveWebView(isSessionReady: false))
+    #expect(!SyncBrowserChrome.showsLoginChromeAboveWebView(isSessionReady: true))
+}
+
+@Test func syncBrowserChrome_hidesBottomActionBarWhileLoginRequired() {
+    #expect(!SyncBrowserChrome.showsBottomActionBar(isSessionReady: false))
+    #expect(SyncBrowserChrome.showsBottomActionBar(isSessionReady: true))
+}
