@@ -80,16 +80,12 @@ public enum BookingEditorField: Hashable, Sendable {
     case externalUrl
     case cancellationUrl
     case end
-    case hotelOffset
-    case departureOffset
-    case arrivalOffset
     case checkInMinutes
     case checkOutMinutes
     case price
     case guests
     case rooms
     case passengers
-    case cancellationOffset(UUID)
     case cancellationFee(UUID)
 }
 
@@ -267,6 +263,15 @@ public struct BookingEditorDraft: Equatable, Sendable {
         return Int(trimmed)
     }
 
+    /// Interne Offset-Parameter: gültige Zahlen übernehmen, sonst den bestehenden Wert behalten
+    /// (kein stilles Löschen bei ungültigem Text, nachdem die Felder nicht mehr editierbar sind).
+    public static func preservedInternalOffset(from text: String, existing: Int?) -> Int? {
+        if let parsed = parseIntOrNil(text) {
+            return parsed
+        }
+        return existing
+    }
+
     public static func parseDoubleOrNil(_ text: String) -> Double? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
@@ -299,9 +304,7 @@ public struct BookingEditorDraft: Equatable, Sendable {
             }
         }
 
-        try ensureOptionalInt(L10n.string(.editorFieldHotelOffset), hotelOffsetSecondsText, focusField: .hotelOffset)
-        try ensureOptionalInt(L10n.string(.editorFieldDepartureOffset), flightDepartureOffsetSecondsText, focusField: .departureOffset)
-        try ensureOptionalInt(L10n.string(.editorFieldArrivalOffset), flightArrivalOffsetSecondsText, focusField: .arrivalOffset)
+        // Zeitzonen-Offsets bleiben interne Sync-/Berechnungsparameter und sind nicht editierbar.
         try ensureOptionalInt(L10n.string(.editorFieldCheckInMinutes), hotelCheckInMinutesText, focusField: .checkInMinutes)
         try ensureOptionalInt(L10n.string(.editorFieldCheckOutMinutes), hotelCheckOutMinutesText, focusField: .checkOutMinutes)
         try ensureOptionalDouble(L10n.string(.editorFieldPrice), totalPriceAmountText, focusField: .price)
@@ -310,11 +313,6 @@ public struct BookingEditorDraft: Equatable, Sendable {
         try ensureOptionalInt(L10n.string(.editorFieldPassengers), passengerCountText, focusField: .passengers)
 
         for (index, deadline) in cancellationDeadlines.enumerated() {
-            try ensureOptionalInt(
-                L10n.format(.editorFieldCancellationOffset, index + 1),
-                deadline.hotelOffsetSecondsText,
-                focusField: .cancellationOffset(deadline.id)
-            )
             try ensureOptionalDouble(
                 L10n.format(.editorFieldCancellationFee, index + 1),
                 deadline.cancellationFeeAmountText,
@@ -419,9 +417,19 @@ public struct BookingEditorDraft: Equatable, Sendable {
         }
         booking.bookingTypeRaw = bookingType.rawValue
         booking.statusRaw = status.rawValue
-        booking.hotelOffsetSeconds = Self.parseIntOrNil(hotelOffsetSecondsText)
-        booking.flightDepartureOffsetSeconds = Self.parseIntOrNil(flightDepartureOffsetSecondsText)
-        booking.flightArrivalOffsetSeconds = Self.parseIntOrNil(flightArrivalOffsetSecondsText)
+        // Zeitzonen-Offsets sind intern: nur gültige Werte übernehmen, sonst Bestand behalten.
+        booking.hotelOffsetSeconds = Self.preservedInternalOffset(
+            from: hotelOffsetSecondsText,
+            existing: booking.hotelOffsetSeconds
+        )
+        booking.flightDepartureOffsetSeconds = Self.preservedInternalOffset(
+            from: flightDepartureOffsetSecondsText,
+            existing: booking.flightDepartureOffsetSeconds
+        )
+        booking.flightArrivalOffsetSeconds = Self.preservedInternalOffset(
+            from: flightArrivalOffsetSecondsText,
+            existing: booking.flightArrivalOffsetSeconds
+        )
         booking.hotelCheckInMinutes = Self.parseIntOrNil(hotelCheckInMinutesText)
         booking.hotelCheckOutMinutes = Self.parseIntOrNil(hotelCheckOutMinutesText)
 
@@ -497,6 +505,9 @@ public struct BookingEditorDraft: Equatable, Sendable {
             booking.rateDetails = nil
         }
 
+        let previousDeadlineOffsets = Dictionary(
+            uniqueKeysWithValues: booking.resolvedCancellationDeadlines.map { ($0.id, $0.hotelOffsetSeconds) }
+        )
         for existing in booking.resolvedCancellationDeadlines {
             modelContext.delete(existing)
         }
@@ -508,7 +519,10 @@ public struct BookingEditorDraft: Equatable, Sendable {
                     policyText: Self.normalizeOptionalString(draft.policyText),
                     isStrict: draft.isStrict,
                     isFreeCancellation: draft.isFreeCancellation,
-                    hotelOffsetSeconds: Self.parseIntOrNil(draft.hotelOffsetSecondsText),
+                    hotelOffsetSeconds: Self.preservedInternalOffset(
+                        from: draft.hotelOffsetSecondsText,
+                        existing: previousDeadlineOffsets[draft.id] ?? nil
+                    ),
                     cancellationFeeAmount: Self.parseDoubleOrNil(draft.cancellationFeeAmountText),
                     booking: booking
                 )
@@ -773,19 +787,10 @@ public struct BookingEditorForm: View {
 
                 if draft.bookingType == .hotel {
                     Section(L10n.string(.editorHotel)) {
-                        TextField(L10n.string(.editorHotelOffset), text: $draft.hotelOffsetSecondsText)
-                            .editorFocus(.hotelOffset, $focusedField)
                         TextField(L10n.string(.editorCheckInMinutes), text: $draft.hotelCheckInMinutesText)
                             .editorFocus(.checkInMinutes, $focusedField)
                         TextField(L10n.string(.editorCheckOutMinutes), text: $draft.hotelCheckOutMinutesText)
                             .editorFocus(.checkOutMinutes, $focusedField)
-                    }
-                } else if draft.bookingType == .flight {
-                    Section(L10n.string(.editorFlight)) {
-                        TextField(L10n.string(.editorDepartureOffset), text: $draft.flightDepartureOffsetSecondsText)
-                            .editorFocus(.departureOffset, $focusedField)
-                        TextField(L10n.string(.editorArrivalOffset), text: $draft.flightArrivalOffsetSecondsText)
-                            .editorFocus(.arrivalOffset, $focusedField)
                     }
                 }
 
@@ -877,8 +882,6 @@ public struct BookingEditorForm: View {
                             Toggle(L10n.string(.editorFreeCancellation), isOn: $deadline.isFreeCancellation)
                             Toggle(BookingDetailLabels.strictDeadline, isOn: $deadline.isStrict)
                             TextField(L10n.string(.editorPolicyText), text: $deadline.policyText)
-                            TextField(L10n.string(.editorOffsetSeconds), text: $deadline.hotelOffsetSecondsText)
-                                .editorFocus(.cancellationOffset(deadline.id), $focusedField)
                             TextField(L10n.string(.editorFee), text: $deadline.cancellationFeeAmountText)
                                 .editorFocus(.cancellationFee(deadline.id), $focusedField)
                             Button(L10n.string(.editorRemoveEntry), role: .destructive) {

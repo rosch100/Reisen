@@ -48,3 +48,22 @@ import ReisenDomain
     #expect(L10n.tripCompletenessKindCaption(kinds: [.lodging, .transport]) == "\(L10n.gapKindDisplay(.lodging)) · \(L10n.gapKindDisplay(.transport))")
     }
 }
+
+@Test func l10n_deCopyClarity_terminologySSOT() {
+    L10n.withLocale(Locale(identifier: "de")) {
+        #expect(L10n.string(.baggageShortPersonal) == "Pers.")
+        #expect(L10n.format(.baggagePassengerLine, 1, "Hand") == "Passagier 1: Hand")
+        #expect(L10n.string(.bookingCancellationLocked) == "Nicht mehr kostenlos stornierbar")
+        #expect(L10n.format(.sync_resultNoDeadlines, 3) == "Keine Stornofristen gefunden (3 Buchungen).")
+        #expect(L10n.string(.actionAssignToTrip) == "Einer Reise zuordnen…")
+        #expect(L10n.string(.commonSave) == "Speichern")
+        #expect(L10n.string(.credentialPassword) == "Passwort")
+        #expect(L10n.string(.menuProviderSync) == "Portal-Sync")
+        #expect(L10n.string(.actionResetLocalStores) == "Lokale Daten zurücksetzen…")
+        #expect(L10n.string(.tripTimeline) == "Zeitachse")
+        #expect(L10n.string(.bookingDeleteConfirmMessage).contains("Voyenna"))
+        #expect(L10n.string(.tabTrips) == "Reisen")
+        #expect(!L10n.string(.actionOpenPasswords).localizedCaseInsensitiveContains("Passwords"))
+        #expect(L10n.string(.actionOpenPasswords) == "Passwörter öffnen")
+    }
+}
