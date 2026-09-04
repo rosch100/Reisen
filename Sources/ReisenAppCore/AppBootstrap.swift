@@ -59,7 +59,15 @@ public final class AppBootstrap {
 
     /// Live CloudKit on/off: persists preference, optionally wipes iCloud, reopens the hybrid store.
     public func applyICloudSyncPreference(enabled: Bool, wipeCloud: Bool) async {
-        guard !isResetting else { return }
+        guard !isResetting else {
+            await recordICloudSyncPreference(
+                runID: UUID(),
+                event: "apply_skipped",
+                result: .skipped,
+                reason: "busy_resetting"
+            )
+            return
+        }
         isResetting = true
         defer { isResetting = false }
         await performApplyICloudSyncPreference(enabled: enabled, wipeCloud: wipeCloud)
@@ -86,13 +94,20 @@ public final class AppBootstrap {
 
         AppSettingsKeys.setICloudSyncEnabled(enabled, defaults: defaults)
 
+        /// After cloud wipe + store-file delete, do not restore the previous preference on reopen failure.
+        var revertPreferenceOnFailure = true
+
         do {
             stopCloudSideEffectObserverIfReady()
 
             if uiTesting.skipsSideEffects {
                 try activateReadyState()
             } else if !enabled && wipeCloud {
-                try await wipeCloudThenResetLocal()
+                let needsReopen = try await wipeCloudDataAndDeleteStoreFiles()
+                revertPreferenceOnFailure = false
+                if needsReopen {
+                    try activateReadyState()
+                }
             } else {
                 // Keep local store files; makeContainer reads preference for CloudKit on/off.
                 try activateReadyState()
@@ -105,7 +120,9 @@ public final class AppBootstrap {
                 reason: reason
             )
         } catch {
-            AppSettingsKeys.setICloudSyncEnabled(previous, defaults: defaults)
+            if revertPreferenceOnFailure {
+                AppSettingsKeys.setICloudSyncEnabled(previous, defaults: defaults)
+            }
             state = .failed(error.localizedDescription)
             await recordICloudSyncPreference(
                 runID: runID,
@@ -168,11 +185,18 @@ public final class AppBootstrap {
             return
         }
 
+        if try await wipeCloudDataAndDeleteStoreFiles() {
+            try activateReadyState()
+        }
+    }
+
+    /// Tombstones synced entities (when possible) and deletes on-disk store files.
+    /// - Returns: `true` if the caller must reopen via `activateReadyState()`; `false` if already ready.
+    private func wipeCloudDataAndDeleteStoreFiles() async throws -> Bool {
         if case .ready(let container, _, _, _) = state {
             try await wipeCloud(from: container.mainContext)
             try PersistenceBootstrap.resetStoreFiles()
-            try activateReadyState()
-            return
+            return true
         }
 
         // Store could not open: recreate local files, pull cloud data, then tombstone it.
@@ -187,6 +211,7 @@ public final class AppBootstrap {
         try await wipeCloud(from: container.mainContext)
         state = provisional
         startCloudSideEffectObserverIfReady()
+        return false
     }
 
     private var currentRegistry: ProviderRegistry {
