@@ -1,11 +1,13 @@
 import Foundation
+import ReisenDomain
 #if os(macOS)
 import Security
 #endif
 
 extension PersistenceBootstrap {
-    nonisolated public static func isCloudKitEnabledByEnvironment() -> Bool {
-        isCloudKitEnabled(
+    /// Env/Entitlements only — ignores the user iCloud-sync preference.
+    nonisolated public static func isCloudKitAllowedByEnvironmentProcess() -> Bool {
+        isCloudKitAllowedByEnvironment(
             environment: ProcessInfo.processInfo.environment,
             processName: ProcessInfo.processInfo.processName,
             arguments: CommandLine.arguments,
@@ -23,6 +25,27 @@ extension PersistenceBootstrap {
         )
     }
 
+    /// Effective CloudKit: Env/Entitlements **and** user preference (Opt-out default on).
+    nonisolated public static func isCloudKitEnabledByEnvironment() -> Bool {
+        isCloudKitEnabled(
+            environment: ProcessInfo.processInfo.environment,
+            processName: ProcessInfo.processInfo.processName,
+            arguments: CommandLine.arguments,
+            teamIdentifier: codeSigningTeamIdentifier(),
+            applicationIdentifier: codeSigningApplicationIdentifier(),
+            icloudContainerIdentifiers: codeSigningStringArrayEntitlement(
+                "com.apple.developer.icloud-container-identifiers"
+            ),
+            icloudServices: codeSigningStringArrayEntitlement(
+                "com.apple.developer.icloud-services"
+            ),
+            icloudContainerEnvironment: stringEntitlement(
+                "com.apple.developer.icloud-container-environment"
+            ),
+            iCloudSyncPreferenceEnabled: AppSettingsKeys.isICloudSyncEnabled()
+        )
+    }
+
     /// CloudKit is off when the process cannot use it: CI/tests, explicit `REISEN_CLOUDKIT=0`,
     /// or (macOS) a signature that cannot open `CKContainer` (ad-hoc: no Team ID /
     /// `application-identifier`, missing iCloud/CloudKit entitlements, or
@@ -30,7 +53,32 @@ extension PersistenceBootstrap {
     /// An array copied from the provisioning profile still aborts CloudKit (`CKException`).
     /// Opening a CloudKit store or `CKContainer` without that aborts macOS (`_os_crash`).
     /// iOS Simulator/Device uses the platform signing path and does not apply that guard.
+    /// User preference off (`iCloudSyncPreferenceEnabled == false`) also disables CloudKit.
     nonisolated public static func isCloudKitEnabled(
+        environment: [String: String],
+        processName: String,
+        arguments: [String],
+        teamIdentifier: String?,
+        applicationIdentifier: String?,
+        icloudContainerIdentifiers: [String],
+        icloudServices: [String],
+        icloudContainerEnvironment: String?,
+        iCloudSyncPreferenceEnabled: Bool
+    ) -> Bool {
+        guard iCloudSyncPreferenceEnabled else { return false }
+        return isCloudKitAllowedByEnvironment(
+            environment: environment,
+            processName: processName,
+            arguments: arguments,
+            teamIdentifier: teamIdentifier,
+            applicationIdentifier: applicationIdentifier,
+            icloudContainerIdentifiers: icloudContainerIdentifiers,
+            icloudServices: icloudServices,
+            icloudContainerEnvironment: icloudContainerEnvironment
+        )
+    }
+
+    nonisolated public static func isCloudKitAllowedByEnvironment(
         environment: [String: String],
         processName: String,
         arguments: [String],
