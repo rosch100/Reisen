@@ -166,28 +166,51 @@ public final class AppBootstrap {
         let defaults = AppSettingsDefaults.current
         let wasExistingInstall = ProviderEnabledDefaultsMigration.looksLikeExistingInstall(defaults: defaults)
         let didMigrate = ProviderEnabledDefaultsMigration.migrateIfNeeded(defaults: defaults)
+        let didRepairFalsePositive = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
+            defaults: defaults
+        )
         ProviderFirstLaunchSetup.bootstrapCompletedIfExistingProviders(defaults: defaults)
         UITestingLaunch.seedProviderEnablementIfNeeded(mode: uiTesting, defaults: defaults)
         UITestingLaunch.seedProviderSetupIfNeeded(mode: uiTesting, defaults: defaults)
-        guard didMigrate, !uiTesting.skipsSideEffects else { return }
+        guard !uiTesting.skipsSideEffects else { return }
         let runID = UUID()
-        Task {
-            await DiagnosticLogger.shared.record(
-                DiagnosticEvent(
-                    context: DiagnosticContext(
-                        runID: runID,
-                        providerID: .manual,
-                        operation: "provider_enabled_defaults_migration"
-                    ),
-                    component: "AppBootstrap",
-                    phase: "settings",
-                    event: "provider_enabled_opt_in_migrated",
-                    result: .succeeded,
-                    reason: wasExistingInstall
-                        ? "existing_install_materialized"
-                        : "fresh_install_opt_in"
+        if didMigrate {
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: DiagnosticContext(
+                            runID: runID,
+                            providerID: .manual,
+                            operation: "provider_enabled_defaults_migration"
+                        ),
+                        component: "AppBootstrap",
+                        phase: "settings",
+                        event: "provider_enabled_opt_in_migrated",
+                        result: .succeeded,
+                        reason: wasExistingInstall
+                            ? "existing_install_materialized"
+                            : "fresh_install_opt_in"
+                    )
                 )
-            )
+            }
+        }
+        if didRepairFalsePositive {
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: DiagnosticContext(
+                            runID: runID,
+                            providerID: .manual,
+                            operation: "provider_enabled_false_positive_repair"
+                        ),
+                        component: "AppBootstrap",
+                        phase: "settings",
+                        event: "provider_enabled_false_positive_repaired",
+                        result: .succeeded,
+                        reason: "all_on_without_configured_account"
+                    )
+                )
+            }
         }
     }
 }
