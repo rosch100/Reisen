@@ -179,10 +179,9 @@ Lokale Push laufen bereits für Storno (`cancellationDeadline`) und Pre-Travel (
 | Pre-Travel Hints, Passagiere, Gepäck | Freitext in Mails | Kein generisches „Tipps“-Feature |
 | EventKit schreiben | iCal-Feed-URL | F04 Datei-Share, kein Feed (X06) |
 | Offen-Tab / Zuordnung | TripIt merged nach Datum | Beibehalten; F16 als UX darauf |
-| Reiseübergreifende Tages-Überschneidungen (Typ-Occupancy, Caption macOS+iOS) | Oft nur Intra-Trip / Text-only | Kern halten; F24 bleibt Provider-Duplikat (geplant) |
-| Bahn-Typ, Paste-Import, Copy-Felder, Kostensumme/FX | — | Umgesetzt (Archiv) |
-| Auto-Gap + Tagesüberschneidungen | Oft nur Intra-Trip / Text-only | Kern halten |
-| Mehrfachauswahl + Batch-Menüs (macOS) | Meist Einzelaktionen | Beibehalten; F16 als Drag darauf |
+| Reiseübergreifende Tages-Überschneidungen | Oft nur Intra-Trip | Kern halten; F24 bleibt Provider-Duplikat (geplant) |
+| Bahn-Typ, Paste-Import, Copy-Felder, Kostensumme | — | Umgesetzt (Archiv) |
+| Auto-Gap, Mehrfachauswahl + Batch-Menüs (macOS) | Meist Einzelaktionen | Beibehalten; F16 als Drag darauf |
 
 ---
 

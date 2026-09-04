@@ -82,11 +82,11 @@ Cursor/Simulator-Workflow: [`docs/dev/ios-cursor.md`](docs/dev/ios-cursor.md)
 
 [![CI](https://github.com/rosch100/Reisen/actions/workflows/ci.yml/badge.svg)](https://github.com/rosch100/Reisen/actions/workflows/ci.yml)
 
-Für PRs und Pushs auf `master` läuft die CI automatisch mit parallelen Suite-Jobs
-(`suite-swiftpm`, `suite-ios-sim`, `suite-ios-release`, `suite-macos-ui`) hinter Detect;
-Merge-Gate ist der Aggregator-Check **CI**. Details: [`docs/ci/README.md`](docs/ci/README.md).
+Für PRs und Pushs auf `master` laufen Suites parallel
+(`suite-swiftpm`, `suite-ios-sim`, `suite-ios-release`, `suite-macos-ui`);
+Merge-Gate ist der Check **CI**. Details: [`docs/ci/README.md`](docs/ci/README.md).
 
-Lokale SwiftPM-Parität:
+Lokal:
 
 ```bash
 bash ./Scripts/ci-test.sh
@@ -101,12 +101,12 @@ Beim Sync:
 
 Darüber hinaus:
 - Buchungstypen inkl. **Bahn** und **Mietwagen** (manuell und je nach Portal)
-- **Paste-Import** von Bestätigungen (PDF/Bild/Text) mit Review vor dem Speichern
+- **Paste-Import** von Bestätigungen (PDF, Bild, Text) — prüfen, dann speichern
 - **Copy/Paste** für Info- und Editor-Felder (Bestätigungscodes per Tap)
-- **Kostensumme** der Reise (je Währung; optional unverbindliche FX-Umrechnung)
-- **Tagesüberschneidungen** und **Trip-Vollständigkeit** (Gaps / Auto-Gap)
-- **Mehrfachauswahl** mit Sammelaktionen in Sidebar und Timeline
-- **Portal öffnen** / **Storno-Portal** und Gap-Suche Deep-Links zur Anbieter-Website
+- **Kostensumme** der Reise (je Währung; optional unverbindlich umgerechnet)
+- **Doppelbuchungen** am selben Tag und **fehlende Abschnitte** in der Reise
+- **Mehrere markieren** und gemeinsam zuordnen oder löschen
+- **Portal öffnen** / **Storno-Seite** und Suche nach fehlenden Abschnitten beim Anbieter
 
 Der Sync ist für **lokale, persönliche Nutzung** gedacht; Session-Cookies bleiben im WebView-Cookie-Store. Optional (Opt-in): Zugangsdaten in der Geräte-Keychain.
 
