@@ -2,7 +2,7 @@
 
 **Datum:** 2026-09-02  
 **Status:** freigegeben (Brainstorming + Spec-Review; Findings eingearbeitet)  
-**Abhängigkeit:** [`2026-08-30-macos-ui-surface-test-design.md`](2026-08-30-macos-ui-surface-test-design.md) — Testvertrag unverändert; dieses Dokument steuert nur **wo** `macos-ui-test.sh` läuft.
+**Abhängigkeit:** [`2026-08-30-macos-ui-surface-test-design.md`](2026-08-30-macos-ui-surface-test-design.md) — Testvertrag unverändert; dieses Dokument steuert **wo** `macos-ui-test.sh` läuft und (Rev 7) welche Selection-Args durchgereicht werden. Selection-Semantik: [`2026-09-04-macos-ui-diff-select-design.md`](2026-09-04-macos-ui-diff-select-design.md).
 
 ## Änderungsprotokoll
 
@@ -48,6 +48,12 @@
 - **Problem:** Lock galt nur für den Test-SSH; `rsync --delete` und shared `/tmp/reisen-macos-ui-run.*` kollidierten zwischen Agents.
 - **Lösung:** Exklusiv-Lock über Sync→Test→Fetch; isoliertes Run-Dir `${REISEN_UI_REMOTE_DIR}/<run-id>/` (Default-Basis `~/Entwicklung/Reisen-ui-runs`); run-scoped Status/Log/Command unter `/tmp/reisen-macos-ui-run-<run-id>.*`; Stale-Lock-Steal wenn Owner älter als 45 min und kein `macos-ui-test.sh`; erfolgreicher Lauf löscht das Run-Dir, Fehlschlag belässt es zur Diagnose.
 
+### Rev 7 — Test-Arg-Passthrough (Diff-Selektion lokal)
+
+- **Problem:** Diff-Selektion braucht lokales Git; Worktree-Sync excludet `.git` → Selektion darf nicht remote laufen.
+- **Lösung:** Wrapper berechnet Selection **lokal** (siehe [`2026-09-04-macos-ui-diff-select-design.md`](2026-09-04-macos-ui-diff-select-design.md)); bei Skip Exit 0 ohne Sync; sonst leitet er `--full` bzw. `--reisen-ui-only-testing` + `-only-testing:…` an remote `macos-ui-test.sh` durch. Keine Diff-Logik auf dem iMac.
+- Satz „Wrapper dupliziert keine Test-Flags“ gilt nur noch für Generate/`xcodebuild`-Flags **außer** diesem expliziten Selection-Passthrough.
+
 ## Ziel
 
 UI-Smokes (`Scripts/macos-ui-test.sh`) auf einem **anderen Mac** ausführen (kein GitHub Actions Runner), konkret dem iMac, mit dem **aktuellen Working Tree** inkl. uncommitteter Änderungen vom Entwickler-Mac.
@@ -67,7 +73,7 @@ UI-Smokes (`Scripts/macos-ui-test.sh`) auf einem **anderen Mac** ausführen (kei
 | Sync | `rsync` des lokalen Working Trees in **Run-Dir** (Option 1) |
 | Host (v1) | Resolve: `imac.altanis.de` zuerst, sonst Bonjour `imac*.local`; bei mehreren Interfaces derselben Maschine LAN (niedrigste RTT) |
 | Parallelität | Ein XCUI-Lauf gleichzeitig (Lock); Trees isoliert pro `run-id` |
-| Ausführung | Wrapper ruft remote das bestehende `macos-ui-test.sh` auf |
+| Ausführung | Lokal Selection/Skip/`--full`; remote `macos-ui-test.sh` mit Passthrough-Args |
 | GUI | `open -a Terminal` + Profil `ReisenUIRemote` (Auto-Close); kein `launchctl asuser` |
 | Xcode | `DEVELOPER_DIR` → Xcode ≥27 unter `/Applications`; Installation manuell |
 | Signing (Remote) | `REISEN_MAC_UI_CODE_SIGNING_OFF`: unsigned build → Ad-hoc resign → test-without-building |
@@ -79,6 +85,7 @@ UI-Smokes (`Scripts/macos-ui-test.sh`) auf einem **anderen Mac** ausführen (kei
 Lokal (Dev-Mac)                         Remote (iMac, GUI-Login)
 ─────────────────                       ────────────────────────
 macos-ui-test-remote.sh
+  0. Selection lokal (diff / --full / Skip→Exit 0)
   1. Host auflösen (altanis → Bonjour-Fallback)
   2. SSH-Preflight (+ Keepalive)
   3. Quelle prüfen (Primär `.git` Directory oder Worktree `.git` Datei)
@@ -86,21 +93,23 @@ macos-ui-test-remote.sh
   5. Exklusiv-Lock erwerben (warten / Stale-Steal)
   6. rsync Working Tree  ─────────────► ~/Entwicklung/Reisen-ui-runs/<run-id>/
   7. Terminal-Profil ReisenUIRemote + open .command
-       → macos-ui-test.sh (Signing-Off-Pfad; run-scoped /tmp)
+       → macos-ui-test.sh --full | --reisen-ui-only-testing …
+         (Signing-Off-Pfad; run-scoped /tmp; keine Diff-Selektion remote)
   8. optional xcresult ◄─────────────── <run-dir>/DerivedData/ReisenMacUITests/
   9. Lock freigeben; Run-Dir bei Exit 0 löschen
 ```
 
 Remote-GUI: Tests laufen in Terminal via `open` (SSH hat keine Audit-Session). Fenster schließen sich **ohne Nutzerdialog** über Terminal-Profil `ReisenUIRemote` (`shellExitAction=0`) und `exit 0` nach Status-Schreiben — **kein** AppleScript-`close` (würde „laufende Prozesse beenden?“ auslösen).
 
-`macos-ui-test.sh` bleibt SSOT für Generate + `xcodebuild`. Der Wrapper dupliziert keine Test-Flags; Remote setzt `REISEN_MAC_UI_CODE_SIGNING_OFF=true` (nicht `CI`).
+`macos-ui-test.sh` bleibt SSOT für Generate + `xcodebuild`. Der Wrapper berechnet Test-Selection lokal und reicht nur Selection-Args durch (`--full` / `--reisen-ui-only-testing` …); er dupliziert keine sonstigen `xcodebuild`-Flags. Remote setzt `REISEN_MAC_UI_CODE_SIGNING_OFF=true` (nicht `CI`).
 
 ## Komponenten
 
 ### `Scripts/macos-ui-test-remote.sh`
 
 - Bash 3.2, `set -euo pipefail`, UTF-8 ohne BOM
-- `--self-test`: lokales Parsing der Env-Defaults, Exclude-Liste enthält Pflicht-Secrets-Pfade, Quoting-Probe für Remote-Invoke, Host-Resolve-Reihenfolge (kein Netz/SSH)
+- CLI: `--full` | Default Diff-Selektion lokal; Skip → Exit 0 ohne rsync; sonst Passthrough an remote `macos-ui-test.sh`
+- `--self-test`: lokales Parsing der Env-Defaults, Exclude-Liste enthält Pflicht-Secrets-Pfade, Quoting-Probe für Remote-Invoke inkl. Passthrough-Args, Host-Resolve-Reihenfolge (kein Netz/SSH)
 - Remote-Befehle immer über `bash -lc` bzw. `bash -c` (Remote-Default-Shell kann fish sein)
 - SSH: `BatchMode=yes`, `ConnectTimeout=8`, `ServerAliveInterval=30`, `ServerAliveCountMax=120`, `StrictHostKeyChecking=yes` (Override `REISEN_UI_REMOTE_STRICT_HOST_KEY`)
 - Exit-Code: SSH liefert den Exit-Code des Remote-`macos-ui-test.sh` unverändert durch
@@ -214,8 +223,8 @@ Gleichwertig zur Norm (Ist-Implementierung):
 
 ## Verifikation
 
-1. `bash ./Scripts/macos-ui-test-remote.sh --self-test` — Resolve-Reihenfolge, Pflicht-Excludes, Quoting, Lock-vor-Sync, Run-Dir-/tmp-Isolation
-2. Bei erreichbarem Host + Xcode 27 + entsperrter GUI: `bash ./Scripts/macos-ui-test-remote.sh` → Exit 0, stderr zeigt Host + `run-id`, Smoke-Output
+1. `bash ./Scripts/macos-ui-test-remote.sh --self-test` — Resolve-Reihenfolge, Pflicht-Excludes, Quoting inkl. Selection-Passthrough, Lock-vor-Sync, Run-Dir-/tmp-Isolation
+2. Bei erreichbarem Host + Xcode 27 + entsperrter GUI: `bash ./Scripts/macos-ui-test-remote.sh` → Exit 0 (Skip oder gefilterte Smokes), stderr zeigt Host + `run-id`; `--full` → volle `MacUISmokeTests`
 3. Gate-Proben: zwei parallele Wrapper → zweiter wartet auf Lock; Sync-Ziel ist `${DIR}/<run-id>/` nicht der Maintainer-Checkout
 
 ## Folgespecs (bewusst später)
