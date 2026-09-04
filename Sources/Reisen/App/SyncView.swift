@@ -156,6 +156,14 @@ struct SyncView: View {
         SyncBrowserChrome.showsCollapseControl(isSessionReady: isSessionReady)
     }
 
+    private var showsLoginChromeAboveWebView: Bool {
+        SyncBrowserChrome.showsLoginChromeAboveWebView(isSessionReady: isSessionReady)
+    }
+
+    private var showsBottomActionBar: Bool {
+        SyncBrowserChrome.showsBottomActionBar(isSessionReady: isSessionReady)
+    }
+
     var body: some View {
         Group {
             if !isProviderEnabled {
@@ -166,16 +174,24 @@ struct SyncView: View {
                 )
             } else if UITestingLaunch.isActive {
                 VStack(spacing: 0) {
-                    sessionBanner
-                    Divider()
-                    actionBar
+                    if showsLoginChromeAboveWebView {
+                        loginChrome
+                    } else {
+                        sessionBanner
+                        Divider()
+                        actionBar
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 VStack(spacing: 0) {
-                    sessionBanner
-                    Divider()
-                    if isSessionReady {
+                    if showsLoginChromeAboveWebView {
+                        loginChrome
+                    } else {
+                        sessionBanner
+                        Divider()
+                    }
+                    if showsBottomActionBar {
                         actionBar
                         Divider()
                     }
@@ -209,11 +225,6 @@ struct SyncView: View {
                     .allowsHitTesting(browserExpanded)
                     .accessibilityHidden(!browserExpanded)
                     .clipped()
-
-                    if !isSessionReady {
-                        Divider()
-                        actionBar
-                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -367,10 +378,6 @@ struct SyncView: View {
 
             Spacer(minLength: 8)
 
-            if sessionStatus == .needsLogin {
-                credentialControls
-            }
-
             if let lastURLString {
                 // SwiftUI-Text statt NSTextView: CopyableTextView blähte die Banner-Höhe auf
                 // und schnitt dadurch „Anmeldung erforderlich“ oben ab.
@@ -390,6 +397,56 @@ struct SyncView: View {
         .background(.bar)
     }
 
+    /// Eine HIG-Fläche: Status, Guidance und Credential-CTAs oberhalb der Login-WebView.
+    private var loginChrome: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "person.crop.circle.badge.questionmark")
+                    .foregroundStyle(loginTrafficLight.color)
+                    .imageScale(.large)
+                    .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(loginTrafficLight.displayLabel)
+                        .font(.headline)
+                        .accessibilityIdentifier(UITestingIdentifiers.syncLoginChrome)
+                    Text(sessionBannerSubtitle)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if showsApplePasskeyHint {
+                        SyncApplePasskeyHintLabel()
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                if let lastURLString {
+                    Text(lastURLString)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: 220, alignment: .trailing)
+                        .textSelection(.enabled)
+                        .help(lastURLString)
+                }
+            }
+
+            credentialControls
+
+            if let keychainMessage {
+                keychainEmptyAssistance(message: keychainMessage)
+            }
+
+            syncStatusMessages
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+    }
+
     @ViewBuilder
     private var credentialControls: some View {
         HStack(spacing: 8) {
@@ -405,7 +462,7 @@ struct SyncView: View {
                 .controlSize(.regular)
             } else if let selectedKeychainAccount {
                 Text(selectedKeychainAccount.username)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .help(L10n.format(.syncAccountLabel, selectedKeychainAccount.username, selectedKeychainAccount.serverHost))
@@ -430,10 +487,97 @@ struct SyncView: View {
             } label: {
                 Label(L10n.string(.actionRememberLogin), systemImage: "plus")
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.borderedProminent)
             .controlSize(.regular)
             .disabled(keychainServerHost == nil)
             .help(L10n.string(.syncRememberLoginHelp))
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func keychainEmptyAssistance(message: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            CopyableLabel(
+                title: message,
+                systemImage: "key.slash",
+                textStyle: .callout,
+                textColor: .secondaryLabelColor,
+                iconColor: .secondary
+            )
+            HStack(spacing: 8) {
+                Button {
+                    if !MacSystemApps.openPasswords() {
+                        appendKeychainMessage(L10n.string(.syncPasswordsAppNotFound))
+                    }
+                } label: {
+                    Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+
+                Button {
+                    if !MacSystemApps.openKeychainAccess() {
+                        appendKeychainMessage(L10n.string(.syncKeychainAccessNotFound))
+                    }
+                } label: {
+                    Label(L10n.string(.actionOpenKeychain), systemImage: "arrow.up.forward.app")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var syncStatusMessages: some View {
+        if let rememberLoginMessage {
+            Text(rememberLoginMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        if let compositionErrorMessage {
+            CopyableLabel(
+                title: compositionErrorMessage,
+                systemImage: "exclamationmark.triangle.fill",
+                textStyle: .callout,
+                textColor: .systemRed,
+                iconColor: .red
+            )
+        } else if let missingProviderMessage {
+            CopyableLabel(
+                title: missingProviderMessage,
+                systemImage: "exclamationmark.triangle.fill",
+                textStyle: .callout,
+                textColor: .systemRed,
+                iconColor: .red
+            )
+        } else if let errorMessage = store?.errorMessage, storeMessageBelongsToThisProvider {
+            VStack(alignment: .leading, spacing: 8) {
+                CopyableLabel(
+                    title: errorMessage,
+                    systemImage: "exclamationmark.triangle.fill",
+                    textStyle: .callout,
+                    textColor: .systemRed,
+                    iconColor: .red
+                )
+                if let pane = store?.privacySettingPane {
+                    OpenPrivacySettingsButton(pane: pane)
+                }
+                PublicGitHubIssueReportActions(
+                    syncError: errorMessage,
+                    providerID: store?.messageProviderID ?? providerID,
+                    store: store
+                )
+            }
+        } else if let statusMessage = store?.statusMessage, storeMessageBelongsToThisProvider {
+            CopyableLabel(
+                title: statusMessage,
+                systemImage: "checkmark.circle",
+                textStyle: .callout,
+                textColor: .secondaryLabelColor,
+                iconColor: .secondary
+            )
         }
     }
 
@@ -448,104 +592,10 @@ struct SyncView: View {
 
     private var actionBar: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let rememberLoginMessage {
-                Text(rememberLoginMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            if let compositionErrorMessage {
-                CopyableLabel(
-                    title: compositionErrorMessage,
-                    systemImage: "exclamationmark.triangle.fill",
-                    textStyle: .callout,
-                    textColor: .systemRed,
-                    iconColor: .red
-                )
-            } else if let missingProviderMessage {
-                CopyableLabel(
-                    title: missingProviderMessage,
-                    systemImage: "exclamationmark.triangle.fill",
-                    textStyle: .callout,
-                    textColor: .systemRed,
-                    iconColor: .red
-                )
-            } else if let errorMessage = store?.errorMessage, storeMessageBelongsToThisProvider {
-                VStack(alignment: .leading, spacing: 8) {
-                    CopyableLabel(
-                        title: errorMessage,
-                        systemImage: "exclamationmark.triangle.fill",
-                        textStyle: .callout,
-                        textColor: .systemRed,
-                        iconColor: .red
-                    )
-                    if let pane = store?.privacySettingPane {
-                        OpenPrivacySettingsButton(pane: pane)
-                    }
-                    PublicGitHubIssueReportActions(
-                        syncError: errorMessage,
-                        providerID: store?.messageProviderID ?? providerID,
-                        store: store
-                    )
-                }
-            } else if let statusMessage = store?.statusMessage, storeMessageBelongsToThisProvider {
-                CopyableLabel(
-                    title: statusMessage,
-                    systemImage: "checkmark.circle",
-                    textStyle: .callout,
-                    textColor: .secondaryLabelColor,
-                    iconColor: .secondary
-                )
-            } else if sessionStatus == .needsLogin, let keychainMessage {
-                VStack(alignment: .leading, spacing: 8) {
-                    CopyableLabel(
-                        title: keychainMessage,
-                        systemImage: "key.slash",
-                        textStyle: .callout,
-                        textColor: .secondaryLabelColor,
-                        iconColor: .secondary
-                    )
-                    HStack(spacing: 8) {
-                        Button {
-                            openRememberLoginSheet()
-                        } label: {
-                            Label(L10n.string(.actionRememberLogin), systemImage: "plus")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.regular)
-                        .disabled(keychainServerHost == nil)
-
-                        Button {
-                            if !MacSystemApps.openPasswords() {
-                                appendKeychainMessage(L10n.string(.syncPasswordsAppNotFound))
-                            }
-                        } label: {
-                            Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-
-                        Button {
-                            if !MacSystemApps.openKeychainAccess() {
-                                appendKeychainMessage(L10n.string(.syncKeychainAccessNotFound))
-                            }
-                        } label: {
-                            Label(L10n.string(.actionOpenKeychain), systemImage: "arrow.up.forward.app")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                    }
-                }
-            }
+            syncStatusMessages
 
             HStack(alignment: .center, spacing: 12) {
-                if !isSessionReady {
-                    Text(L10n.string(.syncAfterLoginHint))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: 8)
-                } else {
-                    Spacer(minLength: 0)
-                }
+                Spacer(minLength: 0)
 
                 if showsBrowserCollapseControl {
                     Button {
@@ -566,25 +616,23 @@ struct SyncView: View {
                         : L10n.string(.syncBrowserShowHelp))
                 }
 
-                if isSessionReady {
-                    Button {
-                        Task { await runSync() }
-                    } label: {
-                        if store?.isSyncing == true {
-                            ProgressView()
-                                .controlSize(.small)
-                                .padding(.horizontal, 8)
-                        } else {
-                            Text(L10n.string(.actionSyncNow))
-                        }
+                Button {
+                    Task { await runSync() }
+                } label: {
+                    if store?.isSyncing == true {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.horizontal, 8)
+                    } else {
+                        Text(L10n.string(.actionSyncNow))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
-                    .disabled(!canStartSync)
-                    .help(canStartSync
-                        ? L10n.string(.syncSyncNowHelp)
-                        : L10n.string(.syncUnavailableHelp))
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
+                .disabled(!canStartSync)
+                .help(canStartSync
+                    ? L10n.string(.syncSyncNowHelp)
+                    : L10n.string(.syncUnavailableHelp))
             }
         }
         .padding(16)

@@ -80,8 +80,26 @@ struct MacUI {
         app.activate()
         if window.waitForExistence(timeout: timeout) { return }
         if element(UITestingIdentifiers.sidebar).waitForExistence(timeout: 6) { return }
+        if element(UITestingIdentifiers.providerSetupSheet).waitForExistence(timeout: 2) { return }
         if element(UITestingIdentifiers.emptyState).waitForExistence(timeout: 2) { return }
         XCTFail("Hauptfenster fehlt\n\(app.debugDescription)")
+    }
+
+    /// Empty-Launch: Setup-Sheet per „Später“ schließen (kein Continue / keine Provider-Aktivierung).
+    func dismissProviderSetupIfPresent(timeout: TimeInterval = 3) {
+        let sheet = element(UITestingIdentifiers.providerSetupSheet)
+        guard sheet.waitForExistence(timeout: timeout) else { return }
+        let later = element(UITestingIdentifiers.providerSetupLater)
+        XCTAssertTrue(
+            later.waitForExistence(timeout: 3),
+            "Setup-Later fehlt trotz Sheet\n\(app.debugDescription)"
+        )
+        later.click()
+        let goneDeadline = Date().addingTimeInterval(5)
+        while sheet.exists, Date() < goneDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        XCTAssertFalse(sheet.exists, "Setup-Sheet bleibt nach Later\n\(app.debugDescription)")
     }
 
     @discardableResult
@@ -132,6 +150,11 @@ struct MacUI {
         return waitFor(UITestingIdentifiers.syncChrome)
     }
 
+    @discardableResult
+    func waitForSyncLoginChrome() -> XCUIElement {
+        waitFor(UITestingIdentifiers.syncLoginChrome)
+    }
+
     func clickAblageMenuItem(_ title: String) {
         app.activate()
         let ablagemenu = app.menuBars.menuBarItems["Ablage"].firstMatch
@@ -146,6 +169,7 @@ struct MacUI {
     }
 
     func createTripViaEmptyCTA(title: String) {
+        dismissProviderSetupIfPresent()
         waitFor(UITestingIdentifiers.emptyStateNewTrip).click()
         fillAndSaveTripEditor(title: title)
     }

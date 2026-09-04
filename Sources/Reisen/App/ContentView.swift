@@ -85,6 +85,8 @@ struct ContentView: View {
     @Environment(\.openURL) private var openURL
 
     @State private var providerEnableEpoch = 0
+    @State private var showProviderSetup = false
+    @State private var didRecordProviderSetupPresented = false
     @State private var showCreateTrip = false
     @State private var tripToEdit: SDTrip?
     @State private var tripPendingDelete: SDTrip?
@@ -162,6 +164,7 @@ struct ContentView: View {
         .frame(minWidth: 960, minHeight: 640)
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
             sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
+            presentProviderSetupIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
             if let providerID = note.object as? ProviderID {
@@ -249,6 +252,7 @@ struct ContentView: View {
         }
         .onAppear {
             applyUITestingLaunchSelectionIfNeeded()
+            presentProviderSetupIfNeeded()
             if !didInjectPasteImportFixture {
                 didInjectPasteImportFixture = true
                 pasteImport.injectTestingFixture()
@@ -314,6 +318,13 @@ struct ContentView: View {
                         selection = .trip(updatedTrip.id)
                     }
                 )
+            }
+            .sheet(isPresented: $showProviderSetup) {
+                ProviderFirstLaunchSetupSheet(
+                    onContinue: completeProviderSetup,
+                    onLater: deferProviderSetup
+                )
+                .interactiveDismissDisabled(true)
             }
             .bookingPortalCancelSheet($cancelRequest)
     }
@@ -572,6 +583,12 @@ struct ContentView: View {
                         showCreateTrip = true
                     }
                     .accessibilityIdentifier(UITestingIdentifiers.emptyStateNewTrip)
+                    if shouldShowProviderSetupReopen {
+                        Button(L10n.string(.setupProvidersReopen)) {
+                            presentProviderSetupFromReopen()
+                        }
+                        .accessibilityIdentifier(UITestingIdentifiers.providerSetupReopen)
+                    }
                     if enabledProviderIDs.first != nil {
                         Button(L10n.string(.actionOpenSync)) {
                             selectFirstEnabledProviderSyncIfAvailable()
@@ -716,6 +733,47 @@ struct ContentView: View {
         } else {
             selection = nil
         }
+    }
+
+    private var shouldShowProviderSetupReopen: Bool {
+        _ = providerEnableEpoch
+        return !AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted)
+            && enabledProviderIDs.isEmpty
+    }
+
+    private func presentProviderSetupIfNeeded() {
+        guard ProviderFirstLaunchSetup.shouldPresent() else { return }
+        guard !showProviderSetup else { return }
+        showProviderSetup = true
+        recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
+    }
+
+    private func presentProviderSetupFromReopen() {
+        showProviderSetup = true
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: "reopen")
+    }
+
+    private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
+        guard ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: enabledIDs) else { return }
+        let defaults = AppSettingsDefaults.current
+        ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
+        ProviderEnabledChange.notify()
+        ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+        showProviderSetup = false
+        selectFirstEnabledProviderSyncIfAvailable()
+        ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
+    }
+
+    private func deferProviderSetup() {
+        ProviderFirstLaunchSetup.markDeferred()
+        showProviderSetup = false
+        ProviderFirstLaunchSetupDiagnostics.recordDeferred()
+    }
+
+    private func recordProviderSetupPresentedIfNeeded(reason: String) {
+        guard !didRecordProviderSetupPresented else { return }
+        didRecordProviderSetupPresented = true
+        ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: reason)
     }
 
     private var sidebarMailbox: SidebarOpenBookingMailbox? {

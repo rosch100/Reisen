@@ -14,4 +14,14 @@ public enum SyncBrowserChrome: Sendable {
         }
         return true
     }
+
+    /// Login-Guidance und Credential-CTAs liegen in einer Fläche oberhalb der WebView.
+    public static func showsLoginChromeAboveWebView(isSessionReady: Bool) -> Bool {
+        !isSessionReady
+    }
+
+    /// Untere Action-Bar: Sync/Collapse/Status nach Login — nicht parallel zu Login-Prompts.
+    public static func showsBottomActionBar(isSessionReady: Bool) -> Bool {
+        isSessionReady
+    }
 }

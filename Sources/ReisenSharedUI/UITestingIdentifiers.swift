@@ -1,5 +1,6 @@
 import Foundation
 import ReisenData
+import ReisenDomain
 
 /// Stabile Accessibility-Identifier für XCUI (nicht L10n).
 public enum UITestingIdentifiers {
@@ -10,6 +11,7 @@ public enum UITestingIdentifiers {
     public static let inspector = "reisen.inspector"
     public static let settings = "reisen.settings"
     public static let syncChrome = "reisen.sync.chrome"
+    public static let syncLoginChrome = "reisen.sync.login-chrome"
     public static let syncBrowserCollapse = "reisen.sync.browser-collapse"
     public static let bookingEditor = "reisen.booking.editor"
     public static let bookingEditorSave = "reisen.booking.editor.save"
@@ -40,6 +42,16 @@ public enum UITestingIdentifiers {
 
     public static func assignBookingsCandidate(_ id: UUID) -> String {
         "reisen.assign-bookings.candidate.\(id.uuidString)"
+    }
+
+    /// First-Launch Provider-Setup (Spec: `setup.providers.*`).
+    public static let providerSetupSheet = "setup.providers.sheet"
+    public static let providerSetupContinue = "setup.providers.continue"
+    public static let providerSetupLater = "setup.providers.later"
+    public static let providerSetupReopen = "setup.providers.reopen"
+
+    public static func providerSetupToggle(_ providerID: ProviderID) -> String {
+        "setup.providers.toggle.\(providerID.rawValue)"
     }
     public static let gapEditor = "reisen.gap.editor"
     public static let gapEditorTitleField = "reisen.gap.editor.title"

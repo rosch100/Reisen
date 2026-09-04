@@ -1,6 +1,7 @@
 import Testing
 import ReisenSharedUI
 import ReisenData
+import ReisenDomain
 
 @Test func uiTestingIdentifiers_areStableAndSeeded() {
     #expect(UITestingIdentifiers.sidebar == "reisen.sidebar")
@@ -10,6 +11,7 @@ import ReisenData
     #expect(UITestingIdentifiers.inspector == "reisen.inspector")
     #expect(UITestingIdentifiers.settings == "reisen.settings")
     #expect(UITestingIdentifiers.syncChrome == "reisen.sync.chrome")
+    #expect(UITestingIdentifiers.syncLoginChrome == "reisen.sync.login-chrome")
     #expect(UITestingIdentifiers.bookingEditor == "reisen.booking.editor")
     #expect(UITestingIdentifiers.bookingEditorSave == "reisen.booking.editor.save")
     #expect(UITestingIdentifiers.emptyState == "reisen.empty-state")
@@ -19,6 +21,11 @@ import ReisenData
     #expect(UITestingIdentifiers.tripEditorSave == "reisen.trip.editor.save")
     #expect(UITestingIdentifiers.assignBookingsSheet == "reisen.assign-bookings.sheet")
     #expect(UITestingIdentifiers.assignBookingsConfirm == "reisen.assign-bookings.confirm")
+    #expect(UITestingIdentifiers.providerSetupSheet == "setup.providers.sheet")
+    #expect(UITestingIdentifiers.providerSetupContinue == "setup.providers.continue")
+    #expect(UITestingIdentifiers.providerSetupLater == "setup.providers.later")
+    #expect(UITestingIdentifiers.providerSetupReopen == "setup.providers.reopen")
+    #expect(UITestingIdentifiers.providerSetupToggle(.check24) == "setup.providers.toggle.check24")
     #expect(UITestingIdentifiers.gapEditor == "reisen.gap.editor")
     #expect(UITestingIdentifiers.gapEditorTitleField == "reisen.gap.editor.title")
     #expect(UITestingIdentifiers.gapEditAction == "reisen.gap.edit")

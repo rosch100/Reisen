@@ -14,6 +14,7 @@ struct SyncTab: View {
     @Binding var sessionChromeEpoch: Int
     var isSelected: Bool
     var onOpenSettings: () -> Void
+    var onReopenProviderSetup: () -> Void
 
     @Environment(\.syncStore) private var syncStore
     @Environment(\.providerRegistry) private var providerRegistry
@@ -23,6 +24,12 @@ struct SyncTab: View {
     private var enabledProviderIDs: [ProviderID] {
         _ = providerEnableEpoch
         return providerRegistry?.enabledSyncProviderIDs() ?? []
+    }
+
+    private var shouldShowProviderSetupReopen: Bool {
+        _ = providerEnableEpoch
+        return !AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted)
+            && enabledProviderIDs.isEmpty
     }
 
     @State private var selectedProviderID: ProviderID = .check24
@@ -138,6 +145,12 @@ struct SyncTab: View {
         } description: {
             Text(L10n.string(.syncEnablePortalsHint))
         } actions: {
+            if shouldShowProviderSetupReopen {
+                Button(L10n.string(.setupProvidersReopen)) {
+                    onReopenProviderSetup()
+                }
+                .accessibilityIdentifier(UITestingIdentifiers.providerSetupReopen)
+            }
             Button(L10n.string(.actionGoToSettings)) {
                 onOpenSettings()
             }
