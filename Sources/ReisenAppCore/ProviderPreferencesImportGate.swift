@@ -69,8 +69,12 @@ public enum ProviderPreferencesImportGate {
         defaults: UserDefaults = AppSettingsDefaults.current
     ) {
         do {
-            try ProviderPreferencesMirror.export(from: defaults, into: context)
-            recordPrefsExport(result: .succeeded, reason: "export")
+            let didWrite = try ProviderPreferencesMirror.export(from: defaults, into: context)
+            if didWrite {
+                recordPrefsExport(result: .succeeded, reason: "export")
+            } else {
+                recordPrefsExport(result: .skipped, reason: "export_unchanged")
+            }
         } catch {
             recordPrefsExport(
                 result: .failed,
@@ -79,13 +83,20 @@ public enum ProviderPreferencesImportGate {
         }
     }
 
-    /// Apply remote prefs; returns snapshot if a record existed.
+    /// Apply remote prefs; returns snapshot nur wenn lokale Defaults sich geändert haben (sonst kein Notify-Echo).
     public static func applyRemoteChange(
         context: ModelContext,
         defaults: UserDefaults = AppSettingsDefaults.current
     ) -> ProviderPreferencesSnapshot? {
         do {
-            return try ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+            let before = ProviderPreferencesSnapshot.read(from: defaults)
+            guard let snap = try ProviderPreferencesMirror.importApplying(from: context, into: defaults) else {
+                return nil
+            }
+            guard snap != before else {
+                return nil
+            }
+            return snap
         } catch {
             recordPrefsImport(result: .failed, reason: "remote_apply_import_failed")
             return nil

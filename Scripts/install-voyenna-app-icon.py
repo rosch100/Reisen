@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Install Voyenna app icons from a full-bleed 1024 master PNG (11c-style).
+"""Install Voyenna app icons from a full-bleed 1024 master PNG (11d-style).
 
 Writes primary (dark) + alternate light icons:
   - Apps/ReiseniOS/Assets.xcassets/AppIcon.appiconset/
   - Apps/ReiseniOS/Assets.xcassets/AppIconLight.appiconset/
   - Apps/Shared/AppIcon.icon/ + AppIconLight.icon/
   - Resources/AppIcon*.icns / iconset / 1024 PNG
-  - docs/design/voyenna-icon-previews/11c-plane-warm-light.png
+  - docs/design/voyenna-icon-previews/11d-plane-warm-light.png
   - docs/legal/assets/app-icon.png (web: Squircle-Maske + Alpha)
   - docs/legal/assets/apple-touch-icon.png (full-bleed, System maskiert)
 """
@@ -22,7 +22,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SRC = ROOT / "docs/design/voyenna-icon-previews/11c-plane-warm-ai-fullbleed.png"
+DEFAULT_SRC = ROOT / "docs/design/voyenna-icon-previews/11d-plane-warm-repositioned.png"
 SIZE = 1024
 # Approx. iOS continuous corner (marketing / web display only — never bake into App Store masters).
 WEB_CORNER_RATIO = 0.2237
@@ -283,10 +283,16 @@ def install_variant(
 
 def main() -> None:
     src = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SRC
+    if not src.is_absolute():
+        src = (ROOT / src).resolve()
     if not src.is_file():
         raise SystemExit(f"Missing source: {src}")
     dark = load_master(src)
-    print(f"Source: {src.relative_to(ROOT)}")
+    try:
+        src_label = src.relative_to(ROOT)
+    except ValueError:
+        src_label = src
+    print(f"Source: {src_label}")
 
     install_variant(
         dark,
@@ -298,7 +304,7 @@ def main() -> None:
     )
 
     light = light_master_from_dark(dark)
-    light_preview = ROOT / "docs/design/voyenna-icon-previews/11c-plane-warm-light.png"
+    light_preview = ROOT / "docs/design/voyenna-icon-previews/11d-plane-warm-light.png"
     write_png(light, light_preview)
     print(f"OK {light_preview.relative_to(ROOT)}")
 

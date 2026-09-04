@@ -48,9 +48,10 @@ Dateinamen:
 - Keine gebackenen Drop-Shadows, Bevels oder Gloss.
 - Ein klares Vordergrund-Glyph; bei ~60 pt noch erkennbar.
 
-## Phase 2 (Gewinner: `11c-plane-warm-ai-fullbleed.png`)
+## Phase 2 (Gewinner: `11d-plane-warm-repositioned.png`)
 
-- Master installiert via `Scripts/install-voyenna-app-icon.py`.
+- Master installiert via `Scripts/install-voyenna-app-icon.py` (Default = `11d`).
+- Balance-Rework 2026-09-04: `11c` war optisch zu weit rechts/unten. Vollkorrektur (`11d`/`11e`) war zu stark; Feintuning: **½ Querweg, ⅔ Höhenweg** von `11c`→Vollkorrektur → aktuelles `11d`.
 - iOS: `AppIcon` (dunkel, Primary) + `AppIconLight` (hell, Alternate, wählbar in Einstellungen).
 - macOS: `Resources/AppIcon.icns` + `AppIconLight.icns`; Dock/Finder über `CFBundleIconFile` (kein manuelles Application-Icon-Bitmap — sonst eckig).
 - Legal/Web: `docs/legal/assets/app-icon.png` (Squircle + Alpha für Favicon/Hero); `apple-touch-icon.png` full-bleed.
@@ -71,7 +72,8 @@ Dateinamen:
 
 ## Akzeptanz Phase 2
 
-- [x] Gewinner `11c` verdrahtet (Asset Catalog + `.icon` + `.icns` + Legal).
+- [x] Gewinner `11d` verdrahtet (Asset Catalog + `.icon` + `.icns` + Legal); Vorgänger `11c`/`11e` als Preview behalten.
+- [x] Optische Zentrierung: Teilkorrektur ½ Quer / ⅔ Höhe (nicht Vollkorrektur).
 - [x] `ictool` Preview iOS Light erzeugt lesbares Paper-Plane-Icon.
 - [x] `AppIcon.icon` als `wrapper.icon` in `Reisen.xcodeproj` (Store, Private, Mac).
 - Simulator/Device-Smoke: neues Icon auf Homescreen (manuell nach nächstem Build).

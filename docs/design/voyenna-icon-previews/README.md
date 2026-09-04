@@ -23,12 +23,13 @@ All files: 1024×1024 RGB, full-bleed (no white corner margin), no baked shadows
 
 Empfehlung zur Auswahl: **V + deep oder warm** für maximale Markenklarheit und Liquid-Glass-Robustheit; **Voyage + deep** wenn Symbol > Lettermark gewünscht.
 
-Phase 2: **Gewinner `11c-plane-warm-ai-fullbleed.png`** → installiert.
+Phase 2: **Gewinner `11d-plane-warm-repositioned.png`** → installiert
+(Balance: ½ Querweg + ⅔ Höhenweg von `11c`→Vollkorrektur).
 
 ```bash
 python3 Scripts/install-voyenna-app-icon.py
 # optional: anderen Master
-python3 Scripts/install-voyenna-app-icon.py docs/design/voyenna-icon-previews/11c-plane-warm-ai-fullbleed.png
+python3 Scripts/install-voyenna-app-icon.py docs/design/voyenna-icon-previews/11e-plane-warm-repositioned-scaled.png
 ```
 
 Produktiv:
@@ -41,7 +42,7 @@ Produktiv:
 | macOS | `Resources/AppIcon.icns` + `AppIconLight.icns` |
 | Legal Site (Web, Squircle) | `docs/legal/assets/app-icon.png` |
 | Apple Touch (full-bleed) | `docs/legal/assets/apple-touch-icon.png` |
-| Preview hell | [11c-plane-warm-light.png](11c-plane-warm-light.png) |
+| Preview hell | [11d-plane-warm-light.png](11d-plane-warm-light.png) |
 
 **Hinweis:** Produkt-Icons (Asset Catalog / `.icns` / Icon Composer) bleiben **Full-bleed ohne gebackene Ecken** — das System maskiert. Die Website-PNG hat eine Squircle-Maske mit Alpha, weil Browser keine System-Maske anwenden.
 
@@ -53,4 +54,15 @@ Auswahl in den iOS-Einstellungen (Dunkel / Hell); Primary bleibt dunkel.
 | --- | --- |
 | [11a-plane-warm-ai-refined.png](11a-plane-warm-ai-refined.png) | KI-Refine; Ecken nachträglich auf Full-bleed korrigiert |
 | [11b-plane-warm-ai-alt.png](11b-plane-warm-ai-alt.png) | KI-Alt; von Haus aus Full-bleed Navy |
-| [11c-plane-warm-ai-fullbleed.png](11c-plane-warm-ai-fullbleed.png) | KI mit striktem Full-bleed-Prompt |
+| [11c-plane-warm-ai-fullbleed.png](11c-plane-warm-ai-fullbleed.png) | KI mit striktem Full-bleed-Prompt; Balance rechts/unten |
+
+## Balance-Rework (optisches Zentrieren)
+
+Vergleich mit Crosshair: [11-balance-compare.png](11-balance-compare.png)
+
+| Datei | Ansatz | Messung (opt. Δ zur Mitte) | Status |
+| --- | --- | --- | --- |
+| [11c](11c-plane-warm-ai-fullbleed.png) | Ausgang | ≈ (+79, +6) — zu weit rechts | ersetzt |
+| [11d](11d-plane-warm-repositioned.png) | A′: ½ Quer + ⅔ Höhe | ≈ (+34, −14) | **Gewinner** |
+| [11e](11e-plane-warm-repositioned-scaled.png) | B: Vollkorrektur + Scale | ≈ (−12, −24) | Alternative (zu stark) |
+| [11f](11f-plane-warm-ai-recentered.png) | C: KI neu | Composition blieb unzuverlässig | Preview only |
