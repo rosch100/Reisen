@@ -10,7 +10,7 @@ internal enum KeychainCredentialUpsert {
             serverHost: normalized.server,
             username: normalized.username
         )
-        let existingQuery = KeychainCredentialQuery.genericBase(account: accountID)
+        let existingQuery = KeychainCredentialQuery.genericBase(account: accountID, synchronizable: true)
         let update = KeychainCredentialQuery.genericUpdateData(normalized.passwordData)
 
         let updateStatus = keychain.itemUpdate(

@@ -5,6 +5,7 @@ internal protocol KeychainInternetPasswordKeychainAPI: Sendable {
     func itemCopyMatching(query: CFDictionary) -> (status: OSStatus, item: CFTypeRef?)
     func itemUpdate(existingQuery: CFDictionary, update: CFDictionary) -> OSStatus
     func itemAdd(add: CFDictionary) -> OSStatus
+    func itemDelete(query: CFDictionary) -> OSStatus
 }
 
 internal struct SecurityInternetPasswordKeychainAPI: KeychainInternetPasswordKeychainAPI {
@@ -20,5 +21,9 @@ internal struct SecurityInternetPasswordKeychainAPI: KeychainInternetPasswordKey
 
     func itemAdd(add: CFDictionary) -> OSStatus {
         SecItemAdd(add, nil)
+    }
+
+    func itemDelete(query: CFDictionary) -> OSStatus {
+        SecItemDelete(query)
     }
 }

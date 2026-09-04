@@ -8,7 +8,7 @@ internal struct KeychainInternetPasswordLookup: Sendable {
     func matchingAttributes(configuredHost: String) throws -> [[CFString: Any]] {
         let candidates = KeychainHostMatching.candidates(for: configuredHost)
         guard !candidates.isEmpty else { return [] }
-        return try KeychainGenericPasswordLookup.matchingAttributes(
+        return try KeychainGenericPasswordLookup.matchingAttributesIncludingLocalOnly(
             keychain: keychain,
             configuredHost: configuredHost
         )
