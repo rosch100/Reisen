@@ -12,10 +12,13 @@ Eine iPadOS/iOS-App bereitstellen, die die Kernfunktionen der macOS-App abbildet
 - Fehlerzustände: Store-Init-Fehler mit Reset-Dialog (optional inkl. Cloud-Wipe, destruktiv nur mit Confirm)
 
 ## Nicht-Ziele
-- Sync von WebView-Cookies/Keychain-Credentials zwischen Geräten
+- Sync von WebView-Cookies zwischen Geräten (Sessions bleiben gerätegebunden)
+- Preferred-Keychain-Account-IDs in CloudKit (Username-PII)
 - App Store Release-Workflow und Screenshots
 - Catalyst
 - macOS-Menü-Shortcuts 1:1 auf iOS
+
+Hinweis: Provider-Enablement/`setupCompleted` syncen über CloudKit; Opt-in App-Credentials über iCloud-Keychain (`kSecAttrSynchronizable`) — siehe `docs/superpowers/specs/2026-09-04-icloud-provider-prefs-credentials-design.md`.
 
 ## Navigation & HIG
 Die App nutzt iOS/iPadOS-native Muster statt der macOS-3-Spalten-Mail-Metapher 1:1 zu portieren.

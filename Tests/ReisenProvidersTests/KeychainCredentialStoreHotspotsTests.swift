@@ -13,9 +13,11 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
 
     var updateCalls: Int = 0
     var addCalls: Int = 0
+    var deleteCalls: Int = 0
 
     var updateStatus: OSStatus = errSecSuccess
     var addStatus: OSStatus = errSecSuccess
+    var deleteStatus: OSStatus = errSecSuccess
 
     private(set) var lastUpdateExistingQuery: CFDictionary?
     private(set) var lastAddQuery: CFDictionary?
@@ -59,6 +61,16 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
             genericSecretByAccount[account] = data
         }
         return addStatus
+    }
+
+    func itemDelete(query: CFDictionary) -> OSStatus {
+        deleteCalls += 1
+        if deleteStatus == errSecSuccess,
+           let dict = query as? [CFString: Any],
+           let account = dict[kSecAttrAccount] as? String {
+            genericSecretByAccount.removeValue(forKey: account)
+        }
+        return deleteStatus
     }
 }
 
@@ -291,6 +303,13 @@ struct KeychainCredentialStoreHotspotsTests {
         #expect((dict?[kSecAttrService] as? String) == KeychainCredentialQuery.service)
         #expect((dict?[kSecAttrAccount] as? String) == "booking.com\u{1f}u@x.de")
         #expect(dict?[kSecUseDataProtectionKeychain] as? Bool == true)
+        #expect(dict?[kSecAttrSynchronizable] as? Bool == true)
+        #expect(
+            CFEqual(
+                (dict?[kSecAttrAccessible] as CFTypeRef?) ?? kCFNull,
+                kSecAttrAccessibleAfterFirstUnlock
+            )
+        )
         #expect(!keychainQueryUsesSynchronizableAny(dict ?? [:]))
         #expect(keychainQueryIsInternetPassword(dict ?? [:]) == false)
     }
