@@ -202,6 +202,7 @@ struct SyncView: View {
                         lastURLString: $lastURLString,
                         webView: webViewBinding,
                         autofillCredentials: autofillCredentials,
+                        passwordAutofillAllowedHosts: loginConfiguration?.passwordAutofillAllowedHosts ?? [],
                         onCapturedCredentials: { credentials in
                             pendingRememberCredentials = credentials
                         },

@@ -38,4 +38,10 @@ extension TravelProvider {
 public protocol TravelProviderLoginConfiguration {
     var loginURL: URL { get }
     var keychainServerHost: String { get }
+    /// Hosts, die Keychain-Passwort-Autofill erhalten dürfen (Default: nur `keychainServerHost`).
+    var passwordAutofillAllowedHosts: [String] { get }
+}
+
+extension TravelProviderLoginConfiguration {
+    public var passwordAutofillAllowedHosts: [String] { [keychainServerHost] }
 }

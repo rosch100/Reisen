@@ -2,6 +2,7 @@ import SwiftUI
 import WebKit
 import ReisenAppCore
 import ReisenDomain
+import ReisenProviders
 import ReisenSharedUI
 
 extension View {
@@ -130,6 +131,20 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
             withError error: Error
         ) {
             onLoadFailed()
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationAction: WKNavigationAction,
+            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        ) {
+            let isMain = navigationAction.targetFrame?.isMainFrame ?? false
+            if let requestURL = navigationAction.request.url,
+               !ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: isMain) {
+                decisionHandler(.cancel)
+                return
+            }
+            decisionHandler(.allow)
         }
     }
 }

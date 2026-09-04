@@ -20,6 +20,7 @@ public enum KeychainAutoFill {
         ProviderLoginAssistance.applyCredentials(
             in: webView,
             credentials: credentials,
+            allowedServerHosts: [account.serverHost],
             diagnosticContext: diagnosticContext
         )
         return credentials

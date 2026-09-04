@@ -15,6 +15,7 @@ struct ProviderSessionView: View {
     @Binding var webView: WKWebView?
 
     let autofillCredentials: ProviderCredentials?
+    let passwordAutofillAllowedHosts: [String]
     let onCapturedCredentials: ((ProviderCredentials) -> Void)?
     let onNavigationBlocked: (() -> Void)?
     let allowsEmbed: Bool
@@ -27,6 +28,7 @@ struct ProviderSessionView: View {
         lastURLString: Binding<String?>,
         webView: Binding<WKWebView?>,
         autofillCredentials: ProviderCredentials? = nil,
+        passwordAutofillAllowedHosts: [String] = [],
         onCapturedCredentials: ((ProviderCredentials) -> Void)? = nil,
         onNavigationBlocked: (() -> Void)? = nil,
         allowsEmbed: Bool,
@@ -38,6 +40,7 @@ struct ProviderSessionView: View {
         self._lastURLString = lastURLString
         self._webView = webView
         self.autofillCredentials = autofillCredentials
+        self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
         self.onCapturedCredentials = onCapturedCredentials
         self.onNavigationBlocked = onNavigationBlocked
         self.allowsEmbed = allowsEmbed
@@ -51,6 +54,7 @@ struct ProviderSessionView: View {
             lastURLString: $lastURLString,
             webViewRef: $webView,
             autofillCredentials: autofillCredentials,
+            passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
             allowsEmbed: allowsEmbed,
@@ -189,6 +193,7 @@ private struct ProviderWebView: NSViewRepresentable {
     @Binding var webViewRef: WKWebView?
 
     let autofillCredentials: ProviderCredentials?
+    let passwordAutofillAllowedHosts: [String]
     let onCapturedCredentials: ((ProviderCredentials) -> Void)?
     let onNavigationBlocked: (() -> Void)?
     let allowsEmbed: Bool
@@ -199,6 +204,7 @@ private struct ProviderWebView: NSViewRepresentable {
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
             autofillCredentials: autofillCredentials,
+            passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
             diagnosticContext: diagnosticContext
@@ -234,6 +240,7 @@ private struct ProviderWebView: NSViewRepresentable {
         context.coordinator.update(
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
+            passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
             diagnosticContext: diagnosticContext
@@ -351,6 +358,7 @@ private struct ProviderWebView: NSViewRepresentable {
         private var sessionStatus: Binding<ProviderSessionStatus>
         private var lastURLString: Binding<String?>
         private var autofillCredentials: ProviderCredentials?
+        private var passwordAutofillAllowedHosts: [String]
         private var onCapturedCredentials: ((ProviderCredentials) -> Void)?
         private var onNavigationBlocked: (() -> Void)?
         private var becomeKeyObserver: NSObjectProtocol?
@@ -373,13 +381,15 @@ private struct ProviderWebView: NSViewRepresentable {
             sessionStatus: Binding<ProviderSessionStatus>,
             lastURLString: Binding<String?>,
             autofillCredentials: ProviderCredentials?,
+            passwordAutofillAllowedHosts: [String],
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
-        onNavigationBlocked: (() -> Void)?,
-        diagnosticContext: DiagnosticContext
+            onNavigationBlocked: (() -> Void)?,
+            diagnosticContext: DiagnosticContext
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
             self.autofillCredentials = autofillCredentials
+            self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
             self.diagnosticContext = diagnosticContext
@@ -388,12 +398,14 @@ private struct ProviderWebView: NSViewRepresentable {
         func update(
             sessionStatus: Binding<ProviderSessionStatus>,
             lastURLString: Binding<String?>,
+            passwordAutofillAllowedHosts: [String],
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
             onNavigationBlocked: (() -> Void)?,
             diagnosticContext: DiagnosticContext
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
+            self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
             self.diagnosticContext = diagnosticContext
@@ -454,7 +466,8 @@ private struct ProviderWebView: NSViewRepresentable {
             if message.name == LoginFormCapture.messageHandlerName {
                 LoginFormCapture.handleScriptMessage(
                     message,
-                    webView: trackedWebView ?? message.webView
+                    webView: trackedWebView ?? message.webView,
+                    allowedServerHosts: passwordAutofillAllowedHosts
                 ) { credentials in
                     onCapturedCredentials?(credentials)
                 }
@@ -676,7 +689,10 @@ private struct ProviderWebView: NSViewRepresentable {
         func applyLoginAssistance(in webView: WKWebView) {
             guard let url = webView.url else { return }
             let absolute = url.absoluteString.lowercased()
-            let isLogin = AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute)
+            let isLogin = AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+                absolute,
+                allowedServerHosts: passwordAutofillAllowedHosts
+            )
             guard isLogin else {
                 loginAssistanceSuspended = false
                 return
@@ -708,6 +724,7 @@ private struct ProviderWebView: NSViewRepresentable {
             loginAssistanceCancellation = ProviderLoginAssistance.applyCredentials(
                 in: webView,
                 credentials: credentials,
+                allowedServerHosts: passwordAutofillAllowedHosts,
                 diagnosticContext: diagnosticContext
             )
         }
@@ -900,9 +917,13 @@ private struct ProviderWebView: NSViewRepresentable {
                 }
             }
 
-            if AuthPageURLHeuristic.shouldApplyPasswordAutofill(absolute) {
+            if AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+                absolute,
+                allowedServerHosts: passwordAutofillAllowedHosts
+            ) {
                 ProviderLoginAssistance.installOnLoginPage(
                     in: webView,
+                    allowedServerHosts: passwordAutofillAllowedHosts,
                     diagnosticContext: diagnosticContext
                 )
             }

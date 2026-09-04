@@ -26,7 +26,7 @@ func loginFieldHintsScriptRecognizesTelAndMobileFields() {
 
 @Test
 func loginAutofillScriptRecognizesTelAndMobileFields() {
-    let script = LoginAutofillScript.build(username: "u", password: "p")
+    let script = LoginAutofillScript.build()
 
     #expect(script.contains("type === 'tel'"))
     #expect(script.contains("inputmode"))

@@ -24,29 +24,44 @@ public enum ProviderPreferencesImportGate {
         recordPrefsImport(result: .started, reason: "gate_start")
 
         if shouldSkipCloudKitWait {
-            let snap = try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
-            recordPrefsImport(
-                result: .succeeded,
-                reason: snap == nil ? "gate_immediate_empty" : "gate_immediate"
-            )
-            return snap
+            do {
+                let snap = try ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+                recordPrefsImport(
+                    result: .succeeded,
+                    reason: snap == nil ? "gate_immediate_empty" : "gate_immediate"
+                )
+                return snap
+            } catch {
+                recordPrefsImport(result: .failed, reason: "gate_immediate_import_failed")
+                return nil
+            }
         }
 
-        if let existing = try? ProviderPreferencesMirror.importApplying(from: context, into: defaults),
-           existing.setupCompleted {
-            recordPrefsImport(result: .succeeded, reason: "gate_already_present")
-            return existing
+        do {
+            if let existing = try ProviderPreferencesMirror.importApplying(from: context, into: defaults),
+               existing.setupCompleted {
+                recordPrefsImport(result: .succeeded, reason: "gate_already_present")
+                return existing
+            }
+        } catch {
+            recordPrefsImport(result: .failed, reason: "gate_precheck_import_failed")
+            return nil
         }
 
         await PersistenceBootstrap.awaitCloudKitImportIfNeeded(timeout: timeout)
 
-        let snap = try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
-        if snap == nil {
-            recordPrefsImport(result: .timedOut, reason: "gate_timeout_empty")
-        } else {
-            recordPrefsImport(result: .succeeded, reason: "gate_after_wait")
+        do {
+            let snap = try ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+            if snap == nil {
+                recordPrefsImport(result: .timedOut, reason: "gate_timeout_empty")
+            } else {
+                recordPrefsImport(result: .succeeded, reason: "gate_after_wait")
+            }
+            return snap
+        } catch {
+            recordPrefsImport(result: .failed, reason: "gate_after_wait_import_failed")
+            return nil
         }
-        return snap
     }
 
     public static func exportFromDefaults(
@@ -57,7 +72,10 @@ public enum ProviderPreferencesImportGate {
             try ProviderPreferencesMirror.export(from: defaults, into: context)
             recordPrefsExport(result: .succeeded, reason: "export")
         } catch {
-            recordPrefsExport(result: .failed, reason: "export_failed")
+            recordPrefsExport(
+                result: .failed,
+                reason: "export_failed_\(String(describing: type(of: error)))"
+            )
         }
     }
 
@@ -66,7 +84,12 @@ public enum ProviderPreferencesImportGate {
         context: ModelContext,
         defaults: UserDefaults = AppSettingsDefaults.current
     ) -> ProviderPreferencesSnapshot? {
-        try? ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+        do {
+            return try ProviderPreferencesMirror.importApplying(from: context, into: defaults)
+        } catch {
+            recordPrefsImport(result: .failed, reason: "remote_apply_import_failed")
+            return nil
+        }
     }
 
     private static func recordPrefsImport(result: DiagnosticResult, reason: String) {

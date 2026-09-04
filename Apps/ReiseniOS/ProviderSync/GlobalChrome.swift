@@ -89,6 +89,12 @@ struct SyncBackgroundSessionProbe: View {
         return loginConfig?.loginURL
     }
 
+    private func passwordAutofillAllowedHosts(for providerID: ProviderID) -> [String] {
+        let provider = providerRegistry?.provider(id: providerID)
+        let loginConfig = provider as? any TravelProviderLoginConfiguration
+        return loginConfig?.passwordAutofillAllowedHosts ?? []
+    }
+
     private func webViewBinding(for providerID: ProviderID) -> Binding<WKWebView?> {
         Binding(
             get: { sessionHub?.webView(for: providerID) },
@@ -131,6 +137,7 @@ struct SyncBackgroundSessionProbe: View {
                         providerID: id,
                         operation: "ios_startup_probe"
                     ),
+                    passwordAutofillAllowedHosts: passwordAutofillAllowedHosts(for: id),
                     webView: webViewBinding(for: id),
                     allowsEmbed: sessionHub?.allowsEmbed(on: .probe) ?? false,
                     onDidFinish: { finishedWebView in

@@ -1,17 +1,13 @@
 import Foundation
 
 /// JS-Quelle für Keychain-gestütztes Login-Ausfüllen in Provider-WKWebViews.
-/// Mehrstufige Flows (zuerst E-Mail, später Kennwort) werden unterstützt.
+/// Credentials kommen über `callAsyncJavaScript`-Arguments (`username` / `password`),
+/// nicht als Literale in der Script-Quelle.
 public enum LoginAutofillScript {
-    public static func build(username: String, password: String) -> String {
-        let usernameLiteral = jsStringLiteral(username)
-        let passwordLiteral = jsStringLiteral(password)
-
+    public static func build() -> String {
+        // Body für `WKWebView.callAsyncJavaScript` (async Function-Body):
+        // Arguments `username`/`password` sind lokal gebunden; IIFE würde den Return verwerfen.
         return """
-        (function() {
-          const username = \(usernameLiteral);
-          const password = \(passwordLiteral);
-
           function isVisible(el) {
             if (!el) return false;
             try {
@@ -420,13 +416,6 @@ public enum LoginAutofillScript {
             rememberCandidatesVisible: rememberCandidatesVisible,
             inputsDebug
           };
-        })();
         """
-    }
-
-    private static func jsStringLiteral(_ s: String) -> String {
-        let encoded = try! JSONEncoder().encode(s)
-        let json = String(data: encoded, encoding: .utf8)!
-        return json
     }
 }

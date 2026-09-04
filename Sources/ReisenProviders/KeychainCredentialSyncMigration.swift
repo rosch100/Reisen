@@ -41,6 +41,18 @@ enum KeychainCredentialSyncMigrationRunner {
                   let password = String(data: passwordData, encoding: .utf8)
             else { continue }
 
+            let syncExistsQuery = KeychainCredentialQuery.genericBase(
+                account: accountKey,
+                synchronizable: true
+            )
+            let (syncStatus, _) = keychain.itemCopyMatching(query: syncExistsQuery as CFDictionary)
+            if syncStatus == errSecSuccess {
+                // Sync-Item existiert bereits — lokales Duplikat entfernen, Sync nicht überschreiben.
+                let deleteQuery = KeychainCredentialQuery.genericLocalOnlyBase(account: accountKey)
+                _ = keychain.itemDelete(query: deleteQuery as CFDictionary)
+                continue
+            }
+
             do {
                 try save(
                     ProviderCredentials(username: parsed.username, password: password),
@@ -50,6 +62,7 @@ enum KeychainCredentialSyncMigrationRunner {
                 _ = keychain.itemDelete(query: deleteQuery as CFDictionary)
                 migrated += 1
             } catch {
+                recordMigration(result: .failed, reason: "item_save_failed")
                 continue
             }
         }

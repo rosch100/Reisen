@@ -199,6 +199,18 @@ if grep -q 'AUTH_OUT="$(reisen_xcodebuild_asc_auth_args)"' "$ROOT/Scripts/ios-ar
   echo "Fehler: reisen_xcodebuild_asc_auth_args darf nicht in Command-Substitution laufen (Subshell löscht den Temp-Key)." >&2
   exit 1
 fi
+if ! grep -q 'reisen_xcodebuild_asc_auth_args' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss in CI xcodebuild mit App-Store-Connect-API-Key authentifizieren." >&2
+  exit 1
+fi
+if ! grep -q 'GITHUB_ACTIONS' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: Private-TestFlight-Archive muss ASC-Auth auf GitHub Actions beschränken (lokal Xcode-Account)." >&2
+  exit 1
+fi
+if grep -q 'AUTH_OUT="$(reisen_xcodebuild_asc_auth_args)"' "$ROOT/Scripts/ios-archive-private-testflight.sh"; then
+  echo "Fehler: reisen_xcodebuild_asc_auth_args darf nicht in Command-Substitution laufen (Subshell löscht den Temp-Key)." >&2
+  exit 1
+fi
 (
   # shellcheck source=apple-developer.sh
   source "$ROOT/Scripts/apple-developer.sh"

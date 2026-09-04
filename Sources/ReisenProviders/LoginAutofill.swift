@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import ReisenDiagnostics
 
 public struct LoginAutofillResult: Sendable, Equatable {
     public let filled: Bool
@@ -13,27 +14,49 @@ public struct LoginAutofillResult: Sendable, Equatable {
 
 /// Keychain-gestütztes Ausfüllen in Provider-WKWebViews (Mac + iOS).
 public enum LoginAutofill {
-    public static func autofillScript(credentials: ProviderCredentials) -> String {
-        LoginAutofillScript.build(username: credentials.username, password: credentials.password)
-    }
-
     @MainActor
     public static func apply(
         in webView: WKWebView,
         credentials: ProviderCredentials,
         completion: ((LoginAutofillResult) -> Void)? = nil
     ) {
-        let script = autofillScript(credentials: credentials)
-        webView.evaluateJavaScript(script) { result, _ in
-            let dictionary = result as? [String: Any]
-            let submitID = dictionary?["submitId"] as? String
-                ?? (result as? NSDictionary)?["submitId"] as? String
-            completion?(
-                LoginAutofillResult(
-                    filled: WebKitJSResult.bool(from: result, key: "filled") ?? false,
-                    submitID: submitID
+        let script = LoginAutofillScript.build()
+        let arguments: [String: Any] = [
+            "username": credentials.username,
+            "password": credentials.password,
+        ]
+        Task { @MainActor in
+            do {
+                let value = try await webView.callAsyncJavaScript(
+                    script,
+                    arguments: arguments,
+                    contentWorld: .page
                 )
-            )
+                let dictionary = value as? [String: Any]
+                let submitID = dictionary?["submitId"] as? String
+                    ?? (value as? NSDictionary)?["submitId"] as? String
+                completion?(
+                    LoginAutofillResult(
+                        filled: WebKitJSResult.bool(from: value, key: "filled") ?? false,
+                        submitID: submitID
+                    )
+                )
+            } catch {
+                let event = DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "login_autofill"
+                    ),
+                    component: "LoginAutofill",
+                    phase: "apply",
+                    event: "login_autofill_failed",
+                    result: .failed,
+                    reason: String(describing: type(of: error))
+                )
+                Task { await DiagnosticLogger.shared.record(event) }
+                completion?(LoginAutofillResult(filled: false, submitID: nil))
+            }
         }
     }
 }

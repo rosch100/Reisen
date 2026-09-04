@@ -51,3 +51,15 @@ import ReisenProviders
     let url = URL(string: "itms-apps://apps.apple.com/app/id367003269")!
     #expect(ProviderWebViewNavigationPolicy.decision(for: url, isMainFrame: true) == .cancel)
 }
+
+@Test func providerWebViewNavigationPolicy_cancelsDataScheme() {
+    let url = URL(string: "data:text/html,<script>1</script>")!
+    #expect(ProviderWebViewNavigationPolicy.decision(for: url, isMainFrame: true) == .cancel)
+    #expect(ProviderWebViewNavigationPolicy.decision(for: url, isMainFrame: false) == .cancel)
+}
+
+@Test func providerWebViewNavigationPolicy_cancelsBlobOnMainFrameOnly() {
+    let url = URL(string: "blob:https://example.com/uuid")!
+    #expect(ProviderWebViewNavigationPolicy.decision(for: url, isMainFrame: true) == .cancel)
+    #expect(ProviderWebViewNavigationPolicy.decision(for: url, isMainFrame: false) == .allow)
+}
