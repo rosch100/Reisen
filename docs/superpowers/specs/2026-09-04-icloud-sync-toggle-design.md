@@ -84,14 +84,14 @@ applyICloudSyncPreference(enabled: Bool, wipeCloud: Bool)
 Ablauf (MainActor, `isResetting`-Guard wie Reset):
 
 1. Diagnostic `apply_started` mit reason; vorherigen Preference-Wert merken.
-2. Preference **vorläufig** schreiben (`setICloudSyncEnabled`), damit `makeContainer` den Effective-Gate sieht.
-3. Observer stoppen.
-4. Wenn `!enabled && wipeCloud`: bestehender Wipe-Pfad (`wipeSyncedEntities` + Export-Wait), dann Store-Reset/Reopen lokal-only.
+2. Observer stoppen.
+3. Wenn `!enabled && wipeCloud`: Wipe **zuerst** mit Preference noch an (damit `.failed`-Provisional CloudKit öffnen/importieren/tombstonen kann); danach Preference `false` und Reopen lokal-only. Nach erfolgreichem Wipe Preference bei Reopen-Fehler **nicht** revertieren.
+4. Wenn Keep-Local / Enable: Preference schreiben (`setICloudSyncEnabled`), damit `makeContainer` den Effective-Gate sieht; dann reopen.
 5. Wenn `!enabled && !wipeCloud`: Container schließen/reopen **ohne** CloudKit; lokale Store-Dateien behalten (kein `resetStoreFiles`, außer der Config-Wechsel erzwingt es nachweisbar).
 6. Wenn `enabled`: reopen mit CloudKit wenn Env erlaubt.
-7. `activateReadyState` / Observer starten; Diagnostic `apply_succeeded`.
+7. Observer starten; Diagnostic `apply_succeeded`.
 
-**Fehler:** Preference auf den gemerkten Wert **revertieren**, Diagnostic `apply_failed`, UI Alert oder `.failed` mit Retry — kein dauerhafter Widerspruch zwischen Toggle und Store.
+**Fehler:** Preference auf den gemerkten Wert **revertieren** (außer nach erfolgreichem Wipe), Diagnostic `apply_failed`, UI Alert oder `.failed` mit Retry — kein dauerhafter Widerspruch zwischen Toggle und Store.
 
 **UITesting:** In-Memory; Preference-Apply baut Ready-State neu ohne Disk/CloudKit.
 
@@ -101,7 +101,7 @@ Ablauf (MainActor, `isResetting`-Guard wie Reset):
 
 - iCloud-Section: **Toggle** gebunden an Preference (Label bestehend `settings.icloud_sync_label`).
 - Darunter: Account-Status + Container-Detail (wie heute).
-- Toggle `.disabled`, wenn Env CloudKit erzwingt-aus; Footer erklärt Env/CI.
+- Toggle `.disabled`, wenn Env CloudKit erzwingt-aus, Callback fehlt, oder Apply läuft; Footer erklärt Env/CI.
 - Accessibility-ID: `settings.icloudSyncToggle` in `UITestingIdentifiers`.
 
 ### Confirms

@@ -92,8 +92,6 @@ public final class AppBootstrap {
             reason: reason
         )
 
-        AppSettingsKeys.setICloudSyncEnabled(enabled, defaults: defaults)
-
         /// After cloud wipe + store-file delete, do not restore the previous preference on reopen failure.
         var revertPreferenceOnFailure = true
 
@@ -101,14 +99,20 @@ public final class AppBootstrap {
             stopCloudSideEffectObserverIfReady()
 
             if uiTesting.skipsSideEffects {
+                AppSettingsKeys.setICloudSyncEnabled(enabled, defaults: defaults)
                 try activateReadyState()
             } else if !enabled && wipeCloud {
-                let needsReopen = try await wipeCloudDataAndDeleteStoreFiles()
+                // Keep preference ON until wipe finishes so a `.failed` provisional store still
+                // opens with CloudKit, imports remote records, and can tombstone them.
+                _ = try await wipeCloudDataAndDeleteStoreFiles()
+                stopCloudSideEffectObserverIfReady()
+                AppSettingsKeys.setICloudSyncEnabled(false, defaults: defaults)
                 revertPreferenceOnFailure = false
-                if needsReopen {
-                    try activateReadyState()
-                }
+                // Always reopen so Effective CloudKit matches the new opt-out (failed-path
+                // provisional may still have been opened with CloudKit while preference was on).
+                try activateReadyState()
             } else {
+                AppSettingsKeys.setICloudSyncEnabled(enabled, defaults: defaults)
                 // Keep local store files; makeContainer reads preference for CloudKit on/off.
                 try activateReadyState()
             }

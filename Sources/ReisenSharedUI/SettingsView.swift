@@ -56,6 +56,7 @@ public struct SettingsView: View {
     @State private var showDisableICloudConfirm = false
     @State private var showEnableICloudConfirm = false
     @State private var iCloudSyncEnabled = AppSettingsKeys.isICloudSyncEnabled()
+    @State private var isApplyingICloudSyncPreference = false
     @State private var cloudAccountStatus: CKAccountStatus?
     @State private var cloudAccountStatusError: String?
     @State private var feedbackText = ""
@@ -283,7 +284,11 @@ public struct SettingsView: View {
                     L10n.string(.settingsIcloudSyncLabel),
                     isOn: iCloudSyncToggleBinding
                 )
-                .disabled(!cloudKitAllowedByEnvironment || onApplyICloudSyncPreference == nil)
+                .disabled(
+                    !cloudKitAllowedByEnvironment
+                        || onApplyICloudSyncPreference == nil
+                        || isApplyingICloudSyncPreference
+                )
                 .accessibilityIdentifier(UITestingIdentifiers.settingsICloudSyncToggle)
 
                 Text(cloudAccountStatusText)
@@ -422,6 +427,7 @@ public struct SettingsView: View {
         Binding(
             get: { iCloudSyncEnabled },
             set: { newValue in
+                guard !isApplyingICloudSyncPreference else { return }
                 guard newValue != iCloudSyncEnabled else { return }
                 if newValue {
                     showEnableICloudConfirm = true
@@ -434,11 +440,16 @@ public struct SettingsView: View {
 
     private func applyICloudSyncPreference(enabled: Bool, wipeCloud: Bool) {
         guard let onApplyICloudSyncPreference else { return }
+        guard !isApplyingICloudSyncPreference else { return }
+        isApplyingICloudSyncPreference = true
         // Optimistic UI; always re-sync from defaults after apply (revert on failure).
         iCloudSyncEnabled = enabled
         Task {
+            defer {
+                isApplyingICloudSyncPreference = false
+                iCloudSyncEnabled = AppSettingsKeys.isICloudSyncEnabled()
+            }
             await onApplyICloudSyncPreference(enabled, wipeCloud)
-            iCloudSyncEnabled = AppSettingsKeys.isICloudSyncEnabled()
         }
     }
 

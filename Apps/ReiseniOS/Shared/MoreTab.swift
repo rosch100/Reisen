@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 import ReisenAppCore
+import ReisenDomain
 import ReisenSharedUI
 
 struct MoreTab: View {
@@ -35,8 +36,10 @@ struct MoreTab: View {
                 },
                 onApplyICloudSyncPreference: { enabled, wipe in
                     statusMessage = enabled
-                        ? "iCloud-Sync wird eingeschaltet…"
-                        : (wipe ? "iCloud-Sync wird gestoppt und geleert…" : "iCloud-Sync wird gestoppt…")
+                        ? L10n.string(.settingsIcloudApplyStatusEnabling)
+                        : (wipe
+                            ? L10n.string(.settingsIcloudApplyStatusDisablingWipe)
+                            : L10n.string(.settingsIcloudApplyStatusDisabling))
                     await onApplyICloudSyncPreference(enabled, wipe)
                     statusMessage = nil
                 }

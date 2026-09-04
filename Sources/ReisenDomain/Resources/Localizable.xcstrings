@@ -9473,6 +9473,54 @@
         }
       }
     },
+    "settings.icloud.apply_status.disabling": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync wird gestoppt…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning off iCloud sync…"
+          }
+        }
+      }
+    },
+    "settings.icloud.apply_status.disabling_wipe": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync wird gestoppt und geleert…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning off iCloud sync and wiping cloud data…"
+          }
+        }
+      }
+    },
+    "settings.icloud.apply_status.enabling": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-Sync wird eingeschaltet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning on iCloud sync…"
+          }
+        }
+      }
+    },
     "settings.icloud.disable_title": {
       "localizations": {
         "de": {
