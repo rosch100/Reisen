@@ -1,5 +1,7 @@
 import SwiftUI
 import SwiftData
+import CoreData
+import Combine
 import ReisenDomain
 import ReisenData
 import ReisenProviders
@@ -87,6 +89,7 @@ struct ContentView: View {
     @State private var providerEnableEpoch = 0
     @State private var showProviderSetup = false
     @State private var didRecordProviderSetupPresented = false
+    @State private var didRunProviderSetupGate = false
     @State private var showCreateTrip = false
     @State private var tripToEdit: SDTrip?
     @State private var tripPendingDelete: SDTrip?
@@ -164,6 +167,7 @@ struct ContentView: View {
         .frame(minWidth: 960, minHeight: 640)
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
             sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
+            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
             presentProviderSetupIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
@@ -252,7 +256,6 @@ struct ContentView: View {
         }
         .onAppear {
             applyUITestingLaunchSelectionIfNeeded()
-            presentProviderSetupIfNeeded()
             if !didInjectPasteImportFixture {
                 didInjectPasteImportFixture = true
                 pasteImport.injectTestingFixture()
@@ -278,6 +281,16 @@ struct ContentView: View {
                     }
                 }
             }
+        }
+        .task {
+            await runProviderSetupGateIfNeeded()
+        }
+        .onReceive(
+            NotificationCenter.default
+                .publisher(for: .NSPersistentStoreRemoteChange)
+                .receive(on: RunLoop.main)
+        ) { _ in
+            handleProviderPrefsRemoteChange()
         }
         .onChange(of: selection?.tripID) { _, newTripID in
             guard newTripID != activeTripID else { return }
@@ -748,6 +761,39 @@ struct ContentView: View {
         recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
     }
 
+    private func runProviderSetupGateIfNeeded() async {
+        guard !didRunProviderSetupGate else { return }
+        didRunProviderSetupGate = true
+        if !UITestingLaunch.isActive {
+            _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
+        }
+        let snap = await ProviderPreferencesImportGate.awaitAndApply(context: modelContext)
+        if let snap, snap.setupCompleted {
+            ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs")
+            ProviderPreferencesImportGate.notifyEnabledAfterImport()
+            return
+        }
+        // Seed CloudKit only when no remote prefs arrived — never overwrite a known remote snapshot at startup.
+        if snap == nil,
+           AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted) {
+            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
+        }
+        presentProviderSetupIfNeeded()
+    }
+
+    private func handleProviderPrefsRemoteChange() {
+        guard ProviderPreferencesImportGate.shouldObserveRemoteChanges else { return }
+        guard let snap = ProviderPreferencesImportGate.applyRemoteChange(context: modelContext) else {
+            return
+        }
+        guard snap.setupCompleted else { return }
+        if showProviderSetup {
+            showProviderSetup = false
+            ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs_late")
+        }
+        ProviderPreferencesImportGate.notifyEnabledAfterImport()
+    }
+
     private func presentProviderSetupFromReopen() {
         showProviderSetup = true
         ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: "reopen")
@@ -759,6 +805,7 @@ struct ContentView: View {
         ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
         ProviderEnabledChange.notify()
         ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+        ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
         selectFirstEnabledProviderSyncIfAvailable()
         ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)

@@ -36,3 +36,8 @@ Unit-/In-Process-Abdeckung (ohne Live-iCloud): `HybridTwoDeviceSyncTests`, `Clou
 3. [ ] Trip/Booking von A erscheint auf B.
 4. [ ] EventKit-Reminder bleibt lokal (nicht auf B gespiegelt).
 5. [ ] Cookie/Login-Sessions bleiben gerätegebunden.
+6. [ ] Provider-Enablement + `setupCompleted` von A → B; First-Launch-Sheet auf B bleibt aus.
+7. [ ] Mit iCloud-Keychain an: in Reisen gespeichertes Portal-Passwort auf B für JS-Fill verfügbar (ohne erneutes „Konto speichern“).
+8. [ ] Mit iCloud-Keychain aus: Prefs syncen weiter; Credentials nur lokal (Degraded).
+
+**open_gaps:** Echtes Keychain-iCloud-E2E und Live-CloudKit-Prefs sind manuell (nicht CI).

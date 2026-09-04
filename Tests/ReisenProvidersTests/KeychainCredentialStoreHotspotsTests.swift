@@ -10,15 +10,20 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
     var genericAttributeResults: Any = [[CFString: Any]]()
     var genericCopyStatus: OSStatus = errSecSuccess
     var genericSecretByAccount: [String: Data] = [:]
+    var localOnlySecretByAccount: [String: Data] = [:]
+    var localOnlyAttributeResults: [[CFString: Any]] = []
 
     var updateCalls: Int = 0
     var addCalls: Int = 0
+    var deleteCalls: Int = 0
 
     var updateStatus: OSStatus = errSecSuccess
     var addStatus: OSStatus = errSecSuccess
+    var deleteStatus: OSStatus = errSecSuccess
 
     private(set) var lastUpdateExistingQuery: CFDictionary?
     private(set) var lastAddQuery: CFDictionary?
+    private(set) var lastDeleteQuery: CFDictionary?
 
     func itemCopyMatching(query: CFDictionary) -> (status: OSStatus, item: CFTypeRef?) {
         copyMatchingCallCount += 1
@@ -26,14 +31,19 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
         copyMatchingQueries.append(dict)
 
         let wantsData = dict[kSecReturnData] as? Bool == true
+        let localOnly = keychainQueryIsLocalOnlyGeneric(dict)
 
         if keychainQueryIsGenericPassword(dict) {
             if wantsData {
                 let account = dict[kSecAttrAccount] as? String ?? ""
-                if let data = genericSecretByAccount[account] {
+                let store = localOnly ? localOnlySecretByAccount : genericSecretByAccount
+                if let data = store[account] {
                     return (errSecSuccess, data as CFTypeRef)
                 }
                 return (errSecItemNotFound, nil)
+            }
+            if localOnly {
+                return (genericCopyStatus, localOnlyAttributeResults as CFTypeRef)
             }
             if let typed = genericAttributeResults as? [[CFString: Any]] {
                 return (genericCopyStatus, typed as CFTypeRef)
@@ -56,9 +66,28 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
         if let dict = add as? [CFString: Any],
            let account = dict[kSecAttrAccount] as? String,
            let data = dict[kSecValueData] as? Data {
-            genericSecretByAccount[account] = data
+            if keychainQueryIsLocalOnlyGeneric(dict) {
+                localOnlySecretByAccount[account] = data
+            } else {
+                genericSecretByAccount[account] = data
+            }
         }
         return addStatus
+    }
+
+    func itemDelete(query: CFDictionary) -> OSStatus {
+        deleteCalls += 1
+        lastDeleteQuery = query
+        if deleteStatus == errSecSuccess,
+           let dict = query as? [CFString: Any],
+           let account = dict[kSecAttrAccount] as? String {
+            if keychainQueryIsLocalOnlyGeneric(dict) {
+                localOnlySecretByAccount.removeValue(forKey: account)
+            } else {
+                genericSecretByAccount.removeValue(forKey: account)
+            }
+        }
+        return deleteStatus
     }
 }
 
@@ -291,6 +320,13 @@ struct KeychainCredentialStoreHotspotsTests {
         #expect((dict?[kSecAttrService] as? String) == KeychainCredentialQuery.service)
         #expect((dict?[kSecAttrAccount] as? String) == "booking.com\u{1f}u@x.de")
         #expect(dict?[kSecUseDataProtectionKeychain] as? Bool == true)
+        #expect(dict?[kSecAttrSynchronizable] as? Bool == true)
+        #expect(
+            CFEqual(
+                (dict?[kSecAttrAccessible] as CFTypeRef?) ?? kCFNull,
+                kSecAttrAccessibleAfterFirstUnlock
+            )
+        )
         #expect(!keychainQueryUsesSynchronizableAny(dict ?? [:]))
         #expect(keychainQueryIsInternetPassword(dict ?? [:]) == false)
     }
@@ -338,4 +374,13 @@ private func keychainQueryIsGenericPassword(_ dict: [CFString: Any]) -> Bool {
         return asString == (kSecClassGenericPassword as String)
     }
     return CFEqual(value as CFTypeRef, kSecClassGenericPassword)
+}
+
+private func keychainQueryIsLocalOnlyGeneric(_ dict: [CFString: Any]) -> Bool {
+    guard keychainQueryIsGenericPassword(dict) else { return false }
+    guard let value = dict[kSecAttrSynchronizable] else { return true }
+    if let asBool = value as? Bool {
+        return asBool == false
+    }
+    return CFEqual(value as CFTypeRef, kCFBooleanFalse)
 }

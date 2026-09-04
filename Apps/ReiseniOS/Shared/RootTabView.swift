@@ -1,5 +1,7 @@
 import SwiftUI
 import SwiftData
+import CoreData
+import Combine
 #if REISEN_PROVIDER_SYNC
 import WebKit
 #endif
@@ -21,6 +23,7 @@ struct RootTabView: View {
     @State private var providerEnableEpoch = 0
     @State private var showProviderSetup = false
     @State private var didRecordProviderSetupPresented = false
+    @State private var didRunProviderSetupGate = false
     @State private var selectedTab: AppTab = .reisen
     @State private var selectedTripID: UUID?
     @State private var selectedOpenBookingID: UUID?
@@ -89,10 +92,19 @@ struct RootTabView: View {
             #endif
         }
         .onAppear {
-            presentProviderSetupIfNeeded()
             #if REISEN_PROVIDER_SYNC
             refreshProviderAppPresence()
             #endif
+        }
+        .task {
+            await runProviderSetupGateIfNeeded()
+        }
+        .onReceive(
+            NotificationCenter.default
+                .publisher(for: .NSPersistentStoreRemoteChange)
+                .receive(on: RunLoop.main)
+        ) { _ in
+            handleProviderPrefsRemoteChange()
         }
         #if REISEN_PROVIDER_SYNC
         .onChange(of: scenePhase) { _, phase in
@@ -102,6 +114,7 @@ struct RootTabView: View {
             }
         }
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
+            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
             presentProviderSetupIfNeeded()
         }
         #endif
@@ -121,6 +134,41 @@ struct RootTabView: View {
         recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
     }
 
+    private func runProviderSetupGateIfNeeded() async {
+        guard !didRunProviderSetupGate else { return }
+        didRunProviderSetupGate = true
+        #if REISEN_PROVIDER_SYNC
+        if !UITestingLaunch.isActive {
+            _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
+        }
+        #endif
+        let snap = await ProviderPreferencesImportGate.awaitAndApply(context: modelContext)
+        if let snap, snap.setupCompleted {
+            ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs")
+            ProviderPreferencesImportGate.notifyEnabledAfterImport()
+            return
+        }
+        // Seed CloudKit only when no remote prefs arrived — never overwrite a known remote snapshot at startup.
+        if snap == nil,
+           AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted) {
+            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
+        }
+        presentProviderSetupIfNeeded()
+    }
+
+    private func handleProviderPrefsRemoteChange() {
+        guard ProviderPreferencesImportGate.shouldObserveRemoteChanges else { return }
+        guard let snap = ProviderPreferencesImportGate.applyRemoteChange(context: modelContext) else {
+            return
+        }
+        guard snap.setupCompleted else { return }
+        if showProviderSetup {
+            showProviderSetup = false
+            ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs_late")
+        }
+        ProviderPreferencesImportGate.notifyEnabledAfterImport()
+    }
+
     private func presentProviderSetupFromReopen() {
         showProviderSetup = true
         ProviderFirstLaunchSetupDiagnostics.recordPresented(reason: "reopen")
@@ -132,6 +180,7 @@ struct RootTabView: View {
         ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
         ProviderEnabledChange.notify()
         ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+        ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
         #if REISEN_PROVIDER_SYNC
         selectedTab = .sync

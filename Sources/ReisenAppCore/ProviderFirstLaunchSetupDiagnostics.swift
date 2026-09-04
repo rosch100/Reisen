@@ -11,6 +11,7 @@ public enum ProviderFirstLaunchSetupDiagnostics: Sendable {
     public static let presentedEvent = "provider_setup_presented"
     public static let completedEvent = "provider_setup_completed"
     public static let deferredEvent = "provider_setup_deferred"
+    public static let skippedEvent = "provider_setup_skipped"
 
     public static func makeEvent(
         event: String,
@@ -56,5 +57,9 @@ public enum ProviderFirstLaunchSetupDiagnostics: Sendable {
 
     public static func recordDeferred() {
         record(event: deferredEvent, result: .cancelled, reason: "later")
+    }
+
+    public static func recordSkipped(reason: String) {
+        record(event: skippedEvent, result: .skipped, reason: reason)
     }
 }

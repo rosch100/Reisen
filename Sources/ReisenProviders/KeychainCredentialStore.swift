@@ -35,4 +35,11 @@ public final class KeychainCredentialStore {
             serverHost: serverHost
         )
     }
+
+    /// Migriert lokale ThisDeviceOnly-Items zu synchronizable (iCloud-Keychain).
+    @discardableResult
+    public func migrateLocalOnlyToSynchronizable() -> Int {
+        KeychainCredentialSyncMigrationRunner.run(keychain: keychain, save: save)
+    }
 }
+
