@@ -104,6 +104,7 @@ struct ProviderSyncContainer: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(UITestingIdentifiers.syncChrome)
         .onAppear { syncHub() }
         .onProviderEnabledChange(bump: $providerEnableEpoch, perform: syncHub)
