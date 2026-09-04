@@ -97,7 +97,7 @@ public enum CloudKitTwoDeviceVerification {
                 mode: mode,
                 ok: false,
                 message: mode == .seed
-                    ? "CloudKit disabled (REISEN_CLOUDKIT=0 / CI / XCTest)."
+                    ? "CloudKit disabled (env/entitlements gate or iCloud sync preference off)."
                     : "CloudKit disabled."
             )
             result.cloudKitEnabled = false
