@@ -16,9 +16,104 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# Keep in sync with Scripts/macos_ui_select_tests.py SKIP_STDERR.
-REISEN_MAC_UI_SKIP_STDERR='macos-ui-test: no smoke selection (diff); skip XCUI. DoD: UI-Verhalten erfordert Smoke-Edit in MacUISmokeTests.'
 REISEN_MAC_UI_CLASS_FILTER='-only-testing:ReisenMacUITests/MacUISmokeTests'
+
+MODE=diff
+ONLY_ARGS=()
+
+reisen_macos_ui_skip_stderr() {
+  # Prints SKIP_STDERR to stdout; fails closed if Python/constant unavailable.
+  local msg
+  if ! msg="$(
+    python3 -c "import importlib.util, sys; s=importlib.util.spec_from_file_location('m', sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); print(m.SKIP_STDERR, end='')" \
+      "$ROOT/Scripts/macos_ui_select_tests.py"
+  )" || [[ -z "$msg" ]]; then
+    echo "Fehler: SKIP_STDERR aus macos_ui_select_tests.py nicht lesbar." >&2
+    return 1
+  fi
+  printf '%s\n' "$msg"
+}
+
+reisen_macos_ui_parse_argv() {
+  MODE=diff
+  ONLY_ARGS=()
+  while (($#)); do
+    case "$1" in
+      --full)
+        MODE=full
+        shift
+        ;;
+      --reisen-ui-only-testing)
+        MODE=passthrough
+        shift
+        while (($#)); do
+          ONLY_ARGS+=("$1")
+          shift
+        done
+        ;;
+      *)
+        echo "Fehler: unbekanntes Argument: $1" >&2
+        return 2
+        ;;
+    esac
+  done
+  if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    MODE=full
+  fi
+  return 0
+}
+
+reisen_macos_ui_resolve_only_args() {
+  local -a resolved=()
+  case "$MODE" in
+    full)
+      resolved=("$REISEN_MAC_UI_CLASS_FILTER")
+      ;;
+    passthrough)
+      if ((${#ONLY_ARGS[@]} == 0)); then
+        echo "Fehler: --reisen-ui-only-testing erfordert mindestens ein Argument." >&2
+        return 2
+      fi
+      local arg
+      for arg in "${ONLY_ARGS[@]}"; do
+        if [[ "$arg" != -only-testing:* ]]; then
+          echo "Fehler: erwartet -only-testing:…, erhalten: $arg" >&2
+          return 2
+        fi
+      done
+      resolved=("${ONLY_ARGS[@]}")
+      ;;
+    diff)
+      local selector_out selector_status
+      local repo_root="${REISEN_MAC_UI_REPO_ROOT:-$ROOT}"
+      if [[ -n "${REISEN_MAC_UI_SELECT_CMD:-}" ]]; then
+        selector_out="$(eval "$REISEN_MAC_UI_SELECT_CMD")"
+      else
+        selector_out="$(python3 "$ROOT/Scripts/macos_ui_select_tests.py" --repo-root "$repo_root")"
+      fi
+      selector_status=$?
+      if [[ "$selector_status" -ne 0 ]]; then
+        return "$selector_status"
+      fi
+      while IFS= read -r line; do
+        [[ -n "$line" ]] && resolved+=("$line")
+      done <<EOF
+$selector_out
+EOF
+      if ((${#resolved[@]} == 0)); then
+        reisen_macos_ui_skip_stderr >&2 || return 1
+        # 10 = skip sentinel (not a python/selector exit code)
+        return 10
+      fi
+      ;;
+    *)
+      echo "Fehler: unbekannter Modus: $MODE" >&2
+      return 2
+      ;;
+  esac
+  ONLY_ARGS=("${resolved[@]}")
+  return 0
+}
 
 reisen_macos_ui_common_args() {
   local project="$1"
@@ -116,12 +211,14 @@ reisen_macos_ui_run_unsigned_build_then_adhoc_test() {
   xcodebuild "${common[@]}" test-without-building
 }
 
-reisen_macos_ui_emit_skip() {
-  printf '%s\n' "$REISEN_MAC_UI_SKIP_STDERR" >&2
-}
-
 if [[ "${1:-}" == "--self-test" ]]; then
+  if (($# != 1)); then
+    echo "Fehler: --self-test nur als alleiniges Argument (bash ./Scripts/macos-ui-test.sh --self-test)." >&2
+    exit 2
+  fi
+
   unset CI GITHUB_ACTIONS REISEN_MAC_UI_CODE_SIGNING_OFF
+
   local_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult "$REISEN_MAC_UI_CLASS_FILTER")"
   printf '%s\n' "$local_out" | grep -qx -- -project
   printf '%s\n' "$local_out" | grep -qx test
@@ -137,97 +234,82 @@ if [[ "${1:-}" == "--self-test" ]]; then
   extra_out="$(reisen_macos_ui_xcodebuild_args /p S 'platform=macOS' /d /r.xcresult "$REISEN_MAC_UI_CLASS_FILTER" CODE_SIGN_IDENTITY=-)"
   printf '%s\n' "$extra_out" | grep -qx CODE_SIGN_IDENTITY=-
 
-  grep -Fq "$REISEN_MAC_UI_SKIP_STDERR" "$ROOT/Scripts/macos-ui-test.sh"
+  skip_spec="$(reisen_macos_ui_skip_stderr)"
+  printf '%s\n' "$skip_spec" | grep -Fq 'macos-ui-test: no smoke selection (diff); skip XCUI.'
+  grep -Fq 'reisen_macos_ui_skip_stderr' "$ROOT/Scripts/macos-ui-test.sh"
   grep -Fq 'macos_ui_select_tests.py' "$ROOT/Scripts/macos-ui-test.sh"
   grep -Fq -e '--reisen-ui-only-testing' "$ROOT/Scripts/macos-ui-test.sh"
-  grep -Fq 'MODE=full' "$ROOT/Scripts/macos-ui-test.sh"
-  # Skip-Stderr must match Python SSOT constant.
-  py_skip="$(
-    python3 -c "
-import importlib.util
-from pathlib import Path
-p = Path(r'$ROOT') / 'Scripts' / 'macos_ui_select_tests.py'
-spec = importlib.util.spec_from_file_location('macos_ui_select_tests', p)
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-print(mod.SKIP_STDERR)
-"
-  )"
-  [[ "$py_skip" == "$REISEN_MAC_UI_SKIP_STDERR" ]]
-
   grep -Fq 'keine -only-testing-Args vor xcodebuild' "$ROOT/Scripts/macos-ui-test.sh"
+
+  unset CI GITHUB_ACTIONS
+  reisen_macos_ui_parse_argv --reisen-ui-only-testing \
+    -only-testing:ReisenMacUITests/MacUISmokeTests/testFoo \
+    -only-testing:ReisenMacUITests/MacUISmokeTests/testBar
+  [[ "$MODE" == passthrough ]]
+  [[ ${#ONLY_ARGS[@]} -eq 2 ]]
+  [[ "${ONLY_ARGS[0]}" == "-only-testing:ReisenMacUITests/MacUISmokeTests/testFoo" ]]
+  [[ "${ONLY_ARGS[1]}" == "-only-testing:ReisenMacUITests/MacUISmokeTests/testBar" ]]
+
+  unset CI GITHUB_ACTIONS
+  reisen_macos_ui_parse_argv
+  [[ "$MODE" == diff ]]
+  CI=true
+  reisen_macos_ui_parse_argv
+  [[ "$MODE" == full ]]
+
+  unset CI GITHUB_ACTIONS
+  GITHUB_ACTIONS=true
+  reisen_macos_ui_parse_argv
+  [[ "$MODE" == full ]]
+
+  unset CI GITHUB_ACTIONS
+  reisen_macos_ui_parse_argv --full
+  [[ "$MODE" == full ]]
+  reisen_macos_ui_resolve_only_args
+  [[ ${#ONLY_ARGS[@]} -eq 1 ]]
+  [[ "${ONLY_ARGS[0]}" == "$REISEN_MAC_UI_CLASS_FILTER" ]]
+
+  unset CI GITHUB_ACTIONS REISEN_MAC_UI_DIFF_BASE REISEN_MAC_UI_REPO_ROOT REISEN_MAC_UI_SELECT_CMD
+  reisen_macos_ui_parse_argv
+  [[ "$MODE" == diff ]]
+
+  hermetic_repo="$(mktemp -d -t reisen-ui-select-selftest.XXXXXX)"
+  hermetic_smoke="${hermetic_repo}/Tests/ReisenMacUITests"
+  mkdir -p "$hermetic_smoke"
+  cp "$ROOT/Tests/ReisenMacUITests/MacUISmokeTests.swift" "$hermetic_smoke/MacUISmokeTests.swift"
+  (
+    cd "$hermetic_repo"
+    git init -b master >/dev/null 2>&1
+    git config user.email "selftest@example.com"
+    git config user.name "Self Test"
+    git add .
+    git commit -m "selftest" >/dev/null 2>&1
+  )
+  export REISEN_MAC_UI_REPO_ROOT="$hermetic_repo"
+  export REISEN_MAC_UI_DIFF_BASE=HEAD
+  set +e
+  empty_resolve_stderr="$(reisen_macos_ui_resolve_only_args 2>&1 >/dev/null)"
+  empty_resolve_status=$?
+  set -e
+  rm -rf "$hermetic_repo"
+  unset REISEN_MAC_UI_REPO_ROOT REISEN_MAC_UI_DIFF_BASE
+  [[ "$empty_resolve_status" -eq 10 ]]
+  printf '%s\n' "$empty_resolve_stderr" | grep -Fq "$skip_spec"
 
   echo "macos-ui-test.sh self-test: OK" >&2
   exit 0
 fi
 
-MODE=diff
-ONLY_ARGS=()
-while (($#)); do
-  case "$1" in
-    --full)
-      MODE=full
-      shift
-      ;;
-    --reisen-ui-only-testing)
-      MODE=passthrough
-      shift
-      while (($#)); do
-        ONLY_ARGS+=("$1")
-        shift
-      done
-      ;;
-    *)
-      echo "Fehler: unbekanntes Argument: $1" >&2
-      exit 2
-      ;;
-  esac
-done
+reisen_macos_ui_parse_argv "$@" || exit $?
 
-if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
-  MODE=full
+resolve_status=0
+reisen_macos_ui_resolve_only_args || resolve_status=$?
+if [[ "$resolve_status" -eq 10 ]]; then
+  exit 0
 fi
-
-case "$MODE" in
-  full)
-    ONLY_ARGS=("$REISEN_MAC_UI_CLASS_FILTER")
-    ;;
-  passthrough)
-    if ((${#ONLY_ARGS[@]} == 0)); then
-      echo "Fehler: --reisen-ui-only-testing ohne -only-testing-Args" >&2
-      exit 2
-    fi
-    for arg in "${ONLY_ARGS[@]}"; do
-      case "$arg" in
-        -only-testing:ReisenMacUITests/MacUISmokeTests*)
-          ;;
-        *)
-          echo "Fehler: ungültiger Passthrough-Arg: $arg" >&2
-          exit 2
-          ;;
-      esac
-    done
-    ;;
-  diff)
-    ONLY_ARGS=()
-    select_status=0
-    select_out="$(python3 "$ROOT/Scripts/macos_ui_select_tests.py" --repo-root "$ROOT")" || select_status=$?
-    if [[ "$select_status" -ne 0 ]]; then
-      exit "$select_status"
-    fi
-    while IFS= read -r line; do
-      [[ -n "$line" ]] && ONLY_ARGS+=("$line")
-    done <<<"$select_out"
-    if ((${#ONLY_ARGS[@]} == 0)); then
-      reisen_macos_ui_emit_skip
-      exit 0
-    fi
-    ;;
-  *)
-    echo "Fehler: unbekannter MODE=$MODE" >&2
-    exit 2
-    ;;
-esac
+if [[ "$resolve_status" -ne 0 ]]; then
+  exit "$resolve_status"
+fi
 
 # Guard: ohne -only-testing würde xcodebuild (bash≥5) die ganze Scheme-Suite fahren.
 if ((${#ONLY_ARGS[@]} == 0)); then
