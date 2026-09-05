@@ -262,9 +262,10 @@ public enum ProviderPreferencesImportGate {
             return .notNeeded
         }
 
-        ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(defaults: defaults)
+        // Mirror zuerst leeren; Defaults erst nach erfolgreichem Delete — sonst Reinfektion bei Delete-Fail.
         do {
             try ProviderPreferencesMirror.deleteAll(in: context)
+            ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(defaults: defaults)
             defaults.set(false, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
             recordPrefsImport(
                 result: .succeeded,

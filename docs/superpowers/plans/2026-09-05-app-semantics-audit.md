@@ -53,3 +53,13 @@
 - [x] Overlap Map am Screen-Owner nur mit Evidence — defer (keine Evidence)
 - [x] Residual-Scan; Ledger aktualisieren
 - [x] `bash ./Scripts/ci-test.sh`; Abschluss-Reviews
+
+### Task R2 — Residual-Pass (2026-09-05)
+
+- [x] Poison-Clear: Mirror delete vor Defaults-Reset
+- [x] Normalizer: kein Offset-`0` bei nil
+- [x] Mirror-Export: Strays verwerfen, Snapshot aus Defaults
+- [x] Opodo Cancellation/getTrips GraphQL-Errors → throw
+- [x] Check24 SameStay GMT; HTML-Deadlines fail-visible
+- [x] Flight-/Hotel-Display: `HotelTimeZone.wallClockUTC`
+- [x] iOS BookingDetail Persist Diagnostic + kein `try?`

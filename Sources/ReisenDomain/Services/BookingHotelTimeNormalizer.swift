@@ -28,11 +28,11 @@ public enum BookingHotelTimeNormalizer {
         }
         updated.timesNormalized = true
 
-        let bookingHotelOffsetSeconds = booking.hotelOffsetSeconds ?? 0
+        // Fehlenden Offset nicht erfinden (kein `0`/`TimeZone.current`) — EventKit/Reminder skippen bei nil.
         updated.cancellationDeadlines = booking.cancellationDeadlines.map { deadline in
             var d = deadline
-            if d.hotelOffsetSeconds == nil {
-                d.hotelOffsetSeconds = bookingHotelOffsetSeconds
+            if d.hotelOffsetSeconds == nil, let bookingOffset = booking.hotelOffsetSeconds {
+                d.hotelOffsetSeconds = bookingOffset
             }
             return d
         }

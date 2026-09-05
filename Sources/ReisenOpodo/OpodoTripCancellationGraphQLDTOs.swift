@@ -4,6 +4,7 @@ import Foundation
 
 struct OpodoTripCancellationEnvelope: Decodable {
     let data: OpodoTripCancellationDataContainer?
+    let errors: [OpodoGraphQLError]?
 }
 
 struct OpodoTripCancellationDataContainer: Decodable {

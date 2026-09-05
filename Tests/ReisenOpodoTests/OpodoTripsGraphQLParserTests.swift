@@ -142,8 +142,8 @@ func opodoGraphQLThrowsNotLoggedInEvenWithTripRows() {
     }
 }
 
-@Test("OpodoTripsGraphQLParser nutzt Trip-Rows trotz nicht-fataler GraphQL-Errors")
-func opodoGraphQLKeepsTripsWhenErrorsAreNonFatal() throws {
+@Test("OpodoTripsGraphQLParser wirft auch bei Trip-Rows wenn GraphQL-Errors vorliegen")
+func opodoGraphQLThrowsWhenErrorsEvenWithTripRows() {
     let json = """
     {"data":{"getTrips":{"trips":[{"trip":{
       "id":"h-1","tdToken":"FAKE_TOKEN_HOTEL","bookingStatus":"CONTRACT","bookingProductStatus":"CONFIRMED",
@@ -151,10 +151,9 @@ func opodoGraphQLKeepsTripsWhenErrorsAreNonFatal() throws {
     }}]}},
      "errors":[{"message":"Field warning"}]}
     """
-    let page = try OpodoTripsGraphQLParser().parseTripPage(from: json)
-    #expect(page.rawTripCount == 1)
-    #expect(page.bookings.count == 1)
-    #expect(page.bookings[0].bookingType == .hotel)
+    #expect(throws: OpodoTripsGraphQLParserError.graphQLErrors("Field warning")) {
+        try OpodoTripsGraphQLParser().parseTripPage(from: json)
+    }
 }
 
 @Test("OpodoTripsGraphQLParser wirft GraphQL-Errors wenn keine Trip-Rows da sind")
