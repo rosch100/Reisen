@@ -32,9 +32,9 @@ public struct AppSettingsKeys {
     public static let providerEnabledPrefix = "reisen_providerEnabled_"
     public static let preferredKeychainAccountPrefix = "reisen_preferredKeychainAccount_"
 
-    /// Erststart-Setup: Weiter bestätigt (kein Auto-Sheet mehr).
+    /// Erststart-Setup: Weiter bestätigt (CloudKit-Prefs / Reopen-Gate).
     public static let providerSetupCompleted = "reisen_providerSetupCompleted_v1"
-    /// Erststart-Setup: Später gewählt (kein Auto-Sheet mehr; Reopen möglich).
+    /// Erstauswahl der Portale ausblenden (Settings + „Ohne Buchungsportale“).
     public static let providerSetupDeferred = "reisen_providerSetupDeferred_v1"
 
     /// Passwort-Konten nach erfolgreichem Login automatisch in der App-Keychain speichern.

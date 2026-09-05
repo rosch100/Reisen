@@ -53,8 +53,10 @@ public enum UITestingIdentifiers {
     /// First-Launch Provider-Setup (Spec: `setup.providers.*`).
     public static let providerSetupSheet = "setup.providers.sheet"
     public static let providerSetupContinue = "setup.providers.continue"
+    /// „Ohne Buchungsportale“ (historischer Identifier `setup.providers.later`).
     public static let providerSetupLater = "setup.providers.later"
     public static let providerSetupReopen = "setup.providers.reopen"
+    public static let settingsHideProviderSetupToggle = "reisen.settings.hide-provider-setup"
 
     public static func providerSetupToggle(_ providerID: ProviderID) -> String {
         "setup.providers.toggle.\(providerID.rawValue)"

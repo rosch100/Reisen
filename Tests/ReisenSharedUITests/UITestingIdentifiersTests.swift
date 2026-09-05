@@ -27,6 +27,7 @@ import ReisenDomain
     #expect(UITestingIdentifiers.providerSetupContinue == "setup.providers.continue")
     #expect(UITestingIdentifiers.providerSetupLater == "setup.providers.later")
     #expect(UITestingIdentifiers.providerSetupReopen == "setup.providers.reopen")
+    #expect(UITestingIdentifiers.settingsHideProviderSetupToggle == "reisen.settings.hide-provider-setup")
     #expect(UITestingIdentifiers.providerSetupToggle(.check24) == "setup.providers.toggle.check24")
     #expect(UITestingIdentifiers.gapEditor == "reisen.gap.editor")
     #expect(UITestingIdentifiers.gapEditorTitleField == "reisen.gap.editor.title")

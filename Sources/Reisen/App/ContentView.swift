@@ -168,6 +168,7 @@ struct ContentView: View {
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
             sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
             ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
+            presentProviderSetupIfNeeded(reason: "no_enabled_providers")
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
             if let providerID = note.object as? ProviderID {
@@ -805,15 +806,15 @@ struct ContentView: View {
 
     private var shouldShowProviderSetupReopen: Bool {
         _ = providerEnableEpoch
-        return !AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted)
+        return !ProviderFirstLaunchSetup.isInitialSetupHidden()
             && enabledProviderIDs.isEmpty
     }
 
-    private func presentProviderSetupIfNeeded() {
+    private func presentProviderSetupIfNeeded(reason: String = "fresh_launch") {
         guard ProviderFirstLaunchSetup.shouldPresent() else { return }
         guard !showProviderSetup else { return }
         showProviderSetup = true
-        recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
+        recordProviderSetupPresentedIfNeeded(reason: reason)
     }
 
     private func runProviderSetupGateIfNeeded() async {
@@ -826,7 +827,7 @@ struct ContentView: View {
             context: modelContext
         )
         if startup == .continueLocalSetup {
-            presentProviderSetupIfNeeded()
+            presentProviderSetupIfNeeded(reason: "fresh_launch")
         }
     }
 
@@ -870,19 +871,29 @@ struct ContentView: View {
 
     private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
         let defaults = AppSettingsDefaults.current
+        if enabledIDs.isEmpty {
+            ProviderFirstLaunchSetup.completeWithoutPortals(defaults: defaults)
+            ProviderEnabledChange.notify()
+            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
+            showProviderSetup = false
+            ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: 0)
+            return
+        }
         ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
+        ProviderFirstLaunchSetup.setInitialSetupHidden(false, defaults: defaults)
         ProviderEnabledChange.notify()
         ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
         ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
-        if !enabledIDs.isEmpty {
-            selectFirstEnabledProviderSyncIfAvailable()
-        }
+        selectFirstEnabledProviderSyncIfAvailable()
         ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
     }
 
     private func deferProviderSetup() {
-        ProviderFirstLaunchSetup.markDeferred()
+        let defaults = AppSettingsDefaults.current
+        ProviderFirstLaunchSetup.completeWithoutPortals(defaults: defaults)
+        ProviderEnabledChange.notify()
+        ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
         ProviderFirstLaunchSetupDiagnostics.recordDeferred()
     }

@@ -8,7 +8,75 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
     return (defaults, suiteName)
 }
 
-@Test func providerFirstLaunchSetup_emptyContinue_marksCompletedWithoutEnablingProviders() {
+@Test func providerFirstLaunchSetup_shouldPresent_whenHideOffAndNoEnabledProvider() {
+    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
+    #expect(!ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: defaults))
+}
+
+@Test func providerFirstLaunchSetup_shouldPresent_falseWhenHideOnEvenIfNoProviders() {
+    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    ProviderFirstLaunchSetup.setInitialSetupHidden(true, defaults: defaults)
+
+    #expect(ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: defaults))
+    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
+    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupDeferred))
+}
+
+@Test func providerFirstLaunchSetup_shouldPresent_falseWhenAnyProviderEnabled() {
+    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: .check24))
+
+    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
+}
+
+@Test func providerFirstLaunchSetup_shouldPresent_trueWhenCompletedButHideOffAndNoProviders() {
+    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
+}
+
+@Test func providerFirstLaunchSetup_ohneBuchungsportale_hidesCompletesAndLeavesProvidersOff() {
+    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    let syncIDs: [ProviderID] = [.check24, .opodo]
+    defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: .check24))
+
+    ProviderFirstLaunchSetup.completeWithoutPortals(syncProviderIDs: syncIDs, defaults: defaults)
+
+    #expect(ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: defaults))
+    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(!AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
+    #expect(!AppSettingsKeys.isProviderEnabled(.opodo, defaults: defaults))
+    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: syncIDs))
+}
+
+@Test func providerFirstLaunchSetup_emptyContinue_marksCompletedAndHidesWithoutEnablingProviders() {
     guard let (defaults, suiteName) = makeIsolatedDefaults() else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")
         return
@@ -21,61 +89,30 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
         syncProviderIDs: syncIDs,
         defaults: defaults
     )
-    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+    ProviderFirstLaunchSetup.completeWithoutPortals(syncProviderIDs: syncIDs, defaults: defaults)
 
-    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: syncIDs))
     #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: defaults))
     #expect(!AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
     #expect(!AppSettingsKeys.isProviderEnabled(.opodo, defaults: defaults))
 }
 
-@Test func providerFirstLaunchSetup_shouldPresent_whenNeitherFlagSet() {
+@Test func providerFirstLaunchSetup_setInitialSetupHidden_offAllowsPresentWhenNoProviders() {
     guard let (defaults, suiteName) = makeIsolatedDefaults() else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")
         return
     }
     defer { defaults.removePersistentDomain(forName: suiteName) }
 
-    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
-}
+    ProviderFirstLaunchSetup.completeWithoutPortals(
+        syncProviderIDs: [.check24],
+        defaults: defaults
+    )
+    ProviderFirstLaunchSetup.setInitialSetupHidden(false, defaults: defaults)
 
-@Test func providerFirstLaunchSetup_shouldPresent_falseWhenCompleted() {
-    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
-        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
-        return
-    }
-    defer { defaults.removePersistentDomain(forName: suiteName) }
-
-    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
-
-    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
-    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
-}
-
-@Test func providerFirstLaunchSetup_shouldPresent_falseWhenDeferred() {
-    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
-        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
-        return
-    }
-    defer { defaults.removePersistentDomain(forName: suiteName) }
-
-    ProviderFirstLaunchSetup.markDeferred(defaults: defaults)
-
-    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
-    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupDeferred))
-}
-
-@Test func providerFirstLaunchSetup_shouldPresent_falseWhenBothFlagsSet() {
-    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
-        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
-        return
-    }
-    defer { defaults.removePersistentDomain(forName: suiteName) }
-
-    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
-    ProviderFirstLaunchSetup.markDeferred(defaults: defaults)
-
-    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    #expect(!ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: defaults))
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24]))
 }
 
 @Test func providerFirstLaunchSetup_applySelection_setsEnabledExplicitly() {
@@ -115,7 +152,7 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
 
     #expect(!didBootstrap)
     #expect(!defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
-    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
 }
 
 @Test func providerFirstLaunchSetup_bootstrap_marksCompletedWhenProviderEnabled() {
@@ -134,6 +171,7 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
 
     #expect(didBootstrap)
     #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
 }
 
 @Test func providerFirstLaunchSetup_bootstrap_skipsFreshInstallWithoutProviderKeys() {
@@ -152,7 +190,7 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
 
     #expect(!didBootstrap)
     #expect(!defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
-    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
 }
 
 @Test func providerFirstLaunchSetup_bootstrap_isIdempotentWhenAlreadyCompleted() {

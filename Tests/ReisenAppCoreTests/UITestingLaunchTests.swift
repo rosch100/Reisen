@@ -77,6 +77,7 @@ import ReisenDomain
     UITestingLaunch.seedProviderSetupIfNeeded(mode: .populated, defaults: defaults)
 
     #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: defaults))
     #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
 }
 

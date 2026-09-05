@@ -56,7 +56,7 @@ public enum ProviderFirstLaunchSetupDiagnostics: Sendable {
     }
 
     public static func recordDeferred() {
-        record(event: deferredEvent, result: .cancelled, reason: "later")
+        record(event: deferredEvent, result: .cancelled, reason: "without_portals")
     }
 
     public static func recordSkipped(reason: String) {

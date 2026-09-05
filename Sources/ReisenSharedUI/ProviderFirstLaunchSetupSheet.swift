@@ -6,7 +6,7 @@ import ReisenDomain
 /// HIG First-Launch-Sheet zur Auswahl der Sync-Buchungsportale (macOS + iOS).
 ///
 /// Persistenz/Notify liegen beim Host (`onContinue` / `onLater`); dieses View hält nur die Auswahl-UI.
-/// Continue ist immer aktiv — leere Auswahl = bewusst keine Portale.
+/// Continue mit Auswahl aktiviert Portale; leere Continue und „Ohne Buchungsportale“ beenden ohne Portale.
 public struct ProviderFirstLaunchSetupSheet: View {
     private let syncProviderIDsOverride: [ProviderID]?
     private let onContinue: (Set<ProviderID>) -> Void
