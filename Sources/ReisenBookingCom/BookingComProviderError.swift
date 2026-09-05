@@ -1,6 +1,6 @@
 import Foundation
 
-public enum BookingComProviderError: LocalizedError, Sendable {
+public enum BookingComProviderError: LocalizedError, Sendable, Equatable {
     case sessionNotEstablished
     case catalogNotFound
     case sessionTokensMissing

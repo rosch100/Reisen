@@ -1,6 +1,7 @@
 import Foundation
 
 /// Vorschlag, den Reisezeitraum zu erweitern, bevor eine Buchung außerhalb des Fensters zugewiesen wird.
+/// Default calendar is `HotelStayDate.calendar` (GMT date anchors), not device TZ.
 public enum TripPeriodExpandOnAssign {
     public struct Proposal: Equatable, Sendable {
         public let start: Date
@@ -18,7 +19,7 @@ public enum TripPeriodExpandOnAssign {
         bookingEnd: Date,
         tripStart: Date,
         tripEnd: Date,
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> Proposal? {
         proposalIfNeeded(
             bookings: [(bookingStart, bookingEnd)],
@@ -33,7 +34,7 @@ public enum TripPeriodExpandOnAssign {
         bookings: [(start: Date, end: Date)],
         tripStart: Date,
         tripEnd: Date,
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> Proposal? {
         guard !bookings.isEmpty else { return nil }
         let anyOutside = bookings.contains { booking in

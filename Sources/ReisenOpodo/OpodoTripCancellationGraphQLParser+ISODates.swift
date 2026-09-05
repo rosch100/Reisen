@@ -8,9 +8,10 @@ extension OpodoTripCancellationGraphQLParser {
         guard let trimmed = NonEmpty.string(raw) else { return nil }
 
         // HAR/UI: `new Date(until)` — ISO und epoch-ms als String.
+        // Epoch ist Instant ohne Quellen-Offset — kein erfundenes `0` (UTC-Ortszeit-Lüge).
         if let millis = Int64(trimmed), trimmed.count >= 12,
            let date = dateFromEpochMillis(millis) {
-            return (date, 0)
+            return (date, nil)
         }
 
         if let date = ISODateTime.parseInstant(trimmed) {

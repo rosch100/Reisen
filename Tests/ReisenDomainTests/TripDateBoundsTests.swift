@@ -69,3 +69,29 @@ private func booking(
     #expect(text != nil)
     #expect(text?.contains("–") == true)
 }
+
+@Test("TripDateBounds Default: Hotel-GMT-Anker nicht über Geräte-TZ verschieben")
+func tripDateBounds_defaultCalendarKeepsHotelGMTDay() {
+    // 2026-09-05 00:00 GMT — in America/Los_Angeles noch 4.9. abends.
+    let stay = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let bounds = TripDateBounds.from(bookings: [booking(startAt: stay, endAt: stay)])
+    #expect(bounds?.start == stay)
+    #expect(HotelStayDate.format(bounds!.start, dateFormat: "d.M.") == "5.9.")
+}
+
+@Test("TripBookingDateWindow Default: Hotel-GMT bleibt im Fenster trotz westlicher Geräte-TZ-Semantik")
+func tripBookingDateWindow_defaultCalendarHotelGMTInWindow() {
+    let tripStart = HotelStayDate.dateOnly(year: 2026, month: 9, day: 1)
+    let tripEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+    let bookingStart = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let bookingEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 7)
+    #expect(
+        TripBookingDateWindow.contains(
+            bookingStart: bookingStart,
+            bookingEnd: bookingEnd,
+            tripStart: tripStart,
+            tripEnd: tripEnd
+        )
+    )
+}
+

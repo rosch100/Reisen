@@ -63,6 +63,14 @@ func opodoCancellationGraphQLEpochFreeLimitHasNilOffset() throws {
     #expect(free.deadlineAt == Date(timeIntervalSince1970: 1_785_566_400))
 }
 
+@Test("Opodo parseISODate: Epoch-String ohne erfundenen Offset 0")
+func opodoParseISODateEpochStringHasNilOffset() throws {
+    let parser = OpodoTripCancellationGraphQLParser()
+    let parsed = try #require(parser.parseISODate("1785566400000"))
+    #expect(parsed.date == Date(timeIntervalSince1970: 1_785_566_400))
+    #expect(parsed.offsetSeconds == nil)
+}
+
 @Test("OpodoTripCancellationGraphQLParser liest Hotel- und Flug-Storno")
 func opodoCancellationGraphQLParsesHotelAndFlight() throws {
     let json = """

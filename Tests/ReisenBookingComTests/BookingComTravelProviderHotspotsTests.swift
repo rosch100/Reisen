@@ -20,6 +20,7 @@ final class FakeBookingComWebView: BookingComWebView {
     var hotelConfirmationHTML: String?
     var inPageThrowsForGraphQL: Bool = false
     var authenticatedThrowsForGraphQL: Bool = false
+    var graphQLError: Error?
     var flightOrderJSON: String?
 
     // Track whether navigation was requested (for fallback tests).
@@ -54,6 +55,9 @@ final class FakeBookingComWebView: BookingComWebView {
 
         let urlString = url.absoluteString
         if urlString == "https://secure.booking.com/dml/graphql" {
+            if let graphQLError {
+                throw graphQLError
+            }
             if inPageThrowsForGraphQL {
                 throw FakeBookingComError.graphqlFailed
             }
@@ -167,6 +171,31 @@ struct BookingComTravelProviderHotspotsTests {
           <div>trip_id=\(tripID)</div>
         </body></html>
         """
+    }
+
+    @Test("BookingComTravelProvider fetchCatalog: sessionTokensMissing fail-closed, kein HTML-Wipe")
+    func fetchCatalog_sessionTokensMissing_throwsWithoutEmptyCatalog() async {
+        let fake = FakeBookingComWebView(url: Self.myTripsURL)
+        // Login-HTML ohne trip_ids → Fallback würde sonst .bookings([]) liefern.
+        fake.outerHTML = """
+        <html><body>
+        <form action="/login"><input name="password"></form>
+        <script>window.csrfToken = "dead";</script>
+        </body></html>
+        """
+        fake.graphQLError = BookingComProviderError.sessionTokensMissing
+
+        let session = FakeBookingComWebViewProviderSession(bookingComWebView: fake)
+        let provider = BookingComTravelProvider()
+
+        do {
+            _ = try await provider.fetchCatalog(session: session)
+            #expect(Bool(false), "expected sessionTokensMissing")
+        } catch let error as BookingComProviderError {
+            #expect(error == .sessionTokensMissing)
+        } catch {
+            #expect(Bool(false), "unexpected \(error)")
+        }
     }
 
     @Test("BookingComTravelProvider fetchCatalog: GraphQL success path executes & returns bookings")
