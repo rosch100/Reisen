@@ -112,8 +112,16 @@ private func persist(
 @Test func unassignedList_pastEnd_selectsElapsedMailbox() {
     let pastEnd = Date(timeIntervalSince1970: pastManualAt)
     let upcomingEnd = Date(timeIntervalSince1970: upcomingAt)
-    #expect(OpenBookingMatching.unassignedList(endAt: pastEnd, now: now) == .elapsed)
-    #expect(OpenBookingMatching.unassignedList(endAt: upcomingEnd, now: now) == .current)
+    #expect(OpenBookingMatching.unassignedList(
+        endAt: pastEnd,
+        now: now,
+        calendar: Calendar.current
+    ) == .elapsed)
+    #expect(OpenBookingMatching.unassignedList(
+        endAt: upcomingEnd,
+        now: now,
+        calendar: Calendar.current
+    ) == .current)
 }
 
 @MainActor
@@ -163,6 +171,66 @@ func trip_isElapsed_defaultCalendarIgnoresDeviceWestOfGMT() {
     west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
     // Geräte-Kalender west-of-GMT: End-Anker wirkt wie 4.9. → fälschlich elapsed.
     #expect(trip.isElapsed(now: now, calendar: west))
+}
+
+@MainActor
+@Test("Hotel isElapsed Default = HotelStayDate.calendar (West-of-GMT kein Fehl-Elapsed)")
+func hotelBooking_isElapsed_defaultCalendarIgnoresDeviceWestOfGMT() {
+    let end = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let hotel = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.hotel.rawValue,
+        title: "Hotel",
+        startAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 1),
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    let now = end.addingTimeInterval(12 * 3600)
+    #expect(!hotel.isElapsed(now: now))
+    #expect(hotel.listInclusionCalendar.timeZone.secondsFromGMT() == 0)
+
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+    #expect(hotel.isElapsed(now: now, calendar: west))
+
+    let flight = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.flight.rawValue,
+        title: "Flight",
+        startAt: end.addingTimeInterval(-3600),
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    #expect(flight.listInclusionCalendar.timeZone.secondsFromGMT() == Calendar.current.timeZone.secondsFromGMT())
+}
+
+@MainActor
+@Test("OpenBookingMatching elapsedUnassigned Default = typbewusst (Hotel West-of-GMT)")
+func openBookingMatching_elapsedUnassigned_usesHotelCalendarByDefault() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let end = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let hotel = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.hotel.rawValue,
+        title: "Hotel",
+        startAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 1),
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    try persist(container.mainContext, hotel)
+
+    // Endtag GMT-Mittag: Hotel noch current (nicht elapsed).
+    let now = end.addingTimeInterval(12 * 3600)
+    #expect(OpenBookingMatching.elapsedUnassigned(in: [hotel], now: now).isEmpty)
+    #expect(OpenBookingMatching.currentUnassigned(in: [hotel], now: now).map(\.id) == [hotel.id])
+
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+    // Expliziter West-Override: Anker wirkt wie Vortag → elapsed.
+    #expect(
+        OpenBookingMatching.elapsedUnassigned(in: [hotel], calendar: west, now: now).map(\.id)
+            == [hotel.id]
+    )
 }
 
 @MainActor

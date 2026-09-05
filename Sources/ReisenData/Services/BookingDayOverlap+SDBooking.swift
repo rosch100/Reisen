@@ -3,10 +3,11 @@ import ReisenDomain
 
 public extension BookingDayOverlap {
     /// UI-Entry: filtert Pool (`isInOverlapPool`), mappt `daySpan`, liefert Partner-IDs (SSOT Domain).
+    /// Ohne `elapsedCalendar`: typbewusst je Buchung (Hotel → `HotelStayDate.calendar`).
     static func partnerIDsByID(
         sdBookings: [SDBooking],
         now: Date = Date(),
-        elapsedCalendar: Calendar = .current,
+        elapsedCalendar: Calendar? = nil,
         calendar: Calendar = HotelStayDate.calendar
     ) -> [UUID: [UUID]] {
         let spans = sdBookings
@@ -14,6 +15,7 @@ public extension BookingDayOverlap {
                 isInOverlapPool(
                     status: $0.status,
                     endAt: $0.endAt,
+                    bookingType: $0.bookingType,
                     now: now,
                     elapsedCalendar: elapsedCalendar
                 )
@@ -31,7 +33,7 @@ public extension BookingDayOverlap {
     static func countsByID(
         sdBookings: [SDBooking],
         now: Date = Date(),
-        elapsedCalendar: Calendar = .current,
+        elapsedCalendar: Calendar? = nil,
         calendar: Calendar = HotelStayDate.calendar
     ) -> [UUID: Int] {
         partnerIDsByID(

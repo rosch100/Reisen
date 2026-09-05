@@ -137,6 +137,18 @@ private func span(
     }
 }
 
+@Test func bookingType_usesHotelStayDateAnchors_onlyHotel() {
+    for type in BookingType.allCases {
+        #expect(type.usesHotelStayDateAnchors == (type == .hotel))
+        #expect(
+            type.listInclusionCalendar.timeZone.secondsFromGMT()
+                == (type == .hotel
+                    ? HotelStayDate.timeZone.secondsFromGMT()
+                    : Calendar.current.timeZone.secondsFromGMT())
+        )
+    }
+}
+
 @Test func bookingDayOverlap_defaultCalendar_isHotelStayDate() {
     // Same absolute instants: device TZ must not change HotelStayDate-anchored days.
     let d1 = day(2026, 8, 1)

@@ -79,6 +79,29 @@ public enum ISODateTime {
         )
     }
 
+    /// Civil day for birthDate / date-only semantics from ISO day or instant-with-offset.
+    /// Instant + offset → wall-clock day in that TZ; Z/nil → date-prefix or GMT civil of the Instant.
+    public static func parseCivilDay(_ raw: String?) -> Date? {
+        guard let trimmed = NonEmpty.string(raw) else { return nil }
+
+        // Reines `yyyy-MM-dd` ohne Zeitanteil.
+        if trimmed.count == 10, let dayOnly = HotelStayDate.parse(trimmed) {
+            return dayOnly
+        }
+
+        if let instant = parseInstant(trimmed) {
+            if let offset = offsetSeconds(from: trimmed) {
+                return HotelStayDate.calendarDay(fromParsed: instant, offsetSeconds: offset)
+            }
+            if let prefix = HotelStayDate.parse(trimmed) {
+                return prefix
+            }
+            return HotelStayDate.dateOnly(fromStoredOrParsed: instant)
+        }
+
+        return HotelStayDate.parse(trimmed)
+    }
+
     private static let offsetRegex: NSRegularExpression = {
         do {
             return try NSRegularExpression(pattern: #"([+-])(\d{2}):?(\d{2})$"#)

@@ -25,18 +25,24 @@ public struct OpenBookingFillPartition {
 
 /// Unzugeordnete Buchungen: Offen-Liste, Fill und Seed (Trip-Fenster + ListInclusion).
 public enum OpenBookingMatching {
+    /// `nil` → `booking.listInclusionCalendar` (Hotel GMT, sonst Gerätekalender).
+    private static func resolvedCalendar(_ override: Calendar?, for booking: SDBooking) -> Calendar {
+        override ?? booking.listInclusionCalendar
+    }
+
     /// Offen-Liste: keine Reise; `BookingListInclusion` (ab heute oder manuell).
     private static func isListedUnassigned(
         _ booking: SDBooking,
-        calendar: Calendar,
+        calendar: Calendar?,
         now: Date
     ) -> Bool {
-        booking.trip == nil && booking.appearsInList(now: now, calendar: calendar)
+        let cal = resolvedCalendar(calendar, for: booking)
+        return booking.trip == nil && booking.appearsInList(now: now, calendar: cal)
     }
 
     public static func listedUnassigned(
         in bookings: [SDBooking],
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> [SDBooking] {
         bookings.filter { isListedUnassigned($0, calendar: calendar, now: now) }
@@ -45,21 +51,33 @@ public enum OpenBookingMatching {
     /// Offen-Liste ohne abgelaufene Buchungen.
     public static func currentUnassigned(
         in bookings: [SDBooking],
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> [SDBooking] {
         listedUnassigned(in: bookings, calendar: calendar, now: now)
-            .filter { !BookingListInclusion.isElapsed(endAt: $0.endAt, now: now, calendar: calendar) }
+            .filter {
+                !BookingListInclusion.isElapsed(
+                    endAt: $0.endAt,
+                    now: now,
+                    calendar: resolvedCalendar(calendar, for: $0)
+                )
+            }
     }
 
     /// Offene Buchungen, deren Ende kalendarisch vor heute liegt.
     public static func elapsedUnassigned(
         in bookings: [SDBooking],
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> [SDBooking] {
         listedUnassigned(in: bookings, calendar: calendar, now: now)
-            .filter { BookingListInclusion.isElapsed(endAt: $0.endAt, now: now, calendar: calendar) }
+            .filter {
+                BookingListInclusion.isElapsed(
+                    endAt: $0.endAt,
+                    now: now,
+                    calendar: resolvedCalendar(calendar, for: $0)
+                )
+            }
     }
 
     /// Offen-Mailbox nach Speichern einer unzugeordneten Buchung (aktuell vs. Abgelaufen).
@@ -71,7 +89,7 @@ public enum OpenBookingMatching {
     public static func unassignedList(
         endAt: Date,
         now: Date = Date(),
-        calendar: Calendar = HotelStayDate.calendar
+        calendar: Calendar
     ) -> UnassignedList {
         BookingListInclusion.isElapsed(endAt: endAt, now: now, calendar: calendar)
             ? .elapsed
@@ -81,16 +99,17 @@ public enum OpenBookingMatching {
     /// Fill/Seed-ohne-Auswahl: listed und ab heute.
     public static func isOpenUnassigned(
         _ booking: SDBooking,
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> Bool {
-        isListedUnassigned(booking, calendar: calendar, now: now)
-            && booking.isUpcoming(now: now, calendar: calendar)
+        let cal = resolvedCalendar(calendar, for: booking)
+        return isListedUnassigned(booking, calendar: calendar, now: now)
+            && booking.isUpcoming(now: now, calendar: cal)
     }
 
     public static func openUnassigned(
         in bookings: [SDBooking],
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> [SDBooking] {
         bookings.filter { isOpenUnassigned($0, calendar: calendar, now: now) }
@@ -99,16 +118,17 @@ public enum OpenBookingMatching {
     public static func isCandidate(
         _ booking: SDBooking,
         for trip: SDTrip,
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> Bool {
         guard isOpenUnassigned(booking, calendar: calendar, now: now) else { return false }
+        let cal = resolvedCalendar(calendar, for: booking)
         return TripBookingDateWindow.contains(
             bookingStart: booking.startAt,
             bookingEnd: booking.endAt,
             tripStart: trip.startDate,
             tripEnd: trip.endDate,
-            calendar: calendar
+            calendar: cal
         )
     }
 
@@ -116,7 +136,7 @@ public enum OpenBookingMatching {
     public static func fillOpportunity(
         booking: SDBooking,
         trips: [SDTrip],
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> SDTrip? {
         var hasTimeGapsByTripID: [UUID: Bool] = [:]
@@ -134,7 +154,7 @@ public enum OpenBookingMatching {
     public static func partitionByFillOpportunity(
         bookings: [SDBooking],
         trips: [SDTrip],
-        calendar: Calendar = HotelStayDate.calendar,
+        calendar: Calendar? = nil,
         now: Date = Date()
     ) -> OpenBookingFillPartition {
         var hasTimeGapsByTripID: [UUID: Bool] = [:]
@@ -159,7 +179,7 @@ public enum OpenBookingMatching {
     private static func fillOpportunity(
         booking: SDBooking,
         trips: [SDTrip],
-        calendar: Calendar,
+        calendar: Calendar?,
         now: Date,
         hasTimeGapsByTripID: inout [UUID: Bool]
     ) -> SDTrip? {

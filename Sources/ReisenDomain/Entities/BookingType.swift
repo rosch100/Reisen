@@ -53,4 +53,20 @@ public enum BookingType: String, Codable, CaseIterable, Identifiable, Sendable {
             return false
         }
     }
+
+    /// Persistenz/Editor: reine Y/M/D-Anker über `HotelStayDate` (GMT-Mitternacht).
+    /// Nur Hotel — Flug/Auto u. a. speichern echte Instants.
+    public var usesHotelStayDateAnchors: Bool {
+        switch self {
+        case .hotel:
+            return true
+        case .flight, .ferry, .train, .activity, .carRental, .other:
+            return false
+        }
+    }
+
+    /// Tagesgrenzen für ListInclusion/Elapsed: Hotel = GMT-Anker, sonst Gerätekalender.
+    public var listInclusionCalendar: Calendar {
+        usesHotelStayDateAnchors ? HotelStayDate.calendar : .current
+    }
 }

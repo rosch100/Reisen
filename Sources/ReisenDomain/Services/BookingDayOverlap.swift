@@ -7,25 +7,33 @@ public enum BookingDayOverlap {
     }
 
     /// Pool-Mitglied: nicht storniert und nicht abgelaufen (`BookingListInclusion.isElapsed`).
+    /// Ohne `elapsedCalendar`: Kalender aus `bookingType` (Hotel → `HotelStayDate.calendar`).
     public static func isInOverlapPool(
         status: BookingStatus,
         endAt: Date,
+        bookingType: BookingType,
         now: Date = Date(),
-        elapsedCalendar: Calendar = .current
+        elapsedCalendar: Calendar? = nil
     ) -> Bool {
-        isEligible(status: status)
-            && !BookingListInclusion.isElapsed(endAt: endAt, now: now, calendar: elapsedCalendar)
+        let calendar = elapsedCalendar ?? bookingType.listInclusionCalendar
+        return isEligible(status: status)
+            && !BookingListInclusion.isElapsed(endAt: endAt, now: now, calendar: calendar)
     }
 
     /// Partner-IDs je Buchung; Einträge nur wenn mindestens ein Partner.
+    /// `elapsedCalendar == nil`: Elapsed je Span über `bookingType.listInclusionCalendar`.
     public static func partnerIDsByID(
         _ bookings: [BookingDaySpan],
         now: Date = Date(),
-        elapsedCalendar: Calendar = .current,
+        elapsedCalendar: Calendar? = nil,
         calendar: Calendar = HotelStayDate.calendar
     ) -> [UUID: [UUID]] {
         let pool = bookings.filter {
-            !BookingListInclusion.isElapsed(endAt: $0.endAt, now: now, calendar: elapsedCalendar)
+            !BookingListInclusion.isElapsed(
+                endAt: $0.endAt,
+                now: now,
+                calendar: elapsedCalendar ?? $0.bookingType.listInclusionCalendar
+            )
         }
         guard pool.count >= 2 else { return [:] }
 
@@ -45,7 +53,7 @@ public enum BookingDayOverlap {
     public static func countsByID(
         _ bookings: [BookingDaySpan],
         now: Date = Date(),
-        elapsedCalendar: Calendar = .current,
+        elapsedCalendar: Calendar? = nil,
         calendar: Calendar = HotelStayDate.calendar
     ) -> [UUID: Int] {
         partnerIDsByID(
