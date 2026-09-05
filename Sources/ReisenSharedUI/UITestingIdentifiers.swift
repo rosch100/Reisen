@@ -12,6 +12,8 @@ public enum UITestingIdentifiers {
     public static let settings = "reisen.settings"
     public static let syncChrome = "reisen.sync.chrome"
     public static let syncLoginChrome = "reisen.sync.login-chrome"
+    /// Hauptfläche: gewähltes Portal ist deaktiviert (Checkbox aus).
+    public static let syncProviderDisabledEmpty = "reisen.sync.provider-disabled-empty"
     public static let syncFillCredentials = "reisen.sync.fill-credentials"
     public static let syncRememberLogin = "reisen.sync.remember-login"
     public static let syncOpenPasswords = "reisen.sync.open-passwords"

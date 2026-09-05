@@ -77,6 +77,7 @@ struct ProviderSyncContainer: View {
                         description: Text(L10n.string(.syncProviderDisabledHint))
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier(UITestingIdentifiers.syncProviderDisabledEmpty)
                 }
             }
 
@@ -109,7 +110,10 @@ struct ProviderSyncContainer: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(UITestingIdentifiers.syncChrome)
         .onAppear { syncHub() }
-        .onProviderEnabledChange(bump: $providerEnableEpoch, perform: syncHub)
+        .onProviderEnabledChange(bump: $providerEnableEpoch) {
+            pruneLoginQueueForEnabledProviders()
+            syncHub()
+        }
         .onAppear {
             if UITestingLaunch.isActive {
                 phase = .ready
@@ -309,7 +313,11 @@ struct ProviderSyncContainer: View {
             // Wenn der User gerade schon fertig ist (current == sessionReady), zum nächsten springen.
             if isRunningLoginQueue,
                hub?.status(for: selectedProviderID) == .sessionReady,
-               let next = loginQueue.first,
+               let next = ProviderStartupLoginSelection.nextAfterCompleting(
+                   completed: selectedProviderID,
+                   in: loginQueue,
+                   stillEnabled: enabledSet
+               ),
                next != selectedProviderID {
                 selectedProviderID = next
             }
@@ -321,11 +329,15 @@ struct ProviderSyncContainer: View {
         await DiagnosticLogger.shared.flush()
 
         // Wenn Queue fertig ergänzt wurde und current bereits sessionReady ist, zum nächsten.
-        if let next = loginQueue.first,
+        if let next = ProviderStartupLoginSelection.nextAfterCompleting(
+            completed: selectedProviderID,
+            in: loginQueue,
+            stillEnabled: enabledSet
+        ),
            hub?.status(for: selectedProviderID) == .sessionReady,
            next != selectedProviderID {
             selectedProviderID = next
-        } else if loginQueue.isEmpty {
+        } else if ProviderStartupLoginSelection.prunedQueue(loginQueue, stillEnabled: enabledSet).isEmpty {
             isRunningLoginQueue = false
         }
         isRunningStartupBootstrap = false
@@ -484,15 +496,57 @@ struct ProviderSyncContainer: View {
 
     private func advanceLoginQueueIfNeeded(completed providerID: ProviderID) {
         guard isRunningLoginQueue else { return }
-        loginQueue.removeAll { $0 == providerID }
+        let next = ProviderStartupLoginSelection.nextAfterCompleting(
+            completed: providerID,
+            in: loginQueue,
+            stillEnabled: enabledSet
+        )
+        loginQueue = ProviderStartupLoginSelection.prunedQueue(loginQueue, stillEnabled: enabledSet)
+            .filter { $0 != providerID }
 
-        if let next = loginQueue.first {
+        if let next {
             if selectedProviderID != next {
                 selectedProviderID = next
             }
-        } else {
-            // Warten, bis die Hintergrundprobes weitere needsLogin-Provider gefunden haben.
-            isRunningLoginQueue = !didFinishBackgroundProbingRemaining
+            return
+        }
+
+        // Warten, bis die Hintergrundprobes weitere needsLogin-Provider gefunden haben.
+        isRunningLoginQueue = !didFinishBackgroundProbingRemaining
+        if selectedProviderID != providerID,
+           !enabledSet.contains(selectedProviderID),
+           enabledSet.contains(providerID) {
+            selectedProviderID = providerID
+        }
+    }
+
+    /// Enable-Toggle/Prefs: deaktivierte IDs aus der Queue nehmen, Fokus nicht auf Disabled belassen.
+    private func pruneLoginQueueForEnabledProviders() {
+        let before = loginQueue
+        loginQueue = ProviderStartupLoginSelection.prunedQueue(loginQueue, stillEnabled: enabledSet)
+        if loginQueue.isEmpty, didFinishBackgroundProbingRemaining {
+            isRunningLoginQueue = false
+        }
+        if !enabledSet.contains(selectedProviderID), let first = enabledProviderIDs.first {
+            selectedProviderID = first
+        }
+        let dropped = before.filter { !loginQueue.contains($0) }
+        guard let firstDropped = dropped.first else { return }
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: firstDropped,
+                        operation: "login_queue_prune"
+                    ),
+                    component: "ProviderSyncContainer",
+                    phase: "login_queue",
+                    event: "disabled_providers_pruned",
+                    result: .succeeded,
+                    reason: "count_\(dropped.count)"
+                )
+            )
         }
     }
 

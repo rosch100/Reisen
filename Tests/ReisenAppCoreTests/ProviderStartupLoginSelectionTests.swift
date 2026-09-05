@@ -56,3 +56,38 @@ import ReisenAppCore
     )
     #expect(first == nil)
 }
+
+/// Regression: Advance darf nicht auf deaktiviertes Airbnb springen, wenn Check24 schon ready ist.
+@Test func providerStartupLoginSelection_nextAfterComplete_skipsDisabledProviders() {
+    let queue: [ProviderID] = [.check24, .airbnb, .opodo]
+    let stillEnabled: Set<ProviderID> = [.check24, .opodo]
+
+    let next = ProviderStartupLoginSelection.nextAfterCompleting(
+        completed: .check24,
+        in: queue,
+        stillEnabled: stillEnabled
+    )
+
+    #expect(next == .opodo)
+}
+
+@Test func providerStartupLoginSelection_nextAfterComplete_nilWhenOnlyDisabledRemain() {
+    let queue: [ProviderID] = [.check24, .airbnb]
+    let stillEnabled: Set<ProviderID> = [.check24]
+
+    let next = ProviderStartupLoginSelection.nextAfterCompleting(
+        completed: .check24,
+        in: queue,
+        stillEnabled: stillEnabled
+    )
+
+    #expect(next == nil)
+}
+
+@Test func providerStartupLoginSelection_prunedQueue_dropsDisabledKeepingOrder() {
+    let pruned = ProviderStartupLoginSelection.prunedQueue(
+        [.check24, .airbnb, .booking, .opodo],
+        stillEnabled: [.check24, .opodo]
+    )
+    #expect(pruned == [ProviderID.check24, ProviderID.opodo])
+}

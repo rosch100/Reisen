@@ -572,11 +572,18 @@ final class MacUISmokeTests: XCTestCase {
 
     func testEnablingProviderViaSidebarToggleOpensSyncChrome() {
         // Regression: Enable→Sync ohne Remount-Churn; WebView-Host muss existieren (nicht nur Login-Chrome).
+        // Zusätzlich: Fokus bleibt auf dem aktivierten Portal — kein „Portal deaktiviert“ für ein anderes.
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
         ui.enableProviderViaSidebarToggle("booking")
         _ = ui.waitForSyncLoginChrome()
         ui.waitFor(UITestingIdentifiers.syncProviderWebView, timeout: 15)
+        XCTAssertFalse(
+            ui.app.descendants(matching: .any)[
+                UITestingIdentifiers.syncProviderDisabledEmpty
+            ].exists,
+            "Nach Enable darf die Hauptfläche nicht „Portal deaktiviert“ zeigen"
+        )
         // Kein Link zur Schlüsselbundverwaltung — nur Passwords / Anmeldung merken.
         XCTAssertFalse(
             ui.app.buttons["Schlüsselbundverwaltung"].exists,

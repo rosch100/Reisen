@@ -23,4 +23,23 @@ public enum ProviderStartupLoginSelection: Sendable {
         return providersInOrder[(selectedIndex + 1)...]
             .filter { stillEnabled.contains($0) }
     }
+
+    /// Entfernt deaktivierte Provider; Reihenfolge der Queue bleibt.
+    public static func prunedQueue(
+        _ queue: [ProviderID],
+        stillEnabled: Set<ProviderID>
+    ) -> [ProviderID] {
+        queue.filter { stillEnabled.contains($0) }
+    }
+
+    /// Nächster Login-Kandidat nach Abschluss; überspringt deaktivierte.
+    public static func nextAfterCompleting(
+        completed: ProviderID,
+        in queue: [ProviderID],
+        stillEnabled: Set<ProviderID>
+    ) -> ProviderID? {
+        let remaining = prunedQueue(queue, stillEnabled: stillEnabled)
+            .filter { $0 != completed }
+        return remaining.first
+    }
 }
