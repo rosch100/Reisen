@@ -181,7 +181,7 @@ func bookingComGraphQLReservationStatusUsesExactTokens() throws {
       "data": {
         "singleTripTimelineQueries": {
           "singleTripTimeline": {
-            "trip": { "title": "Nairobi" },
+            "trip": { "title": "Nairobi", "canceled": false },
             "timelineGroups": [
               {
                 "tripItems": [
@@ -212,6 +212,88 @@ func bookingComGraphQLReservationStatusUsesExactTokens() throws {
     let bookings = try BookingComTripsGraphQLParser().parseTimeline(from: json)
     let hotel = try #require(bookings.first)
     #expect(hotel.status == .unknown)
+}
+
+@Test("Booking.com GraphQL trip.canceled:true + reservationStatus CONFIRMED → cancelled, nicht confirmed")
+func bookingComGraphQLTripCanceledOverridesConfirmedStatus() throws {
+    let parser = BookingComTripsGraphQLParser()
+    #expect(
+        BookingStatus.parse(
+            parser.catalogStatusRaw(reservationStatus: "CONFIRMED", tripCanceled: true)
+        ) == .cancelled
+    )
+    #expect(
+        BookingStatus.parse(
+            parser.catalogStatusRaw(reservationStatus: "CONFIRMED", tripCanceled: false)
+        ) == .confirmed
+    )
+
+    func timelineJSON(canceled: Bool) -> String {
+        """
+        {
+          "data": {
+            "singleTripTimelineQueries": {
+              "singleTripTimeline": {
+                "trip": { "title": "Nairobi", "canceled": \(canceled) },
+                "timelineGroups": [
+                  {
+                    "tripItems": [
+                      {
+                        "__typename": "ReservationTripItem",
+                        "reservation": {
+                          "__typename": "AccommodationReservation",
+                          "verticalType": "ACCOMMODATION",
+                          "bookingUrl": "/mybooking.de.html?auth_key=abc",
+                          "reservationDetailsURL": "/mybooking.de.html?auth_key=abc",
+                          "startDateTime": "2026-08-30T12:00:00.000+03:00",
+                          "endDateTime": "2026-08-31T11:00:00.000+03:00",
+                          "reservationStatus": "CONFIRMED",
+                          "propertyData": {
+                            "name": "Hemak Suites Hotel",
+                            "location": { "city": "Nairobi" }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+        """
+    }
+
+    let active = try #require(parser.parseTimeline(from: timelineJSON(canceled: false)).first)
+    #expect(active.status == .confirmed)
+
+    // DraftAssembler droppt cancelled statusRaw → kein confirmed Katalog-Draft.
+    let canceledBookings = try parser.parseTimeline(from: timelineJSON(canceled: true))
+    #expect(canceledBookings.isEmpty)
+}
+
+@Test("GetTripsQuery überspringt Trips mit canceled:true")
+func bookingComGetTripsSkipsCanceledTrips() throws {
+    // Skip = kein Timeline-Fetch; Absenz-Prune in SyncProviderBookings entfernt stale confirmed.
+    let json = """
+    {
+      "data": {
+        "tripsQueries": {
+          "getTrips": {
+            "__typename": "GetTripsList",
+            "trips": [
+              { "id": "active-1", "canceled": false },
+              { "id": "canceled-1", "canceled": true },
+              { "id": "active-2" }
+            ],
+            "nextPageData": { "paginationToken": null }
+          }
+        }
+      }
+    }
+    """
+    let ids = try BookingComTripsGraphQLParser().parseTripIDs(fromGetTripsJSON: json)
+    #expect(ids == ["active-1", "active-2"])
 }
 
 @Test("BookingComTripsGraphQLParser erkennt TripsListError und GraphQL-Errors")

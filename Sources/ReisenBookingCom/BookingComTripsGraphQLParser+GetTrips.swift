@@ -4,7 +4,15 @@ import ReisenDomain
 extension BookingComTripsGraphQLParser {
     public func parseTripIDs(fromGetTripsJSON json: String) throws -> [String] {
         let list = try decodeGetTripsList(from: json)
-        return list.trips.compactMap(\.id).filter { !$0.isEmpty }
+        // canceled:true weglassen — kein Timeline-Fetch. Absenz-Reconcile in
+        // SyncProviderBookings.deleteProviderBookings(keepingExternalURLs:) entfernt
+        // zuvor syncte confirmed-Buchungen, die nicht mehr im aktiven Katalog sind
+        // (gleiche Semantik wie DraftAssembler-Drop von CANCELLED).
+        return list.trips.compactMap { trip -> String? in
+            guard trip.canceled != true else { return nil }
+            guard let id = trip.id, !id.isEmpty else { return nil }
+            return id
+        }
     }
 
     public func parsePaginationToken(fromGetTripsJSON json: String) throws -> String? {

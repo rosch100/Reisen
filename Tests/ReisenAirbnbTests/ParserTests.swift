@@ -29,7 +29,11 @@ func airbnbInvalidListingTimeZoneYieldsNilOffset() {
 @Test("AirbnbScheduledEventsParser parst Stay Preis, Check-in/out Minuten und Stornofrist")
 func airbnbScheduledEventsParsesPriceDeadlinesAndTimes() throws {
     let json = try fixtureJSON("scheduled_events_stay_sample.json")
-    let result = try AirbnbScheduledEventsParser.parse(responseText: json)
+    let listingOffset = 2 * 3600
+    let result = try AirbnbScheduledEventsParser.parse(
+        responseText: json,
+        hotelOffsetSeconds: listingOffset
+    )
 
     #expect(result.rateDetails?.totalPriceAmount == 52.56)
     #expect(result.rateDetails?.totalPriceCurrency == "EUR")
@@ -44,6 +48,18 @@ func airbnbScheduledEventsParsesPriceDeadlinesAndTimes() throws {
     #expect(abs(deadline.deadlineAt.timeIntervalSince(expected)) < 0.01)
     #expect(deadline.isFreeCancellation == false)
     #expect(deadline.policyText?.localizedCaseInsensitiveContains("non-refundable") == true)
+    #expect(deadline.hotelOffsetSeconds == listingOffset)
+}
+
+@Test("AirbnbScheduledEventsParser ohne Listing-Offset → keine Stornofristen")
+func airbnbScheduledEventsWithoutOffsetDropsDeadlines() throws {
+    let json = try fixtureJSON("scheduled_events_stay_sample.json")
+    let result = try AirbnbScheduledEventsParser.parse(
+        responseText: json,
+        hotelOffsetSeconds: nil
+    )
+    #expect(result.rateDetails?.totalPriceAmount == 52.56)
+    #expect(result.deadlines.isEmpty)
 }
 
 @Test("AirbnbScheduledEventsPayment parst EN Total-cost mit Dezimalpunkt (Sync-Locale)")
@@ -72,6 +88,7 @@ func airbnbMoneyAmountParsesGroupedThousands() {
 @Test("AirbnbScheduledEventsCancellation nutzt end_at als Free-Cancel-Frist")
 func airbnbScheduledEventsCancellationUsesEndAtForFreeRefund() {
     let freeUntil = iso8601("2026-09-30T12:00:00.000Z")
+    let listingOffset = 3600
     let entry = AirbnbScheduledEventRow.CancellationMilestoneEntry(
         timelineTitle: "Before",
         refundType: "Full refund",
@@ -79,9 +96,13 @@ func airbnbScheduledEventsCancellationUsesEndAtForFreeRefund() {
         startAt: iso8601("2026-08-30T15:41:33.336Z"),
         endAt: freeUntil
     )
-    let deadline = AirbnbScheduledEventsCancellation.deadline(from: entry)
+    let deadline = AirbnbScheduledEventsCancellation.deadline(
+        from: entry,
+        hotelOffsetSeconds: listingOffset
+    )
     #expect(deadline?.isFreeCancellation == true)
     #expect(deadline.map { abs($0.deadlineAt.timeIntervalSince(freeUntil)) < 0.01 } == true)
+    #expect(deadline?.hotelOffsetSeconds == listingOffset)
 }
 
 @Test("AirbnbScheduledEventsCancellation verwirft Free-Tier ohne end_at")
@@ -93,7 +114,23 @@ func airbnbScheduledEventsCancellationDropsFreeWithoutEndAt() {
         startAt: iso8601("2026-08-30T15:41:33.336Z"),
         endAt: nil
     )
-    #expect(AirbnbScheduledEventsCancellation.deadline(from: entry) == nil)
+    #expect(
+        AirbnbScheduledEventsCancellation.deadline(from: entry, hotelOffsetSeconds: 3600) == nil
+    )
+}
+
+@Test("AirbnbScheduledEventsCancellation ohne Offset → keine Deadline")
+func airbnbScheduledEventsCancellationDropsWithoutOffset() {
+    let entry = AirbnbScheduledEventRow.CancellationMilestoneEntry(
+        timelineTitle: "Before",
+        refundType: "Full refund",
+        refundTerm: "Get back 100% of what you paid.",
+        startAt: iso8601("2026-08-30T15:41:33.336Z"),
+        endAt: iso8601("2026-09-30T12:00:00.000Z")
+    )
+    #expect(
+        AirbnbScheduledEventsCancellation.deadline(from: entry, hotelOffsetSeconds: nil) == nil
+    )
 }
 
 @Test("AirbnbTripDetailsParser parst Zeitzone, Adresse, Gäste und Raumanzahl")

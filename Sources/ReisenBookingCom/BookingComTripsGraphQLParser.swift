@@ -14,11 +14,16 @@ public struct BookingComTripsGraphQLParser: Sendable {
         }
 
         let tripTitle = timeline?.trip?.title
+        let tripCanceled = timeline?.trip?.canceled == true
         var bookings: [ProviderBookingDraft] = []
         for group in groups {
             for item in group.tripItems ?? [] {
                 guard let reservation = item.reservation else { continue }
-                if let draft = draft(from: reservation, tripTitle: tripTitle) {
+                if let draft = draft(
+                    from: reservation,
+                    tripTitle: tripTitle,
+                    tripCanceled: tripCanceled
+                ) {
                     bookings.append(draft)
                 }
             }

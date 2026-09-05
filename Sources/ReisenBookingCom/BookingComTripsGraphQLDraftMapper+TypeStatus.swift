@@ -2,6 +2,18 @@ import Foundation
 import ReisenDomain
 
 extension BookingComTripsGraphQLParser {
+    /// Trip-`canceled` schlägt `reservationStatus` (z. B. CONFIRMED bei storniertem Trip).
+    /// Token `CANCELLED` → `BookingStatus.parse` / `DraftAssembler` droppen aus dem aktiven Katalog.
+    func catalogStatusRaw(
+        reservationStatus: String?,
+        tripCanceled: Bool
+    ) -> String? {
+        if tripCanceled {
+            return "CANCELLED"
+        }
+        return reservationStatus
+    }
+
     func bookingType(of reservation: GraphQLReservation) -> BookingType {
         if matches(reservation, .containing("Flight"), vertical: "FLIGHT") {
             return .flight

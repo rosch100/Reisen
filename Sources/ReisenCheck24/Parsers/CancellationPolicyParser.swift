@@ -103,9 +103,15 @@ public struct CancellationPolicyParser {
                 ?? hotelUntil.flatMap(ISODateTime.parseInstant)
                 ?? utcUntil.flatMap(ISODateTime.parseInstant)
 
-            let parsedHotelOffsetSeconds = fromLabel?.offsetSeconds ?? hotelOffsetSeconds
+            let parsedHotelOffsetSeconds =
+                fromLabel?.offsetSeconds
+                ?? hotelOffsetSeconds
+                ?? hotelUntil.flatMap(ISODateTime.offsetSeconds(from:))
+                ?? utcUntil.flatMap(ISODateTime.offsetSeconds(from:))
 
             guard let deadlineAt else { continue }
+            // Keine Fristen ohne Stay-/ISO-Offset persistieren (Anzeige/EventKit).
+            guard let parsedHotelOffsetSeconds else { continue }
 
             let isStrict = clauseFormatter.isStrictFromLabelTime(labelTime)
             let isFreeCancellation = clauseFormatter.isFreeCancellationFee(feeLabel)
