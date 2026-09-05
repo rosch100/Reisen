@@ -143,6 +143,7 @@ struct TripDetailView: View {
         do {
             try performRemoveBookingFromTrip(booking)
         } catch {
+            Self.recordPersistFailure(operation: "booking_remove_from_trip", error: error)
             persistErrorMessage = error.localizedDescription
         }
 
@@ -205,6 +206,7 @@ struct TripDetailView: View {
         do {
             try BookingDeletion.perform(booking: bookingToDelete, in: modelContext)
         } catch {
+            Self.recordPersistFailure(operation: "booking_delete", error: error)
             persistErrorMessage = error.localizedDescription
             pendingDeleteBookingID = nil
             return
@@ -535,7 +537,8 @@ struct TripDetailView: View {
                                 context: modelContext
                             )
                         } catch {
-                            assertionFailure("Gap save failed: \(error)")
+                            Self.recordPersistFailure(operation: "trip_gap_save", error: error)
+                            persistErrorMessage = error.localizedDescription
                         }
                         gapEditorPayload = nil
                     }
@@ -768,6 +771,26 @@ struct TripDetailView: View {
 
     private func openBookingsCandidates() -> [SDBooking] {
         allBookings.filter { OpenBookingMatching.isCandidate($0, for: trip) }
+    }
+
+    private static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "TripDetailView",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }
 
@@ -1091,6 +1114,7 @@ private struct BookingDetailPanel: View {
         do {
             try createBookingAssigned(to: trip)
         } catch {
+            Self.recordPersistFailure(operation: "booking_create_period_expand", error: error)
             persistErrorMessage = error.localizedDescription
         }
     }
@@ -1099,6 +1123,7 @@ private struct BookingDetailPanel: View {
         do {
             try createBookingAssigned(to: nil)
         } catch {
+            Self.recordPersistFailure(operation: "booking_create_open", error: error)
             persistErrorMessage = error.localizedDescription
         }
     }
@@ -1112,6 +1137,26 @@ private struct BookingDetailPanel: View {
         )
         selectedTimelineIDs = [newID.uuidString]
         clearEditor()
+    }
+
+    private static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "BookingDetailPanel",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }
 

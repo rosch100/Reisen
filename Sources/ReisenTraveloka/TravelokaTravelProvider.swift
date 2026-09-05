@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import ReisenDomain
 import ReisenProviders
+import ReisenDiagnostics
 
 @MainActor
 public final class TravelokaTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
@@ -180,17 +181,21 @@ private extension TravelokaTravelProvider {
             switch error {
             case .httpStatus(let code) where code == 401 || code == 403:
                 onProgress?("Traveloka Refund: Session abgelaufen — bitte neu anmelden.")
+                Self.recordRefundSkipped(reason: "session_expired")
             case .httpStatus, .emptyBody:
                 onProgress?("Traveloka Refund-Seite nicht erreichbar — Detail ohne Fristen belassen.")
+                Self.recordRefundSkipped(reason: "refund_page_unreachable")
             }
             return enrichment
         } catch {
             onProgress?("Traveloka Refund-Seite nicht erreichbar — Detail ohne Fristen belassen.")
+            Self.recordRefundSkipped(reason: "refund_fetch_failed")
             return enrichment
         }
 
         guard let timeZone = TravelokaJSON.timeZone(iana: timeZoneIdentifier) else {
             onProgress?("Traveloka Refund ohne IANA-Zeitzone — Fristen nicht übernommen.")
+            Self.recordRefundSkipped(reason: "missing_iana_timezone")
             return enrichment
         }
 
@@ -201,6 +206,7 @@ private extension TravelokaTravelProvider {
             )
             guard !deadlines.isEmpty else {
                 onProgress?("Traveloka Refund ohne Storno-Fristen im HTML.")
+                Self.recordRefundSkipped(reason: "empty_refund_deadlines")
                 return enrichment
             }
             var merged = enrichment
@@ -208,7 +214,28 @@ private extension TravelokaTravelProvider {
             return merged
         } catch {
             onProgress?("Traveloka Refund-Fristen nicht lesbar — Detail ohne Fristen belassen.")
+            Self.recordRefundSkipped(reason: "refund_parse_failed")
             return enrichment
+        }
+    }
+
+    private static func recordRefundSkipped(reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .traveloka,
+                        operation: "traveloka_enrich_refund"
+                    ),
+                    component: "TravelokaTravelProvider",
+                    phase: "refund",
+                    event: "refund_enrich_skipped",
+                    result: .skipped,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }
