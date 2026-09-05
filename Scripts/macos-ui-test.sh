@@ -302,11 +302,12 @@ fi
 
 reisen_macos_ui_parse_argv "$@" || exit $?
 
-if ! reisen_macos_ui_resolve_only_args; then
-  resolve_status=$?
-  if [[ "$resolve_status" -eq 10 ]]; then
-    exit 0
-  fi
+resolve_status=0
+reisen_macos_ui_resolve_only_args || resolve_status=$?
+if [[ "$resolve_status" -eq 10 ]]; then
+  exit 0
+fi
+if [[ "$resolve_status" -ne 0 ]]; then
   exit "$resolve_status"
 fi
 

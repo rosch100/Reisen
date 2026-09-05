@@ -271,17 +271,18 @@ final class MacUISmokeTests: XCTestCase {
         self.assertLess(spans["testC"][0], spans["testC"][1])
 
     def test_changed_working_tree_lines(self) -> None:
-        diff = """\
-@@ -8,7 +8,7 @@ final class MacUISmokeTests: XCTestCase {
-     }
-
-     func testA() {
--        let x = 1
-+        let x = 42
-     }
-"""
+        # Blank context lines must carry Git's leading space so line numbers match real diffs.
+        diff = (
+            "@@ -8,7 +8,7 @@ final class MacUISmokeTests: XCTestCase {\n"
+            "     }\n"
+            " \n"
+            "     func testA() {\n"
+            "-        let x = 1\n"
+            "+        let x = 42\n"
+            "     }\n"
+        )
         changed = self.mod.changed_working_tree_lines(diff)
-        self.assertIn(10, changed)
+        self.assertIn(11, changed)
 
     def test_concatenated_diff_resets_hunk_state(self) -> None:
         """Regression: concatenated git diff output must not crash the parser."""
@@ -447,10 +448,13 @@ class MacosUiSelectTestsGit(unittest.TestCase):
                 calls.append(list(cmd))
                 return original_run(cmd, **kwargs)
 
-            env = os.environ.copy()
-            env.pop("REISEN_MAC_UI_DIFF_BASE", None)
-            with mock.patch("subprocess.run", side_effect=tracking_run):
-                base = self.mod.resolve_diff_base(repo, None)
+            saved_diff_base = os.environ.pop("REISEN_MAC_UI_DIFF_BASE", None)
+            try:
+                with mock.patch("subprocess.run", side_effect=tracking_run):
+                    base = self.mod.resolve_diff_base(repo, None)
+            finally:
+                if saved_diff_base is not None:
+                    os.environ["REISEN_MAC_UI_DIFF_BASE"] = saved_diff_base
 
             self.assertEqual(base, c1)
             merge_cmds = [

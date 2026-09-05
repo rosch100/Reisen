@@ -836,7 +836,7 @@ reisen_ui_remote_self_test() {
   esac
   grep -Fq 'echo "${test_invoke} > \${log_file} 2>&1"' "$script_path"
 
-  resolve_line="$(grep -n '^if ! reisen_ui_remote_resolve_test_args; then' "$script_path" | head -1 | cut -d: -f1)"
+  resolve_line="$(grep -n '^reisen_ui_remote_resolve_test_args || resolve_status=\$?' "$script_path" | head -1 | cut -d: -f1)"
   [[ -n "$resolve_line" && -n "$acquire_line" && "$resolve_line" -lt "$acquire_line" ]]
   grep -Fq 'return 10' "$script_path"
 
@@ -867,11 +867,12 @@ reisen_ui_remote_parse_argv "$@" || exit $?
 cd "$ROOT"
 reisen_ui_remote_assert_git_source
 
-if ! reisen_ui_remote_resolve_test_args; then
-  resolve_status=$?
-  if [[ "$resolve_status" -eq 10 ]]; then
-    exit 0
-  fi
+resolve_status=0
+reisen_ui_remote_resolve_test_args || resolve_status=$?
+if [[ "$resolve_status" -eq 10 ]]; then
+  exit 0
+fi
+if [[ "$resolve_status" -ne 0 ]]; then
   exit "$resolve_status"
 fi
 
