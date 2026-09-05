@@ -105,6 +105,133 @@ class CiSelectSuitesTests(unittest.TestCase):
     def test_package_swift_is_harness(self) -> None:
         self.assertTrue(self.mod.is_harness_path("Package.swift"))
 
+    def test_all_none_baselines_full_no_last_green(self) -> None:
+        baselines = {suite: None for suite in self.mod.ALL_SUITES}
+        result = self.mod.select_suites(
+            changed_files=["Sources/ReisenDomain/Entities/Booking.swift"],
+            baselines=baselines,
+            force_full=False,
+            push_to_default=False,
+        )
+        self.assertEqual(result["mode"], "full")
+        self.assertEqual(result["reason"], "no-last-green")
+
+    def test_fill_missing_baselines_keeps_pr_sha(self) -> None:
+        target = {suite: None for suite in self.mod.ALL_SUITES}
+        target["suite-swiftpm"] = "pr-sha"
+        source = {suite: "master-sha" for suite in self.mod.ALL_SUITES}
+        filled = self.mod.fill_missing_baselines(target, source)
+        self.assertEqual(target["suite-swiftpm"], "pr-sha")
+        self.assertEqual(target["suite-ios-sim"], "master-sha")
+        self.assertEqual(filled, len(self.mod.ALL_SUITES) - 1)
+
+    def test_prepare_master_then_domain_affected_swiftpm(self) -> None:
+        baselines = {suite: None for suite in self.mod.ALL_SUITES}
+        master = {suite: "master-sha" for suite in self.mod.ALL_SUITES}
+        prepared, source = self.mod.prepare_baselines_with_default_branch(
+            baselines=baselines,
+            master_baselines=master,
+            default_branch_sha=None,
+        )
+        self.assertEqual(source, "master")
+        result = self.mod.select_suites(
+            changed_files=["Sources/ReisenDomain/Entities/Booking.swift"],
+            baselines=prepared,
+            force_full=False,
+            push_to_default=False,
+        )
+        self.assertEqual(result["mode"], "affected")
+        self.assertEqual(result["suites"], ["suite-swiftpm"])
+
+    def test_prepare_default_branch_when_apis_empty(self) -> None:
+        baselines = {suite: None for suite in self.mod.ALL_SUITES}
+        prepared, source = self.mod.prepare_baselines_with_default_branch(
+            baselines=baselines,
+            master_baselines={suite: None for suite in self.mod.ALL_SUITES},
+            default_branch_sha="defaultdefault01",
+        )
+        self.assertEqual(source, "default-branch")
+        self.assertTrue(all(prepared[s] == "defaultdefault01" for s in self.mod.ALL_SUITES))
+        result = self.mod.select_suites(
+            changed_files=["Sources/ReisenAirbnb/AirbnbTravelProvider.swift"],
+            baselines=prepared,
+            force_full=False,
+            push_to_default=False,
+        )
+        self.assertEqual(result["mode"], "affected")
+        self.assertEqual(result["suites"], ["suite-swiftpm"])
+
+    def test_prepare_none_without_default_branch(self) -> None:
+        baselines = {suite: None for suite in self.mod.ALL_SUITES}
+        prepared, source = self.mod.prepare_baselines_with_default_branch(
+            baselines=baselines,
+            master_baselines={suite: None for suite in self.mod.ALL_SUITES},
+            default_branch_sha=None,
+        )
+        self.assertEqual(source, "none")
+        self.assertTrue(all(prepared[s] is None for s in self.mod.ALL_SUITES))
+
+    def test_pr_green_wins_over_master(self) -> None:
+        baselines = {suite: None for suite in self.mod.ALL_SUITES}
+        baselines["suite-swiftpm"] = "pr-sha"
+        master = {suite: "master-sha" for suite in self.mod.ALL_SUITES}
+        prepared, source = self.mod.prepare_baselines_with_default_branch(
+            baselines=baselines,
+            master_baselines=master,
+            default_branch_sha="unused",
+        )
+        self.assertEqual(source, "pr+master")
+        self.assertEqual(prepared["suite-swiftpm"], "pr-sha")
+        self.assertEqual(prepared["suite-macos-ui"], "master-sha")
+        # no None slots → default-branch not applied
+        self.assertNotIn("default-branch", source)
+
+    def test_resolve_default_branch_sha_tries_refs_in_order(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess_run = __import__("subprocess").run
+            subprocess_run(["git", "init", "-b", "master"], cwd=repo, check=True, capture_output=True)
+            subprocess_run(
+                ["git", "config", "user.email", "t@example.com"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            subprocess_run(
+                ["git", "config", "user.name", "t"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            (repo / "f").write_text("x\n", encoding="utf-8")
+            subprocess_run(["git", "add", "f"], cwd=repo, check=True, capture_output=True)
+            subprocess_run(["git", "commit", "-m", "c"], cwd=repo, check=True, capture_output=True)
+            resolved = self.mod.resolve_default_branch_sha(repo, refs=("missing", "master"))
+            self.assertIsNotNone(resolved)
+            assert resolved is not None
+            sha, ref = resolved
+            self.assertEqual(ref, "master")
+            self.assertEqual(len(sha), 40)
+
+    def test_write_github_outputs_includes_baseline_source(self) -> None:
+        import tempfile
+
+        selection = {
+            "mode": "affected",
+            "reason": "affected",
+            "baselineSource": "master",
+            "suites": ["suite-swiftpm"],
+            "skipped": [s for s in self.mod.ALL_SUITES if s != "suite-swiftpm"],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "github_output"
+            self.mod.write_github_outputs(selection, out)
+            text = out.read_text(encoding="utf-8")
+            self.assertIn("baselineSource=master\n", text)
+            self.assertIn("run_swiftpm=true\n", text)
+
 
 if __name__ == "__main__":
     unittest.main()

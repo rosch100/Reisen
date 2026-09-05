@@ -205,6 +205,64 @@ final class SyncProviderBookingsUpsertTests {
         #expect(repo.all.isEmpty)
     }
 
+    /// Booking.com GetTrips skippt canceled IDs → kein Draft → URL fehlt in keepingExternalURLs.
+    @Test func partialCatalogPrunesCanceledBookingAbsentFromActiveDrafts() throws {
+        let calendar = Calendar.current
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let startOfToday = calendar.startOfDay(for: now)
+        let provider = ProviderID.booking
+
+        let keptStart = startOfToday.addingTimeInterval(10 * 24 * 60 * 60)
+        let keptEnd = startOfToday.addingTimeInterval(12 * 24 * 60 * 60)
+        let kept = Booking(
+            provider: provider,
+            bookingType: .hotel,
+            title: "Aktiv",
+            confirmationCode: "A1",
+            externalUrl: "https://example/booking/keep",
+            startAt: keptStart,
+            endAt: keptEnd,
+            status: .confirmed
+        )
+        let canceled = Booking(
+            provider: provider,
+            bookingType: .hotel,
+            title: "Storniert",
+            confirmationCode: "C1",
+            externalUrl: "https://example/booking/canceled",
+            startAt: startOfToday.addingTimeInterval(20 * 24 * 60 * 60),
+            endAt: startOfToday.addingTimeInterval(22 * 24 * 60 * 60),
+            status: .confirmed
+        )
+        let repo = InMemoryBookingRepository(seed: [kept, canceled])
+        let useCase = SyncProviderBookings(bookingRepository: repo)
+
+        let drafts = [
+            ProviderBookingDraft(
+                provider: provider,
+                bookingType: .hotel,
+                title: "Aktiv",
+                confirmationCode: "A1",
+                externalUrl: "https://example/booking/keep",
+                startAt: keptStart,
+                endAt: keptEnd,
+                status: .confirmed
+            )
+        ]
+
+        _ = try useCase.execute(
+            provider: provider,
+            drafts: drafts,
+            requiresDeadlines: false,
+            now: now
+        )
+
+        #expect(repo.all.count == 1)
+        let remaining = try #require(repo.all.first)
+        #expect(remaining.externalUrl == "https://example/booking/keep")
+        #expect(remaining.status == .confirmed)
+    }
+
     @Test func missingDeadlinesStillPrunesAbsentBookings() throws {
         let calendar = Calendar.current
         let now = Date(timeIntervalSince1970: 1_700_000_000)

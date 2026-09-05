@@ -249,6 +249,96 @@ def fetch_last_green_baselines(
     return baselines
 
 
+def fill_missing_baselines(
+    target: dict[str, str | None],
+    source: dict[str, str | None],
+) -> int:
+    """Fill None slots in target from source. Returns number of slots filled."""
+    filled = 0
+    for suite in ALL_SUITES:
+        if target.get(suite) is None and source.get(suite):
+            target[suite] = source[suite]
+            filled += 1
+    return filled
+
+
+def resolve_default_branch_sha(
+    repo: Path,
+    refs: tuple[str, ...] | None = None,
+) -> tuple[str, str] | None:
+    """
+    Resolve default-branch tip SHA for baseline fill.
+
+    Returns (sha, ref_used) or None if no ref resolves.
+    """
+    candidates: list[str] = []
+    if refs is not None:
+        candidates.extend(refs)
+    else:
+        base_ref = os.environ.get("GITHUB_BASE_REF", "").strip()
+        if base_ref:
+            candidates.append(f"origin/{base_ref}")
+            candidates.append(base_ref)
+        candidates.extend(("origin/master", "master", "refs/remotes/origin/master"))
+    seen: set[str] = set()
+    for ref in candidates:
+        if not ref or ref in seen:
+            continue
+        seen.add(ref)
+        proc = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "--verify", ref],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode != 0:
+            continue
+        sha = proc.stdout.strip()
+        if sha:
+            return sha, ref
+    return None
+
+
+def apply_default_branch_baseline(
+    baselines: dict[str, str | None],
+    *,
+    default_sha: str,
+) -> int:
+    """Write default_sha into all still-None suite slots. Returns slots filled."""
+    filled = 0
+    for suite in ALL_SUITES:
+        if baselines.get(suite) is None:
+            baselines[suite] = default_sha
+            filled += 1
+    return filled
+
+
+def prepare_baselines_with_default_branch(
+    *,
+    baselines: dict[str, str | None],
+    master_baselines: dict[str, str | None] | None,
+    default_branch_sha: str | None,
+) -> tuple[dict[str, str | None], str]:
+    """
+    Merge PR greens with master greens and optional default-branch SHA.
+
+    Returns (baselines, baseline_source) — stable log token:
+    pr | pr+master | pr+master+default-branch | master | master+default-branch |
+    default-branch | none.
+    """
+    sources: list[str] = []
+    if any(baselines.get(s) for s in ALL_SUITES):
+        sources.append("pr")
+    if master_baselines is not None and fill_missing_baselines(baselines, master_baselines):
+        sources.append("master")
+    if any(baselines.get(s) is None for s in ALL_SUITES) and default_branch_sha:
+        if apply_default_branch_baseline(baselines, default_sha=default_branch_sha):
+            sources.append("default-branch")
+    if not any(baselines.get(s) for s in ALL_SUITES):
+        return baselines, "none"
+    return baselines, "+".join(sources)
+
+
 def _api_json(token: str, url: str) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
@@ -276,6 +366,7 @@ def write_github_outputs(selection: dict[str, Any], output_path: Path) -> None:
     lines = [
         f"mode={selection['mode']}",
         f"reason={selection['reason']}",
+        f"baselineSource={selection.get('baselineSource', 'none')}",
     ]
     selected = set(selection["suites"])
     for suite, key in SUITE_OUTPUT_KEYS.items():
@@ -339,6 +430,7 @@ def main(argv: list[str] | None = None) -> int:
 
     baselines: dict[str, str | None] = {suite: None for suite in ALL_SUITES}
     api_error = False
+    baseline_source = "none"
     if args.baseline:
         for item in args.baseline:
             if "=" not in item:
@@ -349,6 +441,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Fehler: unbekannte Suite {suite}", file=sys.stderr)
                 return 2
             baselines[suite] = sha or None
+        baseline_source = "cli"
     elif not args.skip_api and not force_env and not push_to_default:
         token = os.environ.get("GITHUB_TOKEN", "").strip()
         branch = args.branch or os.environ.get("GITHUB_HEAD_REF") or args.ref_name
@@ -365,6 +458,24 @@ def main(argv: list[str] | None = None) -> int:
                     repo=args.repo_slug,
                     branch=branch,
                 )
+                master_baselines = fetch_last_green_baselines(
+                    token=token,
+                    repo=args.repo_slug,
+                    branch="master",
+                )
+                resolved = resolve_default_branch_sha(args.repo)
+                default_sha = resolved[0] if resolved else None
+                baselines, baseline_source = prepare_baselines_with_default_branch(
+                    baselines=baselines,
+                    master_baselines=master_baselines,
+                    default_branch_sha=default_sha,
+                )
+                if resolved and "default-branch" in baseline_source.split("+"):
+                    print(
+                        f"reisen-ci-selection: default-branch-ref={resolved[1]} "
+                        f"sha={resolved[0][:12]}",
+                        file=sys.stderr,
+                    )
             except RuntimeError as exc:
                 print(f"Hinweis: Last-Green-API fehlgeschlagen → full: {exc}", file=sys.stderr)
                 api_error = True
@@ -389,10 +500,12 @@ def main(argv: list[str] | None = None) -> int:
             push_to_default=push_to_default,
         )
 
+    selection["baselineSource"] = baseline_source
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(selection, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(
         f"reisen-ci-selection: mode={selection['mode']} reason={selection['reason']} "
+        f"baselineSource={baseline_source} "
         f"suites={selection['suites']} skipped={selection['skipped']}",
         file=sys.stderr,
     )

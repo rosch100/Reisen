@@ -274,6 +274,7 @@ func bookingComGraphQLTripCanceledOverridesConfirmedStatus() throws {
 
 @Test("GetTripsQuery überspringt Trips mit canceled:true")
 func bookingComGetTripsSkipsCanceledTrips() throws {
+    // Skip = kein Timeline-Fetch; Absenz-Prune in SyncProviderBookings entfernt stale confirmed.
     let json = """
     {
       "data": {
