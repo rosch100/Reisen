@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 public enum TripEditorMode {
     case create
@@ -176,6 +177,11 @@ public struct TripEditorSheet: View {
                     return
                 }
             } catch {
+                SharedUIPersistDiagnostics.recordFailure(
+                    component: "TripEditorSheet",
+                    operation: "trip_editor_seed_fetch",
+                    error: error
+                )
                 errorMessage = error.localizedDescription
                 return
             }
@@ -252,6 +258,11 @@ public struct TripEditorSheet: View {
             onSaved?(savedTrip)
             dismiss()
         } catch {
+            SharedUIPersistDiagnostics.recordFailure(
+                component: "TripEditorSheet",
+                operation: "trip_editor_save",
+                error: error
+            )
             errorMessage = error.localizedDescription
         }
     }

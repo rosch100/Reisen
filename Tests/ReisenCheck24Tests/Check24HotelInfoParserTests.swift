@@ -42,6 +42,12 @@ func check24HotelInfoParserMissingHotelInfoReturnsNil() {
     #expect(Check24HotelInfoParser.parse(from: "<html>accountOwnerStreet</html>") == nil)
 }
 
+@Test("Check24HotelInfoParser: kaputtes hotelInfo-JSON bleibt soft nil")
+func check24HotelInfoParserCorruptJSONReturnsNil() {
+    let html = #"<html>"hotelInfo": { not-json }</html>"#
+    #expect(Check24HotelInfoParser.parse(from: html) == nil)
+}
+
 @Test("Check24HotelInfoParser: Billing-Straße allein ist keine Hoteladresse")
 func check24HotelInfoParserIgnoresBillingStreet() {
     let html = """

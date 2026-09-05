@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 public struct AssignBookingsSheet: View {
     let trip: SDTrip
@@ -109,6 +110,11 @@ public struct AssignBookingsSheet: View {
             try modelContext.save()
             dismiss()
         } catch {
+            SharedUIPersistDiagnostics.recordFailure(
+                component: "AssignBookingsSheet",
+                operation: "assign_bookings_save",
+                error: error
+            )
             errorMessage = error.localizedDescription
         }
     }
