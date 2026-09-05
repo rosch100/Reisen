@@ -35,10 +35,10 @@ struct ProviderFirstLaunchSetupDiagnosticsTests {
         let event = ProviderFirstLaunchSetupDiagnostics.makeEvent(
             event: ProviderFirstLaunchSetupDiagnostics.deferredEvent,
             result: .cancelled,
-            reason: "later"
+            reason: "without_portals"
         )
         #expect(event.event == "provider_setup_deferred")
         #expect(event.result == .cancelled)
-        #expect(event.reason == "later")
+        #expect(event.reason == "without_portals")
     }
 }

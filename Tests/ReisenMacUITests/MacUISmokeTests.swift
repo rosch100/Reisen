@@ -37,7 +37,21 @@ final class MacUISmokeTests: XCTestCase {
                 .matching(identifier: UITestingIdentifiers.providerSetupReopen)
                 .count,
             0,
-            "Empty-Continue setzt completed — kein Reopen-CTA"
+            "Empty-Continue setzt Hide+completed — kein Reopen-CTA"
+        )
+    }
+
+    func testEmptyLaunchWithoutPortalsDismissesSetup() {
+        let ui = MacUI.launchEmpty()
+        ui.waitForWindow()
+        ui.completeProviderSetupWithoutPortals()
+        ui.waitFor(UITestingIdentifiers.emptyState)
+        XCTAssertEqual(
+            ui.app.descendants(matching: .any)
+                .matching(identifier: UITestingIdentifiers.providerSetupReopen)
+                .count,
+            0,
+            "Ohne Buchungsportale setzt Hide — kein Reopen-CTA"
         )
     }
 
@@ -514,6 +528,13 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         ui.openSettings()
         _ = ui.waitFor(UITestingIdentifiers.settingsICloudSyncToggle)
+    }
+
+    func testSettingsHideProviderSetupToggleExists() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openSettings()
+        _ = ui.waitFor(UITestingIdentifiers.settingsHideProviderSetupToggle)
     }
 
     func testProviderSyncChromeIsReachable() {

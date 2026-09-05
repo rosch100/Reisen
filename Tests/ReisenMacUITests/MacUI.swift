@@ -85,24 +85,31 @@ struct MacUI {
         XCTFail("Hauptfenster fehlt\n\(app.debugDescription)")
     }
 
-    /// Empty-Launch: Setup-Sheet per „Später“ schließen (kein Continue / keine Provider-Aktivierung).
+    /// Empty-Launch: Setup-Sheet per „Ohne Buchungsportale“ schließen.
     func dismissProviderSetupIfPresent(timeout: TimeInterval = 3) {
         let sheet = element(UITestingIdentifiers.providerSetupSheet)
         guard sheet.waitForExistence(timeout: timeout) else { return }
         let later = element(UITestingIdentifiers.providerSetupLater)
         XCTAssertTrue(
             later.waitForExistence(timeout: 3),
-            "Setup-Later fehlt trotz Sheet\n\(app.debugDescription)"
+            "Setup „Ohne Buchungsportale“ fehlt trotz Sheet\n\(app.debugDescription)"
         )
         later.click()
         let goneDeadline = Date().addingTimeInterval(5)
         while sheet.exists, Date() < goneDeadline {
             RunLoop.current.run(until: Date().addingTimeInterval(0.05))
         }
-        XCTAssertFalse(sheet.exists, "Setup-Sheet bleibt nach Later\n\(app.debugDescription)")
+        XCTAssertFalse(sheet.exists, "Setup-Sheet bleibt nach Ohne Buchungsportale\n\(app.debugDescription)")
     }
 
-    /// Empty-Launch: Weiter ohne Portale (completed, kein Reopen-CTA).
+    /// Empty-Launch: „Ohne Buchungsportale“ (Hide + completed).
+    func completeProviderSetupWithoutPortals(timeout: TimeInterval = 3) {
+        dismissProviderSetupIfPresent(timeout: timeout)
+        let sheet = element(UITestingIdentifiers.providerSetupSheet)
+        XCTAssertFalse(sheet.exists, "Setup-Sheet bleibt nach Ohne Buchungsportale\n\(app.debugDescription)")
+    }
+
+    /// Empty-Launch: Weiter ohne Portale (completed + Hide, kein Reopen-CTA).
     func completeProviderSetupWithEmptySelection(timeout: TimeInterval = 3) {
         let sheet = waitFor(UITestingIdentifiers.providerSetupSheet, timeout: timeout)
         let continueButton = waitFor(UITestingIdentifiers.providerSetupContinue, timeout: 3)

@@ -9430,13 +9430,45 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Später"
+            "value": "Ohne Buchungsportale"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Later"
+            "value": "Without Booking Portals"
+          }
+        }
+      }
+    },
+    "settings.hide_provider_setup": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erstauswahl der Portale ausblenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide Portal Setup on Launch"
+          }
+        }
+      }
+    },
+    "settings.hide_provider_setup_footer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn ausgeschaltet und kein Portal aktiv ist, erscheint die Auswahl beim Start."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When off and no portal is enabled, setup appears on launch."
           }
         }
       }

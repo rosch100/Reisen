@@ -90,13 +90,14 @@ public enum UITestingLaunch {
         }
     }
 
-    /// Populated-XCUI: Setup completed, damit kein First-Launch-Sheet die Smokes blockiert.
+    /// Populated-XCUI: Setup completed + Hide, damit kein First-Launch-Sheet die Smokes blockiert.
     public static func seedProviderSetupIfNeeded(
         mode: UITestingMode,
         defaults: UserDefaults
     ) {
         guard mode == .populated else { return }
         ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+        ProviderFirstLaunchSetup.setInitialSetupHidden(true, defaults: defaults)
     }
 
     @MainActor

@@ -6,12 +6,18 @@ import ReisenDomain
 /// Toggles für Buchungsportale. SSOT: `AppSettingsKeys.providerEnabledKey`.
 public struct ProviderEnabledSettingsSection: View {
     @Environment(\.providerRegistry) private var providerRegistry
+    @AppStorage(AppSettingsKeys.providerSetupDeferred) private var hideInitialProviderSetup = false
 
     public init() {}
 
     public var body: some View {
         if let registry = providerRegistry, !registry.syncProviderIDs.isEmpty {
             Section {
+                Toggle(L10n.string(.settingsHideProviderSetup), isOn: $hideInitialProviderSetup)
+                    .accessibilityIdentifier(UITestingIdentifiers.settingsHideProviderSetupToggle)
+                    .onChange(of: hideInitialProviderSetup) { _, _ in
+                        ProviderEnabledChange.notify()
+                    }
                 ForEach(registry.syncProviderIDs, id: \.self) { id in
                     ProviderEnabledToggle(
                         providerID: id,
@@ -21,7 +27,7 @@ public struct ProviderEnabledSettingsSection: View {
             } header: {
                 Text(L10n.string(.settingsBookingPortals))
             } footer: {
-                Text(L10n.string(.syncEnablePortalsHint))
+                Text(L10n.string(.settingsHideProviderSetupFooter))
             }
         }
     }

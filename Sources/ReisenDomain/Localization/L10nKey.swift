@@ -334,6 +334,8 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case repositoryPersistenceError = "repository.persistence_error"
     case settingsAppInstalled = "settings.app_installed"
     case settingsBookingPortals = "settings.booking_portals"
+    case settingsHideProviderSetup = "settings.hide_provider_setup"
+    case settingsHideProviderSetupFooter = "settings.hide_provider_setup_footer"
     case settingsCalendar = "settings.calendar"
     case settingsCalendarFooter = "settings.calendar_footer"
     case settingsCalendarPicker = "settings.calendar_picker"
@@ -362,6 +364,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case setupProvidersTitle = "setup.providers.title"
     case setupProvidersSubtitle = "setup.providers.subtitle"
     case setupProvidersContinue = "setup.providers.continue"
+    /// Sheet-Aktion „Ohne Buchungsportale“ (Identifier bleibt `setup.providers.later`).
     case setupProvidersLater = "setup.providers.later"
     case setupProvidersReopen = "setup.providers.reopen"
     case storeClearIcloudMessage = "store.clear_icloud_message"

@@ -28,7 +28,7 @@ struct SyncTab: View {
 
     private var shouldShowProviderSetupReopen: Bool {
         _ = providerEnableEpoch
-        return !AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted)
+        return !ProviderFirstLaunchSetup.isInitialSetupHidden()
             && enabledProviderIDs.isEmpty
     }
 

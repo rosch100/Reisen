@@ -170,21 +170,31 @@ struct RootTabView: View {
 
     private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
         let defaults = AppSettingsDefaults.current
+        if enabledIDs.isEmpty {
+            ProviderFirstLaunchSetup.completeWithoutPortals(defaults: defaults)
+            ProviderEnabledChange.notify()
+            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
+            showProviderSetup = false
+            ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: 0)
+            return
+        }
         ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
+        ProviderFirstLaunchSetup.setInitialSetupHidden(false, defaults: defaults)
         ProviderEnabledChange.notify()
         ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
         ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
         #if REISEN_PROVIDER_SYNC
-        if !enabledIDs.isEmpty {
-            selectedTab = .sync
-        }
+        selectedTab = .sync
         #endif
         ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
     }
 
     private func deferProviderSetup() {
-        ProviderFirstLaunchSetup.markDeferred()
+        let defaults = AppSettingsDefaults.current
+        ProviderFirstLaunchSetup.completeWithoutPortals(defaults: defaults)
+        ProviderEnabledChange.notify()
+        ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
         ProviderFirstLaunchSetupDiagnostics.recordDeferred()
     }
