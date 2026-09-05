@@ -122,8 +122,9 @@ public enum OpenBookingMatching {
         now: Date = Date()
     ) -> Bool {
         guard isOpenUnassigned(booking, calendar: calendar, now: now) else { return false }
-        // Trip-Fenster immer HotelStayDate-GMT-SSOT (wie TripBookingAssignment);
-        // ListInclusion bleibt typbewusst über `calendar` / `listInclusionCalendar`.
+        // Trip-Fenster immer HotelStayDate-GMT-SSOT (`TripBookingAssignment.windowCalendar`);
+        // „ab heute“/ListInclusion typbewusst (`listInclusionCalendar` / optional Override) —
+        // analog `TripBookingAssignment.upcomingCalendar`.
         return TripBookingDateWindow.contains(
             bookingStart: booking.startAt,
             bookingEnd: booking.endAt,

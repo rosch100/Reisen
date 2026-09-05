@@ -4,25 +4,30 @@ import Foundation
 public struct TripBookingAssignment: Sendable {
     public init() {}
 
+    /// - Parameters:
+    ///   - upcomingCalendar: Override for the „ab heute“ gate only.
+    ///     `nil` → `booking.bookingType.listInclusionCalendar` (Hotel GMT, sonst Gerätekalender).
+    ///   - windowCalendar: Trip date-window SSOT; default `HotelStayDate.calendar` (R18).
     public func assignableBookingIDs(
         bookings: [Booking],
         trip: Trip,
         now: Date = Date(),
-        calendar: Calendar = HotelStayDate.calendar
+        upcomingCalendar: Calendar? = nil,
+        windowCalendar: Calendar = HotelStayDate.calendar
     ) -> [UUID] {
-        let startOfToday = calendar.startOfDay(for: now)
-
-        return bookings.compactMap { booking in
+        bookings.compactMap { booking in
             guard booking.tripID == nil else { return nil }
             guard booking.status != .cancelled else { return nil }
-            let bookingStartDay = calendar.startOfDay(for: booking.startAt)
+            let listCal = upcomingCalendar ?? booking.bookingType.listInclusionCalendar
+            let startOfToday = listCal.startOfDay(for: now)
+            let bookingStartDay = listCal.startOfDay(for: booking.startAt)
             guard bookingStartDay >= startOfToday else { return nil }
             guard TripBookingDateWindow.contains(
                 bookingStart: booking.startAt,
                 bookingEnd: booking.endAt,
                 tripStart: trip.startDate,
                 tripEnd: trip.endDate,
-                calendar: calendar
+                calendar: windowCalendar
             ) else { return nil }
             return booking.id
         }
@@ -34,7 +39,8 @@ public struct TripBookingAssignment: Sendable {
         trip: Trip,
         restrictingTo seedBookingIDs: Set<UUID>?,
         now: Date = Date(),
-        calendar: Calendar = HotelStayDate.calendar
+        upcomingCalendar: Calendar? = nil,
+        windowCalendar: Calendar = HotelStayDate.calendar
     ) -> [UUID] {
         if let seedBookingIDs {
             return bookings.compactMap { booking in
@@ -44,7 +50,13 @@ public struct TripBookingAssignment: Sendable {
                 return booking.id
             }
         }
-        return assignableBookingIDs(bookings: bookings, trip: trip, now: now, calendar: calendar)
+        return assignableBookingIDs(
+            bookings: bookings,
+            trip: trip,
+            now: now,
+            upcomingCalendar: upcomingCalendar,
+            windowCalendar: windowCalendar
+        )
     }
 
     public func assignableCount(
@@ -52,7 +64,8 @@ public struct TripBookingAssignment: Sendable {
         startDate: Date,
         endDate: Date,
         now: Date = Date(),
-        calendar: Calendar = HotelStayDate.calendar
+        upcomingCalendar: Calendar? = nil,
+        windowCalendar: Calendar = HotelStayDate.calendar
     ) -> Int {
         guard endDate >= startDate else { return 0 }
         let draftTrip = Trip(title: "", startDate: startDate, endDate: endDate)
@@ -60,7 +73,8 @@ public struct TripBookingAssignment: Sendable {
             bookings: bookings,
             trip: draftTrip,
             now: now,
-            calendar: calendar
+            upcomingCalendar: upcomingCalendar,
+            windowCalendar: windowCalendar
         ).count
     }
 }

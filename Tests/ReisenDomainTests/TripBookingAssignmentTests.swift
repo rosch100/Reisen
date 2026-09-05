@@ -4,6 +4,7 @@ import ReisenDomain
 
 private func booking(
     id: UUID = UUID(),
+    bookingType: BookingType = .hotel,
     startAt: Date,
     endAt: Date,
     status: BookingStatus = .confirmed,
@@ -12,7 +13,7 @@ private func booking(
     Booking(
         id: id,
         provider: .check24,
-        bookingType: .hotel,
+        bookingType: bookingType,
         startAt: startAt,
         endAt: endAt,
         status: status,
@@ -44,7 +45,7 @@ private func booking(
         trip: trip,
         restrictingTo: nil,
         now: now,
-        calendar: calendar
+        windowCalendar: calendar
     )
 
     #expect(Set(ids) == Set([selectedID, extraInWindowID]))
@@ -81,7 +82,7 @@ private func booking(
         trip: trip,
         restrictingTo: [selectedID, selectedOutsideWindowID, cancelledSelectedID],
         now: now,
-        calendar: calendar
+        windowCalendar: calendar
     )
 
     #expect(Set(ids) == Set([selectedID, selectedOutsideWindowID]))
@@ -120,4 +121,78 @@ func tripBookingAssignment_assignableCount_defaultCalendarKeepsHotelGMTDay() {
     )
 
     #expect(count == 1)
+}
+
+@Test("TripBookingAssignment: Flug upcoming typbewusst (East-of-GMT), Fenster bleibt GMT")
+func tripBookingAssignment_flightUpcomingUsesListInclusionCalendarNotGMT() {
+    // now = 2026-09-05 02:00 GMT → East (+10) = 5.9. 12:00.
+    // Flugstart 4.9. 20:00 GMT = 5.9. 06:00 East → under GMT not upcoming, under East yes.
+    var east = Calendar(identifier: .gregorian)
+    east.timeZone = TimeZone(secondsFromGMT: 10 * 3600)!
+
+    let now = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5).addingTimeInterval(2 * 3600)
+    let flightStart = HotelStayDate.dateOnly(year: 2026, month: 9, day: 4)
+        .addingTimeInterval(20 * 3600)
+    let flightEnd = flightStart.addingTimeInterval(3_600)
+    let tripStart = HotelStayDate.dateOnly(year: 2026, month: 9, day: 1)
+    let tripEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+    let id = UUID()
+    let trip = Trip(title: "T", startDate: tripStart, endDate: tripEnd)
+    let flight = booking(
+        id: id,
+        bookingType: .flight,
+        startAt: flightStart,
+        endAt: flightEnd
+    )
+
+    #expect(
+        HotelStayDate.calendar.startOfDay(for: flightStart)
+            < HotelStayDate.calendar.startOfDay(for: now)
+    )
+    #expect(east.startOfDay(for: flightStart) >= east.startOfDay(for: now))
+
+    // Altes Einzel-Kalender-Verhalten (GMT auch für upcoming) → nicht assignable.
+    #expect(
+        TripBookingAssignment().assignableBookingIDs(
+            bookings: [flight],
+            trip: trip,
+            now: now,
+            upcomingCalendar: HotelStayDate.calendar
+        ).isEmpty
+    )
+
+    // Typbewusst (Flug-ListInclusion = Gerätekalender; hier East-Override) → assignable.
+    #expect(
+        TripBookingAssignment().assignableBookingIDs(
+            bookings: [flight],
+            trip: trip,
+            now: now,
+            upcomingCalendar: east
+        ) == [id]
+    )
+
+    // Default nil: Flug → listInclusionCalendar (== Calendar.current).
+    #expect(
+        TripBookingAssignment().assignableBookingIDs(
+            bookings: [flight],
+            trip: trip,
+            now: now,
+            upcomingCalendar: BookingType.flight.listInclusionCalendar
+        )
+            == TripBookingAssignment().assignableBookingIDs(
+                bookings: [flight],
+                trip: trip,
+                now: now
+            )
+    )
+
+    #expect(
+        TripBookingAssignment().assignableCount(
+            bookings: [flight],
+            startDate: tripStart,
+            endDate: tripEnd,
+            now: now,
+            upcomingCalendar: east
+        ) == 1
+    )
 }
