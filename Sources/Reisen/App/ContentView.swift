@@ -2265,7 +2265,10 @@ struct ContentView: View {
             selectedTimelineIDs = [id.uuidString]
             return
         }
-        selection = OpenBookingMatching.unassignedList(endAt: booking.endAt) == .elapsed
+        selection = OpenBookingMatching.unassignedList(
+            endAt: booking.endAt,
+            calendar: booking.listInclusionCalendar
+        ) == .elapsed
             ? .elapsedOpenBookings
             : .openBookings
         selectedOpenBookingIDs = [id]

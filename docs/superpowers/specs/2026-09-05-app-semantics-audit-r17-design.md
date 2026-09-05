@@ -26,6 +26,20 @@ R16 hat `SDTrip.isElapsed` auf `HotelStayDate.calendar` umgestellt. Residual: `S
 4. birthDate: Binding get `localPickerDate`, set `dateOnly`; New-Button bleibt `dateOnly(fromLocalPickerDate: Date())`.
 5. Unverändert: `SyncBookingMatchIndex`, PreTravelHint (device-local Lead Times).
 
+## R18 Follow-ups (vor Merge auf diesem Branch)
+
+| id | sev | status | notes |
+| --- | --- | --- | --- |
+| r18-birthdate-civil-day-ingest | high | fix | Opodo `birthDate` via `HotelStayDate.civilDay(fromISO:)` / `ISODateTime.parseCivilDay` (Offset-Mitternacht → Anker, nicht Instant) |
+| r18-openbooking-type-calendar | medium | fix | `OpenBookingMatching` Default `calendar: nil` → je `booking.listInclusionCalendar`; kein erzwungenes `HotelStayDate.calendar` für Flüge |
+
+### Civil-Day-SSOT
+
+- Day-only `yyyy-MM-dd` → `HotelStayDate.parse`
+- Instant mit Offset → `calendarDay(fromParsed:offsetSeconds:)`
+- Instant Z / ohne Offset → Date-Prefix falls vorhanden, sonst GMT-Civil des Instants
+- BookingEditor-Binding bleibt `localPickerDate`/`dateOnly` (setzt Anker voraus; Ingest ist Primärfix)
+
 ## DoD
 
 Tests, Spec/Plan, kein Commit in diesem Schritt (Parent orchestriert Ship).

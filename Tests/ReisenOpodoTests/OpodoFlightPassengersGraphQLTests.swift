@@ -89,6 +89,7 @@ func opodoFlightPassengersJoinTravellersAndBaggage() throws {
     #expect(p1.title == "MR")
     #expect(p1.givenName == "Anna")
     #expect(p1.familyName == "Example")
+    #expect(p1.birthDate == HotelStayDate.dateOnly(year: 1980, month: 1, day: 1))
     #expect(p1.baggageAllowances.count == 1)
 
     let a1 = try #require(p1.baggageAllowances.first)
@@ -99,6 +100,7 @@ func opodoFlightPassengersJoinTravellersAndBaggage() throws {
     #expect(a1.airlineCode == "8B")
 
     let p2 = try #require(passengers.first { $0.passengerNumber == 2 })
+    #expect(p2.birthDate == HotelStayDate.dateOnly(year: 2015, month: 6, day: 15))
     #expect(p2.baggageAllowances.count == 1)
     let a2 = try #require(p2.baggageAllowances.first)
     #expect(a2.type == .cabinBag)

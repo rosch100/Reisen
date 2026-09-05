@@ -15,7 +15,6 @@ public enum OpenBookingCreateTripAction {
         return makeSeed(
             from: OpenBookingMatching.listedUnassigned(
                 in: selected,
-                calendar: calendar,
                 now: now
             ),
             locale: locale,
@@ -32,7 +31,6 @@ public enum OpenBookingCreateTripAction {
         makeSeed(
             from: OpenBookingMatching.openUnassigned(
                 in: bookings,
-                calendar: calendar,
                 now: now
             ),
             locale: locale,

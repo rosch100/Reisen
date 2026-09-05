@@ -14,4 +14,6 @@
 6. [x] BookingEditor birthDate DatePicker Round-Trip
 7. [x] Unit-Tests (Hotel isElapsed West-of-GMT, birthDate Round-Trip, Typ-Kalender)
 8. [x] Spec/Plan
-9. [ ] `bash ./Scripts/ci-test.sh` / Codereview / PR (Parent)
+9. [x] R18 follow-up: `civilDay(fromISO:)` + Opodo birthDate Ingest
+10. [x] R18 follow-up: `OpenBookingMatching` typbewusster Default-Kalender
+11. [ ] `bash ./Scripts/ci-test.sh` / Codereview / PR (Parent)

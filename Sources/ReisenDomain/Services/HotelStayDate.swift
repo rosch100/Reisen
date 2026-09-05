@@ -32,6 +32,11 @@ public enum HotelStayDate: Sendable {
         HotelStayDateParse.parseGerman(raw)
     }
 
+    /// Civil day from ISO day-only or instant (`1980-01-01T00:00:00+01:00` → 1980-01-01 Anker).
+    public static func civilDay(fromISO raw: String?) -> Date? {
+        ISODateTime.parseCivilDay(raw)
+    }
+
     public static func dateOnly(
         fromStoredOrParsed date: Date,
         legacyHotelOffsetSeconds: Int? = nil

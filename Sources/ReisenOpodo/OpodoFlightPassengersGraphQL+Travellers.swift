@@ -22,7 +22,7 @@ extension OpodoFlightPassengersGraphQL {
                 givenName: dto.name,
                 familyName: dto.firstLastName,
                 secondFamilyName: dto.secondLastName,
-                birthDate: ISODateTime.parse(dto.birthDate),
+                birthDate: HotelStayDate.civilDay(fromISO: dto.birthDate),
                 baggageAllowances: []
             )
         }

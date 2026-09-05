@@ -15,6 +15,27 @@ func hotelStayDateCalendarDayFromParsedUsesOffset() {
     )
 }
 
+@Test("civilDay fromISO: Mitternacht +01:00 → Kalendertag, nicht GMT-Vortag")
+func hotelStayDateCivilDayFromISOOffsetMidnight() {
+    #expect(
+        HotelStayDate.civilDay(fromISO: "1980-01-01T00:00:00+01:00")
+            == HotelStayDate.dateOnly(year: 1980, month: 1, day: 1)
+    )
+    #expect(
+        HotelStayDate.civilDay(fromISO: "2015-06-15T00:00:00+01:00")
+            == HotelStayDate.dateOnly(year: 2015, month: 6, day: 15)
+    )
+    #expect(
+        HotelStayDate.civilDay(fromISO: "1980-01-01")
+            == HotelStayDate.dateOnly(year: 1980, month: 1, day: 1)
+    )
+    // Instant-Parse ohne Civil-Day würde den GMT-Vortag speichern.
+    #expect(
+        ISODateTime.parse("1980-01-01T00:00:00+01:00")
+            != HotelStayDate.dateOnly(year: 1980, month: 1, day: 1)
+    )
+}
+
 @Test("HotelStayDate verwirft Uhrzeit und speichert GMT-Datumsanker")
 func hotelStayDateStripsTimeToGMTAnchor() {
     let withTime = HotelStayDate.parse("2026-08-11T14:30:00+07:00")
