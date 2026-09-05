@@ -100,6 +100,59 @@ func hotelStayDateWestOfGMTOpenSaveDoesNotShiftDay() {
     #expect(HotelStayDate.dateOnly(fromLocalPickerDate: picker, calendar: west) == stored)
 }
 
+@Test("Period-Expand Confirm: Proposal-GMT → localPicker → Persist erhält Anker (R16)")
+func hotelStayDatePeriodExpandConfirmLocalPickerBeforePersist() {
+    let proposalStart = HotelStayDate.dateOnly(year: 2026, month: 8, day: 8)
+    let proposalEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 8)
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+
+    let pickerStart = HotelStayDate.localPickerDate(fromStored: proposalStart, calendar: west)
+    let pickerEnd = HotelStayDate.localPickerDate(fromStored: proposalEnd, calendar: west)
+    #expect(HotelStayDate.dateOnly(fromLocalPickerDate: pickerStart, calendar: west) == proposalStart)
+    #expect(HotelStayDate.dateOnly(fromLocalPickerDate: pickerEnd, calendar: west) == proposalEnd)
+
+    // Ohne localPicker: GMT-Anker direkt als Picker-Wert → Persist verschiebt Tag.
+    #expect(
+        HotelStayDate.dateOnly(fromLocalPickerDate: proposalStart, calendar: west)
+            == HotelStayDate.dateOnly(year: 2026, month: 8, day: 7)
+    )
+}
+
+@Test("Assignment-Preview: Trip aus Picker via dateOnly (east of GMT) trifft Buchungsfenster")
+func hotelStayDateAssignPreviewTripFromLocalPickerPreservesWindow() {
+    var east = Calendar(identifier: .gregorian)
+    east.timeZone = TimeZone(secondsFromGMT: 12 * 3600)!
+    let pickerStart = east.date(from: DateComponents(year: 2026, month: 9, day: 5))!
+    let pickerEnd = east.date(from: DateComponents(year: 2026, month: 9, day: 10))!
+    // Letzter Trip-Tag: ohne Konvertierung endet das Fenster in GMT schon am 9.
+    let bookingOnTrueEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+
+    let mixedTrip = Trip(title: "", startDate: pickerStart, endDate: pickerEnd)
+    #expect(
+        !TripBookingDateWindow.contains(
+            bookingStart: bookingOnTrueEnd,
+            bookingEnd: bookingOnTrueEnd,
+            tripStart: mixedTrip.startDate,
+            tripEnd: mixedTrip.endDate
+        )
+    )
+
+    let anchoredTrip = Trip(
+        title: "",
+        startDate: HotelStayDate.dateOnly(fromLocalPickerDate: pickerStart, calendar: east),
+        endDate: HotelStayDate.dateOnly(fromLocalPickerDate: pickerEnd, calendar: east)
+    )
+    #expect(
+        TripBookingDateWindow.contains(
+            bookingStart: bookingOnTrueEnd,
+            bookingEnd: bookingOnTrueEnd,
+            tripStart: anchoredTrip.startDate,
+            tripEnd: anchoredTrip.endDate
+        )
+    )
+}
+
 @Test("BookingTimeNormalizer kanonisiert Hotels immer auf Date-only (auch wenn schon normalized)")
 func bookingTimeNormalizerAlwaysCanonicalizesHotelDates() {
     let hotelTZ = TimeZone(secondsFromGMT: 7 * 3600)!

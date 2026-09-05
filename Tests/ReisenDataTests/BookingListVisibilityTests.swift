@@ -147,6 +147,73 @@ private func persist(
 }
 
 @MainActor
+@Test("isElapsed Default-Kalender = HotelStayDate.calendar (West-of-GMT kein Fehl-Elapsed)")
+func trip_isElapsed_defaultCalendarIgnoresDeviceWestOfGMT() {
+    let end = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let trip = SDTrip(
+        title: "West",
+        startDate: HotelStayDate.dateOnly(year: 2026, month: 9, day: 1),
+        endDate: end
+    )
+    // 5.9. GMT-Mittag: am Endtag noch aktuell.
+    let now = end.addingTimeInterval(12 * 3600)
+    #expect(!trip.isElapsed(now: now))
+
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+    // Geräte-Kalender west-of-GMT: End-Anker wirkt wie 4.9. → fälschlich elapsed.
+    #expect(trip.isElapsed(now: now, calendar: west))
+}
+
+@MainActor
+@Test("listGapBadgeCount Default-Kalender = HotelStayDate.calendar (West-of-GMT)")
+func listGapBadgeCount_defaultCalendarIgnoresDeviceWestOfGMT() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let context = container.mainContext
+    let end = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+    let trip = SDTrip(
+        title: "Gaps",
+        startDate: HotelStayDate.dateOnly(year: 2026, month: 9, day: 1),
+        endDate: end
+    )
+    let early = SDBooking(
+        providerRaw: ProviderID.check24.rawValue,
+        bookingTypeRaw: BookingType.activity.rawValue,
+        title: "Early",
+        startAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 1),
+        endAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 1).addingTimeInterval(3600),
+        statusRaw: BookingStatus.confirmed.rawValue,
+        trip: trip
+    )
+    let late = SDBooking(
+        providerRaw: ProviderID.check24.rawValue,
+        bookingTypeRaw: BookingType.activity.rawValue,
+        title: "Late",
+        startAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 8),
+        endAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 8).addingTimeInterval(3600),
+        statusRaw: BookingStatus.confirmed.rawValue,
+        trip: trip
+    )
+    trip.bookings = [early, late]
+    context.insert(trip)
+    context.insert(early)
+    context.insert(late)
+    try context.save()
+
+    let now = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5).addingTimeInterval(12 * 3600)
+    #expect(trip.completeness().hasTimeGaps)
+    #expect(trip.listGapBadgeCount(now: now) == 1)
+
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+    // Mit west: End-Anker 10.9. GMT wirkt wie 9.9. lokal — Badge kann trotzdem greifen.
+    // Härterer Fall: now am letzten Trip-Tag; west verschiebt End-Tag vor today → Badge weg.
+    let lastDayNoon = end.addingTimeInterval(12 * 3600)
+    #expect(trip.listGapBadgeCount(now: lastDayNoon) == 1)
+    #expect(trip.listGapBadgeCount(calendar: west, now: lastDayNoon) == nil)
+}
+
+@MainActor
 @Test func fillOpportunity_pastManualDoesNotFillGappyTrip() throws {
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let trip = makeTrip()

@@ -636,6 +636,27 @@ public final class LocalEventKitBridge: CalendarSyncing {
         try calendarEventLinkRepository.upsert(updatedLink)
     }
 
+    /// All-day EventKit-Spanne: Trip-/Hotel-Grenzen über `HotelStayDate` Y/M/D-SSOT;
+    /// Flight-All-day (falls) über Civil-TZ des Drafts.
+    static func allDaySpan(
+        for draft: CalendarEventDraft,
+        civilTimeZone: TimeZone
+    ) -> CalendarAllDaySpan.Range {
+        switch draft.role {
+        case .hotelStay, .tripStart, .tripEnd:
+            return CalendarAllDaySpan.hotelStayRange(
+                startDateOnly: draft.startDate,
+                endDateOnlyInclusive: draft.endDate
+            )
+        case .flightDeparture, .flightArrival:
+            return CalendarAllDaySpan.eventKitRange(
+                startInstant: draft.startDate,
+                endInstantInclusive: draft.endDate,
+                civilTimeZone: civilTimeZone
+            )
+        }
+    }
+
     private func configureEventDates(
         event: EKEvent,
         draft: CalendarEventDraft,
@@ -648,20 +669,9 @@ public final class LocalEventKitBridge: CalendarSyncing {
             event.isAllDay = true
             event.timeZone = nil
 
-            let span: CalendarAllDaySpan.Range
-            if draft.role == .hotelStay {
-                // Exakt die Buchungs-Tagesdaten (Start-Tag … End-Tag), ohne Uhrzeit/TZ.
-                span = CalendarAllDaySpan.hotelStayRange(
-                    startDateOnly: draft.startDate,
-                    endDateOnlyInclusive: draft.endDate
-                )
-            } else {
-                span = CalendarAllDaySpan.eventKitRange(
-                    startInstant: draft.startDate,
-                    endInstantInclusive: draft.endDate,
-                    civilTimeZone: tz
-                )
-            }
+            // Trip-/Hotel-All-day: Y/M/D aus HotelStayDate-SSOT (nicht Hotel-Civil-TZ).
+            // `tz` bleibt für Eligibility/Notes; EventKit All-day setzt timeZone = nil.
+            let span = Self.allDaySpan(for: draft, civilTimeZone: tz)
 
             event.startDate = span.start
             event.endDate = span.end

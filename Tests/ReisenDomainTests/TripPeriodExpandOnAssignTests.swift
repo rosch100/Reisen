@@ -80,3 +80,34 @@ private let outsideEnd = Date(timeIntervalSince1970: 1_786_082_400) // 2026-08-0
     )
     #expect(proposal == nil)
 }
+
+@Test("Hotel DatePicker-Lokal (east of GMT) ohne dateOnly mischt Anker; mit Konvertierung kein Expand")
+func tripPeriodExpand_hotelLocalPickerNeedsDateOnlyBeforeCompare() {
+    let tripStartAnchor = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let tripEndAnchor = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+
+    var east = Calendar(identifier: .gregorian)
+    east.timeZone = TimeZone(secondsFromGMT: 12 * 3600)!
+    let pickerDay = east.date(from: DateComponents(year: 2026, month: 9, day: 5))!
+
+    // Ohne Konvertierung: Lokalmitternacht +12 ist in GMT noch der Vortag → falscher Expand.
+    let mixed = TripPeriodExpandOnAssign.proposalIfNeeded(
+        bookingStart: pickerDay,
+        bookingEnd: pickerDay,
+        tripStart: tripStartAnchor,
+        tripEnd: tripEndAnchor
+    )
+    #expect(mixed != nil)
+    #expect(mixed?.start == HotelStayDate.dateOnly(year: 2026, month: 9, day: 4))
+
+    let bookingStart = HotelStayDate.dateOnly(fromLocalPickerDate: pickerDay, calendar: east)
+    let bookingEnd = HotelStayDate.dateOnly(fromLocalPickerDate: pickerDay, calendar: east)
+    #expect(bookingStart == tripStartAnchor)
+    let converted = TripPeriodExpandOnAssign.proposalIfNeeded(
+        bookingStart: bookingStart,
+        bookingEnd: bookingEnd,
+        tripStart: tripStartAnchor,
+        tripEnd: tripEndAnchor
+    )
+    #expect(converted == nil)
+}

@@ -1085,9 +1085,19 @@ private struct BookingDetailPanel: View {
         guard let draft = bookingEditorDraft else { return }
         switch bookingEditorSession {
         case .create:
+            // Hotel-Draft hält DatePicker-Lokalwerte; Expand vergleicht GMT-Anker (R16).
+            let bookingStart: Date
+            let bookingEnd: Date
+            if draft.bookingType == .hotel {
+                bookingStart = HotelStayDate.dateOnly(fromLocalPickerDate: draft.startAt)
+                bookingEnd = HotelStayDate.dateOnly(fromLocalPickerDate: draft.endAt)
+            } else {
+                bookingStart = draft.startAt
+                bookingEnd = draft.endAt
+            }
             if let proposal = TripPeriodExpandOnAssign.proposalIfNeeded(
-                bookingStart: draft.startAt,
-                bookingEnd: draft.endAt,
+                bookingStart: bookingStart,
+                bookingEnd: bookingEnd,
                 tripStart: trip.startDate,
                 tripEnd: trip.endDate
             ) {

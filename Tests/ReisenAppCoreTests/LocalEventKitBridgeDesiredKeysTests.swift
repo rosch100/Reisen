@@ -62,4 +62,39 @@ struct LocalEventKitBridgeDesiredKeysTests {
         #expect(included.count == 1)
         #expect(included[0].timeZone.secondsFromGMT() == 3600)
     }
+
+    @Test("tripStart/tripEnd All-day nutzt hotelStay Y/M/D-SSOT, nicht Hotel-Civil-TZ (R16)")
+    func tripBoundaryAllDayUsesHotelStayRangeNotCivilTZ() {
+        let day = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+        let tripID = UUID()
+        let trip = Trip(
+            id: tripID,
+            title: "Trip",
+            startDate: day,
+            endDate: day,
+            destination: nil,
+            bookingIDs: []
+        )
+        let drafts = CalendarTimelineTripBoundaryDrafts.drafts(for: trip, bookingsByID: [:])
+        let startDraft = drafts.first { $0.role == .tripStart }!
+        let endDraft = drafts.first { $0.role == .tripEnd }!
+        let west = TimeZone(secondsFromGMT: -8 * 3600)!
+
+        // Civil-TZ west-of-GMT: GMT-Mitternacht 5.9. → lokaler 4.9. (falsche Spanne).
+        let civilWrong = CalendarAllDaySpan.eventKitRange(
+            startInstant: day,
+            endInstantInclusive: day,
+            civilTimeZone: west
+        )
+        #expect(civilWrong.startDay.day == 4)
+
+        let startSpan = LocalEventKitBridge.allDaySpan(for: startDraft, civilTimeZone: west)
+        #expect(startSpan.startDay.year == 2026)
+        #expect(startSpan.startDay.month == 9)
+        #expect(startSpan.startDay.day == 5)
+        #expect(startSpan.endDayInclusive.day == 5)
+
+        let endSpan = LocalEventKitBridge.allDaySpan(for: endDraft, civilTimeZone: west)
+        #expect(endSpan.startDay.day == 5)
+    }
 }
