@@ -121,6 +121,24 @@ struct MacUI {
     }
 
     @discardableResult
+    func waitUntilDeselected(
+        _ element: XCUIElement,
+        timeout: TimeInterval = 3,
+        message: String
+    ) -> XCUIElement {
+        var selected = element.isSelected
+        if selected {
+            let deadline = Date().addingTimeInterval(timeout)
+            while selected, Date() < deadline {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+                selected = element.isSelected
+            }
+        }
+        XCTAssertFalse(selected, "\(message)\n\(app.debugDescription)")
+        return element
+    }
+
+    @discardableResult
     func openSeededTrip() -> XCUIElement {
         waitFor(UITestingIdentifiers.seededTripRow).click()
         return waitFor(UITestingIdentifiers.detail)
@@ -147,6 +165,19 @@ struct MacUI {
     @discardableResult
     func openProviderSyncCheck24() -> XCUIElement {
         app.typeKey("1", modifierFlags: [.command])
+        return waitFor(UITestingIdentifiers.syncChrome)
+    }
+
+    /// Stellt sicher, dass der Provider deaktiviert ist, aktiviert ihn nur per Sidebar-Checkbox → Login/Sync.
+    @discardableResult
+    func enableProviderViaSidebarToggle(_ rawValue: String) -> XCUIElement {
+        let toggle = waitFor(UITestingIdentifiers.providerEnableToggle(rawValue))
+        // Populated-Seed setzt Provider enabled; ein Klick würde sonst deaktivieren.
+        if toggle.isSelected {
+            toggle.click()
+            _ = waitUntilDeselected(toggle, message: "Provider \(rawValue) bleibt aktiviert")
+        }
+        toggle.click()
         return waitFor(UITestingIdentifiers.syncChrome)
     }
 
