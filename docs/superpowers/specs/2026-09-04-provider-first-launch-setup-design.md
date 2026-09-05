@@ -117,7 +117,7 @@ applySelection(enabledIDs:syncProviderIDs:defaults:)
 - Continue 0 / Ohne Buchungsportale: `completeWithoutPortals` → notify → Prefs-Export → dismiss.
 - Empty-State Reopen: wenn `!isInitialSetupHidden && enabledProviderIDs.isEmpty`.
 
-**Settings (`ProviderEnabledSettingsSection`):** Hide-Toggle + Portal-Toggles; Footer = Hide-Footer **und** `sync.enable_portals_hint`.
+**Settings (`ProviderEnabledSettingsSection`):** eigene Section für Hide-Toggle (Footer Hide-Text); Portal-Toggles darunter mit `sync.enable_portals_hint`.
 
 **iOS Reopen:** `SyncTab.emptyProviders` gleicher Reopen-CTA.
 

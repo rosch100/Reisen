@@ -18,19 +18,21 @@ public struct ProviderEnabledSettingsSection: View {
                     .onChange(of: hideInitialProviderSetup) { _, _ in
                         ProviderEnabledChange.notify()
                     }
+            } header: {
+                Text(L10n.string(.settingsBookingPortals))
+            } footer: {
+                Text(L10n.string(.settingsHideProviderSetupFooter))
+            }
+
+            Section {
                 ForEach(registry.syncProviderIDs, id: \.self) { id in
                     ProviderEnabledToggle(
                         providerID: id,
                         displayName: id.displayName
                     )
                 }
-            } header: {
-                Text(L10n.string(.settingsBookingPortals))
             } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(L10n.string(.settingsHideProviderSetupFooter))
-                    Text(L10n.string(.syncEnablePortalsHint))
-                }
+                Text(L10n.string(.syncEnablePortalsHint))
             }
         }
     }

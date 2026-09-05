@@ -520,7 +520,13 @@ final class MacUISmokeTests: XCTestCase {
         let toggle = ui.waitFor(UITestingIdentifiers.settingsNotificationToggle)
         let before = String(describing: toggle.value)
         toggle.click()
-        XCTAssertNotEqual(String(describing: toggle.value), before)
+        let deadline = Date().addingTimeInterval(2)
+        var after = String(describing: toggle.value)
+        while after == before, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            after = String(describing: toggle.value)
+        }
+        XCTAssertNotEqual(after, before, "Notification-Toggle ändert Wert nicht\n\(ui.app.debugDescription)")
     }
 
     func testSettingsICloudSyncToggleExists() {
