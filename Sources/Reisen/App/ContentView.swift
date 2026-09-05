@@ -389,6 +389,7 @@ struct ContentView: View {
         do {
             try TripDeletion.perform(trip: trip, in: modelContext, bookings: policy)
         } catch {
+            Self.recordPersistFailure(operation: "trip_delete", error: error)
             persistErrorMessage = error.localizedDescription
             return
         }
@@ -429,6 +430,7 @@ struct ContentView: View {
         do {
             try BookingDeletion.perform(booking: booking, in: modelContext)
         } catch {
+            Self.recordPersistFailure(operation: "booking_delete", error: error)
             persistErrorMessage = error.localizedDescription
         }
         selectedOpenBookingIDs.remove(booking.id)
@@ -468,6 +470,26 @@ struct ContentView: View {
             for event in events {
                 await DiagnosticLogger.shared.record(event)
             }
+        }
+    }
+
+    private static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "ContentView",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 
@@ -1805,6 +1827,7 @@ struct ContentView: View {
             do {
                 try BookingDeletion.perform(booking: booking, in: modelContext)
             } catch {
+                ContentView.recordPersistFailure(operation: "booking_delete", error: error)
                 persistErrorMessage = error.localizedDescription
             }
             pendingDeleteBookingID = nil
@@ -1822,6 +1845,7 @@ struct ContentView: View {
                             booking.trip = matchingTrip
                             try modelContext.save()
                         } catch {
+                            ContentView.recordPersistFailure(operation: "booking_assign_trip", error: error)
                             assignErrorMessage = error.localizedDescription
                             showAssignError = true
                         }

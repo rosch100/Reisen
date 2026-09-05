@@ -162,7 +162,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenAirbnb",
-            dependencies: ["ReisenDomain", "ReisenProviders"],
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
             path: "Sources/ReisenAirbnb",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
@@ -178,7 +178,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenTraveloka",
-            dependencies: ["ReisenDomain", "ReisenProviders"],
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
             path: "Sources/ReisenTraveloka",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

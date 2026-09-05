@@ -12,6 +12,13 @@ func airbnbHostMatchingIncludesInternationalTLDs() {
     #expect(!AirbnbTravelProvider.isAirbnbHost("phishing.com"))
 }
 
+@Test("AirbnbListingTimeZone: ungültige IANA → nil Offset")
+func airbnbInvalidListingTimeZoneYieldsNilOffset() {
+    let date = Date(timeIntervalSince1970: 1_780_000_000)
+    #expect(AirbnbListingTimeZone.offsetSeconds(listingTimeZone: "Not/A_Real_Zone", at: date) == nil)
+    #expect(AirbnbListingTimeZone.offsetSeconds(listingTimeZone: "Europe/Berlin", at: date) != nil)
+}
+
 @Test("AirbnbScheduledEventsParser parst Stay Preis, Check-in/out Minuten und Stornofrist")
 func airbnbScheduledEventsParsesPriceDeadlinesAndTimes() throws {
     let json = try fixtureJSON("scheduled_events_stay_sample.json")

@@ -249,6 +249,8 @@ private func expectTravelokaPrice(
     #expect(TravelokaJSON.timeZone(iana: "UTC+07:00")?.secondsFromGMT() == 7 * 3600)
     #expect(TravelokaJSON.timeZone(iana: "GMT-05:30")?.secondsFromGMT() == -5 * 3600 - 30 * 60)
     #expect(TravelokaJSON.timeZone(iana: "Asia/Jakarta") != nil)
+    #expect(TravelokaJSON.timeZone(iana: nil) == nil)
+    #expect(TravelokaJSON.timeZone(iana: "Not/A_Real_Zone") == nil)
 }
 
 @Test func travelokaHotelDeadlinesFromCancellationPolicyInfos() throws {

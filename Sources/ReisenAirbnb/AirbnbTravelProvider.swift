@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import ReisenDomain
 import ReisenProviders
+import ReisenDiagnostics
 
 @MainActor
 public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
@@ -94,10 +95,19 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         let scheduledParsed = try AirbnbScheduledEventsParser.parse(responseText: stayDetailsText)
         let guestHints = AirbnbGuestHintParser().parse(from: stayDetailsText)
 
-        let hotelOffsetSeconds: Int? = {
-            guard let timeZone = TimeZone(identifier: tripDetails.listingTimeZone) else { return nil }
-            return timeZone.secondsFromGMT(for: tripDetails.tripStartAt)
-        }()
+        let hotelOffsetSeconds: Int?
+        if let offset = AirbnbListingTimeZone.offsetSeconds(
+            listingTimeZone: tripDetails.listingTimeZone,
+            at: tripDetails.tripStartAt
+        ) {
+            hotelOffsetSeconds = offset
+        } else {
+            Self.recordEnrichSkipped(
+                reason: "invalid_listing_timezone",
+                detail: tripDetails.listingTimeZone
+            )
+            hotelOffsetSeconds = nil
+        }
 
         return DraftAssembler.enrichment(
             from: AirbnbStayEnrichment.facts(
@@ -108,6 +118,31 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
                 guestHints: guestHints
             )
         )
+    }
+}
+
+extension AirbnbTravelProvider {
+    fileprivate static func recordEnrichSkipped(reason: String, detail: String) {
+        let sanitized = detail
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .prefix(64)
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .airbnb,
+                        operation: "airbnb_enrich"
+                    ),
+                    component: "AirbnbTravelProvider",
+                    phase: "timezone",
+                    event: "enrich_skipped",
+                    result: .skipped,
+                    reason: "\(reason)_\(sanitized)",
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }
 
