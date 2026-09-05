@@ -4,6 +4,6 @@ import Foundation
 public enum FieldCopyKind: Sendable, Equatable {
     /// Selektion + Kontextmenü „Kopieren“ (ganzer Wert); kein Tap-to-Copy.
     case standard
-    /// Tap/Klick kopiert den ganzen Wert (Kennungen: Buchungsnr./PNR).
+    /// Tap/Klick kopiert den ganzen Wert (Kennungen: Buchungsnummer/PNR).
     case identifier
 }
