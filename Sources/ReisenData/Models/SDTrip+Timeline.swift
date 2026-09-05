@@ -5,9 +5,10 @@ public extension SDTrip {
     var resolvedGaps: [SDGap] { gaps ?? [] }
 
     /// Timeline: ab heute, nicht storniert; manuell importierte Buchungen auch in der Vergangenheit.
+    /// Ohne `calendar`: jede Buchung nutzt typbewussten Default (`SDBooking.listInclusionCalendar`).
     func timelineBookings(
         now: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar? = nil
     ) -> [SDBooking] {
         return resolvedBookings
             .filter { $0.appearsInList(now: now, calendar: calendar) }
@@ -19,7 +20,7 @@ public extension SDTrip {
     func sidebarChildBookings(
         tripIsElapsed: Bool,
         now: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar? = nil
     ) -> [SDBooking] {
         if tripIsElapsed {
             return resolvedBookings

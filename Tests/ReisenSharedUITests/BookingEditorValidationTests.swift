@@ -65,3 +65,21 @@ func bookingEditorCreateDefaultMapsTripAnchorToLocalPicker() {
     #expect(HotelStayDate.dateOnly(fromLocalPickerDate: draft.startAt) == tripStart)
     #expect(HotelStayDate.dateOnly(fromLocalPickerDate: draft.endAt) == tripEnd)
 }
+
+@Test("birthDate DatePicker Round-Trip west-of-GMT erhält GMT-Anker")
+func bookingEditorBirthDatePickerRoundTripWestOfGMT() {
+    let stored = HotelStayDate.dateOnly(year: 1990, month: 4, day: 1)
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+
+    // Wie BookingPassengerEditorRow Binding: get localPicker, set dateOnly.
+    let picker = HotelStayDate.localPickerDate(fromStored: stored, calendar: west)
+    let persisted = HotelStayDate.dateOnly(fromLocalPickerDate: picker, calendar: west)
+    #expect(persisted == stored)
+
+    // Ohne Inverse würde Open→Save den Tag verschieben.
+    #expect(
+        HotelStayDate.dateOnly(fromLocalPickerDate: stored, calendar: west)
+            == HotelStayDate.dateOnly(year: 1990, month: 3, day: 31)
+    )
+}

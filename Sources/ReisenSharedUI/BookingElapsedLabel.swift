@@ -7,9 +7,10 @@ public enum BookingElapsedText {
     public static func string(
         for booking: SDBooking,
         now: Date,
-        calendar: Calendar = .current
+        calendar: Calendar? = nil
     ) -> String? {
-        guard booking.isElapsed(now: now, calendar: calendar) else { return nil }
+        let resolved = calendar ?? booking.listInclusionCalendar
+        guard booking.isElapsed(now: now, calendar: resolved) else { return nil }
         return L10n.string(.bookingElapsed)
     }
 }
@@ -44,10 +45,10 @@ public struct BookingElapsedLabel: View {
     private let injectedNow: Date?
     private let calendar: Calendar
 
-    public init(for booking: SDBooking, now: Date? = nil, calendar: Calendar = .current) {
+    public init(for booking: SDBooking, now: Date? = nil, calendar: Calendar? = nil) {
         self.booking = booking
         self.injectedNow = now
-        self.calendar = calendar
+        self.calendar = calendar ?? booking.listInclusionCalendar
     }
 
     public var body: some View {

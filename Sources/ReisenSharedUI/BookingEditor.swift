@@ -617,8 +617,12 @@ private struct BookingPassengerEditorRow: View {
                     DatePicker(
                         L10n.string(.editorBirthDate),
                         selection: Binding<Date>(
-                            get: { pax.birthDate! },
-                            set: { pax.birthDate = $0 }
+                            get: {
+                                HotelStayDate.localPickerDate(fromStored: pax.birthDate!)
+                            },
+                            set: {
+                                pax.birthDate = HotelStayDate.dateOnly(fromLocalPickerDate: $0)
+                            }
                         ),
                         displayedComponents: .date
                     )

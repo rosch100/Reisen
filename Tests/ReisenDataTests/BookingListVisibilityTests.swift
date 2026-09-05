@@ -166,6 +166,37 @@ func trip_isElapsed_defaultCalendarIgnoresDeviceWestOfGMT() {
 }
 
 @MainActor
+@Test("Hotel isElapsed Default = HotelStayDate.calendar (West-of-GMT kein Fehl-Elapsed)")
+func hotelBooking_isElapsed_defaultCalendarIgnoresDeviceWestOfGMT() {
+    let end = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let hotel = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.hotel.rawValue,
+        title: "Hotel",
+        startAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 1),
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    let now = end.addingTimeInterval(12 * 3600)
+    #expect(!hotel.isElapsed(now: now))
+    #expect(hotel.listInclusionCalendar.timeZone.secondsFromGMT() == 0)
+
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+    #expect(hotel.isElapsed(now: now, calendar: west))
+
+    let flight = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.flight.rawValue,
+        title: "Flight",
+        startAt: end.addingTimeInterval(-3600),
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    #expect(flight.listInclusionCalendar.timeZone.secondsFromGMT() == Calendar.current.timeZone.secondsFromGMT())
+}
+
+@MainActor
 @Test("listGapBadgeCount Default-Kalender = HotelStayDate.calendar (West-of-GMT)")
 func listGapBadgeCount_defaultCalendarIgnoresDeviceWestOfGMT() throws {
     let container = try PersistenceBootstrap.makeInMemoryContainer()
