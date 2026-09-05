@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import ReisenDomain
 import ReisenProviders
+import ReisenDiagnostics
 
 @MainActor
 public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfiguration, TravelProviderProgressReporting {
@@ -150,9 +151,31 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             } catch {
                 throw OpodoProviderError.enrichmentFailed
             }
+        } else {
+            Self.recordEnrichSkipped(reason: "missing_td_token")
         }
 
         return (graphqlDeadlines, statusRaw)
+    }
+
+    private static func recordEnrichSkipped(reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .opodo,
+                        operation: "opodo_enrich_hotel"
+                    ),
+                    component: "OpodoTravelProvider",
+                    phase: "graphql_deadlines",
+                    event: "enrich_skipped",
+                    result: .skipped,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 
     /// Opodo My-Trips ist eine Hash-SPA unter `/travel/secure/`.

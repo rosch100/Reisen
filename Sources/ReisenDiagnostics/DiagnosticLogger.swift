@@ -134,6 +134,11 @@ public actor DiagnosticLogger {
     private func write(_ event: DiagnosticEvent) {
         guard let data = try? JSONEncoder().encode(event) else {
             logger.error("Diagnoseevent konnte nicht serialisiert werden.")
+            let fallback =
+                "diagnostic_encode_failed component=\(event.component) event=\(event.event) result=\(event.result.rawValue)"
+            if !SyncLog.append(fallback, to: fileURL ?? SyncLog.fileURL(), now: event.timestamp) {
+                logger.error("Diagnose-Encode-Fallback konnte nicht persistiert werden.")
+            }
             return
         }
         let line = "diagnostic=\(String(decoding: data, as: UTF8.self))"

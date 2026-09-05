@@ -238,6 +238,35 @@ func airbnbActivityReservationDetailsIgnoresNonEnglishCancelPolicy() throws {
     #expect(result.deadlines.isEmpty)
 }
 
+@Test("Airbnb Activity Cancel-Policy ohne referenceDate liefert keine Deadline (kein Date()-Jahr)")
+func airbnbCancelDeadlineRequiresReferenceYear() throws {
+    let json = """
+    {
+      "scheduled_event": {
+        "rows": [
+          {
+            "id": "cancel_policy",
+            "payload": {
+              "subtitle": "Get a full refund if you cancel by 9 Aug, 6:00 pm (WIB)."
+            }
+          }
+        ]
+      }
+    }
+    """
+    let withoutReference = try AirbnbActivityReservationDetailsParser.parse(
+        responseText: json,
+        referenceDate: nil
+    )
+    #expect(withoutReference.deadlines.isEmpty)
+
+    let withReference = try AirbnbActivityReservationDetailsParser.parse(
+        responseText: json,
+        referenceDate: iso8601("2026-08-10T11:00:00.000Z")
+    )
+    #expect(withReference.deadlines.count == 1)
+}
+
 private func fixtureJSON(_ name: String) throws -> String {
     try TestFixtures.text(name)
 }
@@ -379,4 +408,48 @@ func airbnbTripListKeepsDraftWithoutPortalURL() throws {
     #expect(draft.confirmationCode == "ABC123")
     #expect(draft.externalUrl == nil)
     #expect(draft.cancellationUrl == nil)
+}
+
+@Test("AirbnbTripsGraphQLParser: ungültige listingTimeZone → kein erfundenes hotelOffset")
+func airbnbTripListInvalidListingTimeZoneYieldsNilOffset() throws {
+    let json = """
+    {
+      "data": {
+        "viewer": {
+          "trips": {
+            "edges": [
+              {
+                "node": {
+                  "id": "VHJpcDox",
+                  "displayName": "Testort",
+                  "status": "UPCOMING",
+                  "startTime": { "listingTimeZone": "Not/A_Real_Zone", "dateTime": "2099-08-01T12:00:00.000Z" },
+                  "endTime": { "listingTimeZone": "Not/A_Real_Zone", "dateTime": "2099-08-02T12:00:00.000Z" },
+                  "scheduledItems": {
+                    "edges": [
+                      {
+                        "node": {
+                          "details": {
+                            "schedulableType": "RESERVATION",
+                            "stayReservation": {
+                              "confirmationCode": "TZSKIP1",
+                              "status": "ACCEPT"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    let catalog = try AirbnbTripsGraphQLParser.parseTripList(from: json)
+    let draft = try #require(catalog.bookings.first)
+    #expect(draft.confirmationCode == "TZSKIP1")
+    #expect(draft.hotelOffsetSeconds == nil)
 }
