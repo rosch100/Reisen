@@ -1,10 +1,11 @@
 import Foundation
 
 /// Inclusive calendar-day bounds for a trip derived from bookings.
+/// Default calendar is `HotelStayDate.calendar` (GMT date anchors), not device TZ.
 public enum TripDateBounds {
     public static func from(
         bookings: [Booking],
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> (start: Date, end: Date)? {
         guard !bookings.isEmpty else { return nil }
         guard let minStart = bookings.min(by: { $0.startAt < $1.startAt }),
@@ -18,7 +19,7 @@ public enum TripDateBounds {
 
     public static func formattedAbbreviatedRange(
         from bookings: [Booking],
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> String? {
         guard let bounds = from(bookings: bookings, calendar: calendar) else { return nil }
         let start = bounds.start.formatted(date: .abbreviated, time: .omitted)

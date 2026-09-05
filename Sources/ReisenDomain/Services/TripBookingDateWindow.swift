@@ -1,13 +1,14 @@
 import Foundation
 
 /// Inclusive calendar-day containment of a booking in a trip window (SSOT).
+/// Default calendar is `HotelStayDate.calendar` (GMT date anchors), not device TZ.
 public enum TripBookingDateWindow {
     public static func contains(
         bookingStart: Date,
         bookingEnd: Date,
         tripStart: Date,
         tripEnd: Date,
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> Bool {
         let tripStartDay = calendar.startOfDay(for: tripStart)
         let tripEndDay = calendar.startOfDay(for: tripEnd)
@@ -23,7 +24,7 @@ public enum TripBookingDateWindow {
         bookingEnd: Date,
         tripStart: Date?,
         tripEnd: Date?,
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> UUID? {
         guard let entryTripID, let tripStart, let tripEnd else { return nil }
         guard contains(

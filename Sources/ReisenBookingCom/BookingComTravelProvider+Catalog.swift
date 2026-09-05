@@ -26,9 +26,13 @@ extension BookingComTravelProvider {
            AuthenticatedSessionGuard.isUnauthorized(authError) {
             throw BookingComProviderError.sessionNotEstablished
         }
-        if let sessionError = lastGraphQLError as? BookingComProviderError,
-           case .sessionNotEstablished = sessionError {
-            throw sessionError
+        if let sessionError = lastGraphQLError as? BookingComProviderError {
+            switch sessionError {
+            case .sessionNotEstablished, .sessionTokensMissing:
+                throw sessionError
+            case .catalogNotFound:
+                break
+            }
         }
         let fallback = try fetchCatalogFallbackHTML(htmlTripIDs: htmlTripIDs, myTripsHTML: myTripsHTML)
         switch fallback {
