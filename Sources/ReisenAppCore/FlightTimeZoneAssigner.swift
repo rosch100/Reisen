@@ -3,6 +3,7 @@ import MapKit
 
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 @MainActor
 public final class FlightTimeZoneAssigner {
@@ -24,19 +25,39 @@ public final class FlightTimeZoneAssigner {
                 && ($0.flightDepartureOffsetSeconds == nil || $0.flightArrivalOffsetSeconds == nil)
         }
 
+        var skippedMissingIATA = 0
+        var skippedNoTimeZone = 0
+        var skippedTransient = 0
+
         for booking in bookings {
             do {
                 var updated = booking
                 try await assignOffsets(into: &updated)
                 try bookingRepository.upsert(updated)
+            } catch let error as CancellationError {
+                throw error
             } catch ResolveError.missingIATACode {
+                skippedMissingIATA += 1
                 continue
             } catch ResolveError.noTimeZoneFound {
+                skippedNoTimeZone += 1
                 continue
             } catch {
-                // Transient geocoding/network failure: skip this booking, keep the batch.
-                continue
+                // Persist/repository failures must not be swallowed.
+                if Self.isLikelyTransientResolveFailure(error) {
+                    skippedTransient += 1
+                    continue
+                }
+                throw error
             }
+        }
+
+        if skippedMissingIATA + skippedNoTimeZone + skippedTransient > 0 {
+            await recordSkipSummary(
+                missingIATA: skippedMissingIATA,
+                noTimeZone: skippedNoTimeZone,
+                transient: skippedTransient
+            )
         }
         try bookingRepository.save()
     }
@@ -93,7 +114,7 @@ public final class FlightTimeZoneAssigner {
 
     private func offsetSeconds(forWallClockInstant wallClockInstant: Date, in timeZone: TimeZone) -> Int {
         var utcCalendar = Calendar(identifier: .gregorian)
-        utcCalendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        utcCalendar.timeZone = HotelStayDate.timeZone
         let components = utcCalendar.dateComponents(
             [.year, .month, .day, .hour, .minute, .second],
             from: wallClockInstant
@@ -104,6 +125,33 @@ public final class FlightTimeZoneAssigner {
             return timeZone.secondsFromGMT(for: wallClockInstant)
         }
         return timeZone.secondsFromGMT(for: localDate)
+    }
+
+    /// Exposed for unit tests (`@testable`); production callers use the assign loop.
+    static func isLikelyTransientResolveFailure(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == NSURLErrorDomain { return true }
+        // Geocoding/search flakiness must not abort the whole assign batch.
+        if ns.domain == MKErrorDomain { return true }
+        return false
+    }
+
+    private func recordSkipSummary(missingIATA: Int, noTimeZone: Int, transient: Int) async {
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: DiagnosticContext(
+                    runID: UUID(),
+                    providerID: .manual,
+                    operation: "flight_timezone_assign"
+                ),
+                component: "FlightTimeZoneAssigner",
+                phase: "assign",
+                event: "flight_offset_skip_summary",
+                result: .skipped,
+                reason: "missing_iata_\(missingIATA)_no_tz_\(noTimeZone)_transient_\(transient)",
+                visibility: .publicDiagnostic
+            )
+        )
     }
 }
 
@@ -140,4 +188,3 @@ public final class TimeNormalizationRepair {
         }
     }
 }
-

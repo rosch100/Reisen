@@ -11,7 +11,7 @@ public final class SwiftDataCancellationDeadlineRepository: CancellationDeadline
     }
 
     public func fetchAll() throws -> [CancellationDeadline] {
-        try modelContext.fetch(FetchDescriptor<SDCancellationDeadline>()).map(DomainMapper.deadline(from:))
+        try modelContext.fetch(FetchDescriptor<SDCancellationDeadline>()).compactMap(DomainMapper.deadline(from:))
     }
 
     public func save() throws {

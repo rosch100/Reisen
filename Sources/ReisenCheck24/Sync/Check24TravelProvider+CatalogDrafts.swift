@@ -1,6 +1,7 @@
 import Foundation
 import ReisenDomain
 import ReisenProviders
+import ReisenDiagnostics
 
 extension Check24TravelProvider {
     func makeBasketDrafts(
@@ -17,6 +18,8 @@ extension Check24TravelProvider {
         bookingDetailsByBookingKey: [String: ParsedBookingDetails]
     ) -> [String: ProviderBookingDraft] {
         var draftByExternalUrl: [String: ProviderBookingDraft] = [:]
+        var droppedMissingCanonical = 0
+        var droppedAssembler = 0
 
         for (basketId, basket) in basketsByBasketId {
             let canonicalUUID = canonicalBookingUuidByBasketId[basketId]
@@ -25,6 +28,7 @@ extension Check24TravelProvider {
             guard let canonicalUUID,
                   let canonicalBooking = parsedBookingByBookingUuid[canonicalUUID],
                   let canonicalExternalUrl = canonicalBooking.externalUrl else {
+                droppedMissingCanonical += 1
                 continue
             }
 
@@ -81,10 +85,18 @@ extension Check24TravelProvider {
                     guestHints: guestHints
                 )
             ) else {
+                droppedAssembler += 1
                 continue
             }
 
             draftByExternalUrl[canonicalExternalUrl] = draft
+        }
+
+        if droppedMissingCanonical + droppedAssembler > 0 {
+            recordBasketDraftDrops(
+                missingCanonical: droppedMissingCanonical,
+                assembler: droppedAssembler
+            )
         }
 
         return draftByExternalUrl
@@ -123,6 +135,26 @@ extension Check24TravelProvider {
             ) else { continue }
             guard let key = draft.externalUrl else { continue }
             draftByExternalUrl[key] = draft
+        }
+    }
+
+    private func recordBasketDraftDrops(missingCanonical: Int, assembler: Int) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .check24,
+                        operation: "check24_catalog"
+                    ),
+                    component: "Check24TravelProvider",
+                    phase: "basket_drafts",
+                    event: "basket_draft_dropped",
+                    result: .skipped,
+                    reason: "missing_canonical_\(missingCanonical)_assembler_\(assembler)",
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }

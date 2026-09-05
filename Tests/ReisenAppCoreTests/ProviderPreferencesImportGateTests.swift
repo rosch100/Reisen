@@ -1,13 +1,17 @@
 import Testing
 import Foundation
 import SwiftData
-import ReisenAppCore
+@testable import ReisenAppCore
 import ReisenData
 import ReisenDomain
 
 @MainActor
 @Suite("ProviderPreferencesImportGate")
 struct ProviderPreferencesImportGateTests {
+    init() {
+        ProviderPreferencesImportGate.resetGateStateForTests()
+    }
+
     @Test("test host skips CloudKit wait")
     func skipWaitOnTestHost() async throws {
         #expect(ProviderPreferencesImportGate.shouldSkipCloudKitWait)
@@ -17,12 +21,12 @@ struct ProviderPreferencesImportGateTests {
         let suite = UserDefaults(suiteName: suiteName)!
         defer { suite.removePersistentDomain(forName: suiteName) }
 
-        let snap = await ProviderPreferencesImportGate.awaitAndApply(
+        let outcome = await ProviderPreferencesImportGate.awaitAndApply(
             context: container.mainContext,
             defaults: suite,
             timeout: .milliseconds(50)
         )
-        #expect(snap == nil)
+        #expect(outcome == .noRecord)
         #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: suite))
     }
 
@@ -68,10 +72,8 @@ struct ProviderPreferencesImportGateTests {
             enabledProviderIDs: [.check24]
         ).apply(to: suite)
 
-        ProviderPreferencesImportGate.exportFromDefaults(
-            context: container.mainContext,
-            defaults: suite
-        )
+        // Mirror direkt — `exportFromDefaults` skippt unter UITesting und teilt Suppress-State.
+        #expect(try ProviderPreferencesMirror.export(from: suite, into: container.mainContext))
         #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) != nil)
 
         if let existing = try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) {
@@ -132,13 +134,13 @@ struct ProviderPreferencesImportGateTests {
         )
         suite.set(true, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
 
-        let snap = await ProviderPreferencesImportGate.awaitAndApply(
+        let outcome = await ProviderPreferencesImportGate.awaitAndApply(
             context: container.mainContext,
             defaults: suite,
             timeout: .milliseconds(50)
         )
 
-        #expect(snap == nil)
+        #expect(outcome == .noRecord)
         #expect(!suite.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
         #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: suite))
         for providerID in syncIDs {
@@ -146,5 +148,77 @@ struct ProviderPreferencesImportGateTests {
             #expect(suite.object(forKey: AppSettingsKeys.providerEnabledKey(for: providerID)) == nil)
         }
         #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) == nil)
+    }
+
+    @Test("awaitAndApply returns applied when singleton prefs exist")
+    func awaitAndApplyReturnsAppliedSnapshot() async throws {
+        let container = try PersistenceBootstrap.makeInMemoryContainer()
+        let suiteName = "test.prefs.gate.applied.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        ProviderPreferencesSnapshot(
+            setupCompleted: true,
+            enabledProviderIDs: [.opodo]
+        ).apply(to: suite)
+        try ProviderPreferencesMirror.export(from: suite, into: container.mainContext)
+
+        let targetName = "test.prefs.gate.applied.target.\(UUID().uuidString)"
+        let target = UserDefaults(suiteName: targetName)!
+        defer { target.removePersistentDomain(forName: targetName) }
+
+        let outcome = await ProviderPreferencesImportGate.awaitAndApply(
+            context: container.mainContext,
+            defaults: target,
+            timeout: .milliseconds(50)
+        )
+        guard case .applied(let snap) = outcome else {
+            Issue.record("expected applied outcome, got \(outcome)")
+            return
+        }
+        #expect(snap.setupCompleted)
+        #expect(target.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+        #expect(AppSettingsKeys.isProviderEnabled(.opodo, defaults: target))
+    }
+
+    @Test("awaitApplyAndSeedLocalIfEmpty returns setupCompletedFromCloud when prefs applied")
+    func awaitApplyAndSeedReturnsCompletedFromCloud() async throws {
+        let container = try PersistenceBootstrap.makeInMemoryContainer()
+        let suiteName = "test.prefs.startup.cloud.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        ProviderPreferencesSnapshot(
+            setupCompleted: true,
+            enabledProviderIDs: [.opodo]
+        ).apply(to: suite)
+        try ProviderPreferencesMirror.export(from: suite, into: container.mainContext)
+
+        let targetName = "test.prefs.startup.cloud.target.\(UUID().uuidString)"
+        let target = UserDefaults(suiteName: targetName)!
+        defer { target.removePersistentDomain(forName: targetName) }
+
+        let result = await ProviderPreferencesImportGate.awaitApplyAndSeedLocalIfEmpty(
+            context: container.mainContext,
+            defaults: target,
+            timeout: .milliseconds(50)
+        )
+        #expect(result == .setupCompletedFromCloud)
+        #expect(target.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    }
+
+    @Test("awaitApplyAndSeedLocalIfEmpty continues local setup when no record")
+    func awaitApplyAndSeedContinuesWhenEmpty() async throws {
+        let container = try PersistenceBootstrap.makeInMemoryContainer()
+        let suiteName = "test.prefs.startup.empty.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        let result = await ProviderPreferencesImportGate.awaitApplyAndSeedLocalIfEmpty(
+            context: container.mainContext,
+            defaults: suite,
+            timeout: .milliseconds(50)
+        )
+        #expect(result == .continueLocalSetup)
     }
 }

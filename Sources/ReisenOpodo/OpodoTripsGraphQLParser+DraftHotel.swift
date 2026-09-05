@@ -18,7 +18,11 @@ extension OpodoTripsGraphQLParser {
             incoming: incomingHotelRates(hotel: hotel)
         )
 
-        let times = TemporalFact.pair(bookingType: .hotel, start: rawStart, end: rawEnd)
+        let times = TemporalFact.pair(
+            bookingType: .hotel,
+            start: HotelStayDate.calendarDay(fromParsed: rawStart),
+            end: HotelStayDate.calendarDay(fromParsed: rawEnd)
+        )
         return DraftAssembler.draft(
             from: ProviderBookingFacts(
                 provider: .opodo,

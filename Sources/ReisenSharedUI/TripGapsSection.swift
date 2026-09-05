@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 /// Interleaved bookings + gaps timeline for iOS and SharedUI embedding.
 public struct TripTimelineSection<BookingRow: View>: View {
@@ -12,6 +13,7 @@ public struct TripTimelineSection<BookingRow: View>: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SDGap.gapStart, order: .forward) private var allGaps: [SDGap]
     @State private var editorPayload: GapEditorPayload?
+    @State private var persistErrorMessage: String?
 
     public init(
         trip: SDTrip,
@@ -58,6 +60,7 @@ public struct TripTimelineSection<BookingRow: View>: View {
                 saveGap(payload: payload, title: title, kind: kind, price: price, currency: currency)
             }
         }
+        .persistFailureAlert(message: $persistErrorMessage)
     }
 
     @ViewBuilder
@@ -115,8 +118,30 @@ public struct TripTimelineSection<BookingRow: View>: View {
                 existing: savedGapsByKey[payload.key],
                 context: modelContext
             )
+            recordGapSave(result: .succeeded, reason: "upsert")
         } catch {
-            assertionFailure("Gap save failed: \(error)")
+            persistErrorMessage = String(describing: error)
+            recordGapSave(result: .failed, reason: String(describing: type(of: error)))
+        }
+    }
+
+    private func recordGapSave(result: DiagnosticResult, reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "trip_gap_save"
+                    ),
+                    component: "TripTimelineSection",
+                    phase: "persist",
+                    event: "gap_save",
+                    result: result,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }

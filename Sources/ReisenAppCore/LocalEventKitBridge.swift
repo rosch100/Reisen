@@ -2,6 +2,7 @@ import Foundation
 @preconcurrency import EventKit
 
 import ReisenDomain
+import ReisenDiagnostics
 import SwiftData
 import ReisenData
 
@@ -286,7 +287,11 @@ public final class LocalEventKitBridge: CalendarSyncing {
                   let booking = bookingsByID[bookingID],
                   booking.tripID == trip.id else { continue }
 
-            let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+            let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
+            guard let tz else {
+                Self.recordEventKitSkip(reason: "deadline_missing_hotel_offset")
+                continue
+            }
             let bookingTitle = bookingTitles[bookingID] ?? "Buchung"
 
             for leadDays in leadTimes {
@@ -495,26 +500,34 @@ public final class LocalEventKitBridge: CalendarSyncing {
         for trip in trips {
             do {
                 let tripDrafts = draftsByTripID[trip.id] ?? []
-                let desiredKeys = Set(tripDrafts.map(eventLinkKey(for:)))
-
                 let existingLinks = try calendarEventLinkRepository.fetchLinks(forTripID: trip.id)
                 let existingByKey = Dictionary(uniqueKeysWithValues: existingLinks.map { (eventLinkKey(for: $0), $0) })
 
-                // 1) Upsert desired events + links.
-                for draft in tripDrafts {
+                // 1) Upsert only drafts with a resolvable offset. Missing offset must not stay in
+                // desiredKeys — otherwise stale EventKit events/links would never be cleaned up.
+                let eligible = Self.calendarDraftsEligibleForSync(
+                    drafts: tripDrafts,
+                    bookingsByID: bookingsByID
+                )
+                let desiredKeys = Set(eligible.map { eventLinkKey(for: $0.draft) })
+                for draft in tripDrafts where !desiredKeys.contains(eventLinkKey(for: draft)) {
+                    Self.recordEventKitSkip(reason: "calendar_event_missing_offset_\(draft.role.rawValue)")
+                }
+                for item in eligible {
+                    let key = eventLinkKey(for: item.draft)
                     try upsertEventAndLink(
                         store: store,
                         eventCalendar: eventCalendar,
-                        draft: draft,
-                        bookingsByID: bookingsByID,
-                        existingLink: existingByKey[eventLinkKey(for: draft)],
+                        draft: item.draft,
+                        timeZone: item.timeZone,
+                        existingLink: existingByKey[key],
                         calendarDuration: calendarDuration,
                         calendarEventLinkRepository: calendarEventLinkRepository
                     )
                     didChangeLinks = true
                 }
 
-                // 2) Delete events/links that are no longer desired.
+                // 2) Delete events/links that are no longer desired (incl. offset-less skips).
                 let unwantedLinks = existingLinks.filter { !desiredKeys.contains(eventLinkKey(for: $0)) }
                 let unwantedIDs = unwantedLinks.map(\.id)
                 if !unwantedIDs.isEmpty {
@@ -543,22 +556,31 @@ public final class LocalEventKitBridge: CalendarSyncing {
         EventLinkKey(role: link.role, ownerBookingID: link.ownerBookingID)
     }
 
-    private func timeZone(for draft: CalendarEventDraft, bookingsByID: [UUID: Booking]) -> TimeZone {
+    private static func timeZone(for draft: CalendarEventDraft, bookingsByID: [UUID: Booking]) -> TimeZone? {
         switch draft.role {
         case .tripStart, .tripEnd:
-            if let offset = draft.timeZoneOffsetSecondsFromGMT {
-                return TimeZone(secondsFromGMT: offset) ?? .current
-            }
-            return .current
+            guard let offset = draft.timeZoneOffsetSecondsFromGMT else { return nil }
+            return TimeZone(secondsFromGMT: offset)
         case .hotelStay:
-            guard let bookingID = draft.ownerBookingID, let booking = bookingsByID[bookingID] else { return .current }
-            return booking.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+            guard let bookingID = draft.ownerBookingID, let booking = bookingsByID[bookingID] else { return nil }
+            return booking.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
         case .flightDeparture:
-            guard let bookingID = draft.ownerBookingID, let booking = bookingsByID[bookingID] else { return .current }
-            return booking.flightDepartureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+            guard let bookingID = draft.ownerBookingID, let booking = bookingsByID[bookingID] else { return nil }
+            return booking.flightDepartureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
         case .flightArrival:
-            guard let bookingID = draft.ownerBookingID, let booking = bookingsByID[bookingID] else { return .current }
-            return booking.flightArrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+            guard let bookingID = draft.ownerBookingID, let booking = bookingsByID[bookingID] else { return nil }
+            return booking.flightArrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
+        }
+    }
+
+    /// Drafts that enter EventKit `desiredKeys` (have a resolvable offset). Offset-less drafts are omitted so stale links cleanup.
+    static func calendarDraftsEligibleForSync(
+        drafts: [CalendarEventDraft],
+        bookingsByID: [UUID: Booking]
+    ) -> [(draft: CalendarEventDraft, timeZone: TimeZone)] {
+        drafts.compactMap { draft in
+            guard let tz = timeZone(for: draft, bookingsByID: bookingsByID) else { return nil }
+            return (draft, tz)
         }
     }
 
@@ -566,13 +588,11 @@ public final class LocalEventKitBridge: CalendarSyncing {
         store: EKEventStore,
         eventCalendar: EKCalendar,
         draft: CalendarEventDraft,
-        bookingsByID: [UUID: Booking],
+        timeZone tz: TimeZone,
         existingLink: CalendarEventLink?,
         calendarDuration: TimeInterval,
         calendarEventLinkRepository: CalendarEventLinkRepository
     ) throws {
-        let tz = timeZone(for: draft, bookingsByID: bookingsByID)
-
         let event: EKEvent
         if let existingLink,
            let existingEvent = store.event(withIdentifier: existingLink.eventIdentifier) {
@@ -733,12 +753,35 @@ public final class LocalEventKitBridge: CalendarSyncing {
 
 private extension LocalEventKitBridge {
     static func formatDeadlineWallClock(_ deadline: CancellationDeadline) -> String {
-        let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+        guard let tz = deadline.hotelOffsetSeconds.flatMap({ TimeZone(secondsFromGMT: $0) }) else {
+            recordEventKitSkip(reason: "format_deadline_missing_hotel_offset")
+            return deadline.policyText ?? "Stornofrist"
+        }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "de_DE")
         formatter.timeZone = tz
         formatter.dateFormat = "d. MMM yyyy HH:mm"
         return formatter.string(from: deadline.deadlineAt)
+    }
+
+    static func recordEventKitSkip(reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "eventkit_side_effect"
+                    ),
+                    component: "LocalEventKitBridge",
+                    phase: "timezone",
+                    event: "eventkit_offset_skip",
+                    result: .skipped,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }
 

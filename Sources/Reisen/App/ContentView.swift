@@ -275,9 +275,7 @@ struct ContentView: View {
                         let repo = SwiftDataBookingRepository(modelContext: modelContext)
                         try TimeNormalizationRepair(bookingRepository: repo).repairIfNeeded()
                     } catch {
-                        #if DEBUG
-                        print("[Reisen] TimeNormalizationRepair fehlgeschlagen: \(error)")
-                        #endif
+                        Self.recordTimeNormalizationRepairFailure(error)
                     }
                 }
             }
@@ -803,18 +801,32 @@ struct ContentView: View {
         if !UITestingLaunch.isActive {
             _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
         }
-        let snap = await ProviderPreferencesImportGate.awaitAndApply(context: modelContext)
-        if let snap, snap.setupCompleted {
-            ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs")
-            ProviderPreferencesImportGate.notifyEnabledAfterImport()
-            return
+        let startup = await ProviderPreferencesImportGate.awaitApplyAndSeedLocalIfEmpty(
+            context: modelContext
+        )
+        if startup == .continueLocalSetup {
+            presentProviderSetupIfNeeded()
         }
-        // Seed CloudKit only when no remote prefs arrived — never overwrite a known remote snapshot at startup.
-        if snap == nil,
-           AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted) {
-            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
+    }
+
+    private static func recordTimeNormalizationRepairFailure(_ error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "time_normalization_repair"
+                    ),
+                    component: "ContentView",
+                    phase: "bootstrap",
+                    event: "time_normalization_repair",
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
-        presentProviderSetupIfNeeded()
     }
 
     private func handleProviderPrefsRemoteChange() {

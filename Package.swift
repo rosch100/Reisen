@@ -154,7 +154,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenBookingCom",
-            dependencies: ["ReisenDomain", "ReisenProviders"],
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
             path: "Sources/ReisenBookingCom",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

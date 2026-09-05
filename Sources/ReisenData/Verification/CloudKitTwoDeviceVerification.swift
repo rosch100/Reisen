@@ -62,6 +62,7 @@ public enum CloudKitTwoDeviceVerification {
         var bookingToFound: Bool?
         var gapFound: Bool?
         var localReminderFound: Bool?
+        var cloudKitAwaitTimedOut: Bool?
 
         init(mode: Mode, ok: Bool, message: String) {
             self.mode = mode.rawValue
@@ -129,7 +130,7 @@ public enum CloudKitTwoDeviceVerification {
         try deleteVerificationEntities(in: modelContext)
         insertSeedGraph(into: modelContext)
         try modelContext.save()
-        await PersistenceBootstrap.awaitCloudKitExportIfNeeded(
+        let exportAwait = await PersistenceBootstrap.awaitCloudKitExportIfNeeded(
             timeout: exportTimeout,
             cloudKitEnabled: true
         )
@@ -137,9 +138,12 @@ public enum CloudKitTwoDeviceVerification {
         var result = VerifyResult(
             mode: .seed,
             ok: true,
-            message: "Seed geschrieben und CloudKit-Export abgewartet."
+            message: exportAwait == .timedOut
+                ? "Seed geschrieben; CloudKit-Export timedOut (degraded, Recovery fortgesetzt)."
+                : "Seed geschrieben und CloudKit-Export abgewartet."
         )
         result.cloudKitEnabled = true
+        result.cloudKitAwaitTimedOut = (exportAwait == .timedOut)
         result.accountStatus = accountStatusName(account)
         result.tripID = tripID.uuidString
         result.bookingFromID = bookingFromID.uuidString
@@ -162,6 +166,7 @@ public enum CloudKitTwoDeviceVerification {
             message: expectMessage(cloud: cloud, localReminderFound: localReminderFound)
         )
         result.cloudKitEnabled = true
+        result.cloudKitAwaitTimedOut = cloud.sawImportTimeout
         result.accountStatus = accountStatusName(account)
         result.tripFound = cloud.tripFound
         result.bookingFromFound = cloud.bookingFromFound
@@ -176,6 +181,7 @@ public enum CloudKitTwoDeviceVerification {
         var bookingFromFound = false
         var bookingToFound = false
         var gapFound = false
+        var sawImportTimeout = false
 
         var allFound: Bool {
             tripFound && bookingFromFound && bookingToFound && gapFound
@@ -186,10 +192,13 @@ public enum CloudKitTwoDeviceVerification {
         var cloud = CloudPresence()
         let deadline = Date().addingTimeInterval(expectTimeout)
         while Date() < deadline {
-            await PersistenceBootstrap.awaitCloudKitImportIfNeeded(
+            let importAwait = await PersistenceBootstrap.awaitCloudKitImportIfNeeded(
                 timeout: .seconds(5),
                 cloudKitEnabled: true
             )
+            if importAwait == .timedOut {
+                cloud.sawImportTimeout = true
+            }
             cloud.tripFound = try tripExists(tripID, in: context)
             cloud.bookingFromFound = try bookingExists(bookingFromID, in: context)
             cloud.bookingToFound = try bookingExists(bookingToID, in: context)
@@ -202,10 +211,14 @@ public enum CloudKitTwoDeviceVerification {
 
     private static func expectMessage(cloud: CloudPresence, localReminderFound: Bool) -> String {
         if !cloud.allFound {
-            return "Cloud-Daten unvollständig oder Sync noch nicht angekommen."
+            let timeoutNote = cloud.sawImportTimeout ? " (Import-Await timedOut während Poll)" : ""
+            return "Cloud-Daten unvollständig oder Sync noch nicht angekommen.\(timeoutNote)"
         }
         if localReminderFound {
             return "Lokales Reminder wurde fälschlich synchronisiert."
+        }
+        if cloud.sawImportTimeout {
+            return "Trip/Bookings/Gap aus iCloud sichtbar; lokales Reminder nicht vorhanden (Import-Await timedOut während Poll)."
         }
         return "Trip/Bookings/Gap aus iCloud sichtbar; lokales Reminder nicht vorhanden."
     }
