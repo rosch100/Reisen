@@ -32,6 +32,7 @@ func gygMyBookingsParsesUpcomingActivityDrafts() throws {
     let deadline = try #require(draft.deadlines.first)
     #expect(deadline.deadlineAt == iso8601("2026-08-07T19:00:00+07:00"))
     #expect(deadline.isFreeCancellation == true)
+    #expect(deadline.hotelOffsetSeconds == 7 * 3600)
     #expect(deadline.policyText?.contains("vollständige Rückerstattung") == true)
     #expect(draft.cancellationUrl == draft.externalUrl)
     #expect(draft.cancellationUrl == GetYourGuideWebConstants.bookingURL(hash: "<REDACTED-1>"))
@@ -190,6 +191,7 @@ func gygBookingSummaryParsesEnrichment() throws {
     let deadline = try #require(enrichment.deadlines.first)
     #expect(deadline.deadlineAt == iso8601("2026-08-07T19:00:00+07:00"))
     #expect(deadline.isFreeCancellation == true)
+    #expect(deadline.hotelOffsetSeconds == 7 * 3600)
 
     #expect(enrichment.rateDetails?.totalPriceAmount == 53.94)
     #expect(enrichment.rateDetails?.totalPriceCurrency == "EUR")

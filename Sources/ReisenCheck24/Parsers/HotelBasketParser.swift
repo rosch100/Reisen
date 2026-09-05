@@ -1,4 +1,6 @@
 import Foundation
+import ReisenDomain
+import ReisenDiagnostics
 
 /// Parses Check24 hotel detail pages for the multi-room grouping basket.
 ///
@@ -82,7 +84,28 @@ public enum HotelBasketParser {
                 items: items
             )
         } catch {
+            recordBasketDecodeSkipped(error: error)
             return nil
+        }
+    }
+
+    private static func recordBasketDecodeSkipped(error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .check24,
+                        operation: "check24_enrich_hotel"
+                    ),
+                    component: "HotelBasketParser",
+                    phase: "basket",
+                    event: "basket_decode_skipped",
+                    result: .skipped,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }

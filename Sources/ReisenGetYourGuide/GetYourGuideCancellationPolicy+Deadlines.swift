@@ -7,7 +7,8 @@ extension GYGCancellationPolicy {
     }
 
     private func asDeadlines() -> [CancellationDeadline] {
-        guard let deadlineAt = expirationDate ?? policyExpirationDate else { return [] }
+        let raw = NonEmpty.string(expirationDate) ?? NonEmpty.string(policyExpirationDate)
+        guard let raw, let deadlineAt = ISODateTime.parseInstant(raw) else { return [] }
         let typeHaystack = [type, policyType]
             .compactMap { $0?.lowercased() }
             .joined(separator: " ")
@@ -17,7 +18,8 @@ extension GYGCancellationPolicy {
             CancellationDeadline(
                 deadlineAt: deadlineAt,
                 policyText: message,
-                isFreeCancellation: isFree
+                isFreeCancellation: isFree,
+                hotelOffsetSeconds: ISODateTime.offsetSeconds(from: raw)
             ),
         ]
     }

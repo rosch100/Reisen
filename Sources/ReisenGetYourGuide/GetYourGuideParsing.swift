@@ -77,8 +77,9 @@ struct GYGCancellationPolicy: Decodable {
     let type: String?
     let policyType: String?
     let message: String?
-    let expirationDate: Date?
-    let policyExpirationDate: Date?
+    /// Raw ISO — Offset für Deadlines behalten (kein Date-Decode ohne Offset).
+    let expirationDate: String?
+    let policyExpirationDate: String?
     let feeValue: Double?
 }
 

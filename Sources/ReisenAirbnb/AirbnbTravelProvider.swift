@@ -196,6 +196,20 @@ private extension AirbnbTravelProvider {
             incoming: guestCount.map { BookingRateDetails(guestCount: $0) }
         )
 
+        let hotelOffsetSeconds: Int?
+        if let offset = AirbnbListingTimeZone.offsetSeconds(
+            listingTimeZone: tripDetails.listingTimeZone,
+            at: tripDetails.tripStartAt
+        ) {
+            hotelOffsetSeconds = offset
+        } else {
+            Self.recordEnrichSkipped(
+                reason: "invalid_listing_timezone",
+                detail: tripDetails.listingTimeZone
+            )
+            hotelOffsetSeconds = nil
+        }
+
         return DraftAssembler.enrichment(
             from: ProviderBookingFacts(
                 provider: .airbnb,
@@ -205,7 +219,8 @@ private extension AirbnbTravelProvider {
                 locationToAddress: parsed.locationToAddress,
                 statusRaw: tripDetails.reservationStatus,
                 deadlines: parsed.deadlines,
-                rateDetails: rateDetails
+                rateDetails: rateDetails,
+                hotelOffsetSeconds: hotelOffsetSeconds
             )
         )
     }
