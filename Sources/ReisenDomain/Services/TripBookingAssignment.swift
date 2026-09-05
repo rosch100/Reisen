@@ -8,7 +8,7 @@ public struct TripBookingAssignment: Sendable {
         bookings: [Booking],
         trip: Trip,
         now: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> [UUID] {
         let startOfToday = calendar.startOfDay(for: now)
 
@@ -34,7 +34,7 @@ public struct TripBookingAssignment: Sendable {
         trip: Trip,
         restrictingTo seedBookingIDs: Set<UUID>?,
         now: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> [UUID] {
         if let seedBookingIDs {
             return bookings.compactMap { booking in
@@ -52,7 +52,7 @@ public struct TripBookingAssignment: Sendable {
         startDate: Date,
         endDate: Date,
         now: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> Int {
         guard endDate >= startDate else { return 0 }
         let draftTrip = Trip(title: "", startDate: startDate, endDate: endDate)

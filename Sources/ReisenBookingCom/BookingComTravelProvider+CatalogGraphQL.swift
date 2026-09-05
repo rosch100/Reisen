@@ -13,7 +13,7 @@ extension BookingComTravelProvider {
         let tripIDs = try await resolveTripIDs(preferredTripIDs: preferredTripIDs, using: webView, tokens: tokens)
         guard !tripIDs.isEmpty else { return [] }
 
-        let result = await fetchTimelineCatalog(
+        let result = try await fetchTimelineCatalog(
             using: webView,
             tokens: tokens,
             tripIDs: tripIDs

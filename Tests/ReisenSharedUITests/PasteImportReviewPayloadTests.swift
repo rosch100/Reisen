@@ -94,18 +94,18 @@ func pasteImportReviewPayload_creating_outsideWindowStaysOpen() {
 }
 
 @Test @MainActor
-func pasteImportReviewPayload_creating_inWindowKeepsTrip() {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-    let tripStart = Date(timeIntervalSince1970: 1_700_000_000)
-    let tripEnd = tripStart.addingTimeInterval(7 * 86_400)
+func pasteImportReviewPayload_creating_defaultCalendarKeepsHotelGMTInWindow() {
+    // 2026-09-05 00:00 GMT — Default-Kalender muss Hotel-GMT sein (kein Geräte-TZ-Vortag).
+    let stay = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let tripStart = HotelStayDate.dateOnly(year: 2026, month: 9, day: 1)
+    let tripEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
     let tripID = UUID()
 
     let candidate = PasteImportCandidate(
         draft: PasteImportDraft(
             bookingType: .hotel,
-            startAt: tripStart,
-            endAt: tripStart.addingTimeInterval(86_400),
+            startAt: stay,
+            endAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 7),
             endAtIsPlaceholder: false,
             status: .unknown
         ),
@@ -115,11 +115,10 @@ func pasteImportReviewPayload_creating_inWindowKeepsTrip() {
         candidate: candidate,
         tripID: tripID,
         tripStart: tripStart,
-        tripEnd: tripEnd,
-        calendar: calendar
+        tripEnd: tripEnd
     )
     #expect(payload.tripID == tripID)
-    #expect(payload.entryTripID == tripID)
+    #expect(HotelStayDate.format(stay, dateFormat: "d.M.") == "5.9.")
 }
 
 @Test @MainActor

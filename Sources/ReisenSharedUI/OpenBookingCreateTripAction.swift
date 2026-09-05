@@ -8,7 +8,7 @@ public enum OpenBookingCreateTripAction {
         fromIDs bookingIDs: Set<UUID>,
         in bookings: [SDBooking],
         locale: Locale = .current,
-        calendar: Calendar = .current,
+        calendar: Calendar = HotelStayDate.calendar,
         now: Date = Date()
     ) -> TripCreateSeed? {
         let selected = bookings.filter { bookingIDs.contains($0.id) }
@@ -26,7 +26,7 @@ public enum OpenBookingCreateTripAction {
     public static func seed(
         from bookings: [SDBooking],
         locale: Locale = .current,
-        calendar: Calendar = .current,
+        calendar: Calendar = HotelStayDate.calendar,
         now: Date = Date()
     ) -> TripCreateSeed? {
         makeSeed(
@@ -42,7 +42,7 @@ public enum OpenBookingCreateTripAction {
 
     public static func dateRangeText(
         for bookings: [SDBooking],
-        calendar: Calendar = .current
+        calendar: Calendar = HotelStayDate.calendar
     ) -> String? {
         TripDateBounds.formattedAbbreviatedRange(
             from: domainBookings(from: bookings),
@@ -57,7 +57,7 @@ public enum OpenBookingCreateTripAction {
         seed seedBinding: Binding<TripCreateSeed?>,
         showFailed: Binding<Bool>,
         locale: Locale = .current,
-        calendar: Calendar = .current,
+        calendar: Calendar = HotelStayDate.calendar,
         now: Date = Date()
     ) -> Bool {
         assign(
@@ -75,7 +75,7 @@ public enum OpenBookingCreateTripAction {
         seed seedBinding: Binding<TripCreateSeed?>,
         showFailed: Binding<Bool>,
         locale: Locale = .current,
-        calendar: Calendar = .current,
+        calendar: Calendar = HotelStayDate.calendar,
         now: Date = Date()
     ) -> Bool {
         assign(

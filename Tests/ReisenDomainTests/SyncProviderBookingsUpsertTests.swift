@@ -329,5 +329,38 @@ final class SyncProviderBookingsUpsertTests {
         let updated = try #require(repo.get(bookingID))
         #expect(updated.tripID == tripID)
     }
+
+    @Test("SyncProviderBookings startOfToday: Hotel-GMT-Anker nicht über Geräte-TZ verschieben")
+    func startOfTodayUsesHotelGMTCalendar() throws {
+        // 2026-09-05 00:00 GMT — in America/Los_Angeles noch 4.9. abends.
+        let stay = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+        #expect(HotelStayDate.calendar.startOfDay(for: stay) == stay)
+        #expect(HotelStayDate.format(stay, dateFormat: "d.M.") == "5.9.")
+
+        let provider = ProviderID.opodo
+        let existing = Booking(
+            provider: provider,
+            bookingType: .hotel,
+            title: "Heute",
+            confirmationCode: "H1",
+            externalUrl: "https://example/opodo/today",
+            startAt: stay,
+            endAt: HotelStayDate.dateOnly(year: 2026, month: 9, day: 7),
+            status: .confirmed
+        )
+        let repo = InMemoryBookingRepository(seed: [existing])
+        let useCase = SyncProviderBookings(bookingRepository: repo)
+
+        // Leerer Katalog: Reconciliation löscht ab Hotel-GMT-startOfToday (== stay).
+        let result = try useCase.execute(
+            provider: provider,
+            drafts: [],
+            requiresDeadlines: false,
+            now: stay
+        )
+
+        #expect(result.bookingsPersisted == 0)
+        #expect(repo.all.isEmpty)
+    }
 }
 

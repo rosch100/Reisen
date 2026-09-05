@@ -1863,9 +1863,7 @@ struct ContentView: View {
     }
 
     private func dateRange(_ trip: SDTrip) -> String {
-        let start = trip.startDate.formatted(date: .abbreviated, time: .omitted)
-        let end = trip.endDate.formatted(date: .abbreviated, time: .omitted)
-        return "\(start) – \(end)"
+        TripDateBounds.formattedAbbreviatedRange(start: trip.startDate, end: trip.endDate)
     }
 
     private func focusTrip(_ trip: SDTrip) {

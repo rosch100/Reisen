@@ -86,3 +86,38 @@ private func booking(
 
     #expect(Set(ids) == Set([selectedID, selectedOutsideWindowID]))
 }
+
+@Test("TripBookingAssignment Default: Hotel-GMT-Anker nicht über Geräte-TZ verschieben")
+func tripBookingAssignment_defaultCalendarKeepsHotelGMTDay() {
+    // 2026-09-05 00:00 GMT — in America/Los_Angeles noch 4.9. abends.
+    let stay = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let tripEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+    let bookingEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 7)
+    let id = UUID()
+    let trip = Trip(title: "T", startDate: stay, endDate: tripEnd)
+
+    let ids = TripBookingAssignment().assignableBookingIDs(
+        bookings: [booking(id: id, startAt: stay, endAt: bookingEnd)],
+        trip: trip,
+        now: stay
+    )
+
+    #expect(ids == [id])
+    #expect(HotelStayDate.format(stay, dateFormat: "d.M.") == "5.9.")
+}
+
+@Test("TripBookingAssignment assignableCount Default: Hotel-GMT-Fenster")
+func tripBookingAssignment_assignableCount_defaultCalendarKeepsHotelGMTDay() {
+    let stay = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let tripEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+    let bookingEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 7)
+
+    let count = TripBookingAssignment().assignableCount(
+        bookings: [booking(startAt: stay, endAt: bookingEnd)],
+        startDate: stay,
+        endDate: tripEnd,
+        now: stay
+    )
+
+    #expect(count == 1)
+}

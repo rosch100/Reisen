@@ -117,3 +117,22 @@ private func insertBooking(
 @Test func openBookingCreateTripAction_dateRangeTextNilWhenEmpty() {
     #expect(OpenBookingCreateTripAction.dateRangeText(for: []) == nil)
 }
+
+@MainActor
+@Test("OpenBookingCreateTripAction dateRangeText Default: Hotel-GMT-Tag")
+func openBookingCreateTripAction_dateRangeText_keepsHotelGMTDay() throws {
+    let stay = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let booking = insertBooking(
+        provider: .manual,
+        type: .hotel,
+        title: "Stay",
+        startAt: stay,
+        duration: 0,
+        into: container.mainContext
+    )
+    let text = OpenBookingCreateTripAction.dateRangeText(for: [booking])
+    #expect(text != nil)
+    #expect(text?.contains("5.9") == true)
+    #expect(text?.contains("4.9") != true)
+}

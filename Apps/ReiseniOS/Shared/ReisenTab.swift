@@ -240,7 +240,7 @@ private struct TripListPane: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(trip.title)
                         .font(.headline)
-                    Text("\(trip.startDate.formatted(date: .abbreviated, time: .omitted)) – \(trip.endDate.formatted(date: .abbreviated, time: .omitted))")
+                    Text(TripDateBounds.formattedAbbreviatedRange(start: trip.startDate, end: trip.endDate))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

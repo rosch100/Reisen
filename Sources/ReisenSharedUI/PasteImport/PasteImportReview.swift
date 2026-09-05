@@ -59,7 +59,7 @@ public struct PasteImportReviewPayload: Equatable, Sendable, Identifiable {
         tripID: UUID?,
         tripStart: Date?,
         tripEnd: Date?,
-        calendar: Calendar = .current,
+        calendar: Calendar = HotelStayDate.calendar,
         index: Int = 1,
         total: Int = 1
     ) -> PasteImportReviewPayload {

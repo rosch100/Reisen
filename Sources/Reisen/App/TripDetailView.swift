@@ -764,9 +764,7 @@ struct TripDetailView: View {
     }
 
     private var dateRange: String {
-        let start = trip.startDate.formatted(date: .abbreviated, time: .omitted)
-        let end = trip.endDate.formatted(date: .abbreviated, time: .omitted)
-        return "\(start) – \(end)"
+        TripDateBounds.formattedAbbreviatedRange(start: trip.startDate, end: trip.endDate)
     }
 
     private func openBookingsCandidates() -> [SDBooking] {

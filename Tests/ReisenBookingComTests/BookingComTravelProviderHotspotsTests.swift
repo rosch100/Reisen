@@ -21,6 +21,8 @@ final class FakeBookingComWebView: BookingComWebView {
     var inPageThrowsForGraphQL: Bool = false
     var authenticatedThrowsForGraphQL: Bool = false
     var graphQLError: Error?
+    /// Wenn gesetzt: nur `fetchAuthenticatedText` für GraphQL wirft diesen Fehler (In-Page unberührt).
+    var authenticatedGraphQLError: Error?
     var flightOrderJSON: String?
 
     // Track whether navigation was requested (for fallback tests).
@@ -98,6 +100,12 @@ final class FakeBookingComWebView: BookingComWebView {
     ) async throws -> String {
         let urlString = url.absoluteString
         if urlString == "https://secure.booking.com/dml/graphql" {
+            if let authenticatedGraphQLError {
+                throw authenticatedGraphQLError
+            }
+            if let graphQLError {
+                throw graphQLError
+            }
             if authenticatedThrowsForGraphQL {
                 throw FakeBookingComError.graphqlFailed
             }
@@ -193,6 +201,101 @@ struct BookingComTravelProviderHotspotsTests {
             #expect(Bool(false), "expected sessionTokensMissing")
         } catch let error as BookingComProviderError {
             #expect(error == .sessionTokensMissing)
+        } catch {
+            #expect(Bool(false), "unexpected \(error)")
+        }
+    }
+
+    @Test("fetchTripIDsForStageGroup: sessionNotEstablished fail-closed, kein Soft-Skip")
+    func fetchTripIDsForStageGroup_sessionNotEstablished_rethrows() async {
+        let fake = FakeBookingComWebView(url: Self.myTripsURL)
+        fake.graphQLError = BookingComProviderError.sessionNotEstablished
+        let provider = BookingComTravelProvider()
+        let tokens = BookingComSessionTokens(csrfToken: "eyJ.fake", apolloClientVersion: "ABC123")
+        var seen = Set<String>()
+
+        do {
+            _ = try await provider.fetchTripIDsForStageGroup(
+                stages: ["UPCOMING"],
+                using: fake,
+                tokens: tokens,
+                parser: BookingComTripsGraphQLParser(),
+                seen: &seen
+            )
+            #expect(Bool(false), "expected sessionNotEstablished")
+        } catch let error as BookingComProviderError {
+            #expect(error == .sessionNotEstablished)
+            #expect(seen.isEmpty)
+        } catch {
+            #expect(Bool(false), "unexpected \(error)")
+        }
+    }
+
+    @Test("fetchTripIDsForStageGroup: sessionTokensMissing fail-closed, kein Soft-Skip")
+    func fetchTripIDsForStageGroup_sessionTokensMissing_rethrows() async {
+        let fake = FakeBookingComWebView(url: Self.myTripsURL)
+        fake.graphQLError = BookingComProviderError.sessionTokensMissing
+        let provider = BookingComTravelProvider()
+        let tokens = BookingComSessionTokens(csrfToken: "eyJ.fake", apolloClientVersion: "ABC123")
+        var seen = Set<String>()
+
+        do {
+            _ = try await provider.fetchTripIDsForStageGroup(
+                stages: ["COMPLETED"],
+                using: fake,
+                tokens: tokens,
+                parser: BookingComTripsGraphQLParser(),
+                seen: &seen
+            )
+            #expect(Bool(false), "expected sessionTokensMissing")
+        } catch let error as BookingComProviderError {
+            #expect(error == .sessionTokensMissing)
+            #expect(seen.isEmpty)
+        } catch {
+            #expect(Bool(false), "unexpected \(error)")
+        }
+    }
+
+    @Test("fetchTimelineCatalog: sessionNotEstablished fail-closed, kein Soft-Count")
+    func fetchTimelineCatalog_sessionNotEstablished_rethrows() async {
+        let fake = FakeBookingComWebView(url: Self.myTripsURL)
+        fake.graphQLError = BookingComProviderError.sessionNotEstablished
+        let provider = BookingComTravelProvider()
+        let tokens = BookingComSessionTokens(csrfToken: "eyJ.fake", apolloClientVersion: "ABC123")
+
+        do {
+            _ = try await provider.fetchTimelineCatalog(
+                using: fake,
+                tokens: tokens,
+                tripIDs: ["111", "222"]
+            )
+            #expect(Bool(false), "expected sessionNotEstablished")
+        } catch let error as BookingComProviderError {
+            #expect(error == .sessionNotEstablished)
+        } catch {
+            #expect(Bool(false), "unexpected \(error)")
+        }
+    }
+
+    @Test("fetchTimelineCatalog: Unauthorized AuthenticatedFetchError fail-closed")
+    func fetchTimelineCatalog_unauthorized_rethrows() async {
+        let fake = FakeBookingComWebView(url: Self.myTripsURL)
+        // In-Page non-auth → Auth-Fallback 401 (postGraphQL mappt Unauthorized nur im In-Page-Catch).
+        fake.inPageThrowsForGraphQL = true
+        fake.authenticatedGraphQLError = AuthenticatedFetchError.httpStatus(401)
+
+        let provider = BookingComTravelProvider()
+        let tokens = BookingComSessionTokens(csrfToken: "eyJ.fake", apolloClientVersion: "ABC123")
+
+        do {
+            _ = try await provider.fetchTimelineCatalog(
+                using: fake,
+                tokens: tokens,
+                tripIDs: ["111"]
+            )
+            #expect(Bool(false), "expected Unauthorized")
+        } catch let error as AuthenticatedFetchError {
+            #expect(AuthenticatedSessionGuard.isUnauthorized(error))
         } catch {
             #expect(Bool(false), "unexpected \(error)")
         }

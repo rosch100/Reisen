@@ -96,10 +96,9 @@ struct TripDetailIOS: View {
                             case .period:
                                 CopyableLabeledValue(
                                     label: L10n.string(.tripPeriod),
-                                    value: L10n.format(
-                                        .tripPeriodRange,
-                                        trip.startDate.formatted(date: .abbreviated, time: .omitted),
-                                        trip.endDate.formatted(date: .abbreviated, time: .omitted)
+                                    value: TripDateBounds.formattedAbbreviatedRange(
+                                        start: trip.startDate,
+                                        end: trip.endDate
                                     ),
                                     kind: .standard,
                                     style: .list
