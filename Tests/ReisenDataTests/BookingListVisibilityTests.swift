@@ -352,3 +352,31 @@ func listGapBadgeCount_defaultCalendarIgnoresDeviceWestOfGMT() throws {
     #expect(elapsedKids.map(\.id) == [pastSynced.id, pastManual.id])
 }
 
+@MainActor
+@Test("isCandidate: Trip-Fenster bleibt HotelStayDate.calendar auch bei West-Override (Flug)")
+func openBookingMatching_isCandidate_tripWindowIgnoresDeviceWestOfGMT() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let tripStart = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+    let tripEnd = HotelStayDate.dateOnly(year: 2026, month: 9, day: 20)
+    let trip = SDTrip(title: "Trip", startDate: tripStart, endDate: tripEnd)
+    // Flug am letzten Reisetag (UTC-Abend) — unter GMT im Fenster, west-of-GMT fälschlich draußen.
+    let flightEnd = tripEnd.addingTimeInterval(18 * 3600)
+    let flight = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.flight.rawValue,
+        title: "Flight",
+        startAt: flightEnd.addingTimeInterval(-3_600),
+        endAt: flightEnd,
+        statusRaw: BookingStatus.confirmed.rawValue
+    )
+    try persist(container.mainContext, trip: trip, flight)
+
+    let now = tripStart.addingTimeInterval(12 * 3600)
+    #expect(OpenBookingMatching.isCandidate(flight, for: trip, now: now))
+
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+    // Expliziter West-Override darf nur ListInclusion betreffen, nicht das Trip-Fenster.
+    #expect(OpenBookingMatching.isCandidate(flight, for: trip, calendar: west, now: now))
+}
+
