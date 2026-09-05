@@ -744,7 +744,8 @@ struct SyncTab: View {
         keychainMessage = L10n.format(
             .syncKeychainAccountsFound,
             accounts.count,
-            credentialServerHost() ?? ""
+            credentialServerHost() ?? "",
+            L10n.string(.actionRememberLogin)
         )
     }
 

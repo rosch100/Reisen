@@ -525,6 +525,8 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitForWindow()
         ui.activateDisabledProviderViaSidebarSelection("booking")
         _ = ui.waitForSyncLoginChrome()
+        // Bootstrap darf nicht crashen; Login-Chrome + WebView-Host sichtbar.
+        ui.waitFor(UITestingIdentifiers.syncProviderWebView, timeout: 15)
     }
 
     func testPasteImportFixturePersistsBooking() {

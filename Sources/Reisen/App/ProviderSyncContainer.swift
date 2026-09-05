@@ -189,6 +189,9 @@ struct ProviderSyncContainer: View {
 
     /// Startup inkrementell: sobald der erste Provider gefunden ist, der noch Login braucht,
     /// wechseln wir sofort in die Login-UI. Die restlichen Provider werden im Hintergrund fertig geprüft.
+    ///
+    /// Enabled-Liste wird zu Beginn gesnapshotet; Auswahl nur über stabile Provider-IDs
+    /// (kein Index in die live berechnete Liste nach `await` — OOB-Crash).
     private func runStartupBootstrapIncremental() async {
         diagnosticRunID = UUID()
         isRunningStartupBootstrap = true
@@ -199,8 +202,9 @@ struct ProviderSyncContainer: View {
         isRunningLoginQueue = false
         didFinishBackgroundProbingRemaining = false
 
-        var firstNeedingLoginIndex: Int?
-        for (index, providerID) in enabledProviderIDs.enumerated() {
+        let providersSnapshot = enabledProviderIDs
+        var firstNeedingLogin: ProviderID?
+        for providerID in providersSnapshot {
             probingProviderLabel = providerDisplayName(providerID)
             await probeProviderSession(
                 providerID,
@@ -212,7 +216,7 @@ struct ProviderSyncContainer: View {
             )
 
             if hub?.status(for: providerID) != .sessionReady {
-                firstNeedingLoginIndex = index
+                firstNeedingLogin = providerID
                 break
             }
         }
@@ -221,7 +225,7 @@ struct ProviderSyncContainer: View {
         backgroundProviderID = nil
 
         // Alle ready: direkt bereit ohne Login-Queue.
-        guard let firstNeedingLoginIndex else {
+        guard let firstNeedingLogin else {
             if !enabledSet.contains(selectedProviderID), let first = enabledProviderIDs.first {
                 selectedProviderID = first
             }
@@ -235,24 +239,41 @@ struct ProviderSyncContainer: View {
             return
         }
 
-        // Sofortige Login-UI für den ersten needsLogin-Provider.
-        let firstNeedingLogin = enabledProviderIDs[firstNeedingLoginIndex]
+        // Sofortige Login-UI für den ersten needsLogin-Provider (ID aus Snapshot, kein Re-Index).
         selectedProviderID = firstNeedingLogin
         loginQueue = [firstNeedingLogin]
         isRunningLoginQueue = true
         phase = .ready
 
-        // Restliche Provider im Hintergrund prüfen.
-        let remainingStart = firstNeedingLoginIndex + 1
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: DiagnosticContext(
+                    runID: diagnosticRunID,
+                    providerID: firstNeedingLogin,
+                    operation: "startup_probe"
+                ),
+                component: "ProviderSyncContainer",
+                phase: "bootstrap",
+                event: "first_needing_login_selected",
+                result: .succeeded,
+                reason: "snapshot_provider_id"
+            )
+        )
+
+        let remaining = ProviderStartupLoginSelection.remainingToProbe(
+            providersInOrder: providersSnapshot,
+            after: firstNeedingLogin,
+            stillEnabled: enabledSet
+        )
         Task { @MainActor in
-            await probeRemainingProviders(startingAt: remainingStart)
+            await probeRemainingProviders(remaining)
         }
     }
 
     /// Läuft parallel zur sichtbaren Login-UI.
     @MainActor
-    private func probeRemainingProviders(startingAt startIndex: Int) async {
-        guard startIndex < enabledProviderIDs.count else {
+    private func probeRemainingProviders(_ remaining: [ProviderID]) async {
+        guard !remaining.isEmpty else {
             didFinishBackgroundProbingRemaining = true
             hub?.markStartupProbeCompleted()
             ProviderSessionNavigation.resetProbeTracking()
@@ -262,9 +283,11 @@ struct ProviderSyncContainer: View {
             return
         }
 
-        for providerID in enabledProviderIDs[startIndex...] {
+        for providerID in remaining {
             // Der sichtbare Provider wird vom SyncView gehostet: Hintergrund darf ihn nicht übernehmen.
             if providerID == selectedProviderID { continue }
+            // Während await kann der User den Provider deaktivieren.
+            guard enabledSet.contains(providerID) else { continue }
 
             probingProviderLabel = providerDisplayName(providerID)
             await probeProviderSession(

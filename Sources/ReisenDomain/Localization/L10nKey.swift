@@ -381,6 +381,8 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case syncFillCredentialsHelp = "sync.fill_credentials_help"
     case syncKeychainAccessNotFound = "sync.keychain_access_not_found"
     case syncKeychainAccountsFound = "sync.keychain_accounts_found"
+    /// %1$@ = Host, %2$@ = Primär-CTA-Label (`action.remember_login`).
+    case syncKeychainNoReadableAccount = "sync.keychain_no_readable_account"
     case syncNoAccountSelected = "sync.no_account_selected"
     case syncNoKeychainHost = "sync.no_keychain_host"
     case syncPasswordsAppNotFound = "sync.passwords_app_not_found"
