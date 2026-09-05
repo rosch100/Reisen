@@ -182,7 +182,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchungsnr. kopieren"
+            "value": "Buchungsnummer kopieren"
           }
         },
         "en": {
@@ -870,7 +870,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pers."
+            "value": "Persönlich"
           }
         },
         "en": {
@@ -1062,13 +1062,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Buchung wird unwiderruflich aus Voyenna entfernt. Nach dem nächsten Portal-Sync kann sie wieder erscheinen, wenn sie beim Portal noch existiert."
+            "value": "Die Buchung wird unwiderruflich aus Voyenna entfernt. Nach der nächsten Portal-Synchronisation kann sie wieder erscheinen, wenn sie beim Portal noch existiert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The booking will be permanently removed from Voyenna. After the next portal sync it may reappear if it still exists at the portal."
+            "value": "The booking will be permanently removed from Voyenna. After the next portal synchronization it may reappear if it still exists at the portal."
           }
         }
       }
@@ -1302,13 +1302,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchungsnr."
+            "value": "Buchungsnummer"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Booking no."
+            "value": "Booking number"
           }
         }
       }
@@ -3974,13 +3974,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Änderungen können beim nächsten Sync überschrieben werden."
+            "value": "Änderungen können bei der nächsten Synchronisation überschrieben werden."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes may be overwritten on the next sync."
+            "value": "Changes may be overwritten on the next synchronization."
           }
         }
       }
@@ -5302,7 +5302,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quelltext gekürzt — fehlende Abschnitte ggf. manuell prüfen."
+            "value": "Quelltext gekürzt — fehlende Abschnitte gegebenenfalls manuell prüfen."
           }
         },
         "en": {
@@ -6150,7 +6150,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Per E-Mail an reisenapp100@gmail.com wird daraus ebenfalls ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Automatische Fehler-Issues (inkl. Abstürze) nur mit dem Schalter oben und sind öffentlich. Repo: github.com/%1$@."
+            "value": "Optionaler GitHub-Benutzername wird nur zur Zuordnung im Issue-Text genutzt; die Meldung erfolgt über das eingebettete Token (ohne GitHub-Anmeldung). Per E-Mail an reisenapp100@gmail.com wird daraus ebenfalls ein öffentliches Issue. App-Store-Bewertung und TestFlight-Feedback kommen an, gehen aber nicht automatisch in GitHub. Automatische Fehler-Issues (einschließlich Abstürze) nur mit dem Schalter oben und sind öffentlich. Repo: github.com/%1$@."
           }
         },
         "en": {
@@ -6214,13 +6214,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Flugabflug/-ankunft eintragen"
+            "value": "Abflug und Ankunft eintragen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add flight departure/arrival"
+            "value": "Add departure and arrival"
           }
         }
       }
@@ -6278,13 +6278,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ohne iCloud-Account erscheinen Sync-Daten nur lokal auf diesem Gerät."
+            "value": "Ohne iCloud-Account erscheinen Synchronisationsdaten nur lokal auf diesem Gerät."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Without an iCloud account, sync data appears locally on this device only."
+            "value": "Without an iCloud account, synchronization data appears locally on this device only."
           }
         }
       }
@@ -6326,13 +6326,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud-Account verfügbar — Sync aktiv."
+            "value": "iCloud-Account verfügbar — Synchronisation aktiv."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud account available — sync active."
+            "value": "iCloud account available — synchronization active."
           }
         }
       }
@@ -6358,13 +6358,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein iCloud-Account angemeldet. Sync-Daten bleiben nur lokal auf diesem Gerät."
+            "value": "Kein iCloud-Account angemeldet. Synchronisationsdaten bleiben nur lokal auf diesem Gerät."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No iCloud account signed in. Sync data stays local on this device only."
+            "value": "No iCloud account signed in. Synchronization data stays local on this device only."
           }
         }
       }
@@ -6390,13 +6390,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud ist eingeschränkt (z. B. Screen Time / MDM). Sync ist nicht verfügbar."
+            "value": "iCloud ist eingeschränkt (z. B. Screen Time / MDM). Synchronisation ist nicht verfügbar."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud is restricted (e.g. Screen Time / MDM). Sync is unavailable."
+            "value": "iCloud is restricted (e.g. Screen Time / MDM). Synchronization is unavailable."
           }
         }
       }
@@ -6476,7 +6476,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync data via iCloud"
+            "value": "Synchronize data via iCloud"
           }
         }
       }
@@ -6854,13 +6854,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Dateien werden gelöscht. Bei aktivem iCloud Sync können Daten erneut geladen werden."
+            "value": "Lokale Dateien werden gelöscht. Bei aktiver iCloud-Synchronisation können Daten erneut geladen werden."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local files will be deleted. With iCloud sync active, data may be reloaded."
+            "value": "Local files will be deleted. With iCloud synchronization active, data may be reloaded."
           }
         }
       }
@@ -6918,13 +6918,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reisebeginn/-ende eintragen"
+            "value": "Reisebeginn und -ende eintragen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add trip start/end"
+            "value": "Add trip start and end"
           }
         }
       }
@@ -6950,7 +6950,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Daten werden neu angelegt, vorhandene iCloud-Daten importiert und anschließend geleert (inkl. Export der Löschungen)."
+            "value": "Lokale Daten werden neu angelegt, vorhandene iCloud-Daten importiert und anschließend geleert (einschließlich Export der Löschungen)."
           }
         },
         "en": {
@@ -6982,13 +6982,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lokale Datendateien werden gelöscht. Bei aktivem iCloud Sync können synchronisierte Daten erneut geladen werden."
+            "value": "Lokale Datendateien werden gelöscht. Bei aktiver iCloud-Synchronisation können synchronisierte Daten erneut geladen werden."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local data files will be deleted. With iCloud sync active, synced data may be reloaded."
+            "value": "Local data files will be deleted. With iCloud synchronization active, synced data may be reloaded."
           }
         }
       }
@@ -7062,13 +7062,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync beendet."
+            "value": "Synchronisation beendet."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync finished."
+            "value": "Synchronization finished."
           }
         }
       }
@@ -7078,13 +7078,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync beendet: %1$@."
+            "value": "Synchronisation beendet: %1$@."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync finished: %1$@."
+            "value": "Synchronization finished: %1$@."
           }
         }
       }
@@ -7254,13 +7254,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync-Speicher fehlt. Bitte App neu starten."
+            "value": "Synchronisationsspeicher fehlt. Bitte App neu starten."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync store is missing. Please restart the app."
+            "value": "Synchronization store is missing. Please restart the app."
           }
         }
       }
@@ -7286,13 +7286,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync-Fehler"
+            "value": "Synchronisationsfehler"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync error"
+            "value": "Synchronization error"
           }
         }
       }
@@ -7702,13 +7702,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync nicht möglich — Anmeldung und aktives Portal prüfen"
+            "value": "Synchronisation nicht möglich — Anmeldung und aktives Portal prüfen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync unavailable — check sign-in and active portal"
+            "value": "Synchronization unavailable — check sign-in and active portal"
           }
         }
       }
@@ -7718,13 +7718,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unbekannter Sync-Fehler."
+            "value": "Unbekannter Synchronisationsfehler."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unknown sync error."
+            "value": "Unknown synchronization error."
           }
         }
       }
@@ -8454,13 +8454,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "„Nur Reise löschen“ belässt die Buchungen unter Offene Buchungen. „Reise und Buchungen löschen“ entfernt die enthaltenen Buchungen dauerhaft. Anbieter-Buchungen können beim nächsten Sync wieder erscheinen."
+            "value": "„Nur Reise löschen“ belässt die Buchungen unter Offene Buchungen. „Reise und Buchungen löschen“ entfernt die enthaltenen Buchungen dauerhaft. Anbieter-Buchungen können bei der nächsten Synchronisation wieder erscheinen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "“Delete trip only” keeps the bookings as open bookings. “Delete trip and bookings” permanently removes the contained bookings. Provider bookings may reappear after the next sync."
+            "value": "“Delete trip only” keeps the bookings as open bookings. “Delete trip and bookings” permanently removes the contained bookings. Provider bookings may reappear after the next synchronization."
           }
         }
       }
@@ -9462,13 +9462,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud-Sync wird gestoppt…"
+            "value": "iCloud-Synchronisation wird gestoppt…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turning off iCloud sync…"
+            "value": "Turning off iCloud synchronization…"
           }
         }
       }
@@ -9478,13 +9478,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud-Sync wird gestoppt und geleert…"
+            "value": "iCloud-Synchronisation wird gestoppt und geleert…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turning off iCloud sync and wiping cloud data…"
+            "value": "Turning off iCloud synchronization and wiping cloud data…"
           }
         }
       }
@@ -9494,13 +9494,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud-Sync wird eingeschaltet…"
+            "value": "iCloud-Synchronisation wird eingeschaltet…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turning on iCloud sync…"
+            "value": "Turning on iCloud synchronization…"
           }
         }
       }
@@ -9526,13 +9526,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync stoppt auf diesem Gerät. iCloud-Daten bleiben, bis du sie leerst — bei erneutem Einschalten können sie zurückkommen."
+            "value": "Die Synchronisation stoppt auf diesem Gerät. iCloud-Daten bleiben, bis du sie leerst — bei erneutem Einschalten können sie zurückkommen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync stops on this device. iCloud data remains until you wipe it — turning sync back on may restore it."
+            "value": "Synchronization stops on this device. iCloud data remains until you wipe it — turning synchronization back on may restore it."
           }
         }
       }
@@ -9622,13 +9622,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud-Sync ist in den Einstellungen ausgeschaltet. Daten bleiben nur lokal auf diesem Gerät."
+            "value": "iCloud-Synchronisation ist in den Einstellungen ausgeschaltet. Daten bleiben nur lokal auf diesem Gerät."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud sync is turned off in Settings. Data stays local on this device only."
+            "value": "iCloud synchronization is turned off in Settings. Data stays local on this device only."
           }
         }
       }

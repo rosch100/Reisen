@@ -157,7 +157,7 @@ public enum UITestingIdentifiers {
     public static let deleteBookingMenuTitleDE = "Löschen…"
     public static let deleteTripMenuTitleDE = "Reise löschen…"
     public static let removeFromTripMenuTitleDE = "Von Reise entfernen…"
-    public static let copyConfirmationMenuTitleDE = "Buchungsnr. kopieren"
+    public static let copyConfirmationMenuTitleDE = "Buchungsnummer kopieren"
     public static let newTripMenuTitleDE = "Neue Reise…"
     public static let assignBookingsMenuTitleDE = "Buchungen zuordnen…"
     public static let editGapMenuTitleDE = "Lücke bearbeiten…"

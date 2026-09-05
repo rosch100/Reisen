@@ -60,7 +60,7 @@ import ReisenDomain
     #expect(UITestingIdentifiers.deleteBookingMenuTitleDE == "Löschen…")
     #expect(UITestingIdentifiers.deleteTripMenuTitleDE == "Reise löschen…")
     #expect(UITestingIdentifiers.removeFromTripMenuTitleDE == "Von Reise entfernen…")
-    #expect(UITestingIdentifiers.copyConfirmationMenuTitleDE == "Buchungsnr. kopieren")
+    #expect(UITestingIdentifiers.copyConfirmationMenuTitleDE == "Buchungsnummer kopieren")
     #expect(UITestingIdentifiers.newTripMenuTitleDE == "Neue Reise…")
     #expect(UITestingIdentifiers.assignBookingsMenuTitleDE == "Buchungen zuordnen…")
     #expect(UITestingIdentifiers.editGapMenuTitleDE == "Lücke bearbeiten…")
