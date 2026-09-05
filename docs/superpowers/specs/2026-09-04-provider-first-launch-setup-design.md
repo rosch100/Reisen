@@ -13,7 +13,7 @@ Nach PR #138 sind Sync-Portale beim Frischstart opt-in (aus). Die erste Nutzerak
 1. Beim Erststart erscheint eine **geführte Setup-Oberfläche** zur Provider-Auswahl.
 2. **HIG:** Sheet/Dialog-Metapher, klare Primary/Secondary, VoiceOver-Labels, keine Dead-End-Falle.
 3. **Optik:** ruhige, produktnahe Präsentation (Header + Provider-Zeilen), keine generische „AI-purple“-Optik; bestehende Voyenna-/System-Chrome nutzen.
-4. Continue aktiviert ≥1 Portal und beendet Setup; „Später“ verschiebt ohne Portale zu aktivieren.
+4. Continue bestätigt die Auswahl (inkl. 0 Portale = App ohne Provider) und beendet Setup; „Später“ verschiebt ohne completed und behält Reopen-CTA.
 5. Sidebar-/Settings-Toggles bleiben SSOT für spätere Änderungen.
 6. UITesting: Populated unterdrückt Sheet; Empty zeigt Sheet (Smoke/Identifier).
 
@@ -38,7 +38,7 @@ Nach PR #138 sind Sync-Portale beim Frischstart opt-in (aus). Die erste Nutzerak
 | Begriff | Bedeutung |
 | --- | --- |
 | **Setup** | Einmalige Erstauswahl der Sync-Provider |
-| **Continue / Weiter** | Persistiert Auswahl (≥1 aktiv), markiert Setup abgeschlossen |
+| **Continue / Weiter** | Persistiert Auswahl (auch 0 = keine Portale), markiert Setup abgeschlossen |
 | **Later / Später** | Schließt Sheet ohne Aktivierung; kein Auto-Show mehr bis manuelles Reopen |
 | **Reopen** | Empty-State-CTA „Portale wählen…“, wenn Setup nicht completed und keine Portale aktiv |
 | **setupCompleted** | UserDefaults-Flag: Weiter wurde bestätigt |
@@ -61,7 +61,7 @@ markDeferred(defaults:)
 
 applySelection(enabledIDs:syncProviderIDs:defaults:)
   setzt providerEnabledKey true für `enabledIDs`, false für übrige `syncProviderIDs`
-  (explizit, kein stiller Default)
+  (explizit, kein stiller Default; leere `enabledIDs` = alle aus)
 ```
 
 - Defaults-Quelle: `AppSettingsDefaults.current` (wie PR #138).
@@ -77,7 +77,7 @@ applySelection(enabledIDs:syncProviderIDs:defaults:)
 - Struktur:
   1. Header: SF Symbol `airplane.departure` (oder App-Icon Asset falls ohnehin Shared), Titel, ein kurzer Untertitel.
   2. Liste/Form der `ProviderID.syncProviderIDs` mit Toggle (Name = `displayName`); optional Caption wenn Native-App installiert (`settingsAppInstalled`) — gleiches Signal wie Settings.
-  3. Footer-Actions: **Weiter** (`.borderedProminent`, disabled wenn 0 gewählt) und **Später** (`.bordered` / cancel-ähnlich).
+  3. Footer-Actions: **Weiter** (`.borderedProminent`, immer aktiv — auch bei 0 gewählt) und **Später** (`.bordered` / cancel-ähnlich).
 - macOS: `.presentationSizing(.fitted)` analog anderer Sheets wo passend; sinnvolle Min-Breite.
 - iOS: Standard-Sheet; Drag-Indicator sichtbar.
 - Farben/Typo: System Semantik (`.primary` / `.secondary`); **kein** lila Gradient, kein Glow, keine Pill-Cluster.
@@ -111,11 +111,13 @@ Jede ID höchstens **ein** Element im erwarteten Tree.
 **macOS `ContentView`:**
 
 - Nach Bootstrap / onAppear: **Import-Gate** (siehe unten), dann wenn `shouldPresent` → Sheet.
-- Continue: `applySelection` → notify → `markCompleted` → Prefs-Export (CloudKit Mirror) → dismiss → `selectFirstEnabledProviderSyncIfAvailable()`.
+  Auto-Present nur hier (Startup-Gate) und über Empty-State-Reopen-CTA — **nicht** aus
+  `onProviderEnabledChange` / Settings-Toggles / `scenePhase` (sonst Sheet über Einstellungen).
+- Continue: `applySelection` (auch leer) → notify → `markCompleted` → Prefs-Export (CloudKit Mirror) → dismiss → bei ≥1 Portal `selectFirstEnabledProviderSyncIfAvailable()`.
 - Later: `markDeferred` → dismiss; Selection bleibt nil / Empty-State. (`setupDeferred` **nicht** nach CloudKit.)
 - Empty-State: wenn `!setupCompleted && enabledProviderIDs.isEmpty` → Button Reopen (neben/statt nur Disabled-Hint).
 
-**iOS `RootTabView`:** gleiches Sheet; Continue wechselt optional auf Sync-Tab wenn Provider-Sync verfügbar.
+**iOS `RootTabView`:** gleiches Sheet; Continue wechselt nur bei ≥1 Portal auf Sync-Tab.
 
 **iOS Reopen:** `SyncTab.emptyProviders` erhält denselben Reopen-CTA (`setup.providers.reopen`), der das Sheet erneut präsentiert (Akzeptanz #3 gilt macOS **und** iOS Host, Evidence macOS-XCUI + iOS Compile).
 
@@ -185,7 +187,9 @@ Prozess-Hooks: `AppSettingsDefaults.installOverride` + `UITestingLaunch.isolated
 
 1. Frische Defaults → Sheet erscheint vor sinnvoller Sync-Arbeit.
 2. Weiter mit ≥1 Provider → Portale aktiv, Sheet weg, Sync erreichbar.
-3. Später → kein Auto-Sheet mehr; Reopen-CTA im Empty-State.
-4. Bestandskunden nach #138-Migration → kein Sheet.
-5. Populated-XCUI unverändert nutzbar; Empty zeigt Setup-Sheet.
-6. Synced `setupCompleted` (CloudKit) → kein Sheet; Late-Import dismiss (iCloud-Prefs-Spec).
+3. Weiter mit 0 Providern → Setup completed, keine Portale, kein Reopen-CTA; App nutzbar.
+4. Später → kein Auto-Sheet mehr; Reopen-CTA im Empty-State.
+5. Bestandskunden nach #138-Migration → kein Sheet.
+6. Populated-XCUI unverändert nutzbar; Empty zeigt Setup-Sheet; Empty-Continue-Smoke.
+7. Synced `setupCompleted` (CloudKit) → kein Sheet; Late-Import dismiss (iCloud-Prefs-Spec).
+8. Settings-/Enable-Notify/`scenePhase` öffnen das Sheet nicht erneut.
