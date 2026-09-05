@@ -20,9 +20,9 @@ Stille Fallbacks und asymmetrische Fehlerpfade in Prefs/CloudKit/Zeit/Provider-S
 
 - Store Wipe-on-Open-Retry umbauen (ohne neue Evidence)
 - Vollständiges Zusammenlegen TripDetail mac/iOS
-- Airbnb/GYG/Billiger/Traveloka soft-Enrich (außer neuem high Residual)
-- DiagnosticLogger Encode-Drop Infra
+- Airbnb/GYG/Billiger/Traveloka soft-Enrich (außer neuem high Residual; Airbnb Catalog-IANA + Cancel-Jahr: open-gaps)
 - Token-Einbettung als Finding
+- DiagnosticLogger Encode-Drop: behoben in open-gaps (SyncLog-Fallback)
 
 ## Policies (SSOT)
 
@@ -77,19 +77,19 @@ W0 Spec → W1 Data/AppCore/Domain → W2 Provider → W3 SharedUI → W4 Shell 
 | W2-booking-deadline-diag | medium | Booking | fix | skip Diagnostic |
 | W2-check24-basket | medium | Check24 | fix | drop counter Diagnostic |
 | W3-gap-save | medium | SharedUI | fix | PersistAlert + DiagnosticLogger |
-| W3-cancel-paste | medium | SharedUI | defer | residual; no high drift this pass |
-| W3-gap-xcui | low | SharedUI | defer | PersistFailureAlert reused; kein neuer Identifier |
+| W3-cancel-paste | medium | SharedUI | wontfix | kein HIGH/MEDIUM-Drift (2026-09-05 open-gaps) |
+| W3-gap-xcui | low | SharedUI | wontfix | PersistFailureAlert reused |
 | W1-cloudkit-verify-await | medium | Data | fix | TwoDeviceVerification meldet timedOut |
 | W4-shell-parity | medium | Shell | fix | iOS persist Diagnostics; print→Logger |
 | W4-ios-booking-persist | medium | Shell | fix | r2: delete/remove Diagnostic + no try? |
-| W5-overlap | low | UI | defer | no Main-Thread evidence this pass |
+| W5-overlap | low | UI | wontfix | no Main-Thread evidence |
 | W5-flight-display-tz | medium | UI | fix | r2: wallClockUTC statt TimeZone.current |
-| defer-wipe-open | — | Data | defer | swiftdata-hybrid-cloudkit |
-| defer-macos-push | — | Platform | defer | apple-signing |
-| defer-airbnb-iana | — | Airbnb | defer | |
-| defer-boardtype-unknown | — | Data | defer | |
-| defer-diag-encode | — | Diagnostics | defer | |
-| defer-opodo-no-tdtoken | medium | Opodo | defer | missing tdToken → empty deadlines (kein GraphQL-Call) |
+| defer-wipe-open | — | Data | wontfix | Wipe+einmal Retry ausreichend; keine Evidence für mehr |
+| defer-macos-push | — | Platform | wontfix | apple-signing / Plattform |
+| defer-airbnb-iana | — | Airbnb | fix | open-gaps: Catalog Skip-Diag + Cancel-Jahr ohne Date() |
+| defer-boardtype-unknown | — | Data | wontfix | bewusstes Domain-Enum |
+| defer-diag-encode | — | Diagnostics | fix | open-gaps: SyncLog-Fallback bei Encode-Fail |
+| defer-opodo-no-tdtoken | medium | Opodo | fix | open-gaps: missing tdToken → Diagnostic.skipped |
 
 ## DoD / Stop
 

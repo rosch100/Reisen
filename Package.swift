@@ -146,7 +146,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenOpodo",
-            dependencies: ["ReisenDomain", "ReisenProviders"],
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
             path: "Sources/ReisenOpodo",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

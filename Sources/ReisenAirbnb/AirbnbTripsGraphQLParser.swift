@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenDiagnostics
 
 /// Parser for Airbnb `TripListQuery` persisted-GraphQL responses.
 ///
@@ -18,6 +19,29 @@ enum AirbnbTripsGraphQLParser {
 
         return ProviderCatalog(bookings: bookings)
     }
+
+    fileprivate static func recordCatalogTimezoneSkipped(listingTimeZone: String) {
+        let sanitized = listingTimeZone
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .prefix(64)
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .airbnb,
+                        operation: "airbnb_catalog"
+                    ),
+                    component: "AirbnbTripsGraphQLParser",
+                    phase: "timezone",
+                    event: "catalog_timezone_skipped",
+                    result: .skipped,
+                    reason: "invalid_listing_timezone_\(sanitized)",
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
+    }
 }
 
 private extension AirbnbTripNode {
@@ -28,8 +52,15 @@ private extension AirbnbTripNode {
 
             // Stay has `stayReservation` with a confirmation code used by scheduled_events.
             if let stay = details.stayReservation, let confirmationCode = stay.confirmationCode, !confirmationCode.isEmpty {
-                let hotelOffsetSeconds = TimeZone(identifier: startTime.listingTimeZone)?
-                    .secondsFromGMT(for: startTime.dateTime)
+                let hotelOffsetSeconds = AirbnbListingTimeZone.offsetSeconds(
+                    listingTimeZone: startTime.listingTimeZone,
+                    at: startTime.dateTime
+                )
+                if hotelOffsetSeconds == nil {
+                    AirbnbTripsGraphQLParser.recordCatalogTimezoneSkipped(
+                        listingTimeZone: startTime.listingTimeZone
+                    )
+                }
                 let times = TemporalFact.pair(
                     bookingType: .hotel,
                     start: startTime.dateTime,

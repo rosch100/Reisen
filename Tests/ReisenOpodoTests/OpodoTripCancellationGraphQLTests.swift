@@ -28,12 +28,14 @@ func opodoRetainedIsCancelled() {
     #expect(BookingStatus.parse(parts: ["CONTRACT", "CANCELLED"]) == .cancelled)
 }
 
-@Test("OpodoWeb extrahiert tdToken aus Detail-URL")
+@Test("OpodoWeb: tdToken aus Detail-URL; fehlendes Token ist Enrich-Skip-Gate")
 func opodoTdTokenFromExternalURL() {
     let url = OpodoWeb.tripDetailsURL(token: "ABC_TOKEN_123")
     #expect(url.hasPrefix(OpodoWeb.secureAreaURLString))
     #expect(OpodoWeb.tdToken(fromExternalURL: url) == "ABC_TOKEN_123")
+    // Ohne Token: OpodoTravelProvider überspringt GraphQL-Deadlines mit enrich_skipped/missing_td_token.
     #expect(OpodoWeb.tdToken(fromExternalURL: OpodoWeb.homepageURLString) == nil)
+    #expect(OpodoWeb.tdToken(fromExternalURL: "https://www.opodo.de/travel/secure/#tripdetails/") == nil)
 }
 
 @Test("OpodoTripCancellationGraphQLParser liest Hotel- und Flug-Storno")

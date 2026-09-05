@@ -168,12 +168,9 @@ private extension AirbnbActivityReservationDetailsParser {
         timeZone: TimeZone,
         referenceDate: Date?
     ) -> Date? {
-        let year: Int = {
-            if let referenceDate {
-                return Calendar(identifier: .gregorian).component(.year, from: referenceDate)
-            }
-            return Calendar(identifier: .gregorian).component(.year, from: Date())
-        }()
+        // Ohne Referenzjahr kein Geräte-`Date()`-Jahr erfinden (Jahr-/IANA-Kontrakt).
+        guard let referenceDate else { return nil }
+        let year = Calendar(identifier: .gregorian).component(.year, from: referenceDate)
 
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)
