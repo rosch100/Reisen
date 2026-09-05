@@ -192,7 +192,7 @@ struct MacUI {
 
     @discardableResult
     func openProviderSyncCheck24() -> XCUIElement {
-        app.typeKey("1", modifierFlags: [.command])
+        waitFor(UITestingIdentifiers.providerRow("check24")).click()
         return waitFor(UITestingIdentifiers.syncChrome)
     }
 
@@ -224,16 +224,30 @@ struct MacUI {
     }
 
     func clickAblageMenuItem(_ title: String) {
+        clickMenuItem(menuBarTitle: "Ablage", itemTitle: title)
+    }
+
+    func clickMenuItem(menuBarTitle: String, itemTitle: String) {
+        revealedMenuItem(menuBarTitle: menuBarTitle, itemTitle: itemTitle).click()
+    }
+
+    /// Öffnet das Menü und prüft `isEnabled` des Eintrags (Menü bleibt offen).
+    func menuItemEnabled(menuBarTitle: String, itemTitle: String) -> Bool {
+        revealedMenuItem(menuBarTitle: menuBarTitle, itemTitle: itemTitle).isEnabled
+    }
+
+    @discardableResult
+    private func revealedMenuItem(menuBarTitle: String, itemTitle: String) -> XCUIElement {
         app.activate()
-        let ablagemenu = app.menuBars.menuBarItems["Ablage"].firstMatch
-        XCTAssertTrue(ablagemenu.waitForExistence(timeout: 5), "Ablage-Menü fehlt")
-        ablagemenu.click()
-        let item = app.menuItems[title].firstMatch
+        let menu = app.menuBars.menuBarItems[menuBarTitle].firstMatch
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "\(menuBarTitle)-Menü fehlt")
+        menu.click()
+        let item = app.menuItems[itemTitle].firstMatch
         XCTAssertTrue(
             item.waitForExistence(timeout: 5),
-            "Menüeintrag fehlt: \(title)\n\(app.debugDescription)"
+            "Menüeintrag fehlt: \(itemTitle)\n\(app.debugDescription)"
         )
-        item.click()
+        return item
     }
 
     func createTripViaEmptyCTA(title: String) {

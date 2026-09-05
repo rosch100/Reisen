@@ -2,11 +2,16 @@ import Foundation
 import OSLog
 
 public actor DiagnosticLogger {
-    public static let shared = DiagnosticLogger()
+    public static let shared = DiagnosticLogger(forwardsPublicEvents: true)
+
+    /// Composition Root (AppCore) setzt den Empfänger — Diagnostics kennt kein Crash-Format.
+    nonisolated(unsafe) public static var notePublicEvent:
+        (@Sendable (DiagnosticEvent) -> Void)?
 
     private let fileURL: URL?
     private let debugEnabled: Bool
     private let maxQueueSize: Int
+    private let forwardsPublicEvents: Bool
     private let logger = Logger(
         subsystem: "app.voyenna.reisen",
         category: "diagnostics"
@@ -21,9 +26,11 @@ public actor DiagnosticLogger {
     public init(
         fileURL: URL? = nil,
         debugEnabled: Bool? = nil,
-        maxQueueSize: Int = 256
+        maxQueueSize: Int = 256,
+        forwardsPublicEvents: Bool = false
     ) {
         self.fileURL = fileURL
+        self.forwardsPublicEvents = forwardsPublicEvents
 #if DEBUG
         self.debugEnabled = debugEnabled
             ?? ProcessInfo.processInfo.arguments.contains("-ReisenDiagnosticsDebug")
@@ -37,6 +44,9 @@ public actor DiagnosticLogger {
         guard event.visibility == .publicDiagnostic || debugEnabled else { return }
         cleanupExpiredEventsIfNeeded(at: event.timestamp)
         let sanitized = sanitizedEvent(event)
+        if forwardsPublicEvents, sanitized.visibility == .publicDiagnostic {
+            Self.notePublicEvent?(sanitized)
+        }
         let key = RateLimitKey(event: sanitized)
         if let existing = recentEvents[key] {
             if event.timestamp.timeIntervalSince(existing.start) > Self.rateLimitWindow {

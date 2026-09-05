@@ -84,7 +84,9 @@ public final class GitHubIssueReporter {
         reporterGitHubUsername: String? = nil,
         attachments: [GitHubIssueAttachment] = [],
         fingerprintMessage: String? = nil,
-        technicalDetails: String? = nil
+        technicalDetails: String? = nil,
+        environmentCaptureLabel: String? = nil,
+        includeCompressedLog: Bool = true
     ) async throws -> GitHubCreatedIssue {
         lastReportErrorMessage = nil
         if persistedStateCorrupt {
@@ -125,7 +127,9 @@ public final class GitHubIssueReporter {
                 attributedUsername: GitHubUsername.optionalValid(reporterGitHubUsername)
             ),
             diagnostics: diagnostics,
-            technicalDetails: technicalDetails
+            technicalDetails: technicalDetails,
+            includeCompressedLog: includeCompressedLog,
+            environmentCaptureLabel: environmentCaptureLabel
         )
         let labels = kind.githubLabels
 

@@ -26,14 +26,15 @@ public enum GitHubIssueDiagnostic {
         origin: GitHubIssueReportOrigin,
         diagnostics: DeviceDiagnostics,
         technicalDetails: String? = nil,
-        includeCompressedLog: Bool = true
+        includeCompressedLog: Bool = true,
+        environmentCaptureLabel: String? = nil
     ) -> String {
         clampToGitHubAPIBodyLimit(
             """
             \(GitHubIssueMarkdown.sectionHeading("Zusammenfassung"))
             \(SecretRedactor.redact(title))
 
-            \(diagnosticTable(kind: kind, providerID: providerID, origin: origin, diagnostics: diagnostics))
+            \(diagnosticTable(kind: kind, providerID: providerID, origin: origin, diagnostics: diagnostics, environmentCaptureLabel: environmentCaptureLabel))
 
             \(GitHubIssueMarkdown.sectionHeading(kind.displayName))
             \(fencedRedacted(message))
@@ -129,9 +130,16 @@ public enum GitHubIssueDiagnostic {
         kind: GitHubIssueKind,
         providerID: ProviderID?,
         origin: GitHubIssueReportOrigin,
-        diagnostics: DeviceDiagnostics
+        diagnostics: DeviceDiagnostics,
+        environmentCaptureLabel: String? = nil
     ) -> String {
         let provider = providerID.map(\.displayName) ?? "—"
+        let captureRow: String
+        if let environmentCaptureLabel, !environmentCaptureLabel.isEmpty {
+            captureRow = "| Diagnosezeitpunkt | \(environmentCaptureLabel) |\n"
+        } else {
+            captureRow = ""
+        }
         return """
         \(GitHubIssueMarkdown.sectionHeading("Diagnose"))
         | Feld | Wert |
@@ -146,7 +154,7 @@ public enum GitHubIssueDiagnostic {
         | Sprache | \(diagnostics.locale) |
         | Zeitzone | \(diagnostics.timeZone) |
         \(diagnostics.environment.tableRows().trimmingCharacters(in: .newlines))
-        | Provider | \(provider) |
+        \(captureRow)| Provider | \(provider) |
         | Dateianhänge | \(GitHubRepository.issueAttachmentPolicyCell) |
 
         reisen-fingerprint: `\(diagnostics.fingerprint)`

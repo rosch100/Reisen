@@ -240,8 +240,12 @@ struct ContentView: View {
                         Label(L10n.string(.actionSyncAll), systemImage: "arrow.triangle.2.circlepath")
                     }
                 }
-                .help(L10n.string(.actionSyncAllHelp))
-                .disabled(store?.isSyncing == true || syncAllCandidates.isEmpty)
+                .menuEnableHelp(
+                    isEnabled: canSyncAll,
+                    enabledHelp: L10n.string(.actionSyncAllHelp),
+                    disabledHelp: L10n.string(.menuSyncAllUnavailableHelp)
+                )
+                .disabled(!canSyncAll)
 
                 Button {
                     showCreateTrip = true
@@ -382,6 +386,36 @@ struct ContentView: View {
                 \.bookingPortalOpenCommandState,
                 selectedBookingPortalCommandState
             )
+            .focusedSceneValue(\.appMenuCommandState, makeAppMenuCommandState())
+    }
+
+    private var canSyncAll: Bool {
+        AppMenuCommandAvailability.canSyncAll(
+            isSyncing: store?.isSyncing == true,
+            hasCandidates: !syncAllCandidates.isEmpty
+        )
+    }
+
+    private func makeAppMenuCommandState() -> AppMenuCommandState {
+        let tripSelected: SDTrip? = {
+            guard case .trip(let id) = selection else { return nil }
+            return trips.first(where: { $0.id == id })
+        }()
+        let canTripActions = AppMenuCommandAvailability.canPerformSingleTripActions(
+            hasFocusedTrip: tripSelected != nil,
+            selectedTripCount: selectedTripIDs.count
+        )
+        let hasAssignCandidates = tripSelected.map { trip in
+            allBookings.contains { OpenBookingMatching.isCandidate($0, for: trip) }
+        } ?? false
+        return AppMenuCommandState(
+            canSyncAll: canSyncAll,
+            canPerformSingleTripActions: canTripActions,
+            canAssignBookings: AppMenuCommandAvailability.canAssignBookings(
+                canPerformSingleTripActions: canTripActions,
+                hasOpenBookingCandidates: hasAssignCandidates
+            )
+        )
     }
 
     private func performPendingTripDeletion(_ policy: TripDeletionBookingPolicy) {

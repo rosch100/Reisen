@@ -630,13 +630,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle synchronisieren"
+            "value": "Alle aktualisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync All"
+            "value": "Refresh All"
           }
         }
       }
@@ -646,13 +646,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle aktivierten, angemeldeten Portale nacheinander synchronisieren"
+            "value": "Alle aktivierten, angemeldeten Portale nacheinander aktualisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync all enabled, signed-in portals one after another"
+            "value": "Refresh all enabled, signed-in portals one after another"
           }
         }
       }
@@ -4790,13 +4790,29 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle synchronisieren"
+            "value": "Alle aktualisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync All"
+            "value": "Refresh All"
+          }
+        }
+      }
+    },
+    "menu.sync_all_unavailable_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Portal bereit oder Synchronisation läuft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No portal ready or synchronization in progress"
           }
         }
       }
@@ -4806,13 +4822,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktuelles Portal synchronisieren"
+            "value": "Aktuelles Portal aktualisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync Current Portal"
+            "value": "Refresh Current Portal"
           }
         }
       }
@@ -7638,13 +7654,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchungen synchronisieren"
+            "value": "Buchungen aktualisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync bookings"
+            "value": "Refresh Bookings"
           }
         }
       }
@@ -7654,13 +7670,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buchungen dieses Portals jetzt synchronisieren"
+            "value": "Buchungen dieses Portals jetzt aktualisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync this portal's bookings now"
+            "value": "Refresh this portal's bookings now"
           }
         }
       }

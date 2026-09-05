@@ -65,6 +65,7 @@ Code-Spiegel: `UITestingIdentifiers.copyConfirmationMenuTitleDE` = `Buchungsnumm
 | --- | --- | --- |
 | `booking.delete_confirm_message_synced` | … Nach der nächsten Portal-Synchronisation … | … next portal synchronization … |
 | `editor.sync_overwrite_warning` | Änderungen können bei der nächsten Synchronisation überschrieben werden. | Changes may be overwritten on the next synchronization. |
+| `menu.sync_all_unavailable_help` | Kein Portal bereit oder Synchronisation läuft | No portal ready or synchronization in progress |
 | `settings.icloud.footer.default` | … Synchronisationsdaten … | … synchronization data … |
 | `settings.icloud.status.available` | … Synchronisation aktiv. | … synchronization active. |
 | `settings.icloud.status.no_account` | … Synchronisationsdaten … | … Synchronization data … |

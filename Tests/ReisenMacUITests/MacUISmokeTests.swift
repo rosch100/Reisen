@@ -561,6 +561,32 @@ final class MacUISmokeTests: XCTestCase {
         )
     }
 
+    func testEditTripMenuDisabledWithoutTripSelection() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openProviderSyncCheck24()
+        XCTAssertFalse(
+            ui.menuItemEnabled(
+                menuBarTitle: "Bearbeiten",
+                itemTitle: UITestingIdentifiers.editTripMenuTitleDE
+            ),
+            "Reise bearbeiten… muss ohne Trip-Selection disabled sein"
+        )
+    }
+
+    func testSyncCurrentMenuDisabledWithoutPortalSelection() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openSeededTrip()
+        XCTAssertFalse(
+            ui.menuItemEnabled(
+                menuBarTitle: "Voyenna",
+                itemTitle: UITestingIdentifiers.syncCurrentMenuTitleDE
+            ),
+            "Aktuelles Portal aktualisieren muss ohne Portal-Selection disabled sein"
+        )
+    }
+
     func testSelectingDisabledProviderActivatesSyncChrome() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
