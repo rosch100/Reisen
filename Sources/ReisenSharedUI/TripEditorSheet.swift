@@ -141,8 +141,9 @@ public struct TripEditorSheet: View {
         ) {
             Button(TripPeriodExpandPrompt.confirmAction) {
                 if let pendingPeriodExpand {
-                    startDate = pendingPeriodExpand.start
-                    endDate = pendingPeriodExpand.end
+                    // Proposal = GMT-Anker; DatePicker-State braucht lokale Y/M/D (R16).
+                    startDate = HotelStayDate.localPickerDate(fromStored: pendingPeriodExpand.start)
+                    endDate = HotelStayDate.localPickerDate(fromStored: pendingPeriodExpand.end)
                 }
                 persist(assignSeedOutsideWindow: true)
             }
@@ -334,7 +335,12 @@ private struct TripEditorAssignmentPreviewSection: View {
 
     private func refreshAssignableCount() {
         let bookings = allBookings.map(DomainMapper.booking(from:))
-        let draftTrip = Trip(title: "", startDate: startDate, endDate: endDate)
+        // Picker-State → GMT-Anker für TripBookingAssignment / DateWindow (R16).
+        let draftTrip = Trip(
+            title: "",
+            startDate: HotelStayDate.dateOnly(fromLocalPickerDate: startDate),
+            endDate: HotelStayDate.dateOnly(fromLocalPickerDate: endDate)
+        )
         assignableCount = TripBookingAssignment().bookingIDsToAssign(
             bookings: bookings,
             trip: draftTrip,

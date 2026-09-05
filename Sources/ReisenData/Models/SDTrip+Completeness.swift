@@ -14,7 +14,7 @@ public extension SDTrip {
 
     /// Inter-Gap-Count für Listen, nur bei aktuellen Reisen mit Lücken; sonst `nil`.
     func listGapBadgeCount(
-        calendar: Calendar = .current,
+        calendar: Calendar = HotelStayDate.calendar,
         now: Date = Date()
     ) -> Int? {
         guard endDate >= calendar.startOfDay(for: now) else { return nil }
@@ -25,7 +25,7 @@ public extension SDTrip {
     /// Einmal pro Liste: Trip-ID → Inter-Gap-Count (nur Einträge mit Badge).
     static func listGapBadgeCounts(
         for trips: [SDTrip],
-        calendar: Calendar = .current,
+        calendar: Calendar = HotelStayDate.calendar,
         now: Date = Date()
     ) -> [UUID: Int] {
         var result: [UUID: Int] = [:]
