@@ -2,7 +2,7 @@ import SwiftUI
 import ReisenDomain
 import ReisenData
 
-/// SSOT-Kontextmenüeintrag „Buchungsnr. kopieren“ (nur wenn Code gesetzt).
+/// SSOT-Kontextmenüeintrag „Buchungsnummer kopieren“ (nur wenn Code gesetzt).
 public struct BookingCopyConfirmationMenuItems: View {
     let confirmationCode: String?
 

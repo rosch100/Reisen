@@ -139,7 +139,7 @@ Legende `…`: ja = Zielstring endet auf `…`; nein = ohne.
 | `action.cancel_in_portal_menu` | Stornieren im Portal | Cancel in Portal | ja |
 | `action.cancel_in_portal` | Stornieren | Cancel | nein |
 | `action.copy_cancellation_link` | Storno-Link kopieren | Copy Cancellation Link | nein |
-| `action.copy_confirmation` | Buchungsnr. kopieren | Copy Confirmation Number | nein |
+| `action.copy_confirmation` | Buchungsnummer kopieren | Copy Confirmation Number | nein |
 | `action.copy_link` | Link kopieren | Copy Link | nein |
 | `action.check_provider_sessions` | Provider-Sitzungen prüfen | Check Provider Sessions | ja |
 | `action.remember_login` | Anmeldung merken | Remember Login | ja |
