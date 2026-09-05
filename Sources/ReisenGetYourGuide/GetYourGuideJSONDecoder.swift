@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenDiagnostics
 
 enum GetYourGuideJSONDecoder {
     static let shared: JSONDecoder = {
@@ -19,6 +20,31 @@ enum GetYourGuideJSONDecoder {
     }()
 
     static func decode<T: Decodable>(_ type: T.Type, from data: Data) -> T? {
-        try? shared.decode(type, from: data)
+        do {
+            return try shared.decode(type, from: data)
+        } catch {
+            recordDecodeSkipped(typeName: String(describing: type), error: error)
+            return nil
+        }
+    }
+
+    private static func recordDecodeSkipped(typeName: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .getYourGuide,
+                        operation: "gyg_json_decode"
+                    ),
+                    component: "GetYourGuideJSONDecoder",
+                    phase: "decode",
+                    event: "json_decode_skipped",
+                    result: .skipped,
+                    reason: "\(typeName):\(String(describing: type(of: error)))",
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }

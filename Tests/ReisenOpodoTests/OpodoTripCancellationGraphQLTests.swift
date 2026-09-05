@@ -38,6 +38,31 @@ func opodoTdTokenFromExternalURL() {
     #expect(OpodoWeb.tdToken(fromExternalURL: "https://www.opodo.de/travel/secure/#tripdetails/") == nil)
 }
 
+@Test("OpodoTripCancellationGraphQLParser: Epoch freeCancellationLimit ohne erfundenen Offset")
+func opodoCancellationGraphQLEpochFreeLimitHasNilOffset() throws {
+    let json = """
+    {
+      "data": {
+        "getTrip": {
+          "trip": {
+            "id": "flight-1",
+            "itinerary": {
+              "freeCancellationLimit": { "limitTime": 1785566400000, "hoursApart": 48 }
+            },
+            "accommodationBooking": null,
+            "accommodationProductBooking": null
+          }
+        }
+      }
+    }
+    """
+    let deadlines = try OpodoTripCancellationGraphQLParser().parseDeadlines(from: json)
+    let free = try #require(deadlines.first { $0.isFreeCancellation })
+    #expect(free.policyText == "Opodo freeCancellationLimit")
+    #expect(free.hotelOffsetSeconds == nil)
+    #expect(free.deadlineAt == Date(timeIntervalSince1970: 1_785_566_400))
+}
+
 @Test("OpodoTripCancellationGraphQLParser liest Hotel- und Flug-Storno")
 func opodoCancellationGraphQLParsesHotelAndFlight() throws {
     let json = """

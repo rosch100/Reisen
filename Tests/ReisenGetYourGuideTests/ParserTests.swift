@@ -177,6 +177,14 @@ func gygProviderErrorSessionNotEstablished() {
     #expect(GetYourGuideProviderError.from(.challenge) == .cloudflareChallenge)
 }
 
+@Test("GetYourGuideJSONDecoder: ungültiges JSON → nil (kein stiller Decode)")
+func gygJSONDecoderInvalidPayloadReturnsNil() {
+    let data = Data("{not-json".utf8)
+    struct Probe: Decodable { let id: String }
+    #expect(GetYourGuideJSONDecoder.decode(Probe.self, from: data) == nil)
+}
+
+
 @Test("GetYourGuideBookingSummaryParser mappt Treffpunkt, Fristen und Teilnehmer ohne PII-Namen")
 func gygBookingSummaryParsesEnrichment() throws {
     let json = try GetYourGuideResearchFixture.json(named: "gyg_bookingSummary_redacted.json")

@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import ReisenProviders
 
 extension WKWebView {
     func evaluateJavaScriptStringAsync(_ javaScript: String) async throws -> String? {
@@ -42,13 +43,11 @@ extension WKWebView {
             }
             const response = await fetch(url, init);
             const text = await response.text();
-            if (!response.ok) {
-              throw new Error('HTTP ' + response.status + ': ' + text.slice(0, 180));
-            }
-            if (!text) {
-              throw new Error('empty body');
-            }
-            return text;
+            return {
+              ok: response.ok,
+              status: response.status,
+              text: text
+            };
             """,
             arguments: [
                 "url": url.absoluteString,
@@ -58,8 +57,25 @@ extension WKWebView {
             ],
             contentWorld: .page
         )
-        guard let text = result as? String, !text.isEmpty else {
+        guard let payload = result as? [String: Any] else {
             throw BookingComProviderError.catalogNotFound
+        }
+        let ok: Bool = {
+            if let value = payload["ok"] as? Bool { return value }
+            if let number = payload["ok"] as? NSNumber { return number.boolValue }
+            return false
+        }()
+        let status: Int = {
+            if let value = payload["status"] as? Int { return value }
+            if let number = payload["status"] as? NSNumber { return number.intValue }
+            return -1
+        }()
+        let text = (payload["text"] as? String) ?? ""
+        guard ok else {
+            throw AuthenticatedFetchError.httpStatus(status)
+        }
+        guard !text.isEmpty else {
+            throw AuthenticatedFetchError.emptyBody
         }
         return text
     }

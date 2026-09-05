@@ -170,7 +170,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenGetYourGuide",
-            dependencies: ["ReisenDomain", "ReisenProviders"],
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
             path: "Sources/ReisenGetYourGuide",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

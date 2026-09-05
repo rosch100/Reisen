@@ -161,13 +161,18 @@ func activityListHTMLWithoutBookingLinksIsEmptyCatalog() throws {
     #expect(parsed.bookings.isEmpty)
 }
 
-@Test("ActivityListParser: HTML ohne Storno-Fristen liefert leere Deadlines")
-func activityListHTMLWithoutCancellationDeadlinesIsEmpty() throws {
-    let parsed = try ActivityListParser().parseActivityListHTML(
-        #"<html><body><a href="/hotel/booking/1">Hotel</a></body></html>"#
-    )
+@Test("ActivityListParser: HTML-Storno-Datum ohne Offset → keine Deadlines")
+func activityListHTMLCancellationWithoutOffsetIsNotPersisted() throws {
+    let html = #"""
+    <html><body>
+    <a href="/hotel/booking/1">Hotel 01.06.2026 – 05.06.2026</a>
+    <p>Kostenlose Stornierung bis 15.05.2026</p>
+    </body></html>
+    """#
+    let parsed = try ActivityListParser().parseActivityListHTML(html)
     #expect(parsed.cancellationDeadlines.isEmpty)
 }
+
 
 @Test("ActivityListParser: HTML-Link ohne Datum-Fenster wird gedroppt, kein Throw")
 func activityListHTMLBookingWindowDropDoesNotThrow() throws {

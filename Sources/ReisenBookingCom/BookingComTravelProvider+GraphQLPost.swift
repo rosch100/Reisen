@@ -26,6 +26,8 @@ extension BookingComTravelProvider {
                 headers: headers,
                 body: body
             )
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw BookingComProviderError.sessionNotEstablished
         } catch {
             return try await webView.fetchAuthenticatedText(
                 url: BookingComGraphQLQueries.graphqlURL,

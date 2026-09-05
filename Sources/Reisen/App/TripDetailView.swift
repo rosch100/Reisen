@@ -1255,7 +1255,17 @@ private struct BookingRow: View {
             ].joined(separator: "\n")
 
         case .activity, .other:
-            return "\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))"
+            let start = Formatting.formatOrtszeit(
+                booking.startAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: booking.resolvedHotelTimeZone
+            )
+            let end = Formatting.formatOrtszeit(
+                booking.endAt,
+                dateFormat: "d.M. HH:mm",
+                timeZone: booking.resolvedHotelTimeZone
+            )
+            return "\(start) – \(end)"
         }
     }
 
@@ -1326,7 +1336,17 @@ private struct BookingRow: View {
         if booking.bookingType.usesFlightLikeSchedule {
             return bookingTimeCopyText()
         }
-        return "\(booking.startAt.formatted(date: .abbreviated, time: .omitted)) – \(booking.endAt.formatted(date: .abbreviated, time: .omitted))"
+        let start = Formatting.formatOrtszeit(
+            booking.startAt,
+            dateFormat: "d.M.yyyy",
+            timeZone: booking.resolvedHotelTimeZone
+        )
+        let end = Formatting.formatOrtszeit(
+            booking.endAt,
+            dateFormat: "d.M.yyyy",
+            timeZone: booking.resolvedHotelTimeZone
+        )
+        return "\(start) – \(end)"
     }
 
     private func bookingFullCopyText(now: Date) -> String {

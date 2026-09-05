@@ -39,7 +39,8 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
         try await ensureOnAirbnbOrigin(using: webView)
 
         onProgress?("Lade Trips (Airbnb)…")
-        let jsonText = try await webView.airbnbFetchTextAsync(
+        let jsonText = try await fetchAirbnbText(
+            webView: webView,
             url: AirbnbAPI.tripListQueryURL(),
             headers: graphqlHeaders(referer: loginURL.absoluteString)
         )
@@ -61,7 +62,8 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
 
         onProgress?("Lade Trip-Details (Airbnb)…")
         let relayTripID = try encodeTripRelayID(numericTripID)
-        let tripDetailsText = try await webView.airbnbFetchTextAsync(
+        let tripDetailsText = try await fetchAirbnbText(
+            webView: webView,
             url: AirbnbAPI.tripDetailsQueryURL(relayTripIDBase64: relayTripID),
             headers: graphqlHeaders(referer: loginURL.absoluteString)
         )
@@ -87,7 +89,8 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
             schedulableType: schedulableType,
             confirmationCode: confirmationCode
         )
-        let stayDetailsText = try await webView.airbnbFetchTextAsync(
+        let stayDetailsText = try await fetchAirbnbText(
+            webView: webView,
             url: stayDetailsURL,
             headers: reservationOverviewHeaders(referer: loginURL.absoluteString)
         )
@@ -178,7 +181,8 @@ private extension AirbnbTravelProvider {
             schedulableType: schedulableType,
             confirmationCode: confirmationCode
         )
-        let detailsText = try await webView.airbnbFetchTextAsync(
+        let detailsText = try await fetchAirbnbText(
+            webView: webView,
             url: detailsURL,
             headers: reservationOverviewHeaders(referer: loginURL.absoluteString)
         )
@@ -286,9 +290,17 @@ private extension AirbnbTravelProvider {
         }
         return data.base64EncodedString()
     }
-}
 
-private extension AirbnbTravelProvider {
-    // Intentionally empty: we reuse `ReisenDomain.RepositoryError`.
+    func fetchAirbnbText(
+        webView: WKWebView,
+        url: URL,
+        headers: [String: String]
+    ) async throws -> String {
+        do {
+            return try await webView.airbnbFetchTextAsync(url: url, headers: headers)
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw AirbnbProviderError.sessionNotEstablished
+        }
+    }
 }
 
