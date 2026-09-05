@@ -83,15 +83,19 @@ public final class BilligerMietwagenTravelProvider: TravelProvider, TravelProvid
         contentType: String? = nil,
         body: Data? = nil
     ) async throws -> String {
-        try await webView.fetchAuthenticatedText(
-            url: url,
-            method: method,
-            accept: "application/json",
-            referer: referer,
-            contentType: contentType,
-            body: body,
-            headers: headers
-        )
+        do {
+            return try await webView.fetchAuthenticatedText(
+                url: url,
+                method: method,
+                accept: "application/json",
+                referer: referer,
+                contentType: contentType,
+                body: body,
+                headers: headers
+            )
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw BilligerMietwagenProviderError.sessionNotAuthenticated
+        }
     }
 
     func postJSON(

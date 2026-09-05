@@ -42,6 +42,8 @@ extension BookingComTravelProvider {
                 headers: [:],
                 timeoutSeconds: 60
             )
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw BookingComProviderError.sessionNotEstablished
         } catch {
             throw BookingComProviderError.catalogNotFound
         }

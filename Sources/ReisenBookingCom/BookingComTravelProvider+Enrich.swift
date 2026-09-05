@@ -1,6 +1,7 @@
 import Foundation
 import ReisenDomain
 import ReisenProviders
+import ReisenDiagnostics
 
 @MainActor
 extension BookingComTravelProvider {
@@ -40,7 +41,11 @@ extension BookingComTravelProvider {
             return emptyEnrichment(bookingType: .hotel)
         }
         let html = try await loadHotelConfirmationHTML(using: webView, url: confirmationURL)
-        let deadlines = BookingComCancellationDeadlineParser().parseDeadlines(
+        let parser = BookingComCancellationDeadlineParser()
+        if ref.hotelOffsetSeconds == nil, parser.hasFeeScheduleMarkup(html) {
+            Self.recordHotelDeadlineSkipped(reason: "missing_hotel_offset")
+        }
+        let deadlines = parser.parseDeadlines(
             from: html,
             hotelOffsetSeconds: ref.hotelOffsetSeconds
         )
@@ -56,6 +61,26 @@ extension BookingComTravelProvider {
                 guestHints: guestHints
             )
         )
+    }
+
+    private static func recordHotelDeadlineSkipped(reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .booking,
+                        operation: "booking_com_enrich_hotel"
+                    ),
+                    component: "BookingComTravelProvider",
+                    phase: "deadline",
+                    event: "deadline_skipped",
+                    result: .skipped,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 
     private func emptyEnrichment(bookingType: BookingType) -> ProviderBookingEnrichment {

@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenDiagnostics
 
 /// Verpflegung und Zimmerkategorie aus dem Rate-/Offer-JSON (Objekt mit `mealType`, nicht Seiten-First-Match).
 enum Check24HotelOfferFactsParser {
@@ -35,9 +36,15 @@ enum Check24HotelOfferFactsParser {
             from: html,
             containingKey: containingKey
         ),
-            let data = json.data(using: .utf8),
-            let dto = try? JSONDecoder().decode(OfferDTO.self, from: data)
+            let data = json.data(using: .utf8)
         else {
+            return nil
+        }
+        let dto: OfferDTO
+        do {
+            dto = try JSONDecoder().decode(OfferDTO.self, from: data)
+        } catch {
+            recordOfferDecodeSkipped(error: error)
             return nil
         }
         let board = resolveBoard(mealType: dto.mealType, mealTypeLabel: dto.mealTypeLabel)
@@ -48,6 +55,26 @@ enum Check24HotelOfferFactsParser {
             includedBreakfast: board.includedBreakfast,
             roomCategory: roomCategory
         )
+    }
+
+    private static func recordOfferDecodeSkipped(error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .check24,
+                        operation: "check24_enrich_hotel"
+                    ),
+                    component: "Check24HotelOfferFactsParser",
+                    phase: "offer_facts",
+                    event: "offer_facts_decode_skipped",
+                    result: .skipped,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 
     private static func resolveBoard(mealType: String?, mealTypeLabel: String?) -> BookingBoardType {
