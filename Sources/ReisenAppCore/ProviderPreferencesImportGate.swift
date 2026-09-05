@@ -24,6 +24,13 @@ public enum PrefsStartupGateResult: Equatable, Sendable {
 public enum ProviderPreferencesImportGate {
     public static let defaultTimeout: Duration = .seconds(8)
 
+    /// Test-only: static Gate-Flags zwischen Suites zurücksetzen (Shared MainActor-State).
+    static func resetGateStateForTests() {
+        isExporting = false
+        isApplyingRemote = false
+        suppressExportsAfterImportNotify = false
+    }
+
     private enum PoisonClearResult {
         case notNeeded
         case cleared

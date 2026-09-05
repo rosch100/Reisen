@@ -1,13 +1,17 @@
 import Testing
 import Foundation
 import SwiftData
-import ReisenAppCore
+@testable import ReisenAppCore
 import ReisenData
 import ReisenDomain
 
 @MainActor
 @Suite("ProviderPreferencesImportGate")
 struct ProviderPreferencesImportGateTests {
+    init() {
+        ProviderPreferencesImportGate.resetGateStateForTests()
+    }
+
     @Test("test host skips CloudKit wait")
     func skipWaitOnTestHost() async throws {
         #expect(ProviderPreferencesImportGate.shouldSkipCloudKitWait)
@@ -68,10 +72,8 @@ struct ProviderPreferencesImportGateTests {
             enabledProviderIDs: [.check24]
         ).apply(to: suite)
 
-        ProviderPreferencesImportGate.exportFromDefaults(
-            context: container.mainContext,
-            defaults: suite
-        )
+        // Mirror direkt — `exportFromDefaults` skippt unter UITesting und teilt Suppress-State.
+        #expect(try ProviderPreferencesMirror.export(from: suite, into: container.mainContext))
         #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) != nil)
 
         if let existing = try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) {
