@@ -12,6 +12,13 @@ func airbnbHostMatchingIncludesInternationalTLDs() {
     #expect(!AirbnbTravelProvider.isAirbnbHost("phishing.com"))
 }
 
+@Test("AirbnbProviderError: fehlende Session")
+func airbnbProviderErrorSessionNotEstablished() {
+    let error = AirbnbProviderError.sessionNotEstablished
+    #expect(error.errorDescription?.localizedCaseInsensitiveContains("session") == true)
+}
+
+
 @Test("AirbnbListingTimeZone: ungültige IANA → nil Offset")
 func airbnbInvalidListingTimeZoneYieldsNilOffset() {
     let date = Date(timeIntervalSince1970: 1_780_000_000)

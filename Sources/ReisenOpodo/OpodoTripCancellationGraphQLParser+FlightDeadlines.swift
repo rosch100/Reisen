@@ -30,7 +30,7 @@ extension OpodoTripCancellationGraphQLParser {
                     policyText: "Opodo freeCancellationLimit",
                     isStrict: true,
                     isFreeCancellation: true,
-                    hotelOffsetSeconds: 0
+                    hotelOffsetSeconds: nil
                 )
             )
         }

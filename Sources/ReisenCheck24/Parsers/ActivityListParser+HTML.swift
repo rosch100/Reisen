@@ -69,29 +69,10 @@ extension ActivityListParser {
     }
 
     func parseCancellationDeadlines(from html: String) throws -> [ParsedCancellationDeadline] {
-        let ns = html as NSString
-        let pattern = #"(?is)storn[^\d]{0,120}((\d{2})\.(\d{2})\.(\d{4}))"#
-        let regex = try NSRegularExpression(pattern: pattern, options: [])
-        let fullRange = NSRange(location: 0, length: ns.length)
-        let matches = regex.matches(in: html, options: [], range: fullRange)
-
-        if matches.isEmpty {
-            throw Check24ParseError.noCancellationDeadlineFound
-        }
-
-        return matches.compactMap { match in
-            guard match.numberOfRanges >= 2 else { return nil }
-            let dateString = ns.substring(with: match.range(at: 1))
-            guard let date = HotelStayDate.parseGerman(dateString) else { return nil }
-            return ParsedCancellationDeadline(
-                deadlineAt: date,
-                policyText: nil,
-                isStrict: true,
-                isFreeCancellation: false,
-                hotelOffsetSeconds: nil,
-                cancellationFeeAmount: nil
-            )
-        }
+        // Katalog-HTML liefert keine Stay-Offset/IANA — Fristen hier nicht mit nil Offset persistieren
+        // (kein Offset erfinden). Enrich-Pfade mit Offset bleiben maßgeblich.
+        _ = html
+        return []
     }
 
     private func bookingType(from href: String) -> BookingType {

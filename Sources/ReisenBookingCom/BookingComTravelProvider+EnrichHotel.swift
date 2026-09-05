@@ -18,8 +18,10 @@ extension BookingComTravelProvider {
             if Self.looksLikeHotelConfirmation(text) {
                 return text
             }
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw BookingComProviderError.sessionNotEstablished
         } catch {
-            // Navigation-Fallback unten.
+            // Navigation-Fallback unten (nur Non-Auth).
         }
 
         try await NavigationAwaiter().load(url, in: webView)
