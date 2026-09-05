@@ -132,9 +132,19 @@ public struct BookingEditorDraft: Equatable, Sendable {
         prefillEnd: Date? = nil,
         now: Date = Date()
     ) -> BookingEditorDraft {
-        let start = prefillStart ?? max(now, tripStartDate)
-        let computedEnd = Calendar.current.date(byAdding: .day, value: 3, to: start) ?? start
-        let end = max(prefillEnd ?? computedEnd, start)
+        // Trip-/Gap-Daten sind HotelStayDate-GMT-Anker; DatePicker braucht lokale Y/M/D (R15).
+        let calendar = Calendar.current
+        let tripPicker = HotelStayDate.localPickerDate(fromStored: tripStartDate, calendar: calendar)
+        let prefillStartPicker = prefillStart.map {
+            HotelStayDate.localPickerDate(fromStored: $0, calendar: calendar)
+        }
+        let prefillEndPicker = prefillEnd.map {
+            HotelStayDate.localPickerDate(fromStored: $0, calendar: calendar)
+        }
+        let todayPicker = calendar.startOfDay(for: now)
+        let start = prefillStartPicker ?? max(todayPicker, tripPicker)
+        let computedEnd = calendar.date(byAdding: .day, value: 3, to: start) ?? start
+        let end = max(prefillEndPicker ?? computedEnd, start)
         return BookingEditorDraft(
             bookingID: nil,
             provider: .manual,
@@ -179,7 +189,17 @@ public struct BookingEditorDraft: Equatable, Sendable {
 
     /// Editor-Felder aus einer Domain-Buchung — SSOT für `fromExisting` und Paste-Import-Prefill.
     public static func fromDomain(_ booking: Booking) -> BookingEditorDraft {
-        BookingEditorDraft(
+        let startAt: Date
+        let endAt: Date
+        if booking.bookingType == .hotel {
+            // Hotel dates are GMT anchors; DatePicker needs local civil midnights.
+            startAt = HotelStayDate.localPickerDate(fromStored: booking.startAt)
+            endAt = HotelStayDate.localPickerDate(fromStored: booking.endAt)
+        } else {
+            startAt = booking.startAt
+            endAt = booking.endAt
+        }
+        return BookingEditorDraft(
             bookingID: booking.id,
             provider: booking.provider,
             bookingType: booking.bookingType,
@@ -188,8 +208,8 @@ public struct BookingEditorDraft: Equatable, Sendable {
             confirmationCode: booking.confirmationCode ?? "",
             externalUrl: booking.externalUrl ?? "",
             cancellationUrl: booking.cancellationUrl ?? "",
-            startAt: booking.startAt,
-            endAt: booking.endAt,
+            startAt: startAt,
+            endAt: endAt,
             locationFrom: booking.locationFrom ?? "",
             locationTo: booking.locationTo ?? "",
             locationFromAddress: booking.locationFromAddress ?? "",

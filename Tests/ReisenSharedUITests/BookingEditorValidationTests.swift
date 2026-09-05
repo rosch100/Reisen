@@ -49,3 +49,19 @@ import ReisenSharedUI
     #expect(BookingEditorDraft.preservedInternalOffset(from: "", existing: 7_200) == 7_200)
     #expect(BookingEditorDraft.preservedInternalOffset(from: "bad", existing: nil) == nil)
 }
+
+@Test("createDefault: Trip-GMT-Anker → Picker ohne West-of-GMT-Tages-Shift")
+func bookingEditorCreateDefaultMapsTripAnchorToLocalPicker() {
+    let tripStart = HotelStayDate.dateOnly(year: 2030, month: 6, day: 15)
+    let tripEnd = HotelStayDate.dateOnly(year: 2030, month: 6, day: 18)
+    // now vor Trip → start = tripStart (als Picker-Wert)
+    let now = HotelStayDate.dateOnly(year: 2030, month: 1, day: 1)
+    let draft = BookingEditorDraft.createDefault(
+        tripStartDate: tripStart,
+        prefillStart: tripStart,
+        prefillEnd: tripEnd,
+        now: now
+    )
+    #expect(HotelStayDate.dateOnly(fromLocalPickerDate: draft.startAt) == tripStart)
+    #expect(HotelStayDate.dateOnly(fromLocalPickerDate: draft.endAt) == tripEnd)
+}

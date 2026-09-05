@@ -65,6 +65,41 @@ func hotelStayDateFromLocalPickerPreservesCivilDay() {
     #expect(stored == HotelStayDate.dateOnly(year: 2026, month: 8, day: 11))
 }
 
+@Test("localPickerDate Round-Trip Los Angeles und Berlin erhält GMT-Anker")
+func hotelStayDateLocalPickerRoundTripLosAngelesAndBerlin() {
+    let stored = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+
+    var losAngeles = Calendar(identifier: .gregorian)
+    losAngeles.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+    let laPicker = HotelStayDate.localPickerDate(fromStored: stored, calendar: losAngeles)
+    #expect(
+        HotelStayDate.dateOnly(fromLocalPickerDate: laPicker, calendar: losAngeles) == stored
+    )
+
+    var berlin = Calendar(identifier: .gregorian)
+    berlin.timeZone = TimeZone(identifier: "Europe/Berlin")!
+    let berlinPicker = HotelStayDate.localPickerDate(fromStored: stored, calendar: berlin)
+    #expect(
+        HotelStayDate.dateOnly(fromLocalPickerDate: berlinPicker, calendar: berlin) == stored
+    )
+}
+
+@Test("West of GMT: open→save ohne Edit verschiebt Kalendertag nicht")
+func hotelStayDateWestOfGMTOpenSaveDoesNotShiftDay() {
+    let stored = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    var west = Calendar(identifier: .gregorian)
+    west.timeZone = TimeZone(secondsFromGMT: -8 * 3600)!
+
+    // Ohne Inverse: DatePicker an GMT-Anker binden und speichern verschiebt den Tag.
+    #expect(
+        HotelStayDate.dateOnly(fromLocalPickerDate: stored, calendar: west)
+            == HotelStayDate.dateOnly(year: 2026, month: 9, day: 4)
+    )
+
+    let picker = HotelStayDate.localPickerDate(fromStored: stored, calendar: west)
+    #expect(HotelStayDate.dateOnly(fromLocalPickerDate: picker, calendar: west) == stored)
+}
+
 @Test("BookingTimeNormalizer kanonisiert Hotels immer auf Date-only (auch wenn schon normalized)")
 func bookingTimeNormalizerAlwaysCanonicalizesHotelDates() {
     let hotelTZ = TimeZone(secondsFromGMT: 7 * 3600)!
