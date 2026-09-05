@@ -97,21 +97,49 @@ func bookingTimeNormalizerNormalizesTrainWithOffsets() {
     #expect(normalized.timesNormalized == true)
 }
 
-@Test("BookingTimeNormalizer lässt train ohne Offsets unverändert")
-func bookingTimeNormalizerLeavesTrainWithoutOffsetsUnchanged() {
+@Test("BookingTimeNormalizer propagiert Flug-Abflug-Offset auf Deadlines")
+func bookingTimeNormalizerPropagatesFlightDepartureOffsetToDeadlines() {
     let rawStartAt = Date(timeIntervalSince1970: 1_780_000_000)
     let rawEndAt = Date(timeIntervalSince1970: 1_780_010_000)
+    let rawDeadlineAt = Date(timeIntervalSince1970: 1_780_020_000)
+
+    let deadline = CancellationDeadline(
+        deadlineAt: rawDeadlineAt,
+        policyText: "Free cancel",
+        isStrict: true,
+        isFreeCancellation: true,
+        hotelOffsetSeconds: nil
+    )
 
     var booking = Booking(
-        provider: .manual,
-        bookingType: .train,
+        provider: .booking,
+        bookingType: .flight,
         startAt: rawStartAt,
-        endAt: rawEndAt
+        endAt: rawEndAt,
+        flightDepartureOffsetSeconds: 7 * 3600,
+        flightArrivalOffsetSeconds: 8 * 3600,
+        cancellationDeadlines: [deadline]
     )
     booking.timesNormalized = false
 
     let normalized = BookingTimeNormalizer().normalizePendingIfPossible(booking)
-    #expect(normalized.startAt == rawStartAt)
-    #expect(normalized.endAt == rawEndAt)
-    #expect(normalized.timesNormalized != true)
+    #expect(normalized.cancellationDeadlines.first?.hotelOffsetSeconds == 7 * 3600)
+}
+
+@Test("BookingTimeNormalizer belässt Deadline-Offset nil bei Flug ohne Offsets")
+func bookingTimeNormalizerLeavesFlightDeadlineOffsetNilWithoutFlightOffsets() {
+    let deadline = CancellationDeadline(
+        deadlineAt: Date(timeIntervalSince1970: 1_780_020_000),
+        hotelOffsetSeconds: nil
+    )
+    var booking = Booking(
+        provider: .booking,
+        bookingType: .flight,
+        startAt: Date(timeIntervalSince1970: 1_780_000_000),
+        endAt: Date(timeIntervalSince1970: 1_780_010_000),
+        cancellationDeadlines: [deadline]
+    )
+    booking.timesNormalized = false
+    let normalized = BookingTimeNormalizer().normalizePendingIfPossible(booking)
+    #expect(normalized.cancellationDeadlines.first?.hotelOffsetSeconds == nil)
 }

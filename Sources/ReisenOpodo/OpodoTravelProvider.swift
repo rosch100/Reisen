@@ -76,10 +76,15 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
         }
 
         onProgress?("Lade Flug-Passagiere & Gepäck…")
-        let passengers = try await OpodoFlightPassengersGraphQL.fetchPassengersAndBaggage(
-            token: token,
-            using: webView
-        )
+        let passengers: [BookingPassenger]
+        do {
+            passengers = try await OpodoFlightPassengersGraphQL.fetchPassengersAndBaggage(
+                token: token,
+                using: webView
+            )
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw OpodoProviderError.sessionNotEstablished
+        }
 
         // Kompatibilität: bestehende UI/Editor erwartet aktuell `rateDetails.baggageInfoRaw`.
         let baggageInfoRaw = BaggageInfoFormatter.baggageInfoRaw(passengers: passengers)

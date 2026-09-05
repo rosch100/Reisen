@@ -212,6 +212,8 @@ func airbnbActivityReservationDetailsParsesEnrichmentFields() throws {
         )
     )
     #expect(abs(deadline.deadlineAt.timeIntervalSince(expectedDeadline)) < 0.01)
+    let jakarta = try #require(TimeZone(identifier: "Asia/Jakarta"))
+    #expect(deadline.hotelOffsetSeconds == jakarta.secondsFromGMT(for: deadline.deadlineAt))
 }
 
 @Test("AirbnbActivityReservationDetailsParser ignoriert nicht-EN Cancel-Policy-Text")

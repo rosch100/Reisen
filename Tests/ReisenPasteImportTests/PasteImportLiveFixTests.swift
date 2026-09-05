@@ -250,5 +250,5 @@ private func ticketClock(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ m
     parts.hour = hour
     parts.minute = minute
     parts.second = 0
-    return Calendar.current.date(from: parts)!
+    return HotelStayDate.calendar.date(from: parts)!
 }

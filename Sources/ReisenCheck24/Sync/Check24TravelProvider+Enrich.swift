@@ -54,6 +54,7 @@ extension Check24TravelProvider {
         let stay = HotelCheckInOutParser().parse(from: snapshot.html)
             .merging(place: Check24HotelInfoParser.parse(from: snapshot.html))
         var passengers: [BookingPassenger]? = nil
+        var baggageSoftFailed = false
         if ref.bookingType == .flight {
             let parser = Check24FlightPassengersAndLuggageParser()
             let guestNames = parser.guestNames(from: snapshot.html)
@@ -70,6 +71,8 @@ extension Check24TravelProvider {
                         baggageAllowances: baggage
                     )
                     passengers = built.isEmpty ? nil : built
+                } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+                    throw Check24ProviderError.sessionNotEstablished
                 } catch {
                     await recordDiagnosticPhase(
                         "enrichment",
@@ -79,6 +82,7 @@ extension Check24TravelProvider {
                         reason: error.localizedDescription
                     )
                     passengers = nil
+                    baggageSoftFailed = true
                 }
             }
         }
@@ -112,14 +116,20 @@ extension Check24TravelProvider {
                 guestHints: hints
             )
         )
+        let completionReason: String?
+        if baggageSoftFailed {
+            completionReason = "baggage_failed"
+        } else if ref.bookingType == .hotel {
+            completionReason = hotelDetailCompletionReason(stay: stay, details: details)
+        } else {
+            completionReason = nil
+        }
         await recordDiagnosticPhase(
             "enrichment",
             event: "completed",
-            result: .succeeded,
+            result: baggageSoftFailed ? .skipped : .succeeded,
             url: url,
-            reason: ref.bookingType == .hotel
-                ? hotelDetailCompletionReason(stay: stay, details: details)
-                : nil
+            reason: completionReason
         )
         return enrichment
     }

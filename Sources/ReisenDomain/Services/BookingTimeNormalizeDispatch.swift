@@ -8,7 +8,6 @@ public enum BookingTimeNormalizeDispatch {
         guard booking.bookingType.usesFlightLikeSchedule else {
             return booking
         }
-        guard booking.timesNormalized != true else { return booking }
         return BookingFlightTimeNormalizer.normalize(booking)
     }
 }

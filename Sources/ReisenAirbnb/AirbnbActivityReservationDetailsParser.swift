@@ -101,17 +101,17 @@ private extension AirbnbActivityReservationDetailsParser {
 
         return [
             CancellationDeadline(
-                deadlineAt: deadlineAt,
+                deadlineAt: deadlineAt.date,
                 policyText: policyText,
                 isStrict: true,
                 isFreeCancellation: isFree,
-                hotelOffsetSeconds: nil
+                hotelOffsetSeconds: deadlineAt.timeZone.secondsFromGMT(for: deadlineAt.date)
             )
         ]
     }
 
     /// e.g. EN: "Get a full refund if you cancel by 9 Aug, 6:00 pm (WIB)."
-    static func parseCancelByDate(from text: String, referenceDate: Date?) -> Date? {
+    static func parseCancelByDate(from text: String, referenceDate: Date?) -> (date: Date, timeZone: TimeZone)? {
         let normalized = normalizeCancelPolicyText(text)
         return parseEnglishCancelByDate(from: normalized, referenceDate: referenceDate)
     }
@@ -122,7 +122,7 @@ private extension AirbnbActivityReservationDetailsParser {
             .replacingOccurrences(of: "\u{202F}", with: " ")
     }
 
-    static func parseEnglishCancelByDate(from normalized: String, referenceDate: Date?) -> Date? {
+    static func parseEnglishCancelByDate(from normalized: String, referenceDate: Date?) -> (date: Date, timeZone: TimeZone)? {
         let pattern =
             #"(?i)cancel by\s+(\d{1,2})\s+([A-Za-z]{3}),?\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*\(([A-Za-z]+)\)"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
@@ -150,14 +150,17 @@ private extension AirbnbActivityReservationDetailsParser {
         var hour = hour12 % 12
         if ampm == "pm" { hour += 12 }
 
-        return cancelDeadlineDate(
+        guard let date = cancelDeadlineDate(
             day: day,
             month: month,
             hour: hour,
             minute: minute,
             timeZone: timeZone,
             referenceDate: referenceDate
-        )
+        ) else {
+            return nil
+        }
+        return (date, timeZone)
     }
 
     static func cancelDeadlineDate(

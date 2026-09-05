@@ -26,10 +26,11 @@ enum PasteImportTicketDate {
     }
 
     private static func local(_ text: String) -> Date? {
-        let calendar = Calendar.current
+        // Wall-Clock ohne Offset: HotelStayDate-SSOT (GMT), kein Geräte-`Calendar.current`.
+        let calendar = HotelStayDate.calendar
         for formatter in formatters {
             formatter.calendar = calendar
-            formatter.timeZone = calendar.timeZone
+            formatter.timeZone = HotelStayDate.timeZone
             if let date = formatter.date(from: text) { return date }
         }
         return nil
