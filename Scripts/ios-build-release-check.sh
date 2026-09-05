@@ -8,8 +8,8 @@ RELEASE_DESTINATION='generic/platform=iOS Simulator'
 
 reisen_ios_release_check_self_test() {
   local script="$ROOT/Scripts/ios-build-release-check.sh"
-  grep -Fq "generic/platform=iOS Simulator" "$script"
-  grep -Fq 'RELEASE_DESTINATION=' "$script"
+  # Exact top-level destination (not self-test body alone).
+  grep -Fqx "RELEASE_DESTINATION='generic/platform=iOS Simulator'" "$script"
   # Production body must not boot a simulator (ignore this self-test function).
   local production
   production="$(sed -n '/^REISEN_CI_T0="$(date +%s)"/,$p' "$script")"
@@ -21,15 +21,16 @@ reisen_ios_release_check_self_test() {
     echo "Fehler: simctl bootstatus darf im Release-Check-Produktionspfad nicht vorkommen." >&2
     return 1
   fi
-  # Parallel Store + Private builds (background jobs + wait) + per-scheme logs.
-  grep -Fq 'build_scheme_release ReiseniOS' "$script"
-  grep -Fq 'build_scheme_release ReiseniOSPrivate' "$script"
-  grep -Fq 'store_pid=$!' "$script"
-  grep -Fq 'private_pid=$!' "$script"
-  grep -Fq 'wait "$store_pid"' "$script"
-  grep -Fq 'wait "$private_pid"' "$script"
-  grep -Fq 'xcodebuild-release.log' "$script"
-  grep -Fq 'ios-verify-binary-isolation.sh' "$script"
+  # Parallel Store + Private builds (background jobs + wait) + per-scheme logs —
+  # assert on production path so self-test grep strings cannot satisfy themselves.
+  printf '%s\n' "$production" | grep -Fq 'build_scheme_release ReiseniOS'
+  printf '%s\n' "$production" | grep -Fq 'build_scheme_release ReiseniOSPrivate'
+  printf '%s\n' "$production" | grep -Fq 'store_pid=$!'
+  printf '%s\n' "$production" | grep -Fq 'private_pid=$!'
+  printf '%s\n' "$production" | grep -Fq 'wait "$store_pid"'
+  printf '%s\n' "$production" | grep -Fq 'wait "$private_pid"'
+  printf '%s\n' "$production" | grep -Fq 'xcodebuild-release.log'
+  printf '%s\n' "$production" | grep -Fq 'ios-verify-binary-isolation.sh'
   echo "ios-build-release-check.sh self-test: OK" >&2
 }
 
