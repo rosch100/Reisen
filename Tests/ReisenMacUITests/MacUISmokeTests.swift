@@ -27,6 +27,20 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitFor(UITestingIdentifiers.providerSetupSheet)
     }
 
+    func testEmptyLaunchContinueWithoutProvidersDismissesSetup() {
+        let ui = MacUI.launchEmpty()
+        ui.waitForWindow()
+        ui.completeProviderSetupWithEmptySelection()
+        ui.waitFor(UITestingIdentifiers.emptyState)
+        XCTAssertEqual(
+            ui.app.descendants(matching: .any)
+                .matching(identifier: UITestingIdentifiers.providerSetupReopen)
+                .count,
+            0,
+            "Empty-Continue setzt completed — kein Reopen-CTA"
+        )
+    }
+
     func testSeededTripShowsDetail() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()

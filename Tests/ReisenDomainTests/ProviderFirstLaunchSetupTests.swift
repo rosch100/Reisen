@@ -8,9 +8,25 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
     return (defaults, suiteName)
 }
 
-@Test func providerFirstLaunchSetup_acceptsContinue_rejectsEmptySelection() {
-    #expect(!ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: []))
-    #expect(ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: [.check24]))
+@Test func providerFirstLaunchSetup_emptyContinue_marksCompletedWithoutEnablingProviders() {
+    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    let syncIDs: [ProviderID] = [.check24, .opodo]
+    ProviderFirstLaunchSetup.applySelection(
+        enabledIDs: [],
+        syncProviderIDs: syncIDs,
+        defaults: defaults
+    )
+    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+
+    #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(!AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
+    #expect(!AppSettingsKeys.isProviderEnabled(.opodo, defaults: defaults))
 }
 
 @Test func providerFirstLaunchSetup_shouldPresent_whenNeitherFlagSet() {
