@@ -15,20 +15,15 @@ public enum TripPeriodExpandPrompt {
         L10n.string(.tripPeriodExpandDeclineAction)
     }
 
-    public static func message(
-        for proposal: TripPeriodExpandOnAssign.Proposal,
-        calendar: Calendar = .current
-    ) -> String {
-        let range = formattedRange(proposal: proposal, calendar: calendar)
+    public static func message(for proposal: TripPeriodExpandOnAssign.Proposal) -> String {
+        let range = formattedRange(proposal: proposal)
         return L10n.format(.tripPeriodExpandConfirmMessage, range)
     }
 
-    public static func formattedRange(
-        proposal: TripPeriodExpandOnAssign.Proposal,
-        calendar: Calendar = .current
-    ) -> String {
-        let start = proposal.start.formatted(date: .abbreviated, time: .omitted)
-        let end = proposal.end.formatted(date: .abbreviated, time: .omitted)
+    /// Formatiert Proposal-Start/Ende über `HotelStayDate` (GMT-Anker), nicht Geräte-TZ.
+    public static func formattedRange(proposal: TripPeriodExpandOnAssign.Proposal) -> String {
+        let start = HotelStayDate.format(proposal.start, dateFormat: "d.M.yyyy")
+        let end = HotelStayDate.format(proposal.end, dateFormat: "d.M.yyyy")
         return "\(start) – \(end)"
     }
 }

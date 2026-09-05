@@ -79,6 +79,26 @@ func tripDateBounds_defaultCalendarKeepsHotelGMTDay() {
     #expect(HotelStayDate.format(bounds!.start, dateFormat: "d.M.") == "5.9.")
 }
 
+@Test("TripDateBounds formattedAbbreviatedRange: Hotel-GMT Tag, kein Geräte-TZ-Vortag")
+func tripDateBounds_formattedAbbreviatedRange_keepsHotelGMTDay() {
+    // 2026-09-05 00:00 GMT — Geräte-`.formatted` in westlichen TZs würde oft 4.9. zeigen.
+    let stay = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let text = TripDateBounds.formattedAbbreviatedRange(
+        from: [booking(startAt: stay, endAt: stay)]
+    )
+    #expect(text != nil)
+    #expect(text?.contains("5.9") == true)
+    #expect(text?.contains("4.9") != true)
+}
+
+@Test("TripDateBounds formattedAbbreviatedRange(start:end:): Hotel-GMT Anker, kein Geräte-TZ-Vortag")
+func tripDateBounds_formattedAbbreviatedRange_startEnd_keepsHotelGMTDay() {
+    let start = HotelStayDate.dateOnly(year: 2026, month: 9, day: 5)
+    let end = HotelStayDate.dateOnly(year: 2026, month: 9, day: 10)
+    let text = TripDateBounds.formattedAbbreviatedRange(start: start, end: end)
+    #expect(text == "5.9.2026 – 10.9.2026")
+}
+
 @Test("TripBookingDateWindow Default: Hotel-GMT bleibt im Fenster trotz westlicher Geräte-TZ-Semantik")
 func tripBookingDateWindow_defaultCalendarHotelGMTInWindow() {
     let tripStart = HotelStayDate.dateOnly(year: 2026, month: 9, day: 1)

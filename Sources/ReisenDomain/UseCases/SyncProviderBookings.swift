@@ -20,7 +20,7 @@ public final class SyncProviderBookings {
         requiresDeadlines: Bool,
         now: Date = Date()
     ) throws -> SyncProviderBookingsResult {
-        let calendar = Calendar.current
+        let calendar = HotelStayDate.calendar
         let startOfToday = calendar.startOfDay(for: now)
 
         guard !drafts.isEmpty else {

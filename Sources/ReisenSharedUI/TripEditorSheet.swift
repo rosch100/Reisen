@@ -167,10 +167,12 @@ public struct TripEditorSheet: View {
                 let bookingRepo = SwiftDataBookingRepository(modelContext: modelContext)
                 let bookings = try bookingRepo.fetchAll().filter { seedBookingIDs.contains($0.id) }
                 let ranges = bookings.map { (start: $0.startAt, end: $0.endAt) }
+                let tripStart = HotelStayDate.dateOnly(fromLocalPickerDate: startDate)
+                let tripEnd = HotelStayDate.dateOnly(fromLocalPickerDate: endDate)
                 if let proposal = TripPeriodExpandOnAssign.proposalIfNeeded(
                     bookings: ranges,
-                    tripStart: startDate,
-                    tripEnd: endDate
+                    tripStart: tripStart,
+                    tripEnd: tripEnd
                 ) {
                     pendingPeriodExpand = proposal
                     showPeriodExpandConfirm = true
@@ -194,7 +196,10 @@ public struct TripEditorSheet: View {
     private func persist(assignSeedOutsideWindow: Bool) {
         errorMessage = nil
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, endDate >= startDate else { return }
+        // DatePicker → HotelStayDate GMT-Anker (wie BookingEditor), kein Geräte-TZ-Mitternacht.
+        let persistedStart = HotelStayDate.dateOnly(fromLocalPickerDate: startDate)
+        let persistedEnd = HotelStayDate.dateOnly(fromLocalPickerDate: endDate)
+        guard !trimmed.isEmpty, persistedEnd >= persistedStart else { return }
 
         do {
             let savedTrip: SDTrip
@@ -202,8 +207,8 @@ public struct TripEditorSheet: View {
             case .create:
                 let newTrip = SDTrip(
                     title: trimmed,
-                    startDate: startDate,
-                    endDate: endDate,
+                    startDate: persistedStart,
+                    endDate: persistedEnd,
                     destination: nil,
                     notes: nil
                 )
@@ -212,8 +217,8 @@ public struct TripEditorSheet: View {
             case .edit:
                 guard let trip else { return }
                 trip.title = trimmed
-                trip.startDate = startDate
-                trip.endDate = endDate
+                trip.startDate = persistedStart
+                trip.endDate = persistedEnd
                 savedTrip = trip
             }
 
@@ -232,8 +237,8 @@ public struct TripEditorSheet: View {
                             guard TripBookingDateWindow.contains(
                                 bookingStart: booking.startAt,
                                 bookingEnd: booking.endAt,
-                                tripStart: startDate,
-                                tripEnd: endDate
+                                tripStart: persistedStart,
+                                tripEnd: persistedEnd
                             ) else { return nil }
                             return booking.id
                         }

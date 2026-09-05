@@ -17,13 +17,19 @@ public enum TripDateBounds {
         return (start, end)
     }
 
+    /// Inclusive trip period display from stored HotelStayDate GMT anchors.
+    /// Uses `HotelStayDate.format` — never device `Date.formatted` (TZ day shift).
+    public static func formattedAbbreviatedRange(start: Date, end: Date) -> String {
+        let startText = HotelStayDate.format(start, dateFormat: "d.M.yyyy")
+        let endText = HotelStayDate.format(end, dateFormat: "d.M.yyyy")
+        return "\(startText) – \(endText)"
+    }
+
     public static func formattedAbbreviatedRange(
         from bookings: [Booking],
         calendar: Calendar = HotelStayDate.calendar
     ) -> String? {
         guard let bounds = from(bookings: bookings, calendar: calendar) else { return nil }
-        let start = bounds.start.formatted(date: .abbreviated, time: .omitted)
-        let end = bounds.end.formatted(date: .abbreviated, time: .omitted)
-        return "\(start) – \(end)"
+        return formattedAbbreviatedRange(start: bounds.start, end: bounds.end)
     }
 }

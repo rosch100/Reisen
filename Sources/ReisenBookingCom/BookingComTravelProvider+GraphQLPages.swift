@@ -27,6 +27,13 @@ extension BookingComTravelProvider {
             } while paginationToken != nil
         } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
             throw BookingComProviderError.sessionNotEstablished
+        } catch let error as BookingComProviderError {
+            switch error {
+            case .sessionNotEstablished, .sessionTokensMissing:
+                throw error
+            case .catalogNotFound:
+                Self.recordStageTripIDsSkipped(stages: stages, error: error)
+            }
         } catch {
             Self.recordStageTripIDsSkipped(stages: stages, error: error)
         }

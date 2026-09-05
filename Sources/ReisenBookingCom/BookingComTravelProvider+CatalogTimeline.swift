@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenProviders
 
 @MainActor
 extension BookingComTravelProvider {
@@ -7,7 +8,7 @@ extension BookingComTravelProvider {
         using webView: BookingComWebView,
         tokens: BookingComSessionTokens,
         tripIDs: [String]
-    ) async -> (bookings: [ProviderBookingDraft], timelineFailures: Int, lastTimelineError: Error?) {
+    ) async throws -> (bookings: [ProviderBookingDraft], timelineFailures: Int, lastTimelineError: Error?) {
         var bookings: [ProviderBookingDraft] = []
         var timelineFailures = 0
         var lastTimelineError: Error?
@@ -21,6 +22,16 @@ extension BookingComTravelProvider {
                     tripID: tripID
                 )
                 bookings.append(contentsOf: drafts)
+            } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+                throw error
+            } catch let error as BookingComProviderError {
+                switch error {
+                case .sessionNotEstablished, .sessionTokensMissing:
+                    throw error
+                case .catalogNotFound:
+                    lastTimelineError = error
+                    timelineFailures += 1
+                }
             } catch {
                 lastTimelineError = error
                 timelineFailures += 1
