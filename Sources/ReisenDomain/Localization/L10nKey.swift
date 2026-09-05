@@ -185,7 +185,6 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case actionOpenInBrowser = "action.open_in_browser"
     case actionOpenInBrowserHelp = "action.open_in_browser_help"
     case actionOpenInProviderApp = "action.open_in_provider_app"
-    case actionOpenKeychain = "action.open_keychain"
     case actionOpenPasswords = "action.open_passwords"
     case actionOpenProviderSync = "action.open_provider_sync"
     case actionOpenShort = "action.open_short"
@@ -379,7 +378,6 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case syncError = "sync.error"
     case syncUnknownError = "sync.unknown_error"
     case syncFillCredentialsHelp = "sync.fill_credentials_help"
-    case syncKeychainAccessNotFound = "sync.keychain_access_not_found"
     case syncKeychainAccountsFound = "sync.keychain_accounts_found"
     /// %1$@ = Host, %2$@ = Primär-CTA-Label (`action.remember_login`).
     case syncKeychainNoReadableAccount = "sync.keychain_no_readable_account"

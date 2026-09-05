@@ -550,6 +550,15 @@ final class MacUISmokeTests: XCTestCase {
         ui.enableProviderViaSidebarToggle("booking")
         _ = ui.waitForSyncLoginChrome()
         ui.waitFor(UITestingIdentifiers.syncProviderWebView, timeout: 15)
+        // Kein Link zur Schlüsselbundverwaltung — nur Passwords / Anmeldung merken.
+        XCTAssertFalse(
+            ui.app.buttons["Schlüsselbundverwaltung"].exists,
+            "Schlüsselbundverwaltung-Button darf nicht erscheinen"
+        )
+        XCTAssertFalse(
+            ui.app.buttons["Keychain Access"].exists,
+            "Keychain Access button must not appear"
+        )
     }
 
     func testPasteImportFixturePersistsBooking() {

@@ -529,27 +529,16 @@ struct SyncView: View {
     }
 
     private var keychainAssistanceActionButtons: some View {
-        HStack(spacing: 8) {
-            Button {
-                if !MacSystemApps.openPasswords() {
-                    appendKeychainMessage(L10n.string(.syncPasswordsAppNotFound))
-                }
-            } label: {
-                Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
+        Button {
+            if !MacSystemApps.openPasswords() {
+                appendKeychainMessage(L10n.string(.syncPasswordsAppNotFound))
             }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-
-            Button {
-                if !MacSystemApps.openKeychainAccess() {
-                    appendKeychainMessage(L10n.string(.syncKeychainAccessNotFound))
-                }
-            } label: {
-                Label(L10n.string(.actionOpenKeychain), systemImage: "arrow.up.forward.app")
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
+        } label: {
+            Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
         }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .accessibilityIdentifier(UITestingIdentifiers.syncOpenPasswords)
     }
 
     @ViewBuilder
