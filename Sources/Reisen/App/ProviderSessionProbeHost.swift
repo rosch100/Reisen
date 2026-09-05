@@ -44,7 +44,8 @@ struct ProviderSessionProbeHost: View {
                         runID: diagnosticRunID,
                         providerID: backgroundProviderID,
                         operation: "startup_probe"
-                    )
+                    ),
+                    sessionHub: hub
                 )
                 .id(backgroundProviderID)
                 .frame(width: 1, height: 1)

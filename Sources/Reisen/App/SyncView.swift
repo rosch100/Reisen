@@ -220,7 +220,8 @@ struct SyncView: View {
                             runID: diagnosticRunID,
                             providerID: providerID,
                             operation: "macos_sync"
-                        )
+                        ),
+                        sessionHub: sessionHub
                     )
                     .accessibilityIdentifier(UITestingIdentifiers.syncProviderWebView)
                     .frame(

@@ -9,7 +9,8 @@ public struct SyncLoginChromeAdaptiveLayout<Status: View, Credentials: View>: Vi
     private let status: Status
     private let credentials: Credentials
 
-    @State private var availableWidth: CGFloat = 0
+    /// Start bei Side-by-Side-Schwelle: vermeidet ersten Layout-Flip 0→gemessen (Remount-Churn #145).
+    @State private var availableWidth: CGFloat = SyncBrowserChrome.sideBySideMinimumWidth
 
     public init(
         @ViewBuilder status: () -> Status,

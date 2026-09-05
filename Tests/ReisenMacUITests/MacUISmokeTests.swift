@@ -530,6 +530,7 @@ final class MacUISmokeTests: XCTestCase {
     }
 
     func testEnablingProviderViaSidebarToggleOpensSyncChrome() {
+        // Regression: Enable→Sync ohne Remount-Churn; WebView-Host muss existieren (nicht nur Login-Chrome).
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
         ui.enableProviderViaSidebarToggle("booking")
