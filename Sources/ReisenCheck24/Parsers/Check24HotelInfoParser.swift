@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenDiagnostics
 
 /// Hotel-Ort, -Adresse und Check-in/-out aus eingebettetem `hotelInfo` auf der Buchungsdetailseite.
 public enum Check24HotelInfoParser {
@@ -26,7 +27,28 @@ public enum Check24HotelInfoParser {
             let dto = try JSONDecoder().decode(Check24HotelInfoDTO.self, from: data)
             return place(from: dto)
         } catch {
+            recordHotelInfoDecodeSkipped(error: error)
             return nil
+        }
+    }
+
+    private static func recordHotelInfoDecodeSkipped(error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .check24,
+                        operation: "check24_enrich_hotel"
+                    ),
+                    component: "Check24HotelInfoParser",
+                    phase: "hotel_info",
+                    event: "hotel_info_decode_skipped",
+                    result: .skipped,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 

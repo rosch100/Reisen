@@ -238,7 +238,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ReisenSharedUITests",
-            dependencies: ["ReisenSharedUI", "ReisenData", "ReisenDomain"],
+            dependencies: ["ReisenSharedUI", "ReisenData", "ReisenDomain", "ReisenDiagnostics"],
             path: "Tests/ReisenSharedUITests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 // MARK: - Session
 
@@ -992,6 +993,11 @@ public struct BookingEditorForm: View {
                 proxy.scrollTo(error.focusField, anchor: .center)
             }
         } catch {
+            SharedUIPersistDiagnostics.recordFailure(
+                component: "BookingEditorForm",
+                operation: "booking_editor_save",
+                error: error
+            )
             errorMessage = (error as? LocalizedError)?.errorDescription
                 ?? String(describing: error)
         }

@@ -4,6 +4,7 @@ import SwiftData
 import SwiftUI
 import ReisenData
 import ReisenDomain
+import ReisenDiagnostics
 
 /// Sendable Review-Payload ohne SwiftData-Objekte — für macOS-`Window` und iOS-Sheet.
 public struct PasteImportReviewPayload: Equatable, Sendable, Identifiable {
@@ -287,6 +288,11 @@ public struct PasteImportReviewSheet: View {
             entryTrip.endDate = proposal.end
             try createBooking(assignedTo: entryTrip)
         } catch {
+            SharedUIPersistDiagnostics.recordFailure(
+                component: "PasteImportReview",
+                operation: "paste_import_period_expand_save",
+                error: error
+            )
             persistErrorMessage = error.localizedDescription
         }
     }
@@ -295,6 +301,11 @@ public struct PasteImportReviewSheet: View {
         do {
             try createBooking(assignedTo: nil)
         } catch {
+            SharedUIPersistDiagnostics.recordFailure(
+                component: "PasteImportReview",
+                operation: "paste_import_save_open",
+                error: error
+            )
             persistErrorMessage = error.localizedDescription
         }
     }
