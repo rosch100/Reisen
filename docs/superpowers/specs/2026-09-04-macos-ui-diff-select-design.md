@@ -1,7 +1,7 @@
 # macOS XCUI: Diff-Selektion lokal / Full on demand
 
 **Datum:** 2026-09-04
-**Status:** freigegeben (Spec-Review OK; Conformity Rev 1–2 eingearbeitet; Implementierung verdrahtet)
+**Status:** freigegeben (Spec-Review OK; Conformity Rev 1–3 eingearbeitet; Implementierung verdrahtet)
 **Abhängigkeit:** [`2026-08-30-macos-ui-surface-test-design.md`](2026-08-30-macos-ui-surface-test-design.md) (Testvertrag), [`2026-09-02-macos-ui-test-remote-design.md`](2026-09-02-macos-ui-test-remote-design.md) (Remote-Transport; Rev 7 Flag-Passthrough)
 
 ## Änderungsprotokoll
@@ -18,6 +18,14 @@
 
 - `+`-Leerzeilen zählen nicht als Overlap (Einfügen zwischen Methoden).
 - Shell-Wiring: `macos-ui-test.sh` / `macos-ui-test-remote.sh` Modes + Docs/Rules/Skill Sync.
+
+### Rev 3 — Shell-Härtung (Port aus #152-Follow-up)
+
+- **SKIP_STDERR SSOT:** Shell liest `SKIP_STDERR` fail-closed aus `macos_ui_select_tests.py` (kein duplizierter Shell-String).
+- **Skip-Sentinel:** leere Selection → intern `return 10` in Resolve-Helfern → Prozess-Exit 0 (unterscheidbar von Python-/Git-Fehlern).
+- **Diff-Basis:** ein `git diff <basis> -- MacUISmokeTests.swift` (staged + unstaged); untracked-neu via `git cat-file -e <basis>:path`.
+- **Self-Test:** `--self-test` nur als alleiniges argv; hermetischer Empty-Diff via Temp-Repo + `REISEN_MAC_UI_REPO_ROOT`.
+- **Remote:** `reisen_ui_remote_resolve_test_args` vor Lock/Host/Sync; `reisen_ui_remote_quote_test_invoke` + `${test_invoke}` in `.command`.
 
 ## Ziel
 
@@ -90,7 +98,7 @@ macos-ui-test-remote.sh [--full]
 2. Gelöscht → nicht selektieren.
 3. Nur Helper / kein `test*`-Overlap → Skip/Exit 0.
 4. **Selector-I/O:** stdout = eine `-only-testing:ReisenMacUITests/MacUISmokeTests/<testName>`-Zeile pro Treffer; leere stdout + Exit 0 = Skip; Exit ≠ 0 = Fehler (kein Full).
-5. **Skip-Stderr (Pflicht):** mindestens eine Zeile der Form
+5. **Skip-Stderr (Pflicht):** Konstante `SKIP_STDERR` in `macos_ui_select_tests.py`; Shell druckt sie via Import (fail-closed). Form:
    `macos-ui-test: no smoke selection (diff); skip XCUI. DoD: UI-Verhalten erfordert Smoke-Edit in MacUISmokeTests.`
 
 ### CLI / Env
@@ -125,7 +133,7 @@ macos-ui-test-remote.sh [--full]
 ## Verifikation
 
 - `python3 -m unittest discover -s Scripts/tests -p 'test_ci_*.py'` deckt Selector ab (`test_ci_macos_ui_select_tests.py`).
-- Shell-`--self-test`: `--full`, Skip-Stderr, `--reisen-ui-only-testing`, Remote-Passthrough (kein Git auf Remote nötig).
+- Shell-`--self-test` (nur alleiniges argv): `--full`, Skip-Stderr aus Python, `--reisen-ui-only-testing`, hermetischer Empty-Diff (`REISEN_MAC_UI_REPO_ROOT`), Remote-Passthrough + Resolve-vor-Lock (kein Git auf Remote nötig).
 - CI-Job `suite-macos-ui` weiterhin Full-Klasse (Regression der Gate-Semantik).
 
 ## Abgrenzung zu bestehendem Spec
