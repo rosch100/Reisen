@@ -43,8 +43,8 @@ private func hotelDraft(
     #expect(draft.title == "Hotel Lissabon")
     #expect(draft.confirmationCode == "ABC123")
     #expect(draft.locationTo == "Lissabon")
-    #expect(draft.startAt == prefillStart)
-    #expect(draft.endAt == prefillEnd)
+    #expect(draft.startAt == HotelStayDate.localPickerDate(fromStored: prefillStart))
+    #expect(draft.endAt == HotelStayDate.localPickerDate(fromStored: prefillEnd))
     #expect(draft.hotelCheckInMinutesText.isEmpty)
     #expect(draft.hotelCheckOutMinutesText.isEmpty)
 }

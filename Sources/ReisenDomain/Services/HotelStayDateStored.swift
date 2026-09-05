@@ -23,4 +23,8 @@ public enum HotelStayDateStored {
     public static func dateOnly(fromLocalPickerDate date: Date, calendar: Calendar = .current) -> Date {
         HotelStayDatePicker.dateOnly(fromLocalPickerDate: date, calendar: calendar)
     }
+
+    public static func localPickerDate(fromStored date: Date, calendar: Calendar = .current) -> Date {
+        HotelStayDatePicker.localPickerDate(fromStored: date, calendar: calendar)
+    }
 }

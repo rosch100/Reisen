@@ -62,6 +62,11 @@ public enum HotelStayDate: Sendable {
         HotelStayDateStored.dateOnly(fromLocalPickerDate: date, calendar: calendar)
     }
 
+    /// Maps a stored GMT date-only anchor to a DatePicker value that shows the same Y/M/D in `calendar` (default `.current`).
+    public static func localPickerDate(fromStored date: Date, calendar: Calendar = .current) -> Date {
+        HotelStayDateStored.localPickerDate(fromStored: date, calendar: calendar)
+    }
+
     public static func format(
         _ date: Date,
         dateFormat: String,

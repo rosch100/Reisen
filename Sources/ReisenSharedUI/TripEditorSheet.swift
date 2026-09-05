@@ -50,13 +50,14 @@ public struct TripEditorSheet: View {
 
         if let trip {
             _title = State(initialValue: trip.title)
-            _startDate = State(initialValue: trip.startDate)
-            _endDate = State(initialValue: trip.endDate)
+            _startDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: trip.startDate))
+            _endDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: trip.endDate))
             focusTitleOnAppear = false
         } else if let seed {
+            // TripCreateSeed bounds are HotelStayDate GMT anchors (TripDateBounds).
             _title = State(initialValue: seed.title ?? "")
-            _startDate = State(initialValue: seed.startDate)
-            _endDate = State(initialValue: seed.endDate)
+            _startDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: seed.startDate))
+            _endDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: seed.endDate))
             focusTitleOnAppear = seed.title?.isEmpty ?? true
         } else {
             _title = State(initialValue: "")
