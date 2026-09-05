@@ -104,6 +104,12 @@ struct ProviderSidebarRow: View {
         isEnabled.toggle()
         ProviderEnabledChange.notify()
         let enabled = isEnabled
+        if enabled {
+            NotificationCenter.default.post(
+                name: .reisenShowProviderSync,
+                object: providerID
+            )
+        }
         Task {
             await DiagnosticLogger.shared.record(
                 DiagnosticEvent(

@@ -529,6 +529,14 @@ final class MacUISmokeTests: XCTestCase {
         ui.waitFor(UITestingIdentifiers.syncProviderWebView, timeout: 15)
     }
 
+    func testEnablingProviderViaSidebarToggleOpensSyncChrome() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.enableProviderViaSidebarToggle("booking")
+        _ = ui.waitForSyncLoginChrome()
+        ui.waitFor(UITestingIdentifiers.syncProviderWebView, timeout: 15)
+    }
+
     func testPasteImportFixturePersistsBooking() {
         let ui = MacUI.launchPasteImportFixture()
         ui.waitForWindow()
