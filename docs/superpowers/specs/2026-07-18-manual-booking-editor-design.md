@@ -88,7 +88,7 @@ Sichtbarkeit typabhängig (`BookingType`).
 
 - **Manual:** Sync rührt sie nicht an.
 - **Sync-Buchungen:** Lokale Edits sind erlaubt und werden persistiert. Beim **nächsten Sync desselben Providers** überschreibt der Upsert die Provider-Felder wie bisher (kein Field-Pinning in v1). Die Reise-Zuordnung (`trip`) bleibt wie im bestehenden Upsert-Verhalten geschützt, sofern bereits so implementiert.
-- UI-Hinweis im Edit-Modus bei Sync-Buchungen (Footer/Hilfe): „Änderungen können beim nächsten Sync überschrieben werden.“
+- UI-Hinweis im Edit-Modus bei Sync-Buchungen (Footer/Hilfe): „Änderungen können bei der nächsten Synchronisation überschrieben werden.“
 
 ### Speichern
 

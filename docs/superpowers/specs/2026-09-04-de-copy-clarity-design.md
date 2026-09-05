@@ -46,7 +46,7 @@ Die UI mischt Fachbegriffe und Anglizismen so, dass Bedeutungen uneinheitlich od
 | Erinnerungslisten | **Erinnerungsliste** (nicht Reminder-Liste) | Reminder list (EN Apple-nah ok) |
 | Storno-Kurzlabel Sektion | **Stornierung** | Cancellation |
 | Zeitleiste-UI | **Zeitachse** | Timeline (EN üblich) |
-| Gepäck Kurz „Personal“ | **Pers.** | Personal |
+| Gepäck Kurz „Personal“ | **Persönlich** (ersetzt Pers.; siehe [de-label-hig-clarity](2026-09-05-de-label-hig-clarity-design.md)) | Personal |
 | Passagierzeile | **Passagier %d** | Passenger %d (statt Pax) |
 
 ## Vollständige Änderungstabelle
@@ -57,7 +57,7 @@ Nur Keys mit **sichtbarer** Änderung. Wert = neuer DE-String; EN nur wenn Spalt
 
 | Key | DE neu | EN neu (falls) |
 | --- | --- | --- |
-| `baggage.short_personal` | Pers. | — |
+| `baggage.short_personal` | Persönlich | — |
 | `baggage.passenger_line` | Passagier %1$d: %2$@ | Passenger %1$d: %2$@ |
 | `booking.cancellation.locked` | Nicht mehr kostenlos stornierbar | No longer free to cancel |
 | `sync_result.no_deadlines` | Keine Stornofristen gefunden (%1$d Buchungen). | No cancellation deadlines found (%1$d bookings). |
