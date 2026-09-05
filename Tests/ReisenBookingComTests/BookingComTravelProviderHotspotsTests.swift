@@ -242,6 +242,23 @@ struct BookingComTravelProviderHotspotsTests {
         #expect(enrichment.flightArrivalOffsetSeconds == 8 * 3600)
     }
 
+    @Test("BookingComTravelProvider enrichBooking: flight without order token returns empty enrichment")
+    func enrichFlight_missingOrderToken_returnsEmpty() async throws {
+        let fake = FakeBookingComWebView(url: Self.myTripsURL)
+        let session = FakeBookingComWebViewProviderSession(bookingComWebView: fake)
+        let provider = BookingComTravelProvider()
+
+        let ref = ProviderBookingRef(
+            externalUrl: "https://flights.booking.com/confirmation/",
+            bookingType: .flight
+        )
+
+        let enrichment = try await provider.enrichBooking(session: session, ref: ref)
+        #expect(enrichment.deadlines.isEmpty)
+        #expect(enrichment.flightDepartureOffsetSeconds == nil)
+        #expect(enrichment.rateDetails == nil)
+    }
+
     @Test("BookingComTravelProvider enrichBooking: hotel confirmation loads HTML → deadlines + rateDetails")
     func enrichHotel_loadsConfirmationHTML() async throws {
         let fake = FakeBookingComWebView(url: Self.myTripsURL)

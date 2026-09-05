@@ -6,6 +6,7 @@ import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 struct OffenTab: View {
     @Binding var sessionChromeEpoch: Int
@@ -280,6 +281,7 @@ struct OpenBookingsScreen: View {
             }
             multiSelection.remove(booking.id)
         } catch {
+            Self.recordPersistFailure(operation: "booking_delete", error: error)
             persistErrorMessage = error.localizedDescription
         }
         pendingDeleteBooking = nil
@@ -412,6 +414,26 @@ struct OpenBookingsScreen: View {
                 booking: booking,
                 fillCaption: fillCaption,
                 partnerTitles: overlapPartnerTitles(for: booking.id)
+            )
+        }
+    }
+
+    private static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "OffenTab",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
             )
         }
     }

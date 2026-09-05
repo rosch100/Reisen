@@ -169,6 +169,14 @@ func activityListHTMLWithoutCancellationDeadlinesIsEmpty() throws {
     #expect(parsed.cancellationDeadlines.isEmpty)
 }
 
+@Test("ActivityListParser: HTML-Link ohne Datum-Fenster wird gedroppt, kein Throw")
+func activityListHTMLBookingWindowDropDoesNotThrow() throws {
+    let html = #"<html><body><a href="/hotel/booking/ohne-datum">Hotel</a></body></html>"#
+    let parsed = try ActivityListParser().parseActivityListHTML(html)
+    #expect(parsed.bookings.isEmpty)
+    #expect(parsed.cancellationDeadlines.isEmpty)
+}
+
 @Test("Check24: Login-HTML wird als fehlende Session erkannt")
 func check24LoginHTMLIndicatesMissingSession() {
     let loginHTML = """
