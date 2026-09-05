@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 import ReisenDomain
-import ReisenPasteImport
+@testable import ReisenPasteImport
 
 @Test func pasteImportGenerableMapper_dropsLabelConfirmationCodes() {
     let dto = PasteImportBookingDTO(confirmationCode: "Booking reference")
@@ -105,5 +105,16 @@ private func ticketWallClock(_ year: Int, _ month: Int, _ day: Int, _ hour: Int,
     parts.hour = hour
     parts.minute = minute
     parts.second = 0
-    return Calendar.current.date(from: parts)!
+    return HotelStayDate.calendar.date(from: parts)!
+}
+
+@Test("PasteImportTicketDate wall-clock nutzt HotelStayDate-TZ (kein Geräte-Calendar)")
+func pasteImportTicketDateUsesHotelStayTimeZone() throws {
+    let date = try #require(PasteImportTicketDate.parse("15 August 2026 14:30"))
+    let comps = HotelStayDate.calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+    #expect(comps.year == 2026)
+    #expect(comps.month == 8)
+    #expect(comps.day == 15)
+    #expect(comps.hour == 14)
+    #expect(comps.minute == 30)
 }

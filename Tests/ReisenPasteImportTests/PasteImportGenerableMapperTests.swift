@@ -79,7 +79,7 @@ private func ticketDate(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ mi
     parts.hour = hour
     parts.minute = minute
     parts.second = 0
-    return Calendar.current.date(from: parts)!
+    return HotelStayDate.calendar.date(from: parts)!
 }
 
 @Test func pasteImportGenerableMapper_blankStringsBecomeNilAndValuesAreTrimmed() {

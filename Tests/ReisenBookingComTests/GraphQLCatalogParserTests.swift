@@ -398,17 +398,36 @@ func bookingComHotelConfirmationParsesRoomOnlyBoard() throws {
     #expect(rate.boardType == .roomOnly)
 }
 
-@Test("BookingComFlightOrderParser liefert Gepäck und TZ-Offsets")
-func bookingComFlightOrderParsesBaggageAndOffsets() throws {
-    let json = try fixtureJSON("flight_order_sample.json")
+@Test("BookingComFlightOrderParser setzt Deadline-Offset aus ISO")
+func bookingComFlightOrderDeadlineKeepsISOOffset() throws {
+    let json = """
+    {
+      "cancellationOptions": {
+        "cancellable": true,
+        "isFullRefund": true,
+        "refundOptions": [
+          {
+            "deadlineAt": "2026-08-01T10:00:00+07:00",
+            "description": "Free cancellation",
+            "isFullRefund": true,
+            "feeAmount": 0
+          }
+        ]
+      },
+      "airOrder": {
+        "flightSegments": [
+          {
+            "departureTimeTz": "2026-08-11T16:10:00+07:00",
+            "arrivalTimeTz": "2026-08-11T18:35:00+08:00"
+          }
+        ]
+      }
+    }
+    """
     let parsed = try BookingComFlightOrderParser().parse(from: json)
-    #expect(parsed.deadlines.isEmpty)
-    #expect(parsed.flightDepartureOffsetSeconds == 7 * 3600)
-    #expect(parsed.flightArrivalOffsetSeconds == 8 * 3600)
-    #expect(parsed.rateDetails?.baggageInfoRaw?.contains("Aufgabe") == true)
-    #expect(parsed.rateDetails?.baggageInfoRaw?.contains("10KG") == true)
-    #expect(parsed.rateDetails?.baggageInfoRaw?.contains("Hand") == true)
-    #expect(parsed.passengers.isEmpty == true)
+    let deadline = try #require(parsed.deadlines.first)
+    #expect(deadline.hotelOffsetSeconds == 7 * 3600)
+    #expect(deadline.isFreeCancellation == true)
 }
 
 @Test("BookingComFlightOrderParser parst strukturierte Passagiere + Gepäck")

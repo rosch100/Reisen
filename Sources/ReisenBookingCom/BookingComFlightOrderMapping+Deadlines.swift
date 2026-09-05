@@ -21,6 +21,7 @@ extension BookingComFlightOrderParser {
             policyText: refund.description,
             isStrict: true,
             isFreeCancellation: options.isFullRefund == true || refund.isFullRefund == true,
+            hotelOffsetSeconds: ISODateTime.offsetSeconds(from: raw),
             cancellationFeeAmount: refund.feeAmount
         )
     }
