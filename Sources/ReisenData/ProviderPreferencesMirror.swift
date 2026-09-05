@@ -25,7 +25,7 @@ public enum ProviderPreferencesMirror {
         let record = try upsertSingleton(in: context)
         record.setupCompleted = snapshot.setupCompleted
         record.enabledProviderRawCSV = snapshot.enabledProviderRawCSV
-        dedupeNonCanonical(in: context, keeping: record)
+        try dedupeNonCanonical(in: context, keeping: record)
         try context.save()
         return true
     }
@@ -47,22 +47,19 @@ public enum ProviderPreferencesMirror {
         if snapshot == current {
             return snapshot
         }
-        dedupeNonCanonical(in: context, keeping: record)
+        try dedupeNonCanonical(in: context, keeping: record)
         snapshot.apply(to: defaults)
         try context.save()
         return snapshot
     }
 
+    /// Nur der kanonische Singleton-Record — kein Fallback auf `all.first`.
     public static func fetchCanonical(in context: ModelContext) throws -> SDProviderPreferences? {
         let singletonID = ProviderPreferencesRecordID.singleton
         let descriptor = FetchDescriptor<SDProviderPreferences>(
             predicate: #Predicate { $0.id == singletonID }
         )
-        if let match = try context.fetch(descriptor).first {
-            return match
-        }
-        let all = FetchDescriptor<SDProviderPreferences>()
-        return try context.fetch(all).first
+        return try context.fetch(descriptor).first
     }
 
     /// Entfernt alle Prefs-Records (False-Positive-Poison / Mirror-Bereinigung nach lokalem Repair).
@@ -77,16 +74,24 @@ public enum ProviderPreferencesMirror {
 
     private static func upsertSingleton(in context: ModelContext) throws -> SDProviderPreferences {
         if let existing = try fetchCanonical(in: context) {
-            existing.id = ProviderPreferencesRecordID.singleton
             return existing
+        }
+        // Promote a stray non-singleton row once, then dedupe — never invent content from `all.first` on import.
+        let all = try context.fetch(FetchDescriptor<SDProviderPreferences>())
+        if let stray = all.first {
+            stray.id = ProviderPreferencesRecordID.singleton
+            return stray
         }
         let created = SDProviderPreferences()
         context.insert(created)
         return created
     }
 
-    private static func dedupeNonCanonical(in context: ModelContext, keeping canonical: SDProviderPreferences) {
-        let all = (try? context.fetch(FetchDescriptor<SDProviderPreferences>())) ?? []
+    private static func dedupeNonCanonical(
+        in context: ModelContext,
+        keeping canonical: SDProviderPreferences
+    ) throws {
+        let all = try context.fetch(FetchDescriptor<SDProviderPreferences>())
         for row in all where row !== canonical {
             context.delete(row)
         }

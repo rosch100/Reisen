@@ -3,6 +3,7 @@ import UserNotifications
 
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 import SwiftData
 
 @MainActor
@@ -55,7 +56,14 @@ public final class LocalReminderScheduler: ReminderScheduling {
         try await requestAuthorization(center: center)
 
         // Nur kostenlose Stornofristen erinnern (Fee-Stufen „ab … € x“ sind keine Cancel-by-Frist).
-        let eligibleDeadlines = deadlines.filter { $0.isFreeCancellation }
+        // Ohne Hotel-Offset kein Geräte-TZ-Fallback — Skip + Diagnostic (wie EventKit).
+        let eligibleDeadlines = deadlines.filter { deadline in
+            if Self.isEligibleCancellationDeadline(deadline) { return true }
+            if deadline.isFreeCancellation, deadline.hotelOffsetSeconds == nil {
+                Self.recordReminderSkip(reason: "deadline_missing_hotel_offset")
+            }
+            return false
+        }
         let eligibleDeadlineIDs = Set(eligibleDeadlines.map(\.id))
         let desiredKeys = desiredKeys(
             deadlines: eligibleDeadlines,
@@ -94,13 +102,41 @@ public final class LocalReminderScheduler: ReminderScheduling {
         return created
     }
 
-    private static func formatDeadlineWallClock(_ deadline: CancellationDeadline) -> String {
-        let tz = deadline.hotelOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+    /// Free-cancellation + resolvable hotel offset — otherwise skip (no `TimeZone.current`).
+    static func isEligibleCancellationDeadline(_ deadline: CancellationDeadline) -> Bool {
+        deadline.isFreeCancellation && deadline.hotelOffsetSeconds != nil
+    }
+
+    private static func formatDeadlineWallClock(_ deadline: CancellationDeadline) -> String? {
+        guard let tz = deadline.hotelOffsetSeconds.flatMap({ TimeZone(secondsFromGMT: $0) }) else {
+            recordReminderSkip(reason: "format_deadline_missing_hotel_offset")
+            return nil
+        }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "de_DE")
         formatter.timeZone = tz
         formatter.dateFormat = "d. MMM yyyy HH:mm"
         return formatter.string(from: deadline.deadlineAt)
+    }
+
+    static func recordReminderSkip(reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "reminder_side_effect"
+                    ),
+                    component: "LocalReminderScheduler",
+                    phase: "timezone",
+                    event: "reminder_offset_skip",
+                    result: .skipped,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 
     func normalizedLeadTimes(_ leadTimesDays: [Int]) throws -> [Int] {
@@ -219,7 +255,7 @@ public final class LocalReminderScheduler: ReminderScheduling {
                 if !desiredKeys.contains(key) { continue }
 
                 let bookingTitle = deadline.bookingID.flatMap { bookingTitles[$0] } ?? "Buchung"
-                let untilText = Self.formatDeadlineWallClock(deadline)
+                guard let untilText = Self.formatDeadlineWallClock(deadline) else { continue }
                 let content = UNMutableNotificationContent()
                 content.title = "Stornofrist"
                 content.body = "\(bookingTitle): bis zum \(untilText)"

@@ -38,13 +38,10 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             if let loggedIn = OpodoSessionProbe.isLoggedIn(fromGraphQLJSON: accountJSON), !loggedIn {
                 throw OpodoProviderError.sessionNotEstablished
             }
-        } catch let error as OpodoProviderError {
-            throw error
         } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
             throw OpodoProviderError.sessionNotEstablished
-        } catch {
-            // Probe fehlgeschlagen: getTrips bleibt maßgeblich.
         }
+        // Andere Fehler (Netzwerk/Parse) und OpodoProviderError propagieren unverändert.
     }
 
     private func fetchHTMLCatalogFallback(using webView: WKWebView) async throws -> [ProviderBookingDraft] {
@@ -151,8 +148,7 @@ public final class OpodoTravelProvider: TravelProvider, TravelProviderLoginConfi
             } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
                 throw OpodoProviderError.sessionNotEstablished
             } catch {
-                // GraphQL SSOT für Storno; Guest-Hints werden separat aus Trip-Details geladen.
-                return ([], nil)
+                throw OpodoProviderError.enrichmentFailed
             }
         }
 
@@ -321,6 +317,7 @@ enum OpodoHotelGraphQLEnrichment {
 public enum OpodoProviderError: LocalizedError, Sendable {
     case sessionNotEstablished
     case catalogNotFound
+    case enrichmentFailed
 
     public var errorDescription: String? {
         switch self {
@@ -328,6 +325,8 @@ public enum OpodoProviderError: LocalizedError, Sendable {
             return "Es besteht noch keine Opodo Session. Bitte zunächst anmelden."
         case .catalogNotFound:
             return "Opodo-Katalog konnte nicht geladen werden."
+        case .enrichmentFailed:
+            return "Opodo-Storno-/Statusdaten konnten nicht geladen werden."
         }
     }
 }

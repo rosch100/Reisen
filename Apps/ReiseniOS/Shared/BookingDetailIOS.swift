@@ -6,6 +6,7 @@ import ReisenAppCore
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 struct BookingDetailIOS: View {
     let bookingID: UUID
@@ -174,6 +175,7 @@ struct BookingDetailIOS: View {
                     } catch {
                         assignErrorMessage = error.localizedDescription
                         showAssignError = true
+                        Self.recordPersistFailure(operation: "booking_assign_trip", error: error)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -372,6 +374,28 @@ struct BookingDetailIOS: View {
                 )
                 .reisenSheetDetents()
             }
+        }
+    }
+}
+
+private extension BookingDetailIOS {
+    static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "BookingDetailIOS",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }

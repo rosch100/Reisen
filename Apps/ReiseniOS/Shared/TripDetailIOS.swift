@@ -5,6 +5,7 @@ import ReisenAppCore
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 struct TripDetailIOS: View {
     let tripID: UUID
@@ -235,6 +236,7 @@ struct TripDetailIOS: View {
             pendingDeleteBooking = nil
         } catch {
             persistErrorMessage = error.localizedDescription
+            Self.recordPersistFailure(operation: "booking_delete", error: error)
         }
     }
 
@@ -244,6 +246,27 @@ struct TripDetailIOS: View {
             dismiss()
         } catch {
             persistErrorMessage = error.localizedDescription
+            Self.recordPersistFailure(operation: "trip_delete", error: error)
+        }
+    }
+
+    private static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "TripDetailIOS",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }

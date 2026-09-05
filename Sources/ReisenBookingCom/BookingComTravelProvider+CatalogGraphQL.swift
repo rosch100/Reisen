@@ -18,18 +18,20 @@ extension BookingComTravelProvider {
             tokens: tokens,
             tripIDs: tripIDs
         )
-        return try finalizeTimelineCatalog(result, tripIDCount: tripIDs.count)
+        return try finalizeTimelineCatalog(result)
     }
 
     func finalizeTimelineCatalog(
-        _ result: (bookings: [ProviderBookingDraft], timelineFailures: Int, lastTimelineError: Error?),
-        tripIDCount: Int
+        _ result: (bookings: [ProviderBookingDraft], timelineFailures: Int, lastTimelineError: Error?)
     ) throws -> [ProviderBookingDraft] {
+        if result.timelineFailures > 0 {
+            if let lastTimelineError = result.lastTimelineError {
+                throw lastTimelineError
+            }
+            throw BookingComProviderError.catalogNotFound
+        }
         if !result.bookings.isEmpty {
             return BookingComParsing.dedupeByExternalURL(result.bookings)
-        }
-        if result.timelineFailures == tripIDCount, let lastTimelineError = result.lastTimelineError {
-            throw lastTimelineError
         }
         throw BookingComProviderError.catalogNotFound
     }

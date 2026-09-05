@@ -31,7 +31,7 @@ extension DomainMapper {
             rawPayloadFingerprint: model.rawPayloadFingerprint,
             tripID: model.trip?.id,
             autoGapIdentityKey: model.autoGapIdentityKey,
-            cancellationDeadlines: (model.cancellationDeadlines ?? []).map(deadline(from:)),
+            cancellationDeadlines: (model.cancellationDeadlines ?? []).compactMap(deadline(from:)),
             rateDetails: model.rateDetails.map(rateDetails(from:)),
             passengers: (model.passengers ?? []).map(passenger(from:)),
             guestHints: (model.guestHints ?? []).map(guestHint(from:))

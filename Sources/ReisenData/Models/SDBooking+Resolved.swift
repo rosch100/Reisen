@@ -7,6 +7,6 @@ public extension SDBooking {
     var resolvedGuestHints: [SDBookingGuestHint] { guestHints ?? [] }
 
     var domainCancellationDeadlines: [CancellationDeadline] {
-        resolvedCancellationDeadlines.map(DomainMapper.deadline(from:))
+        resolvedCancellationDeadlines.compactMap(DomainMapper.deadline(from:))
     }
 }

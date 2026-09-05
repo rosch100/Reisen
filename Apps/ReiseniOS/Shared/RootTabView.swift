@@ -143,18 +143,12 @@ struct RootTabView: View {
             _ = KeychainCredentialSyncMigration.migrateLocalOnlyToSynchronizable()
         }
         #endif
-        let snap = await ProviderPreferencesImportGate.awaitAndApply(context: modelContext)
-        if let snap, snap.setupCompleted {
-            ProviderFirstLaunchSetupDiagnostics.recordSkipped(reason: "icloud_prefs")
-            ProviderPreferencesImportGate.notifyEnabledAfterImport()
-            return
+        let startup = await ProviderPreferencesImportGate.awaitApplyAndSeedLocalIfEmpty(
+            context: modelContext
+        )
+        if startup == .continueLocalSetup {
+            presentProviderSetupIfNeeded()
         }
-        // Seed CloudKit only when no remote prefs arrived — never overwrite a known remote snapshot at startup.
-        if snap == nil,
-           AppSettingsDefaults.current.bool(forKey: AppSettingsKeys.providerSetupCompleted) {
-            ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
-        }
-        presentProviderSetupIfNeeded()
     }
 
     private func handleProviderPrefsRemoteChange() {

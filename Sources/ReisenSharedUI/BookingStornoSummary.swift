@@ -24,7 +24,7 @@ public enum BookingStornoSummary {
     ) -> [BookingStornoSummaryLine] {
         guard !booking.resolvedCancellationDeadlines.isEmpty else { return [] }
 
-        let domainDeadlines = booking.resolvedCancellationDeadlines.map(DomainMapper.deadline(from:))
+        let domainDeadlines = booking.resolvedCancellationDeadlines.compactMap(DomainMapper.deadline(from:))
         let summaryLines = CancellationDeadlineDisplayService().summaryLines(
             deadlines: domainDeadlines,
             hotelTimeZone: booking.resolvedHotelTimeZone,

@@ -211,8 +211,13 @@ public final class AppBootstrap {
                 "Cloud-Wipe nach Store-Fehler: Container konnte nicht geöffnet werden."
             )
         }
-        await PersistenceBootstrap.awaitCloudKitImportIfNeeded(
+        let importAwait = await PersistenceBootstrap.awaitCloudKitImportIfNeeded(
             cloudKitEnabled: Self.isEffectiveCloudKitEnabled()
+        )
+        await recordCloudKitAwaitIfTimedOut(
+            result: importAwait,
+            event: "cloudkit_import_await",
+            reason: "wipe_from_failed_store"
         )
         try await wipeCloud(from: container.mainContext)
         state = provisional
@@ -229,8 +234,37 @@ public final class AppBootstrap {
 
     private func wipeCloud(from context: ModelContext) async throws {
         try PersistenceBootstrap.wipeSyncedEntities(in: context, includeLocal: true)
-        await PersistenceBootstrap.awaitCloudKitExportIfNeeded(
+        let exportAwait = await PersistenceBootstrap.awaitCloudKitExportIfNeeded(
             cloudKitEnabled: Self.isEffectiveCloudKitEnabled()
+        )
+        await recordCloudKitAwaitIfTimedOut(
+            result: exportAwait,
+            event: "cloudkit_export_await",
+            reason: "wipe_cloud_entities"
+        )
+    }
+
+    private func recordCloudKitAwaitIfTimedOut(
+        result: CloudKitAwaitResult,
+        event: String,
+        reason: String
+    ) async {
+        guard result == .timedOut else { return }
+        guard !uiTesting.skipsSideEffects else { return }
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: DiagnosticContext(
+                    runID: UUID(),
+                    providerID: .manual,
+                    operation: "cloudkit_await"
+                ),
+                component: "AppBootstrap",
+                phase: "wipe",
+                event: event,
+                result: .timedOut,
+                reason: reason,
+                visibility: .publicDiagnostic
+            )
         )
     }
 

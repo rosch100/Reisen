@@ -86,6 +86,20 @@ func activityListParseCatalogDate_hotelHarEveningIsCalendarDay() throws {
     #expect(parsed == HotelStayDate.calendarDay(fromParsed: flexible))
 }
 
+@Test("ActivityListParser FutureRelevant nutzt GMT-Hotel-Anker statt Calendar.current")
+func activityListFutureRelevantUsesHotelStayDateAnchor() {
+    let parser = ActivityListParser()
+    // 2026-08-27 01:30 in Samoa (UTC-11) is still 2026-08-27 in GMT.
+    var samoa = Calendar(identifier: .gregorian)
+    samoa.timeZone = TimeZone(secondsFromGMT: -11 * 3600)!
+    let now = samoa.date(from: DateComponents(year: 2026, month: 8, day: 27, hour: 1, minute: 30))!
+    let todayGMT = HotelStayDate.calendarDay(fromParsed: now)
+    #expect(parser.isFutureRelevantBooking(statusKey: "upcoming", startAt: todayGMT, now: now))
+    let yesterdayGMT = HotelStayDate.dateOnly(year: 2026, month: 8, day: 26)
+    #expect(!parser.isFutureRelevantBooking(statusKey: "upcoming", startAt: yesterdayGMT, now: now))
+}
+
+
 @Test("ActivityListParser: Hotel-Kalendertag gestern bleibt draußen, auch bei T23:59")
 func activityListHotelYesterdayEveningDoesNotPassTodayGate() {
     var calendar = Calendar(identifier: .gregorian)

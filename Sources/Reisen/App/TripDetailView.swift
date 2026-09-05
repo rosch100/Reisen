@@ -1162,7 +1162,7 @@ private struct BookingRow: View {
 
     private func computeFutureDeadlinesForDisplay(now: Date = Date()) -> [SDCancellationDeadline] {
         let service = CancellationDeadlineDisplayService()
-        let domainDeadlines = booking.resolvedCancellationDeadlines.map(DomainMapper.deadline(from:))
+        let domainDeadlines = booking.resolvedCancellationDeadlines.compactMap(DomainMapper.deadline(from:))
         let filteredDomainDeadlines = service.deadlinesForDisplay(domainDeadlines, now: now)
         let deadlinesByID = Dictionary(uniqueKeysWithValues: booking.resolvedCancellationDeadlines.map { ($0.id, $0) })
         // Preserve the ascending order returned by the domain/service layer.
@@ -1421,7 +1421,8 @@ private struct BookingRow: View {
         red: NSColor
     ) {
         if deadline.isFreeCancellation {
-            let urgency = urgencyService.urgency(for: DomainMapper.deadline(from: deadline), now: now)
+            guard let domainDeadline = DomainMapper.deadline(from: deadline) else { return }
+            let urgency = urgencyService.urgency(for: domainDeadline, now: now)
             let color: NSColor = {
                 switch urgency {
                 case .ok: return green
