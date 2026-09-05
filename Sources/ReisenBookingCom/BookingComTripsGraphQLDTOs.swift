@@ -38,6 +38,7 @@ struct GetTripsResult: Decodable {
 
 struct GetTrip: Decodable {
     let id: String?
+    let canceled: Bool?
 }
 
 struct GetTripsNextPage: Decodable {
@@ -64,6 +65,8 @@ struct SingleTripTimeline: Decodable {
 
 struct GraphQLTrip: Decodable {
     let title: String?
+    /// Trip-XP GraphQL `canceled` (US-Schreibweise); true → Katalog als storniert behandeln.
+    let canceled: Bool?
 }
 
 struct TripItemGroup: Decodable {

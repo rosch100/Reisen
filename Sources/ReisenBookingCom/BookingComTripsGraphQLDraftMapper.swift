@@ -20,7 +20,11 @@ extension BookingComTripsGraphQLParser {
         var passengerCount: Int?
     }
 
-    func draft(from reservation: GraphQLReservation, tripTitle: String?) -> ProviderBookingDraft? {
+    func draft(
+        from reservation: GraphQLReservation,
+        tripTitle: String?,
+        tripCanceled: Bool = false
+    ) -> ProviderBookingDraft? {
         guard let externalUrl = BookingComParsing.absoluteBookingURL(
             reservation.bookingUrl ?? reservation.reservationDetailsURL
         ) else {
@@ -49,7 +53,10 @@ extension BookingComTripsGraphQLParser {
                 locationToAddress: fields.locationToAddress,
                 operatorName: fields.operatorName,
                 isAllDay: activityIsAllDay(bookingType, startISO: startISO, endISO: endISO),
-                statusRaw: reservation.reservationStatus,
+                statusRaw: catalogStatusRaw(
+                    reservationStatus: reservation.reservationStatus,
+                    tripCanceled: tripCanceled
+                ),
                 deadlines: deadlines,
                 rateDetails: rateDetails(from: reservation, bookingType: bookingType, fields: fields),
                 hotelOffsetSeconds: fields.hotelOffsetSeconds,

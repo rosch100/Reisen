@@ -10,7 +10,8 @@ struct AirbnbScheduledEventsParseResult {
 
 enum AirbnbScheduledEventsParser {
     static func parse(
-        responseText: String
+        responseText: String,
+        hotelOffsetSeconds: Int?
     ) throws -> AirbnbScheduledEventsParseResult {
         let decoded = try AirbnbJSONDecoder.shared.decode(
             AirbnbScheduledEventsEnvelope.self,
@@ -19,7 +20,10 @@ enum AirbnbScheduledEventsParser {
         let rows = decoded.scheduledEvent.rows
 
         return AirbnbScheduledEventsParseResult(
-            deadlines: AirbnbScheduledEventsCancellation.parse(rows: rows),
+            deadlines: AirbnbScheduledEventsCancellation.parse(
+                rows: rows,
+                hotelOffsetSeconds: hotelOffsetSeconds
+            ),
             rateDetails: AirbnbScheduledEventsPayment.parse(rows: rows),
             hotelCheckInMinutes: AirbnbScheduledEventsMinutes.parse(
                 rows: rows,

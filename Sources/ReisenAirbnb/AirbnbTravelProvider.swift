@@ -95,9 +95,6 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
             headers: reservationOverviewHeaders(referer: loginURL.absoluteString)
         )
 
-        let scheduledParsed = try AirbnbScheduledEventsParser.parse(responseText: stayDetailsText)
-        let guestHints = AirbnbGuestHintParser().parse(from: stayDetailsText)
-
         let hotelOffsetSeconds: Int?
         if let offset = AirbnbListingTimeZone.offsetSeconds(
             listingTimeZone: tripDetails.listingTimeZone,
@@ -111,6 +108,12 @@ public final class AirbnbTravelProvider: TravelProvider, TravelProviderLoginConf
             )
             hotelOffsetSeconds = nil
         }
+
+        let scheduledParsed = try AirbnbScheduledEventsParser.parse(
+            responseText: stayDetailsText,
+            hotelOffsetSeconds: hotelOffsetSeconds
+        )
+        let guestHints = AirbnbGuestHintParser().parse(from: stayDetailsText)
 
         return DraftAssembler.enrichment(
             from: AirbnbStayEnrichment.facts(

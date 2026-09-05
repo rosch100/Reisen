@@ -173,6 +173,41 @@ func activityListHTMLCancellationWithoutOffsetIsNotPersisted() throws {
     #expect(parsed.cancellationDeadlines.isEmpty)
 }
 
+@Test("CancellationPolicyParser: Hotel-Offset aus cancelableUntilHotel")
+func cancellationPolicyParserKeepsHotelOffset() {
+    let html = #"""
+    cancelationLabelFee":"Kostenlos stornierbar","cancelationLabelTime":"bis zum 12.08.2026 21:59 Uhr (Hotel-Ortszeit)"
+    ,"cancelableUntilHotel":"2026-08-12T21:59:59+0800","cancelableUntilUtc":"2026-08-12T13:59:59+0000"
+    """#
+    let parsed = CancellationPolicyParser().parseCancellationPolicy(from: html)
+    #expect(parsed.deadlines.count == 1)
+    let deadline = parsed.deadlines[0]
+    #expect(deadline.hotelOffsetSeconds == 8 * 3600)
+    #expect(deadline.isFreeCancellation == true)
+}
+
+@Test("CancellationPolicyParser: Offset-Recovery aus ISO +HH:MM wenn Regex-Offset fehlt")
+func cancellationPolicyParserRecoversColonOffsetFromHotelUntil() {
+    // extractHotelOffsetSeconds erwartet [+-]HHMM; +08:00 kommt nur über ISODateTime.offsetSeconds.
+    let html = #"""
+    cancelationLabelFee":"Kostenlos stornierbar","cancelationLabelTime":"Policy text ohne deutsches Datum"
+    ,"cancelableUntilHotel":"2026-08-12T21:59:59+08:00"
+    """#
+    let parsed = CancellationPolicyParser().parseCancellationPolicy(from: html)
+    #expect(parsed.deadlines.count == 1)
+    #expect(parsed.deadlines[0].hotelOffsetSeconds == 8 * 3600)
+}
+
+@Test("CancellationPolicyParser: Frist ohne Offset wird nicht persistiert")
+func cancellationPolicyParserDropsDeadlineWithoutOffset() {
+    // Nur Label-Fee/Time, kein Until mit Offset → keine Deadline.
+    let html = #"""
+    cancelationLabelFee":"Kostenlos stornierbar","cancelationLabelTime":"bis zum 12.08.2026 21:59 Uhr (Hotel-Ortszeit)"
+    """#
+    let parsed = CancellationPolicyParser().parseCancellationPolicy(from: html)
+    #expect(parsed.deadlines.isEmpty)
+}
+
 
 @Test("ActivityListParser: HTML-Link ohne Datum-Fenster wird gedroppt, kein Throw")
 func activityListHTMLBookingWindowDropDoesNotThrow() throws {

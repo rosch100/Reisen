@@ -29,24 +29,31 @@ enum AirbnbScheduledEventsCancellation {
         "nicht erstattungsfähig",
     ]
 
-    static func parse(rows: [AirbnbScheduledEventRow]) -> [CancellationDeadline] {
+    static func parse(
+        rows: [AirbnbScheduledEventRow],
+        hotelOffsetSeconds: Int?
+    ) -> [CancellationDeadline] {
         let row = rows.first(where: { $0.id == "cancellation_visualization" })
         guard let row else { return [] }
         // In this HAR, cancellation milestones are encoded in `cancellation_milestone_modal_v2.entries[]`.
         guard let modalEntries = row.cancellationMilestoneModalV2?.entries else { return [] }
-        return modalEntries.compactMap(deadline(from:))
+        return modalEntries.compactMap { deadline(from: $0, hotelOffsetSeconds: hotelOffsetSeconds) }
     }
 
     static func deadline(
-        from entry: AirbnbScheduledEventRow.CancellationMilestoneEntry
+        from entry: AirbnbScheduledEventRow.CancellationMilestoneEntry,
+        hotelOffsetSeconds: Int?
     ) -> CancellationDeadline? {
+        // Absolute Instant ok; Anzeige/EventKit brauchen Listing-/Stay-Offset — ohne Offset nicht persistieren.
+        guard let hotelOffsetSeconds else { return nil }
         guard let isFree = classifyFreeCancellation(entry) else { return nil }
         guard let deadlineAt = deadlineAt(for: entry, isFree: isFree) else { return nil }
         return CancellationDeadline(
             deadlineAt: deadlineAt,
             policyText: entry.refundTerm ?? entry.timelineTitle,
             isStrict: true,
-            isFreeCancellation: isFree
+            isFreeCancellation: isFree,
+            hotelOffsetSeconds: hotelOffsetSeconds
         )
     }
 

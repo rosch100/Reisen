@@ -4,7 +4,11 @@ import ReisenDomain
 extension BookingComTripsGraphQLParser {
     public func parseTripIDs(fromGetTripsJSON json: String) throws -> [String] {
         let list = try decodeGetTripsList(from: json)
-        return list.trips.compactMap(\.id).filter { !$0.isEmpty }
+        return list.trips.compactMap { trip -> String? in
+            guard trip.canceled != true else { return nil }
+            guard let id = trip.id, !id.isEmpty else { return nil }
+            return id
+        }
     }
 
     public func parsePaginationToken(fromGetTripsJSON json: String) throws -> String? {
