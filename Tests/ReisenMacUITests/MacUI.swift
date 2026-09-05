@@ -104,8 +104,13 @@ struct MacUI {
 
     /// Empty-Launch: „Ohne Buchungsportale“ (Hide + completed).
     func completeProviderSetupWithoutPortals(timeout: TimeInterval = 3) {
-        dismissProviderSetupIfPresent(timeout: timeout)
-        let sheet = element(UITestingIdentifiers.providerSetupSheet)
+        let sheet = waitFor(UITestingIdentifiers.providerSetupSheet, timeout: timeout)
+        let later = waitFor(UITestingIdentifiers.providerSetupLater, timeout: 3)
+        later.click()
+        let goneDeadline = Date().addingTimeInterval(5)
+        while sheet.exists, Date() < goneDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
         XCTAssertFalse(sheet.exists, "Setup-Sheet bleibt nach Ohne Buchungsportale\n\(app.debugDescription)")
     }
 
