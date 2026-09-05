@@ -112,12 +112,10 @@ struct RootTabView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 refreshProviderAppPresence()
-                presentProviderSetupIfNeeded()
             }
         }
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
             ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
-            presentProviderSetupIfNeeded()
         }
         #endif
     }
@@ -171,7 +169,6 @@ struct RootTabView: View {
     }
 
     private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
-        guard ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: enabledIDs) else { return }
         let defaults = AppSettingsDefaults.current
         ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
         ProviderEnabledChange.notify()
@@ -179,7 +176,9 @@ struct RootTabView: View {
         ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
         #if REISEN_PROVIDER_SYNC
-        selectedTab = .sync
+        if !enabledIDs.isEmpty {
+            selectedTab = .sync
+        }
         #endif
         ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
     }

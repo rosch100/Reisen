@@ -102,6 +102,22 @@ struct MacUI {
         XCTAssertFalse(sheet.exists, "Setup-Sheet bleibt nach Later\n\(app.debugDescription)")
     }
 
+    /// Empty-Launch: Weiter ohne Portale (completed, kein Reopen-CTA).
+    func completeProviderSetupWithEmptySelection(timeout: TimeInterval = 3) {
+        let sheet = waitFor(UITestingIdentifiers.providerSetupSheet, timeout: timeout)
+        let continueButton = waitFor(UITestingIdentifiers.providerSetupContinue, timeout: 3)
+        XCTAssertTrue(
+            continueButton.isEnabled,
+            "Continue muss ohne Portale aktiv sein\n\(app.debugDescription)"
+        )
+        continueButton.click()
+        let goneDeadline = Date().addingTimeInterval(5)
+        while sheet.exists, Date() < goneDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        XCTAssertFalse(sheet.exists, "Setup-Sheet bleibt nach Empty-Continue\n\(app.debugDescription)")
+    }
+
     @discardableResult
     func waitUntilSelected(
         _ element: XCUIElement,

@@ -168,7 +168,6 @@ struct ContentView: View {
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
             sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
             ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
-            presentProviderSetupIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
             if let providerID = note.object as? ProviderID {
@@ -870,14 +869,15 @@ struct ContentView: View {
     }
 
     private func completeProviderSetup(enabledIDs: Set<ProviderID>) {
-        guard ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: enabledIDs) else { return }
         let defaults = AppSettingsDefaults.current
         ProviderFirstLaunchSetup.applySelection(enabledIDs: enabledIDs, defaults: defaults)
         ProviderEnabledChange.notify()
         ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
         ProviderPreferencesImportGate.exportFromDefaults(context: modelContext, defaults: defaults)
         showProviderSetup = false
-        selectFirstEnabledProviderSyncIfAvailable()
+        if !enabledIDs.isEmpty {
+            selectFirstEnabledProviderSyncIfAvailable()
+        }
         ProviderFirstLaunchSetupDiagnostics.recordCompleted(enabledCount: enabledIDs.count)
     }
 

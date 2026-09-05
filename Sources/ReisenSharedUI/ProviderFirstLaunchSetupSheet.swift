@@ -6,6 +6,7 @@ import ReisenDomain
 /// HIG First-Launch-Sheet zur Auswahl der Sync-Buchungsportale (macOS + iOS).
 ///
 /// Persistenz/Notify liegen beim Host (`onContinue` / `onLater`); dieses View hält nur die Auswahl-UI.
+/// Continue ist immer aktiv — leere Auswahl = bewusst keine Portale.
 public struct ProviderFirstLaunchSetupSheet: View {
     private let syncProviderIDsOverride: [ProviderID]?
     private let onContinue: (Set<ProviderID>) -> Void
@@ -36,10 +37,6 @@ public struct ProviderFirstLaunchSetupSheet: View {
             return registry.syncProviderIDs
         }
         return ProviderID.syncProviderIDs
-    }
-
-    private var canContinue: Bool {
-        ProviderFirstLaunchSetup.acceptsContinue(enabledIDs: selection)
     }
 
     public var body: some View {
@@ -117,7 +114,6 @@ public struct ProviderFirstLaunchSetupSheet: View {
                 onContinue(selection)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!canContinue)
             .keyboardShortcut(.defaultAction)
             .accessibilityIdentifier(UITestingIdentifiers.providerSetupContinue)
         }
