@@ -59,16 +59,21 @@ W0 Spec → W1 Data/AppCore/Domain → W2 Provider → W3 SharedUI → W4 Shell 
 | id | severity | area | status | notes |
 | --- | --- | --- | --- | --- |
 | W1-prefs-outcome | high | AppCore | fix | PrefsImportOutcome |
-| W1-poison-clear | high | AppCore | fix | clear returns failed on delete fail |
-| W1-mirror-canonical | high | Data | fix | singleton only; dedupe throws |
+| W1-poison-clear | high | AppCore | fix | delete before defaults reset (r2) |
+| W1-mirror-canonical | high | Data | fix | singleton only; export drops strays (r2) |
 | W1-cloudkit-await | high | Data | fix | CloudKitAwaitResult + wipe timedOut log |
 | W1-eventkit-tz | high | AppCore | fix | skip missing offset (EventKit + ReminderScheduler) |
 | W1-flight-tz | medium | AppCore | fix | skip summary + persist throw |
 | W1-deadlines-tests | medium | Domain | fix | replace/retain + epoch gate |
+| W1-normalizer-offset | high | Domain | fix | r2: no invent `0` on nil deadline offset |
 | W2-opodo-throw | high | Opodo | fix | session/enrichment throw |
+| W2-opodo-cancel-graphql | high | Opodo | fix | r2: cancellation envelope errors throw |
+| W2-opodo-partial-errors | medium | Opodo | fix | r2: getTrips errors always throw |
 | W2-booking-partial | high | Booking | fix | timelineFailures > 0 throw |
 | W2-check24-tz | medium | Check24 | fix | HotelStayDate today gate |
-| W2-opodo-hotel-offset | medium | Opodo | fix | GMT calendarDay; hotelOffsetSeconds bleibt nil bis Enrich |
+| W2-check24-samestay | medium | Check24 | fix | r2: HotelStayDate.calendar |
+| W2-check24-html-deadline | medium | Check24 | fix | r2: only noDeadline → []; other throws |
+| W2-opodo-hotel-offset | medium | Opodo | fix | GMT calendarDay; wall-clock `0` intentional |
 | W2-booking-deadline-diag | medium | Booking | fix | skip Diagnostic |
 | W2-check24-basket | medium | Check24 | fix | drop counter Diagnostic |
 | W3-gap-save | medium | SharedUI | fix | PersistAlert + DiagnosticLogger |
@@ -76,12 +81,15 @@ W0 Spec → W1 Data/AppCore/Domain → W2 Provider → W3 SharedUI → W4 Shell 
 | W3-gap-xcui | low | SharedUI | defer | PersistFailureAlert reused; kein neuer Identifier |
 | W1-cloudkit-verify-await | medium | Data | fix | TwoDeviceVerification meldet timedOut |
 | W4-shell-parity | medium | Shell | fix | iOS persist Diagnostics; print→Logger |
+| W4-ios-booking-persist | medium | Shell | fix | r2: delete/remove Diagnostic + no try? |
 | W5-overlap | low | UI | defer | no Main-Thread evidence this pass |
+| W5-flight-display-tz | medium | UI | fix | r2: wallClockUTC statt TimeZone.current |
 | defer-wipe-open | — | Data | defer | swiftdata-hybrid-cloudkit |
 | defer-macos-push | — | Platform | defer | apple-signing |
 | defer-airbnb-iana | — | Airbnb | defer | |
 | defer-boardtype-unknown | — | Data | defer | |
 | defer-diag-encode | — | Diagnostics | defer | |
+| defer-opodo-no-tdtoken | medium | Opodo | defer | missing tdToken → empty deadlines (kein GraphQL-Call) |
 
 ## DoD / Stop
 

@@ -161,6 +161,14 @@ func activityListHTMLWithoutBookingLinksIsEmptyCatalog() throws {
     #expect(parsed.bookings.isEmpty)
 }
 
+@Test("ActivityListParser: HTML ohne Storno-Fristen liefert leere Deadlines")
+func activityListHTMLWithoutCancellationDeadlinesIsEmpty() throws {
+    let parsed = try ActivityListParser().parseActivityListHTML(
+        #"<html><body><a href="/hotel/booking/1">Hotel</a></body></html>"#
+    )
+    #expect(parsed.cancellationDeadlines.isEmpty)
+}
+
 @Test("Check24: Login-HTML wird als fehlende Session erkannt")
 func check24LoginHTMLIndicatesMissingSession() {
     let loginHTML = """

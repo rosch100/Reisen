@@ -17,7 +17,12 @@ public struct ActivityListParser {
             try? parseBookingWindow(for: link, in: html)
         }
 
-        let cancellationDeadlines = (try? parseCancellationDeadlines(from: html)) ?? []
+        let cancellationDeadlines: [ParsedCancellationDeadline]
+        do {
+            cancellationDeadlines = try parseCancellationDeadlines(from: html)
+        } catch Check24ParseError.noCancellationDeadlineFound {
+            cancellationDeadlines = []
+        }
         return ParsedActivity(bookings: parsedBookings, cancellationDeadlines: cancellationDeadlines)
     }
 }

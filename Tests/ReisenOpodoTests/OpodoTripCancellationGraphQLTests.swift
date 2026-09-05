@@ -265,3 +265,28 @@ func opodoCancellationGraphQLReadsProductBookingPolicies() throws {
     #expect(enrichment.deadlines.isEmpty)
     #expect(enrichment.guestHints == nil)
 }
+@Test("OpodoTripCancellationGraphQLParser wirft bei GraphQL-Errors")
+func opodoCancellationGraphQLThrowsOnErrors() {
+    let json = #"{"errors":[{"message":"Internal error"}]}"#
+    #expect(throws: OpodoTripCancellationGraphQLParserError.graphQLErrors("Internal error")) {
+        try OpodoTripCancellationGraphQLParser().parse(from: json)
+    }
+}
+
+@Test("OpodoTripCancellationGraphQLParser wirft bei USER_NOT_LOGGED_IN")
+func opodoCancellationGraphQLThrowsWhenNotLoggedIn() {
+    let json = """
+    {"errors":[{"message":"Auth","extensions":{"errorCode":"USER_NOT_LOGGED_IN"}}]}
+    """
+    #expect(throws: OpodoTripCancellationGraphQLParserError.notLoggedIn) {
+        try OpodoTripCancellationGraphQLParser().parse(from: json)
+    }
+}
+
+@Test("OpodoTripCancellationGraphQLParser: fehlender Trip ohne Errors → leere Deadlines")
+func opodoCancellationGraphQLEmptyTripWithoutErrors() throws {
+    let json = #"{"data":{"getTrip":{"trip":null}}}"#
+    let parsed = try OpodoTripCancellationGraphQLParser().parse(from: json)
+    #expect(parsed.deadlines.isEmpty)
+    #expect(parsed.statusRaw == nil)
+}

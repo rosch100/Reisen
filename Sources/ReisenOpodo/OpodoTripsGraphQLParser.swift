@@ -17,9 +17,7 @@ public struct OpodoTripsGraphQLParser: Sendable {
         )
         let wrappers = envelope.data?.getTrips?.trips ?? []
         try throwIfSessionLost(envelope.errors)
-        if wrappers.isEmpty {
-            try throwIfGraphQLFailed(envelope.errors)
-        }
+        try throwIfGraphQLFailed(envelope.errors)
 
         let bookings = wrappers.compactMap { wrapper in
             wrapper.trip.flatMap(draft(from:))

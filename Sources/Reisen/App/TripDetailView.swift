@@ -1234,8 +1234,10 @@ private struct BookingRow: View {
 
         let departureOffset = booking.flightDepartureOffsetSeconds
         let arrivalOffset = booking.flightArrivalOffsetSeconds
-        let departureTZ = departureOffset.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
-        let arrivalTZ = arrivalOffset.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+        let departureTZ = departureOffset.flatMap { TimeZone(secondsFromGMT: $0) }
+            ?? HotelTimeZone.wallClockUTC
+        let arrivalTZ = arrivalOffset.flatMap { TimeZone(secondsFromGMT: $0) }
+            ?? HotelTimeZone.wallClockUTC
         let departure = Formatting.formatOrtszeit(
             booking.startAt,
             dateFormat: "d.M. HH:mm",

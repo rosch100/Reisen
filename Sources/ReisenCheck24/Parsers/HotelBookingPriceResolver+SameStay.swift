@@ -8,7 +8,7 @@ extension HotelBookingPriceResolver {
         let bTitle = (b.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !aTitle.isEmpty, aTitle == bTitle else { return false }
 
-        let calendar = Calendar.current
+        let calendar = HotelStayDate.calendar
         return calendar.isDate(a.startAt, inSameDayAs: b.startAt)
             && calendar.isDate(a.endAt, inSameDayAs: b.endAt)
     }

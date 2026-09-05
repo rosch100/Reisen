@@ -66,7 +66,7 @@ struct BookingDetailIOS: View {
     }
 
     private var hotelTimeZone: TimeZone {
-        booking?.resolvedHotelTimeZone ?? TimeZone(secondsFromGMT: 0) ?? .current
+        booking?.resolvedHotelTimeZone ?? HotelTimeZone.wallClockUTC
     }
 
     private var draftBinding: Binding<BookingEditorDraft>? {
@@ -89,6 +89,7 @@ struct BookingDetailIOS: View {
             pendingDeleteBookingID = nil
             dismiss()
         } catch {
+            Self.recordPersistFailure(operation: "booking_delete", error: error)
             persistErrorMessage = error.localizedDescription
             pendingDeleteBookingID = nil
         }
@@ -98,8 +99,14 @@ struct BookingDetailIOS: View {
         guard let bookingID = pendingRemoveFromTripBookingID,
               let bookingToRemove = bookings.first(where: { $0.id == bookingID }) else { return }
         bookingToRemove.trip = nil
-        try? modelContext.save()
-        pendingRemoveFromTripBookingID = nil
+        do {
+            try modelContext.save()
+            pendingRemoveFromTripBookingID = nil
+        } catch {
+            Self.recordPersistFailure(operation: "booking_remove_from_trip", error: error)
+            persistErrorMessage = error.localizedDescription
+            pendingRemoveFromTripBookingID = nil
+        }
     }
 
     @ViewBuilder

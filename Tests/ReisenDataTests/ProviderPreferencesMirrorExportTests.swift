@@ -67,4 +67,35 @@ struct ProviderPreferencesMirrorExportTests {
         #expect(second == first)
         #expect(context.hasChanges == false)
     }
+
+    @Test("export replaces stray non-singleton with defaults snapshot")
+    func exportReplacesStrayWithDefaultsSnapshot() throws {
+        let schema = Schema([SDProviderPreferences.self])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [configuration])
+        let context = ModelContext(container)
+
+        let stray = SDProviderPreferences(
+            id: UUID(),
+            setupCompleted: true,
+            enabledProviderRawCSV: ProviderID.check24.rawValue
+        )
+        context.insert(stray)
+        try context.save()
+
+        let suite = "reisen.test.prefs.export.stray.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: AppSettingsKeys.providerSetupCompleted)
+        defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: .opodo))
+
+        #expect(try ProviderPreferencesMirror.export(from: defaults, into: context) == true)
+
+        let all = try context.fetch(FetchDescriptor<SDProviderPreferences>())
+        #expect(all.count == 1)
+        let record = try #require(all.first)
+        #expect(record.id == ProviderPreferencesRecordID.singleton)
+        #expect(record.enabledProviderRawCSV == ProviderID.opodo.rawValue)
+        #expect(record.setupCompleted == true)
+    }
 }

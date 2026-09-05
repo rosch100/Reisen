@@ -76,11 +76,10 @@ public enum ProviderPreferencesMirror {
         if let existing = try fetchCanonical(in: context) {
             return existing
         }
-        // Promote a stray non-singleton row once, then dedupe — never invent content from `all.first` on import.
+        // Export schreibt immer aus Defaults — stray Rows verwerfen, nie Inhalt aus `all.first` übernehmen.
         let all = try context.fetch(FetchDescriptor<SDProviderPreferences>())
-        if let stray = all.first {
-            stray.id = ProviderPreferencesRecordID.singleton
-            return stray
+        for row in all {
+            context.delete(row)
         }
         let created = SDProviderPreferences()
         context.insert(created)

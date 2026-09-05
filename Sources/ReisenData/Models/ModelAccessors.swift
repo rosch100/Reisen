@@ -68,11 +68,13 @@ public extension SDBooking {
     }
 
     var resolvedFlightDepartureTimeZone: TimeZone {
-        flightDepartureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+        flightDepartureOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
+            ?? HotelTimeZone.wallClockUTC
     }
 
     var resolvedFlightArrivalTimeZone: TimeZone {
-        flightArrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) } ?? .current
+        flightArrivalOffsetSeconds.flatMap { TimeZone(secondsFromGMT: $0) }
+            ?? HotelTimeZone.wallClockUTC
     }
 
     /// HIG: nur Vor-/Nachname, keine Titel (MR/MS/Mx).

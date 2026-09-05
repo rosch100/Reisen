@@ -2,8 +2,8 @@ import Testing
 import Foundation
 import ReisenDomain
 
-@Test("BookingTimeNormalizer setzt Deadline-hotelOffsetSeconds vor Persistenz (Default 0)")
-func bookingTimeNormalizerSetsDeadlineOffsetDefaultZero() {
+@Test("BookingTimeNormalizer belässt Deadline-hotelOffsetSeconds nil ohne Booking-Offset")
+func bookingTimeNormalizerLeavesDeadlineOffsetNilWhenBookingHasNone() throws {
     let rawStartAt = Date(timeIntervalSince1970: 1_780_000_000)
     let rawEndAt = Date(timeIntervalSince1970: 1_780_010_000)
     let rawDeadlineAt = Date(timeIntervalSince1970: 1_780_020_000)
@@ -40,8 +40,9 @@ func bookingTimeNormalizerSetsDeadlineOffsetDefaultZero() {
     #expect(normalized.endAt == HotelStayDate.dateOnly(fromStoredOrParsed: rawEndAt))
     #expect(normalized.timesNormalized == true)
 
-    let normalizedDeadline = normalized.cancellationDeadlines.first
-    #expect(normalizedDeadline?.hotelOffsetSeconds == 0)
+    #expect(normalized.cancellationDeadlines.count == 1)
+    let normalizedDeadline = try #require(normalized.cancellationDeadlines.first)
+    #expect(normalizedDeadline.hotelOffsetSeconds == nil)
 }
 
 @Test("BookingTimeNormalizer propagiert Booking hotelOffsetSeconds auf Deadlines")
