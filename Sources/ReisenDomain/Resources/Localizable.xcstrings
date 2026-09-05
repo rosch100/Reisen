@@ -465,22 +465,6 @@
         }
       }
     },
-    "action.open_keychain": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schlüsselbundverwaltung"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keychain Access"
-          }
-        }
-      }
-    },
     "action.open_passwords": {
       "localizations": {
         "de": {
@@ -7325,22 +7309,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Insert the selected account email and password into the login fields."
-          }
-        }
-      }
-    },
-    "sync.keychain_access_not_found": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schlüsselbundverwaltung wurde nicht gefunden."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keychain Access was not found."
           }
         }
       }

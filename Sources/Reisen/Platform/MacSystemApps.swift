@@ -1,21 +1,13 @@
 import AppKit
 import Foundation
 
-/// Öffnet System-Apps für Credential-Hilfsflows (Passwords / Schlüsselbundverwaltung).
+/// Öffnet System-Apps für Credential-Hilfsflows (Passwords).
 enum MacSystemApps {
     @discardableResult
     static func openPasswords() -> Bool {
         openApplication(atCandidates: [
             "/System/Applications/Passwords.app",
             "/Applications/Passwords.app",
-        ])
-    }
-
-    @discardableResult
-    static func openKeychainAccess() -> Bool {
-        openApplication(atCandidates: [
-            "/System/Library/CoreServices/Applications/Keychain Access.app",
-            "/Applications/Utilities/Keychain Access.app",
         ])
     }
 
