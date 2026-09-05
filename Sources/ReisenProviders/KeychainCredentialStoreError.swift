@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import ReisenDomain
 
 extension KeychainCredentialStore {
     public enum CredentialStoreError: LocalizedError, Equatable {
@@ -13,11 +14,11 @@ extension KeychainCredentialStore {
         public var errorDescription: String? {
             switch self {
             case .noEntry(let serverHost):
-                return """
-                Kein lesbares Konto für '\(serverHost)'.
-                Passwords-App-Einträge sind für andere Apps gesperrt.
-                Primärweg: „Konto speichern…“ — E-Mail und Kennwort aus Passwords hier hinterlegen.
-                """
+                return L10n.format(
+                    .syncKeychainNoReadableAccount,
+                    serverHost,
+                    L10n.string(.actionRememberLogin)
+                )
             case .unsupportedItem:
                 return "Keychain-Eintrag hat ein unerwartetes Format."
             case .unexpectedItemAttributes:

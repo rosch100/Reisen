@@ -181,6 +181,12 @@ struct SyncView: View {
                         Divider()
                         actionBar
                     }
+                    if browserExpanded {
+                        Color.clear
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .accessibilityIdentifier(UITestingIdentifiers.syncProviderWebView)
+                            .accessibilityLabel("Provider WebView")
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -216,6 +222,7 @@ struct SyncView: View {
                             operation: "macos_sync"
                         )
                     )
+                    .accessibilityIdentifier(UITestingIdentifiers.syncProviderWebView)
                     .frame(
                         maxWidth: .infinity,
                         minHeight: browserExpanded ? 120 : 0,
@@ -407,7 +414,7 @@ struct SyncView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     credentialControls
                     if let keychainMessage {
-                        keychainEmptyAssistance(message: keychainMessage)
+                        keychainEmptyAssistanceMessage(message: keychainMessage)
                     }
                 }
             }
@@ -502,40 +509,45 @@ struct SyncView: View {
             .accessibilityIdentifier(UITestingIdentifiers.syncRememberLogin)
             .help(L10n.string(.syncRememberLoginHelp))
 
+            if keychainMessage != nil {
+                keychainAssistanceActionButtons
+            }
+
             Spacer(minLength: 0)
         }
     }
 
-    private func keychainEmptyAssistance(message: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            CopyableLabel(
-                title: message,
-                systemImage: "key.slash",
-                textStyle: .callout,
-                textColor: .secondaryLabelColor,
-                iconColor: .secondary
-            )
-            HStack(spacing: 8) {
-                Button {
-                    if !MacSystemApps.openPasswords() {
-                        appendKeychainMessage(L10n.string(.syncPasswordsAppNotFound))
-                    }
-                } label: {
-                    Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+    private func keychainEmptyAssistanceMessage(message: String) -> some View {
+        CopyableLabel(
+            title: message,
+            systemImage: "key.slash",
+            textStyle: .callout,
+            textColor: .secondaryLabelColor,
+            iconColor: .secondary
+        )
+    }
 
-                Button {
-                    if !MacSystemApps.openKeychainAccess() {
-                        appendKeychainMessage(L10n.string(.syncKeychainAccessNotFound))
-                    }
-                } label: {
-                    Label(L10n.string(.actionOpenKeychain), systemImage: "arrow.up.forward.app")
+    private var keychainAssistanceActionButtons: some View {
+        HStack(spacing: 8) {
+            Button {
+                if !MacSystemApps.openPasswords() {
+                    appendKeychainMessage(L10n.string(.syncPasswordsAppNotFound))
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+            } label: {
+                Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
             }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+
+            Button {
+                if !MacSystemApps.openKeychainAccess() {
+                    appendKeychainMessage(L10n.string(.syncKeychainAccessNotFound))
+                }
+            } label: {
+                Label(L10n.string(.actionOpenKeychain), systemImage: "arrow.up.forward.app")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
         }
     }
 
@@ -843,7 +855,8 @@ struct SyncView: View {
         keychainMessage = L10n.format(
             .syncKeychainAccountsFound,
             accounts.count,
-            keychainServerHost ?? ""
+            keychainServerHost ?? "",
+            L10n.string(.actionRememberLogin)
         )
     }
 
@@ -855,7 +868,8 @@ struct SyncView: View {
                 keychainMessage = L10n.format(
                     .syncKeychainAccountsFound,
                     keychainAccounts.count,
-                    keychainServerHost ?? ""
+                    keychainServerHost ?? "",
+                    L10n.string(.actionRememberLogin)
                 )
             }
             return

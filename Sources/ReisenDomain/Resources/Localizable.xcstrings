@@ -7350,13 +7350,29 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$d lesbare Konten für '%2$@' gefunden.\nBitte das gewünschte Konto wählen. Fehlt ein Passwörter-Konto: „Konto speichern…“."
+            "value": "%1$d lesbare Konten für '%2$@' gefunden.\nBitte das gewünschte Konto wählen. Fehlt ein Passwörter-Konto: „%3$@“."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$d readable accounts found for '%2$@'.\nSelect the account you want. If a Passwords account is missing: \"Save account…\"."
+            "value": "%1$d readable accounts found for '%2$@'.\nSelect the account you want. If a Passwords account is missing: \"%3$@\"."
+          }
+        }
+      }
+    },
+    "sync.keychain_no_readable_account": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein lesbares Konto für '%1$@'.\nPasswords-App-Einträge sind für andere Apps gesperrt.\nPrimärweg: „%2$@“ — E-Mail und Kennwort aus Passwords hier hinterlegen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No readable account for '%1$@'.\nPasswords app entries are locked for other apps.\nPrimary path: \"%2$@\" — store email and password from Passwords here."
           }
         }
       }
