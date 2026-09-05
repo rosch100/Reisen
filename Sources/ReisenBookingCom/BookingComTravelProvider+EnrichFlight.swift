@@ -1,6 +1,7 @@
 import Foundation
 import ReisenDomain
 import ReisenProviders
+import ReisenDiagnostics
 
 @MainActor
 extension BookingComTravelProvider {
@@ -9,12 +10,14 @@ extension BookingComTravelProvider {
         confirmationURL: URL
     ) async throws -> ProviderBookingEnrichment {
         guard let orderToken = Self.flightOrderToken(from: confirmationURL) else {
+            recordFlightEnrichSkipped(reason: "missing_order_token")
             return emptyFlightEnrichment
         }
 
         onProgress?("Lade Flug-Stornooptionen…")
 
         guard let orderURL = flightOrderURL(orderToken: orderToken) else {
+            recordFlightEnrichSkipped(reason: "missing_order_url")
             return emptyFlightEnrichment
         }
 
@@ -23,10 +26,12 @@ extension BookingComTravelProvider {
             orderURL: orderURL,
             confirmationURL: confirmationURL
         ) else {
+            recordFlightEnrichSkipped(reason: "order_fetch_failed")
             return emptyFlightEnrichment
         }
 
         guard let parsed = parseFlightOrder(json: json) else {
+            recordFlightEnrichSkipped(reason: "order_parse_failed")
             return emptyFlightEnrichment
         }
 
@@ -89,6 +94,26 @@ extension BookingComTravelProvider {
             return try BookingComFlightOrderParser().parse(from: json)
         } catch {
             return nil
+        }
+    }
+
+    private func recordFlightEnrichSkipped(reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .booking,
+                        operation: "booking_com_enrich_flight"
+                    ),
+                    component: "BookingComTravelProvider",
+                    phase: "enrich_flight",
+                    event: "flight_enrich_skipped",
+                    result: .skipped,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }

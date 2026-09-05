@@ -3,6 +3,7 @@ import Foundation
 import ReisenCrashSignal
 import ReisenData
 import ReisenDomain
+import ReisenDiagnostics
 
 enum GitHubIssueCrashCatcher {
     private static var pendingURL: URL? {
@@ -89,9 +90,7 @@ enum GitHubIssueCrashCatcher {
             try Data(SecretRedactor.redact(message).utf8).write(to: url, options: [.atomic])
             return true
         } catch {
-            #if DEBUG
-            print("[Reisen] Pending-Crash-Report fehlgeschlagen: \(error)")
-            #endif
+            // Crash-/Uncaught-Pfad: kein async Diagnostic; Fail = return false.
             return false
         }
     }
@@ -135,9 +134,21 @@ enum GitHubIssueCrashCatcher {
         } catch is GitHubIssueTokenError {
             return
         } catch {
-            #if DEBUG
-            print("[Reisen] Pending-Crash-Issue nicht gesendet, Datei bleibt: \(error.localizedDescription)")
-            #endif
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "github_crash_flush"
+                    ),
+                    component: "GitHubIssueCrashCatcher",
+                    phase: "flush",
+                    event: "pending_crash_report",
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 

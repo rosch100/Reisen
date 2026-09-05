@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import ReisenData
 import ReisenDomain
+import ReisenDiagnostics
 
 public enum GitHubIssueReporterError: Error, Equatable, LocalizedError {
     case rateLimited
@@ -262,9 +263,23 @@ public final class GitHubIssueReporter {
             let data = try JSONEncoder().encode(state)
             try data.write(to: persistenceURL, options: [.atomic])
         } catch {
-            #if DEBUG
-            print("[Reisen] GitHub-Issue-Reporter-State nicht gespeichert: \(error.localizedDescription)")
-            #endif
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: DiagnosticContext(
+                            runID: UUID(),
+                            providerID: .manual,
+                            operation: "github_issue_reporter_persist"
+                        ),
+                        component: "GitHubIssueReporter",
+                        phase: "persist",
+                        event: "reporter_state_persist",
+                        result: .failed,
+                        reason: String(describing: type(of: error)),
+                        visibility: .publicDiagnostic
+                    )
+                )
+            }
         }
     }
 

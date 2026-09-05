@@ -11,6 +11,7 @@ import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 #if REISEN_PROVIDER_SYNC
 import ReisenProviders
 #endif
@@ -202,9 +203,15 @@ struct RootTabView: View {
 
     /// Nach Review-Sichern: compact → Detail, split → Selection.
     private func selectPasteImportBooking(_ bookingID: UUID) {
-        let tripID = try? modelContext.fetch(
-            FetchDescriptor<SDBooking>(predicate: #Predicate { $0.id == bookingID })
-        ).first?.trip?.id
+        let tripID: UUID?
+        do {
+            tripID = try modelContext.fetch(
+                FetchDescriptor<SDBooking>(predicate: #Predicate { $0.id == bookingID })
+            ).first?.trip?.id
+        } catch {
+            Self.recordPersistFailure(operation: "paste_import_select_fetch", error: error)
+            tripID = nil
+        }
 
         if let tripID {
             selectedTripID = tripID
@@ -300,6 +307,26 @@ struct RootTabView: View {
             )
                 .tabItem { Label(L10n.string(.tabMore), systemImage: "ellipsis.circle") }
                 .tag(AppTab.mehr)
+        }
+    }
+
+    private static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "RootTabView",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 }

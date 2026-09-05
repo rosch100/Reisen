@@ -6,6 +6,7 @@ import ReisenPasteImport
 import ReisenSharedUI
 import ReisenDomain
 import ReisenData
+import ReisenDiagnostics
 
 struct ReisenTab: View {
     @Binding var sessionChromeEpoch: Int
@@ -138,10 +139,31 @@ struct ReisenTab: View {
                 selectedTripID = nil
             }
         } catch {
+            Self.recordPersistFailure(operation: "trip_delete", error: error)
             persistErrorMessage = error.localizedDescription
             return
         }
         pendingDeleteTrip = nil
+    }
+
+    private static func recordPersistFailure(operation: String, error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: operation
+                    ),
+                    component: "ReisenTab",
+                    phase: "persist",
+                    event: operation,
+                    result: .failed,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }
 
