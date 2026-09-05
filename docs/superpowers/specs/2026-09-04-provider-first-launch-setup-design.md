@@ -1,27 +1,28 @@
 # Design: Geführte Erststart-Auswahl der Provider
 
-**Datum:** 2026-09-04
-**Status:** approved (Ansatz A — feature-dev full_auto)
-**Scope:** macOS + iOS (SharedUI-Sheet); Domain-Gate; UITesting; Logging. Baut auf PR #138 (Provider opt-in) auf.
+**Datum:** 2026-09-04 (Aktualisiert 2026-09-05 — Hide-Toggle / Ohne Buchungsportale)
+**Status:** approved (Ansatz A — feature-dev full_auto; Gapfill Hide-Option)
+**Scope:** macOS + iOS (SharedUI-Sheet); Domain-Gate; Settings-Hide; UITesting; Logging. Baut auf PR #138 (Provider opt-in) und PR #179 (Empty-Continue) auf.
 
 ## Problem
 
-Nach PR #138 sind Sync-Portale beim Frischstart opt-in (aus). Die erste Nutzeraktion soll die **Auswahl der abzufragenden Provider** sein. Heute gibt es dafür **keine geführte UI** — nur Sidebar-/Settings-Checkboxen und einen Hinweistext. Das ist weder Erststart-geführt noch HIG-klar.
+Nach PR #138 sind Sync-Portale beim Frischstart opt-in (aus). Die erste Nutzeraktion soll die **Auswahl der abzufragenden Provider** sein. Nutzung **ohne Portale** braucht eine klare HIG-Aktion und eine Settings-Preferenz, sonst bleibt die Erstauswahl nach „Aufschub“ unsichtbar steuerbar.
 
 ## Ziele
 
-1. Beim Erststart erscheint eine **geführte Setup-Oberfläche** zur Provider-Auswahl.
+1. Beim Start (und wenn Hide aus + kein Portal aktiv) erscheint eine **geführte Setup-Oberfläche**.
 2. **HIG:** Sheet/Dialog-Metapher, klare Primary/Secondary, VoiceOver-Labels, keine Dead-End-Falle.
-3. **Optik:** ruhige, produktnahe Präsentation (Header + Provider-Zeilen), keine generische „AI-purple“-Optik; bestehende Voyenna-/System-Chrome nutzen.
-4. Continue bestätigt die Auswahl (inkl. 0 Portale = App ohne Provider) und beendet Setup; „Später“ verschiebt ohne completed und behält Reopen-CTA.
-5. Sidebar-/Settings-Toggles bleiben SSOT für spätere Änderungen.
-6. UITesting: Populated unterdrückt Sheet; Empty zeigt Sheet (Smoke/Identifier).
+3. **Optik:** ruhige, produktnahe Präsentation (Header + Provider-Zeilen); bestehende Voyenna-/System-Chrome nutzen.
+4. Continue bestätigt die Auswahl (inkl. 0 Portale = Hide + completed); Secondary **Ohne Buchungsportale** setzt Hide und completed.
+5. Settings-Toggle **Erstauswahl der Portale ausblenden** steuert Hide (Key `providerSetupDeferred`).
+6. Sidebar-/Settings-Toggles bleiben SSOT für Portal-Aktivierung.
+7. UITesting: Populated unterdrückt Sheet; Empty zeigt Sheet (Smoke/Identifier).
 
 ## Nicht-Ziele
 
 - Login-/Session-Wizard (bleibt SyncView nach Auswahl).
 - Neues Provider-Branding/Asset-Pack (nur vorhandene `displayName` + SF Symbol).
-- Erzwingen mindestens eines Providers für immer (Later erlaubt Aufschub).
+- Erzwingen mindestens eines Providers für immer (Ohne Buchungsportale erlaubt dauerhaft 0).
 - iOS-XCUI-Target (existiert nicht) — iOS Host trotzdem verdrahten; Evidence über macOS XCUI + `ios-test.sh`.
 - Änderung der Opt-in-Default-Semantik oder Upgrade-Migration aus PR #138.
 
@@ -29,45 +30,48 @@ Nach PR #138 sind Sync-Portale beim Frischstart opt-in (aus). Die erste Nutzerak
 
 | Ansatz | Beschreibung | Urteil |
 | --- | --- | --- |
-| **A — Modal Setup-Sheet (gewählt)** | SharedUI-Sheet beim Cold Launch; Multi-Select; Weiter / Später | HIG-üblich für Setup; klar geführt; wiederverwendbar macOS/iOS |
-| B — Inline Empty-Detail | Setup ersetzt nur ContentUnavailableView | Weniger geführt; leicht zu übersehen; Sidebar ablenkend |
-| C — Mehrstufiger Wizard inkl. Login | Auswahl + Login in einem Flow | YAGNI; vermischt Concerns; bricht SyncView-SSOT |
+| **A — Modal Setup-Sheet (gewählt)** | SharedUI-Sheet; Multi-Select; Weiter / Ohne Buchungsportale | HIG-üblich; klar geführt; wiederverwendbar macOS/iOS |
+| B — Inline Empty-Detail | Setup ersetzt nur ContentUnavailableView | Weniger geführt; leicht zu übersehen |
+| C — Mehrstufiger Wizard inkl. Login | Auswahl + Login in einem Flow | YAGNI; vermischt Concerns |
 
 ## Begriffe (SSOT)
 
 | Begriff | Bedeutung |
 | --- | --- |
-| **Setup** | Einmalige Erstauswahl der Sync-Provider |
-| **Continue / Weiter** | Persistiert Auswahl (auch 0 = keine Portale), markiert Setup abgeschlossen |
-| **Later / Später** | Schließt Sheet ohne Aktivierung; kein Auto-Show mehr bis manuelles Reopen |
-| **Reopen** | Empty-State-CTA „Portale wählen…“, wenn Setup nicht completed und keine Portale aktiv |
-| **setupCompleted** | UserDefaults-Flag: Weiter wurde bestätigt |
-| **setupDeferred** | UserDefaults-Flag: Später gewählt (Auto-Present aus) |
+| **Setup** | Geführte Auswahl der Sync-Provider |
+| **Continue / Weiter** | Persistiert Auswahl; bei ≥1 Portalen Hide aus + completed; bei 0 = wie Ohne Buchungsportale |
+| **Ohne Buchungsportale** | Hide an + completed + alle Sync-Portale aus (Identifier bleibt `setup.providers.later`) |
+| **Hide / Erstauswahl ausblenden** | Settings-Toggle; Key `reisen_providerSetupDeferred_v1` |
+| **Reopen** | Empty-State-CTA „Portale wählen…“, wenn Hide aus und keine Portale aktiv |
+| **setupCompleted** | UserDefaults-Flag: Setup abgeschlossen (CloudKit-Prefs) |
+| **setupDeferred / Hide** | UserDefaults-Flag: Erstauswahl ausblenden (lokal; nicht CloudKit) |
 
 ## Domain-Vertrag
-
-Neue Domain-Unit (pure, testbar), z. B. `ProviderFirstLaunchSetup`:
 
 ```text
 Keys (AppSettingsKeys / SSOT):
   reisen_providerSetupCompleted_v1
-  reisen_providerSetupDeferred_v1
+  reisen_providerSetupDeferred_v1   // Hide / „Erstauswahl ausblenden“
 
-shouldPresent(defaults:) -> Bool
-  true iff !completed && !deferred
+isInitialSetupHidden(defaults:) -> Bool
+setInitialSetupHidden(_:defaults:)
+
+shouldPresent(defaults:syncProviderIDs:) -> Bool
+  true iff !isInitialSetupHidden && kein Sync-Portal enabled
 
 markCompleted(defaults:)
-markDeferred(defaults:)
+markDeferred(defaults:)                 // Alias → setInitialSetupHidden(true)
+completeWithoutPortals(syncProviderIDs:defaults:)
+  applySelection([]) + setInitialSetupHidden(true) + markCompleted
 
 applySelection(enabledIDs:syncProviderIDs:defaults:)
   setzt providerEnabledKey true für `enabledIDs`, false für übrige `syncProviderIDs`
-  (explizit, kein stiller Default; leere `enabledIDs` = alle aus)
 ```
 
-- Defaults-Quelle: `AppSettingsDefaults.current` (wie PR #138).
+- Defaults-Quelle: `AppSettingsDefaults.current` bzw. injizierte Suite.
 - Nach Apply: `ProviderEnabledChange.notify()` im Host (nicht in Domain).
-- Upgrade-Installationen mit bereits materialisierten `providerEnabled_*` (PR #138 Migration): wenn **mindestens ein** Portal aktiv **oder** irgendein `reisen_providerEnabled_*` existiert → Bootstrap setzt `setupCompleted=true` (kein Sheet für Bestandskunden). Frischinstall ohne Keys → Sheet.
-- Setup-Flags lesen/schreiben **nur** über `AppSettingsDefaults.current` bzw. injizierte Suite — keine neuen `UserDefaults.standard`-Call-Sites für Setup-Keys.
+- Upgrade-Heuristik (Bootstrap): mindestens ein Portal aktiv → `setupCompleted=true` (kein Sheet für Bestandskunden mit aktiven Portalen).
+- Setup-Flags nur über `AppSettingsDefaults.current` / UITesting-Suite.
 
 ## UI-Vertrag (HIG + Optik)
 
@@ -75,24 +79,22 @@ applySelection(enabledIDs:syncProviderIDs:defaults:)
 
 - SwiftUI `.sheet` (kein Full-Screen-Trap auf macOS).
 - Struktur:
-  1. Header: SF Symbol `airplane.departure` (oder App-Icon Asset falls ohnehin Shared), Titel, ein kurzer Untertitel.
-  2. Liste/Form der `ProviderID.syncProviderIDs` mit Toggle (Name = `displayName`); optional Caption wenn Native-App installiert (`settingsAppInstalled`) — gleiches Signal wie Settings.
-  3. Footer-Actions: **Weiter** (`.borderedProminent`, immer aktiv — auch bei 0 gewählt) und **Später** (`.bordered` / cancel-ähnlich).
-- macOS: `.presentationSizing(.fitted)` analog anderer Sheets wo passend; sinnvolle Min-Breite.
-- iOS: Standard-Sheet; Drag-Indicator sichtbar.
-- Farben/Typo: System Semantik (`.primary` / `.secondary`); **kein** lila Gradient, kein Glow, keine Pill-Cluster.
+  1. Header: SF Symbol `airplane.departure`, Titel, Untertitel.
+  2. Liste der `ProviderID.syncProviderIDs` mit Toggle; optional Caption `settingsAppInstalled`.
+  3. Footer-Actions: **Weiter** (`.borderedProminent`, immer aktiv) und **Ohne Buchungsportale** (`.bordered` / cancel-ähnlich).
+- macOS: `.presentationSizing(.fitted)`; iOS: Standard-Sheet + Drag-Indicator.
 
-### Copy (L10n de/en, neue Keys)
+### Copy (L10n de/en)
 
-| Key (Vorschlag) | DE | EN |
+| Key | DE | EN |
 | --- | --- | --- |
 | `setup.providers.title` | Buchungsportale wählen | Choose Booking Portals |
-| `setup.providers.subtitle` | Wähle die Portale, die Voyenna synchronisieren soll. Du kannst das später jederzeit ändern. | Choose the portals Voyenna should sync. You can change this anytime. |
+| `setup.providers.subtitle` | Wähle die Portale… | Choose the portals… |
 | `setup.providers.continue` | Weiter | Continue |
-| `setup.providers.later` | Später | Later |
+| `setup.providers.later` | Ohne Buchungsportale | Without Booking Portals |
 | `setup.providers.reopen` | Portale wählen… | Choose Portals… |
-
-Ellipsis bei Reopen: **ja** (öffnet Sheet).
+| `settings.hide_provider_setup` | Erstauswahl der Portale ausblenden | Hide Portal Setup on Launch |
+| `settings.hide_provider_setup_footer` | Wenn ausgeschaltet und kein Portal aktiv ist, erscheint die Auswahl beim Start. | When off and no portal is enabled, setup appears on launch. |
 
 ### Accessibility / Identifier
 
@@ -101,95 +103,74 @@ Ellipsis bei Reopen: **ja** (öffnet Sheet).
 | `setup.providers.sheet` | Sheet-Root |
 | `setup.providers.toggle.<rawValue>` | Toggle pro Provider |
 | `setup.providers.continue` | Weiter |
-| `setup.providers.later` | Später |
+| `setup.providers.later` | Ohne Buchungsportale |
 | `setup.providers.reopen` | Empty-State-CTA |
-
-Jede ID höchstens **ein** Element im erwarteten Tree.
+| `reisen.settings.hide-provider-setup` | Settings-Hide-Toggle |
 
 ### Host-Verhalten
 
-**macOS `ContentView`:**
+**macOS `ContentView` / iOS `RootTabView`:**
 
-- Nach Bootstrap / onAppear: **Import-Gate** (siehe unten), dann wenn `shouldPresent` → Sheet.
-  Auto-Present nur hier (Startup-Gate) und über Empty-State-Reopen-CTA — **nicht** aus
-  `onProviderEnabledChange` / Settings-Toggles / `scenePhase` (sonst Sheet über Einstellungen).
-- Continue: `applySelection` (auch leer) → notify → `markCompleted` → Prefs-Export (CloudKit Mirror) → dismiss → bei ≥1 Portal `selectFirstEnabledProviderSyncIfAvailable()`.
-- Later: `markDeferred` → dismiss; Selection bleibt nil / Empty-State. (`setupDeferred` **nicht** nach CloudKit.)
-- Empty-State: wenn `!setupCompleted && enabledProviderIDs.isEmpty` → Button Reopen (neben/statt nur Disabled-Hint).
+- Nach Bootstrap: Import-Gate, dann wenn `shouldPresent` → Sheet (`reason=fresh_launch`).
+- Bei `ProviderEnabledChange` (Sidebar-/Settings-Enable **oder** Hide-Toggle): wenn `shouldPresent` → Sheet (`reason=no_enabled_providers`). Nicht aus `scenePhase` allein.
+- Continue ≥1: `applySelection` → Hide aus → notify → `markCompleted` → Prefs-Export → dismiss → Sync/Selection.
+- Continue 0 / Ohne Buchungsportale: `completeWithoutPortals` → notify → Prefs-Export → dismiss.
+- Empty-State Reopen: wenn `!isInitialSetupHidden && enabledProviderIDs.isEmpty`.
 
-**iOS `RootTabView`:** gleiches Sheet; Continue wechselt nur bei ≥1 Portal auf Sync-Tab.
+**Settings (`ProviderEnabledSettingsSection`):** Hide-Toggle + Portal-Toggles; Footer = Hide-Footer **und** `sync.enable_portals_hint`.
 
-**iOS Reopen:** `SyncTab.emptyProviders` erhält denselben Reopen-CTA (`setup.providers.reopen`), der das Sheet erneut präsentiert (Akzeptanz #3 gilt macOS **und** iOS Host, Evidence macOS-XCUI + iOS Compile).
+**iOS Reopen:** `SyncTab.emptyProviders` gleicher Reopen-CTA.
 
-### CloudKit Import-Gate (Gapfill — iCloud Prefs)
+### CloudKit Import-Gate
 
-SSOT Detail: `docs/superpowers/specs/2026-09-04-icloud-provider-prefs-credentials-design.md`.
-
-1. **Vor Present:** kurzer Wait auf initialen CloudKit-Import der Prefs. Wenn synced `setupCompleted` → **kein** Sheet (`provider_setup_skipped` / `icloud_prefs`).
-2. **Timeout** ohne Prefs → Frischinstall-Sheet wie bisher.
-3. **UITesting / `REISEN_CLOUDKIT=0` / CI:** Gate **sofort complete** (kein Netz-Wait) — Empty-Launch-Vertrag unverändert.
-4. **Post-Present:** Sheet sichtbar, später Import mit `setupCompleted` → Apply Snapshot + dismiss (`icloud_prefs_late`); Teilauswahl verwerfen. Nur Enables ohne `setupCompleted` → Sheet bleibt.
-
-### Session-Probe
-
-Solange Setup präsentiert wird: keine erzwungene Login-Selection (bereits durch opt-in leer). Probe darf laufen, Selection-Initialisierung bleibt wie PR #138 (`selection = nil` ohne enabled).
+Unverändert (siehe iCloud-Prefs-Spec): Wait auf Import; synced `setupCompleted` → skip; Timeout → lokales Setup; Late-Import dismiss. Hide/`setupDeferred` **nicht** nach CloudKit.
 
 ## UITesting / Isolation (`live_app`)
 
 | Mode | Verhalten |
 | --- | --- |
-| Populated (`-UITesting`) | `seedProviderSetupIfNeeded`: `setupCompleted=true` (+ bestehende Provider-Enable-Seeds) → **kein** Sheet |
-| Empty (`-UITestingEmpty`) | Flags ungesetzt → Sheet **auto sichtbar** |
+| Populated (`-UITesting`) | `seedProviderSetupIfNeeded`: `setupCompleted=true` **und** Hide an → kein Sheet |
+| Empty (`-UITestingEmpty`) | Flags ungesetzt → Sheet auto sichtbar |
 
-### Empty-Launch-Vertrag (Ist-Navigation, verbindlich)
+### Empty-Launch-Vertrag
 
-1. `MacUI.waitForWindow`: akzeptiert zusätzlich Existence von `setup.providers.sheet` (Fenster gilt als bereit).
-2. **Dedizierter Smoke** `testEmptyLaunchShowsProviderSetupSheet`: nur `waitFor(setup.providers.sheet)` — **kein** Continue-/Later-Tap (Assert vs Act / Reach-only).
-3. **Bestehende Empty-Smokes** (`createTripViaEmptyCTA`, ReviewTour Empty → `emptyState`): vor Nutzung von `emptyState` / `emptyStateNewTrip` **Dismiss** via Later-Tap (`setup.providers.later`) — Handler = `markDeferred` only (keine Provider-Aktivierung, kein Login-Disclosure). Page-Object-Helper z. B. `dismissProviderSetupIfPresent()`.
-4. **Kein** Continue in ReviewTour/Empty-Create — Continue wäre Produktions-Handoff (Enable + ggf. Sync-Pfad / Disclosure).
-5. Populated: Assert Sheet-Count `0` für `setup.providers.sheet`.
-
-### Isolation-Grep-Baseline (Scope dieses Features)
-
-- **In Scope / Fail:** neue Setup-Keys und Apply-Pfad nur `AppSettingsDefaults.current` oder UITesting-Suite; Host/`@AppStorage` nur unter `defaultAppStorage(isolatedDefaults)` wenn UITesting aktiv.
-- **Residual (nicht dieses Feature, nicht Continue-XCUI):** bestehende `UserDefaults.standard`-Sites (`ProviderLoginDisclosure.accept`, Teile `SyncTab`, CrashCatcher). Continue-XCUI, der Disclosure-Login auslöst, ist **v1 out of scope**; Empty-Dismiss bleibt Later-only.
-
-Compile-Units: XCUI importiert weiter `ReisenSharedUI` Identifier-SSOT (bestehende Grenze); keine neuen SharedUI-SwiftUI-Types in den Test-Runner linken außer Identifier-Konstanten.
-
-Prozess-Hooks: `AppSettingsDefaults.installOverride` + `UITestingLaunch.isolatedDefaults` nur Bootstrap/UITesting — keine unsynchronisierte Parallel-Mutation in Unit-Tests (Suite pro Test / removePersistentDomain wie bestehende Tests).
+1. `MacUI.waitForWindow`: Sheet-Existence akzeptiert.
+2. Smoke `testEmptyLaunchShowsProviderSetupSheet`: Reach-only Sheet.
+3. Empty-Smokes: Dismiss via `setup.providers.later` → `completeWithoutPortals` (Hide + completed, kein Reopen).
+4. Smoke `testEmptyLaunchWithoutPortalsDismissesSetup` / Empty-Continue; Settings-Hide-Toggle Existence.
+5. Populated: Sheet-Count `0`.
 
 ## Logging
 
-`DiagnosticLogger` Events (component z. B. `ProviderFirstLaunchSetup`):
-
 | event | result | reason Beispiele |
 | --- | --- | --- |
-| `provider_setup_presented` | started | `fresh_launch` |
-| `provider_setup_completed` | succeeded | `continue_count_<n>` (nur Anzahl, keine Provider-Namen als PII-Risiko — raw IDs ok als stabile Machine-Strings) |
-| `provider_setup_deferred` | cancelled | `later` |
+| `provider_setup_presented` | started | `fresh_launch` / `no_enabled_providers` / `reopen` |
+| `provider_setup_completed` | succeeded | `continue_count_<n>` |
+| `provider_setup_deferred` | cancelled | `without_portals` |
 | `provider_setup_skipped` | skipped | `icloud_prefs` / `icloud_prefs_late` |
 
 ## Tests
 
-1. Domain: `shouldPresent` Matrix (completed/deferred/combos); `applySelection` setzt Keys explizit.
-2. Bootstrap/UITesting: Populated seed completed; Empty nicht.
-3. Upgrade-Heuristik: vorhandene `providerEnabled_*` → completed ohne Sheet.
-4. macOS XCUI: Empty Smoke Existence Sheet; Populated Smoke bricht nicht (kein Sheet).
+1. Domain: `shouldPresent` (Hide/Enables); `completeWithoutPortals`; Hide-Toggle-Semantik.
+2. Bootstrap/UITesting: Populated seed completed+Hide; Empty nicht.
+3. Upgrade-Heuristik: aktive Portale → completed.
+4. macOS XCUI: Empty Sheet; Ohne-Portale-Dismiss; Settings-Hide-Toggle; Populated ohne Sheet.
 5. Identifier in SharedUI SSOT.
 
 ## open_gaps (bewusst)
 
-- Kein iOS-XCUI: iOS-Optik manuell / `ios-test.sh` Compile; Identifier trotzdem gesetzt.
-- Keine Screenshot-Regression-Suite für Optik; HIG-Review optional via `macos-ui-review.sh` nach Implementierung.
-- Geräteübergreifende Prefs/Credentials: siehe iCloud-Prefs-Spec (separater Lieferumfang).
+- Kein iOS-XCUI: Evidence macOS-XCUI + iOS Compile.
+- Keine Screenshot-Regression-Suite.
+- Geräteübergreifende Prefs: iCloud-Prefs-Spec (Hide lokal).
 
 ## Akzeptanz
 
-1. Frische Defaults → Sheet erscheint vor sinnvoller Sync-Arbeit.
-2. Weiter mit ≥1 Provider → Portale aktiv, Sheet weg, Sync erreichbar.
-3. Weiter mit 0 Providern → Setup completed, keine Portale, kein Reopen-CTA; App nutzbar.
-4. Später → kein Auto-Sheet mehr; Reopen-CTA im Empty-State.
-5. Bestandskunden nach #138-Migration → kein Sheet.
-6. Populated-XCUI unverändert nutzbar; Empty zeigt Setup-Sheet; Empty-Continue-Smoke.
-7. Synced `setupCompleted` (CloudKit) → kein Sheet; Late-Import dismiss (iCloud-Prefs-Spec).
-8. Settings-/Enable-Notify/`scenePhase` öffnen das Sheet nicht erneut.
+1. Frische Defaults → Sheet erscheint.
+2. Weiter mit ≥1 Provider → Portale aktiv, Sheet weg.
+3. Weiter mit 0 / Ohne Buchungsportale → Hide an, completed, kein Reopen, App nutzbar.
+4. Hide aus + kein Portal aktiv → Sheet (Start **oder** nach Enable/Hide-Notify).
+5. Hide an → kein Auto-Sheet.
+6. Bestandskunden mit aktiven Portalen → kein Sheet.
+7. Populated-XCUI ohne Sheet; Empty zeigt Sheet.
+8. Synced `setupCompleted` (CloudKit) → kein Sheet; Late-Import dismiss.
+9. `scenePhase` allein öffnet das Sheet nicht.

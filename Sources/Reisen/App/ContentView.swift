@@ -168,7 +168,7 @@ struct ContentView: View {
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
             sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
             ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
-            presentProviderSetupIfNeeded()
+            presentProviderSetupIfNeeded(reason: "no_enabled_providers")
         }
         .onReceive(NotificationCenter.default.publisher(for: .reisenShowProviderSync)) { note in
             if let providerID = note.object as? ProviderID {
@@ -810,11 +810,11 @@ struct ContentView: View {
             && enabledProviderIDs.isEmpty
     }
 
-    private func presentProviderSetupIfNeeded() {
+    private func presentProviderSetupIfNeeded(reason: String = "fresh_launch") {
         guard ProviderFirstLaunchSetup.shouldPresent() else { return }
         guard !showProviderSetup else { return }
         showProviderSetup = true
-        recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
+        recordProviderSetupPresentedIfNeeded(reason: reason)
     }
 
     private func runProviderSetupGateIfNeeded() async {
@@ -827,7 +827,7 @@ struct ContentView: View {
             context: modelContext
         )
         if startup == .continueLocalSetup {
-            presentProviderSetupIfNeeded()
+            presentProviderSetupIfNeeded(reason: "fresh_launch")
         }
     }
 

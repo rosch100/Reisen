@@ -27,7 +27,10 @@ public struct ProviderEnabledSettingsSection: View {
             } header: {
                 Text(L10n.string(.settingsBookingPortals))
             } footer: {
-                Text(L10n.string(.settingsHideProviderSetupFooter))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.string(.settingsHideProviderSetupFooter))
+                    Text(L10n.string(.syncEnablePortalsHint))
+                }
             }
         }
     }

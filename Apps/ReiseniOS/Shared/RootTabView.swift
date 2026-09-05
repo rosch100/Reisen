@@ -116,6 +116,7 @@ struct RootTabView: View {
         }
         .onProviderEnabledChange(bump: $providerEnableEpoch) {
             ProviderPreferencesImportGate.exportFromDefaults(context: modelContext)
+            presentProviderSetupIfNeeded(reason: "no_enabled_providers")
         }
         #endif
     }
@@ -127,11 +128,11 @@ struct RootTabView: View {
     }
     #endif
 
-    private func presentProviderSetupIfNeeded() {
+    private func presentProviderSetupIfNeeded(reason: String = "fresh_launch") {
         guard ProviderFirstLaunchSetup.shouldPresent() else { return }
         guard !showProviderSetup else { return }
         showProviderSetup = true
-        recordProviderSetupPresentedIfNeeded(reason: "fresh_launch")
+        recordProviderSetupPresentedIfNeeded(reason: reason)
     }
 
     private func runProviderSetupGateIfNeeded() async {
@@ -146,7 +147,7 @@ struct RootTabView: View {
             context: modelContext
         )
         if startup == .continueLocalSetup {
-            presentProviderSetupIfNeeded()
+            presentProviderSetupIfNeeded(reason: "fresh_launch")
         }
     }
 
