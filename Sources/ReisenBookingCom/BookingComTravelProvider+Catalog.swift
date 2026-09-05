@@ -22,6 +22,14 @@ extension BookingComTravelProvider {
         }
 
         let lastGraphQLError = graphQLError(from: graphQL)
+        if let authError = lastGraphQLError as? AuthenticatedFetchError,
+           AuthenticatedSessionGuard.isUnauthorized(authError) {
+            throw BookingComProviderError.sessionNotEstablished
+        }
+        if let sessionError = lastGraphQLError as? BookingComProviderError,
+           case .sessionNotEstablished = sessionError {
+            throw sessionError
+        }
         let fallback = try fetchCatalogFallbackHTML(htmlTripIDs: htmlTripIDs, myTripsHTML: myTripsHTML)
         switch fallback {
         case .bookings(let bookings):

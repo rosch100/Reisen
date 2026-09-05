@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenDiagnostics
 
 /// Parst Mietwagen-Detailseiten (`mietwagen.check24.de`, `CpInitial` in Page-HTML).
 public enum Check24CarRentalDetailParser {
@@ -25,8 +26,28 @@ public enum Check24CarRentalDetailParser {
             let dto = try JSONDecoder().decode(Check24CarRentalCpInitialDTO.self, from: data)
             return detail(from: dto, html: html)
         } catch {
-            // Schema-Drift / unerwartetes CpInitial: kein Partial-Mapping, Aufrufer behandelt nil.
+            recordCarDetailDecodeSkipped(error: error)
             return nil
+        }
+    }
+
+    private static func recordCarDetailDecodeSkipped(error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .check24,
+                        operation: "check24_enrich_car"
+                    ),
+                    component: "Check24CarRentalDetailParser",
+                    phase: "cp_initial",
+                    event: "car_detail_decode_skipped",
+                    result: .skipped,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
         }
     }
 

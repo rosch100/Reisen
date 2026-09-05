@@ -38,8 +38,10 @@ extension BookingComTravelProvider {
         onProgress?("Lade Buchungsdetails…")
         guard let confirmationURL = BookingComParsing.normalizedHotelConfirmationURL(ref.externalUrl)
             .flatMap(URL.init(string:)) else {
+            Self.recordHotelEnrichSkipped(reason: "invalid_confirmation_url")
             return emptyEnrichment(bookingType: .hotel)
         }
+
         let html = try await loadHotelConfirmationHTML(using: webView, url: confirmationURL)
         let parser = BookingComCancellationDeadlineParser()
         if ref.hotelOffsetSeconds == nil, parser.hasFeeScheduleMarkup(html) {
@@ -75,6 +77,26 @@ extension BookingComTravelProvider {
                     component: "BookingComTravelProvider",
                     phase: "deadline",
                     event: "deadline_skipped",
+                    result: .skipped,
+                    reason: reason,
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
+    }
+
+    private static func recordHotelEnrichSkipped(reason: String) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .booking,
+                        operation: "booking_com_enrich_hotel"
+                    ),
+                    component: "BookingComTravelProvider",
+                    phase: "enrich_hotel",
+                    event: "hotel_enrich_skipped",
                     result: .skipped,
                     reason: reason,
                     visibility: .publicDiagnostic

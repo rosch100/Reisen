@@ -64,6 +64,18 @@ func opodoEmptyHTMLIsEmptyCatalog() throws {
     #expect(bookings.isEmpty)
 }
 
+@Test("OpodoCancellationDeadlineParser behält ISO-Offset aus Snippet")
+func opodoCancellationParserKeepsISOOffsetFromSnippet() throws {
+    let html = """
+    <html><body>
+      <div>free cancellation until 2026-08-07T19:00:00+07:00 for this booking</div>
+    </body></html>
+    """
+    let deadlines = OpodoCancellationDeadlineParser().parseDeadlines(from: html)
+    let deadline = try #require(deadlines.first)
+    #expect(deadline.hotelOffsetSeconds == 7 * 3600)
+}
+
 @Test("OpodoCancellationDeadlineParser erkennt Storno Datum aus HTML")
 func opodoCancellationParserFindsDeadline() {
     let html = """

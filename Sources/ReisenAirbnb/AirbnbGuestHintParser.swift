@@ -1,5 +1,6 @@
 import Foundation
 import ReisenDomain
+import ReisenDiagnostics
 
 /// Extracts prep-relevant hints from Airbnb stay reservation-overview JSON.
 /// Only `house_rules` and `house_manual` rows (Stay-Detail, visible phrases) — no dummy content.
@@ -81,10 +82,35 @@ public struct AirbnbGuestHintParser: Sendable {
     }
 
     private func decode(_ responseText: String) -> AirbnbStayHintEnvelope? {
-        try? AirbnbJSONDecoder.shared.decode(
-            AirbnbStayHintEnvelope.self,
-            from: Data(responseText.utf8)
-        )
+        do {
+            return try AirbnbJSONDecoder.shared.decode(
+                AirbnbStayHintEnvelope.self,
+                from: Data(responseText.utf8)
+            )
+        } catch {
+            Self.recordGuestHintDecodeSkipped(error: error)
+            return nil
+        }
+    }
+
+    private static func recordGuestHintDecodeSkipped(error: Error) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .airbnb,
+                        operation: "airbnb_enrich"
+                    ),
+                    component: "AirbnbGuestHintParser",
+                    phase: "guest_hints",
+                    event: "guest_hint_decode_skipped",
+                    result: .skipped,
+                    reason: String(describing: type(of: error)),
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }
 

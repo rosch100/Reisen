@@ -41,7 +41,7 @@ public struct AssignBookingsSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(booking.presentationTitle)
                                     .font(.headline)
-                                Text("\(booking.startAt.formatted(date: .abbreviated, time: .shortened)) – \(booking.endAt.formatted(date: .abbreviated, time: .shortened))")
+                                Text(BookingScheduleRangeText.make(for: booking))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

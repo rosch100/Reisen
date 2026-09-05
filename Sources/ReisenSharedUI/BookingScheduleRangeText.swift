@@ -2,7 +2,7 @@ import Foundation
 import ReisenData
 import ReisenDomain
 
-/// SSOT: Listen-/Overview-Datumszeile (flight-like inkl. Ortszeit-Uhrzeit).
+/// SSOT: Listen-/Overview-Datumszeile (flight-like inkl. Ortszeit-Uhrzeit; Hotel/Activity Wall-Clock-SSOT).
 public enum BookingScheduleRangeText {
     public static func make(for booking: SDBooking) -> String {
         if booking.bookingType.usesFlightLikeSchedule {
@@ -18,8 +18,23 @@ public enum BookingScheduleRangeText {
             )
             return "\(start) – \(end)"
         }
-        let start = booking.startAt.formatted(date: .abbreviated, time: .omitted)
-        let end = booking.endAt.formatted(date: .abbreviated, time: .omitted)
+        // Hotel/Activity/Car/Other: kein Geräte-`.formatted` — HotelStayDate / resolvedHotelTimeZone.
+        if booking.bookingType == .hotel {
+            let start = HotelStayDate.format(
+                booking.startAt,
+                dateFormat: "d.M.yyyy",
+                legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
+            )
+            let end = HotelStayDate.format(
+                booking.endAt,
+                dateFormat: "d.M.yyyy",
+                legacyHotelOffsetSeconds: booking.hotelOffsetSeconds
+            )
+            return "\(start) – \(end)"
+        }
+        let tz = booking.resolvedHotelTimeZone
+        let start = Formatting.formatOrtszeit(booking.startAt, dateFormat: "d.M.yyyy", timeZone: tz)
+        let end = Formatting.formatOrtszeit(booking.endAt, dateFormat: "d.M.yyyy", timeZone: tz)
         return "\(start) – \(end)"
     }
 }

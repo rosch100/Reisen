@@ -74,7 +74,7 @@ public struct TripTimelineSection<BookingRow: View>: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Label(presentation.displayTitle, systemImage: "arrow.left.arrow.right")
                         .font(.headline)
-                    Text("\(gap.gapStart.formatted(date: .abbreviated, time: .shortened)) – \(gap.gapEnd.formatted(date: .abbreviated, time: .shortened))")
+                    Text(gapRangeText(for: gap))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(L10n.gapKindDisplay(presentation.effectiveKind))
@@ -89,7 +89,7 @@ public struct TripTimelineSection<BookingRow: View>: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            let rangeText = "\(gap.gapStart.formatted(date: .abbreviated, time: .shortened)) – \(gap.gapEnd.formatted(date: .abbreviated, time: .shortened))"
+            let rangeText = gapRangeText(for: gap)
             GapCopyMenuItems(
                 title: presentation.displayTitle,
                 rangeText: rangeText,
@@ -97,6 +97,16 @@ public struct TripTimelineSection<BookingRow: View>: View {
                 priceText: presentation.priceText
             )
         }
+    }
+
+    private func gapRangeText(for gap: ComputedGap) -> String {
+        let tz = HotelTimeZone.resolve(
+            fromOffsetSeconds: gap.fromBooking.hotelOffsetSeconds,
+            toOffsetSeconds: gap.toBooking.hotelOffsetSeconds
+        )
+        let start = Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M. HH:mm", timeZone: tz)
+        let end = Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M. HH:mm", timeZone: tz)
+        return "\(start) – \(end)"
     }
 
     private func saveGap(

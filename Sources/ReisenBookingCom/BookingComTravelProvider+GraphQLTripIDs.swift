@@ -6,13 +6,13 @@ extension BookingComTravelProvider {
     func fetchAllTripIDs(
         using webView: BookingComWebView,
         tokens: BookingComSessionTokens
-    ) async -> [String] {
+    ) async throws -> [String] {
         var orderedIDs: [String] = []
         var seen = Set<String>()
         let parser = BookingComTripsGraphQLParser()
 
         for stages in BookingComGraphQLQueries.tripListStageGroups {
-            let stageIDs = await fetchTripIDsForStageGroup(
+            let stageIDs = try await fetchTripIDsForStageGroup(
                 stages: stages,
                 using: webView,
                 tokens: tokens,

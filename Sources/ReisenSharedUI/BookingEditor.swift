@@ -593,15 +593,22 @@ private struct BookingPassengerEditorRow: View {
             .textContentType(.familyName)
 
             HStack {
-                DatePicker(
-                    L10n.string(.editorBirthDate),
-                    selection: Binding<Date>(
-                        get: { pax.birthDate ?? Date() },
-                        set: { pax.birthDate = $0 }
-                    ),
-                    displayedComponents: .date
-                )
+                if pax.birthDate != nil {
+                    DatePicker(
+                        L10n.string(.editorBirthDate),
+                        selection: Binding<Date>(
+                            get: { pax.birthDate! },
+                            set: { pax.birthDate = $0 }
+                        ),
+                        displayedComponents: .date
+                    )
+                } else {
+                    Button(L10n.string(.editorBirthDate)) {
+                        pax.birthDate = HotelStayDate.dateOnly(fromLocalPickerDate: Date())
+                    }
+                }
                 Button(L10n.string(.editorClearBirthDate), role: .destructive) { pax.birthDate = nil }
+                    .disabled(pax.birthDate == nil)
             }
 
             Divider()

@@ -10,7 +10,7 @@ extension BookingComTravelProvider {
         preferredTripIDs: [String]
     ) async throws -> [ProviderBookingDraft] {
         let tokens = try BookingComSessionTokens.extract(from: myTripsHTML)
-        let tripIDs = await resolveTripIDs(preferredTripIDs: preferredTripIDs, using: webView, tokens: tokens)
+        let tripIDs = try await resolveTripIDs(preferredTripIDs: preferredTripIDs, using: webView, tokens: tokens)
         guard !tripIDs.isEmpty else { return [] }
 
         let result = await fetchTimelineCatalog(

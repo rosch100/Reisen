@@ -56,6 +56,31 @@ private let germanLocale = Locale(identifier: "de")
     }
 }
 
+@Test func bookingScheduleRangeText_hotelUsesHotelStayDateNotDeviceFormatted() {
+    let start = Date(timeIntervalSince1970: 1_800_000_000)
+    let end = start.addingTimeInterval(86_400)
+    let hotel = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.hotel.rawValue,
+        title: "Hotel",
+        startAt: start,
+        endAt: end,
+        statusRaw: BookingStatus.confirmed.rawValue,
+        hotelOffsetSeconds: 7 * 3600
+    )
+    let expectedStart = HotelStayDate.format(
+        start,
+        dateFormat: "d.M.yyyy",
+        legacyHotelOffsetSeconds: 7 * 3600
+    )
+    let expectedEnd = HotelStayDate.format(
+        end,
+        dateFormat: "d.M.yyyy",
+        legacyHotelOffsetSeconds: 7 * 3600
+    )
+    #expect(BookingScheduleRangeText.make(for: hotel) == "\(expectedStart) – \(expectedEnd)")
+}
+
 @Test func bookingScheduleRangeText_includesTimeForFlightLikeTypes() {
     let start = Date(timeIntervalSince1970: 1_800_000_000)
     let end = start.addingTimeInterval(7_200)
