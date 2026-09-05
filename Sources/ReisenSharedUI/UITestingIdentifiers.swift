@@ -165,4 +165,7 @@ public enum UITestingIdentifiers {
     public static let newTripMenuTitleDE = "Neue Reise…"
     public static let assignBookingsMenuTitleDE = "Buchungen zuordnen…"
     public static let editGapMenuTitleDE = "Lücke bearbeiten…"
+    public static let editTripMenuTitleDE = "Reise bearbeiten…"
+    public static let syncAllMenuTitleDE = "Alle aktualisieren"
+    public static let syncCurrentMenuTitleDE = "Aktuelles Portal aktualisieren"
 }

@@ -3,6 +3,37 @@ import Testing
 import ReisenDomain
 @testable import ReisenAppCore
 
+@Test func diagnosticLogger_notesPublicEvent() async {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-diagnostic-crash-note-\(UUID().uuidString).jsonl")
+    defer { try? FileManager.default.removeItem(at: url) }
+    nonisolated(unsafe) var noted: DiagnosticEvent?
+    let token = "crash-note-\(UUID().uuidString)"
+    DiagnosticLogger.notePublicEvent = { event in
+        guard event.reason == token else { return }
+        noted = event
+    }
+    defer { DiagnosticLogger.notePublicEvent = nil }
+
+    let logger = DiagnosticLogger(
+        fileURL: url,
+        debugEnabled: false,
+        forwardsPublicEvents: true
+    )
+    let event = DiagnosticEvent(
+        context: DiagnosticContext(runID: UUID(), providerID: .booking, operation: "startup_probe"),
+        component: "Probe",
+        phase: "session_probe",
+        event: "timeout",
+        result: .timedOut,
+        reason: token
+    )
+    await logger.record(event)
+    #expect(noted?.event == "timeout")
+    #expect(noted?.context.providerID == .booking)
+    #expect(noted?.result == .timedOut)
+}
+
 @Test func diagnosticLogger_writesPublicEventsAsJSONLines() async throws {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("reisen-diagnostic-log-\(UUID().uuidString).jsonl")

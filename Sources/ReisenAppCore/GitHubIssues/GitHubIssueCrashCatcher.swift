@@ -14,6 +14,7 @@ enum GitHubIssueCrashCatcher {
     static func install() {
         previousUncaughtExceptionHandler = NSGetUncaughtExceptionHandler()
         NSSetUncaughtExceptionHandler(reisenUncaughtExceptionHandler)
+        DiagnosticLogger.notePublicEvent = GitHubIssueCrashReport.note
         if let url = pendingURL {
             prepareFatalSignalPending(
                 at: url,
@@ -122,34 +123,55 @@ enum GitHubIssueCrashCatcher {
         guard let message = pendingMessageForReport(at: url, optedIn: true), !message.isEmpty else {
             return
         }
+        let provider = GitHubIssueCrashReport.providerID(from: message)
         do {
             _ = try await GitHubIssueReporter.shared.report(
                 kind: .error,
                 message: message,
-                providerID: nil,
-                titleOverride: GitHubIssueTitle.uncaughtException,
-                reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername()
+                providerID: provider,
+                titleOverride: GitHubIssueCrashReport.reportTitle(from: message),
+                reporterGitHubUsername: AppSettingsKeys.optionalFeedbackGitHubUsername(),
+                fingerprintMessage: GitHubIssueCrashReport.fingerprintMaterial(from: message),
+                environmentCaptureLabel: GitHubIssueCrashReport.postCrashRelaunchLabel,
+                includeCompressedLog: false
+            )
+            await recordFlush(
+                providerID: provider ?? GitHubIssueCrashReport.flushProviderUnknown,
+                result: .succeeded,
+                reason: GitHubIssueTitle.summary(from: message)
             )
             try FileManager.default.removeItem(at: url)
         } catch is GitHubIssueTokenError {
             return
         } catch {
-            await DiagnosticLogger.shared.record(
-                DiagnosticEvent(
-                    context: DiagnosticContext(
-                        runID: UUID(),
-                        providerID: .manual,
-                        operation: "github_crash_flush"
-                    ),
-                    component: "GitHubIssueCrashCatcher",
-                    phase: "flush",
-                    event: "pending_crash_report",
-                    result: .failed,
-                    reason: String(describing: type(of: error)),
-                    visibility: .publicDiagnostic
-                )
+            await recordFlush(
+                providerID: provider ?? GitHubIssueCrashReport.flushProviderUnknown,
+                result: .failed,
+                reason: String(describing: type(of: error))
             )
         }
+    }
+
+    private static func recordFlush(
+        providerID: ProviderID,
+        result: DiagnosticResult,
+        reason: String
+    ) async {
+        await DiagnosticLogger.shared.record(
+            DiagnosticEvent(
+                context: DiagnosticContext(
+                    runID: UUID(),
+                    providerID: providerID,
+                    operation: "github_crash_flush"
+                ),
+                component: "GitHubIssueCrashCatcher",
+                phase: "flush",
+                event: "pending_crash_report",
+                result: result,
+                reason: reason,
+                visibility: .publicDiagnostic
+            )
+        )
     }
 
     static func isDebuggerAttached() -> Bool {

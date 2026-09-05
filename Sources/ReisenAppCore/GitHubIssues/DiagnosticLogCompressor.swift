@@ -1,4 +1,5 @@
 import Foundation
+import ReisenDiagnostics
 import ReisenDomain
 
 enum DiagnosticLogCompressorError: Error {
@@ -27,6 +28,56 @@ enum DiagnosticLogCompressor {
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         return lines.suffix(lastLineCount).joined(separator: "\n")
     }
+
+    static func notablePreview(from text: String, maxLineCount: Int = 8) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .compactMap(compactNotableLine)
+            .suffix(maxLineCount)
+            .joined(separator: "\n")
+    }
+
+    private static func compactNotableLine(_ line: Substring) -> String? {
+        if let markerRange = line.range(of: "diagnostic=") {
+            guard let event = decodeEvent(payload: line[markerRange.upperBound...]),
+                  isNotable(event)
+            else {
+                return nil
+            }
+            return compact(event)
+        }
+        guard line.contains("timedOut") || line.contains("result=failure") else {
+            return nil
+        }
+        return String(line)
+    }
+
+    private static func decodeEvent(payload: Substring) -> DiagnosticEvent? {
+        guard let data = payload.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(DiagnosticEvent.self, from: data)
+    }
+
+    private static func isNotable(_ event: DiagnosticEvent) -> Bool {
+        switch event.result {
+        case .failed, .timedOut, .cancelled:
+            return true
+        case .started, .succeeded, .skipped:
+            return event.event.contains("timeout") || event.event.contains("error")
+        }
+    }
+
+    private static func compact(_ event: DiagnosticEvent) -> String {
+        var parts = [
+            event.context.providerID.rawValue,
+            event.component,
+            event.phase,
+            event.event,
+            event.result.rawValue,
+        ]
+        if let reason = event.reason, !reason.isEmpty {
+            parts.append(reason)
+        }
+        return parts.joined(separator: " ")
+    }
 }
 
 enum DiagnosticLogAttachment: Equatable, Sendable {
@@ -36,6 +87,7 @@ enum DiagnosticLogAttachment: Equatable, Sendable {
     case compressionFailed(preview: String)
     case attached(
         preview: String,
+        notablePreview: String,
         zlibBase64: String,
         rawByteCount: Int,
         fileByteCount: Int,
@@ -65,10 +117,12 @@ enum DiagnosticLogAttachment: Equatable, Sendable {
             from: redactedTail,
             lastLineCount: previewLineCount
         )
+        let notable = DiagnosticLogCompressor.notablePreview(from: redactedTail)
         do {
             let blob = try DiagnosticLogCompressor.zlibBase64(redactedTail)
             return .attached(
                 preview: preview,
+                notablePreview: notable,
                 zlibBase64: blob,
                 rawByteCount: redactedTail.utf8.count,
                 fileByteCount: fileByteCount,
@@ -95,7 +149,7 @@ enum DiagnosticLogAttachment: Equatable, Sendable {
             \(GitHubIssueMarkdown.fence(preview))
             Kompression fehlgeschlagen
             """
-        case .attached(let preview, let blob, let raw, let file, let truncated):
+        case .attached(let preview, let notable, let blob, let raw, let file, let truncated):
             var text = """
 
             \(Self.logSectionHeading)
@@ -108,6 +162,13 @@ enum DiagnosticLogAttachment: Equatable, Sendable {
             \(Self.previewHeading)
             \(GitHubIssueMarkdown.fence(preview))
             """
+            if !notable.isEmpty {
+                text += """
+
+                ### Auffällige Zeilen (Fehler/Timeout)
+                \(GitHubIssueMarkdown.fence(notable))
+                """
+            }
             if includeCompressedLog {
                 text += """
 
@@ -131,7 +192,7 @@ enum DiagnosticLogAttachment: Equatable, Sendable {
             return Self.emptyStatus
         case .unreadable(let detail):
             return Self.unreadableStatus(detail)
-        case .attached(let preview, _, _, _, _), .compressionFailed(let preview):
+        case .attached(let preview, _, _, _, _, _), .compressionFailed(let preview):
             return GitHubIssueMarkdown.fence(
                 DiagnosticLogCompressor.preview(
                     from: preview,

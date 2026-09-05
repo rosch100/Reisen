@@ -89,11 +89,13 @@ struct SyncView: View {
     }
 
     private var canSync: Bool {
-        isProviderEnabled
-            && sessionWebView != nil
-            && providerRegistry != nil
-            && store != nil
-            && !(store?.isSyncing ?? false)
+        ProviderSyncAvailability.canSync(
+            isProviderEnabled: isProviderEnabled,
+            hasWebView: sessionWebView != nil,
+            hasRegistry: providerRegistry != nil,
+            hasStore: store != nil,
+            isSyncing: store?.isSyncing ?? false
+        )
     }
 
     private var loginConfiguration: (any TravelProviderLoginConfiguration)? {
@@ -325,6 +327,7 @@ struct SyncView: View {
                     : L10n.string(.syncUnavailableHelp))
             }
         }
+        .focusedSceneValue(\.providerSyncCanSync, canSync)
         .providerLoginDisclosure(isActive: isProviderEnabled)
     }
 

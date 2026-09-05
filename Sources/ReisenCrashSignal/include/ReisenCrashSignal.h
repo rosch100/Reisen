@@ -5,10 +5,23 @@
 
 enum { REISEN_CRASH_SIGNAL_MAX_FRAMES = 32 };
 
+enum { REISEN_CRASH_SIGNAL_MAX_IMAGES = 48 };
+enum { REISEN_CRASH_SIGNAL_MAX_BREADCRUMBS = 12 };
+
 bool reisen_crash_signal_prepare(const char *path, bool opted_in);
 void reisen_crash_signal_set_opted_in(bool opted_in);
 void reisen_crash_signal_mark_written(void);
 void reisen_crash_signal_reset_for_tests(void);
+void reisen_crash_signal_refresh_images(void);
+void reisen_crash_signal_note_breadcrumb(const char *line);
+void reisen_crash_signal_note_provider(const char *provider);
+bool reisen_crash_signal_note_image_for_tests(
+    const char *name,
+    uint64_t start,
+    uint64_t end,
+    const char *uuid,
+    int64_t slide
+);
 bool reisen_crash_signal_write_to_fd(int fd, int sig, const uintptr_t *frames, int frame_count);
 bool reisen_crash_signal_write_current(int sig);
 bool reisen_crash_signal_install(bool debugger_attached);

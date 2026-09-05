@@ -7,6 +7,8 @@ import ReisenSharedUI
 struct ReisenCommands: Commands {
     @FocusedValue(\.openBookingsCommandState) private var openBookingsCommandState
     @FocusedValue(\.bookingPortalOpenCommandState) private var bookingPortalOpenCommandState
+    @FocusedValue(\.appMenuCommandState) private var appMenuCommandState
+    @FocusedValue(\.providerSyncCanSync) private var providerSyncCanSync
     @Environment(\.openURL) private var openURL
 
     /// Verfügbarkeit entscheidet über beide Einfüge-Einträge im Menü.
@@ -14,6 +16,15 @@ struct ReisenCommands: Commands {
     /// Die Notification trägt die Modellstufe nicht mit; `PasteImportSession.start()`
     /// löst sie über `PasteImportResolvedModel.kind()` erneut auf — dieselbe Quelle, kein zweiter Pfad.
     private var pasteImportKind: PasteImportModelKind { PasteImportResolvedModel.kind() }
+
+    private var canPerformSingleTripActions: Bool {
+        appMenuCommandState?.canPerformSingleTripActions == true
+    }
+    private var canAssignBookings: Bool { appMenuCommandState?.canAssignBookings == true }
+    private var canSyncAll: Bool { appMenuCommandState?.canSyncAll == true }
+    private var canSyncCurrent: Bool { providerSyncCanSync == true }
+    private var canOpenBookingPortal: Bool { bookingPortalOpenCommandState?.canOpen == true }
+    private var canCancelBookingPortal: Bool { bookingPortalOpenCommandState?.canCancel == true }
 
     var body: some Commands {
         CommandGroup(replacing: .pasteboard) {
@@ -54,6 +65,11 @@ struct ReisenCommands: Commands {
                 NotificationCenter.default.post(name: .reisenAddBooking, object: nil)
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
+            .disabled(!canPerformSingleTripActions)
+            .menuDisabledOnlyHelp(
+                isEnabled: canPerformSingleTripActions,
+                disabledHelp: L10n.string(.tripSelectTrip)
+            )
 
             // ⌘V bleibt System-Paste; der Paste-Import liegt auf ⌘⇧V.
             PasteImportActionControl(kind: pasteImportKind) {
@@ -69,51 +85,76 @@ struct ReisenCommands: Commands {
             Button(L10n.string(.menuAssignBookings)) {
                 NotificationCenter.default.post(name: .reisenAssignBookings, object: nil)
             }
+            .disabled(!canAssignBookings)
+            .menuEnableHelp(
+                isEnabled: canAssignBookings,
+                enabledHelp: L10n.string(.tripAssignOpenHelp),
+                disabledHelp: assignBookingsDisabledHelp
+            )
         }
 
         CommandGroup(after: .appInfo) {
-            Button(L10n.string(.menuProviderSync)) {
-                NotificationCenter.default.post(name: .reisenShowProviderSync, object: nil)
-            }
-            .keyboardShortcut("1", modifiers: [.command])
-
             Button(L10n.string(.menuSyncAllProviders)) {
                 NotificationCenter.default.post(name: .reisenSyncAllProviders, object: nil)
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
+            .disabled(!canSyncAll)
+            .menuEnableHelp(
+                isEnabled: canSyncAll,
+                enabledHelp: L10n.string(.actionSyncAllHelp),
+                disabledHelp: L10n.string(.menuSyncAllUnavailableHelp)
+            )
 
             Button(L10n.string(.menuSyncCurrentProvider)) {
                 NotificationCenter.default.post(name: .reisenSyncCurrentProvider, object: nil)
             }
             .keyboardShortcut("r", modifiers: [.command])
+            .disabled(!canSyncCurrent)
+            .menuEnableHelp(
+                isEnabled: canSyncCurrent,
+                enabledHelp: L10n.string(.syncSyncBookingsHelp),
+                disabledHelp: L10n.string(.syncUnavailableHelp)
+            )
         }
 
         CommandGroup(after: .pasteboard) {
             Button(L10n.string(.menuEditTrip)) {
                 NotificationCenter.default.post(name: .reisenEditSelectedTrip, object: nil)
             }
+            .disabled(!canPerformSingleTripActions)
+            .menuDisabledOnlyHelp(
+                isEnabled: canPerformSingleTripActions,
+                disabledHelp: L10n.string(.tripSelectTrip)
+            )
 
             Button(BookingPortalOpenTitle.openInBrowser) {
                 if let url = bookingPortalOpenCommandState?.url {
                     openURL(url)
                 }
             }
-            .disabled(bookingPortalOpenCommandState?.canOpen != true)
-            .help(
-                bookingPortalOpenCommandState?.canOpen == true
-                    ? BookingPortalOpenTitle.openInBrowserHelp
-                    : L10n.string(.bookingDetailNoBrowserLink)
+            .disabled(!canOpenBookingPortal)
+            .menuEnableHelp(
+                isEnabled: canOpenBookingPortal,
+                enabledHelp: BookingPortalOpenTitle.openInBrowserHelp,
+                disabledHelp: L10n.string(.bookingDetailNoBrowserLink)
             )
 
             Button(BookingPortalCancelTitle.menu) {
                 NotificationCenter.default.post(name: .reisenPresentBookingCancel, object: nil)
             }
-            .disabled(bookingPortalOpenCommandState?.canCancel != true)
-            .help(
-                bookingPortalOpenCommandState?.canCancel == true
-                    ? BookingPortalCancelTitle.help
-                    : L10n.string(.bookingDetailNoBrowserLink)
+            .disabled(!canCancelBookingPortal)
+            .menuEnableHelp(
+                isEnabled: canCancelBookingPortal,
+                enabledHelp: BookingPortalCancelTitle.help,
+                disabledHelp: L10n.string(.bookingDetailNoBrowserLink)
             )
         }
+    }
+
+    private var assignBookingsDisabledHelp: String {
+        if canPerformSingleTripActions {
+            return L10n.string(.tripNoOpenInRange)
+        }
+        return L10n.string(.tripSelectTrip)
     }
 }

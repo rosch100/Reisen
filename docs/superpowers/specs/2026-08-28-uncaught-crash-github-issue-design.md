@@ -59,7 +59,7 @@ install()
   └── sigaction(SIGTRAP, SIGABRT, …) → Pending (C / Darwin write, signal-safe)
         └── vorherigen Handler wiederherstellen / SIG_DFL + raise(sig)
 
-nächster Start: flushPending() → GitHubIssueReporter.report(kind: .error, titleOverride: uncaughtException)
+nächster Start: flushPending() → GitHubIssueReporter.report(kind: .error, Titel aus Pending)
 ```
 
 Kein neues Modul, kein dritter Reporter, keine parallele Fingerprint-Logik.
@@ -69,6 +69,8 @@ Kein neues Modul, kein dritter Reporter, keine parallele Fingerprint-Logik.
 - Async-signal-safe: nur `open`/`write`/`close`/`backtrace`/`lseek`/`fstat`/`raise`/`signal`. Kein Swift-Heap, kein `FileManager`, kein `UserDefaults`, kein `SecretRedactor` im Handler.
 - **Prepare mutiert keine Pending-Datei.** `prepare` speichert nur den Pfad in einem festen Puffer und das Opt-in-Flag (`sig_atomic_t`). Kein `open` mit `O_TRUNC`, kein Löschen, kein Anlegen der Datei. Eine Datei vom **vorherigen** Absturz muss `install()` am nächsten Start unangetastet lassen, bis `flushPending` sie gelesen hat.
 - **Write öffnet erst im Handler** (bzw. in der testbaren Writer-Funktion): wenn `!opted_in` oder `already_written` → nicht schreiben, Datei nicht anlegen. Sonst `open`: Datei fehlt → `O_CREAT|O_WRONLY|O_EXCL`; Datei existiert bereits → **kein** Write (NSException oder alter Pending-Inhalt hat Vorrang).
+- **Image-Snapshot** in `prepare` / `refresh_images` (nicht im Handler): `_dyld_*` + LC_UUID / `__TEXT`. `prepare` registriert `_dyld_register_func_for_add_image` → `refresh_images` bei später geladenen Images (WebKit). Handler liest nur die Tabelle und schreibt `Image +Offset`.
+- **Breadcrumbs** aus öffentlichen `DiagnosticEvent`s (ohne `webview_created`/`webview_reparented` bei Erfolg); letzter `providerID` im Pending-Text.
 - `write_current` darf nicht von einem schon offenen `pending_fd` abhängen, den Prepare nie setzt. Es öffnet aus `path_buf` oder bricht ohne Dateianlage ab.
 - Nach erfolgreichem `NSException`-Pending `mark_written`, damit `SIGABRT` dieselbe Datei nicht mit ärmerem Signaltext überschreibt.
 - Debugger (`P_TRACED`): fatale Signal-Handler **nicht** installieren (NSException-Handler bleibt).
@@ -84,13 +86,16 @@ Same-Session-Refresh: `GitHubIssueCrashCatcher.install()` (nur aus `AppBootstrap
 ### Issue
 
 - `kind/error` + `source/in-app` (bestehende Labels)
-- Titel: bestehendes `GitHubIssueTitle.uncaughtException` (`[Fehler] Unbehandelte Ausnahme`) für **beide** Pending-Quellen — ein Flush-Pfad
-- Body: Message (Signalname + Frame-Adressen bzw. NSException-Text) + bestehende Diagnose-Tabelle
-- Rate-Limit und Fingerprint von `GitHubIssueReporter` unverändert
+- Ein Flush-Pfad; Titel aus Pending-Text: Signal → `[Fehler] SIGTRAP`, NSException → `GitHubIssueTitle.uncaughtException`
+- Body: Signalname, `time_unix`, `pid`, letzter `provider`, Frames als `Adresse Image +Offset`, **nur** Images die im Stack vorkommen, Breadcrumbs + Diagnose-Tabelle
+- Keine GitHub-Datei-Uploads (Issues-API kann keine Anhänge). Alles im Issue-Body, Limit 65536 Zeichen. Crash-Flush **ohne** zlib+Base64 (sonst verdrängt der Sync-Log-Blob Stack/Images beim Clamp).
+- Diagnosezeile `Diagnosezeitpunkt | Neustart nach Absturz` — RAM/Thermal stammen vom Melde-Start, nicht vom Absturz
+- Fingerprint: Signal + `Image +Offset` (ohne ASLR-Absolutadressen), damit gleiche Absturzstellen zusammenfallen
+- Rate-Limit von `GitHubIssueReporter` unverändert
 
 ## Akzeptanz
 
-1. Bei Opt-in fängt ein fataler `SIGTRAP` (ohne Debugger) einen Pending-Crash-Report mit Signalname.
+1. Bei Opt-in fängt ein fataler `SIGTRAP` (ohne Debugger) einen Pending-Crash-Report mit Signalname, Image+Offset und UUID.
 2. Ohne Opt-in entsteht keine Pending-Datei (wie heute bei NSException).
 3. NSException-Pending wird nicht durch den nachfolgenden `SIGABRT` überschrieben.
 4. Mit Debugger keine Signal-Handler-Installation.
@@ -114,7 +119,7 @@ TDD: zuerst kompilierende Stubs (Writer gibt `false`, legt keine Datei an), RED 
 
 C-Globals sind prozessweit: `reisen_crash_signal_reset_for_tests` vor jedem Signal-Test; Suite `.serialized`. Fachlich isolierte Tests bevorzugen `write_to_fd` ohne globale Prepare-State.
 
-- `write_to_fd`: Format Signalname + Hex-Adressen
+- `write_to_fd`: Signalname, `time_unix`, `pid`, optional `provider=`, Frames als `Adresse Image +Offset`, nur Images mit Frame, Breadcrumbs
 - Opt-in false → **keine** Pending-Datei (nicht nur leer)
 - `prepare(false)` dann `set_opted_in(true)` dann Write → Datei mit `SIGTRAP` (Same-Session-Refresh)
 - Inverse: Opt-in, dann `set_opted_in(false)` → Write legt keine Datei an

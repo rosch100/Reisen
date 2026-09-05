@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import ReisenDiagnostics
 @testable import ReisenAppCore
 
 @Test func syncLog_appendWritesTimestampedLine() throws {
@@ -38,7 +39,7 @@ import Foundation
     let prefix = String(repeating: "x", count: 200)
     try Data("\(prefix)\ngast@domain.de\n".utf8).write(to: url)
     let attachment = SyncLog.recentTail(maxBytes: 40, fileURL: url)
-    guard case .attached(let preview, _, _, let fileByteCount, let truncated) = attachment else {
+    guard case .attached(let preview, _, _, _, let fileByteCount, let truncated) = attachment else {
         Issue.record("expected attached log")
         return
     }
@@ -57,6 +58,36 @@ import Foundation
     SyncLog.rotateIfNeeded(at: url)
     let size = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber
     #expect(size?.intValue == SyncLog.keepBytes)
+}
+
+@Test func diagnosticLogAttachment_previewPrefersNotableFailureLines() throws {
+    let context = DiagnosticContext(runID: UUID(), providerID: .booking, operation: "startup_probe")
+    func line(event: String, result: DiagnosticResult) throws -> String {
+        let payload = String(
+            decoding: try JSONEncoder().encode(
+                DiagnosticEvent(
+                    context: context,
+                    component: "ProviderSessionView",
+                    phase: "lifecycle",
+                    event: event,
+                    result: result
+                )
+            ),
+            as: UTF8.self
+        )
+        return "[2026-09-05T12:51:39Z] diagnostic=\(payload)"
+    }
+    let noise = (0..<10).map { _ in
+        (try? line(event: "webview_created", result: .succeeded)) ?? ""
+    }
+    let timeout = try line(event: "timeout", result: .timedOut)
+    let text = (noise + [timeout]).joined(separator: "\n")
+    let notable = DiagnosticLogCompressor.notablePreview(from: text, maxLineCount: 8)
+    #expect(notable.contains("timeout"))
+    #expect(notable.contains("timedOut"))
+    #expect(notable.contains("booking"))
+    #expect(!notable.contains("webview_created"))
+    #expect(!notable.contains("diagnostic="))
 }
 
 @Test func syncLog_recentTailExcludesLocalDebugEventsByDefault() throws {
@@ -97,7 +128,7 @@ import Foundation
 
     let attachment = SyncLog.recentTail(fileURL: url)
 
-    guard case .attached(let preview, _, _, _, _) = attachment else {
+    guard case .attached(let preview, _, _, _, _, _) = attachment else {
         Issue.record("expected attached log")
         return
     }
@@ -195,7 +226,7 @@ import Foundation
     let cutInsideLocal = full.utf8.count - publicLine.utf8.count - 2 - (localLine.utf8.count / 2)
     let attachment = SyncLog.recentTail(maxBytes: cutInsideLocal, fileURL: url)
 
-    guard case .attached(let preview, _, _, _, let truncated) = attachment else {
+    guard case .attached(let preview, _, _, _, _, let truncated) = attachment else {
         Issue.record("expected attached log")
         return
     }
@@ -227,7 +258,7 @@ import Foundation
     try Data(localLine.utf8).write(to: url)
 
     let attachment = SyncLog.recentTail(maxBytes: localLine.utf8.count / 2, fileURL: url)
-    guard case .attached(let preview, _, _, _, let truncated) = attachment else {
+    guard case .attached(let preview, _, _, _, _, let truncated) = attachment else {
         Issue.record("expected attached log")
         return
     }

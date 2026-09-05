@@ -182,6 +182,93 @@ struct GitHubIssueCrashSignalTests {
         let text = try String(contentsOf: url, encoding: .utf8)
         #expect(text.contains("SIGTRAP"))
         #expect(text.lowercased().contains("abc"))
+        #expect(text.contains("time_unix="))
+        #expect(text.contains("pid="))
+    }
+
+    @Test func annotatesFrameWithImageOffsetAndUUID() throws {
+        reisen_crash_signal_reset_for_tests()
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-image-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let added = "Reisen".withCString { name in
+            "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE".withCString { uuid in
+                reisen_crash_signal_note_image_for_tests(
+                    name,
+                    0x1000,
+                    0x2000,
+                    uuid,
+                    0x1000
+                )
+            }
+        }
+        #expect(added)
+        let fd = open(url.path, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR)
+        #expect(fd >= 0)
+        defer { if fd >= 0 { close(fd) } }
+        let frames: [UInt] = [0x1ABC]
+        let ok = frames.withUnsafeBufferPointer { buffer in
+            reisen_crash_signal_write_to_fd(fd, SIGTRAP, buffer.baseAddress, Int32(buffer.count))
+        }
+        #expect(ok)
+        fsync(fd)
+        let text = try String(contentsOf: url, encoding: .utf8)
+        #expect(text.contains("0x1abc Reisen +0xabc"))
+        #expect(text.contains("images:"))
+        #expect(text.contains("Reisen uuid=AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"))
+        #expect(text.contains("slide=0x1000"))
+    }
+
+    @Test func omitsImagesThatDoNotContainAFrame() throws {
+        reisen_crash_signal_reset_for_tests()
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-unused-image-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let unused = "Unused.dylib".withCString { name in
+            "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF".withCString { uuid in
+                reisen_crash_signal_note_image_for_tests(name, 0x9000, 0x9100, uuid, 0x9000)
+            }
+        }
+        let used = "Reisen".withCString { name in
+            "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE".withCString { uuid in
+                reisen_crash_signal_note_image_for_tests(name, 0x1000, 0x2000, uuid, 0x1000)
+            }
+        }
+        #expect(unused)
+        #expect(used)
+        let fd = open(url.path, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR)
+        #expect(fd >= 0)
+        defer { if fd >= 0 { close(fd) } }
+        let frames: [UInt] = [0x1ABC]
+        let ok = frames.withUnsafeBufferPointer { buffer in
+            reisen_crash_signal_write_to_fd(fd, SIGTRAP, buffer.baseAddress, Int32(buffer.count))
+        }
+        #expect(ok)
+        fsync(fd)
+        let text = try String(contentsOf: url, encoding: .utf8)
+        #expect(text.contains("Reisen uuid="))
+        #expect(!text.contains("Unused.dylib"))
+    }
+
+    @Test func writesProviderAndBreadcrumbs() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reisen-sig-crumb-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        reisen_crash_signal_note_provider("booking")
+        reisen_crash_signal_note_breadcrumb(
+            "provider=booking component=ProviderSyncContainer event=timeout result=timedOut"
+        )
+        let fd = open(url.path, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR)
+        #expect(fd >= 0)
+        defer { if fd >= 0 { close(fd) } }
+        let ok = reisen_crash_signal_write_to_fd(fd, SIGTRAP, nil, 0)
+        #expect(ok)
+        fsync(fd)
+        let text = try String(contentsOf: url, encoding: .utf8)
+        #expect(text.contains("provider=booking"))
+        #expect(text.contains("breadcrumbs:"))
+        #expect(text.contains("ProviderSyncContainer"))
+        #expect(text.contains("timedOut"))
     }
 
     @Test func optedOutPrepareDoesNotCreateFile() throws {

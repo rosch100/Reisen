@@ -112,6 +112,8 @@ Legende `…`: ja = Zielstring endet auf `…`; nein = ohne.
 
 ### Öffnen / Navigation / Sync
 
+Sync-Verben **aktualisieren/Refresh** und Enable-Matrix: [2026-09-05-app-menu-hig-enable-design](2026-09-05-app-menu-hig-enable-design.md) (ersetzt die Sync-Zeilen unten).
+
 | Key | DE | EN | `…` |
 | --- | --- | --- | --- |
 | `menu.provider_sync` | Provider Sync | Provider Sync | nein |
