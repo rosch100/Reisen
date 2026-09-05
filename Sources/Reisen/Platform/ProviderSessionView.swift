@@ -20,6 +20,8 @@ struct ProviderSessionView: View {
     let onNavigationBlocked: (() -> Void)?
     let allowsEmbed: Bool
     let diagnosticContext: DiagnosticContext
+    /// Hub-SSOT gegen Remount-Churn (ensureWebView); optional für Previews/Tests.
+    var sessionHub: ProviderSessionHub?
 
     init(
         providerID: ProviderID,
@@ -32,7 +34,8 @@ struct ProviderSessionView: View {
         onCapturedCredentials: ((ProviderCredentials) -> Void)? = nil,
         onNavigationBlocked: (() -> Void)? = nil,
         allowsEmbed: Bool,
-        diagnosticContext: DiagnosticContext
+        diagnosticContext: DiagnosticContext,
+        sessionHub: ProviderSessionHub? = nil
     ) {
         self.providerID = providerID
         self.loginURL = loginURL
@@ -45,6 +48,7 @@ struct ProviderSessionView: View {
         self.onNavigationBlocked = onNavigationBlocked
         self.allowsEmbed = allowsEmbed
         self.diagnosticContext = diagnosticContext
+        self.sessionHub = sessionHub
     }
 
     var body: some View {
@@ -58,7 +62,8 @@ struct ProviderSessionView: View {
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
             allowsEmbed: allowsEmbed,
-            diagnosticContext: diagnosticContext
+            diagnosticContext: diagnosticContext,
+            sessionHub: sessionHub
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -198,6 +203,7 @@ private struct ProviderWebView: NSViewRepresentable {
     let onNavigationBlocked: (() -> Void)?
     let allowsEmbed: Bool
     let diagnosticContext: DiagnosticContext
+    var sessionHub: ProviderSessionHub?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
@@ -217,19 +223,14 @@ private struct ProviderWebView: NSViewRepresentable {
         let webView = resolveWebView(context: context)
         host.embed(webView)
         context.coordinator.observeWindowActivation(for: webView)
+        context.coordinator.boundProviderID = diagnosticContext.providerID
+        loadLoginURLIfNeeded(in: webView, context: context)
 
         DispatchQueue.main.async {
-            webViewRef = webView
-            webView.window?.makeFirstResponder(webView)
-            context.coordinator.boundProviderID = diagnosticContext.providerID
-            if let loginURL {
-                let current = webView.url?.absoluteString
-                context.coordinator.loadedLoginURL = loginURL
-                // Hub-WebView kann noch eine alte URL haben (z. B. Opodo /travel/secure/).
-                if current != loginURL.absoluteString {
-                    webView.load(URLRequest(url: loginURL))
-                }
+            if webViewRef !== webView {
+                webViewRef = webView
             }
+            webView.window?.makeFirstResponder(webView)
         }
 
         return host
@@ -277,11 +278,9 @@ private struct ProviderWebView: NSViewRepresentable {
             }
         }
 
-        if let loginURL, context.coordinator.loadedLoginURL != loginURL {
-            context.coordinator.dismissAuthPopup()
-            context.coordinator.loadedLoginURL = loginURL
-            webView.load(URLRequest(url: loginURL))
-        } else if credentialsChanged {
+        loadLoginURLIfNeeded(in: webView, context: context)
+
+        if credentialsChanged {
             context.coordinator.scheduleLoginAssistance(in: webView)
         }
     }
@@ -301,7 +300,34 @@ private struct ProviderWebView: NSViewRepresentable {
         coordinator.tearDown()
     }
 
+    private func loadLoginURLIfNeeded(in webView: FocusableWKWebView, context: Context) {
+        guard let loginURL else { return }
+        // Nur bei Binding-Wechsel (nicht nach OAuth/Redirects in updateNSView).
+        guard context.coordinator.loadedLoginURL != loginURL else { return }
+        // Remount: neuer Coordinator, Hub-WebView behalten — Login nicht erneut anstoßen.
+        if let hub = sessionHub,
+           hub.requestedLoginURL(for: diagnosticContext.providerID) == loginURL {
+            context.coordinator.loadedLoginURL = loginURL
+            return
+        }
+        context.coordinator.dismissAuthPopup()
+        context.coordinator.loadedLoginURL = loginURL
+        sessionHub?.noteRequestedLoginURL(diagnosticContext.providerID, url: loginURL)
+        let current = webView.url?.absoluteString
+        // Hub-WebView kann noch eine alte URL haben (z. B. Opodo /travel/secure/).
+        if current != loginURL.absoluteString {
+            webView.load(URLRequest(url: loginURL))
+        }
+    }
+
     private func resolveWebView(context: Context) -> FocusableWKWebView {
+        if let hub = sessionHub,
+           let ensured = hub.ensureWebView(diagnosticContext.providerID, create: {
+               makeFreshWebView(context: context)
+           }) as? FocusableWKWebView {
+            attachCoordinator(ensured, context: context)
+            return ensured
+        }
         if let existing = webViewRef as? FocusableWKWebView {
             attachCoordinator(existing, context: context)
             return existing

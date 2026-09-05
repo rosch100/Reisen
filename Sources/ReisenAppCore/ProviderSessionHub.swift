@@ -11,21 +11,27 @@ public final class ProviderSessionHub {
     public struct Slot: Equatable {
         public var status: ProviderSessionStatus = .needsLogin
         public var lastURLString: String?
+        /// Letzte bewusst angeforderte Login-URL (überlebt SwiftUI-Coordinator-Remount).
+        public var requestedLoginURL: URL?
         /// Nicht in Equatable einbezogen: Identität der WebView.
         public var webView: WKWebView?
 
         public init(
             status: ProviderSessionStatus = .needsLogin,
             lastURLString: String? = nil,
+            requestedLoginURL: URL? = nil,
             webView: WKWebView? = nil
         ) {
             self.status = status
             self.lastURLString = lastURLString
+            self.requestedLoginURL = requestedLoginURL
             self.webView = webView
         }
 
         public static func == (lhs: Slot, rhs: Slot) -> Bool {
-            lhs.status == rhs.status && lhs.lastURLString == rhs.lastURLString
+            lhs.status == rhs.status
+                && lhs.lastURLString == rhs.lastURLString
+                && lhs.requestedLoginURL == rhs.requestedLoginURL
         }
     }
 
@@ -72,7 +78,37 @@ public final class ProviderSessionHub {
     public func updateWebView(_ providerID: ProviderID, webView: WKWebView?) {
         guard var slot = slots[providerID] else { return }
         slot.webView = webView
+        if webView == nil {
+            slot.requestedLoginURL = nil
+        }
         slots[providerID] = slot
+    }
+
+    /// Merkt die Login-URL am Slot, damit Remounts mit neuem Coordinator nicht neu laden.
+    public func noteRequestedLoginURL(_ providerID: ProviderID, url: URL) {
+        guard var slot = slots[providerID] else { return }
+        slot.requestedLoginURL = url
+        slots[providerID] = slot
+    }
+
+    public func requestedLoginURL(for providerID: ProviderID) -> URL? {
+        slots[providerID]?.requestedLoginURL
+    }
+
+    /// SSOT gegen SwiftUI-Remount-Churn: create nur wenn der Slot noch keine WebView hat.
+    /// - Returns: bestehende oder neu erzeugte WebView; `nil` wenn der Provider keinen Slot hat.
+    @discardableResult
+    public func ensureWebView(
+        _ providerID: ProviderID,
+        create: () -> WKWebView
+    ) -> WKWebView? {
+        guard slots[providerID] != nil else { return nil }
+        if let existing = slots[providerID]?.webView {
+            return existing
+        }
+        let created = create()
+        updateWebView(providerID, webView: created)
+        return created
     }
 
     public func isLoggedIn(for providerID: ProviderID) -> Bool? {
