@@ -1,5 +1,7 @@
 import Foundation
 import ReisenProviders
+import ReisenDiagnostics
+import ReisenDomain
 
 @MainActor
 extension BookingComTravelProvider {
@@ -9,7 +11,7 @@ extension BookingComTravelProvider {
         tokens: BookingComSessionTokens,
         parser: BookingComTripsGraphQLParser,
         seen: inout Set<String>
-    ) async -> [String] {
+    ) async throws -> [String] {
         var orderedIDs: [String] = []
         do {
             var paginationToken: String? = nil
@@ -23,8 +25,10 @@ extension BookingComTravelProvider {
                 appendUnseenTripIDs(page.tripIDs, into: &orderedIDs, seen: &seen)
                 paginationToken = page.nextPaginationToken
             } while paginationToken != nil
+        } catch let error as AuthenticatedFetchError where AuthenticatedSessionGuard.isUnauthorized(error) {
+            throw BookingComProviderError.sessionNotEstablished
         } catch {
-            // Stage-Gruppe fehlgeschlagen → nächste / SSR-Fallback.
+            Self.recordStageTripIDsSkipped(stages: stages, error: error)
         }
         return orderedIDs
     }
@@ -56,5 +60,27 @@ extension BookingComTravelProvider {
         let tripIDs = try parser.parseTripIDs(fromGetTripsJSON: json)
         let nextPaginationToken = try parser.parsePaginationToken(fromGetTripsJSON: json)
         return (tripIDs, nextPaginationToken)
+    }
+
+    private static func recordStageTripIDsSkipped(stages: [String], error: Error) {
+        let stageLabel = stages.joined(separator: ",").prefix(64)
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .booking,
+                        operation: "booking_com_catalog"
+                    ),
+                    component: "BookingComTravelProvider",
+                    phase: "get_trips_stages",
+                    event: "stage_trip_ids_skipped",
+                    result: .skipped,
+                    errorType: String(describing: type(of: error)),
+                    reason: String(stageLabel),
+                    visibility: .publicDiagnostic
+                )
+            )
+        }
     }
 }

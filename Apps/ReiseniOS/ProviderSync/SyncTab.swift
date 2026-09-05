@@ -792,6 +792,25 @@ struct SyncTab: View {
             )
         } catch {
             selectedKeychainAccount = nil
+            keychainMessage = error.localizedDescription
+            let context = DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: selectedProviderID,
+                operation: "ios_auto_login"
+            )
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: context,
+                        component: "SyncTab",
+                        phase: "keychain",
+                        event: "credential_load",
+                        result: .failed,
+                        errorType: String(describing: type(of: error)),
+                        reason: DiagnosticRedactor.redact(error.localizedDescription)
+                    )
+                )
+            }
         }
     }
 }

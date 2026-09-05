@@ -11,11 +11,12 @@ extension OpodoCancellationDeadlineParser {
             || lower.contains("100%")
     }
 
-    func firstDateInSnippet(_ snippet: String) -> Date? {
+    func firstDateInSnippet(_ snippet: String) -> (date: Date, offsetSeconds: Int?)? {
         if let iso = parseISODateFromSnippet(snippet) { return iso }
-        if let bis = parseOpodoBisDateFromSnippet(snippet) { return bis }
-        if let deDateTime = parseDeDateTimeFromSnippet(snippet) { return deDateTime }
-        if let deDate = parseDeDateFromSnippet(snippet) { return deDate }
+        // DE/Wall-Clock ohne Offset-Marker: Opodo-UI-Konvention `0` (nicht Geräte-TZ).
+        if let bis = parseOpodoBisDateFromSnippet(snippet) { return (bis, 0) }
+        if let deDateTime = parseDeDateTimeFromSnippet(snippet) { return (deDateTime, 0) }
+        if let deDate = parseDeDateFromSnippet(snippet) { return (deDate, 0) }
         return nil
     }
 }

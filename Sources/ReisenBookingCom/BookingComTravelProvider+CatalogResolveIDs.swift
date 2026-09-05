@@ -6,8 +6,8 @@ extension BookingComTravelProvider {
         preferredTripIDs: [String],
         using webView: BookingComWebView,
         tokens: BookingComSessionTokens
-    ) async -> [String] {
-        let tripIDs = await fetchAllTripIDs(using: webView, tokens: tokens)
+    ) async throws -> [String] {
+        let tripIDs = try await fetchAllTripIDs(using: webView, tokens: tokens)
         if tripIDs.isEmpty {
             return preferredTripIDs
         }

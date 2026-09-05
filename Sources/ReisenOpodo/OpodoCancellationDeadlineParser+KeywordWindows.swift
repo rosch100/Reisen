@@ -33,15 +33,14 @@ extension OpodoCancellationDeadlineParser {
                 let end = lower.index(swiftRange.upperBound, offsetBy: windowRadius, limitedBy: lower.endIndex) ?? lower.endIndex
                 let snippet = String(html[start..<end])
 
-                if let date = firstDateInSnippet(snippet) {
+                if let parsed = firstDateInSnippet(snippet) {
                     deadlines.append(
                         CancellationDeadline(
-                            deadlineAt: date,
+                            deadlineAt: parsed.date,
                             policyText: snippet.trimmingCharacters(in: .whitespacesAndNewlines),
                             isStrict: true,
                             isFreeCancellation: isFreeCancellation(in: snippet),
-                            // Opodo-UI-Zeiten sind Wall-Clock (HAR oft `-00:00`), nicht Geräte-TZ.
-                            hotelOffsetSeconds: 0,
+                            hotelOffsetSeconds: parsed.offsetSeconds,
                             cancellationFeeAmount: extractFeeAmount(from: snippet)
                         )
                     )

@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import ReisenDomain
 import ReisenProviders
+import ReisenDiagnostics
 
 extension Check24TravelProvider {
     public func enrichBooking(
@@ -33,7 +34,7 @@ extension Check24TravelProvider {
                     url: url,
                     reason: "car_rental_readiness"
                 )
-                return Self.carRentalEnrichment(html: nil)
+                throw Check24ProviderError.navigationFailed
             }
             let snapshot = try await snapshotHTML(from: webView)
             await recordDiagnosticPhase(
@@ -44,9 +45,20 @@ extension Check24TravelProvider {
             )
             return Self.carRentalEnrichment(html: snapshot.html)
         }
+        var hotelReadinessSkipped = false
         if ref.bookingType == .hotel {
-            _ = try await waitForHotelDetailReady(in: webView)
+            let detailReady = try await waitForHotelDetailReady(in: webView)
             _ = try await waitForHotelInfoAddressPayload(in: webView)
+            if !detailReady {
+                hotelReadinessSkipped = true
+                await recordDiagnosticPhase(
+                    "enrichment",
+                    event: "readiness_failed",
+                    result: .skipped,
+                    url: url,
+                    reason: "hotel_detail_readiness"
+                )
+            }
         }
         let snapshot = try await snapshotHTML(from: webView)
         let policy = CancellationPolicyParser().parseCancellationPolicy(from: snapshot.html)
@@ -119,15 +131,19 @@ extension Check24TravelProvider {
         let completionReason: String?
         if baggageSoftFailed {
             completionReason = "baggage_failed"
+        } else if hotelReadinessSkipped {
+            completionReason = "hotel_detail_readiness"
         } else if ref.bookingType == .hotel {
             completionReason = hotelDetailCompletionReason(stay: stay, details: details)
         } else {
             completionReason = nil
         }
+        let completionResult: DiagnosticResult =
+            (baggageSoftFailed || hotelReadinessSkipped) ? .skipped : .succeeded
         await recordDiagnosticPhase(
             "enrichment",
             event: "completed",
-            result: baggageSoftFailed ? .skipped : .succeeded,
+            result: completionResult,
             url: url,
             reason: completionReason
         )
