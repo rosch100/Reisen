@@ -36,6 +36,7 @@ struct SyncView: View {
     @State private var diagnosticRunID = UUID()
     @State private var sessionStatus: ProviderSessionStatus = .needsLogin
     @State private var lastURLString: String?
+    @State private var authPopupURLAbsoluteString: String?
     @State private var missingProviderMessage: String?
     @State private var isBrowserExpanded = false
     @State private var keychainAccounts: [KeychainCredentialAccount] = []
@@ -208,6 +209,7 @@ struct SyncView: View {
                         loginURL: providerLoginURL,
                         sessionStatus: $sessionStatus,
                         lastURLString: $lastURLString,
+                        authPopupURLAbsoluteString: $authPopupURLAbsoluteString,
                         webView: webViewBinding,
                         autofillCredentials: autofillCredentials,
                         passwordAutofillAllowedHosts: loginConfiguration?.passwordAutofillAllowedHosts ?? [],
@@ -304,6 +306,10 @@ struct SyncView: View {
             // Keychain hier nicht anfassen — Redirects (Check24 SSO) sehen kurz wie Login aus,
             // obwohl Cookies danach sessionReady setzen. Keychain nur über den Settle-Pfad.
         }
+        .onChange(of: showsApplePasskeyHint) { _, visible in
+            guard visible else { return }
+            recordApplePasskeyHintVisible()
+        }
         .onChange(of: sessionWebView != nil) { _, _ in
             sessionHub?.updateWebView(providerID, webView: sessionWebView)
         }
@@ -364,7 +370,8 @@ struct SyncView: View {
     private var showsApplePasskeyHint: Bool {
         AuthIdentityProviderHost.showsApplePasskeyHint(
             needsLogin: sessionStatus == .needsLogin,
-            urlAbsoluteString: lastURLString
+            urlAbsoluteString: lastURLString,
+            authPopupURLAbsoluteString: authPopupURLAbsoluteString
         )
     }
 
@@ -937,6 +944,26 @@ struct SyncView: View {
             keychainMessage = existing + "\n\n" + suffix
         } else {
             keychainMessage = suffix
+        }
+    }
+
+    private func recordApplePasskeyHintVisible() {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: providerID,
+                        operation: "sync_login"
+                    ),
+                    component: "SyncApplePasskeyHint",
+                    phase: "login",
+                    event: "apple_passkey_hint",
+                    result: .succeeded,
+                    url: authPopupURLAbsoluteString ?? lastURLString,
+                    reason: "apple_idp_visible"
+                )
+            )
         }
     }
 }

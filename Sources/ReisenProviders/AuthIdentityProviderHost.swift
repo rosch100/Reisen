@@ -21,9 +21,14 @@ public enum AuthIdentityProviderHost {
     /// Sync-Banner: Passkey-Hinweis nur bei Apple-IdP während Login.
     public static func showsApplePasskeyHint(
         needsLogin: Bool,
-        urlAbsoluteString: String?
+        urlAbsoluteString: String?,
+        authPopupURLAbsoluteString: String? = nil
     ) -> Bool {
-        guard needsLogin, let urlAbsoluteString else { return false }
+        guard needsLogin else { return false }
+        if let authPopupURLAbsoluteString, matchesApple(urlAbsoluteString: authPopupURLAbsoluteString) {
+            return true
+        }
+        guard let urlAbsoluteString else { return false }
         return matchesApple(urlAbsoluteString: urlAbsoluteString)
     }
 

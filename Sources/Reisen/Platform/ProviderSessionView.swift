@@ -12,6 +12,7 @@ struct ProviderSessionView: View {
     let loginURL: URL?
     @Binding var sessionStatus: ProviderSessionStatus
     @Binding var lastURLString: String?
+    @Binding var authPopupURLAbsoluteString: String?
     @Binding var webView: WKWebView?
 
     let autofillCredentials: ProviderCredentials?
@@ -28,6 +29,7 @@ struct ProviderSessionView: View {
         loginURL: URL?,
         sessionStatus: Binding<ProviderSessionStatus>,
         lastURLString: Binding<String?>,
+        authPopupURLAbsoluteString: Binding<String?> = .constant(nil),
         webView: Binding<WKWebView?>,
         autofillCredentials: ProviderCredentials? = nil,
         passwordAutofillAllowedHosts: [String] = [],
@@ -41,6 +43,7 @@ struct ProviderSessionView: View {
         self.loginURL = loginURL
         self._sessionStatus = sessionStatus
         self._lastURLString = lastURLString
+        self._authPopupURLAbsoluteString = authPopupURLAbsoluteString
         self._webView = webView
         self.autofillCredentials = autofillCredentials
         self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
@@ -56,6 +59,7 @@ struct ProviderSessionView: View {
             loginURL: loginURL,
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
+            authPopupURLAbsoluteString: $authPopupURLAbsoluteString,
             webViewRef: $webView,
             autofillCredentials: autofillCredentials,
             passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
@@ -195,6 +199,7 @@ private struct ProviderWebView: NSViewRepresentable {
     let loginURL: URL?
     @Binding var sessionStatus: ProviderSessionStatus
     @Binding var lastURLString: String?
+    @Binding var authPopupURLAbsoluteString: String?
     @Binding var webViewRef: WKWebView?
 
     let autofillCredentials: ProviderCredentials?
@@ -209,6 +214,7 @@ private struct ProviderWebView: NSViewRepresentable {
         Coordinator(
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
+            authPopupURLAbsoluteString: $authPopupURLAbsoluteString,
             autofillCredentials: autofillCredentials,
             passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
             onCapturedCredentials: onCapturedCredentials,
@@ -241,6 +247,7 @@ private struct ProviderWebView: NSViewRepresentable {
         context.coordinator.update(
             sessionStatus: $sessionStatus,
             lastURLString: $lastURLString,
+            authPopupURLAbsoluteString: $authPopupURLAbsoluteString,
             passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
@@ -383,6 +390,7 @@ private struct ProviderWebView: NSViewRepresentable {
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         private var sessionStatus: Binding<ProviderSessionStatus>
         private var lastURLString: Binding<String?>
+        private var authPopupURLAbsoluteString: Binding<String?>
         private var autofillCredentials: ProviderCredentials?
         private var passwordAutofillAllowedHosts: [String]
         private var onCapturedCredentials: ((ProviderCredentials) -> Void)?
@@ -406,6 +414,7 @@ private struct ProviderWebView: NSViewRepresentable {
         init(
             sessionStatus: Binding<ProviderSessionStatus>,
             lastURLString: Binding<String?>,
+            authPopupURLAbsoluteString: Binding<String?>,
             autofillCredentials: ProviderCredentials?,
             passwordAutofillAllowedHosts: [String],
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
@@ -414,6 +423,7 @@ private struct ProviderWebView: NSViewRepresentable {
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
+            self.authPopupURLAbsoluteString = authPopupURLAbsoluteString
             self.autofillCredentials = autofillCredentials
             self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
             self.onCapturedCredentials = onCapturedCredentials
@@ -424,6 +434,7 @@ private struct ProviderWebView: NSViewRepresentable {
         func update(
             sessionStatus: Binding<ProviderSessionStatus>,
             lastURLString: Binding<String?>,
+            authPopupURLAbsoluteString: Binding<String?>,
             passwordAutofillAllowedHosts: [String],
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
             onNavigationBlocked: (() -> Void)?,
@@ -431,6 +442,7 @@ private struct ProviderWebView: NSViewRepresentable {
         ) {
             self.sessionStatus = sessionStatus
             self.lastURLString = lastURLString
+            self.authPopupURLAbsoluteString = authPopupURLAbsoluteString
             self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
@@ -829,6 +841,7 @@ private struct ProviderWebView: NSViewRepresentable {
         @MainActor
         private func handleAuthPopupNavigation(_ webView: WKWebView, allowDismiss: Bool) {
             guard let url = webView.url else { return }
+            authPopupURLAbsoluteString.wrappedValue = url.absoluteString
             authPopupSawIdentityProvider = ProviderAuthPopupPolicy.noteIdentityProviderSighting(
                 currentURL: url,
                 alreadySawIdentityProvider: authPopupSawIdentityProvider
@@ -866,6 +879,7 @@ private struct ProviderWebView: NSViewRepresentable {
             authPopupWebView = nil
             authPopupParent = nil
             authPopupSawIdentityProvider = false
+            authPopupURLAbsoluteString.wrappedValue = nil
             if let host = parent?.superview as? WebViewHostView {
                 host.dismissAuthPopup()
             } else {

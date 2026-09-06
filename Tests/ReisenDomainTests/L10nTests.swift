@@ -85,3 +85,14 @@ import ReisenDomain
         #expect(L10n.string(.actionOpenPasswords) == "Passwörter öffnen")
     }
 }
+
+@Test func l10n_syncApplePasskeyHint_namesPasskeyAndAppleUsername() {
+    L10n.withLocale(Locale(identifier: "de")) {
+        let de = L10n.string(.syncApplePasskeyHint)
+        #expect(de == "Die Passkey-Anmeldung funktioniert in der App nicht. Gib den Apple-Benutzernamen ein.")
+    }
+    L10n.withLocale(Locale(identifier: "en")) {
+        let en = L10n.string(.syncApplePasskeyHint)
+        #expect(en == "Passkey sign-in does not work in the app. Enter your Apple username.")
+    }
+}
