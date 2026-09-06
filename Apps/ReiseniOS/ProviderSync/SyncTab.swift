@@ -46,6 +46,7 @@ struct SyncTab: View {
     @State private var rememberLoginMessage: String?
     @State private var navigationWasBlocked = false
     @State private var diagnosticRunID = UUID()
+    @State private var authPopupURLAbsoluteString: String?
 
     @AppStorage(AppSettingsKeys.rememberLoginAutomatically)
     private var rememberLoginAutomatically: Bool = false
@@ -159,6 +160,10 @@ struct SyncTab: View {
                 isKeyboardVisible = false
             }
             .providerLoginDisclosure(isActive: !enabledProviderIDs.isEmpty)
+            .onChange(of: showsApplePasskeyHint) { _, visible in
+                guard visible else { return }
+                recordApplePasskeyHintVisible()
+            }
         }
     }
 
@@ -203,6 +208,9 @@ struct SyncTab: View {
                 allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false,
                 onDidFinish: { finishedWebView in
                     handleWebDidFinish(finishedWebView)
+                },
+                onAuthPopupURLChange: { urlString in
+                    authPopupURLAbsoluteString = urlString
                 },
                 onCapturedCredentials: { credentials in
                     pendingRememberCredentials = credentials
@@ -353,7 +361,8 @@ struct SyncTab: View {
     private var showsApplePasskeyHint: Bool {
         AuthIdentityProviderHost.showsApplePasskeyHint(
             needsLogin: sessionStatus == .needsLogin,
-            urlAbsoluteString: lastURLString
+            urlAbsoluteString: lastURLString,
+            authPopupURLAbsoluteString: authPopupURLAbsoluteString
         )
     }
 
@@ -833,6 +842,26 @@ struct SyncTab: View {
                     )
                 )
             }
+        }
+    }
+
+    private func recordApplePasskeyHintVisible() {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: selectedProviderID,
+                        operation: "sync_login"
+                    ),
+                    component: "SyncApplePasskeyHint",
+                    phase: "login",
+                    event: "apple_passkey_hint",
+                    result: .succeeded,
+                    url: authPopupURLAbsoluteString ?? lastURLString,
+                    reason: "apple_idp_visible"
+                )
+            )
         }
     }
 }

@@ -7158,13 +7158,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bei „Login mit Apple“ funktioniert der Passkey nur in Safari oder dem System-Anmeldefenster. Verwende hier das Apple-Account-Passwort und gegebenenfalls den Bestätigungscode."
+            "value": "Die Passkey-Anmeldung funktioniert in der App nicht. Gib den Apple-Benutzernamen ein."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For Sign in with Apple, passkeys work only in Safari or the system authentication window. Here, use your Apple Account password and, if requested, the verification code."
+            "value": "Passkey sign-in does not work in the app. Enter your Apple username."
           }
         }
       }

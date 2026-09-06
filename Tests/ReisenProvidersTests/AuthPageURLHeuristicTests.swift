@@ -107,6 +107,40 @@ import ReisenProviders
     #expect(!AuthIdentityProviderHost.matchesApple(urlAbsoluteString: "https://accounts.google.com/signin"))
 }
 
+@Test func applePasskeyHintUsesAuthPopupURLWhileParentStaysOnPortal() {
+    let portal = "https://www.traveloka.com/en-en/user/signin"
+    let apple = "https://appleid.apple.com/auth/authorize?client_id=x"
+    let google = "https://accounts.google.com/signin"
+    #expect(
+        AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: true,
+            urlAbsoluteString: portal,
+            authPopupURLAbsoluteString: apple
+        )
+    )
+    #expect(
+        !AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: true,
+            urlAbsoluteString: portal,
+            authPopupURLAbsoluteString: nil
+        )
+    )
+    #expect(
+        !AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: true,
+            urlAbsoluteString: portal,
+            authPopupURLAbsoluteString: google
+        )
+    )
+    #expect(
+        !AuthIdentityProviderHost.showsApplePasskeyHint(
+            needsLogin: false,
+            urlAbsoluteString: portal,
+            authPopupURLAbsoluteString: apple
+        )
+    )
+}
+
 @Test func travelokaMyBookingIsAccountPage() {
     #expect(AuthPageURLHeuristic.looksLikeAccountPage("https://www.traveloka.com/en-en/user/mybooking"))
     #expect(AuthPageURLHeuristic.looksLikeLoginPage("https://www.traveloka.com/en-en/user/signin"))

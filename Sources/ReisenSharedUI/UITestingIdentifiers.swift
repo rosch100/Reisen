@@ -12,6 +12,8 @@ public enum UITestingIdentifiers {
     public static let settings = "reisen.settings"
     public static let syncChrome = "reisen.sync.chrome"
     public static let syncLoginChrome = "reisen.sync.login-chrome"
+    /// Passkey-Hinweis im Sync-Login-Chrome (nur bei Apple-IdP sichtbar).
+    public static let syncApplePasskeyHint = "reisen.sync.apple-passkey-hint"
     /// Hauptfläche: gewähltes Portal ist deaktiviert (Checkbox aus).
     public static let syncProviderDisabledEmpty = "reisen.sync.provider-disabled-empty"
     public static let syncFillCredentials = "reisen.sync.fill-credentials"
