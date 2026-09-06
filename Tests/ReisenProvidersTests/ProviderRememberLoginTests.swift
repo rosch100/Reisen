@@ -113,3 +113,90 @@ func rememberLoginApplyAutoSaveOutcome_updatesState() {
     #expect(message == "saved")
     #expect(savedID == "booking.com\u{1f}u@x.de")
 }
+
+@Test
+func loginContinueAfterSave_fillsWhenNeedsLoginAndPasswordMode() {
+    let account = KeychainCredentialAccount(serverHost: "booking.com", username: "u@x.de")
+
+    let manual = ProviderRememberLogin.loginContinueAfterSave(
+        account: account,
+        sessionNeedsLogin: true,
+        mode: .passwordManual
+    )
+    #expect(manual.preferredAccountID == account.id)
+    #expect(manual.shouldAutoFill)
+    #expect(manual.reason == "needs_login")
+
+    let prefill = ProviderRememberLogin.loginContinueAfterSave(
+        account: account,
+        sessionNeedsLogin: true,
+        mode: .passwordPrefill(username: "u@x.de", password: "pw")
+    )
+    #expect(prefill.preferredAccountID == account.id)
+    #expect(prefill.shouldAutoFill)
+    #expect(prefill.reason == "needs_login")
+}
+
+@Test
+func loginContinueAfterSave_skipsSessionOnlyEvenWhenNeedsLogin() {
+    let account = KeychainCredentialAccount(serverHost: "booking.com", username: "u@x.de")
+    let decision = ProviderRememberLogin.loginContinueAfterSave(
+        account: account,
+        sessionNeedsLogin: true,
+        mode: .sessionOnly
+    )
+    #expect(decision.preferredAccountID == account.id)
+    #expect(!decision.shouldAutoFill)
+    #expect(decision.reason == "session_only")
+}
+
+@Test
+func loginContinueAfterSave_skipsWhenSessionReady() {
+    let account = KeychainCredentialAccount(serverHost: "opodo.de", username: "a@x.de")
+
+    let readyManual = ProviderRememberLogin.loginContinueAfterSave(
+        account: account,
+        sessionNeedsLogin: false,
+        mode: .passwordManual
+    )
+    #expect(readyManual.preferredAccountID == account.id)
+    #expect(!readyManual.shouldAutoFill)
+    #expect(readyManual.reason == "session_ready")
+
+    let readySession = ProviderRememberLogin.loginContinueAfterSave(
+        account: account,
+        sessionNeedsLogin: false,
+        mode: .sessionOnly
+    )
+    #expect(readySession.preferredAccountID == account.id)
+    #expect(!readySession.shouldAutoFill)
+    #expect(readySession.reason == "session_ready")
+}
+
+@Test
+func applyAfterSavedAccount_setsPreferredIDAndReloadAutoFillWithoutSeparateSchedule() {
+    let account = KeychainCredentialAccount(serverHost: "booking.com", username: "u@x.de")
+    var preferred = ""
+
+    let continueLogin = ProviderRememberLogin.applyAfterSavedAccount(
+        account: account,
+        sessionNeedsLogin: true,
+        mode: .passwordManual,
+        setPreferredAccountID: { preferred = $0 }
+    )
+    #expect(preferred == account.id)
+    #expect(continueLogin.preferredAccountID == account.id)
+    #expect(continueLogin.shouldAutoFill)
+    #expect(continueLogin.reason == "needs_login")
+
+    preferred = "stale"
+    let skipReady = ProviderRememberLogin.applyAfterSavedAccount(
+        account: account,
+        sessionNeedsLogin: false,
+        mode: .passwordManual,
+        setPreferredAccountID: { preferred = $0 }
+    )
+    #expect(preferred == account.id)
+    #expect(!skipReady.shouldAutoFill)
+    #expect(skipReady.reason == "session_ready")
+}

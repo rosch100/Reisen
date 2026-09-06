@@ -76,6 +76,14 @@ func loginAutofillScriptReturnsSubmitIdentifierFields() {
 }
 
 @Test
+func loginAutofillScriptTreatsContinueAsUsernameStepSubmit() {
+    let script = LoginAutofillScript.build()
+
+    #expect(script.contains(LoginAutofillFieldHeuristic.usernameStepSubmitPattern))
+    #expect(script.contains("looksLikeSubmit"))
+}
+
+@Test
 func providerLoginAttemptPolicyCapsAttemptsAndRequiresRetryDelay() {
     #expect(ProviderLoginAttemptPolicy.maximumAttempts(requested: 99) == 3)
     #expect(ProviderLoginAttemptPolicy.maximumAttempts(requested: 0) == 1)
