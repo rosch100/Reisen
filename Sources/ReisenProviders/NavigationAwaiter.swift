@@ -65,8 +65,7 @@ public final class NavigationAwaiter: NSObject {
                 )
             }
         } catch {
-            let timedOut = (error as NSError).domain == "NavigationAwaiter"
-                && (error as NSError).code == 1
+            let timedOut = NavigationSettleTimeout.isTimeout(error)
             if let context {
                 await record(
                     context: context,
@@ -77,7 +76,7 @@ public final class NavigationAwaiter: NSObject {
                     errorType: String(reflecting: type(of: error)),
                     reason: Task.isCancelled
                         ? "task_cancelled"
-                        : (timedOut ? "navigation_timeout" : DiagnosticRedactor.redact(error.localizedDescription))
+                        : (timedOut ? NavigationSettleTimeout.diagnosticReason : DiagnosticRedactor.redact(error.localizedDescription))
                 )
             }
             throw error
