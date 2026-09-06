@@ -223,6 +223,12 @@ struct MacUI {
         waitFor(UITestingIdentifiers.syncLoginChrome)
     }
 
+    @discardableResult
+    func openRememberLoginSheet() -> XCUIElement {
+        waitFor(UITestingIdentifiers.syncRememberLogin).click()
+        return waitFor(UITestingIdentifiers.syncRememberLoginSheet)
+    }
+
     func clickAblageMenuItem(_ title: String) {
         clickMenuItem(menuBarTitle: "Ablage", itemTitle: title)
     }

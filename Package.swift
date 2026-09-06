@@ -95,6 +95,7 @@ let package = Package(
                 "ReisenDomain",
                 "ReisenData",
                 "ReisenProviders",
+                "ReisenSharedUI",
                 "ReisenCheck24",
                 "ReisenOpodo",
                 "ReisenBookingCom",

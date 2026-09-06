@@ -100,6 +100,16 @@ public enum UITestingLaunch {
         ProviderFirstLaunchSetup.setInitialSetupHidden(true, defaults: defaults)
     }
 
+    /// Populated-XCUI: Disclosure bereits akzeptiert in isolatedDefaults — Alert blockiert nicht,
+    /// und `accept()` auf `.standard` wird vom Smoke nicht getippt.
+    public static func seedProviderLoginDisclosureIfNeeded(
+        mode: UITestingMode,
+        defaults: UserDefaults
+    ) {
+        guard mode == .populated else { return }
+        ProviderLoginDisclosure.accept(defaults: defaults)
+    }
+
     @MainActor
     public static let isolatedDefaults = makeIsolatedDefaults()
 }

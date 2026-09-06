@@ -245,8 +245,7 @@ struct SyncView: View {
             if let keychainServerHost {
                 SaveProviderCredentialSheet(
                     serverHost: keychainServerHost,
-                    mode: rememberLoginMode,
-                    onOpenPasswordManager: { MacSystemApps.openPasswords() }
+                    mode: rememberLoginMode
                 ) { account in
                     preferredKeychainAccountID = account.id
                     reloadKeychainAccounts(selecting: account)
