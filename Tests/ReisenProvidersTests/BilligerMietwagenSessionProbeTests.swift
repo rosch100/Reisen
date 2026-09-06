@@ -39,3 +39,103 @@ import ReisenProviders
     #expect(sessionHeaders["client-id"] == "web")
     #expect(sessionHeaders["Origin"] == "https://www.billiger-mietwagen.de")
 }
+
+@Test func billigerMietwagenSessionProbeReprobesWhenSessionCookiesAppearAfterSPALogin() {
+    #expect(
+        BilligerMietwagenAuthConstants.sessionCookieNames == Set([
+            "__Secure-billigermietwagen",
+            "__Secure-user_account",
+        ])
+    )
+    let afterLogin = BilligerMietwagenSessionProbe.shouldReprobeAfterCookieChange(
+        previousPresence: [],
+        currentCookies: [
+            ("consent", true),
+            ("__Secure-billigermietwagen", true),
+            ("__Secure-user_account", true),
+        ]
+    )
+    #expect(afterLogin.shouldReprobe == true)
+    #expect(
+        afterLogin.newPresence == [
+            "__Secure-billigermietwagen",
+            "__Secure-user_account",
+        ]
+    )
+
+    let unchanged = BilligerMietwagenSessionProbe.shouldReprobeAfterCookieChange(
+        previousPresence: afterLogin.newPresence,
+        currentCookies: [
+            ("consent", true),
+            ("__Secure-billigermietwagen", true),
+            ("__Secure-user_account", true),
+        ]
+    )
+    #expect(unchanged.shouldReprobe == false)
+    #expect(unchanged.newPresence == afterLogin.newPresence)
+
+    let emptySessionCookies = BilligerMietwagenSessionProbe.shouldReprobeAfterCookieChange(
+        previousPresence: [],
+        currentCookies: [
+            ("__Secure-billigermietwagen", false),
+            ("__Secure-user_account", false),
+        ]
+    )
+    #expect(emptySessionCookies.shouldReprobe == false)
+    #expect(emptySessionCookies.newPresence.isEmpty)
+
+    let filledAfterEmpty = BilligerMietwagenSessionProbe.shouldReprobeAfterCookieChange(
+        previousPresence: emptySessionCookies.newPresence,
+        currentCookies: [
+            ("__Secure-billigermietwagen", true),
+            ("__Secure-user_account", true),
+        ]
+    )
+    #expect(filledAfterEmpty.shouldReprobe == true)
+
+    let onlyUnrelated = BilligerMietwagenSessionProbe.shouldReprobeAfterCookieChange(
+        previousPresence: [],
+        currentCookies: [("consent", true), ("_ga", true)]
+    )
+    #expect(onlyUnrelated.shouldReprobe == false)
+    #expect(onlyUnrelated.newPresence.isEmpty)
+
+    let afterLogout = BilligerMietwagenSessionProbe.shouldReprobeAfterCookieChange(
+        previousPresence: afterLogin.newPresence,
+        currentCookies: [("consent", true)]
+    )
+    #expect(afterLogout.shouldReprobe == true)
+    #expect(afterLogout.newPresence.isEmpty)
+}
+
+@MainActor
+@Test func billigerMietwagenSessionCookieObserverApplyCookiesTracksPresenceChanges() {
+    var fired = 0
+    let observer = BilligerMietwagenSessionCookieObserver { fired += 1 }
+    func cookie(_ name: String, value: String) -> HTTPCookie {
+        HTTPCookie(properties: [
+            .domain: "www.billiger-mietwagen.de",
+            .path: "/",
+            .name: name,
+            .value: value,
+            .secure: "TRUE",
+        ])!
+    }
+
+    #expect(observer.applyCookies([cookie("consent", value: "1")]) == false)
+    #expect(
+        observer.applyCookies([
+            cookie("consent", value: "1"),
+            cookie("__Secure-billigermietwagen", value: "tok"),
+            cookie("__Secure-user_account", value: "acc"),
+        ]) == true
+    )
+    #expect(
+        observer.applyCookies([
+            cookie("__Secure-billigermietwagen", value: "tok"),
+            cookie("__Secure-user_account", value: "acc"),
+        ]) == false
+    )
+    #expect(observer.applyCookies([cookie("consent", value: "1")]) == true)
+    #expect(fired == 0)
+}
