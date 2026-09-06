@@ -57,8 +57,19 @@ public final class ProviderLoginAssistanceCancellation {
     }
 }
 
+public enum LoginAssistanceFillNextStep: Equatable, Sendable {
+    case succeeded
+    case startPasswordStep(delay: TimeInterval)
+    case retry(delay: TimeInterval)
+    case exhausted(reason: String)
+}
+
 public enum ProviderLoginAttemptPolicy {
     public static let maximumAllowedAttempts = 3
+    /// Kurze Retries bis Login-Felder überhaupt da sind.
+    public static let defaultRetryDelays: [TimeInterval] = [0.25, 0.75]
+    /// Nach E-Mail+Continue: SPA braucht länger bis zum Passwortfeld (Traveloka).
+    public static let passwordStepRetryDelays: [TimeInterval] = [1.0, 2.0]
 
     public static func maximumAttempts(requested: Int) -> Int {
         max(1, min(requested, maximumAllowedAttempts))
@@ -72,6 +83,40 @@ public enum ProviderLoginAttemptPolicy {
             return nil
         }
         return delays[min(attempt - 1, delays.count - 1)]
+    }
+
+    /// Entscheidung nach einem Autofill-Versuch (SSOT für applyCredentials + Tests).
+    public static func nextStep(
+        passwordExpected: Bool,
+        result: LoginAutofillResult,
+        attempt: Int,
+        maximumAttempts: Int,
+        sawUsernameWithoutPassword: Bool,
+        initialRetryDelays: [TimeInterval]
+    ) -> LoginAssistanceFillNextStep {
+        if result.isComplete(passwordExpected: passwordExpected) {
+            return .succeeded
+        }
+
+        if passwordExpected,
+           !sawUsernameWithoutPassword,
+           result.userFilled > 0,
+           result.passFilled == 0 {
+            return .startPasswordStep(delay: passwordStepRetryDelays[0])
+        }
+
+        let activeDelays = sawUsernameWithoutPassword
+            ? passwordStepRetryDelays
+            : initialRetryDelays
+        guard !activeDelays.isEmpty else {
+            return .exhausted(reason: "retry_schedule_missing")
+        }
+        guard attempt < maximumAttempts,
+              let delay = retryDelay(after: attempt, delays: activeDelays)
+        else {
+            return .exhausted(reason: "fill_failed \(result.fillCountsReason)")
+        }
+        return .retry(delay: delay)
     }
 }
 
@@ -137,7 +182,7 @@ public enum ProviderLoginAssistance {
         credentials: ProviderCredentials,
         allowedServerHosts: [String],
         maxAttempts: Int = 3,
-        retryDelays: [TimeInterval] = [0.25, 0.75],
+        retryDelays: [TimeInterval] = ProviderLoginAttemptPolicy.defaultRetryDelays,
         diagnosticContext: DiagnosticContext? = nil,
         completion: ((Bool) -> Void)? = nil
     ) -> ProviderLoginAssistanceCancellation {
@@ -147,6 +192,47 @@ public enum ProviderLoginAssistance {
         )
         let maximumAttempts = ProviderLoginAttemptPolicy.maximumAttempts(requested: maxAttempts)
         var attempt = 0
+        var sawUsernameWithoutPassword = false
+        let initialRetryDelays = retryDelays
+
+        func finish(succeeded: Bool, exhaustedReason: String?) {
+            if !succeeded {
+                resetAssistanceScheduling(for: webView)
+                if let diagnosticContext {
+                    Task {
+                        await DiagnosticLogger.shared.record(
+                            DiagnosticEvent(
+                                context: diagnosticContext,
+                                component: "ProviderLoginAssistance",
+                                phase: "autofill",
+                                event: "scheduling_reset",
+                                result: .succeeded,
+                                attempt: attempt,
+                                url: urlForLog(for: webView),
+                                reason: exhaustedReason ?? "fill_incomplete"
+                            )
+                        )
+                    }
+                }
+            }
+            if let exhaustedReason, let diagnosticContext, !succeeded {
+                Task {
+                    await DiagnosticLogger.shared.record(
+                        DiagnosticEvent(
+                            context: diagnosticContext,
+                            component: "ProviderLoginAssistance",
+                            phase: "autofill",
+                            event: "retries_exhausted",
+                            result: .failed,
+                            attempt: attempt,
+                            url: urlForLog(for: webView),
+                            reason: exhaustedReason
+                        )
+                    )
+                }
+            }
+            completion?(succeeded)
+        }
 
         func runAttempt() {
             guard !cancellation.isCancelled else { return }
@@ -175,7 +261,16 @@ public enum ProviderLoginAssistance {
                 LoginAutofill.apply(in: webView, credentials: credentials) { autofillResult in
                     guard !cancellation.isCancelled else { return }
                     let passwordExpected = !credentials.password.isEmpty
-                    if autofillResult.isComplete(passwordExpected: passwordExpected) {
+                    let step = ProviderLoginAttemptPolicy.nextStep(
+                        passwordExpected: passwordExpected,
+                        result: autofillResult,
+                        attempt: attempt,
+                        maximumAttempts: maximumAttempts,
+                        sawUsernameWithoutPassword: sawUsernameWithoutPassword,
+                        initialRetryDelays: initialRetryDelays
+                    )
+                    switch step {
+                    case .succeeded:
                         if let diagnosticContext {
                             Task {
                                 await DiagnosticLogger.shared.record(
@@ -192,15 +287,10 @@ public enum ProviderLoginAssistance {
                                 )
                             }
                         }
-                        completion?(true)
-                        return
-                    }
-                    guard attempt < maximumAttempts,
-                          let delay = ProviderLoginAttemptPolicy.retryDelay(
-                              after: attempt,
-                              delays: retryDelays
-                          )
-                    else {
+                        finish(succeeded: true, exhaustedReason: nil)
+                    case .startPasswordStep(let delay):
+                        sawUsernameWithoutPassword = true
+                        attempt = 0
                         if let diagnosticContext {
                             Task {
                                 await DiagnosticLogger.shared.record(
@@ -208,23 +298,26 @@ public enum ProviderLoginAssistance {
                                         context: diagnosticContext,
                                         component: "ProviderLoginAssistance",
                                         phase: "autofill",
-                                        event: "retries_exhausted",
-                                        result: .failed,
-                                        attempt: attempt,
+                                        event: "filled_partial",
+                                        result: .started,
+                                        attempt: 1,
                                         url: urlForLog(for: webView),
-                                        reason: retryDelays.isEmpty
-                                            ? "retry_schedule_missing"
-                                            : "fill_failed \(autofillResult.fillCountsReason)"
+                                        reason: autofillResult.diagnosticReason
                                     )
                                 )
                             }
                         }
-                        completion?(false)
-                        return
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                        guard !cancellation.isCancelled else { return }
-                        runAttempt()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                            guard !cancellation.isCancelled else { return }
+                            runAttempt()
+                        }
+                    case .retry(let delay):
+                        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                            guard !cancellation.isCancelled else { return }
+                            runAttempt()
+                        }
+                    case .exhausted(let reason):
+                        finish(succeeded: false, exhaustedReason: reason)
                     }
                 }
             }
