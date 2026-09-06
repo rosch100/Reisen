@@ -61,6 +61,9 @@ struct SyncView: View {
             wrappedValue: "",
             AppSettingsKeys.preferredKeychainAccountKey(for: providerID)
         )
+        if UITestingLaunch.seedsSessionReady {
+            _sessionStatus = State(initialValue: .sessionReady)
+        }
     }
 
     private var settings: AppSettings {
@@ -167,6 +170,13 @@ struct SyncView: View {
         SyncBrowserChrome.showsBottomActionBar(isSessionReady: isSessionReady)
     }
 
+    private var contentStackAlignment: Alignment {
+        switch SyncBrowserChrome.contentStackVerticalAlignment(isBrowserExpanded: browserExpanded) {
+        case .top:
+            return .top
+        }
+    }
+
     var body: some View {
         Group {
             if !isProviderEnabled {
@@ -191,7 +201,7 @@ struct SyncView: View {
                             .accessibilityLabel("Provider WebView")
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentStackAlignment)
             } else {
                 VStack(spacing: 0) {
                     if showsLoginChromeAboveWebView {
@@ -239,7 +249,7 @@ struct SyncView: View {
                     .accessibilityHidden(!browserExpanded)
                     .clipped()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentStackAlignment)
             }
         }
         .navigationTitle(L10n.string(.syncProviderSyncTitle))
@@ -435,6 +445,7 @@ struct SyncView: View {
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.bar)
+        .accessibilityIdentifier(UITestingIdentifiers.syncSessionBanner)
     }
 
     /// Eine HIG-Fläche: Status, Guidance und Credential-CTAs oberhalb der Login-WebView.

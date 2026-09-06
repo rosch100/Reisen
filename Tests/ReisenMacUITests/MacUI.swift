@@ -11,6 +11,14 @@ struct MacUI {
         launch(arguments: [UITestingLaunch.argument])
     }
 
+    /// Session-ready Sync-Chrome (Banner oben, Browser collapsed) ohne Live-Probe.
+    static func launchSessionReady() -> MacUI {
+        launch(arguments: [
+            UITestingLaunch.argument,
+            UITestingLaunch.sessionReadyArgument,
+        ])
+    }
+
     static func launchEmpty() -> MacUI {
         launch(arguments: [UITestingLaunch.emptyArgument])
     }
@@ -221,6 +229,11 @@ struct MacUI {
     @discardableResult
     func waitForSyncLoginChrome() -> XCUIElement {
         waitFor(UITestingIdentifiers.syncLoginChrome)
+    }
+
+    @discardableResult
+    func waitForSyncSessionBanner() -> XCUIElement {
+        waitFor(UITestingIdentifiers.syncSessionBanner)
     }
 
     @discardableResult

@@ -36,6 +36,8 @@ public enum UITestingLaunch {
     public static let argument = "-UITesting"
     public static let emptyArgument = "-UITestingEmpty"
     public static let pasteImportArgument = "-UITestingPasteImport"
+    /// Populated + sessionReady-Chrome (collapsed Browser) für Layout-Smokes.
+    public static let sessionReadyArgument = "-UITestingSessionReady"
     public static let environmentKey = "REISEN_UITESTING"
     public static let environmentPopulated = "1"
     public static let environmentEmpty = "empty"
@@ -55,6 +57,11 @@ public enum UITestingLaunch {
         isActive && ProcessInfo.processInfo.arguments.contains(pasteImportArgument)
     }
 
+    /// Session-ready Sync-Chrome (Banner + Action-Bar, Browser collapsed) ohne Live-Probe.
+    public static var seedsSessionReady: Bool {
+        seedsSessionReady(arguments: ProcessInfo.processInfo.arguments)
+    }
+
     public static func isActive(arguments: [String]) -> Bool {
         UITestingMode.from(arguments: arguments) != .off
     }
@@ -66,6 +73,11 @@ public enum UITestingLaunch {
     public static func shouldInjectPasteImportFixture(arguments: [String]) -> Bool {
         UITestingMode.from(arguments: arguments) != .off
             && arguments.contains(pasteImportArgument)
+    }
+
+    public static func seedsSessionReady(arguments: [String]) -> Bool {
+        UITestingMode.from(arguments: arguments) == .populated
+            && arguments.contains(sessionReadyArgument)
     }
 
     public static func makeIsolatedDefaults(
