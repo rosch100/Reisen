@@ -456,13 +456,39 @@ struct ProviderSessionWebView: UIViewRepresentable {
 
         func webViewDidClose(_ webView: WKWebView) {
             guard webView === authPopupWebView else { return }
+            let refresh = ProviderAuthPopupPolicy.parentRefreshAfterChildClose(
+                sawIdentityProvider: authPopupSawIdentityProvider
+            )
             recordNavigationEvent(
                 ProviderAuthPopupPolicy.Event.closed,
                 result: .succeeded,
                 webView: webView,
-                reason: ProviderAuthPopupPolicy.Reason.webViewDidClose
+                reason: ProviderAuthPopupPolicy.childCloseReason(refresh: refresh)
             )
-            dismissAuthPopup(refreshParent: true)
+            switch refresh {
+            case .immediate:
+                dismissAuthPopup(refreshParent: true)
+            case .deferred:
+                let parent = authPopupParent
+                dismissAuthPopup(refreshParent: false)
+                DispatchQueue.main.asyncAfter(
+                    deadline: .now() + ProviderAuthPopupPolicy.childDismissDelay
+                ) { [weak self, weak parent] in
+                    guard let self, let parent else { return }
+                    guard ProviderAuthPopupPolicy.shouldApplyDeferredParentRefresh(
+                        childStillPresented: self.authPopupWebView != nil
+                    ) else {
+                        self.recordNavigationEvent(
+                            ProviderAuthPopupPolicy.Event.parentRefreshSkipped,
+                            result: .skipped,
+                            webView: parent,
+                            reason: ProviderAuthPopupPolicy.Reason.newChildPresented
+                        )
+                        return
+                    }
+                    self.refreshParentAfterAuthPopup(parent)
+                }
+            }
         }
 
         private func handleAuthPopupNavigation(_ webView: WKWebView, allowDismiss: Bool) {
@@ -510,6 +536,10 @@ struct ProviderSessionWebView: UIViewRepresentable {
                 popup?.removeFromSuperview()
             }
             guard refreshParent, let parent else { return }
+            refreshParentAfterAuthPopup(parent)
+        }
+
+        private func refreshParentAfterAuthPopup(_ parent: WKWebView) {
             applyAssistance(in: parent)
             onDidFinish(parent)
         }

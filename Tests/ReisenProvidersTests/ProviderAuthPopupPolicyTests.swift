@@ -126,3 +126,38 @@ import ReisenProviders
     #expect(ProviderAuthPopupPolicy.bindProvider(.getYourGuide, previous: &bound))
     #expect(bound == .getYourGuide)
 }
+
+/// web_message (Traveloka, Airbnb) schließt auf appleid; Parent erst nach Delay anfassen.
+@Test func providerAuthPopupPolicy_defersParentRefreshAfterIdentityProviderClose() {
+    #expect(
+        ProviderAuthPopupPolicy.parentRefreshAfterChildClose(sawIdentityProvider: true)
+            == .deferred
+    )
+}
+
+@Test func providerAuthPopupPolicy_refreshesParentImmediatelyWithoutIdentityProvider() {
+    #expect(
+        ProviderAuthPopupPolicy.parentRefreshAfterChildClose(sawIdentityProvider: false)
+            == .immediate
+    )
+}
+
+@Test func providerAuthPopupPolicy_childCloseReasonMatchesRefreshTiming() {
+    #expect(
+        ProviderAuthPopupPolicy.childCloseReason(refresh: .immediate)
+            == ProviderAuthPopupPolicy.Reason.webViewDidClose
+    )
+    #expect(
+        ProviderAuthPopupPolicy.childCloseReason(refresh: .deferred)
+            == ProviderAuthPopupPolicy.Reason.idpCloseWithoutProviderReturn
+    )
+}
+
+@Test func providerAuthPopupPolicy_skipsDeferredParentRefreshWhileNewChildIsOpen() {
+    #expect(
+        !ProviderAuthPopupPolicy.shouldApplyDeferredParentRefresh(childStillPresented: true)
+    )
+    #expect(
+        ProviderAuthPopupPolicy.shouldApplyDeferredParentRefresh(childStillPresented: false)
+    )
+}
