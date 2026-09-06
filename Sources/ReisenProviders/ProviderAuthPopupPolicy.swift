@@ -19,6 +19,7 @@ public enum ProviderAuthPopupPolicy: Sendable {
         public static let presented = "popup_presented"
         public static let closed = "popup_closed"
         public static let completed = "popup_completed"
+        public static let parentRefreshSkipped = "popup_parent_refresh_skipped"
     }
 
     /// Diagnose-`reason`-Werte (macOS + iOS).
@@ -26,9 +27,16 @@ public enum ProviderAuthPopupPolicy: Sendable {
         public static let childWebView = "child_webview"
         public static let webViewDidClose = "webview_did_close"
         public static let returnedToProviderSite = "returned_to_provider_site"
+        public static let idpCloseWithoutProviderReturn = "idp_close_without_provider_return"
+        public static let newChildPresented = "new_child_presented"
         public static let missingHost = "missing_host"
         public static let missingRequestURL = "missing_request_url"
         public static let navigationPolicy = "navigation_policy"
+    }
+
+    public enum ParentRefreshAfterChildClose: Equatable, Sendable {
+        case immediate
+        case deferred
     }
 
     /// Wartet kurz, damit Callback-Seiten `window.opener` + `close` nutzen können.
@@ -88,6 +96,27 @@ public enum ProviderAuthPopupPolicy: Sendable {
             currentURL: requestURL,
             alreadySawIdentityProvider: false
         )
+    }
+
+    /// `web_message` schließt auf dem IdP; Parent-Login-JS erst nach `childDismissDelay`.
+    public static func parentRefreshAfterChildClose(
+        sawIdentityProvider: Bool
+    ) -> ParentRefreshAfterChildClose {
+        sawIdentityProvider ? .deferred : .immediate
+    }
+
+    public static func childCloseReason(
+        refresh: ParentRefreshAfterChildClose
+    ) -> String {
+        switch refresh {
+        case .immediate: return Reason.webViewDidClose
+        case .deferred: return Reason.idpCloseWithoutProviderReturn
+        }
+    }
+
+    /// Nach IdP-Close: Parent nur anfassen, wenn kein neues Kind-Popup lebt.
+    public static func shouldApplyDeferredParentRefresh(childStillPresented: Bool) -> Bool {
+        !childStillPresented
     }
 
     static func sharesRegistrableDomain(_ hostA: String, _ hostB: String) -> Bool {
