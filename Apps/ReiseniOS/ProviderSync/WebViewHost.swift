@@ -42,6 +42,7 @@ struct WebViewHost: View {
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
+    var onAuthPopupURLChange: ((String?) -> Void)?
     var onCapturedCredentials: ((ProviderCredentials) -> Void)?
     var onNavigationBlocked: (() -> Void)?
 
@@ -54,6 +55,7 @@ struct WebViewHost: View {
             webView: $webView,
             allowsEmbed: allowsEmbed,
             onDidFinish: onDidFinish,
+            onAuthPopupURLChange: onAuthPopupURLChange,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked
         )
@@ -70,6 +72,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
+    var onAuthPopupURLChange: ((String?) -> Void)?
     var onCapturedCredentials: ((ProviderCredentials) -> Void)?
     var onNavigationBlocked: (() -> Void)?
     @Environment(\.providerSessionHub) private var sessionHub
@@ -77,6 +80,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(
             onDidFinish: onDidFinish,
+            onAuthPopupURLChange: onAuthPopupURLChange,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
             diagnosticContext: diagnosticContext,
@@ -113,6 +117,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         let view = resolveWebView(context: context)
         context.coordinator.diagnosticContext = diagnosticContext
         context.coordinator.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
+        context.coordinator.onAuthPopupURLChange = onAuthPopupURLChange
         if ProviderAuthPopupPolicy.bindProvider(
             providerID,
             previous: &context.coordinator.boundProviderID
@@ -221,6 +226,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         let onDidFinish: (WKWebView) -> Void
+        var onAuthPopupURLChange: ((String?) -> Void)?
         let onCapturedCredentials: ((ProviderCredentials) -> Void)?
         let onNavigationBlocked: (() -> Void)?
         var diagnosticContext: DiagnosticContext?
@@ -234,12 +240,14 @@ struct ProviderSessionWebView: UIViewRepresentable {
 
         init(
             onDidFinish: @escaping (WKWebView) -> Void,
+            onAuthPopupURLChange: ((String?) -> Void)?,
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
             onNavigationBlocked: (() -> Void)?,
             diagnosticContext: DiagnosticContext?,
             passwordAutofillAllowedHosts: [String]
         ) {
             self.onDidFinish = onDidFinish
+            self.onAuthPopupURLChange = onAuthPopupURLChange
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
             self.diagnosticContext = diagnosticContext
@@ -485,6 +493,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
 
         private func handleAuthPopupNavigation(_ webView: WKWebView, allowDismiss: Bool) {
             guard let url = webView.url else { return }
+            onAuthPopupURLChange?(url.absoluteString)
             authPopupSawIdentityProvider = ProviderAuthPopupPolicy.noteIdentityProviderSighting(
                 currentURL: url,
                 alreadySawIdentityProvider: authPopupSawIdentityProvider
@@ -520,6 +529,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
             authPopupWebView = nil
             authPopupParent = nil
             authPopupSawIdentityProvider = false
+            onAuthPopupURLChange?(nil)
             if let host = parent?.superview as? WebViewHostUIView {
                 host.dismissAuthPopup()
             } else {

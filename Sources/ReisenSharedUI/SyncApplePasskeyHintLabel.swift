@@ -10,5 +10,6 @@ public struct SyncApplePasskeyHintLabel: View {
             .font(.footnote)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier(UITestingIdentifiers.syncApplePasskeyHint)
     }
 }

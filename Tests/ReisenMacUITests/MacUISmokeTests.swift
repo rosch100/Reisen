@@ -573,6 +573,13 @@ final class MacUISmokeTests: XCTestCase {
         ui.openProviderSyncCheck24()
         // UITesting ohne echte Session → needsLogin: eine Login-Chrome-Fläche oberhalb.
         _ = ui.waitForSyncLoginChrome()
+        XCTAssertEqual(
+            ui.app.descendants(matching: .any)
+                .matching(identifier: UITestingIdentifiers.syncApplePasskeyHint)
+                .count,
+            0,
+            "Passkey-Hinweis nur bei Apple-IdP, nicht auf Check24-Login"
+        )
         ui.waitForLabelContaining("Anmeldung erforderlich")
         ui.waitFor(UITestingIdentifiers.syncRememberLogin)
         XCTAssertFalse(
