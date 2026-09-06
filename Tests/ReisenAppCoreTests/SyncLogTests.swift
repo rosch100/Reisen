@@ -64,6 +64,17 @@ import ReisenDiagnostics
     #expect(sizeNumber.intValue <= SyncLog.keepBytes)
 }
 
+@Test func syncLog_lineAlignedSuffix_preservesWindowStartingAtLineBoundary() {
+    let line1 = "[2026-09-06T08:24:01Z] diagnostic={\"event\":\"keep_b\"}\n"
+    let line2 = "[2026-09-06T08:24:02Z] diagnostic={\"event\":\"keep_c\"}\n"
+    let noise = "[2026-09-06T08:24:00Z] diagnostic={\"event\":\"noise_a\"}\n"
+    let data = Data((noise + line1 + line2).utf8)
+    let keepBytes = line1.utf8.count + line2.utf8.count
+    let suffix = SyncLog.lineAlignedSuffix(from: data, keepBytes: keepBytes)
+    let text = String(decoding: suffix, as: UTF8.self)
+    #expect(text == line1 + line2)
+}
+
 @Test func syncLog_rotateAlignsToNewlineBoundary() throws {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("reisen-sync-log-rotate-nl-\(UUID().uuidString).txt")
