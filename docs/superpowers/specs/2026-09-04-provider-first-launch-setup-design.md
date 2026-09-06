@@ -57,7 +57,8 @@ isInitialSetupHidden(defaults:) -> Bool
 setInitialSetupHidden(_:defaults:)
 
 shouldPresent(defaults:syncProviderIDs:) -> Bool
-  true iff !isInitialSetupHidden && kein Sync-Portal enabled
+  true iff kein Sync-Portal enabled && !(isInitialSetupHidden && setupCompleted)
+  Hide unterdrückt nur nach abgeschlossenem Setup.
 
 markCompleted(defaults:)
 markDeferred(defaults:)                 // Alias → setInitialSetupHidden(true)
@@ -151,7 +152,7 @@ Unverändert (siehe iCloud-Prefs-Spec): Wait auf Import; synced `setupCompleted`
 
 ## Tests
 
-1. Domain: `shouldPresent` (Hide/Enables); `completeWithoutPortals`; Hide-Toggle-Semantik.
+1. Domain: `shouldPresent` (Hide nur mit completed; Enables); `completeWithoutPortals`; Hide-Toggle-Semantik.
 2. Bootstrap/UITesting: Populated seed completed+Hide; Empty nicht.
 3. Upgrade-Heuristik: aktive Portale → completed.
 4. macOS XCUI: Empty Sheet; Ohne-Portale-Dismiss; Settings-Hide-Toggle; Populated ohne Sheet.
@@ -169,7 +170,7 @@ Unverändert (siehe iCloud-Prefs-Spec): Wait auf Import; synced `setupCompleted`
 2. Weiter mit ≥1 Provider → Portale aktiv, Sheet weg.
 3. Weiter mit 0 / Ohne Buchungsportale → Hide an, completed, kein Reopen, App nutzbar.
 4. Hide aus + kein Portal aktiv → Sheet (Start **oder** nach Enable/Hide-Notify).
-5. Hide an → kein Auto-Sheet.
+5. Hide an **und** setupCompleted → kein Auto-Sheet. Hide ohne completed (Settings vor Abschluss oder Import von `setupCompleted=false`) → Sheet.
 6. Bestandskunden mit aktiven Portalen → kein Sheet.
 7. Populated-XCUI ohne Sheet; Empty zeigt Sheet.
 8. Synced `setupCompleted` (CloudKit) → kein Sheet; Late-Import dismiss.
