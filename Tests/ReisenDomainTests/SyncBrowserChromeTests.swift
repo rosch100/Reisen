@@ -94,3 +94,13 @@ import ReisenDomain
     #expect(!SyncBrowserChrome.showsRememberLoginInBottomBar(isSessionReady: false))
     #expect(SyncBrowserChrome.showsRememberLoginInBottomBar(isSessionReady: true))
 }
+
+/// Regression: collapsed Browser darf Session-Banner nicht vertikal zentrieren.
+@Test func syncBrowserChrome_contentStackPinsToTopWhenBrowserCollapsed() {
+    #expect(
+        SyncBrowserChrome.contentStackVerticalAlignment(isBrowserExpanded: false) == .top
+    )
+    #expect(
+        SyncBrowserChrome.contentStackVerticalAlignment(isBrowserExpanded: true) == .top
+    )
+}
