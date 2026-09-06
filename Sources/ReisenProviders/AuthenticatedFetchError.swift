@@ -1,8 +1,9 @@
 import Foundation
 
-public enum AuthenticatedFetchError: LocalizedError, Sendable {
+public enum AuthenticatedFetchError: LocalizedError, Sendable, Equatable {
     case httpStatus(Int)
     case emptyBody
+    case timedOut
 
     public var errorDescription: String? {
         switch self {
@@ -10,6 +11,8 @@ public enum AuthenticatedFetchError: LocalizedError, Sendable {
             return "Authentifizierter Abruf fehlgeschlagen (HTTP \(code))."
         case .emptyBody:
             return "Authentifizierter Abruf lieferte keinen Text."
+        case .timedOut:
+            return "Authentifizierter Abruf: Zeitüberschreitung."
         }
     }
 }

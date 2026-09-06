@@ -182,7 +182,7 @@ private extension TravelokaTravelProvider {
             case .httpStatus(let code) where code == 401 || code == 403:
                 onProgress?("Traveloka Refund: Session abgelaufen — bitte neu anmelden.")
                 Self.recordRefundSkipped(reason: "session_expired")
-            case .httpStatus, .emptyBody:
+            case .httpStatus, .emptyBody, .timedOut:
                 onProgress?("Traveloka Refund-Seite nicht erreichbar — Detail ohne Fristen belassen.")
                 Self.recordRefundSkipped(reason: "refund_page_unreachable")
             }

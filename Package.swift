@@ -323,7 +323,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ReisenProvidersTests",
-            dependencies: ["ReisenProviders", "ReisenDomain"],
+            dependencies: ["ReisenProviders", "ReisenDomain", "ReisenDiagnostics"],
             path: "Tests/ReisenProvidersTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

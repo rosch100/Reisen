@@ -67,7 +67,7 @@ public enum SyncLog {
         do {
             let data = try Data(contentsOf: url)
             guard data.count > maxFileBytes else { return true }
-            let suffix = data.suffix(keepBytes)
+            let suffix = lineAlignedSuffix(from: data, keepBytes: keepBytes)
             try suffix.write(to: url, options: [.atomic])
             return true
         } catch {
@@ -76,6 +76,22 @@ public enum SyncLog {
             )
             return false
         }
+    }
+
+    /// Letzte `keepBytes` Bytes, erste Teilzeile nach Truncation verworfen.
+    public static func lineAlignedSuffix(from data: Data, keepBytes: Int) -> Data {
+        let raw = data.suffix(keepBytes)
+        guard data.count > keepBytes else { return Data(raw) }
+        let cutIndex = data.index(data.endIndex, offsetBy: -keepBytes)
+        if cutIndex > data.startIndex,
+           data[data.index(before: cutIndex)] == UInt8(ascii: "\n") {
+            return Data(raw)
+        }
+        guard let newlineOffset = raw.firstIndex(of: UInt8(ascii: "\n")) else {
+            return Data()
+        }
+        let afterNewline = raw.index(after: newlineOffset)
+        return Data(raw[afterNewline...])
     }
 
     public static func removeExpiredDiagnosticEvents(
