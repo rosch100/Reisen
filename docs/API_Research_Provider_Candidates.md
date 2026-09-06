@@ -413,6 +413,7 @@ Browser-/Systemanfrage gestartet.
 | GetYourGuide | Ja | `response_mode=form_post`, `redirect_uri=https://auth.getyourguide.com/login/callback`, `client_id=com.getyourguide` | Bester Kandidat für einen macOS-Spike: Standard-WebAuthn-Flow und Passkey-Option sichtbar; Callback gehört weiterhin GetYourGuide. |
 | Booking.com | Ja | `response_mode=form_post`, `redirect_uri=https://account.booking.com/social/result/apple`, `client_id=com.booking.BookingApp.ServiceID` | Ebenfalls Spike-Kandidat: Standard-WebAuthn-Flow und Passkey-Option sichtbar; Callback gehört weiterhin Booking.com. |
 | Check24 | Nein | — | Login bietet ausschließlich E-Mail/Mobiltelefonnummer und Check24-Sicherheitscodes; kein Apple-, Social- oder Passkey-Login. |
+| Opodo | Nein | — | Login ohne „Mit Apple anmelden“; Social nur soweit Google/Facebook (Homepage-i18n). |
 
 Bei GetYourGuide und Booking.com wurde auf der Apple-Seite die Option
 „Mit dem Passkey anmelden“ angezeigt. Nach dem Start wechselte die Schaltfläche
@@ -432,7 +433,7 @@ App-Callback:
 - GetYourGuide und Booking.com verwenden zwar `form_post`, leiten aber auf
   Provider-Callbacks weiter. Die daraus entstehenden Browser-Cookies sind
   nicht für die Reisen-`WKWebView` verfügbar.
-- Check24 bietet keinen Apple-Login an.
+- Check24 und Opodo bieten keinen Apple-Login an.
 
 Eine App-interne Passkey-Unterstützung ist daher ohne Provideränderung nur als
 unvollständiger Browser-Login möglich. Für einen vollständigen Sync müsste der
