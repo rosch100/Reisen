@@ -93,10 +93,31 @@ struct SyncTab: View {
                         mode: rememberLoginMode
                     ) { account in
                         showCredentialSheet = false
-                        setPreferredKeychainAccountID(account.id)
-                        selectedKeychainAccount = account
+                        let decision = ProviderRememberLogin.applyAfterSavedAccount(
+                            account: account,
+                            sessionNeedsLogin: sessionStatus == .needsLogin,
+                            mode: rememberLoginMode,
+                            setPreferredAccountID: setPreferredKeychainAccountID
+                        )
+                        reloadKeychainAccounts(autoFill: decision.shouldAutoFill)
                         rememberLoginMessage = L10n.format(.credentialSavedForHost, host)
-                        scheduleAutoFillFromKeychain()
+                        let context = DiagnosticContext(
+                            runID: diagnosticRunID,
+                            providerID: selectedProviderID,
+                            operation: "ios_auto_login"
+                        )
+                        Task {
+                            await DiagnosticLogger.shared.record(
+                                DiagnosticEvent(
+                                    context: context,
+                                    component: "SyncTab",
+                                    phase: "keychain",
+                                    event: "credential_save_continue",
+                                    result: decision.shouldAutoFill ? .started : .skipped,
+                                    reason: decision.reason
+                                )
+                            )
+                        }
                     }
                 }
             }

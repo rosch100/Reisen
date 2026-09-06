@@ -21,6 +21,62 @@ public enum ProviderRememberLogin {
         )
     }
 
+    public struct LoginContinueAfterSave: Equatable, Sendable {
+        public let preferredAccountID: String
+        public let shouldAutoFill: Bool
+        public let reason: String
+
+        public init(preferredAccountID: String, shouldAutoFill: Bool, reason: String) {
+            self.preferredAccountID = preferredAccountID
+            self.shouldAutoFill = shouldAutoFill
+            self.reason = reason
+        }
+    }
+
+    public static func loginContinueAfterSave(
+        account: KeychainCredentialAccount,
+        sessionNeedsLogin: Bool,
+        mode: ProviderRememberLoginMode
+    ) -> LoginContinueAfterSave {
+        guard sessionNeedsLogin else {
+            return LoginContinueAfterSave(
+                preferredAccountID: account.id,
+                shouldAutoFill: false,
+                reason: "session_ready"
+            )
+        }
+        switch mode {
+        case .passwordManual, .passwordPrefill:
+            return LoginContinueAfterSave(
+                preferredAccountID: account.id,
+                shouldAutoFill: true,
+                reason: "needs_login"
+            )
+        case .sessionOnly:
+            return LoginContinueAfterSave(
+                preferredAccountID: account.id,
+                shouldAutoFill: false,
+                reason: "session_only"
+            )
+        }
+    }
+
+    /// Host-Apply nach Speichern: Preferred-ID setzen, Fill nur über Reload-`autoFill`.
+    public static func applyAfterSavedAccount(
+        account: KeychainCredentialAccount,
+        sessionNeedsLogin: Bool,
+        mode: ProviderRememberLoginMode,
+        setPreferredAccountID: (String) -> Void
+    ) -> LoginContinueAfterSave {
+        let decision = loginContinueAfterSave(
+            account: account,
+            sessionNeedsLogin: sessionNeedsLogin,
+            mode: mode
+        )
+        setPreferredAccountID(decision.preferredAccountID)
+        return decision
+    }
+
     /// Wendet Auto-Save-Ergebnis auf View-State an (SyncTab/SyncView SSOT).
     public static func applyAutoSaveOutcome(
         _ outcome: AutoSaveOutcome,

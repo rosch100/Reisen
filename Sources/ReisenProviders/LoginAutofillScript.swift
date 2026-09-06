@@ -5,6 +5,10 @@ import Foundation
 /// nicht als Literale in der Script-Quelle.
 public enum LoginAutofillScript {
     public static func build() -> String {
+        let submitHay = LoginAutofillFieldHeuristic.submitHayPattern
+        let usernameStepSubmit = LoginAutofillFieldHeuristic.usernameStepSubmitPattern
+        let socialSubmit = LoginAutofillFieldHeuristic.socialSubmitPattern
+        let passwordHay = LoginAutofillFieldHeuristic.passwordHayPattern
         // Body für `WKWebView.callAsyncJavaScript` (async Function-Body):
         // Arguments `username`/`password` sind lokal gebunden; IIFE würde den Return verwerfen.
         return """
@@ -196,7 +200,7 @@ public enum LoginAutofillScript {
             if (type === 'password') return true;
             const hay = (dataHay(el) || '').toLowerCase();
             // Check24: #cl_pw_login / c24-uli-input-pw / autocomplete=current-password
-            return /(current-password|password|passwort|kennwort|passwd|pwd|pass|cl_pw_login|uli-input-pw)/i.test(hay);
+            return /(\(passwordHay))/i.test(hay);
           }
 
           function looksLikeRemember(el) {
@@ -263,7 +267,7 @@ public enum LoginAutofillScript {
           }
 
           function isSocialSubmit(el) {
-            return /(sign.?in.?with.?(apple|google|facebook)|continue.?with.?(apple|google|facebook)|login.?with.?(apple|google|facebook)|anmelden.?mit.?(apple|google|facebook)|passkey)/i.test(controlHay(el));
+            return /(\(socialSubmit))/i.test(controlHay(el));
           }
 
           function looksLikeSubmit(el) {
@@ -281,7 +285,7 @@ public enum LoginAutofillScript {
             if (!isButton) return false;
             if (isSocialSubmit(el)) return false;
             const hay = controlHay(el);
-            if (/(c24-uli-pw-btn|c24-uli-login-btn|submit-button|anmelden|einloggen|log.?in|sign.?in)/i.test(hay)) {
+            if (/(\(submitHay))/i.test(hay)) {
               return true;
             }
             // Generischer Submit im Login-UI (z.B. andere Provider).
@@ -307,6 +311,7 @@ public enum LoginAutofillScript {
               let score = 0;
               if (preferPasswordStep && id === 'c24-uli-pw-btn') score += 100;
               if (!preferPasswordStep && id === 'c24-uli-login-btn') score += 100;
+              if (!preferPasswordStep && /(\(usernameStepSubmit))/i.test(controlHay(el))) score += 80;
               if (id === 'c24-uli-pw-btn') score += 50;
               if (id === 'c24-uli-login-btn') score += 40;
               if ((el.getAttribute('data-tid') || '') === 'submit-button') score += 20;

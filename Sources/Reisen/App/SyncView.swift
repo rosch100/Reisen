@@ -248,9 +248,31 @@ struct SyncView: View {
                     mode: rememberLoginMode,
                     onOpenPasswordManager: { MacSystemApps.openPasswords() }
                 ) { account in
-                    preferredKeychainAccountID = account.id
-                    reloadKeychainAccounts(selecting: account)
+                    let decision = ProviderRememberLogin.applyAfterSavedAccount(
+                        account: account,
+                        sessionNeedsLogin: sessionStatus == .needsLogin,
+                        mode: rememberLoginMode,
+                        setPreferredAccountID: { preferredKeychainAccountID = $0 }
+                    )
+                    reloadKeychainAccounts(selecting: account, autoFill: decision.shouldAutoFill)
                     rememberLoginMessage = L10n.format(.credentialSavedForHost, keychainServerHost)
+                    let context = DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: providerID,
+                        operation: "auto_login"
+                    )
+                    Task {
+                        await DiagnosticLogger.shared.record(
+                            DiagnosticEvent(
+                                context: context,
+                                component: "SyncView",
+                                phase: "keychain",
+                                event: "credential_save_continue",
+                                result: decision.shouldAutoFill ? .started : .skipped,
+                                reason: decision.reason
+                            )
+                        )
+                    }
                 }
             }
         }
