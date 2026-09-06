@@ -3,7 +3,6 @@ import Foundation
 /// Gate und Persistenz für die geführte Erststart-Provider-Auswahl.
 public enum ProviderFirstLaunchSetup: Sendable {
     /// Settings-Toggle „Erstauswahl der Portale ausblenden“ (Key: `providerSetupDeferred`).
-    /// Fehlender Key = aus (Erststart-Default).
     public static func isInitialSetupHidden(defaults: UserDefaults = AppSettingsDefaults.current) -> Bool {
         defaults.bool(forKey: AppSettingsKeys.providerSetupDeferred)
     }
