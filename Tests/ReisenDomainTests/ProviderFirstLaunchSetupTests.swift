@@ -15,6 +15,7 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
     }
     defer { defaults.removePersistentDomain(forName: suiteName) }
 
+    #expect(defaults.object(forKey: AppSettingsKeys.providerSetupDeferred) == nil)
     #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
     #expect(!ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: defaults))
 }

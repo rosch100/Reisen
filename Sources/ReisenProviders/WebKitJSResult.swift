@@ -12,4 +12,20 @@ enum WebKitJSResult {
         }
         return nil
     }
+
+    static func int(from result: Any?, key: String) -> Int? {
+        if let dict = result as? [String: Any] {
+            return intValue(dict[key])
+        }
+        if let dict = result as? NSDictionary {
+            return intValue(dict[key])
+        }
+        return nil
+    }
+
+    private static func intValue(_ value: Any?) -> Int? {
+        if let value = value as? Int { return value }
+        if let value = value as? NSNumber { return value.intValue }
+        return nil
+    }
 }
