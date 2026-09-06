@@ -309,11 +309,12 @@ struct ProviderSessionWebView: UIViewRepresentable {
             onDidFinish(webView)
         }
 
+        @MainActor
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
             preferences: WKWebpagePreferences,
-            decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
+            decisionHandler: @escaping @MainActor (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
         ) {
             ProviderWebViewMobileMode.apply(to: preferences)
             let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
