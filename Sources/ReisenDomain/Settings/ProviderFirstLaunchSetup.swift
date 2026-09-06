@@ -3,6 +3,7 @@ import Foundation
 /// Gate und Persistenz für die geführte Erststart-Provider-Auswahl.
 public enum ProviderFirstLaunchSetup: Sendable {
     /// Settings-Toggle „Erstauswahl der Portale ausblenden“ (Key: `providerSetupDeferred`).
+    /// Fehlender Key = aus (Erststart-Default).
     public static func isInitialSetupHidden(defaults: UserDefaults = AppSettingsDefaults.current) -> Bool {
         defaults.bool(forKey: AppSettingsKeys.providerSetupDeferred)
     }
@@ -14,18 +15,15 @@ public enum ProviderFirstLaunchSetup: Sendable {
         defaults.set(hidden, forKey: AppSettingsKeys.providerSetupDeferred)
     }
 
-    /// `true`, wenn kein Sync-Portal aktiv ist und Hide das Sheet nicht unterdrücken darf.
-    /// Hide gilt nur nach `setupCompleted` (Ohne Buchungsportale / Settings nach Abschluss).
+    /// `true`, wenn Erstauswahl nicht ausgeblendet ist und kein Sync-Portal aktiv.
     public static func shouldPresent(
         defaults: UserDefaults = AppSettingsDefaults.current,
         syncProviderIDs: [ProviderID] = ProviderID.syncProviderIDs
     ) -> Bool {
-        let hasEnabledPortal = syncProviderIDs.contains {
+        guard !isInitialSetupHidden(defaults: defaults) else { return false }
+        return !syncProviderIDs.contains {
             AppSettingsKeys.isProviderEnabled($0, defaults: defaults)
         }
-        guard !hasEnabledPortal else { return false }
-        guard isInitialSetupHidden(defaults: defaults) else { return true }
-        return !defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted)
     }
 
     public static func markCompleted(defaults: UserDefaults = AppSettingsDefaults.current) {
