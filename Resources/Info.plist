@@ -54,7 +54,7 @@
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
 	<key>NSSupportsSuddenTermination</key>
-	<false/>
+	<true/>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Voyenna legt Termine für Stornofristen in deinem Kalender an.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>

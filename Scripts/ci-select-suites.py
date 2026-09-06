@@ -490,15 +490,18 @@ def main(argv: list[str] | None = None) -> int:
                 explicit_files=args.changed_file,
             )
         except RuntimeError as exc:
-            print(f"Fehler: {exc}", file=sys.stderr)
-            return 1
-        force_full = force_env or any(is_harness_path(p) for p in changed)
-        selection = select_suites(
-            changed_files=changed,
-            baselines=baselines,
-            force_full=force_full,
-            push_to_default=push_to_default,
-        )
+            # Force-Push: Last-Green-SHA existiert, ist aber kein Ancestor von HEAD
+            # (Invalid symmetric difference) — fail-open auf full, nicht rot.
+            print(f"Hinweis: Changed-Files-Diff fehlgeschlagen → full: {exc}", file=sys.stderr)
+            selection = _full_result(baselines, "diff-error")
+        else:
+            force_full = force_env or any(is_harness_path(p) for p in changed)
+            selection = select_suites(
+                changed_files=changed,
+                baselines=baselines,
+                force_full=force_full,
+                push_to_default=push_to_default,
+            )
 
     selection["baselineSource"] = baseline_source
     args.out.parent.mkdir(parents=True, exist_ok=True)
