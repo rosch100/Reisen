@@ -56,8 +56,34 @@ import ReisenDiagnostics
     let oversized = Data(repeating: UInt8(ascii: "a"), count: SyncLog.maxFileBytes + 10)
     try oversized.write(to: url)
     SyncLog.rotateIfNeeded(at: url)
-    let size = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber
-    #expect(size?.intValue == SyncLog.keepBytes)
+    let sizeNumber = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber
+    guard let sizeNumber else {
+        Issue.record("expected file size after rotation")
+        return
+    }
+    #expect(sizeNumber.intValue <= SyncLog.keepBytes)
+}
+
+@Test func syncLog_rotateAlignsToNewlineBoundary() throws {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("reisen-sync-log-rotate-nl-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+
+    let lineA = "[2026-09-06T08:24:00Z] diagnostic={\"event\":\"noise_a\"}\n"
+    let lineB = "[2026-09-06T08:24:01Z] diagnostic={\"event\":\"keep_b\"}\n"
+    let lineC = "[2026-09-06T08:24:02Z] diagnostic={\"event\":\"keep_c\"}\n"
+    let padding = String(repeating: "X", count: SyncLog.maxFileBytes)
+    let full = padding + lineA + lineB + lineC
+    try Data(full.utf8).write(to: url)
+
+    SyncLog.rotateIfNeeded(at: url)
+    let text = try String(contentsOf: url, encoding: .utf8)
+    #expect(!text.hasPrefix("X"))
+    #expect(!text.hasPrefix("tion="))
+    #expect(!text.hasPrefix("diagnostic="))
+    #expect(text.first == "[" || text.isEmpty)
+    #expect(text.contains("keep_b") || text.contains("keep_c"))
+    #expect(text.utf8.count <= SyncLog.keepBytes)
 }
 
 @Test func diagnosticLogAttachment_previewPrefersNotableFailureLines() throws {
