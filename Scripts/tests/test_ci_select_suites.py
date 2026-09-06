@@ -232,6 +232,37 @@ class CiSelectSuitesTests(unittest.TestCase):
             self.assertIn("baselineSource=master\n", text)
             self.assertIn("run_swiftpm=true\n", text)
 
+    def test_main_unreachable_baseline_diff_falls_back_to_full(self) -> None:
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "selection.json"
+            baseline_args: list[str] = []
+            for suite in self.mod.ALL_SUITES:
+                baseline_args.extend(["--baseline", f"{suite}={'a' * 40}"])
+            with mock.patch.object(
+                self.mod,
+                "build_changed_files",
+                side_effect=RuntimeError(
+                    "git diff fehlgeschlagen: fatal: Invalid symmetric difference expression"
+                ),
+            ):
+                code = self.mod.main(
+                    [
+                        "--repo",
+                        tmp,
+                        "--out",
+                        str(out),
+                        "--skip-api",
+                        *baseline_args,
+                    ]
+                )
+            self.assertEqual(code, 0)
+            selection = __import__("json").loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(selection["mode"], "full")
+            self.assertEqual(selection["reason"], "diff-error")
+
 
 if __name__ == "__main__":
     unittest.main()
