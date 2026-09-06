@@ -21,6 +21,11 @@ public enum BilligerMietwagenAuthConstants {
     public static let accessTokenField = "access_token"
     public static let refreshTokenField = "refresh_token"
     public static let userIDField = "user_id"
+    /// HAR: `POST session.php` setzt diese Cookies; Ampel-Re-Probe nach SPA-Login.
+    public static let sessionCookieNames: Set<String> = [
+        "__Secure-billigermietwagen",
+        "__Secure-user_account",
+    ]
     /// Cognito-JWT-Claim; FLOYT erwartet denselben Wert als `user_id` beim Refresh.
     public static let jwtUsernameClaim = "username"
 

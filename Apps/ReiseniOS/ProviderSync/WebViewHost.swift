@@ -105,6 +105,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
         context.coordinator.loadedLoginURL = loginURL
         context.coordinator.boundProviderID = providerID
+        context.coordinator.observeSessionCookies(in: view, providerID: providerID)
         DispatchQueue.main.async {
             webView = view
         }
@@ -125,6 +126,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
         if allowsEmbed {
             attachCoordinator(view, context: context)
+            context.coordinator.observeSessionCookies(in: view, providerID: providerID)
             if uiView.webView !== view || view.superview !== uiView {
                 context.coordinator.dismissAuthPopup()
                 uiView.embed(view)
@@ -234,6 +236,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         private weak var authPopupWebView: WKWebView?
         private weak var authPopupParent: WKWebView?
         private var authPopupSawIdentityProvider = false
+        private var sessionCookieObserver: BilligerMietwagenSessionCookieObserver?
 
         init(
             onDidFinish: @escaping (WKWebView) -> Void,
@@ -252,10 +255,28 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
 
         func tearDown(from webView: WKWebView?) {
+            sessionCookieObserver?.detach()
+            sessionCookieObserver = nil
             dismissAuthPopup()
             webView?.configuration.userContentController.removeScriptMessageHandler(
                 forName: LoginFormCapture.messageHandlerName
             )
+        }
+
+        func observeSessionCookies(in webView: WKWebView, providerID: ProviderID) {
+            guard providerID == .billigerMietwagen else {
+                sessionCookieObserver?.detach()
+                sessionCookieObserver = nil
+                return
+            }
+            guard sessionCookieObserver == nil else { return }
+            let observer = BilligerMietwagenSessionCookieObserver { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                self.recordSessionCookieChange(webView: webView)
+                self.onDidFinish(webView)
+            }
+            observer.attach(to: webView.configuration.websiteDataStore.httpCookieStore)
+            sessionCookieObserver = observer
         }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -335,6 +356,23 @@ struct ProviderSessionWebView: UIViewRepresentable {
                 webView: webView,
                 error: error
             )
+        }
+
+        private func recordSessionCookieChange(webView: WKWebView) {
+            guard let diagnosticContext else { return }
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: diagnosticContext,
+                        component: "ProviderSessionWebView",
+                        phase: "session_probe",
+                        event: "session_cookie_changed",
+                        result: .started,
+                        url: webView.url.flatMap { DiagnosticRedactor.urlMetadata(for: $0) },
+                        reason: "session_cookie_changed"
+                    )
+                )
+            }
         }
 
         func recordNavigationEvent(

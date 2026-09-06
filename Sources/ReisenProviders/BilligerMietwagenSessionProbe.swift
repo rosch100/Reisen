@@ -12,6 +12,28 @@ public enum BilligerMietwagenSessionProbe {
         BilligerMietwagenAuthConstants.hasSessionTokens(inSessionJSON: text)
     }
 
+    /// Session-Cookies mit nicht-leerem Wert (SPA-`POST session.php`).
+    public static func sessionCookiePresence(
+        in cookies: [(name: String, hasValue: Bool)]
+    ) -> Set<String> {
+        Set(
+            cookies.compactMap { cookie in
+                guard BilligerMietwagenAuthConstants.sessionCookieNames.contains(cookie.name),
+                      cookie.hasValue else { return nil }
+                return cookie.name
+            }
+        )
+    }
+
+    /// Re-Probe, wenn nicht-leere Session-Cookies erscheinen oder verschwinden.
+    public static func shouldReprobeAfterCookieChange(
+        previousPresence: Set<String>,
+        currentCookies: [(name: String, hasValue: Bool)]
+    ) -> (shouldReprobe: Bool, newPresence: Set<String>) {
+        let newPresence = sessionCookiePresence(in: currentCookies)
+        return (newPresence != previousPresence, newPresence)
+    }
+
     /// GET `session.php` mit Probe-Referer und Login-Auswertung (SSOT für Navigation + Session-UI).
     public static func fetchIsLoggedIn(
         using webView: WKWebView,

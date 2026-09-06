@@ -230,6 +230,10 @@ private struct ProviderWebView: NSViewRepresentable {
         host.embed(webView)
         context.coordinator.observeWindowActivation(for: webView)
         context.coordinator.boundProviderID = diagnosticContext.providerID
+        context.coordinator.observeSessionCookies(
+            in: webView,
+            providerID: diagnosticContext.providerID
+        )
         loadLoginURLIfNeeded(in: webView, context: context)
 
         DispatchQueue.main.async {
@@ -286,6 +290,10 @@ private struct ProviderWebView: NSViewRepresentable {
         }
 
         loadLoginURLIfNeeded(in: webView, context: context)
+        context.coordinator.observeSessionCookies(
+            in: webView,
+            providerID: diagnosticContext.providerID
+        )
 
         if credentialsChanged {
             context.coordinator.scheduleLoginAssistance(in: webView)
@@ -410,6 +418,7 @@ private struct ProviderWebView: NSViewRepresentable {
         private var lastObservedURL: URL?
         /// Während „Anmelden…“ (Post-Submit) keine DOM-Hilfe mehr.
         private var loginAssistanceSuspended = false
+        private var sessionCookieObserver: BilligerMietwagenSessionCookieObserver?
 
         init(
             sessionStatus: Binding<ProviderSessionStatus>,
@@ -456,6 +465,28 @@ private struct ProviderWebView: NSViewRepresentable {
             return changed
         }
 
+        func observeSessionCookies(in webView: WKWebView, providerID: ProviderID) {
+            guard providerID == .billigerMietwagen else {
+                sessionCookieObserver?.detach()
+                sessionCookieObserver = nil
+                return
+            }
+            guard sessionCookieObserver == nil else { return }
+            let observer = BilligerMietwagenSessionCookieObserver { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                self.recordEvent(
+                    "session_cookie_changed",
+                    phase: "session_probe",
+                    result: .started,
+                    webView: webView,
+                    reason: "session_cookie_changed"
+                )
+                self.updateSession(from: webView)
+            }
+            observer.attach(to: webView.configuration.websiteDataStore.httpCookieStore)
+            sessionCookieObserver = observer
+        }
+
         func observeWindowActivation(for webView: WKWebView) {
             trackedWebView = webView
             if let becomeKeyObserver {
@@ -478,6 +509,8 @@ private struct ProviderWebView: NSViewRepresentable {
         }
 
         func tearDown() {
+            sessionCookieObserver?.detach()
+            sessionCookieObserver = nil
             loginAssistanceWorkItem?.cancel()
             loginAssistanceWorkItem = nil
             loginAssistanceCancellation?.cancel()
