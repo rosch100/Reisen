@@ -172,9 +172,10 @@ public enum ProviderLoginAssistance {
                 diagnosticContext: diagnosticContext
             ) { _ in
                 guard !cancellation.isCancelled else { return }
-                LoginAutofill.apply(in: webView, credentials: credentials) { filled in
+                LoginAutofill.apply(in: webView, credentials: credentials) { autofillResult in
                     guard !cancellation.isCancelled else { return }
-                    if filled.filled {
+                    let passwordExpected = !credentials.password.isEmpty
+                    if autofillResult.isComplete(passwordExpected: passwordExpected) {
                         if let diagnosticContext {
                             Task {
                                 await DiagnosticLogger.shared.record(
@@ -186,9 +187,7 @@ public enum ProviderLoginAssistance {
                                         result: .succeeded,
                                         attempt: attempt,
                                         url: urlForLog(for: webView),
-                                        reason: filled.submitID.map {
-                                            "submit_id=\(DiagnosticRedactor.redact($0))"
-                                        }
+                                        reason: autofillResult.diagnosticReason
                                     )
                                 )
                             }
@@ -215,7 +214,7 @@ public enum ProviderLoginAssistance {
                                         url: urlForLog(for: webView),
                                         reason: retryDelays.isEmpty
                                             ? "retry_schedule_missing"
-                                            : "fill_failed"
+                                            : "fill_failed \(autofillResult.fillCountsReason)"
                                     )
                                 )
                             }
