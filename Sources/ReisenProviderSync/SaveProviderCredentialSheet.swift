@@ -24,9 +24,12 @@ public struct SaveProviderCredentialSheet: View {
         self.serverHost = serverHost
         self.mode = mode
         self.onSaved = onSaved
-        if case .passwordPrefill(let user, let pass) = mode {
+        switch mode {
+        case .passwordPrefill(let user, let pass), .passwordStored(let user, let pass):
             _username = State(initialValue: user)
             _password = State(initialValue: pass)
+        case .passwordManual, .sessionOnly:
+            break
         }
     }
 
@@ -36,7 +39,7 @@ public struct SaveProviderCredentialSheet: View {
                 switch mode {
                 case .sessionOnly:
                     sessionOnlyContent
-                case .passwordManual, .passwordPrefill:
+                case .passwordManual, .passwordPrefill, .passwordStored:
                     passwordContent
                 }
 
@@ -48,11 +51,7 @@ public struct SaveProviderCredentialSheet: View {
                     }
                 }
             }
-#if os(iOS)
             .formStyle(.grouped)
-#else
-            .formStyle(.grouped)
-#endif
             .navigationTitle(L10n.string(.actionRememberLogin))
             .accessibilityIdentifier(UITestingIdentifiers.syncRememberLoginSheet)
 #if os(iOS)
@@ -60,13 +59,18 @@ public struct SaveProviderCredentialSheet: View {
             .reisenSheetDetents()
 #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(L10n.string(.commonCancel)) { dismiss() }
+                if mode.showsCancelAction {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(L10n.string(.commonCancel)) { dismiss() }
+                            .accessibilityIdentifier(UITestingIdentifiers.syncRememberLoginCancel)
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if case .sessionOnly = mode {
+                    switch mode {
+                    case .sessionOnly:
                         Button(L10n.string(.actionUnderstood)) { dismiss() }
-                    } else {
+                            .accessibilityIdentifier(UITestingIdentifiers.syncRememberLoginUnderstood)
+                    case .passwordManual, .passwordPrefill, .passwordStored:
                         Button(L10n.string(.actionSaveCredential)) { save() }
                             .disabled(
                                 isSaving
@@ -108,16 +112,24 @@ public struct SaveProviderCredentialSheet: View {
     @ViewBuilder
     private var passwordContent: some View {
         Section {
-            if case .passwordManual = mode {
+            switch mode {
+            case .passwordManual:
                 Text(L10n.format(.credentialCopyFromPasswordsFooter, serverHost))
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            } else {
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            case .passwordPrefill:
                 Text(L10n.format(.credentialSavedAccountFooter, serverHost))
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            case .passwordStored:
+                Text(L10n.format(.credentialStoredAccountFooter, serverHost))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            case .sessionOnly:
+                EmptyView()
             }
         }
 

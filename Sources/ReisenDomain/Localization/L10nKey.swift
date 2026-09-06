@@ -528,6 +528,7 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case credentialOauthSessionFooter = "credential.oauth_session_footer"
     case credentialPassword = "credential.password"
     case credentialSavedAccountFooter = "credential.saved_account_footer"
+    case credentialStoredAccountFooter = "credential.stored_account_footer"
     case credentialSessionPersistenceFooter = "credential.session_persistence_footer"
     case privacyContinuedWithout = "privacy.continued_without"
     case privacyDenialCalendars = "privacy.denial.calendars"

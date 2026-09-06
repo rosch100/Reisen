@@ -23,6 +23,8 @@ public enum UITestingIdentifiers {
     public static let syncRememberLoginSheet = "reisen.sync.remember-login.sheet"
     public static let syncRememberLoginUsername = "reisen.sync.remember-login.username"
     public static let syncRememberLoginPassword = "reisen.sync.remember-login.password"
+    public static let syncRememberLoginUnderstood = "reisen.sync.remember-login.understood"
+    public static let syncRememberLoginCancel = "reisen.sync.remember-login.cancel"
     public static let syncOpenPasswords = "reisen.sync.open-passwords"
     public static let syncBrowserCollapse = "reisen.sync.browser-collapse"
     public static let syncProviderWebView = "reisen.sync.provider-webview"

@@ -17,6 +17,8 @@ import ReisenDomain
     #expect(UITestingIdentifiers.syncRememberLoginSheet == "reisen.sync.remember-login.sheet")
     #expect(UITestingIdentifiers.syncRememberLoginUsername == "reisen.sync.remember-login.username")
     #expect(UITestingIdentifiers.syncRememberLoginPassword == "reisen.sync.remember-login.password")
+    #expect(UITestingIdentifiers.syncRememberLoginUnderstood == "reisen.sync.remember-login.understood")
+    #expect(UITestingIdentifiers.syncRememberLoginCancel == "reisen.sync.remember-login.cancel")
     #expect(UITestingIdentifiers.syncOpenPasswords == "reisen.sync.open-passwords")
     #expect(UITestingIdentifiers.bookingEditor == "reisen.booking.editor")
     #expect(UITestingIdentifiers.bookingEditorSave == "reisen.booking.editor.save")
