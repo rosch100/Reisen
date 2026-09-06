@@ -6,10 +6,23 @@ public enum SyncLoginChromeArrangement: Equatable, Sendable {
     case stacked
 }
 
+/// Vertikale Pinning-Semantik des Sync-Content-Stacks (Domain-SSOT; View mappt auf SwiftUI Alignment).
+public enum SyncContentStackVerticalAlignment: Equatable, Sendable {
+    case top
+}
+
 /// Regeln für Provider-Sync-Browser-Chrome (macOS + iOS): Placement und progressive Login-UI.
 public enum SyncBrowserChrome: Sendable {
     /// Ab dieser Chrome-Breite liegen Status/Guidance und Credential-CTAs nebeneinander.
     public static let sideBySideMinimumWidth: Double = 560
+
+    /// Content-Stack immer top-pinnen. Bei collapsed Browser (kein flexibles WebView-Kind)
+    /// zentriert SwiftUI sonst Session-Banner und Action-Bar vertikal in der Detailfläche.
+    public static func contentStackVerticalAlignment(
+        isBrowserExpanded _: Bool
+    ) -> SyncContentStackVerticalAlignment {
+        .top
+    }
 
     /// Collapse/Expand nur sinnvoll, wenn Login nicht mehr der Hauptzweck ist.
     public static func showsCollapseControl(isSessionReady: Bool) -> Bool {
