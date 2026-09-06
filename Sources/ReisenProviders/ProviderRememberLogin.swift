@@ -4,7 +4,19 @@ import Foundation
 public enum ProviderRememberLoginMode: Sendable, Equatable {
     case passwordManual
     case passwordPrefill(username: String, password: String)
+    /// Bereits in der App-Keychain gespeichertes Passwort-Konto (anzeigen/aktualisieren).
+    case passwordStored(username: String, password: String)
     case sessionOnly
+
+    /// HIG: Info-only (`sessionOnly`) hat keinen Cancel — nur Ack. Editable Modes behalten Cancel.
+    public var showsCancelAction: Bool {
+        switch self {
+        case .sessionOnly:
+            return false
+        case .passwordManual, .passwordPrefill, .passwordStored:
+            return true
+        }
+    }
 }
 
 /// SSOT für „Anmeldung merken“ (Sheet-Modus und Auto-Save nach Login).
@@ -46,7 +58,7 @@ public enum ProviderRememberLogin {
             )
         }
         switch mode {
-        case .passwordManual, .passwordPrefill:
+        case .passwordManual, .passwordPrefill, .passwordStored:
             return LoginContinueAfterSave(
                 preferredAccountID: account.id,
                 shouldAutoFill: true,
@@ -161,11 +173,32 @@ public enum ProviderRememberLogin {
     public static func beginSheet(
         sessionReady: Bool,
         pending: ProviderCredentials?,
+        stored: ProviderCredentials? = nil,
         mode: inout ProviderRememberLoginMode,
         message: inout String?
     ) {
         message = nil
-        mode = ProviderRememberLoginMode.forSheet(sessionReady: sessionReady, pending: pending)
+        mode = ProviderRememberLoginMode.forSheet(
+            sessionReady: sessionReady,
+            pending: pending,
+            stored: stored
+        )
+    }
+
+    /// Lädt bevorzugtes oder erstes Passwort-Konto für den Sheet-Prefill.
+    public static func resolveStoredCredentials(
+        serverHost: String,
+        preferredAccountID: String,
+        store: KeychainCredentialStore = KeychainCredentialStore()
+    ) throws -> ProviderCredentials? {
+        let accounts = try store.accounts(serverHost: serverHost)
+        guard let account = KeychainAutoFill.pickAccount(
+            from: accounts,
+            storedPreferredID: preferredAccountID
+        ) ?? accounts.first else {
+            return nil
+        }
+        return try store.credentials(for: account)
     }
 
     /// Auto-Save für erfasste Formular-Credentials (SyncTab/SyncView SSOT).
@@ -193,13 +226,17 @@ public enum ProviderRememberLogin {
 }
 
 extension ProviderRememberLoginMode {
-    /// Sheet-Modus aus Session-Status und optional erfassten Formular-Credentials.
+    /// Sheet-Modus: pending Capture → Prefill; sonst gespeichertes Konto; sonst Session/Manual.
     public static func forSheet(
         sessionReady: Bool,
-        pending: ProviderCredentials?
+        pending: ProviderCredentials?,
+        stored: ProviderCredentials? = nil
     ) -> ProviderRememberLoginMode {
         if let pending {
             return .passwordPrefill(username: pending.username, password: pending.password)
+        }
+        if let stored {
+            return .passwordStored(username: stored.username, password: stored.password)
         }
         return sessionReady ? .sessionOnly : .passwordManual
     }

@@ -6,25 +6,91 @@ import Testing
 @Test
 func rememberLoginSheetMode_prefillsWhenPendingCredentialsExist() {
     let pending = ProviderCredentials(username: "u@x.de", password: "pw")
+    let stored = ProviderCredentials(username: "stored@x.de", password: "stored")
 
     #expect(
-        ProviderRememberLoginMode.forSheet(sessionReady: false, pending: pending)
+        ProviderRememberLoginMode.forSheet(sessionReady: false, pending: pending, stored: nil)
             == .passwordPrefill(username: "u@x.de", password: "pw")
     )
     #expect(
-        ProviderRememberLoginMode.forSheet(sessionReady: true, pending: pending)
+        ProviderRememberLoginMode.forSheet(sessionReady: true, pending: pending, stored: stored)
             == .passwordPrefill(username: "u@x.de", password: "pw")
     )
 }
 
 @Test
-func rememberLoginSheetMode_sessionOnlyWhenReadyWithoutPending() {
+func rememberLoginSheetMode_prefersStoredPasswordOverSessionOnly() {
+    let stored = ProviderCredentials(username: "stored@x.de", password: "stored-pw")
+
     #expect(
-        ProviderRememberLoginMode.forSheet(sessionReady: true, pending: nil) == .sessionOnly
+        ProviderRememberLoginMode.forSheet(sessionReady: true, pending: nil, stored: stored)
+            == .passwordStored(username: "stored@x.de", password: "stored-pw")
     )
     #expect(
-        ProviderRememberLoginMode.forSheet(sessionReady: false, pending: nil) == .passwordManual
+        ProviderRememberLoginMode.forSheet(sessionReady: false, pending: nil, stored: stored)
+            == .passwordStored(username: "stored@x.de", password: "stored-pw")
     )
+}
+
+@Test
+func rememberLoginSheetMode_sessionOnlyWhenReadyWithoutPendingOrStored() {
+    #expect(
+        ProviderRememberLoginMode.forSheet(
+            sessionReady: true,
+            pending: nil as ProviderCredentials?,
+            stored: nil as ProviderCredentials?
+        ) == .sessionOnly
+    )
+    #expect(
+        ProviderRememberLoginMode.forSheet(
+            sessionReady: false,
+            pending: nil as ProviderCredentials?,
+            stored: nil as ProviderCredentials?
+        ) == .passwordManual
+    )
+}
+
+@Test
+func rememberLoginSheetMode_cancelActionOnlyWhenEditable() {
+    #expect(!ProviderRememberLoginMode.sessionOnly.showsCancelAction)
+    #expect(ProviderRememberLoginMode.passwordManual.showsCancelAction)
+    #expect(
+        ProviderRememberLoginMode.passwordPrefill(username: "a", password: "b").showsCancelAction
+    )
+    #expect(
+        ProviderRememberLoginMode.passwordStored(username: "a", password: "b").showsCancelAction
+    )
+}
+
+@Test
+func rememberLoginResolveStoredCredentials_loadsPreferredOrFirst() throws {
+    let fake = FakeKeychainInternetPasswordAPI()
+    let store = KeychainCredentialStore(keychain: fake)
+    let host = "booking.com"
+    let preferred = KeychainCredentialAccount(serverHost: host, username: "b@x.de")
+    let other = KeychainCredentialAccount(serverHost: host, username: "a@x.de")
+
+    fake.genericAttributeResults = [
+        [
+            kSecAttrService as CFString: KeychainCredentialQuery.service,
+            kSecAttrAccount as CFString: other.id,
+        ],
+        [
+            kSecAttrService as CFString: KeychainCredentialQuery.service,
+            kSecAttrAccount as CFString: preferred.id,
+        ],
+    ]
+    fake.genericSecretByAccount = [
+        other.id: Data("pw-a".utf8),
+        preferred.id: Data("pw-b".utf8),
+    ]
+
+    let resolved = try ProviderRememberLogin.resolveStoredCredentials(
+        serverHost: host,
+        preferredAccountID: preferred.id,
+        store: store
+    )
+    #expect(resolved == ProviderCredentials(username: "b@x.de", password: "pw-b"))
 }
 
 @Test
@@ -135,6 +201,15 @@ func loginContinueAfterSave_fillsWhenNeedsLoginAndPasswordMode() {
     #expect(prefill.preferredAccountID == account.id)
     #expect(prefill.shouldAutoFill)
     #expect(prefill.reason == "needs_login")
+
+    let stored = ProviderRememberLogin.loginContinueAfterSave(
+        account: account,
+        sessionNeedsLogin: true,
+        mode: .passwordStored(username: "u@x.de", password: "pw")
+    )
+    #expect(stored.preferredAccountID == account.id)
+    #expect(stored.shouldAutoFill)
+    #expect(stored.reason == "needs_login")
 }
 
 @Test

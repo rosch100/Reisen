@@ -565,6 +565,14 @@ final class MacUISmokeTests: XCTestCase {
             sheet.buttons["Open Passwords"].exists,
             "Sheet must not show Open Passwords"
         )
+        // Editable needsLogin-Sheet: kein Info-Ack „Verstanden“ (nur sessionOnly).
+        // Cancel liegt in der macOS-Toolbar oft außerhalb des Sheet-AX-Unterbaums —
+        // showsCancelAction bleibt Unit-getestet.
+        XCTAssertFalse(
+            sheet.descendants(matching: .any)[UITestingIdentifiers.syncRememberLoginUnderstood]
+                .firstMatch.exists,
+            "Understood is sessionOnly-only"
+        )
     }
 
     func testProviderSyncChromeIsReachable() {

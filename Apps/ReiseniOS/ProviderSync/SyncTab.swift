@@ -666,13 +666,45 @@ struct SyncTab: View {
     }
 
     private func openRememberLoginSheet() {
+        let stored = loadStoredCredentialsForRememberLoginSheet()
         ProviderRememberLogin.beginSheet(
             sessionReady: sessionStatus == .sessionReady,
             pending: pendingRememberCredentials,
+            stored: stored,
             mode: &rememberLoginMode,
             message: &rememberLoginMessage
         )
         showCredentialSheet = true
+    }
+
+    private func loadStoredCredentialsForRememberLoginSheet() -> ProviderCredentials? {
+        guard let host = credentialServerHost() else { return nil }
+        do {
+            return try ProviderRememberLogin.resolveStoredCredentials(
+                serverHost: host,
+                preferredAccountID: preferredKeychainAccountID()
+            )
+        } catch {
+            let context = DiagnosticContext(
+                runID: diagnosticRunID,
+                providerID: selectedProviderID,
+                operation: "remember_login"
+            )
+            Task {
+                await DiagnosticLogger.shared.record(
+                    DiagnosticEvent(
+                        context: context,
+                        component: "SyncTab",
+                        phase: "keychain",
+                        event: "stored_credentials_load_failed",
+                        result: .failed,
+                        errorType: String(describing: type(of: error)),
+                        reason: DiagnosticRedactor.redact(error.localizedDescription)
+                    )
+                )
+            }
+            return nil
+        }
     }
 
     @MainActor
