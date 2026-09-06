@@ -334,6 +334,7 @@ public final class AppBootstrap {
         ProviderFirstLaunchSetup.bootstrapCompletedIfExistingProviders(defaults: defaults)
         UITestingLaunch.seedProviderEnablementIfNeeded(mode: uiTesting, defaults: defaults)
         UITestingLaunch.seedProviderSetupIfNeeded(mode: uiTesting, defaults: defaults)
+        UITestingLaunch.seedProviderLoginDisclosureIfNeeded(mode: uiTesting, defaults: defaults)
         guard !uiTesting.skipsSideEffects else { return }
         let runID = UUID()
         if didMigrate {

@@ -245,8 +245,7 @@ struct SyncView: View {
             if let keychainServerHost {
                 SaveProviderCredentialSheet(
                     serverHost: keychainServerHost,
-                    mode: rememberLoginMode,
-                    onOpenPasswordManager: { MacSystemApps.openPasswords() }
+                    mode: rememberLoginMode
                 ) { account in
                     let decision = ProviderRememberLogin.applyAfterSavedAccount(
                         account: account,
