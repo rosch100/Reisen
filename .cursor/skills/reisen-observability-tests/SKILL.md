@@ -59,7 +59,7 @@ await DiagnosticLogger.shared.record(
 - Nach kritischen Sync-/Probe-Blöcken `flush()` wo bestehender Code das schon tut.
 - Kein paralleles Diagnose-Format erfinden.
 
-Referenz-Beispiele: `NavigationSettlePoll`, `ProviderLoginAssistance`, Tests in `Tests/ReisenAppCoreTests/DiagnosticLoggerTests.swift`.
+Referenz-Beispiele: `NavigationSettleLoop`, `ProviderLoginAssistance`, Tests in `Tests/ReisenAppCoreTests/DiagnosticLoggerTests.swift`.
 
 ## Unit-/Domain-Tests
 

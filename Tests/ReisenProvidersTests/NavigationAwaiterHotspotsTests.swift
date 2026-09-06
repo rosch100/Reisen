@@ -48,12 +48,35 @@ struct NavigationAwaiterHotspotsTests {
             throw NSError(domain: "UnexpectedSuccess", code: 0)
         } catch {
             let err = error as NSError
-            #expect(err.domain == "NavigationAwaiter")
-            #expect(err.code == 1)
+            #expect(err.domain == NavigationSettleTimeout.errorDomain)
+            #expect(err.code == NavigationSettleTimeout.errorCode)
+            #expect(NavigationSettleTimeout.isTimeout(error))
         }
 
         #expect(!webView.loadRequests.isEmpty)
         #expect(webView.loadRequests.first?.url == targetURL)
+    }
+
+    @Test("NavigationAwaiter.load: on-target + isLoading endet nicht mit Timeout")
+    func navigationAwaiterSucceeds_whenOnTargetButStillLoading() async throws {
+        let url = URL(string: "https://hotel.check24.de/kundenbereich/buchung/abc")!
+        let webView = FakeNavigationWebView(url: url, isLoading: true)
+        let awaiter = NavigationAwaiter(timeoutSeconds: 4)
+        try await awaiter.load(url, in: webView)
+        #expect(webView.loadRequests.count == 1)
+    }
+
+    @Test("NavigationSettleLoop: on-target bei überschrittener Deadline wirft nicht")
+    func navigationSettleLoopSucceeds_whenOnTargetAtDeadline() async throws {
+        let url = URL(string: "https://hotel.check24.de/kundenbereich/buchung/abc")!
+        let webView = FakeNavigationWebView(url: url, isLoading: true)
+        try await NavigationSettleLoop.wait(
+            webView: webView,
+            targetHost: "hotel.check24.de",
+            targetPath: "/kundenbereich/buchung/abc",
+            deadline: Date().addingTimeInterval(-0.01),
+            timeoutURL: url
+        )
     }
 }
 
