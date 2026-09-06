@@ -543,6 +543,30 @@ final class MacUISmokeTests: XCTestCase {
         _ = ui.waitFor(UITestingIdentifiers.settingsHideProviderSetupToggle)
     }
 
+    func testRememberLoginSheetHasAutofillFieldsWithoutOpenPasswordsButton() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        ui.openProviderSyncCheck24()
+        _ = ui.waitForSyncLoginChrome()
+        let sheet = ui.openRememberLoginSheet()
+        XCTAssertTrue(
+            sheet.descendants(matching: .any)[UITestingIdentifiers.syncRememberLoginUsername]
+                .firstMatch.waitForExistence(timeout: 5)
+        )
+        XCTAssertTrue(
+            sheet.descendants(matching: .any)[UITestingIdentifiers.syncRememberLoginPassword]
+                .firstMatch.exists
+        )
+        XCTAssertFalse(
+            sheet.buttons["Passwörter öffnen"].exists,
+            "Sheet darf keinen Passwörter-öffnen-Button haben"
+        )
+        XCTAssertFalse(
+            sheet.buttons["Open Passwords"].exists,
+            "Sheet must not show Open Passwords"
+        )
+    }
+
     func testProviderSyncChromeIsReachable() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()

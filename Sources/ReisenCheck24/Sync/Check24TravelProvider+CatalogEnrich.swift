@@ -1,6 +1,8 @@
 import Foundation
 import WebKit
 import ReisenDomain
+import ReisenDiagnostics
+import ReisenProviders
 
 extension Check24TravelProvider {
     func enrichHotelBookings(
@@ -40,24 +42,36 @@ extension Check24TravelProvider {
             }
 
             onProgress?("Stornofrist \(index + 1)/\(hotelBookingsWithURL.count)…")
-            try await enrichHotelDetail(
-                webView: webView,
-                parsedBooking: parsedBooking,
-                bookingURL: bookingURL,
-                bookingURLString: bookingURLString,
-                deadlinesByBookingURL: &deadlinesByBookingURL,
-                hotelStayByBookingURL: &hotelStayByBookingURL,
-                guestHintsByBookingURL: &guestHintsByBookingURL,
-                bookingDetailsByBookingKey: &bookingDetailsByBookingKey,
+            do {
+                try await enrichHotelDetail(
+                    webView: webView,
+                    parsedBooking: parsedBooking,
+                    bookingURL: bookingURL,
+                    bookingURLString: bookingURLString,
+                    deadlinesByBookingURL: &deadlinesByBookingURL,
+                    hotelStayByBookingURL: &hotelStayByBookingURL,
+                    guestHintsByBookingURL: &guestHintsByBookingURL,
+                    bookingDetailsByBookingKey: &bookingDetailsByBookingKey,
 
-                basketsByBasketId: &basketsByBasketId,
-                bookingUuidToBasketId: &bookingUuidToBasketId,
-                canonicalBookingUuidByBasketId: &canonicalBookingUuidByBasketId,
-                deadlinesByBasketId: &deadlinesByBasketId,
-                hotelStayByBasketId: &hotelStayByBasketId,
-                guestHintsByBasketId: &guestHintsByBasketId,
-                bookingDetailsByBasketId: &bookingDetailsByBasketId
-            )
+                    basketsByBasketId: &basketsByBasketId,
+                    bookingUuidToBasketId: &bookingUuidToBasketId,
+                    canonicalBookingUuidByBasketId: &canonicalBookingUuidByBasketId,
+                    deadlinesByBasketId: &deadlinesByBasketId,
+                    hotelStayByBasketId: &hotelStayByBasketId,
+                    guestHintsByBasketId: &guestHintsByBasketId,
+                    bookingDetailsByBasketId: &bookingDetailsByBasketId
+                )
+            } catch {
+                guard !Check24HotelEnrichIsolation.shouldRethrow(error) else { throw error }
+                await recordDiagnosticPhase(
+                    "hotel_detail",
+                    event: "enrich_failed",
+                    result: .failed,
+                    url: bookingURL,
+                    reason: NavigationSettleTimeout.diagnosticReason
+                )
+                continue
+            }
         }
     }
 

@@ -3,6 +3,8 @@ import ReisenDiagnostics
 
 @MainActor
 public enum NavigationSettleLoop {
+    private static let pollIntervalNanoseconds: UInt64 = 100_000_000
+
     public static func wait(
         webView: NavigationWebView,
         targetHost: String,
@@ -12,72 +14,89 @@ public enum NavigationSettleLoop {
         diagnosticContext: DiagnosticContext? = nil
     ) async throws {
         var sawLoading = webView.isLoading
-        var previousURL = webView.url
-        var previousLoading = webView.isLoading
-        var previousTargetMatch = NavigationTargetMatching.isOnTarget(
-            webView: webView,
-            host: targetHost,
-            path: targetPath
-        )
+        var previous = TickState(webView: webView, host: targetHost, path: targetPath)
+        var onTargetSince: Date? = previous.isOnTarget ? Date() : nil
 
         while Date() < deadline {
-            let currentURL = webView.url
-            let currentLoading = webView.isLoading
-            let currentTargetMatch = NavigationTargetMatching.isOnTarget(
-                webView: webView,
-                host: targetHost,
-                path: targetPath
-            )
-            if let diagnosticContext {
-                if currentURL != previousURL {
-                    await record(
-                        context: diagnosticContext,
-                        event: "url_changed",
-                        result: .started,
-                        url: currentURL
-                    )
-                }
-                if currentLoading != previousLoading {
-                    await record(
-                        context: diagnosticContext,
-                        event: "loading_changed",
-                        result: .started,
-                        url: currentURL,
-                        reason: "is_loading=\(currentLoading)"
-                    )
-                }
-                if currentTargetMatch != previousTargetMatch {
-                    await record(
-                        context: diagnosticContext,
-                        event: "target_match_changed",
-                        result: currentTargetMatch ? .succeeded : .started,
-                        url: currentURL,
-                        reason: "target_match=\(currentTargetMatch)"
-                    )
-                }
-                await record(
-                    context: diagnosticContext,
-                    event: "poll",
-                    result: .started,
-                    url: webView.url,
-                    reason: "is_loading=\(webView.isLoading),saw_loading=\(sawLoading),target=\(NavigationTargetMatching.isOnTarget(webView: webView, host: targetHost, path: targetPath))"
-                )
-            }
+            let current = TickState(webView: webView, host: targetHost, path: targetPath)
+            onTargetSince = current.isOnTarget ? (onTargetSince ?? Date()) : nil
+            await recordTransitions(from: previous, to: current, context: diagnosticContext)
             if try await NavigationSettlePoll.tick(
                 webView: webView,
                 targetHost: targetHost,
                 targetPath: targetPath,
                 sawLoading: &sawLoading,
-                diagnosticContext: diagnosticContext
+                onTargetSince: onTargetSince
             ) {
                 return
             }
-            previousURL = currentURL
-            previousLoading = currentLoading
-            previousTargetMatch = currentTargetMatch
-            try await Task.sleep(nanoseconds: 100_000_000)
+            previous = current
+            try await Task.sleep(nanoseconds: pollIntervalNanoseconds)
+        }
+        if TickState(webView: webView, host: targetHost, path: targetPath).isOnTarget {
+            if let diagnosticContext {
+                await record(
+                    context: diagnosticContext,
+                    event: "deadline_on_target",
+                    result: .succeeded,
+                    url: webView.url,
+                    reason: "on_target_at_deadline"
+                )
+            }
+            return
         }
         throw NavigationSettleTimeout.error(for: timeoutURL)
+    }
+
+    private struct TickState {
+        var url: URL?
+        var isLoading: Bool
+        var isOnTarget: Bool
+
+        @MainActor
+        init(webView: NavigationWebView, host: String, path: String) {
+            url = webView.url
+            isLoading = webView.isLoading
+            isOnTarget = NavigationTargetMatching.isOnTarget(
+                webView: webView,
+                host: host,
+                path: path
+            )
+        }
+    }
+
+    private static func recordTransitions(
+        from previous: TickState,
+        to current: TickState,
+        context: DiagnosticContext?
+    ) async {
+        guard let context else { return }
+        if current.url != previous.url {
+            await record(
+                context: context,
+                event: "url_changed",
+                result: .started,
+                url: current.url
+            )
+        }
+        if current.isLoading != previous.isLoading {
+            await record(
+                context: context,
+                event: "loading_changed",
+                result: .started,
+                url: current.url,
+                reason: "is_loading=\(current.isLoading)"
+            )
+        }
+        if current.isOnTarget != previous.isOnTarget {
+            await record(
+                context: context,
+                event: "target_match_changed",
+                result: current.isOnTarget ? .succeeded : .started,
+                url: current.url,
+                reason: "target_match=\(current.isOnTarget)"
+            )
+        }
     }
 
     /// URL roh; Host-Redaction ist SSOT in `DiagnosticLogger`.

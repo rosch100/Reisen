@@ -40,6 +40,7 @@ import ReisenDomain
 
     #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
     #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
+    #expect(ProviderLoginDisclosure.isAccepted(defaults: defaults))
 }
 
 /// Bootstrap-Heuristik (nur explizit aktive Portale) liegt in `ProviderFirstLaunchSetupTests`;

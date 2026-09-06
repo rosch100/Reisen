@@ -94,3 +94,18 @@ import ReisenDomain
     #expect(!defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
     #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults))
 }
+
+@Test func uiTestingLaunch_seedLoginDisclosureOnlyForPopulated() {
+    let suite = "ReisenTests.uiTesting.disclosure.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suite) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    UITestingLaunch.seedProviderLoginDisclosureIfNeeded(mode: .empty, defaults: defaults)
+    #expect(!ProviderLoginDisclosure.isAccepted(defaults: defaults))
+
+    UITestingLaunch.seedProviderLoginDisclosureIfNeeded(mode: .populated, defaults: defaults)
+    #expect(ProviderLoginDisclosure.isAccepted(defaults: defaults))
+}
