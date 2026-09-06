@@ -135,20 +135,22 @@ private struct CancelSessionWebHostIOS: UIViewRepresentable {
             onLoadFailed()
         }
 
+        @MainActor
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+            decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
         ) {
             #if REISEN_PROVIDER_SYNC
-            let isMain = navigationAction.targetFrame?.isMainFrame ?? false
-            if let requestURL = navigationAction.request.url,
-               !ProviderWebViewNavigationPolicy.allows(requestURL, isMainFrame: isMain) {
-                decisionHandler(.cancel)
-                return
-            }
-            #endif
+            decisionHandler(
+                ProviderWebViewNavigationPolicy.navigationActionPolicy(
+                    url: navigationAction.request.url,
+                    isMainFrame: navigationAction.targetFrame?.isMainFrame ?? false
+                )
+            )
+            #else
             decisionHandler(.allow)
+            #endif
         }
     }
 }

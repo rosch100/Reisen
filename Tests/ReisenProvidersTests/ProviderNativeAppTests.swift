@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import WebKit
 import ReisenDomain
 import ReisenProviders
 
@@ -62,4 +63,24 @@ import ReisenProviders
     let url = URL(string: "blob:https://example.com/uuid")!
     #expect(ProviderWebViewNavigationPolicy.decision(for: url, isMainFrame: true) == .cancel)
     #expect(ProviderWebViewNavigationPolicy.decision(for: url, isMainFrame: false) == .allow)
+}
+
+@Test func providerWebViewNavigationPolicy_mapsMissingURLToAllow() {
+    #expect(
+        ProviderWebViewNavigationPolicy.navigationActionPolicy(url: nil, isMainFrame: true)
+            == .allow
+    )
+}
+
+@Test func providerWebViewNavigationPolicy_mapsDecisionOntoWKPolicy() {
+    let blocked = URL(string: "booking://open")!
+    let allowed = URL(string: "https://secure.booking.com/login")!
+    #expect(
+        ProviderWebViewNavigationPolicy.navigationActionPolicy(url: blocked, isMainFrame: true)
+            == .cancel
+    )
+    #expect(
+        ProviderWebViewNavigationPolicy.navigationActionPolicy(url: allowed, isMainFrame: true)
+            == .allow
+    )
 }
