@@ -7,6 +7,7 @@ import ReisenDomain
     #expect(UITestingLaunch.argument == "-UITesting")
     #expect(UITestingLaunch.emptyArgument == "-UITestingEmpty")
     #expect(UITestingLaunch.pasteImportArgument == "-UITestingPasteImport")
+    #expect(UITestingLaunch.sessionReadyArgument == "-UITestingSessionReady")
     #expect(UITestingLaunch.isActive(arguments: ["-UITesting"]))
     #expect(UITestingLaunch.shouldSeed(arguments: ["-UITesting"]))
     #expect(UITestingLaunch.isActive(arguments: ["-UITestingEmpty"]))
@@ -18,6 +19,15 @@ import ReisenDomain
     ]))
     #expect(!UITestingLaunch.shouldInjectPasteImportFixture(arguments: [
         UITestingLaunch.pasteImportArgument,
+    ]))
+    #expect(UITestingLaunch.seedsSessionReady(arguments: [
+        UITestingLaunch.argument,
+        UITestingLaunch.sessionReadyArgument,
+    ]))
+    #expect(!UITestingLaunch.seedsSessionReady(arguments: [UITestingLaunch.argument]))
+    #expect(!UITestingLaunch.seedsSessionReady(arguments: [
+        UITestingLaunch.emptyArgument,
+        UITestingLaunch.sessionReadyArgument,
     ]))
     #expect(UITestingMode.from(arguments: ["-UITesting"]) == .populated)
     #expect(UITestingMode.from(arguments: ["-UITestingEmpty"]) == .empty)

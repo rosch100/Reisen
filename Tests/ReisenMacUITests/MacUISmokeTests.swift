@@ -600,6 +600,32 @@ final class MacUISmokeTests: XCTestCase {
         )
     }
 
+    /// Regression: Session-Banner bei collapsed Browser oben, nicht vertikal mittig.
+    func testSessionReadyBannerPinsToTopWhenBrowserCollapsed() {
+        let ui = MacUI.launchSessionReady()
+        ui.waitForWindow()
+        let chrome = ui.openProviderSyncCheck24()
+        let banner = ui.waitForSyncSessionBanner()
+        ui.waitForLabelContaining("Angemeldet")
+        XCTAssertTrue(
+            ui.element(UITestingIdentifiers.syncBrowserCollapse).exists,
+            "Browser-Collapse gehört zur sessionReady-Action-Bar"
+        )
+        // Banner-Oberkante nahe Sync-Chrome-Oberkante (nicht Content-Mitte).
+        let topGap = banner.frame.minY - chrome.frame.minY
+        XCTAssertGreaterThanOrEqual(topGap, -2, "Banner darf nicht über Sync-Chrome liegen")
+        XCTAssertLessThan(
+            topGap,
+            48,
+            "Session-Banner muss oben im Sync-Content sitzen (Gap=\(topGap))"
+        )
+        XCTAssertLessThan(
+            banner.frame.midY,
+            chrome.frame.minY + chrome.frame.height * 0.35,
+            "Session-Banner darf bei collapsed Browser nicht vertikal zentriert sein"
+        )
+    }
+
     func testEditTripMenuDisabledWithoutTripSelection() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
