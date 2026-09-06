@@ -2,12 +2,12 @@ import SwiftUI
 import ReisenDomain
 import ReisenProviders
 import ReisenAppCore
+import ReisenSharedUI
 
 /// Speichert eine Provider-Anmeldung — Passwort-Konto oder Session-Hinweis (Apple/Passkey/OAuth).
 public struct SaveProviderCredentialSheet: View {
     let serverHost: String
     let mode: ProviderRememberLoginMode
-    var onOpenPasswordManager: (() -> Bool)?
     var onSaved: (KeychainCredentialAccount) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -19,12 +19,10 @@ public struct SaveProviderCredentialSheet: View {
     public init(
         serverHost: String,
         mode: ProviderRememberLoginMode = .passwordManual,
-        onOpenPasswordManager: (() -> Bool)? = nil,
         onSaved: @escaping (KeychainCredentialAccount) -> Void
     ) {
         self.serverHost = serverHost
         self.mode = mode
-        self.onOpenPasswordManager = onOpenPasswordManager
         self.onSaved = onSaved
         if case .passwordPrefill(let user, let pass) = mode {
             _username = State(initialValue: user)
@@ -56,6 +54,7 @@ public struct SaveProviderCredentialSheet: View {
             .formStyle(.grouped)
 #endif
             .navigationTitle(L10n.string(.actionRememberLogin))
+            .accessibilityIdentifier(UITestingIdentifiers.syncRememberLoginSheet)
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .reisenSheetDetents()
@@ -114,16 +113,6 @@ public struct SaveProviderCredentialSheet: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-
-                if let onOpenPasswordManager {
-                    Button {
-                        if !onOpenPasswordManager() {
-                            errorMessage = L10n.string(.syncPasswordsAppNotFound)
-                        }
-                    } label: {
-                        Label(L10n.string(.actionOpenPasswords), systemImage: "key.horizontal")
-                    }
-                }
             } else {
                 Text(L10n.format(.credentialSavedAccountFooter, serverHost))
                 .font(.callout)
@@ -134,11 +123,16 @@ public struct SaveProviderCredentialSheet: View {
 
         Section(L10n.format(.credentialSection, serverHost)) {
             TextField(L10n.string(.credentialEmailUsername), text: $username)
+                .textContentType(ProviderRememberLoginAutoFill.usernameContentType)
+                .accessibilityIdentifier(UITestingIdentifiers.syncRememberLoginUsername)
 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .keyboardType(.emailAddress)
 #endif
             SecureField(L10n.string(.credentialPassword), text: $password)
+                .textContentType(ProviderRememberLoginAutoFill.passwordContentType)
+                .accessibilityIdentifier(UITestingIdentifiers.syncRememberLoginPassword)
         }
     }
 
