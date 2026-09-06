@@ -9680,6 +9680,22 @@
           }
         }
       }
+    },
+    "credential.stored_account_footer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeichertes Passwort-Konto für %1$@. Du kannst die Daten ändern und erneut speichern."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved password account for %1$@. You can edit the details and save again."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
