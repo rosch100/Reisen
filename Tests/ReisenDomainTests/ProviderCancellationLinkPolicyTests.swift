@@ -12,7 +12,7 @@ import ReisenDomain
     )
     #expect(
         ProviderCancellationLinkPolicy.mode(provider: .airbnb, bookingType: .hotel)
-            == .none
+            == .distinctURL
     )
     #expect(
         ProviderCancellationLinkPolicy.mode(provider: .getYourGuide, bookingType: .activity)
@@ -20,13 +20,14 @@ import ReisenDomain
     )
     #expect(
         ProviderCancellationLinkPolicy.mode(provider: .billigerMietwagen, bookingType: .carRental)
-            == .sessionBoundDistinct
+            == .inPageOnOpen
     )
     for type in BookingType.allCases {
         #expect(ProviderCancellationLinkPolicy.mode(provider: .manual, bookingType: type) == .distinctURL)
-        #expect(ProviderCancellationLinkPolicy.mode(provider: .opodo, bookingType: type) == .none)
-        #expect(ProviderCancellationLinkPolicy.mode(provider: .booking, bookingType: type) == .none)
-        #expect(ProviderCancellationLinkPolicy.mode(provider: .check24, bookingType: type) == .none)
+        #expect(ProviderCancellationLinkPolicy.mode(provider: .opodo, bookingType: type) == .inPageOnOpen)
+        let bookingMode: ProviderCancellationLinkMode = type == .hotel ? .distinctURL : .none
+        #expect(ProviderCancellationLinkPolicy.mode(provider: .booking, bookingType: type) == bookingMode)
+        #expect(ProviderCancellationLinkPolicy.mode(provider: .check24, bookingType: type) == .distinctURL)
     }
 }
 
@@ -69,14 +70,21 @@ import ReisenDomain
         (
             .airbnb,
             BookingType.allCases.map {
-                (bookingType: $0, mode: $0 == .activity ? .distinctURL : .none)
+                let mode: ProviderCancellationLinkMode =
+                    ($0 == .activity || $0 == .hotel) ? .distinctURL : .none
+                return (bookingType: $0, mode: mode)
             }
         ),
         (.getYourGuide, expectedModes(.inPageOnOpen)),
-        (.billigerMietwagen, expectedModes(.sessionBoundDistinct)),
-        (.check24, expectedModes(.none)),
-        (.opodo, expectedModes(.none)),
-        (.booking, expectedModes(.none)),
+        (.billigerMietwagen, expectedModes(.inPageOnOpen)),
+        (.check24, expectedModes(.distinctURL)),
+        (.opodo, expectedModes(.inPageOnOpen)),
+        (
+            .booking,
+            BookingType.allCases.map {
+                (bookingType: $0, mode: $0 == .hotel ? .distinctURL : .none)
+            }
+        ),
     ]
 
     #expect(expectations.count == ProviderID.syncProviderIDs.count)

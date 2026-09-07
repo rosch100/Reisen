@@ -37,6 +37,7 @@ extension Check24TravelProvider {
             title: parsed.title,
             confirmationCode: parsed.confirmationCode,
             externalUrl: parsed.externalUrl,
+            cancellationUrl: parsed.externalUrl.flatMap(Check24CancellationURL.fromBookingDetailURL),
             locationFrom: parsed.locationFrom,
             locationTo: preferStayLocation(stay?.locationTo, over: parsed.locationTo),
             locationFromAddress: parsed.locationFromAddress,

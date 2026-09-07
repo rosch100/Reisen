@@ -25,6 +25,7 @@ func bookingComGraphQLParsesFlightAndHotel() throws {
 
     let flight = try #require(byType[.flight]?.first)
     #expect(flight.externalUrl?.contains("flights.booking.com") == true)
+    #expect(flight.cancellationUrl == nil)
     #expect(flight.title == "Yogyakarta → Beach City")
     #expect(flight.locationFrom == "Yogyakarta (YIA)")
     #expect(flight.locationTo == "Beach City (DPS)")
@@ -63,6 +64,11 @@ func bookingComGraphQLParsesFlightAndHotel() throws {
 
     let hotel = try #require(byType[.hotel]?.first)
     #expect(hotel.externalUrl?.contains("booking.com") == true)
+    #expect(
+        hotel.cancellationUrl
+            == "https://secure.booking.com/cancel.de.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips"
+    )
+    #expect(hotel.cancellationUrl != hotel.externalUrl)
     #expect(hotel.title == "Hotel Example Central")
     #expect(hotel.locationTo == "Sample City")
     #expect(hotel.locationToAddress == "Example Street 1")
@@ -96,6 +102,32 @@ func bookingComNormalizesHotelConfirmationURL() throws {
     #expect(!normalized.lowercased().contains("confirmation.de.html"))
     #expect(normalized.contains("lang=en"))
     #expect(normalized.contains("auth_key=fixtureAuthKey0001"))
+}
+
+@Test("BookingComCancellationURL mappt confirmation.de.html → cancel.de.html mit auth_key")
+func bookingComCancellationURLMapsConfirmationToCancel() {
+    #expect(
+        BookingComCancellationURL.fromConfirmationURL(
+            "/confirmation.de.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips"
+        )
+            == "https://secure.booking.com/cancel.de.html?auth_key=fixtureAuthKey0001;aid=304142;source=mytrips"
+    )
+    #expect(
+        BookingComCancellationURL.fromConfirmationURL(
+            "https://secure.booking.com/confirmation.html?auth_key=abc&aid=1"
+        )
+            == "https://secure.booking.com/cancel.html?auth_key=abc&aid=1"
+    )
+    #expect(
+        BookingComCancellationURL.fromConfirmationURL(
+            "/confirmation.de.html?aid=304142;source=mytrips"
+        ) == nil
+    )
+    #expect(
+        BookingComCancellationURL.fromConfirmationURL(
+            "https://flights.booking.com/confirmation/token"
+        ) == nil
+    )
 }
 
 @Test("BookingComParsing normalisiert confirmation.en-us.html → confirmation.html lang=en")

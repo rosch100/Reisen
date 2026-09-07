@@ -94,6 +94,7 @@ let package = Package(
                 "ReisenAppCore",
                 "ReisenDomain",
                 "ReisenData",
+                "ReisenDiagnostics",
                 "ReisenProviders",
                 "ReisenSharedUI",
                 "ReisenCheck24",

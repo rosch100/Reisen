@@ -52,7 +52,28 @@ func activityListExcludesCancelledAndPast() throws {
             bookingDetailsByBookingKey: [:]
         )
     )
-    #expect(draft.cancellationUrl == nil)
+    #expect(
+        draft.cancellationUrl
+            == "https://hotel.check24.de/kundenbereich/buchung/11111111-1111-1111-1111-111111111111?action=cancel"
+    )
+    #expect(draft.cancellationUrl != draft.externalUrl)
+}
+
+@Test("Check24CancellationURL hängt action=cancel an Buchungsdetail")
+func check24CancellationURLAppendsActionCancel() {
+    #expect(
+        Check24CancellationURL.fromBookingDetailURL(
+            "https://hotel.check24.de/kundenbereich/buchung/01a0531c-0906-70d5-909c-93f93d8afe10"
+        )
+            == "https://hotel.check24.de/kundenbereich/buchung/01a0531c-0906-70d5-909c-93f93d8afe10?action=cancel"
+    )
+    #expect(
+        Check24CancellationURL.fromBookingDetailURL(
+            "https://flug.check24.de/kundenbereich/buchung/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee?foo=1"
+        )
+            == "https://flug.check24.de/kundenbereich/buchung/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee?action=cancel"
+    )
+    #expect(Check24CancellationURL.fromBookingDetailURL("https://hotel.check24.de/search/") == nil)
 }
 
 @Test("ActivityListParser parst Hotel-ISO mit Offset-Suffix über Datumspräfix")
