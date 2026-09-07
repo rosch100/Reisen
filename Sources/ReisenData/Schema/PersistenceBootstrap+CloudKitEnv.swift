@@ -4,48 +4,65 @@ import Security
 #endif
 
 extension PersistenceBootstrap {
-    /// Env/Entitlements only — ignores the user iCloud-sync preference.
-    nonisolated public static func isCloudKitAllowedByEnvironmentProcess() -> Bool {
-        isCloudKitAllowedByEnvironment(
-            environment: ProcessInfo.processInfo.environment,
-            processName: ProcessInfo.processInfo.processName,
-            arguments: CommandLine.arguments,
-            teamIdentifier: codeSigningTeamIdentifier(),
-            applicationIdentifier: codeSigningApplicationIdentifier(),
-            icloudContainerIdentifiers: codeSigningStringArrayEntitlement(
-                "com.apple.developer.icloud-container-identifiers"
-            ),
-            icloudServices: codeSigningStringArrayEntitlement(
-                "com.apple.developer.icloud-services"
-            ),
-            icloudContainerEnvironment: stringEntitlement(
-                "com.apple.developer.icloud-container-environment"
-            )
-        )
-    }
-
     /// Effective CloudKit: Env/Entitlements **and** caller-supplied user preference.
     /// Resolve `AppSettingsKeys.isICloudSyncEnabled()` outside ReisenData and pass it in.
     nonisolated public static func isCloudKitEnabledByEnvironment(
         iCloudSyncPreferenceEnabled: Bool
     ) -> Bool {
-        isCloudKitEnabled(
+        #if os(macOS)
+        let snap = cachedCodeSigningSnapshot
+        return isCloudKitEnabled(
             environment: ProcessInfo.processInfo.environment,
             processName: ProcessInfo.processInfo.processName,
             arguments: CommandLine.arguments,
-            teamIdentifier: codeSigningTeamIdentifier(),
-            applicationIdentifier: codeSigningApplicationIdentifier(),
-            icloudContainerIdentifiers: codeSigningStringArrayEntitlement(
-                "com.apple.developer.icloud-container-identifiers"
-            ),
-            icloudServices: codeSigningStringArrayEntitlement(
-                "com.apple.developer.icloud-services"
-            ),
-            icloudContainerEnvironment: stringEntitlement(
-                "com.apple.developer.icloud-container-environment"
-            ),
+            teamIdentifier: snap.teamIdentifier,
+            applicationIdentifier: snap.applicationIdentifier,
+            icloudContainerIdentifiers: snap.icloudContainerIdentifiers,
+            icloudServices: snap.icloudServices,
+            icloudContainerEnvironment: snap.icloudContainerEnvironment,
             iCloudSyncPreferenceEnabled: iCloudSyncPreferenceEnabled
         )
+        #else
+        return isCloudKitEnabled(
+            environment: ProcessInfo.processInfo.environment,
+            processName: ProcessInfo.processInfo.processName,
+            arguments: CommandLine.arguments,
+            teamIdentifier: nil,
+            applicationIdentifier: nil,
+            icloudContainerIdentifiers: [],
+            icloudServices: [],
+            icloudContainerEnvironment: nil,
+            iCloudSyncPreferenceEnabled: iCloudSyncPreferenceEnabled
+        )
+        #endif
+    }
+
+    /// Env/Entitlements only — ignores the user iCloud-sync preference.
+    nonisolated public static func isCloudKitAllowedByEnvironmentProcess() -> Bool {
+        #if os(macOS)
+        let snap = cachedCodeSigningSnapshot
+        return isCloudKitAllowedByEnvironment(
+            environment: ProcessInfo.processInfo.environment,
+            processName: ProcessInfo.processInfo.processName,
+            arguments: CommandLine.arguments,
+            teamIdentifier: snap.teamIdentifier,
+            applicationIdentifier: snap.applicationIdentifier,
+            icloudContainerIdentifiers: snap.icloudContainerIdentifiers,
+            icloudServices: snap.icloudServices,
+            icloudContainerEnvironment: snap.icloudContainerEnvironment
+        )
+        #else
+        return isCloudKitAllowedByEnvironment(
+            environment: ProcessInfo.processInfo.environment,
+            processName: ProcessInfo.processInfo.processName,
+            arguments: CommandLine.arguments,
+            teamIdentifier: nil,
+            applicationIdentifier: nil,
+            icloudContainerIdentifiers: [],
+            icloudServices: [],
+            icloudContainerEnvironment: nil
+        )
+        #endif
     }
 
     /// CloudKit is off when the process cannot use it: CI/tests, explicit `REISEN_CLOUDKIT=0`,
@@ -124,50 +141,81 @@ extension PersistenceBootstrap {
 
     nonisolated static func codeSigningTeamIdentifier() -> String? {
         #if os(macOS)
-        let team = codeSigningInformation()?[kSecCodeInfoTeamIdentifier] as? String
-        guard let team, !team.isEmpty else { return nil }
-        return team
+        cachedCodeSigningSnapshot.teamIdentifier
         #else
         return nil
         #endif
     }
 
     nonisolated static func codeSigningApplicationIdentifier() -> String? {
-        stringEntitlement("com.apple.application-identifier")
+        #if os(macOS)
+        cachedCodeSigningSnapshot.applicationIdentifier
+        #else
+        return nil
+        #endif
     }
 
-    nonisolated private static func codeSigningStringArrayEntitlement(_ key: String) -> [String] {
-        #if os(macOS)
-        guard let raw = codeSigningEntitlements()?[key] else { return [] }
+    #if os(macOS)
+    /// Process-lifetime cache: entitlements/signing do not change after launch.
+    /// Spins 2026-09-04: every prefs remote-change re-entered `SecCodeCopySigningInformation` on MainActor.
+    nonisolated private static let cachedCodeSigningSnapshot = CodeSigningSnapshot.load()
+
+    private struct CodeSigningSnapshot: Sendable {
+        let teamIdentifier: String?
+        let applicationIdentifier: String?
+        let icloudContainerIdentifiers: [String]
+        let icloudServices: [String]
+        let icloudContainerEnvironment: String?
+
+        nonisolated static func load() -> CodeSigningSnapshot {
+            let info = loadCodeSigningInformation()
+            let entitlements = info?[kSecCodeInfoEntitlementsDict] as? NSDictionary
+            let team = info?[kSecCodeInfoTeamIdentifier] as? String
+            return CodeSigningSnapshot(
+                teamIdentifier: (team?.isEmpty == false) ? team : nil,
+                applicationIdentifier: stringEntitlement(
+                    "com.apple.application-identifier",
+                    entitlements: entitlements
+                ),
+                icloudContainerIdentifiers: stringArrayEntitlement(
+                    "com.apple.developer.icloud-container-identifiers",
+                    entitlements: entitlements
+                ),
+                icloudServices: stringArrayEntitlement(
+                    "com.apple.developer.icloud-services",
+                    entitlements: entitlements
+                ),
+                icloudContainerEnvironment: stringEntitlement(
+                    "com.apple.developer.icloud-container-environment",
+                    entitlements: entitlements
+                )
+            )
+        }
+    }
+
+    nonisolated private static func stringArrayEntitlement(
+        _ key: String,
+        entitlements: NSDictionary?
+    ) -> [String] {
+        guard let raw = entitlements?[key] else { return [] }
         if let string = raw as? String, !string.isEmpty { return [string] }
         if let strings = raw as? [String] { return strings }
         if let array = raw as? NSArray {
             return array.compactMap { $0 as? String }
         }
         return []
-        #else
-        _ = key
-        return []
-        #endif
     }
 
-    nonisolated private static func stringEntitlement(_ key: String) -> String? {
-        #if os(macOS)
-        let value = codeSigningEntitlements()?[key] as? String
+    nonisolated private static func stringEntitlement(
+        _ key: String,
+        entitlements: NSDictionary?
+    ) -> String? {
+        let value = entitlements?[key] as? String
         guard let value, !value.isEmpty else { return nil }
         return value
-        #else
-        _ = key
-        return nil
-        #endif
     }
 
-    #if os(macOS)
-    nonisolated private static func codeSigningEntitlements() -> NSDictionary? {
-        codeSigningInformation()?[kSecCodeInfoEntitlementsDict] as? NSDictionary
-    }
-
-    nonisolated private static func codeSigningInformation() -> NSDictionary? {
+    nonisolated private static func loadCodeSigningInformation() -> NSDictionary? {
         var dynamicCode: SecCode?
         guard SecCodeCopySelf([], &dynamicCode) == errSecSuccess, let dynamicCode else {
             return nil

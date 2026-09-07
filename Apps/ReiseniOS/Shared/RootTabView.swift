@@ -106,7 +106,9 @@ struct RootTabView: View {
                 .publisher(for: .NSPersistentStoreRemoteChange)
                 .receive(on: RunLoop.main)
         ) { _ in
-            handleProviderPrefsRemoteChange()
+            ProviderPrefsRemoteChangeScheduler.schedule {
+                handleProviderPrefsRemoteChange()
+            }
         }
         #if REISEN_PROVIDER_SYNC
         .onChange(of: scenePhase) { _, phase in

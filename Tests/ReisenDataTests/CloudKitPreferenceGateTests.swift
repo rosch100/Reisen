@@ -46,3 +46,13 @@ import ReisenData
     )
     #expect(allowed == true)
 }
+
+@Test func cloudKitEnabledByEnvironment_isStableAcrossRepeatedCalls() {
+    let first = PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+        iCloudSyncPreferenceEnabled: true
+    )
+    let second = PersistenceBootstrap.isCloudKitEnabledByEnvironment(
+        iCloudSyncPreferenceEnabled: true
+    )
+    #expect(first == second)
+}
