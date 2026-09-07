@@ -210,6 +210,7 @@ struct RootTabView: View {
 
     private func focusCreatedTrip(_ tripID: UUID) {
         selectedTripID = tripID
+        compactPushTripID = tripID
         selectedTab = .reisen
     }
 

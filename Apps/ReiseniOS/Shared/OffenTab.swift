@@ -68,6 +68,7 @@ struct OffenTab: View {
         OpenBookingsScreen(
             searchText: $searchText,
             selectedBookingID: $selectedBookingID,
+            compactPushBookingID: $compactPushBookingID,
             multiSelection: $multiSelection,
             isSelectingForTripCreate: $isSelectingForTripCreate,
             tripCreateSeed: $tripCreateSeed,
@@ -81,6 +82,7 @@ struct OffenTab: View {
         OpenBookingsScreen(
             searchText: $searchText,
             selectedBookingID: $selectedBookingID,
+            compactPushBookingID: $compactPushBookingID,
             multiSelection: $multiSelection,
             isSelectingForTripCreate: $isSelectingForTripCreate,
             tripCreateSeed: $tripCreateSeed,
@@ -95,6 +97,7 @@ struct OffenTab: View {
 struct OpenBookingsScreen: View {
     @Binding var searchText: String
     @Binding var selectedBookingID: UUID?
+    @Binding var compactPushBookingID: UUID?
     @Binding var multiSelection: Set<UUID>
     @Binding var isSelectingForTripCreate: Bool
     @Binding var tripCreateSeed: TripCreateSeed?
@@ -190,8 +193,13 @@ struct OpenBookingsScreen: View {
                     }
                     .environment(\.editMode, .constant(.active))
                     .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
-                } else {
+                } else if CompactListNavigation.listUsesSelectionBinding(usesSplit: usesSplit) {
                     List(selection: $selectedBookingID) {
+                        openBookingListContent(interactive: true)
+                    }
+                    .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
+                } else {
+                    List {
                         openBookingListContent(interactive: true)
                     }
                     .searchable(text: $searchText, prompt: L10n.string(.tripSearchOpenBookings))
@@ -409,7 +417,12 @@ struct OpenBookingsScreen: View {
 
     @ViewBuilder
     private func bookingRow(_ booking: SDBooking, fillCaption: String? = nil) -> some View {
-        AdaptiveUUIDSelectionRow(id: booking.id, selection: $selectedBookingID, usesSplit: usesSplit) {
+        AdaptiveUUIDSelectionRow(
+            id: booking.id,
+            selection: $selectedBookingID,
+            compactPush: $compactPushBookingID,
+            usesSplit: usesSplit
+        ) {
             OpenBookingRow(
                 booking: booking,
                 fillCaption: fillCaption,
