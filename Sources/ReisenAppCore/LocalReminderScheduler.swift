@@ -108,15 +108,11 @@ public final class LocalReminderScheduler: ReminderScheduling {
     }
 
     private static func formatDeadlineWallClock(_ deadline: CancellationDeadline) -> String? {
-        guard let tz = deadline.hotelOffsetSeconds.flatMap({ TimeZone(secondsFromGMT: $0) }) else {
+        guard let text = CancellationDeadlineWallClock.string(for: deadline) else {
             recordReminderSkip(reason: "format_deadline_missing_hotel_offset")
             return nil
         }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
-        formatter.timeZone = tz
-        formatter.dateFormat = "d. MMM yyyy HH:mm"
-        return formatter.string(from: deadline.deadlineAt)
+        return text
     }
 
     static func recordReminderSkip(reason: String) {

@@ -292,7 +292,11 @@ struct ContentView: View {
                 .publisher(for: .NSPersistentStoreRemoteChange)
                 .receive(on: RunLoop.main)
         ) { _ in
-            handleProviderPrefsRemoteChange()
+            // Nicht synchron im Receive: HID/Spins 2026-09-04 zeigten MainActor-Arbeit
+            // (Signing-Lookup + SwiftData-Import) während Remote-Change.
+            ProviderPrefsRemoteChangeScheduler.schedule {
+                handleProviderPrefsRemoteChange()
+            }
         }
         .onChange(of: selection?.tripID) { _, newTripID in
             guard newTripID != activeTripID else { return }
