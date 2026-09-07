@@ -99,6 +99,7 @@ public enum ProviderEnabledDefaultsMigration: Sendable {
     }
 
     /// Setzt False-Positive-All-On zurück auf Opt-in und öffnet das Erststart-Setup erneut.
+    /// Bewusste Erstauswahl (`setupCompleted`) wird nicht als False-Positive behandelt.
     @discardableResult
     public static func repairFalsePositiveAllOnIfNeeded(
         syncProviderIDs: [ProviderID] = ProviderID.syncProviderIDs,
@@ -106,6 +107,7 @@ public enum ProviderEnabledDefaultsMigration: Sendable {
     ) -> Bool {
         guard !defaults.bool(forKey: falsePositiveRepairKey) else { return false }
         guard defaults.bool(forKey: migratedKey) else { return false }
+        guard !defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted) else { return false }
         guard isFalsePositiveAllOn(syncProviderIDs: syncProviderIDs, defaults: defaults) else {
             return false
         }
@@ -114,5 +116,12 @@ public enum ProviderEnabledDefaultsMigration: Sendable {
         defaults.set(true, forKey: falsePositiveRepairKey)
         defaults.set(true, forKey: needsMirrorExportKey)
         return true
+    }
+
+    /// Repair-Marker verwerfen. `needsMirrorExport` bleibt bis erfolgreichem Clean-Export.
+    public static func clearFalsePositiveRepairKey(
+        defaults: UserDefaults = .standard
+    ) {
+        defaults.removeObject(forKey: falsePositiveRepairKey)
     }
 }

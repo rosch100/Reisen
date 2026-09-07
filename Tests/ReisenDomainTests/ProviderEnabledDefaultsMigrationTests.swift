@@ -125,8 +125,7 @@ import ReisenDomain
         defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: providerID))
     }
     defaults.set("", forKey: AppSettingsKeys.preferredKeychainAccountKey(for: .check24))
-    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
-    ProviderFirstLaunchSetup.markDeferred(defaults: defaults)
+    // Kein setupCompleted: nur dann ist All-On ohne Konten ein False-Positive.
 
     let didRepair = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
         syncProviderIDs: syncIDs,
@@ -160,7 +159,6 @@ import ReisenDomain
         "check24.de\u{1F}user@example.com",
         forKey: AppSettingsKeys.preferredKeychainAccountKey(for: .check24)
     )
-    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
 
     let didRepair = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
         syncProviderIDs: syncIDs,
@@ -240,4 +238,32 @@ import ReisenDomain
     #expect(!didRepair)
     #expect(AppSettingsKeys.isProviderEnabled(.check24, defaults: defaults))
     #expect(AppSettingsKeys.isProviderEnabled(.opodo, defaults: defaults))
+}
+
+@Test func providerEnabledDefaultsMigration_repairSkipsWhenSetupCompleted() {
+    let suiteName = "reisen.tests.providerEnabled.migration.repairCompleted.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suiteName) else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    let syncIDs: [ProviderID] = [.check24, .opodo, .booking]
+    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.migratedKey)
+    for providerID in syncIDs {
+        defaults.set(true, forKey: AppSettingsKeys.providerEnabledKey(for: providerID))
+    }
+    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+
+    let didRepair = ProviderEnabledDefaultsMigration.repairFalsePositiveAllOnIfNeeded(
+        syncProviderIDs: syncIDs,
+        defaults: defaults
+    )
+
+    #expect(!didRepair)
+    #expect(!defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey))
+    for providerID in syncIDs {
+        #expect(AppSettingsKeys.isProviderEnabled(providerID, defaults: defaults))
+    }
+    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
 }

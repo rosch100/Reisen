@@ -58,6 +58,24 @@ private func makeIsolatedDefaults() -> (UserDefaults, String)? {
     #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: defaults, syncProviderIDs: [.check24, .opodo]))
 }
 
+@Test func providerFirstLaunchSetup_markCompleted_clearsFalsePositiveRepairKeyOnly() {
+    guard let (defaults, suiteName) = makeIsolatedDefaults() else {
+        Issue.record("UserDefaults suite konnte nicht erzeugt werden")
+        return
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey)
+    defaults.set(true, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+
+    ProviderFirstLaunchSetup.markCompleted(defaults: defaults)
+
+    #expect(defaults.bool(forKey: AppSettingsKeys.providerSetupCompleted))
+    #expect(!defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey))
+    // needsMirrorExport bleibt bis Clean-Export im Import-Gate.
+    #expect(defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
+}
+
 @Test func providerFirstLaunchSetup_ohneBuchungsportale_hidesCompletesAndLeavesProvidersOff() {
     guard let (defaults, suiteName) = makeIsolatedDefaults() else {
         Issue.record("UserDefaults suite konnte nicht erzeugt werden")

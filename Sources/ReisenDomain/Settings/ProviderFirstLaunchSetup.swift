@@ -27,6 +27,8 @@ public enum ProviderFirstLaunchSetup: Sendable {
 
     public static func markCompleted(defaults: UserDefaults = AppSettingsDefaults.current) {
         defaults.set(true, forKey: AppSettingsKeys.providerSetupCompleted)
+        // Nur Repair-Marker; `needsMirrorExport` bleibt bis Clean-Export im Import-Gate.
+        defaults.removeObject(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey)
     }
 
     public static func markDeferred(defaults: UserDefaults = AppSettingsDefaults.current) {

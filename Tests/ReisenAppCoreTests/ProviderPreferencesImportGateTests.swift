@@ -111,7 +111,7 @@ struct ProviderPreferencesImportGateTests {
         #expect(ProviderPreferencesSnapshot.read(from: suite) == before)
     }
 
-    @Test("false-positive repair clears poisoned mirror instead of re-infecting defaults")
+    @Test("false-positive repair clears poisoned mirror and exports local opt-in")
     func clearsPoisonedMirrorAfterFalsePositiveRepair() async throws {
         let container = try PersistenceBootstrap.makeInMemoryContainer()
         let suiteName = "test.prefs.gate.poison.\(UUID().uuidString)"
@@ -124,10 +124,9 @@ struct ProviderPreferencesImportGateTests {
             syncProviderIDs: syncIDs,
             defaults: suite
         )
-        ProviderFirstLaunchSetup.markCompleted(defaults: suite)
+        // Mirror poison ohne lokale setupCompleted (Repair-Zustand).
         try ProviderPreferencesMirror.export(from: suite, into: container.mainContext)
 
-        // Lokal bereits repariert; Mirror noch mit All-On + setupCompleted.
         ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(
             syncProviderIDs: syncIDs,
             defaults: suite
@@ -140,14 +139,100 @@ struct ProviderPreferencesImportGateTests {
             timeout: .milliseconds(50)
         )
 
-        #expect(outcome == .noRecord)
+        // Lokal bleibt Opt-in; Mirror erhält Clean-Export der lokalen Defaults.
+        guard case .applied(let snap) = outcome else {
+            Issue.record("expected applied clean local snapshot, got \(outcome)")
+            return
+        }
+        #expect(!snap.setupCompleted)
+        #expect(snap.enabledProviderIDs.isEmpty)
         #expect(!suite.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
         #expect(ProviderFirstLaunchSetup.shouldPresent(defaults: suite))
         for providerID in syncIDs {
             #expect(!AppSettingsKeys.isProviderEnabled(providerID, defaults: suite))
-            #expect(suite.object(forKey: AppSettingsKeys.providerEnabledKey(for: providerID)) == nil)
         }
-        #expect(try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext) == nil)
+        let clean = try ProviderPreferencesMirror.fetchCanonical(in: container.mainContext)
+        #expect(clean != nil)
+        #expect(clean?.setupCompleted == false)
+        #expect(clean?.enabledProviderRawCSV.isEmpty == true)
+    }
+
+    @Test("completeWithoutPortals after repair keeps empty selection despite poisoned mirror")
+    func completeWithoutPortalsSurvivesPoisonedMirrorImport() async throws {
+        let container = try PersistenceBootstrap.makeInMemoryContainer()
+        let suiteName = "test.prefs.gate.withoutPortalsPoison.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        let syncIDs = ProviderID.syncProviderIDs
+        ProviderFirstLaunchSetup.applySelection(
+            enabledIDs: Set(syncIDs),
+            syncProviderIDs: syncIDs,
+            defaults: suite
+        )
+        try ProviderPreferencesMirror.export(from: suite, into: container.mainContext)
+
+        ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(
+            syncProviderIDs: syncIDs,
+            defaults: suite
+        )
+        suite.set(true, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+        ProviderFirstLaunchSetup.completeWithoutPortals(syncProviderIDs: syncIDs, defaults: suite)
+
+        let outcome = await ProviderPreferencesImportGate.awaitAndApply(
+            context: container.mainContext,
+            defaults: suite,
+            timeout: .milliseconds(50)
+        )
+
+        guard case .applied(let snap) = outcome else {
+            Issue.record("expected applied without-portals snapshot, got \(outcome)")
+            return
+        }
+        #expect(snap.setupCompleted)
+        #expect(snap.enabledProviderIDs.isEmpty)
+        #expect(ProviderFirstLaunchSetup.isInitialSetupHidden(defaults: suite))
+        #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: suite))
+        #expect(!suite.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey))
+        for providerID in syncIDs {
+            #expect(!AppSettingsKeys.isProviderEnabled(providerID, defaults: suite))
+        }
+    }
+
+    @Test("sticky repair key does not wipe intentional all-on after setupCompleted")
+    func stickyRepairKeyPreservesIntentionalAllOnSelection() async throws {
+        let container = try PersistenceBootstrap.makeInMemoryContainer()
+        let suiteName = "test.prefs.gate.intentionalAllOn.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        defer { suite.removePersistentDomain(forName: suiteName) }
+
+        let syncIDs = ProviderID.syncProviderIDs
+        ProviderFirstLaunchSetup.applySelection(
+            enabledIDs: Set(syncIDs),
+            syncProviderIDs: syncIDs,
+            defaults: suite
+        )
+        ProviderFirstLaunchSetup.markCompleted(defaults: suite)
+        // Stale repair flag from an earlier false-positive pass must not re-wipe user intent.
+        suite.set(true, forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey)
+        try ProviderPreferencesMirror.export(from: suite, into: container.mainContext)
+
+        let outcome = await ProviderPreferencesImportGate.awaitAndApply(
+            context: container.mainContext,
+            defaults: suite,
+            timeout: .milliseconds(50)
+        )
+
+        guard case .applied(let snap) = outcome else {
+            Issue.record("expected applied intentional selection, got \(outcome)")
+            return
+        }
+        #expect(snap.setupCompleted)
+        #expect(snap.enabledProviderIDs == Set(syncIDs))
+        #expect(!ProviderFirstLaunchSetup.shouldPresent(defaults: suite))
+        for providerID in syncIDs {
+            #expect(AppSettingsKeys.isProviderEnabled(providerID, defaults: suite))
+        }
     }
 
     @Test("awaitAndApply returns applied when singleton prefs exist")
