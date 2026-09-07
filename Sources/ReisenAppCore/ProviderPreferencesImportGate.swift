@@ -64,6 +64,10 @@ public enum ProviderPreferencesImportGate {
     ) async -> PrefsImportOutcome {
         recordPrefsImport(result: .started, reason: "gate_start")
 
+        if purgePoisonedMirrorPreferringLocalDefaults(context: context, defaults: defaults) == .failed {
+            return .failed
+        }
+
         if shouldSkipCloudKitWait {
             return outcomeAfterImportAttempt(
                 context: context,
@@ -78,9 +82,6 @@ public enum ProviderPreferencesImportGate {
         do {
             if let existing = try applyImport(from: context, into: defaults),
                existing.setupCompleted {
-                if let terminal = poisonClearTerminalOutcome(context: context, defaults: defaults) {
-                    return terminal
-                }
                 recordPrefsImport(result: .succeeded, reason: "gate_already_present")
                 return .applied(existing)
             }
@@ -166,12 +167,12 @@ public enum ProviderPreferencesImportGate {
         guard shouldObserveRemoteChanges else { return nil }
         guard !isExporting else { return nil }
         guard !isApplyingRemote else { return nil }
+        if purgePoisonedMirrorPreferringLocalDefaults(context: context, defaults: defaults) == .failed {
+            return nil
+        }
         do {
             let before = ProviderPreferencesSnapshot.read(from: defaults)
             let snap = try applyImport(from: context, into: defaults)
-            if poisonClearTerminalOutcome(context: context, defaults: defaults) != nil {
-                return nil
-            }
             guard let snap else { return nil }
             guard snap != before else { return nil }
             return snap
@@ -206,9 +207,6 @@ public enum ProviderPreferencesImportGate {
     ) -> PrefsImportOutcome {
         do {
             let snap = try applyImport(from: context, into: defaults)
-            if let terminal = poisonClearTerminalOutcome(context: context, defaults: defaults) {
-                return terminal
-            }
             if let snap {
                 recordPrefsImport(result: .succeeded, reason: successReasonIfPresent)
                 return .applied(snap)
@@ -221,20 +219,33 @@ public enum ProviderPreferencesImportGate {
         }
     }
 
-    /// `.cleared` / `.failed` beenden den Import-Pfad; `.notNeeded` → weiter.
-    private static func poisonClearTerminalOutcome(
+    /// Vor jedem Import: vergifteten Mirror löschen und **lokale** Defaults exportieren.
+    /// Kein `resetToOptIn` — Repair/User-Setup sind bereits lokal autoritativ.
+    @discardableResult
+    private static func purgePoisonedMirrorPreferringLocalDefaults(
         context: ModelContext,
         defaults: UserDefaults
-    ) -> PrefsImportOutcome? {
-        switch clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
-            context: context,
-            defaults: defaults
-        ) {
-        case .notNeeded:
-            return nil
-        case .cleared:
-            return .noRecord
-        case .failed:
+    ) -> PoisonClearResult {
+        let needsExport = defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+        guard needsExport else {
+            return .notNeeded
+        }
+
+        do {
+            try ProviderPreferencesMirror.deleteAll(in: context)
+            isExporting = true
+            defer { isExporting = false }
+            _ = try ProviderPreferencesMirror.export(from: defaults, into: context)
+            defaults.set(false, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+            recordPrefsImport(
+                result: .succeeded,
+                reason: "false_positive_mirror_cleared"
+            )
+            recordPrefsExport(result: .succeeded, reason: "false_positive_clean_export")
+            return .cleared
+        } catch {
+            defaults.set(true, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
+            recordPrefsImport(result: .failed, reason: "false_positive_mirror_clear_failed")
             return .failed
         }
     }
@@ -246,38 +257,6 @@ public enum ProviderPreferencesImportGate {
         isApplyingRemote = true
         defer { isApplyingRemote = false }
         return try ProviderPreferencesMirror.importApplying(from: context, into: defaults)
-    }
-
-    /// Nach lokalem False-Positive-Repair: Import darf den Mirror-Poison nicht dauerhaft zurückschreiben.
-    private static func clearPoisonedMirrorAfterFalsePositiveRepairIfNeeded(
-        context: ModelContext,
-        defaults: UserDefaults
-    ) -> PoisonClearResult {
-        let needsExport = defaults.bool(forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
-        let reinfectedAfterRepair =
-            defaults.bool(forKey: ProviderEnabledDefaultsMigration.falsePositiveRepairKey)
-            && ProviderEnabledDefaultsMigration.isFalsePositiveAllOn(defaults: defaults)
-
-        guard needsExport || reinfectedAfterRepair else {
-            return .notNeeded
-        }
-
-        // Mirror zuerst leeren; Defaults erst nach erfolgreichem Delete — sonst Reinfektion bei Delete-Fail.
-        do {
-            try ProviderPreferencesMirror.deleteAll(in: context)
-            ProviderEnabledDefaultsMigration.resetToOptInClearingSetup(defaults: defaults)
-            defaults.set(false, forKey: ProviderEnabledDefaultsMigration.needsMirrorExportKey)
-            recordPrefsImport(
-                result: .succeeded,
-                reason: needsExport
-                    ? "false_positive_mirror_cleared"
-                    : "false_positive_mirror_reinfection_cleared"
-            )
-            return .cleared
-        } catch {
-            recordPrefsImport(result: .failed, reason: "false_positive_mirror_clear_failed")
-            return .failed
-        }
     }
 
     private static func recordPrefsImport(result: DiagnosticResult, reason: String) {
