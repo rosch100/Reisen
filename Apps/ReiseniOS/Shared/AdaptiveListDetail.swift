@@ -1,5 +1,8 @@
 import SwiftUI
 
+import ReisenAppCore
+import ReisenDiagnostics
+
 private enum AdaptiveUsesSplitNavigationKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -15,7 +18,7 @@ extension EnvironmentValues {
 /// Regular width: `NavigationSplitView`. Compact: `NavigationStack`.
 struct AdaptiveListDetail<ListContent: View, DetailContent: View, EmptyDetail: View, Selection: Hashable>: View {
     @Binding var selection: Selection?
-    /// Einmaliger Compact-Push (z. B. nach Paste-Import-Sichern), ohne List-Selection-Doppelpush.
+    /// Einmaliger Compact-Push (User-Tip / Paste-Import), ohne List-Selection-Doppelpush.
     @Binding var compactPush: Selection?
     @ViewBuilder var list: () -> ListContent
     @ViewBuilder var detail: (Selection) -> DetailContent
@@ -80,10 +83,11 @@ struct CompactUUIDDestination<Destination: View>: ViewModifier {
     }
 }
 
-/// Split: Button setzt Selection. Compact: NavigationLink.
+/// Split: Button setzt Selection. Compact: Selection + `compactPush` (Path-Append).
 struct AdaptiveUUIDSelectionRow<Label: View>: View {
     let id: UUID
     @Binding var selection: UUID?
+    @Binding var compactPush: UUID?
     let usesSplit: Bool
     @ViewBuilder var label: () -> Label
 
@@ -98,9 +102,43 @@ struct AdaptiveUUIDSelectionRow<Label: View>: View {
             }
             .buttonStyle(.plain)
         } else {
-            NavigationLink(value: id) {
+            Button {
+                var nextSelection = selection
+                var nextPush = compactPush
+                CompactListNavigation.applyUserSelect(
+                    id: id,
+                    selection: &nextSelection,
+                    compactPush: &nextPush
+                )
+                selection = nextSelection
+                compactPush = nextPush
+                Self.recordCompactUserSelect()
+            } label: {
                 label()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private static func recordCompactUserSelect() {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "compact_list_select"
+                    ),
+                    component: "AdaptiveUUIDSelectionRow",
+                    phase: "navigation",
+                    event: "compact_user_select",
+                    result: .succeeded,
+                    reason: "path_push_via_compact_push",
+                    visibility: .localDebugOnly
+                )
+            )
         }
     }
 }

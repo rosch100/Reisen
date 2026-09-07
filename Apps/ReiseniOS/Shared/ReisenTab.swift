@@ -56,6 +56,7 @@ struct ReisenTab: View {
                 mode: .create,
                 onSaved: { newTrip in
                     selectedTripID = newTrip.id
+                    compactPushTripID = newTrip.id
                 }
             )
             .reisenSheetDetents()
@@ -84,6 +85,7 @@ struct ReisenTab: View {
                 filteredTrips: filteredTrips,
                 searchText: $searchText,
                 selectedTripID: $selectedTripID,
+                compactPushTripID: $compactPushTripID,
                 focusBookingID: $focusBookingID,
                 onCreateTrip: { showCreateTrip = true },
                 onOpenSync: onOpenSync,
@@ -98,6 +100,7 @@ struct ReisenTab: View {
                 filteredTrips: filteredTrips,
                 searchText: $searchText,
                 selectedTripID: $selectedTripID,
+                compactPushTripID: $compactPushTripID,
                 focusBookingID: $focusBookingID,
                 onCreateTrip: { showCreateTrip = true },
                 onRequestDelete: { trip in
@@ -172,6 +175,7 @@ private struct TripListPane: View {
     let filteredTrips: [SDTrip]
     @Binding var searchText: String
     @Binding var selectedTripID: UUID?
+    @Binding var compactPushTripID: UUID?
     @Binding var focusBookingID: UUID?
     var onCreateTrip: () -> Void
     #if REISEN_PROVIDER_SYNC
@@ -200,31 +204,8 @@ private struct TripListPane: View {
                 let currentTrips = filteredTrips.filter { !$0.isElapsed() }
                 let elapsedTrips = filteredTrips.filter { $0.isElapsed() }
                 let gapBadges = SDTrip.listGapBadgeCounts(for: filteredTrips)
-                List(selection: $selectedTripID) {
-                    ForEach(currentTrips) { trip in
-                        tripRow(trip, gapCount: gapBadges[trip.id])
-                            .tag(trip.id)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(L10n.string(.commonDelete), role: .destructive) {
-                                    onRequestDelete(trip)
-                                }
-                            }
-                    }
-                    if !elapsedTrips.isEmpty {
-                        Section(L10n.string(.bookingElapsed)) {
-                            ForEach(elapsedTrips) { trip in
-                                tripRow(trip, gapCount: gapBadges[trip.id])
-                                    .tag(trip.id)
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                        Button(L10n.string(.commonDelete), role: .destructive) {
-                                            onRequestDelete(trip)
-                                        }
-                                    }
-                            }
-                        }
-                    }
-                }
-                .searchable(text: $searchText, prompt: L10n.string(.tripSearchTrips))
+                tripList(currentTrips: currentTrips, elapsedTrips: elapsedTrips, gapBadges: gapBadges)
+                    .searchable(text: $searchText, prompt: L10n.string(.tripSearchTrips))
             }
         }
         .navigationTitle(L10n.string(.tabTrips))
@@ -234,8 +215,50 @@ private struct TripListPane: View {
     }
 
     @ViewBuilder
+    private func tripList(
+        currentTrips: [SDTrip],
+        elapsedTrips: [SDTrip],
+        gapBadges: [UUID: Int]
+    ) -> some View {
+        let rows = Group {
+            ForEach(currentTrips) { trip in
+                tripRow(trip, gapCount: gapBadges[trip.id])
+                    .tag(trip.id)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(L10n.string(.commonDelete), role: .destructive) {
+                            onRequestDelete(trip)
+                        }
+                    }
+            }
+            if !elapsedTrips.isEmpty {
+                Section(L10n.string(.bookingElapsed)) {
+                    ForEach(elapsedTrips) { trip in
+                        tripRow(trip, gapCount: gapBadges[trip.id])
+                            .tag(trip.id)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(L10n.string(.commonDelete), role: .destructive) {
+                                    onRequestDelete(trip)
+                                }
+                            }
+                    }
+                }
+            }
+        }
+        if CompactListNavigation.listUsesSelectionBinding(usesSplit: usesSplit) {
+            List(selection: $selectedTripID) { rows }
+        } else {
+            List { rows }
+        }
+    }
+
+    @ViewBuilder
     private func tripRow(_ trip: SDTrip, gapCount: Int?) -> some View {
-        AdaptiveUUIDSelectionRow(id: trip.id, selection: $selectedTripID, usesSplit: usesSplit) {
+        AdaptiveUUIDSelectionRow(
+            id: trip.id,
+            selection: $selectedTripID,
+            compactPush: $compactPushTripID,
+            usesSplit: usesSplit
+        ) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(trip.title)
@@ -250,5 +273,6 @@ private struct TripListPane: View {
                 }
             }
         }
+        .accessibilityIdentifier(UITestingIdentifiers.tripRow(trip.id))
     }
 }
