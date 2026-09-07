@@ -129,12 +129,22 @@ struct TripDetailIOS: View {
                         trip: trip,
                         bookings: trip.timelineBookings()
                     ) { booking in
-                        NavigationLink(value: PresentedBookingID(id: booking.id)) {
-                            OpenBookingRow(
-                                booking: booking,
-                                partnerTitles: overlapPartnerTitles(for: booking.id)
-                            )
+                        Button {
+                            presentBookingDetail(bookingID: booking.id)
+                        } label: {
+                            HStack {
+                                OpenBookingRow(
+                                    booking: booking,
+                                    partnerTitles: overlapPartnerTitles(for: booking.id)
+                                )
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(UITestingIdentifiers.bookingRow(booking.id))
                         .contextMenu {
                             BookingCopyConfirmationMenuItems(booking: booking)
                             if let url = booking.browserURL {
@@ -167,9 +177,6 @@ struct TripDetailIOS: View {
                 }
                 .navigationTitle(trip.title)
                 .id(trip.id)
-                .navigationDestination(for: PresentedBookingID.self) { token in
-                    BookingDetailIOS(bookingID: token.id)
-                }
                 .navigationDestination(item: $presentedBookingID) { token in
                     BookingDetailIOS(bookingID: token.id)
                 }
@@ -224,8 +231,38 @@ struct TripDetailIOS: View {
 
     private func applyFocusBookingIfNeeded() {
         guard let bookingID = focusBookingID else { return }
-        presentedBookingID = PresentedBookingID(id: bookingID)
+        presentBookingDetail(bookingID: bookingID)
         focusBookingID = nil
+    }
+
+    private func presentBookingDetail(bookingID: UUID) {
+        var presentedID = presentedBookingID?.id
+        TripBookingDetailNavigation.applyUserSelect(
+            bookingID: bookingID,
+            presentedBookingID: &presentedID
+        )
+        presentedBookingID = presentedID.map(PresentedBookingID.init(id:))
+        Self.recordBookingDetailSelect()
+    }
+
+    private static func recordBookingDetailSelect() {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "trip_booking_detail_select"
+                    ),
+                    component: "TripDetailIOS",
+                    phase: "navigation",
+                    event: "booking_detail_select",
+                    result: .succeeded,
+                    reason: "item_destination_via_presented_binding",
+                    visibility: .localDebugOnly
+                )
+            )
+        }
     }
 
     private func deletePendingBooking() {
