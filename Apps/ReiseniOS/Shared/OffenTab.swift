@@ -365,18 +365,25 @@ struct OpenBookingsScreen: View {
                         }
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(L10n.string(.commonDelete), role: .destructive) {
-                            requestDeleteBooking(booking)
+                        ForEach(
+                            BookingRowSwipeActions.actions(
+                                for: .openBooking(offersCreateTripOnLeading: !usesSplit),
+                                edge: .trailing
+                            ),
+                            id: \.self
+                        ) { action in
+                            openBookingSwipeButton(action, booking: booking)
                         }
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        if !usesSplit {
-                            Button {
-                                createTripFromBooking(booking.id)
-                            } label: {
-                                CreateTripFromBookingsLabel()
-                            }
-                            .tint(.accentColor)
+                        ForEach(
+                            BookingRowSwipeActions.actions(
+                                for: .openBooking(offersCreateTripOnLeading: !usesSplit),
+                                edge: .leading
+                            ),
+                            id: \.self
+                        ) { action in
+                            openBookingSwipeButton(action, booking: booking)
                         }
                     }
             } else {
@@ -387,6 +394,29 @@ struct OpenBookingsScreen: View {
                 )
                     .tag(booking.id)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func openBookingSwipeButton(
+        _ action: BookingRowSwipeAction,
+        booking: SDBooking
+    ) -> some View {
+        switch action {
+        case .delete:
+            Button(L10n.string(.commonDelete), role: .destructive) {
+                requestDeleteBooking(booking)
+            }
+            .accessibilityIdentifier(UITestingIdentifiers.swipeBookingDelete)
+        case .createTripFromBooking:
+            Button {
+                createTripFromBooking(booking.id)
+            } label: {
+                CreateTripFromBookingsLabel()
+            }
+            .tint(.accentColor)
+        case .removeFromTrip:
+            EmptyView()
         }
     }
 
