@@ -52,6 +52,8 @@ public enum UITestingIdentifiers {
     public static let elapsedOpenBookingsMailbox = "reisen.elapsed-open-bookings.mailbox"
     public static let tripEditor = "reisen.trip.editor"
     public static let tripEditorTitleField = "reisen.trip.editor.title"
+    public static let tripEditorDestinationField = "reisen.trip.editor.destination"
+    public static let tripEditorNotesField = "reisen.trip.editor.notes"
     public static let tripEditorSave = "reisen.trip.editor.save"
     public static let assignBookingsSheet = "reisen.assign-bookings.sheet"
     public static let assignBookingsConfirm = "reisen.assign-bookings.confirm"
