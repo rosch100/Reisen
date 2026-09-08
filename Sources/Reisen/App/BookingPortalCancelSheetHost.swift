@@ -3,7 +3,7 @@ import AppKit
 import WebKit
 import ReisenAppCore
 import ReisenDomain
-import ReisenProviders
+import ReisenProviderSync
 import ReisenSharedUI
 
 extension View {
@@ -22,14 +22,17 @@ struct BookingPortalCancelSheetHost: View {
 
     @Environment(\.providerSessionHub) private var hub
     @State private var loadFailed = false
+    @State private var cancellationLikelyCompleted = false
 
     var body: some View {
         BookingPortalCancelSheetChrome(loadFailed: loadFailed, onDismiss: dismiss) {
             CancelSessionWebHost(
                 webView: hub?.webView(for: request.providerID),
+                providerID: request.providerID,
                 url: request.url,
                 allowsEmbed: hub?.allowsEmbed(on: .cancelSheet) ?? false,
-                onLoadFailed: { loadFailed = true }
+                onLoadFailed: { loadFailed = true },
+                onCompletionDetected: { cancellationLikelyCompleted = true }
             )
         }
         .frame(minWidth: 720, minHeight: 520)
@@ -38,6 +41,10 @@ struct BookingPortalCancelSheetHost: View {
         }
         .onDisappear {
             hub?.setWebViewDisplayOwner(.syncHost)
+            PortalCancelProviderResync.consumeCompletionAndRequest(
+                &cancellationLikelyCompleted,
+                providerID: request.providerID
+            )
         }
     }
 
@@ -49,12 +56,18 @@ struct BookingPortalCancelSheetHost: View {
 
 private struct CancelSessionWebHost: NSViewRepresentable {
     var webView: WKWebView?
+    var providerID: ProviderID
     var url: URL
     var allowsEmbed: Bool
     var onLoadFailed: () -> Void
+    var onCompletionDetected: () -> Void
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onLoadFailed: onLoadFailed)
+    func makeCoordinator() -> BookingPortalCancelSheetNavigation {
+        BookingPortalCancelSheetNavigation(
+            providerID: providerID,
+            onLoadFailed: onLoadFailed,
+            onCompletionDetected: onCompletionDetected
+        )
     }
 
     func makeNSView(context: Context) -> NSView {
@@ -66,12 +79,14 @@ private struct CancelSessionWebHost: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         context.coordinator.onLoadFailed = onLoadFailed
+        context.coordinator.onCompletionDetected = onCompletionDetected
+        context.coordinator.providerID = providerID
         if allowsEmbed {
             embedIfNeeded(in: nsView, context: context)
         }
     }
 
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+    static func dismantleNSView(_ nsView: NSView, coordinator: BookingPortalCancelSheetNavigation) {
         coordinator.releaseNavigationDelegate()
     }
 
@@ -89,63 +104,6 @@ private struct CancelSessionWebHost: NSViewRepresentable {
             ])
         }
         context.coordinator.adopt(webView)
-        if context.coordinator.loadedURL != url {
-            context.coordinator.loadedURL = url
-            webView.load(URLRequest(url: url))
-        }
-    }
-
-    final class Coordinator: NSObject, WKNavigationDelegate {
-        var onLoadFailed: () -> Void
-        var loadedURL: URL?
-        weak var observedWebView: WKWebView?
-        private var previousNavigationDelegate: (any WKNavigationDelegate)?
-
-        init(onLoadFailed: @escaping () -> Void) {
-            self.onLoadFailed = onLoadFailed
-        }
-
-        func adopt(_ webView: WKWebView) {
-            if observedWebView === webView { return }
-            releaseNavigationDelegate()
-            previousNavigationDelegate = WebViewNavigationDelegateHandoff.take(webView, owner: self)
-            observedWebView = webView
-        }
-
-        func releaseNavigationDelegate() {
-            WebViewNavigationDelegateHandoff.release(
-                observedWebView,
-                owner: self,
-                previous: previousNavigationDelegate
-            )
-            previousNavigationDelegate = nil
-            observedWebView = nil
-        }
-
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            onLoadFailed()
-        }
-
-        func webView(
-            _ webView: WKWebView,
-            didFailProvisionalNavigation navigation: WKNavigation!,
-            withError error: Error
-        ) {
-            onLoadFailed()
-        }
-
-        @MainActor
-        func webView(
-            _ webView: WKWebView,
-            decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
-        ) {
-            decisionHandler(
-                ProviderWebViewNavigationPolicy.navigationActionPolicy(
-                    url: navigationAction.request.url,
-                    isMainFrame: navigationAction.targetFrame?.isMainFrame ?? false
-                )
-            )
-        }
+        context.coordinator.prepareLoad(url: url)
     }
 }

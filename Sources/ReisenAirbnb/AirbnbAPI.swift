@@ -32,6 +32,12 @@ enum AirbnbAPI {
         return "\(baseURL.absoluteString)/experience_alteration/\(encoded)?flow=oneCancel&productType=experience"
     }
 
+    /// Live Stay-Cancel: `/alterations/stays/{code}/cancel`; Host wie `baseURL`.
+    static func stayCancellationURL(confirmationCode: String) -> String {
+        let encoded = encodedPathSegment(confirmationCode)
+        return "\(baseURL.absoluteString)/alterations/stays/\(encoded)/cancel"
+    }
+
     private static func encodedPathSegment(_ value: String) -> String {
         var pathAllowed = CharacterSet.urlPathAllowed
         pathAllowed.remove(charactersIn: "/")

@@ -180,6 +180,10 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .reisenSyncAllProviders)) { _ in
             Task { await runSyncAll() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .reisenSyncProvider)) { note in
+            guard let providerID = note.object as? ProviderID else { return }
+            Task { await runSyncAfterPortalCancel(providerID) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .reisenNewTrip)) { _ in
             showCreateTrip = true
         }
@@ -761,6 +765,16 @@ struct ContentView: View {
                 NavigationHintURLs.ordered(hubURLString: sessionHub.lastURLString(for: id))
             },
             diagnosticRunID: runID
+        )
+    }
+
+    @MainActor
+    private func runSyncAfterPortalCancel(_ providerID: ProviderID) async {
+        await PortalCancelProviderResync.run(
+            providerID: providerID,
+            syncStore: store,
+            sessionHub: sessionHub,
+            settings: syncAllSettings
         )
     }
 

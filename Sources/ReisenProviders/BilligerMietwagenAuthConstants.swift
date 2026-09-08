@@ -8,7 +8,7 @@ public enum BilligerMietwagenAuthConstants {
     public static let floytAPIHostSuffix = ".floyt.com"
     public static let reservationPathPrefix = "/reservation"
     public static let accountPathPrefix = "\(reservationPathPrefix)/account"
-    /// SPA Cancel ohne Buchungs-ID (Session-Cookies); Sheet-Spec Live-Beleg.
+    /// SPA Cancel-Pfad (Gast-Lookup ohne Detail-Kontext; scoped Cancel nur via Buchungsdetail).
     public static let cancellationPath = "\(reservationPathPrefix)/cancellation"
 
     /// `X-Whitelabel` aus HAR `POST …/auth/v1/login` (nicht Hostname).

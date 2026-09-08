@@ -57,7 +57,7 @@ public enum BilligerMietwagenBookingsParser {
                 title: PlaceLabel.route(from: fromCity, to: toCity) ?? operatorName,
                 confirmationCode: NonEmpty.string(item.reservationId),
                 externalUrl: BilligerMietwagenWebConstants.bookingPageURL(id: id),
-                cancellationUrl: BilligerMietwagenWebConstants.cancellationPageURL,
+                cancellationUrl: BilligerMietwagenWebConstants.bookingPageURL(id: id),
                 locationFrom: fromCity,
                 locationTo: toCity,
                 operatorName: operatorName,

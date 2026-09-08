@@ -32,6 +32,7 @@ extension OpodoTripsGraphQLParser {
                 title: hotel.accommodationName,
                 confirmationCode: hotel.id ?? trip.id,
                 externalUrl: externalUrl,
+                cancellationUrl: externalUrl,
                 locationTo: hotel.city,
                 locationToAddress: PostalAddress.lines(
                     street: hotel.address,
