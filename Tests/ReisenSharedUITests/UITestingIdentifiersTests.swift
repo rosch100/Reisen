@@ -26,6 +26,8 @@ import ReisenDomain
     #expect(UITestingIdentifiers.addBooking == "reisen.action.add-booking")
     #expect(UITestingIdentifiers.tripEditor == "reisen.trip.editor")
     #expect(UITestingIdentifiers.tripEditorTitleField == "reisen.trip.editor.title")
+    #expect(UITestingIdentifiers.tripEditorDestinationField == "reisen.trip.editor.destination")
+    #expect(UITestingIdentifiers.tripEditorNotesField == "reisen.trip.editor.notes")
     #expect(UITestingIdentifiers.tripEditorSave == "reisen.trip.editor.save")
     #expect(UITestingIdentifiers.assignBookingsSheet == "reisen.assign-bookings.sheet")
     #expect(UITestingIdentifiers.assignBookingsConfirm == "reisen.assign-bookings.confirm")

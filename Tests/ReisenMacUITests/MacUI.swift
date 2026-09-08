@@ -269,10 +269,10 @@ struct MacUI {
         return item
     }
 
-    func createTripViaEmptyCTA(title: String) {
+    func createTripViaEmptyCTA(title: String, destination: String? = nil, notes: String? = nil) {
         dismissProviderSetupIfPresent()
         waitFor(UITestingIdentifiers.emptyStateNewTrip).click()
-        fillAndSaveTripEditor(title: title)
+        fillAndSaveTripEditor(title: title, destination: destination, notes: notes)
     }
 
     func createTripViaMenu(title: String) {
@@ -337,10 +337,23 @@ struct MacUI {
         app.typeKey(.return, modifierFlags: [])
     }
 
-    private func fillAndSaveTripEditor(title: String) {
+    private func fillAndSaveTripEditor(title: String, destination: String? = nil, notes: String? = nil) {
         let titleField = waitFor(UITestingIdentifiers.tripEditorTitleField)
         titleField.click()
         titleField.typeText(title)
+
+        let destinationField = waitFor(UITestingIdentifiers.tripEditorDestinationField)
+        if let destination {
+            destinationField.click()
+            destinationField.typeText(destination)
+        }
+
+        let notesField = waitFor(UITestingIdentifiers.tripEditorNotesField)
+        if let notes {
+            notesField.click()
+            notesField.typeText(notes)
+        }
+
         waitFor(UITestingIdentifiers.tripEditorSave).click()
     }
 }
