@@ -441,9 +441,11 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchEmpty()
         ui.waitForWindow()
         let title = "UI Test Created Trip"
-        ui.createTripViaEmptyCTA(title: title)
+        let destination = "UI Test Destination"
+        ui.createTripViaEmptyCTA(title: title, destination: destination, notes: "UI Test Notes")
         XCTAssertFalse(ui.element(UITestingIdentifiers.tripEditor).waitForExistence(timeout: 3))
         ui.waitForLabelContaining(title)
+        ui.waitForLabelContaining(destination)
     }
 
     func testNewTripMenuCreatesTrip() {

@@ -29,6 +29,8 @@ struct TripDetailIOS: View {
     @State private var showRemoveFromTripConfirmation = false
     @State private var presentedBookingID: PresentedBookingID?
     @State private var cancelRequest: BookingPortalCancelRequest?
+    @State private var bookingCreateDraft: BookingEditorDraft?
+    @State private var showCreateBooking = false
 
     init(tripID: UUID, focusBookingID: Binding<UUID?> = .constant(nil)) {
         self.tripID = tripID
@@ -121,6 +123,9 @@ struct TripDetailIOS: View {
                             }
                         }
                         if trip.resolvedBookings.isEmpty {
+                            Button(L10n.string(.actionAddBooking)) {
+                                startCreateBooking(for: trip)
+                            }
                             Button(L10n.string(.actionAssignBookings)) {
                                 showAssignBookings = true
                             }
@@ -208,8 +213,21 @@ struct TripDetailIOS: View {
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            startCreateBooking(for: trip)
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel(L10n.string(.actionAddBooking))
+                        .accessibilityIdentifier(UITestingIdentifiers.addBooking)
+                        .help(L10n.string(.tripAddBookingHelp))
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button(L10n.string(.commonEdit)) { tripToEdit = trip }
+                            Button(L10n.string(.actionAddBooking)) {
+                                startCreateBooking(for: trip)
+                            }
                             Button(L10n.string(.actionAssignBookings)) { showAssignBookings = true }
                             Divider()
                             Button(L10n.string(.actionDeleteTrip), role: .destructive) {
@@ -223,6 +241,13 @@ struct TripDetailIOS: View {
                 .sheet(item: $tripToEdit) { trip in
                     TripEditorSheet(mode: .edit, trip: trip)
                     .reisenSheetDetents()
+                }
+                .sheet(isPresented: $showCreateBooking) {
+                    TripCreateBookingSheetIOS(
+                        trip: trip,
+                        draft: $bookingCreateDraft,
+                        isPresented: $showCreateBooking
+                    )
                 }
                 .sheet(isPresented: $showAssignBookings) {
                     AssignBookingsSheet(trip: trip, candidates: assignCandidates(for: trip))
@@ -283,6 +308,14 @@ struct TripDetailIOS: View {
     private func requestRemoveFromTrip(_ booking: SDBooking) {
         pendingRemoveBooking = booking
         showRemoveFromTripConfirmation = true
+    }
+
+    private func startCreateBooking(for trip: SDTrip) {
+        TripCreateBookingSheetIOS.start(
+            draft: &bookingCreateDraft,
+            isPresented: &showCreateBooking,
+            trip: trip
+        )
     }
 
     private func applyFocusBookingIfNeeded() {

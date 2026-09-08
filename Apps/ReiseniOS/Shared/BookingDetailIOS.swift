@@ -118,6 +118,7 @@ struct BookingDetailIOS: View {
             } label: {
                 Label(L10n.string(.commonEdit), systemImage: "pencil")
             }
+            .accessibilityIdentifier(UITestingIdentifiers.bookingDetailEdit)
             .help(L10n.string(.tripEditBookingHelp))
 
             Button(role: .destructive) {

@@ -23,6 +23,8 @@ public struct TripEditorSheet: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var title: String
+    @State private var destination: String
+    @State private var notes: String
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var errorMessage: String?
@@ -50,17 +52,23 @@ public struct TripEditorSheet: View {
 
         if let trip {
             _title = State(initialValue: trip.title)
+            _destination = State(initialValue: trip.destination ?? "")
+            _notes = State(initialValue: trip.notes ?? "")
             _startDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: trip.startDate))
             _endDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: trip.endDate))
             focusTitleOnAppear = false
         } else if let seed {
             // TripCreateSeed bounds are HotelStayDate GMT anchors (TripDateBounds).
             _title = State(initialValue: seed.title ?? "")
+            _destination = State(initialValue: "")
+            _notes = State(initialValue: "")
             _startDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: seed.startDate))
             _endDate = State(initialValue: HotelStayDate.localPickerDate(fromStored: seed.endDate))
             focusTitleOnAppear = seed.title?.isEmpty ?? true
         } else {
             _title = State(initialValue: "")
+            _destination = State(initialValue: "")
+            _notes = State(initialValue: "")
             _startDate = State(initialValue: defaultStart)
             _endDate = State(initialValue: defaultEnd)
             focusTitleOnAppear = true
@@ -90,6 +98,11 @@ public struct TripEditorSheet: View {
                     TextField(L10n.string(.tripNameField), text: $title)
                         .accessibilityIdentifier(UITestingIdentifiers.tripEditorTitleField)
                         .focused($focusedField, equals: .title)
+                    TextField(L10n.string(.tripDestination), text: $destination)
+                        .accessibilityIdentifier(UITestingIdentifiers.tripEditorDestinationField)
+                    TextField(L10n.string(.tripNotes), text: $notes, axis: .vertical)
+                        .lineLimit(3...6)
+                        .accessibilityIdentifier(UITestingIdentifiers.tripEditorNotesField)
                     DatePicker(L10n.string(.tripStartDate), selection: $startDate, displayedComponents: .date)
                     DatePicker(L10n.string(.tripEndDate), selection: $endDate, displayedComponents: .date)
                 }
@@ -127,7 +140,7 @@ public struct TripEditorSheet: View {
             .padding(16)
         }
 #if os(macOS)
-        .frame(minWidth: 480, idealWidth: 480, minHeight: 320, maxHeight: 440)
+        .frame(minWidth: 480, idealWidth: 480, minHeight: 400, maxHeight: 560)
         .presentationSizing(.fitted)
 #endif
         .onAppear {
@@ -214,13 +227,26 @@ public struct TripEditorSheet: View {
                     destination: nil,
                     notes: nil
                 )
+                TripEditorPersistedFields.apply(
+                    title: trimmed,
+                    startDate: persistedStart,
+                    endDate: persistedEnd,
+                    destinationRaw: destination,
+                    notesRaw: notes,
+                    to: newTrip
+                )
                 modelContext.insert(newTrip)
                 savedTrip = newTrip
             case .edit:
                 guard let trip else { return }
-                trip.title = trimmed
-                trip.startDate = persistedStart
-                trip.endDate = persistedEnd
+                TripEditorPersistedFields.apply(
+                    title: trimmed,
+                    startDate: persistedStart,
+                    endDate: persistedEnd,
+                    destinationRaw: destination,
+                    notesRaw: notes,
+                    to: trip
+                )
                 savedTrip = trip
             }
 
