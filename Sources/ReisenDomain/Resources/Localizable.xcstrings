@@ -4198,13 +4198,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Private Übernachtung"
+            "value": "Lücke: Übernachtung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Private overnight stay"
+            "value": "Gap: Overnight stay"
           }
         }
       }
@@ -4214,13 +4214,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zwischentransport"
+            "value": "Lücke: Transport"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecting transport"
+            "value": "Gap: Transport"
           }
         }
       }

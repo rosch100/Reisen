@@ -511,6 +511,11 @@ final class MacUISmokeTests: XCTestCase {
     func testGapEditorIsReachableForSeededGap() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
+        // Gap-Platzhalter (Lücke: …) bleiben editierbar; Icon/Datumsformat teilen SharedUI-SSOT.
+        XCTAssertTrue(
+            ui.waitFor(UITestingIdentifiers.seededGapRow).exists,
+            "Seed-Gap-Zeile muss in der Timeline sichtbar sein"
+        )
         ui.editSeededGapTitle("UI Testing Edited Gap")
         ui.waitForLabelContaining("UI Testing Edited Gap")
     }

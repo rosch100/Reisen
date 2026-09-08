@@ -5,7 +5,7 @@ import ReisenData
 import ReisenDomain
 
 @MainActor
-@Test func autoGapReconciler_createsLodgingBetweenFlights() throws {
+@Test func autoGapReconciler_createsNoLodgingBetweenFlights() throws {
     let container = try PersistenceBootstrap.makeInMemoryContainer()
     let context = container.mainContext
     let tripStart = Date(timeIntervalSince1970: 1_000_000)
@@ -42,9 +42,62 @@ import ReisenDomain
     let autos = try context.fetch(FetchDescriptor<SDBooking>()).filter {
         $0.providerRaw == ProviderID.autoGap.rawValue
     }
-    #expect(autos.count == 1)
-    #expect(autos[0].bookingTypeRaw == BookingType.hotel.rawValue)
-    #expect(autos[0].autoGapIdentityKey == AutoGapIdentity.key(from: early.id, to: late.id, role: .lodging))
+    #expect(autos.isEmpty)
+}
+
+@MainActor
+@Test func autoGapReconciler_removesLegacyAutoLodgingOnReconcile() throws {
+    let container = try PersistenceBootstrap.makeInMemoryContainer()
+    let context = container.mainContext
+    let trip = SDTrip(
+        id: UUID(),
+        title: "ES",
+        startDate: Date(timeIntervalSince1970: 1_000_000),
+        endDate: Date(timeIntervalSince1970: 1_900_000)
+    )
+    context.insert(trip)
+    let early = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.flight.rawValue,
+        startAt: Date(timeIntervalSince1970: 1_000_000),
+        endAt: Date(timeIntervalSince1970: 1_100_000),
+        locationFrom: "FRA",
+        locationTo: "BCN",
+        statusRaw: BookingStatus.confirmed.rawValue,
+        trip: trip
+    )
+    let late = SDBooking(
+        providerRaw: ProviderID.manual.rawValue,
+        bookingTypeRaw: BookingType.flight.rawValue,
+        startAt: Date(timeIntervalSince1970: 1_700_000),
+        endAt: Date(timeIntervalSince1970: 1_800_000),
+        locationFrom: "BCN",
+        locationTo: "FRA",
+        statusRaw: BookingStatus.confirmed.rawValue,
+        trip: trip
+    )
+    let legacy = SDBooking(
+        providerRaw: ProviderID.autoGap.rawValue,
+        bookingTypeRaw: BookingType.hotel.rawValue,
+        title: "Hotel",
+        startAt: Date(timeIntervalSince1970: 1_100_000),
+        endAt: Date(timeIntervalSince1970: 1_700_000),
+        statusRaw: BookingStatus.unknown.rawValue,
+        autoGapIdentityKey: AutoGapIdentity.key(from: early.id, to: late.id, role: .lodging),
+        trip: trip
+    )
+    context.insert(early)
+    context.insert(late)
+    context.insert(legacy)
+    try context.save()
+
+    try AutoGapReconcileTrigger.run(tripIDs: [trip.id], in: context)
+    try context.save()
+
+    let autos = try context.fetch(FetchDescriptor<SDBooking>()).filter {
+        $0.providerRaw == ProviderID.autoGap.rawValue
+    }
+    #expect(autos.isEmpty)
 }
 
 @MainActor
@@ -159,7 +212,17 @@ import ReisenDomain
     )
     context.insert(early)
     context.insert(late)
-    try AutoGapReconcileTrigger.run(tripIDs: [tripA.id], in: context)
+    let legacyAuto = SDBooking(
+        providerRaw: ProviderID.autoGap.rawValue,
+        bookingTypeRaw: BookingType.hotel.rawValue,
+        title: "Hotel",
+        startAt: Date(timeIntervalSince1970: 1_100_000),
+        endAt: Date(timeIntervalSince1970: 1_700_000),
+        statusRaw: BookingStatus.unknown.rawValue,
+        autoGapIdentityKey: AutoGapIdentity.key(from: early.id, to: late.id, role: .lodging),
+        trip: tripA
+    )
+    context.insert(legacyAuto)
     try context.save()
     #expect(try context.fetch(FetchDescriptor<SDBooking>()).filter {
         $0.providerRaw == ProviderID.autoGap.rawValue && $0.trip?.id == tripA.id
@@ -209,13 +272,18 @@ import ReisenDomain
     )
     context.insert(early)
     context.insert(late)
-    try AutoGapReconcileTrigger.run(tripIDs: [trip.id], in: context)
-    try context.save()
-    let auto = try #require(
-        try context.fetch(FetchDescriptor<SDBooking>()).first {
-            $0.providerRaw == ProviderID.autoGap.rawValue
-        }
+    let auto = SDBooking(
+        providerRaw: ProviderID.autoGap.rawValue,
+        bookingTypeRaw: BookingType.hotel.rawValue,
+        title: "Hotel",
+        startAt: Date(timeIntervalSince1970: 1_100_000),
+        endAt: Date(timeIntervalSince1970: 1_700_000),
+        statusRaw: BookingStatus.unknown.rawValue,
+        autoGapIdentityKey: AutoGapIdentity.key(from: early.id, to: late.id, role: .lodging),
+        trip: trip
     )
+    context.insert(auto)
+    try context.save()
     try BookingDeletion.perform(booking: auto, in: context)
     let autos = try context.fetch(FetchDescriptor<SDBooking>()).filter {
         $0.providerRaw == ProviderID.autoGap.rawValue
