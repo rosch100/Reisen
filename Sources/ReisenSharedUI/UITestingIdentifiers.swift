@@ -55,6 +55,8 @@ public enum UITestingIdentifiers {
     public static let tripEditorDestinationField = "reisen.trip.editor.destination"
     public static let tripEditorNotesField = "reisen.trip.editor.notes"
     public static let tripEditorSave = "reisen.trip.editor.save"
+    /// Gap-Zeile in Trip-Timeline (macOS GapRow / iOS TripTimelineSection).
+    public static let tripGapRow = "reisen.trip.gap.row"
     public static let assignBookingsSheet = "reisen.assign-bookings.sheet"
     public static let assignBookingsConfirm = "reisen.assign-bookings.confirm"
     public static let assignBookingsAction = "reisen.action.assign-bookings"

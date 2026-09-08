@@ -72,11 +72,13 @@ public struct TripTimelineSection<BookingRow: View>: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Label(presentation.displayTitle, systemImage: "arrow.left.arrow.right")
+                    Label(presentation.displayTitle, systemImage: presentation.systemImageName)
                         .font(.headline)
-                    Text(gapRangeText(for: gap))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let rangeText = GapPresentation.rangeText(for: gap, kind: presentation.effectiveKind) {
+                        Text(rangeText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Text(L10n.gapKindDisplay(presentation.effectiveKind))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
@@ -88,25 +90,15 @@ public struct TripTimelineSection<BookingRow: View>: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(UITestingIdentifiers.tripGapRow)
         .contextMenu {
-            let rangeText = gapRangeText(for: gap)
             GapCopyMenuItems(
                 title: presentation.displayTitle,
-                rangeText: rangeText,
+                rangeText: GapPresentation.rangeText(for: gap, kind: presentation.effectiveKind),
                 kindLabel: L10n.gapKindDisplay(presentation.effectiveKind),
                 priceText: presentation.priceText
             )
         }
-    }
-
-    private func gapRangeText(for gap: ComputedGap) -> String {
-        let tz = HotelTimeZone.resolve(
-            fromOffsetSeconds: gap.fromBooking.hotelOffsetSeconds,
-            toOffsetSeconds: gap.toBooking.hotelOffsetSeconds
-        )
-        let start = Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M. HH:mm", timeZone: tz)
-        let end = Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M. HH:mm", timeZone: tz)
-        return "\(start) – \(end)"
     }
 
     private func saveGap(

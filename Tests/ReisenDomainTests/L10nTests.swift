@@ -83,6 +83,8 @@ import ReisenDomain
         #expect(L10n.string(.tabTrips) == "Reisen")
         #expect(!L10n.string(.actionOpenPasswords).localizedCaseInsensitiveContains("Passwords"))
         #expect(L10n.string(.actionOpenPasswords) == "Passwörter öffnen")
+        #expect(L10n.gapKindDisplay(.lodging) == "Lücke: Übernachtung")
+        #expect(L10n.gapKindDisplay(.transport) == "Lücke: Transport")
     }
 }
 
