@@ -75,6 +75,11 @@ public struct GapPresentation: Equatable {
         return Formatting.formatCurrencyAmount(priceAmount, currencyCode: priceCurrencyCode)
     }
 
+    /// SF Symbol SSOT für Gap-Zeilen (macOS + iOS).
+    public var systemImageName: String {
+        effectiveKind.systemImageName
+    }
+
     public static func resolve(computed: ComputedGap, saved: SDGap?) -> GapPresentation {
         GapPresentation(
             key: computed.identityKey,
@@ -83,6 +88,26 @@ public struct GapPresentation: Equatable {
             priceAmount: saved?.priceAmount,
             priceCurrencyCode: saved?.priceCurrencyCode
         )
+    }
+
+    /// Datumszeile: Übernachtung hotel-kalendarisch ohne Uhrzeit; Transport ohne Zeitraum.
+    public static func rangeText(for gap: ComputedGap, kind: GapKind) -> String? {
+        switch kind {
+        case .transport:
+            return nil
+        case .lodging, .both:
+            let start = HotelStayDate.format(
+                gap.gapStart,
+                dateFormat: "d.M.",
+                legacyHotelOffsetSeconds: gap.fromBooking.hotelOffsetSeconds
+            )
+            let end = HotelStayDate.format(
+                gap.gapEnd,
+                dateFormat: "d.M.",
+                legacyHotelOffsetSeconds: gap.toBooking.hotelOffsetSeconds
+            )
+            return "\(start) – \(end)"
+        }
     }
 
     /// Transport-Lücken: Kind + Start-/Zielstadt, wenn ableitbar (nie volle Adresse).

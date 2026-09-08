@@ -50,7 +50,7 @@ private func booking(
     #expect(gaps[0].endAt.timeIntervalSince(gaps[0].startAt) <= SpatialGapDetector.maxTransportDuration)
 }
 
-@Test func planner_hotelPairDifferentCities_plansLodgingNotInventedTrain() {
+@Test func planner_hotelPairDifferentCities_plansNoAutoBookings() {
     let day: TimeInterval = 24 * 60 * 60
     let hotelA = booking(type: .hotel, start: 0, end: day, locationFrom: "Paris", locationTo: "Paris")
     let hotelB = booking(type: .hotel, start: 5 * day, end: 6 * day, locationFrom: "Berlin", locationTo: "Berlin")
@@ -59,14 +59,10 @@ private func booking(
         tripEnd: Date(timeIntervalSince1970: 7 * day),
         bookings: [hotelA, hotelB]
     )
-    #expect(plan.contains { $0.role == .lodging && $0.bookingType == .hotel })
-    #expect(!plan.contains { $0.bookingType == .train })
-    let lodging = plan.filter { $0.role == .lodging }
-    #expect(lodging.count == 1)
-    #expect(lodging[0].endAt.timeIntervalSince(lodging[0].startAt) >= GapDetector.defaultMinGap)
+    #expect(plan.isEmpty)
 }
 
-@Test func gapDetector_hotelPairDifferentCities_splitsTransportAndLodging() {
+@Test func gapDetector_hotelPairDifferentCities_lodgingFullSpan_transportOnLastDay() {
     let day: TimeInterval = 24 * 60 * 60
     let hotelA = booking(type: .hotel, start: 0, end: day, locationFrom: "Paris", locationTo: "Paris")
     let hotelB = booking(type: .hotel, start: 5 * day, end: 6 * day, locationFrom: "Berlin", locationTo: "Berlin")
@@ -80,10 +76,66 @@ private func booking(
     #expect(transport.count == 1)
     #expect(lodging.count == 1)
     guard let transportGap = transport.first, let lodgingGap = lodging.first else { return }
-    #expect(transportGap.gapEnd.timeIntervalSince(transportGap.gapStart) <= SpatialGapDetector.maxTransportDuration)
-    #expect(transportGap.gapStart == hotelA.endAt)
-    #expect(lodgingGap.gapStart == transportGap.gapEnd)
+    #expect(lodgingGap.gapStart == hotelA.endAt)
     #expect(lodgingGap.gapEnd == hotelB.startAt)
+    let expectedTransportStart = max(
+        lodgingGap.gapStart,
+        min(
+            HotelStayDate.dateOnly(
+                fromStoredOrParsed: lodgingGap.gapEnd,
+                legacyHotelOffsetSeconds: hotelB.hotelOffsetSeconds ?? hotelA.hotelOffsetSeconds
+            ),
+            lodgingGap.gapEnd
+        )
+    )
+    #expect(transportGap.gapStart == expectedTransportStart)
+    #expect(transportGap.gapEnd == lodgingGap.gapEnd)
+}
+
+@Test func gapDetector_placeChangeZeroDuration_yieldsNoGaps() {
+    let instant: TimeInterval = 1_000_000
+    let hotelA = booking(type: .hotel, start: instant - 86_400, end: instant, locationTo: "Paris")
+    let hotelB = booking(type: .hotel, start: instant, end: instant + 86_400, locationFrom: "Berlin")
+    let gaps = GapDetector().computeGaps(
+        bookings: [hotelA, hotelB],
+        tripStart: Date(timeIntervalSince1970: instant - 86_400),
+        tripEnd: Date(timeIntervalSince1970: instant + 86_400)
+    ).filter { !$0.isTripBoundary }
+    #expect(gaps.isEmpty)
+}
+
+@Test func gapDetector_sameLocalDayCheckoutToCheckin_transportClampedToLodgingStart() {
+    // Checkout 10:00 und Check-in 22:00 am selben GMT-Tag (dayStart vor from.endAt).
+    let checkout = Date(timeIntervalSince1970: 10 * 3_600)
+    let checkin = Date(timeIntervalSince1970: 22 * 3_600)
+    let hotelA = booking(
+        type: .hotel,
+        start: 0,
+        end: checkout.timeIntervalSince1970,
+        locationFrom: "Paris",
+        locationTo: "Paris"
+    )
+    let hotelB = booking(
+        type: .hotel,
+        start: checkin.timeIntervalSince1970,
+        end: checkin.timeIntervalSince1970 + 86_400,
+        locationFrom: "Berlin",
+        locationTo: "Berlin"
+    )
+    let gaps = GapDetector().computeGaps(
+        bookings: [hotelA, hotelB],
+        tripStart: Date(timeIntervalSince1970: 0),
+        tripEnd: Date(timeIntervalSince1970: 3 * 86_400)
+    ).filter { !$0.isTripBoundary }
+    // Intervall 12h == defaultMinGap → Lodging + Transport möglich
+    let lodging = gaps.filter { $0.kind == .lodging }
+    let transport = gaps.filter { $0.kind == .transport }
+    #expect(lodging.count == 1)
+    #expect(transport.count == 1)
+    guard let lodgingGap = lodging.first, let transportGap = transport.first else { return }
+    #expect(transportGap.gapStart >= lodgingGap.gapStart)
+    #expect(transportGap.gapStart == hotelA.endAt)
+    #expect(transportGap.gapEnd == lodgingGap.gapEnd)
 }
 
 @Test func spatial_skipsWhenEitherPlaceMissing() {
@@ -92,7 +144,7 @@ private func booking(
     #expect(SpatialGapDetector.detect(sortedReal: [a, b]).isEmpty)
 }
 
-@Test func planner_createsHotelForLongTemporalLodgingBetweenFlights() {
+@Test func planner_createsNoAutoHotelForLongTemporalLodgingBetweenFlights() {
     let flightOut = booking(type: .flight, start: 1_000_000, end: 1_100_000, locationFrom: "FRA", locationTo: "BCN")
     let cancelledHotel = booking(
         type: .hotel,
@@ -102,18 +154,15 @@ private func booking(
         locationFrom: "Barcelona"
     )
     let flightBack = booking(type: .flight, start: 1_700_000, end: 1_800_000, locationFrom: "BCN", locationTo: "FRA")
-    // Gap between flights: 1_100_000 → 1_700_000 = 600_000s ≈ 166h > 12h; classifier lodging
     let plan = AutoGapPlanner.plan(
         tripStart: Date(timeIntervalSince1970: 1_000_000),
         tripEnd: Date(timeIntervalSince1970: 1_900_000),
         bookings: [flightOut, cancelledHotel, flightBack]
     )
-    let lodging = plan.filter { $0.role == .lodging }
-    #expect(lodging.count == 1)
-    #expect(lodging[0].bookingType == .hotel)
+    #expect(plan.isEmpty)
 }
 
-@Test func planner_ignoresAutoGapBookingsAsInput() {
+@Test func planner_ignoresAutoGapBookingsAsInput_stillEmptyPlan() {
     let early = booking(type: .flight, start: 1_000_000, end: 1_100_000, locationFrom: "FRA", locationTo: "MAD")
     let late = booking(type: .flight, start: 1_700_000, end: 1_800_000, locationFrom: "MAD", locationTo: "FRA")
     let filler = booking(
@@ -129,7 +178,7 @@ private func booking(
         tripEnd: Date(timeIntervalSince1970: 1_900_000),
         bookings: [early, filler, late]
     )
-    #expect(plan.contains { $0.role == .lodging })
+    #expect(plan.isEmpty)
 }
 
 @Test func reconcile_updatesSameIdentityWhenTimesChange() {
