@@ -67,6 +67,7 @@ public enum UITestingIdentifiers {
 
     /// First-Launch Provider-Setup (Spec: `setup.providers.*`).
     public static let providerSetupSheet = "setup.providers.sheet"
+    public static let providerSetupSelectAll = "setup.providers.all"
     public static let providerSetupContinue = "setup.providers.continue"
     /// „Ohne Buchungsportale“ (historischer Identifier `setup.providers.later`).
     public static let providerSetupLater = "setup.providers.later"

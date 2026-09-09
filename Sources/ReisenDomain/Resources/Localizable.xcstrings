@@ -9409,6 +9409,54 @@
         }
       }
     },
+    "setup.providers.all": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "setup.providers.all_select_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Portale auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all portals"
+          }
+        }
+      }
+    },
+    "setup.providers.all_deselect_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Portale abwählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deselect all portals"
+          }
+        }
+      }
+    },
     "setup.providers.subtitle": {
       "localizations": {
         "de": {
