@@ -9,6 +9,7 @@ public enum LoginAutofillScript {
         let usernameStepSubmit = LoginAutofillFieldHeuristic.usernameStepSubmitPattern
         let socialSubmit = LoginAutofillFieldHeuristic.socialSubmitPattern
         let passwordHay = LoginAutofillFieldHeuristic.passwordHayPattern
+        let oneTimeCodeHay = LoginAutofillFieldHeuristic.oneTimeCodeHayPattern
         // Body für `WKWebView.callAsyncJavaScript` (async Function-Body):
         // Arguments `username`/`password` sind lokal gebunden; IIFE würde den Return verwerfen.
         return """
@@ -194,8 +195,19 @@ public enum LoginAutofillScript {
             return /(e-?mail|mobile|phone|telefon|handy|username|benutzer|user|login|account|cl_login)/i.test(hay);
           }
 
+          function looksLikeOneTimeCode(el) {
+            if (!el) return false;
+            try {
+              const auto = (el.getAttribute('autocomplete') || '').toLowerCase();
+              if (auto === 'one-time-code') return true;
+            } catch (_) {}
+            const hay = (dataHay(el) || '').toLowerCase();
+            return /(\(oneTimeCodeHay))/i.test(hay);
+          }
+
           function looksLikePassword(el) {
             if (!el || el.tagName !== 'INPUT') return false;
+            if (looksLikeOneTimeCode(el)) return false;
             const type = (el.type || '').toLowerCase();
             if (type === 'password') return true;
             const hay = (dataHay(el) || '').toLowerCase();
