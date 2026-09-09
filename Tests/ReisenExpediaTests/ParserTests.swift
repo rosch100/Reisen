@@ -320,7 +320,7 @@ private enum ExpediaFixtureLoader {
         ExpediaExternalURL.manageBookingURL(
             tripViewId: "egti-TEST-VIEW-0001",
             tripItemId: "dGVzdFRyaXBJdGVtSWQwMDAx"
-        ).hasSuffix("/manage-booking")
+        )?.hasSuffix("/manage-booking") == true
     )
     let withQuery =
         "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/abc?utm=x#section"
@@ -333,6 +333,19 @@ private enum ExpediaFixtureLoader {
             to: "https://www.expedia.de/trips/egti-x/details/abc/manage-booking?q=1"
         ) == "https://www.expedia.de/trips/egti-x/details/abc/manage-booking?q=1"
     )
+    #expect(
+        ExpediaExternalURL.manageBookingURL(
+            tripViewId: "egti-TEST-VIEW-0001",
+            tripItemId: "item with space"
+        )?.contains("item%20with%20space") == true
+    )
+}
+
+@Test func expediaScheduleMonthNumberRejectsAmbiguousPrefix() {
+    #expect(ExpediaScheduleParser.monthNumber("Dez") == 12)
+    #expect(ExpediaScheduleParser.monthNumber("J.") == nil)
+    #expect(ExpediaScheduleParser.monthNumber("j") == nil)
+    #expect(ExpediaScheduleParser.monthNumber("janua") == 1)
 }
 
 @Test func expediaHotelServicingSoftPathsVisibleInParsers() {

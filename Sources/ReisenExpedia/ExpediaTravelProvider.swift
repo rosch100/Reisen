@@ -326,10 +326,16 @@ private extension ExpediaTravelProvider {
             }
             return result
         } catch {
-            if !(error is CancellationError) {
+            switch ExpediaHotelSidePath.roomDetailsHandling(for: error) {
+            case .softContinue:
                 await recordEnrichSidePathFailure(phase: "booking_servicing", error: error)
+                return result
+            case .hardFail:
+                if !(error is CancellationError) {
+                    await recordEnrichSidePathFailure(phase: "booking_servicing", error: error)
+                }
+                throw error
             }
-            throw error
         }
     }
 

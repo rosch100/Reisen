@@ -69,8 +69,8 @@ public enum ProviderSessionLiveProbe {
 
         var skipsAccountPage: Bool {
             switch self {
-            case .opodo, .traveloka, .expedia: return true
-            case .billigerMietwagen, .check24: return false
+            case .opodo, .traveloka: return true
+            case .billigerMietwagen, .check24, .expedia: return false
             }
         }
 

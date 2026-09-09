@@ -102,7 +102,7 @@ Jeder Sync-Provider hat **genau einen** Mode pro `(provider, bookingType)`-Zelle
 | Check24 | * | distinct | Catalog (`mapDraft`) | Live `…/kundenbereich/buchung/{uuid}?action=cancel` | 2 (done) |
 | Expedia.de | `.hotel` | distinct | Enrich (`BookingServicing` cancel review) | HAR + Fixture `expedia_booking_servicing_hotel_*`; Cancel fehlt → soft, kein Sync-Abbruch | 3 (done) |
 | Expedia.de | `.carRental` | inPageOnOpen | Catalog (`…/manage-booking`) | Assist nur Car + Manage-Booking + Car-Marker JS | 3 (done) |
-| Expedia.de | `.flight` / `.activity` | none | — | Kein Cancel-Capture (nur synthetic Catalog); Cancel-URL/Mode erst mit Beleg | 3 |
+| Expedia.de | `.flight` / `.activity` / `.ferry` / `.train` / `.other` | none | — | Kein Cancel-Capture (Flight/Activity nur synthetic Catalog); Cancel-URL/Mode erst mit Beleg | 3 |
 | Manual | — | distinct (Editor) | Nutzer | HTTPS-Feld | — |
 
 **Welle 1 (verbindlicher Spec-Scope):** Policy-SSOT + Presentation `linkMode` (inkl. `.none` → hidden) + Copy-Helper + Docs-Folgen + Extract/Tests für **GYG (inPageOnOpen)** und **billiger-mietwagen (inPageOnOpen**, `cancellationUrl == externalUrl`, Assist „Buchung stornieren“ — Spec 2026-09-07). Traveloka/Airbnb Experience Regression.

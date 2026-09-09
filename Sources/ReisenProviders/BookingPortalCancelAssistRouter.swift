@@ -25,7 +25,7 @@ public final class BookingPortalCancelAssistRouter {
     public func webViewDidFinish(
         _ webView: WKWebView,
         provider: ProviderID,
-        bookingType: BookingType? = nil
+        bookingType: BookingType?
     ) {
         opodo.onAlreadyCancelled = onPortalCancelCompleted
         billigerMietwagen.webViewDidFinish(webView, provider: provider)

@@ -36,13 +36,12 @@ public final class ExpediaCarCancelAssistRunner {
         let deadline = ContinuousClock.now + .nanoseconds(
             Int64(PortalCancelAssistSupport.pollTimeoutNanoseconds)
         )
-        var clickedConfirm = false
+        var clickedEntry = false
         while !Task.isCancelled, ContinuousClock.now < deadline {
             let step = await evaluateStep(webView)
             switch step {
             case .clickedConfirm:
                 record(result: .started, reason: "confirm_clicked")
-                clickedConfirm = true
                 await pollDialogGone(on: webView, deadline: deadline)
                 return
             case .alreadyConfirm:
@@ -50,6 +49,7 @@ public final class ExpediaCarCancelAssistRunner {
                 // Click confirm on next loop.
             case .clickedEntry:
                 record(result: .started, reason: "entry_clicked")
+                clickedEntry = true
             case .dialogGone:
                 // Confirm success is handled in `pollDialogGone` after `.clickedConfirm`.
                 break
@@ -65,7 +65,7 @@ public final class ExpediaCarCancelAssistRunner {
             try? await Task.sleep(nanoseconds: PortalCancelAssistSupport.pollIntervalNanoseconds)
         }
         if !Task.isCancelled {
-            record(result: .failed, reason: clickedConfirm ? "assist_timeout" : "entry_missing")
+            record(result: .failed, reason: clickedEntry ? "assist_timeout" : "entry_missing")
         }
     }
 

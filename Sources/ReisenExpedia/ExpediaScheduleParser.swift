@@ -61,10 +61,12 @@ enum ExpediaScheduleParser {
             "dez": 12, "dezember": 12, "dec": 12,
         ]
         if let exact = map[key] { return exact }
-        for (k, v) in map where key.hasPrefix(k) || k.hasPrefix(key) {
-            return v
-        }
-        return nil
+        // Prefix fallback only for unambiguous tokens (e.g. "janua" → januar); reject "j"/"J.".
+        guard key.count >= 3 else { return nil }
+        let candidates = Set(
+            map.filter { key.hasPrefix($0.key) || $0.key.hasPrefix(key) }.map(\.value)
+        )
+        return candidates.count == 1 ? candidates.first : nil
     }
 
     static func makeBerlinDate(
