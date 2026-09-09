@@ -207,6 +207,9 @@ struct SyncTab: View {
     private var syncContent: some View {
         let sessionReady = sessionStatus == .sessionReady
         return VStack(spacing: 0) {
+            if showsUnscopedSyncFeedback {
+                unscopedSyncFeedbackBanner
+            }
             if SyncBrowserChrome.showsLoginChromeAboveWebView(isSessionReady: sessionReady) {
                 loginChrome
             } else {
@@ -540,6 +543,26 @@ struct SyncTab: View {
         }
     }
 
+    private var storeMessageBelongsToSelectedProvider: Bool {
+        guard let syncStore else { return false }
+        return SyncFeedbackScope.belongsToSelectedProvider(
+            selected: selectedProviderID,
+            isSyncing: syncStore.isSyncing,
+            syncingProviderID: syncStore.syncingProviderID,
+            messageProviderID: syncStore.messageProviderID
+        )
+    }
+
+    private var showsUnscopedSyncFeedback: Bool {
+        guard let syncStore else { return false }
+        guard SyncFeedbackScope.showsUnscopedAggregateBanner(
+            messageProviderID: syncStore.messageProviderID
+        ) else { return false }
+        let hasStatus = syncStore.statusMessage?.isEmpty == false
+        let hasError = syncStore.errorMessage?.isEmpty == false
+        return hasStatus || hasError
+    }
+
     private var actionBar: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let rememberLoginMessage {
@@ -547,14 +570,16 @@ struct SyncTab: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            if let statusMessage = syncStore?.statusMessage {
-                Text(statusMessage).foregroundStyle(.secondary)
-            }
-            if let errorMessage = syncStore?.errorMessage {
-                syncErrorBanner(
-                    errorMessage,
-                    privacyPane: syncStore?.privacySettingPane
-                )
+            if storeMessageBelongsToSelectedProvider {
+                if let statusMessage = syncStore?.statusMessage {
+                    Text(statusMessage).foregroundStyle(.secondary)
+                }
+                if let errorMessage = syncStore?.errorMessage {
+                    syncErrorBanner(
+                        errorMessage,
+                        privacyPane: syncStore?.privacySettingPane
+                    )
+                }
             }
 
             HStack(spacing: 12) {
@@ -612,6 +637,42 @@ struct SyncTab: View {
     }
 
     @ViewBuilder
+    private var unscopedSyncFeedbackBanner: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let statusMessage = syncStore?.statusMessage, !statusMessage.isEmpty {
+                Text(statusMessage)
+                    .font(.footnote)
+                    .foregroundStyle(syncStore?.errorMessage == nil ? Color.secondary : Color.red)
+            }
+            if let errorMessage = syncStore?.errorMessage, !errorMessage.isEmpty {
+                let privacyPane = syncStore?.privacySettingPane
+                Label(
+                    privacyPane != nil ? L10n.string(.syncAccessDenied) : L10n.string(.syncError),
+                    systemImage: privacyPane != nil ? "lock.slash" : "exclamationmark.triangle.fill"
+                )
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.red)
+                Text(errorMessage)
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
+                    .font(.footnote)
+                if let privacyPane {
+                    OpenPrivacySettingsButton(pane: privacyPane)
+                }
+                PublicGitHubIssueReportActions(
+                    syncError: errorMessage,
+                    providerID: nil,
+                    store: syncStore
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.bar)
+        .accessibilityIdentifier(UITestingIdentifiers.syncUnscopedFeedback)
+    }
+
+    @ViewBuilder
     private func syncErrorBanner(
         _ errorMessage: String,
         privacyPane: PrivacySettingPane?
@@ -641,6 +702,7 @@ struct SyncTab: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityIdentifier(UITestingIdentifiers.syncProviderScopedError)
     }
 
     private func ensureSelectedProviderIsEnabled() {
