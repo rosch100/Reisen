@@ -316,22 +316,26 @@ private struct ProviderWebView: NSViewRepresentable {
     }
 
     private func loadLoginURLIfNeeded(in webView: FocusableWKWebView, context: Context) {
-        guard let loginURL else { return }
-        // Nur bei Binding-Wechsel (nicht nach OAuth/Redirects in updateNSView).
-        guard context.coordinator.loadedLoginURL != loginURL else { return }
-        // Remount: neuer Coordinator, Hub-WebView behalten — Login nicht erneut anstoßen.
-        if let hub = sessionHub,
-           hub.requestedLoginURL(for: diagnosticContext.providerID) == loginURL {
-            context.coordinator.loadedLoginURL = loginURL
+        let decision = ProviderLoginURLLoadIntent.decide(
+            loginURL: loginURL,
+            allowsEmbed: true,
+            coordinatorLoadedURL: context.coordinator.loadedLoginURL,
+            hubRequestedURL: sessionHub?.requestedLoginURL(for: diagnosticContext.providerID),
+            webViewURLString: webView.url?.absoluteString,
+            isLoading: webView.isLoading
+        )
+        switch decision {
+        case .skip:
             return
-        }
-        context.coordinator.dismissAuthPopup()
-        context.coordinator.loadedLoginURL = loginURL
-        sessionHub?.noteRequestedLoginURL(diagnosticContext.providerID, url: loginURL)
-        let current = webView.url?.absoluteString
-        // Hub-WebView kann noch eine alte URL haben (z. B. Opodo /travel/secure/).
-        if current != loginURL.absoluteString {
-            webView.load(URLRequest(url: loginURL))
+        case .markLoaded:
+            guard let loginURL else { return }
+            context.coordinator.loadedLoginURL = loginURL
+            sessionHub?.noteRequestedLoginURL(diagnosticContext.providerID, url: loginURL)
+        case .load(let url):
+            context.coordinator.dismissAuthPopup()
+            context.coordinator.loadedLoginURL = url
+            sessionHub?.noteRequestedLoginURL(diagnosticContext.providerID, url: url)
+            webView.load(URLRequest(url: url))
         }
     }
 

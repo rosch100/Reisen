@@ -53,9 +53,12 @@ struct SyncTab: View {
     private var rememberLoginAutomatically: Bool = false
 
     var body: some View {
+        // Hub-Slots vor WebViewHost — sonst updateWebView no-op / zweites WebView vor onAppear.
+        let enabled = enabledProviderIDs
+        let _ = sessionHub?.syncEnabledProviders(Set(enabled))
         NavigationStack {
             Group {
-                if enabledProviderIDs.isEmpty {
+                if enabled.isEmpty {
                     emptyProviders
                 } else {
                     syncContent
