@@ -26,10 +26,20 @@ struct BookingPortalCancelTitleTests {
     #expect(!BookingPortalOpenTitle.short.isEmpty)
 }
 
-@Test func bookingPortalCancelTitle_buttonIsStornierenInGerman() {
+@Test func bookingPortalCancelTitle_buttonNamesPortalNavigationInGerman() {
     L10n.withLocale(Locale(identifier: "de")) {
-        #expect(L10n.string(.actionCancelInPortal) == "Stornieren")
-        #expect(BookingPortalCancelTitle.button == "Stornieren")
+        #expect(L10n.string(.actionCancelInPortal) == "Stornieren im Portal…")
+        #expect(BookingPortalCancelTitle.button == "Stornieren im Portal…")
+        #expect(BookingPortalCancelTitle.button.contains("Portal"))
+        #expect(BookingPortalCancelTitle.button.hasSuffix("…"))
+    }
+}
+
+@Test func bookingPortalCancelTitle_buttonNamesPortalNavigationInEnglish() {
+    L10n.withLocale(Locale(identifier: "en")) {
+        #expect(L10n.string(.actionCancelInPortal) == "Cancel in Portal…")
+        #expect(BookingPortalCancelTitle.button == "Cancel in Portal…")
+        #expect(BookingPortalCancelTitle.button.hasSuffix("…"))
     }
 }
 
