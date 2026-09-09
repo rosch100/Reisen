@@ -14,6 +14,43 @@ import WebKit
     #expect(ProviderWebViewDisplayPolicy.allowsEmbed(owner: .cancelSheet, host: .cancelSheet))
 }
 
+/// Regression: Probe darf die Hub-WebView des sichtbaren Sync-Providers nicht stehlen
+/// (iOS Login/OTP → schwarze Sync-Fläche bei needsLogin).
+@Test func providerWebViewDisplayPolicy_probeMustNotEmbedForegroundSyncProvider() {
+    #expect(
+        !ProviderWebViewDisplayPolicy.allowsEmbed(
+            owner: .syncHost,
+            host: .probe,
+            providerID: .traveloka,
+            foregroundSyncProviderID: .traveloka
+        )
+    )
+    #expect(
+        ProviderWebViewDisplayPolicy.allowsEmbed(
+            owner: .syncHost,
+            host: .sync,
+            providerID: .traveloka,
+            foregroundSyncProviderID: .traveloka
+        )
+    )
+    #expect(
+        ProviderWebViewDisplayPolicy.allowsEmbed(
+            owner: .syncHost,
+            host: .probe,
+            providerID: .check24,
+            foregroundSyncProviderID: .traveloka
+        )
+    )
+    #expect(
+        ProviderWebViewDisplayPolicy.allowsEmbed(
+            owner: .syncHost,
+            host: .probe,
+            providerID: .traveloka,
+            foregroundSyncProviderID: nil
+        )
+    )
+}
+
 @Test @MainActor func providerSessionHub_displayOwnerDefaultsToSyncHostAndResets() {
     let hub = ProviderSessionHub()
     #expect(hub.webViewDisplayOwner == .syncHost)
@@ -21,6 +58,18 @@ import WebKit
     #expect(hub.webViewDisplayOwner == .cancelSheet)
     hub.setWebViewDisplayOwner(.syncHost)
     #expect(hub.webViewDisplayOwner == .syncHost)
+}
+
+@Test @MainActor func providerSessionHub_foregroundClaimBlocksProbeEmbed() {
+    let hub = ProviderSessionHub()
+    hub.syncEnabledProviders([.traveloka, .check24])
+    #expect(hub.allowsEmbed(on: .probe, providerID: .traveloka))
+    hub.setForegroundSyncProviderID(.traveloka)
+    #expect(!hub.allowsEmbed(on: .probe, providerID: .traveloka))
+    #expect(hub.allowsEmbed(on: .sync, providerID: .traveloka))
+    #expect(hub.allowsEmbed(on: .probe, providerID: .check24))
+    hub.setForegroundSyncProviderID(nil)
+    #expect(hub.allowsEmbed(on: .probe, providerID: .traveloka))
 }
 
 @Test @MainActor func providerSessionHub_hasSessionWebViewReflectsSlot() {
