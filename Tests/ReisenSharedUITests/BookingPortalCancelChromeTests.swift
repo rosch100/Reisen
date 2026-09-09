@@ -3,10 +3,10 @@ import Testing
 import ReisenDomain
 @testable import ReisenSharedUI
 
-@Test func bookingPortalCancelChrome_destructiveUsesStornierenTitle() {
+@Test func bookingPortalCancelChrome_portalNavigationUsesExternalIconWithoutDestructiveRole() {
     #expect(BookingPortalCancelTitle.button == L10n.string(.actionCancelInPortal))
     #expect(BookingPortalCancelChrome.systemImage == "arrow.up.right.square")
-    #expect(BookingPortalCancelChrome.usesDestructiveRole)
+    #expect(!BookingPortalCancelChrome.usesDestructiveRole)
 }
 
 @MainActor

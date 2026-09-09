@@ -116,3 +116,29 @@ private let germanLocale = Locale(identifier: "de")
     let withoutDetail = BookingGuestHintPresentation.make(title: "Parken", detail: "")
     #expect(withoutDetail.detail == nil)
 }
+
+@Test func bookingGuestHintPresentation_omitsDetailWhenEqualToTitle() {
+    let duplicate = BookingGuestHintPresentation.make(
+        title: "Gather used towels",
+        detail: "Gather used towels"
+    )
+    #expect(duplicate.title == "Gather used towels")
+    #expect(duplicate.detail == nil)
+
+    let caseInsensitive = BookingGuestHintPresentation.make(
+        title: "Handtücher mitbringen",
+        detail: "  handtücher mitbringen  "
+    )
+    #expect(caseInsensitive.detail == nil)
+}
+
+@Test func bookingCancellationCostLabels_avoidKostenKostenlosEcho() {
+    L10n.withLocale(Locale(identifier: "de")) {
+        let label = BookingDetailLabels.cancellationCost
+        let free = BookingDetailLabels.cancellationFree
+        #expect(label == "Gebühr")
+        #expect(free == "Keine")
+        #expect("\(label) \(free)" != "Kosten Kostenlos")
+        #expect(!free.localizedCaseInsensitiveContains("kosten"))
+    }
+}

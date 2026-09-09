@@ -1,6 +1,6 @@
 import Foundation
 
-/// SSOT-Titel für „Stornieren im Portal“ (Kurzbutton vs. Menü vs. Help).
+/// SSOT-Titel für Portal-Storno (Button/Menü/Help).
 public enum BookingPortalCancelTitle {
     public static var button: String {
         L10n.string(.actionCancelInPortal)

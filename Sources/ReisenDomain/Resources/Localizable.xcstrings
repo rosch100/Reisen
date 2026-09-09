@@ -70,13 +70,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stornieren"
+            "value": "Stornieren im Portal…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancel"
+            "value": "Cancel in Portal…"
           }
         }
       }
@@ -1190,13 +1190,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kosten"
+            "value": "Gebühr"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cost"
+            "value": "Fee"
           }
         }
       }
@@ -1206,13 +1206,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kostenlos"
+            "value": "Keine"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Free"
+            "value": "None"
           }
         }
       }
