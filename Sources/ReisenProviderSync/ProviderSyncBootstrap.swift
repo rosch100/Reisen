@@ -8,6 +8,7 @@ import ReisenOpodo
 import ReisenProviders
 import ReisenTraveloka
 import ReisenBilligerMietwagen
+import ReisenExpedia
 
 /// Produktions-Registry für Private-iOS und macOS (nicht im App-Store-Binary).
 @MainActor
@@ -22,6 +23,7 @@ public enum ProviderSyncBootstrap {
             .getYourGuide: GetYourGuideTravelProvider(),
             .traveloka: TravelokaTravelProvider(),
             .billigerMietwagen: BilligerMietwagenTravelProvider(),
+            .expedia: ExpediaTravelProvider(),
         ]
         let providers = ProviderID.syncProviderIDs.compactMap { providersByID[$0] }
         precondition(
@@ -37,6 +39,7 @@ public enum ProviderSyncBootstrap {
                 AirbnbDeepLinkBuilder(),
                 GetYourGuideDeepLinkBuilder(),
                 TravelokaDeepLinkBuilder(),
+                ExpediaDeepLinkBuilder(),
             ]
         )
     }

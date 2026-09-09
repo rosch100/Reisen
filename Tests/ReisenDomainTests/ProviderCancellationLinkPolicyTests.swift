@@ -22,6 +22,14 @@ import ReisenDomain
         ProviderCancellationLinkPolicy.mode(provider: .billigerMietwagen, bookingType: .carRental)
             == .inPageOnOpen
     )
+    #expect(
+        ProviderCancellationLinkPolicy.mode(provider: .expedia, bookingType: .hotel)
+            == .distinctURL
+    )
+    #expect(
+        ProviderCancellationLinkPolicy.mode(provider: .expedia, bookingType: .carRental)
+            == .inPageOnOpen
+    )
     for type in BookingType.allCases {
         #expect(ProviderCancellationLinkPolicy.mode(provider: .manual, bookingType: type) == .distinctURL)
         #expect(ProviderCancellationLinkPolicy.mode(provider: .opodo, bookingType: type) == .inPageOnOpen)
@@ -83,6 +91,21 @@ import ReisenDomain
             .booking,
             BookingType.allCases.map {
                 (bookingType: $0, mode: $0 == .hotel ? .distinctURL : .none)
+            }
+        ),
+        (
+            .expedia,
+            BookingType.allCases.map {
+                let mode: ProviderCancellationLinkMode
+                switch $0 {
+                case .hotel:
+                    mode = .distinctURL
+                case .carRental, .flight, .activity:
+                    mode = .inPageOnOpen
+                case .ferry, .train, .other:
+                    mode = .none
+                }
+                return (bookingType: $0, mode: mode)
             }
         ),
     ]

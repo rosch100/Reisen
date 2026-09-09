@@ -695,6 +695,12 @@ final class MacUISmokeTests: XCTestCase {
         )
     }
 
+    func testExpediaProviderRowIsReachableInSidebar() {
+        let ui = MacUI.launchPopulated()
+        ui.waitForWindow()
+        _ = ui.waitFor(UITestingIdentifiers.providerRow("expedia"))
+    }
+
     func testPasteImportFixturePersistsBooking() {
         let ui = MacUI.launchPasteImportFixture()
         ui.waitForWindow()

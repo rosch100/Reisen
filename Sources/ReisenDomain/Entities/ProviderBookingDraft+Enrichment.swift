@@ -31,6 +31,7 @@ extension ProviderBookingDraft {
         operatorName = enrichment.operatorName ?? operatorName
         isAllDay = enrichment.isAllDay ?? isAllDay
         assignNonEmpty(enrichment.cancellationUrl, to: \.cancellationUrl)
+        assignNonEmpty(enrichment.confirmationCode, to: \.confirmationCode)
     }
 
     /// Storno ersetzt Katalog-Fristen und Stay-Offset auch dann, wenn das Enrichment leer bzw. `nil` ist.

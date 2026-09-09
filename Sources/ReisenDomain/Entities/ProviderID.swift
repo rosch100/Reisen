@@ -24,6 +24,7 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
         case .getYourGuide: return "GetYourGuide"
         case .traveloka: return "Traveloka"
         case .billigerMietwagen: return "billiger-mietwagen.de"
+        case .expedia: return "Expedia.de"
         case .manual: return L10n.string(.providerManual)
         case .autoGap: return L10n.string(.providerAutoGap)
         default: return rawValue
@@ -37,6 +38,7 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
     public static let getYourGuide = ProviderID(rawValue: "getyourguide")
     public static let traveloka = ProviderID(rawValue: "traveloka")
     public static let billigerMietwagen = ProviderID(rawValue: "billigermietwagen")
+    public static let expedia = ProviderID(rawValue: "expedia")
     /// Lokale / benutzerdefinierte Buchung (wird nicht über Provider-Sync ersetzt).
     public static let manual = ProviderID(rawValue: "manual")
     /// Automatisch erzeugter Lücken-Platzhalter (nur Reconcile; kein Sync).
@@ -44,7 +46,7 @@ public struct ProviderID: RawRepresentable, Hashable, Sendable, Codable, CustomS
 
     /// Registrierte Sync-Provider (SSOT; muss der App-Registry entsprechen).
     public static let syncProviderIDs: [ProviderID] = [
-        .check24, .opodo, .booking, .airbnb, .getYourGuide, .traveloka, .billigerMietwagen,
+        .check24, .opodo, .booking, .airbnb, .getYourGuide, .traveloka, .billigerMietwagen, .expedia,
     ]
 
     /// Sync-/Portal-Provider erwarten ein Brand-SVG; sonst kein Missing-Asset-„?“ in der UI.

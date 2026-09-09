@@ -1,0 +1,59 @@
+{
+  "tripItems": {
+    "__typename": "TripItemsResponse",
+    "itemGroups": [
+      {
+        "__typename": "TripsItemsGroup",
+        "sections": [
+          {
+            "__typename": "TripsItemsSection",
+            "cards": [
+              {
+                "__typename": "TripsUIBookedItemCard",
+                "identifier": "eg:flight:v2:syntheticflight0001",
+                "primary": "FRA → BER",
+                "badge": {
+                  "__typename": "EGDSStandardBadge",
+                  "text": "Gebucht",
+                  "theme": "positive"
+                },
+                "enrichedSecondaries": [
+                  {
+                    "text": "von 20. Nov., 09:15 Uhr bis 20. Nov., 10:25 Uhr",
+                    "__typename": "EGDSPlainText"
+                  },
+                  {
+                    "text": "Reiseplan: 90000000000001",
+                    "__typename": "EGDSPlainText"
+                  }
+                ],
+                "cardAction": {
+                  "__typename": "UILinkAction",
+                  "resource": {
+                    "__typename": "HttpURI",
+                    "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/dGVzdFRyaXBJdGVtSWQwMDAx"
+                  }
+                },
+                "menu": {
+                  "__typename": "TripsUIItemCardMenu",
+                  "items": [
+                    {
+                      "action": {
+                        "analytics": {
+                          "referrerId": "TO.FLT.TripItemMenu.NAV.ManageTrip"
+                        },
+                        "resource": {
+                          "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/dGVzdFRyaXBJdGVtSWQwMDAx/manage-booking"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

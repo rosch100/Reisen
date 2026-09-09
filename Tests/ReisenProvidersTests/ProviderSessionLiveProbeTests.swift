@@ -23,6 +23,11 @@ import Testing
     #expect(check24 != nil)
     #expect(check24?.skipsAccountPage == false)
 
+    let expedia = ProviderSessionLiveProbe.prepare(.shouldProbeExpedia, sessionAlreadyReady: false)
+    #expect(expedia != nil)
+    #expect(expedia?.skipsAccountPage == true)
+    #expect(expedia?.applies(URL(string: "https://www.expedia.de/trips")!) == true)
+
     #expect(ProviderSessionLiveProbe.prepare(.sessionReady, sessionAlreadyReady: false) == nil)
     #expect(ProviderSessionLiveProbe.prepare(.needsLogin, sessionAlreadyReady: false) == nil)
     #expect(ProviderSessionLiveProbe.prepare(.unknown, sessionAlreadyReady: false) == nil)

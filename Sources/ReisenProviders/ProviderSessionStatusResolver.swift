@@ -12,6 +12,7 @@ public enum ProviderSessionStatusHeuristic: Equatable {
     case shouldProbeTraveloka
     case shouldProbeBilligerMietwagen
     case shouldProbeCheck24
+    case shouldProbeExpedia
     case unknown
 }
 
@@ -30,6 +31,11 @@ public enum ProviderSessionStatusResolver {
         // Opodo: /travel/secure/ sieht aus wie Account, Session nur per GraphQL.
         if OpodoSessionProbe.applies(to: url) {
             return .shouldProbeOpodo
+        }
+
+        // Expedia: `/trips` ist Account-Marker, Session nur per Cookie + Trips-HTML.
+        if ExpediaSessionProbe.applies(to: url) {
+            return .shouldProbeExpedia
         }
 
         if AuthPageURLHeuristic.looksLikeAccountPageWithoutLogin(absolute) {

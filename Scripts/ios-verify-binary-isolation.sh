@@ -95,6 +95,7 @@ ADAPTER_URL_MARKERS=(
   "www.opodo.de/frontend-api/service/graphql"
   "traveloka.com/api/v2/user/whoami"
   "consumer-api.floyt.com/useraccount/v1/bookings"
+  "www.expedia.de/graphql"
 )
 
 STORE_FORBIDDEN_SYMBOLS=(
@@ -106,9 +107,12 @@ STORE_FORBIDDEN_SYMBOLS=(
   GetYourGuideTravelProvider
   TravelokaTravelProvider
   BilligerMietwagenTravelProvider
+  ExpediaTravelProvider
   OpodoSessionProbe
   TravelokaSessionProbe
   BilligerMietwagenSessionProbe
+  ExpediaSessionProbe
+  ExpediaCarCancelAssist
   ProviderSessionStatusResolver
 )
 

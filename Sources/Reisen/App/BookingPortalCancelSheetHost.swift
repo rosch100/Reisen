@@ -29,6 +29,7 @@ struct BookingPortalCancelSheetHost: View {
             CancelSessionWebHost(
                 webView: hub?.webView(for: request.providerID),
                 providerID: request.providerID,
+                bookingType: request.bookingType,
                 url: request.url,
                 allowsEmbed: hub?.allowsEmbed(on: .cancelSheet) ?? false,
                 onLoadFailed: { loadFailed = true },
@@ -57,6 +58,7 @@ struct BookingPortalCancelSheetHost: View {
 private struct CancelSessionWebHost: NSViewRepresentable {
     var webView: WKWebView?
     var providerID: ProviderID
+    var bookingType: BookingType?
     var url: URL
     var allowsEmbed: Bool
     var onLoadFailed: () -> Void
@@ -65,6 +67,7 @@ private struct CancelSessionWebHost: NSViewRepresentable {
     func makeCoordinator() -> BookingPortalCancelSheetNavigation {
         BookingPortalCancelSheetNavigation(
             providerID: providerID,
+            bookingType: bookingType,
             onLoadFailed: onLoadFailed,
             onCompletionDetected: onCompletionDetected
         )
@@ -81,6 +84,7 @@ private struct CancelSessionWebHost: NSViewRepresentable {
         context.coordinator.onLoadFailed = onLoadFailed
         context.coordinator.onCompletionDetected = onCompletionDetected
         context.coordinator.providerID = providerID
+        context.coordinator.bookingType = bookingType
         if allowsEmbed {
             embedIfNeeded(in: nsView, context: context)
         }

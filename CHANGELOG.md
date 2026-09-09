@@ -2,6 +2,12 @@
 
 Nennenswerte Änderungen an Reisen. Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- **Expedia.de** als Sync-Provider (`ReisenExpedia`): Katalog/Enrich über Persisted GraphQL, Hotel-Cancel via Booking-Servicing, Mietwagen-Cancel-Assist auf `/manage-booking`, Gap-Suche Hotel (+ Car mit Zeiten)
+- Website/Datenschutz: Expedia.de in Anbieterliste und Haftungsausschluss (DE/EN)
+
 ## [0.2.2] — 2026-09-04
 
 ### Added

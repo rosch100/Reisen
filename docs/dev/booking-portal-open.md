@@ -1,6 +1,6 @@
 # Buchungs-Portal öffnen & Gap-Suche
 
-Stand: 2026-08-28
+Stand: 2026-09-09
 
 Zwei getrennte HTTPS-Pfade:
 
@@ -25,6 +25,7 @@ App-Store-iOS: keine Provider-Registry → keine Gap-Suche; Buchungs-Open über 
 | Check24 Fähre | `https://ferry.check24.de/kundenbereich/buchung/{uuid}` | Browser | unklar / Browser-Fallback |
 | GetYourGuide | `https://www.getyourguide.com/en-us/booking/{hash}` | Browser | best-effort |
 | Traveloka | `…/item/details/{bookingId}?type=&id=` | Browser | best-effort |
+| Expedia.de | `…/trips/{egti}/details/{tripItemId}` | Browser | best-effort |
 | Opodo | `…/travel/secure/#tripdetails/td={token}` | Browser | Nein (Hash) → Safari |
 | Manual | `reisen://manual/{uuid}` | kein Open | kein Open |
 
@@ -43,6 +44,9 @@ Persistiertes `Booking.cancellationUrl` → `BookingExternalURL.browserURL` → 
 | Airbnb Stay | `…/alterations/stays/{code}/cancel` | ja, wenn actionable (≠ Open) |
 | GetYourGuide | = Open-URL (In-Page-Modal) | ja, nur mit Hub-Session + Fristen |
 | billiger-mietwagen.de | `…/reservation/account/bookings/{id}` (= Open; Assist → scoped Cancel) | ja, nur mit Hub-Session + Fristen |
+| Expedia.de Hotel | `…/booking-servicing/lodging/voluntary/cancel/review?…` | ja, wenn actionable (≠ Open) |
+| Expedia.de Mietwagen | `…/details/…/manage-booking` (= In-Page; Assist → Dialog/Confirm) | ja, nur mit Hub-Session + Fristen |
+| Expedia.de Flug/Aktivität | `…/manage-booking` (Ableitung; kein Assist v1) | ja, nur mit Hub-Session + Fristen |
 | Opodo | = Open-URL (`#tripdetails…`; Assist öffnet Bestätigungsdialog) | ja, nur mit Hub-Session + Fristen |
 | Check24 | `…/kundenbereich/buchung/{uuid}?action=cancel` | ja, wenn actionable (≠ Open) |
 | Booking.com Hotel | `…/cancel*.html?…auth_key=…` (aus Confirmation) | ja, wenn actionable (≠ Open) |
@@ -57,12 +61,14 @@ Menge = aktivierte Sync-Provider ∩ Builder. UI: Picker „alle aktiven“ oder
 
 | Kategorie | sichtbar bei GapKind | Builder |
 |-----------|----------------------|---------|
-| Hotel | lodging, both | Check24, Booking.com, Airbnb, Traveloka |
+| Hotel | lodging, both | Check24, Booking.com, Airbnb, Traveloka, Expedia.de |
 | Flug | transport, both | Check24, Booking.com, Traveloka |
 | Erlebnis | lodging, both | GetYourGuide, Traveloka |
-| Fähre / Mietwagen | transport, both | nur mit belegter öffentlicher URL (aktuell keine) |
+| Fähre | transport, both | nur mit belegter öffentlicher URL (aktuell keine) |
+| Mietwagen | transport, both | Expedia.de (nur mit konkreten Gap-Zeiten); sonst keine |
 
 **Opodo:** kein Gap-Builder — öffentliche Prefill-Suche war nicht zuverlässig belegbar (kein Dummy).
+**Expedia.de:** Hotel-Gap (`Hotel-Search`); Mietwagen-Gap (`carsearch/details`) nur wenn Gap konkrete Abhol-/Rückgabezeiten hat.
 
 ## Open-Titel (L10n-SSOT)
 

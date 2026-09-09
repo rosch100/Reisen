@@ -5,23 +5,32 @@ import ReisenData
 public struct BookingPortalCancelRequest: Identifiable, Equatable, Sendable {
     public var id: URL { url }
     public var providerID: ProviderID
+    public var bookingType: BookingType?
     public var url: URL
 
-    public init(providerID: ProviderID, url: URL) {
+    public init(providerID: ProviderID, url: URL, bookingType: BookingType? = nil) {
         self.providerID = providerID
         self.url = url
+        self.bookingType = bookingType
     }
 
     public static func handle(
         _ presentation: BookingPortalCancelPresentation,
         url: URL,
         providerID: ProviderID,
+        bookingType: BookingType? = nil,
         openURL: (URL) -> Void,
         presentSheet: (BookingPortalCancelRequest) -> Void
     ) {
         switch presentation {
         case .sheet:
-            presentSheet(BookingPortalCancelRequest(providerID: providerID, url: url))
+            presentSheet(
+                BookingPortalCancelRequest(
+                    providerID: providerID,
+                    url: url,
+                    bookingType: bookingType
+                )
+            )
         case .safari:
             openURL(url)
         case .hidden:
@@ -40,6 +49,7 @@ public struct BookingPortalCancelRequest: Identifiable, Equatable, Sendable {
             presentation,
             url: url,
             providerID: booking.provider,
+            bookingType: booking.bookingType,
             openURL: openURL,
             presentSheet: presentSheet
         )

@@ -67,6 +67,7 @@ SWIFTPM_SOURCE_PREFIXES: tuple[str, ...] = (
     "Sources/ReisenGetYourGuide/",
     "Sources/ReisenTraveloka/",
     "Sources/ReisenBilligerMietwagen/",
+    "Sources/ReisenExpedia/",
     "Sources/ReisenCrashSignal/",
 )
 
@@ -85,6 +86,7 @@ SWIFTPM_TEST_PREFIXES: tuple[str, ...] = (
     "Tests/ReisenGetYourGuideTests/",
     "Tests/ReisenTravelokaTests/",
     "Tests/ReisenBilligerMietwagenTests/",
+    "Tests/ReisenExpediaTests/",
     "Tests/ReisenSharedUITests/",
 )
 

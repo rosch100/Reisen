@@ -44,6 +44,7 @@ public enum ProviderSessionLiveProbe {
         case traveloka
         case billigerMietwagen
         case check24
+        case expedia
 
         static func from(_ heuristic: ProviderSessionStatusHeuristic) -> Kind? {
             switch heuristic {
@@ -51,6 +52,7 @@ public enum ProviderSessionLiveProbe {
             case .shouldProbeTraveloka: return .traveloka
             case .shouldProbeBilligerMietwagen: return .billigerMietwagen
             case .shouldProbeCheck24: return .check24
+            case .shouldProbeExpedia: return .expedia
             case .sessionReady, .needsLogin, .unknown: return nil
             }
         }
@@ -61,12 +63,13 @@ public enum ProviderSessionLiveProbe {
             case .traveloka: return TravelokaSessionProbe.applies(to:)
             case .billigerMietwagen: return BilligerMietwagenSessionProbe.applies(to:)
             case .check24: return Check24SessionProbe.applies(to:)
+            case .expedia: return ExpediaSessionProbe.applies(to:)
             }
         }
 
         var skipsAccountPage: Bool {
             switch self {
-            case .opodo, .traveloka: return true
+            case .opodo, .traveloka, .expedia: return true
             case .billigerMietwagen, .check24: return false
             }
         }
@@ -87,6 +90,8 @@ public enum ProviderSessionLiveProbe {
                 return try await BilligerMietwagenSessionProbe.fetchIsLoggedIn(using: webView)
             case .check24:
                 return try await Check24SessionProbe.fetchIsLoggedIn(using: webView)
+            case .expedia:
+                return try await ExpediaSessionProbe.fetchIsLoggedIn(using: webView)
             }
         }
     }

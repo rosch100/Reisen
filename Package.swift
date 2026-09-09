@@ -24,6 +24,7 @@ let package = Package(
         .library(name: "ReisenGetYourGuide", targets: ["ReisenGetYourGuide"]),
         .library(name: "ReisenTraveloka", targets: ["ReisenTraveloka"]),
         .library(name: "ReisenBilligerMietwagen", targets: ["ReisenBilligerMietwagen"]),
+        .library(name: "ReisenExpedia", targets: ["ReisenExpedia"]),
         .executable(name: "Voyenna", targets: ["Reisen"]),
         .executable(name: "SyncIOSQuerySchemes", targets: ["SyncIOSQuerySchemes"]),
     ],
@@ -104,6 +105,7 @@ let package = Package(
                 "ReisenGetYourGuide",
                 "ReisenTraveloka",
                 "ReisenBilligerMietwagen",
+                "ReisenExpedia",
             ],
             path: "Sources/ReisenProviderSync",
             swiftSettings: [
@@ -190,6 +192,14 @@ let package = Package(
             name: "ReisenBilligerMietwagen",
             dependencies: ["ReisenDomain", "ReisenProviders"],
             path: "Sources/ReisenBilligerMietwagen",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .target(
+            name: "ReisenExpedia",
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
+            path: "Sources/ReisenExpedia",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]
@@ -318,6 +328,14 @@ let package = Package(
             name: "ReisenBilligerMietwagenTests",
             dependencies: ["ReisenBilligerMietwagen", "ReisenDomain", "ReisenProviders"],
             path: "Tests/ReisenBilligerMietwagenTests",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "ReisenExpediaTests",
+            dependencies: ["ReisenExpedia", "ReisenDomain", "ReisenProviders"],
+            path: "Tests/ReisenExpediaTests",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ]

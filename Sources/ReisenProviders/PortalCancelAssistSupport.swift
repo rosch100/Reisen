@@ -3,7 +3,7 @@ import WebKit
 import ReisenDiagnostics
 import ReisenDomain
 
-/// Shared timing + diagnostics for portal cancel-sheet assists (BM, Opodo).
+/// Shared timing + diagnostics for portal cancel-sheet assists (BM, Opodo, Expedia Car).
 public enum PortalCancelAssistSupport {
     public static let phase = "assist"
     public static let operation = "portal_cancel_assist"
