@@ -132,6 +132,8 @@ struct SyncBackgroundSessionProbe: View {
         let _ = sessionHub?.syncEnabledProviders(Set(enabled))
         ZStack {
             ForEach(enabled, id: \.self) { id in
+                // foregroundSyncProviderID lesen → Observation-Refresh wenn SyncTab Anspruch nimmt.
+                let _ = sessionHub?.foregroundSyncProviderID
                 WebViewHost(
                     loginURL: loginURL(for: id),
                     providerID: id,
@@ -142,7 +144,7 @@ struct SyncBackgroundSessionProbe: View {
                     ),
                     passwordAutofillAllowedHosts: passwordAutofillAllowedHosts(for: id),
                     webView: webViewBinding(for: id),
-                    allowsEmbed: sessionHub?.allowsEmbed(on: .probe) ?? false,
+                    allowsEmbed: sessionHub?.allowsEmbed(on: .probe, providerID: id) ?? false,
                     onDidFinish: { finishedWebView in
                         handleWebNavigationDidFinish(providerID: id, finishedWebView)
                     }

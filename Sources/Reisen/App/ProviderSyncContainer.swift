@@ -91,7 +91,10 @@ struct ProviderSyncContainer: View {
                     webView: backgroundWebViewBinding(for: backgroundProviderID),
                     autofillCredentials: nil,
                     passwordAutofillAllowedHosts: passwordAutofillAllowedHosts(for: backgroundProviderID),
-                    allowsEmbed: hub?.allowsEmbed(on: .probe) ?? false,
+                    allowsEmbed: hub?.allowsEmbed(
+                        on: .probe,
+                        providerID: backgroundProviderID
+                    ) ?? false,
                     diagnosticContext: DiagnosticContext(
                         runID: diagnosticRunID,
                         providerID: backgroundProviderID,
