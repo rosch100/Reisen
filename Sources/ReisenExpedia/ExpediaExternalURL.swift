@@ -42,6 +42,22 @@ enum ExpediaExternalURL {
     }
 
     static func manageBookingURL(tripViewId: String, tripItemId: String) -> String {
-        detailURL(tripViewId: tripViewId, tripItemId: tripItemId) + "/manage-booking"
+        let detail = detailURL(tripViewId: tripViewId, tripItemId: tripItemId)
+        guard let managed = appendingManageBooking(to: detail) else {
+            preconditionFailure("Expedia detail URL must append manage-booking: \(detail)")
+        }
+        return managed
+    }
+
+    /// Appends `/manage-booking` via path segments (preserves query/fragment; idempotent).
+    static func appendingManageBooking(to urlString: String) -> String? {
+        guard var components = URLComponents(string: urlString) else { return nil }
+        let path = components.path
+        if path.lowercased().contains("/manage-booking") {
+            return urlString
+        }
+        let trimmed = path.hasSuffix("/") ? String(path.dropLast()) : path
+        components.path = trimmed.isEmpty ? "/manage-booking" : "\(trimmed)/manage-booking"
+        return components.string
     }
 }

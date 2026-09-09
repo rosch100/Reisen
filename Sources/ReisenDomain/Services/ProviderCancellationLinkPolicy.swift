@@ -20,8 +20,10 @@ public enum ProviderCancellationLinkPolicy {
             return .inPageOnOpen
         case (.expedia, .hotel):
             return .distinctURL
-        case (.expedia, .carRental), (.expedia, .flight), (.expedia, .activity):
+        case (.expedia, .carRental):
             return .inPageOnOpen
+        case (.expedia, .flight), (.expedia, .activity):
+            return .none
         case (.check24, _):
             return .distinctURL
         case (.booking, .hotel):

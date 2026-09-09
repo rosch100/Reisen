@@ -75,7 +75,7 @@ private enum ExpediaFixtureLoader {
     let flight = try #require(flightDrafts.first)
     #expect(flight.bookingType == .flight)
     #expect(flight.title == "FRA → BER")
-    #expect(flight.cancellationUrl?.contains("/manage-booking") == true)
+    #expect(flight.cancellationUrl == nil)
 
     let activityData = try ExpediaFixtureLoader.loadJSON("expedia_trip_items_activity_synthetic.json")
     let activityDrafts = await ExpediaCatalogParser.drafts(
@@ -85,6 +85,7 @@ private enum ExpediaFixtureLoader {
     let activity = try #require(activityDrafts.first)
     #expect(activity.bookingType == .activity)
     #expect(activity.title == "City Walking Tour")
+    #expect(activity.cancellationUrl == nil)
 }
 
 @Test func expediaCatalogSkipsUnknownProductPrefix() async throws {
@@ -321,6 +322,17 @@ private enum ExpediaFixtureLoader {
             tripItemId: "dGVzdFRyaXBJdGVtSWQwMDAx"
         ).hasSuffix("/manage-booking")
     )
+    let withQuery =
+        "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/abc?utm=x#section"
+    #expect(
+        ExpediaExternalURL.appendingManageBooking(to: withQuery)
+            == "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/abc/manage-booking?utm=x#section"
+    )
+    #expect(
+        ExpediaExternalURL.appendingManageBooking(
+            to: "https://www.expedia.de/trips/egti-x/details/abc/manage-booking?q=1"
+        ) == "https://www.expedia.de/trips/egti-x/details/abc/manage-booking?q=1"
+    )
 }
 
 @Test func expediaHotelServicingSoftPathsVisibleInParsers() {
@@ -337,6 +349,18 @@ private enum ExpediaFixtureLoader {
             bookingType: .carRental,
             manageURL: "https://www.expedia.de/trips/x/details/y/manage-booking"
         )?.hasSuffix("/manage-booking") == true
+    )
+    #expect(
+        ExpediaProductType.catalogCancellationURL(
+            bookingType: .flight,
+            manageURL: "https://www.expedia.de/trips/x/details/y/manage-booking"
+        ) == nil
+    )
+    #expect(
+        ExpediaProductType.catalogCancellationURL(
+            bookingType: .activity,
+            manageURL: "https://www.expedia.de/trips/x/details/y/manage-booking"
+        ) == nil
     )
 }
 

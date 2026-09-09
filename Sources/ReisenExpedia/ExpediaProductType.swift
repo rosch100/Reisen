@@ -13,12 +13,13 @@ enum ExpediaProductType {
         return nil
     }
 
-    /// Car / flight / activity use manage-booking as cancellation entry; hotel needs Booking-Servicing.
+    /// Car uses manage-booking as cancellation entry (live assist evidence). Flight/activity stay
+    /// without catalog cancel URL until a real cancel capture exists. Hotel needs Booking-Servicing.
     static func usesManageBookingAsCancellationURL(_ bookingType: BookingType) -> Bool {
         switch bookingType {
-        case .carRental, .flight, .activity:
+        case .carRental:
             return true
-        case .hotel, .ferry, .train, .other:
+        case .hotel, .flight, .activity, .ferry, .train, .other:
             return false
         }
     }

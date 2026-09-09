@@ -63,7 +63,7 @@ Primary Catalog/Enrich: Start + Erfolg/`failed`/`cancelled` via `DiagnosticLogge
 | `eg:activity:v2:` | `.activity` |
 | unbekannt | skip + Log |
 
-Cancel-URL im Katalog (`ExpediaProductType.usesManageBookingAsCancellationURL`): Car/Flight/Activity → Manage-Booking; Hotel → `nil` (kommt aus Enrich/Servicing).
+Cancel-URL im Katalog (`ExpediaProductType.usesManageBookingAsCancellationURL`): Car → Manage-Booking; Flight/Activity → `nil` bis Cancel-Capture; Hotel → `nil` (kommt aus Enrich/Servicing).
 
 ## Zeiten / Fristen
 

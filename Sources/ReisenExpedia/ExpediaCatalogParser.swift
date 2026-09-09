@@ -168,7 +168,7 @@ enum ExpediaCatalogParser {
             let referrer = ExpediaJSON.dict(ExpediaJSON.dict(action)?["analytics"])
                 .flatMap { ExpediaJSON.string($0["referrerId"]) } ?? ""
             if referrer.contains("ManageTrip"), let url = resourceURL(in: action) {
-                return url.contains("/manage-booking") ? url : url + "/manage-booking"
+                return ExpediaExternalURL.appendingManageBooking(to: url) ?? url
             }
         }
         return nil
