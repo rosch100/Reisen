@@ -10,8 +10,8 @@ SSOT im Code: [`ProviderID.syncProviderIDs`](../../Sources/ReisenDomain/Entities
 | Airbnb | ReisenAirbnb | Unterkünfte, Erlebnisse | [Experiences](airbnb-experiences-impl-spec.md); Stay-Hints aus `house_rules` / `house_manual` |
 | GetYourGuide | ReisenGetYourGuide | Erlebnisse / Touren | [Impl-Spec](getyourguide-impl-spec.md) |
 | Traveloka | ReisenTraveloka | Hotel, Flug, Erlebnisse, Mietwagen, … | [Impl-Spec](traveloka-impl-spec.md) |
-| billiger-mietwagen.de | ReisenBilligerMietwagen | Mietwagen (FLOYT) | [Impl-Spec](billiger-mietwagen-impl-spec.md) |
-| Expedia.de | ReisenExpedia | Hotel, Mietwagen (+ abgeleitet Flug/Aktivität) | [Impl-Spec](expedia-impl-spec.md) |
+| billiger-mietwagen | ReisenBilligerMietwagen | Mietwagen (FLOYT) | [Impl-Spec](billiger-mietwagen-impl-spec.md) |
+| Expedia | ReisenExpedia | Hotel, Mietwagen (+ abgeleitet Flug/Aktivität) | [Impl-Spec](expedia-impl-spec.md) |
 
 **Manuell:** Buchungen ohne Portal (`ProviderID.manual`) — Flug, Hotel, Fähre, Bahn, Mietwagen, Erlebnis, Sonstiges (`BookingType`).
 

@@ -69,31 +69,33 @@ struct MacUI {
     /// Sidebar-/Timeline-Titel sind oft Button-Labels mit Datums-Suffix, nicht exakte StaticTexts.
     @discardableResult
     func waitForLabelContaining(_ text: String, timeout: TimeInterval = 8) -> XCUIElement {
+        waitForLabelContaining(text, in: [app], timeout: timeout)
+    }
+
+    /// Enger Suchraum — vermeidet CI-Timeouts bei `app.descendants(matching: .any)`.
+    @discardableResult
+    func waitForLabelContaining(
+        _ text: String,
+        in roots: [XCUIElement],
+        timeout: TimeInterval = 8
+    ) -> XCUIElement {
         let predicate = NSPredicate(
             format: "label CONTAINS %@ OR value CONTAINS %@",
             text,
             text
         )
-        // Kein `descendants(.any)` über die ganze App — auf macOS hängt die Snapshot-Evaluation
-        // (CI: „Timed out while evaluating UI query“, PasteImport-Smoke ~125s).
-        let queries: [XCUIElementQuery] = [
-            app.staticTexts.matching(predicate),
-            app.buttons.matching(predicate),
-            app.links.matching(predicate),
-            app.otherElements.matching(predicate),
-        ]
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            for query in queries {
-                let match = query.firstMatch
-                if match.exists {
-                    return match
-                }
+            for root in roots {
+                let match = root.descendants(matching: .any).matching(predicate).firstMatch
+                if match.exists { return match }
             }
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
-        XCTFail("Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)")
-        return app.staticTexts.firstMatch
+        XCTFail(
+            "Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)"
+        )
+        return app
     }
 
     func waitForWindow(timeout: TimeInterval = 15) {
