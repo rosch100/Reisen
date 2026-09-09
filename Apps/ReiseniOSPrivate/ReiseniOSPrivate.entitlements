@@ -10,6 +10,10 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)app.voyenna.reisen.shared-credentials</string>
+	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.app.voyenna.reisen.private.pasteimport</string>

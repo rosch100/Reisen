@@ -8,6 +8,11 @@ Team-ID und Bundle-IDs sind **keine Secrets**, werden aber nicht in dieser Doku 
 | iOS App Store | `app.voyenna.reisen.ios` (`ReiseniOS`) | gemeinsamer CloudKit-Container |
 | iOS Private | `app.voyenna.reisen.ios.private` (`ReiseniOSPrivate`) | gemeinsamer CloudKit-Container |
 
+**Keychain Sharing (Portal-Credentials):** macOS und iOS Private teilen die Access Group
+`$(AppIdentifierPrefix)app.voyenna.reisen.shared-credentials` (Entitlements + `KeychainCredentialAccessGroup`).
+Ohne diese Capability bleiben synchronizable GenericPasswords pro Bundle-ID isoliert.
+Automatic Signing muss Keychain Sharing für beide App-IDs freischalten (`setup-apple-developer.sh` / Xcode Capabilities).
+
 Team: **DEVELOPMENT_TEAM** aus `project.yml` oder Umgebungsvariable `APPLE_TEAM_ID` (Automatic Signing).
 
 Lokal eingerichtet (nach `setup-apple-developer.sh`):
