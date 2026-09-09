@@ -10,4 +10,5 @@ enum ExpediaProviderError: Error, Equatable, Sendable {
     case missingTripItemId
     case lodgingTripIdUndecodable
     case missingHotelCancellationURL
+    case propertyTimeZoneUnresolved
 }

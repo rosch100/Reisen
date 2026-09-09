@@ -7,9 +7,10 @@
 | ReisenDomain | Foundation | SSOT: Entities, Repository-/Side-Effect-Ports, Use Cases, `ProviderID`, Application-Support-Pfad |
 | ReisenData | Domain, SwiftData | Persistenz-Adapter, Hybrid-Stores V7 (`reisen-cloud` / `reisen-local`), Mapper |
 | ReisenDiagnostics | Domain | Diagnose-Events, Redaction, Logger, Sync-Log-Append (ohne Data/AppCore) |
-| ReisenProviders | Domain, Diagnostics | `TravelProvider`, `ProviderRegistry`, Deep-Link-Ports |
+| ReisenMapKit | MapKit | Store-sichere `MapKitQuery`-SSOT (Geocode/LocalSearch) |
+| ReisenProviders | Domain, Diagnostics, WebKit | `TravelProvider`, `ProviderRegistry`, Deep-Link-Ports (nicht im App-Store-Binary) |
 | ReisenCrashSignal | Darwin | Async-signal-safe Pending-Writer für fatale POSIX-Signale (von AppCore genutzt) |
-| ReisenAppCore | Domain, Data, Diagnostics, ReisenCrashSignal | Bootstrap, SyncStore, EventKit/Reminder Side Effects, GitHub-Issues |
+| ReisenAppCore | Domain, Data, Diagnostics, MapKit, ReisenCrashSignal | Bootstrap, SyncStore, EventKit/Reminder Side Effects, GitHub-Issues |
 | ReisenCheck24 | Domain, Providers, Diagnostics, WebKit | Check24 Sync |
 | ReisenOpodo | Domain, Providers, WebKit | Opodo Sync |
 | ReisenBookingCom | Domain, Providers, WebKit | Booking.com Sync |
@@ -17,7 +18,7 @@
 | ReisenGetYourGuide | Domain, Providers, WebKit | GetYourGuide Sync |
 | ReisenTraveloka | Domain, Providers, WebKit | Traveloka Sync |
 | ReisenBilligerMietwagen | Domain, Providers, WebKit | billiger-mietwagen Sync |
-| ReisenExpedia | Domain, Providers, Diagnostics, WebKit | Expedia Sync |
+| ReisenExpedia | Domain, Providers, Diagnostics, MapKit, WebKit | Expedia Sync |
 | ReisenProviderSync | Domain, Providers, Anbieter-Module | Produktions-Registry (`ProviderSyncBootstrap`) |
 | ReisenPasteImport | Domain, AppCore | On-device Paste-Import von Bestätigungen |
 | Reisen | alle | macOS Composition Root + UI |

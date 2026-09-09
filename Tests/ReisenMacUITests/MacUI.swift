@@ -67,6 +67,7 @@ struct MacUI {
     }
 
     /// Sidebar-/Timeline-Titel sind oft Button-Labels mit Datums-Suffix, nicht exakte StaticTexts.
+    /// Kein `descendants(.any)`: unter CI-Last hängt die AX-Query („Timed out while evaluating UI query“).
     @discardableResult
     func waitForLabelContaining(_ text: String, timeout: TimeInterval = 8) -> XCUIElement {
         waitForLabelContaining(text, in: [app], timeout: timeout)
@@ -100,7 +101,7 @@ struct MacUI {
                     if match.exists { return match }
                 }
             }
-            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
         }
         XCTFail(
             "Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)"

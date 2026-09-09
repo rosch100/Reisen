@@ -214,20 +214,209 @@ private extension ExpediaTravelProvider {
         referer: String?
     ) async throws -> ProviderBookingEnrichment {
         var result = enrichment
-        result = try await applyRoomDetails(
+        var propertyTimeZone: TimeZone?
+
+        result = try await applyLocationDetails(
+            to: result,
+            webView: webView,
+            parts: parts,
+            duaid: duaid,
+            referer: referer,
+            propertyTimeZone: &propertyTimeZone
+        )
+        result = try await applyPricingAndRewards(
             to: result,
             webView: webView,
             parts: parts,
             duaid: duaid,
             referer: referer
+        )
+        result = try await applyBookingSummary(
+            to: result,
+            webView: webView,
+            parts: parts,
+            duaid: duaid,
+            referer: referer
+        )
+        result = try await applyRoomDetails(
+            to: result,
+            webView: webView,
+            parts: parts,
+            duaid: duaid,
+            referer: referer,
+            propertyTimeZone: propertyTimeZone
         )
         return try await applyBookingServicing(
             to: result,
             webView: webView,
             parts: parts,
             duaid: duaid,
-            referer: referer
+            referer: referer,
+            propertyTimeZone: propertyTimeZone
         )
+    }
+
+    func applyLocationDetails(
+        to enrichment: ProviderBookingEnrichment,
+        webView: WKWebView,
+        parts: ExpediaExternalURL.Parts,
+        duaid: String,
+        referer: String?,
+        propertyTimeZone: inout TimeZone?
+    ) async throws -> ProviderBookingEnrichment {
+        var result = enrichment
+        do {
+            let data = try await postPersistedGraphQL(
+                webView: webView,
+                operation: ExpediaGraphQL.locationDetails,
+                variables: [
+                    "input": [
+                        "tripItemId": parts.tripItemId,
+                        "tripViewId": parts.tripViewId,
+                    ],
+                    "context": ExpediaGraphQL.context(duaid: duaid),
+                ],
+                referer: referer
+            )
+            if let location = ExpediaEnrichmentParser.locationDetails(from: data) {
+                if let address = location.address, !address.isEmpty {
+                    result.locationToAddress = address
+                    do {
+                        propertyTimeZone = try await ExpediaPropertyTimeZone.resolve(address: address)
+                    } catch {
+                        await recordEnrichSidePathFailure(
+                            phase: "location_details",
+                            error: ExpediaProviderError.propertyTimeZoneUnresolved,
+                            reason: "property_timezone_unresolved"
+                        )
+                    }
+                } else {
+                    await recordEnrichSidePathFailure(
+                        phase: "location_details",
+                        error: ExpediaProviderError.invalidResponse,
+                        reason: "address_absent"
+                    )
+                }
+            } else {
+                await recordEnrichSidePathFailure(
+                    phase: "location_details",
+                    error: ExpediaProviderError.invalidResponse,
+                    reason: "location_details_absent"
+                )
+            }
+        } catch {
+            switch ExpediaHotelSidePath.roomDetailsHandling(for: error) {
+            case .softContinue:
+                await recordEnrichSidePathFailure(phase: "location_details", error: error)
+            case .hardFail:
+                if !(error is CancellationError) {
+                    await recordEnrichSidePathFailure(phase: "location_details", error: error)
+                }
+                throw error
+            }
+        }
+        return result
+    }
+
+    func applyPricingAndRewards(
+        to enrichment: ProviderBookingEnrichment,
+        webView: WKWebView,
+        parts: ExpediaExternalURL.Parts,
+        duaid: String,
+        referer: String?
+    ) async throws -> ProviderBookingEnrichment {
+        var result = enrichment
+        do {
+            let data = try await postPersistedGraphQL(
+                webView: webView,
+                operation: ExpediaGraphQL.pricingAndRewards,
+                variables: [
+                    "input": [
+                        "tripsInput": [
+                            "tripItemId": parts.tripItemId,
+                            "tripViewId": parts.tripViewId,
+                        ],
+                    ],
+                    "context": ExpediaGraphQL.context(duaid: duaid),
+                ],
+                referer: referer
+            )
+            if let price = ExpediaEnrichmentParser.totalPrice(fromPricingAndRewards: data) {
+                var rate = result.rateDetails ?? BookingRateDetails()
+                if rate.totalPriceAmount == nil {
+                    rate.totalPriceAmount = NSDecimalNumber(decimal: price.amount).doubleValue
+                    rate.totalPriceCurrency = price.currency
+                    result.rateDetails = rate
+                }
+            } else {
+                await recordEnrichSidePathFailure(
+                    phase: "pricing_rewards",
+                    error: ExpediaProviderError.invalidResponse,
+                    reason: "price_absent"
+                )
+            }
+        } catch {
+            switch ExpediaHotelSidePath.roomDetailsHandling(for: error) {
+            case .softContinue:
+                await recordEnrichSidePathFailure(phase: "pricing_rewards", error: error)
+            case .hardFail:
+                if !(error is CancellationError) {
+                    await recordEnrichSidePathFailure(phase: "pricing_rewards", error: error)
+                }
+                throw error
+            }
+        }
+        return result
+    }
+
+    func applyBookingSummary(
+        to enrichment: ProviderBookingEnrichment,
+        webView: WKWebView,
+        parts: ExpediaExternalURL.Parts,
+        duaid: String,
+        referer: String?
+    ) async throws -> ProviderBookingEnrichment {
+        var result = enrichment
+        do {
+            let data = try await postPersistedGraphQL(
+                webView: webView,
+                operation: ExpediaGraphQL.bookingSummary,
+                variables: [
+                    "primaryId": [
+                        "id": parts.tripViewId,
+                        "type": "TRIP_VIEW_ID",
+                    ],
+                    "secondaryId": [
+                        "id": parts.tripItemId,
+                        "type": "TRIP_ITEM_ID",
+                    ],
+                    "context": ExpediaGraphQL.context(duaid: duaid),
+                ],
+                referer: referer
+            )
+            if result.confirmationCode == nil,
+               let code = ExpediaEnrichmentParser.confirmationCode(fromBookingSummary: data)
+            {
+                result.confirmationCode = code
+            } else if result.confirmationCode == nil {
+                await recordEnrichSidePathFailure(
+                    phase: "booking_summary",
+                    error: ExpediaProviderError.invalidResponse,
+                    reason: "confirmation_absent"
+                )
+            }
+        } catch {
+            switch ExpediaHotelSidePath.roomDetailsHandling(for: error) {
+            case .softContinue:
+                await recordEnrichSidePathFailure(phase: "booking_summary", error: error)
+            case .hardFail:
+                if !(error is CancellationError) {
+                    await recordEnrichSidePathFailure(phase: "booking_summary", error: error)
+                }
+                throw error
+            }
+        }
+        return result
     }
 
     func applyRoomDetails(
@@ -235,7 +424,8 @@ private extension ExpediaTravelProvider {
         webView: WKWebView,
         parts: ExpediaExternalURL.Parts,
         duaid: String,
-        referer: String?
+        referer: String?,
+        propertyTimeZone: TimeZone?
     ) async throws -> ProviderBookingEnrichment {
         var result = enrichment
         do {
@@ -249,7 +439,10 @@ private extension ExpediaTravelProvider {
                 ],
                 referer: referer
             )
-            let deadlines = ExpediaEnrichmentParser.cancellationDeadlines(fromRoomDetails: room)
+            let deadlines = ExpediaEnrichmentParser.cancellationDeadlines(
+                fromRoomDetails: room,
+                propertyTimeZone: propertyTimeZone
+            )
             if !deadlines.isEmpty {
                 result.deadlines = deadlines
             }
@@ -279,7 +472,8 @@ private extension ExpediaTravelProvider {
         webView: WKWebView,
         parts: ExpediaExternalURL.Parts,
         duaid: String,
-        referer: String?
+        referer: String?,
+        propertyTimeZone: TimeZone?
     ) async throws -> ProviderBookingEnrichment {
         var result = enrichment
         guard let lodgingTripId = ExpediaExternalURL.lodgingServicingTripId(
@@ -290,7 +484,6 @@ private extension ExpediaTravelProvider {
                 error: ExpediaProviderError.lodgingTripIdUndecodable,
                 reason: "lodging_trip_id_undecodable"
             )
-            // Keep TripItem enrichment; cancel URL remains best-effort.
             return result
         }
 
@@ -319,7 +512,8 @@ private extension ExpediaTravelProvider {
                 )
             }
             let servicingDeadlines = ExpediaEnrichmentParser.cancellationDeadlines(
-                fromServicingData: servicing
+                fromServicingData: servicing,
+                propertyTimeZone: propertyTimeZone
             )
             if !servicingDeadlines.isEmpty {
                 result.deadlines = servicingDeadlines

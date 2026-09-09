@@ -31,6 +31,24 @@ enum ExpediaGraphQL {
         pageID: "page.BookingServicing,U,80"
     )
 
+    static let pricingAndRewards = PersistedOperation(
+        name: "PricingAndRewardsQuery",
+        sha256Hash: "564be4abdd284dd205345f8b1a592e4d5e024768908be70e4dc83620d0018457",
+        pageID: "page.Trip.ItemDetail,U,80"
+    )
+
+    static let locationDetails = PersistedOperation(
+        name: "LocationDetailsQuery",
+        sha256Hash: "0d97b21c296bbb4758a4fcaa92936d4649ed02a73bb4003e7d9ac3e1cf39b4d2",
+        pageID: "page.Trip.ItemDetail,U,80"
+    )
+
+    static let bookingSummary = PersistedOperation(
+        name: "SharedUIWeb_BookingSummary",
+        sha256Hash: "5cb64382d33427d2b38207fe117a495e540de39292e67f63792f63329c4bb316",
+        pageID: "page.Trip.ItemDetail,U,80"
+    )
+
     static func persistedBody(
         operation: PersistedOperation,
         variables: [String: Any]
