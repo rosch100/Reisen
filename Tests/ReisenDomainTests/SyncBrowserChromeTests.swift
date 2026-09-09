@@ -104,3 +104,67 @@ import ReisenDomain
         SyncBrowserChrome.contentStackVerticalAlignment(isBrowserExpanded: true) == .top
     )
 }
+
+/// Regression: Form-Accessory / Tastatur am unteren Rand überdeckt Floating-TabBar.
+@Test func syncBrowserChrome_detectsKeyboardChromeOccupyingScreenBottom() {
+    let screenMinY = 0.0
+    let screenMaxY = 852.0
+    // Soft-Keyboard (~336pt) am unteren Rand
+    #expect(
+        SyncBrowserChrome.isKeyboardChromeOccupyingBottom(
+            endFrameMinY: 516,
+            endFrameMaxY: 852,
+            screenMinY: screenMinY,
+            screenMaxY: screenMaxY
+        )
+    )
+    // Nur Form-Accessory (~55pt) — Hardware-Keyboard / minimierte Tastatur
+    #expect(
+        SyncBrowserChrome.isKeyboardChromeOccupyingBottom(
+            endFrameMinY: 797,
+            endFrameMaxY: 852,
+            screenMinY: screenMinY,
+            screenMaxY: screenMaxY
+        )
+    )
+    // Ausgeblendet: Frame unterhalb des Screens
+    #expect(
+        !SyncBrowserChrome.isKeyboardChromeOccupyingBottom(
+            endFrameMinY: 852,
+            endFrameMaxY: 1_188,
+            screenMinY: screenMinY,
+            screenMaxY: screenMaxY
+        )
+    )
+    // 1pt-Overlap zählt nicht (Rauschen)
+    #expect(
+        !SyncBrowserChrome.isKeyboardChromeOccupyingBottom(
+            endFrameMinY: 851,
+            endFrameMaxY: 852,
+            screenMinY: screenMinY,
+            screenMaxY: screenMaxY,
+            minimumOverlap: 1
+        )
+    )
+}
+
+@Test func syncBrowserChrome_hidesTabBarOnlyWhenSyncSelectedAndKeyboardChromeOccupiesBottom() {
+    #expect(
+        SyncBrowserChrome.hidesTabBarWhileKeyboardChromeVisible(
+            isSyncTabSelected: true,
+            keyboardChromeOccupiesBottom: true
+        )
+    )
+    #expect(
+        !SyncBrowserChrome.hidesTabBarWhileKeyboardChromeVisible(
+            isSyncTabSelected: true,
+            keyboardChromeOccupiesBottom: false
+        )
+    )
+    #expect(
+        !SyncBrowserChrome.hidesTabBarWhileKeyboardChromeVisible(
+            isSyncTabSelected: false,
+            keyboardChromeOccupiesBottom: true
+        )
+    )
+}

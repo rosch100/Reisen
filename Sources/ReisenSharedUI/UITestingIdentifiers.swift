@@ -38,6 +38,8 @@ public enum UITestingIdentifiers {
     public static let bookingCreateDraftSidebar = "reisen.booking.create-draft.sidebar"
     public static let deleteTripMenu = "reisen.action.delete-trip"
     public static let deleteBookingMenu = "reisen.action.delete-booking"
+    public static let swipeBookingDelete = "reisen.swipe.booking.delete"
+    public static let swipeBookingRemoveFromTrip = "reisen.swipe.booking.remove-from-trip"
     /// Chevron zum Ausklappen von Sidebar-Outline-Kindern (Trip oder Offene-Mailbox).
     public static let sidebarExpandBookings = "reisen.action.expand-sidebar-bookings"
     public static let splitDivider = "reisen.split.divider"
@@ -50,7 +52,11 @@ public enum UITestingIdentifiers {
     public static let elapsedOpenBookingsMailbox = "reisen.elapsed-open-bookings.mailbox"
     public static let tripEditor = "reisen.trip.editor"
     public static let tripEditorTitleField = "reisen.trip.editor.title"
+    public static let tripEditorDestinationField = "reisen.trip.editor.destination"
+    public static let tripEditorNotesField = "reisen.trip.editor.notes"
     public static let tripEditorSave = "reisen.trip.editor.save"
+    /// Gap-Zeile in Trip-Timeline (macOS GapRow / iOS TripTimelineSection).
+    public static let tripGapRow = "reisen.trip.gap.row"
     public static let assignBookingsSheet = "reisen.assign-bookings.sheet"
     public static let assignBookingsConfirm = "reisen.assign-bookings.confirm"
     public static let assignBookingsAction = "reisen.action.assign-bookings"
@@ -61,6 +67,7 @@ public enum UITestingIdentifiers {
 
     /// First-Launch Provider-Setup (Spec: `setup.providers.*`).
     public static let providerSetupSheet = "setup.providers.sheet"
+    public static let providerSetupSelectAll = "setup.providers.all"
     public static let providerSetupContinue = "setup.providers.continue"
     /// „Ohne Buchungsportale“ (historischer Identifier `setup.providers.later`).
     public static let providerSetupLater = "setup.providers.later"

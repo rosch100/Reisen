@@ -18,6 +18,7 @@ extension OpodoActivityListParser {
                 start: times.start,
                 end: times.end,
                 externalUrl: groups.url,
+                cancellationUrl: groups.url,
                 statusRaw: nil
             )
         )

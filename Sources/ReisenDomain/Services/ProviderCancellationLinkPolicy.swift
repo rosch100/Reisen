@@ -14,12 +14,14 @@ public enum ProviderCancellationLinkPolicy {
             return .distinctURL
         case (.traveloka, _):
             return .distinctURL
-        case (.airbnb, .activity):
+        case (.airbnb, .activity), (.airbnb, .hotel):
             return .distinctURL
-        case (.getYourGuide, _):
+        case (.getYourGuide, _), (.billigerMietwagen, _), (.opodo, _):
             return .inPageOnOpen
-        case (.billigerMietwagen, _):
-            return .sessionBoundDistinct
+        case (.check24, _):
+            return .distinctURL
+        case (.booking, .hotel):
+            return .distinctURL
         default:
             return .none
         }

@@ -4198,13 +4198,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Private Übernachtung"
+            "value": "Lücke: Übernachtung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Private overnight stay"
+            "value": "Gap: Overnight stay"
           }
         }
       }
@@ -4214,13 +4214,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zwischentransport"
+            "value": "Lücke: Transport"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecting transport"
+            "value": "Gap: Transport"
           }
         }
       }
@@ -9405,6 +9405,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose Booking Portals"
+          }
+        }
+      }
+    },
+    "setup.providers.all": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "setup.providers.all_select_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Portale auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all portals"
+          }
+        }
+      }
+    },
+    "setup.providers.all_deselect_help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Portale abwählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deselect all portals"
           }
         }
       }

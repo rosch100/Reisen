@@ -46,7 +46,6 @@ Airbnb liefert in Browser/API mehr Buchungsdaten als der Sync nutzt. Teile sind 
 - WLAN (`hidden_wifi_info`) speichern.
 - Koordinaten, Betten-/Bad-Anzahl (kein Domain-Feld außer `roomCount` = Schlafzimmer).
 - Passagier-Namen aus `travelers` (PII; Anzahl über `guestCount`).
-- Stay-`cancellationUrl` ohne belegte HTTPS-`web_url`.
 - DE-Storno-Textparser für Experiences (eigenes Follow-up).
 - Andere Provider in derselben Welle (Schema gilt hotel/activity global; Füllung zuerst Airbnb).
 - Kalender-Notizen mit Zugangscode.

@@ -74,4 +74,24 @@ public enum SyncBrowserChrome: Sendable {
     public static func showsRememberLoginInBottomBar(isSessionReady: Bool) -> Bool {
         isSessionReady
     }
+
+    /// System-Tastatur oder Form-Accessory belegt den unteren Bildschirmrand (Keyboard-Frame in Screen-Koordinaten).
+    public static func isKeyboardChromeOccupyingBottom(
+        endFrameMinY: Double,
+        endFrameMaxY: Double,
+        screenMinY: Double,
+        screenMaxY: Double,
+        minimumOverlap: Double = 1
+    ) -> Bool {
+        let overlap = max(0, min(endFrameMaxY, screenMaxY) - max(endFrameMinY, screenMinY))
+        return overlap > minimumOverlap
+    }
+
+    /// Floating-TabBar ausblenden, solange Sync aktiv und Keyboard-Chrome den unteren Rand belegt.
+    public static func hidesTabBarWhileKeyboardChromeVisible(
+        isSyncTabSelected: Bool,
+        keyboardChromeOccupiesBottom: Bool
+    ) -> Bool {
+        isSyncTabSelected && keyboardChromeOccupiesBottom
+    }
 }

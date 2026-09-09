@@ -196,6 +196,17 @@ func airbnbStayEnrichmentWritesAddressGuestsAndRooms() throws {
     )
 }
 
+@Test func airbnbStayCancellationURLEncodesPathSegment() {
+    #expect(
+        AirbnbAPI.stayCancellationURL(confirmationCode: "HMNY553Y2X")
+            == "https://www.airbnb.de/alterations/stays/HMNY553Y2X/cancel"
+    )
+    #expect(
+        AirbnbAPI.stayCancellationURL(confirmationCode: "a/b")
+            == "https://www.airbnb.de/alterations/stays/a%2Fb/cancel"
+    )
+}
+
 @Test("AirbnbTripsGraphQLParser mappt EXPERIENCE_RESERVATION auf BookingType.activity")
 func airbnbTripListMapsExperienceToActivity() throws {
     let json = try researchFixtureJSON("airbnb_TripListQuery_experience_redacted.json")
@@ -453,7 +464,10 @@ func airbnbTripListKeepsDraftWithoutPortalURL() throws {
     let draft = try #require(catalog.bookings.first)
     #expect(draft.confirmationCode == "ABC123")
     #expect(draft.externalUrl == nil)
-    #expect(draft.cancellationUrl == nil)
+    #expect(
+        draft.cancellationUrl
+            == "https://www.airbnb.de/alterations/stays/ABC123/cancel"
+    )
 }
 
 @Test("AirbnbTripsGraphQLParser: ungültige listingTimeZone → kein erfundenes hotelOffset")

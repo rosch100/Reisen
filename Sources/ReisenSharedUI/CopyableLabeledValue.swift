@@ -10,17 +10,39 @@ public enum CopyableLabeledValueStyle: Sendable, Equatable {
 
     /// Typische Wert-Schrift in Detail-Blöcken (Room/Storno/Hints).
     var detailValueTextStyle: CopyableValueTextStyle {
-        switch self {
-        case .list: .body
-        case .inspector: .caption2
-        }
+        CopyableLabeledValueAppearance.forStyle(self).detailValueTextStyle
     }
 
     /// Titel-Zeile in Hint-/Room-Blöcken (Inspector etwas größer als Detail).
     var titleValueTextStyle: CopyableValueTextStyle {
-        switch self {
-        case .list: .body
-        case .inspector: .caption
+        CopyableLabeledValueAppearance.forStyle(self).defaultValueTextStyle
+    }
+}
+
+/// Testbare Label/Wert-Hierarchie für `CopyableLabeledValue` (HIG: Label sekundär, Wert primär).
+public struct CopyableLabeledValueAppearance: Equatable, Sendable {
+    public let labelTextStyle: CopyableValueTextStyle
+    public let labelUsesSecondaryForeground: Bool
+    public let defaultValueTextStyle: CopyableValueTextStyle
+    public let detailValueTextStyle: CopyableValueTextStyle
+
+    public static func forStyle(_ style: CopyableLabeledValueStyle) -> Self {
+        switch style {
+        case .list:
+            // Label sekundär/kleiner, Wert body — iOS-List-HIG.
+            return Self(
+                labelTextStyle: .subheadline,
+                labelUsesSecondaryForeground: true,
+                defaultValueTextStyle: .body,
+                detailValueTextStyle: .body
+            )
+        case .inspector:
+            return Self(
+                labelTextStyle: .caption2,
+                labelUsesSecondaryForeground: true,
+                defaultValueTextStyle: .caption,
+                detailValueTextStyle: .caption2
+            )
         }
     }
 }
@@ -67,18 +89,21 @@ public struct CopyableLabeledValue: View {
     }
 
     public var body: some View {
+        let appearance = CopyableLabeledValueAppearance.forStyle(style)
         switch style {
         case .list:
             LabeledContent {
                 valueView
             } label: {
                 Text(label)
+                    .font(appearance.labelTextStyle.swiftUIFont)
+                    .foregroundStyle(appearance.labelUsesSecondaryForeground ? .secondary : .primary)
             }
         case .inspector:
             VStack(alignment: .leading, spacing: 1) {
                 Text(label)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(appearance.labelTextStyle.swiftUIFont)
+                    .foregroundStyle(appearance.labelUsesSecondaryForeground ? .secondary : .primary)
                 valueView
             }
             .frame(maxWidth: .infinity, alignment: .leading)

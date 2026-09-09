@@ -25,8 +25,12 @@ struct TripDetailIOS: View {
     @State private var persistErrorMessage: String?
     @State private var pendingDeleteBooking: SDBooking?
     @State private var showBookingDeleteConfirm = false
+    @State private var pendingRemoveBooking: SDBooking?
+    @State private var showRemoveFromTripConfirmation = false
     @State private var presentedBookingID: PresentedBookingID?
     @State private var cancelRequest: BookingPortalCancelRequest?
+    @State private var bookingCreateDraft: BookingEditorDraft?
+    @State private var showCreateBooking = false
 
     init(tripID: UUID, focusBookingID: Binding<UUID?> = .constant(nil)) {
         self.tripID = tripID
@@ -119,6 +123,9 @@ struct TripDetailIOS: View {
                             }
                         }
                         if trip.resolvedBookings.isEmpty {
+                            Button(L10n.string(.actionAddBooking)) {
+                                startCreateBooking(for: trip)
+                            }
                             Button(L10n.string(.actionAssignBookings)) {
                                 showAssignBookings = true
                             }
@@ -168,9 +175,27 @@ struct TripDetailIOS: View {
                                     )
                                 }
                             )
+                            Button(L10n.string(.actionRemoveFromTrip), role: .destructive) {
+                                requestRemoveFromTrip(booking)
+                            }
                             Button(L10n.string(.actionDeleteEllipsis), role: .destructive) {
-                                pendingDeleteBooking = booking
-                                showBookingDeleteConfirm = true
+                                requestDeleteBooking(booking)
+                            }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            ForEach(
+                                BookingRowSwipeActions.actions(for: .tripAssignedBooking, edge: .trailing),
+                                id: \.self
+                            ) { action in
+                                tripBookingSwipeButton(action, booking: booking)
+                            }
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            ForEach(
+                                BookingRowSwipeActions.actions(for: .tripAssignedBooking, edge: .leading),
+                                id: \.self
+                            ) { action in
+                                tripBookingSwipeButton(action, booking: booking)
                             }
                         }
                     }
@@ -188,8 +213,21 @@ struct TripDetailIOS: View {
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            startCreateBooking(for: trip)
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel(L10n.string(.actionAddBooking))
+                        .accessibilityIdentifier(UITestingIdentifiers.addBooking)
+                        .help(L10n.string(.tripAddBookingHelp))
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button(L10n.string(.commonEdit)) { tripToEdit = trip }
+                            Button(L10n.string(.actionAddBooking)) {
+                                startCreateBooking(for: trip)
+                            }
                             Button(L10n.string(.actionAssignBookings)) { showAssignBookings = true }
                             Divider()
                             Button(L10n.string(.actionDeleteTrip), role: .destructive) {
@@ -204,6 +242,13 @@ struct TripDetailIOS: View {
                     TripEditorSheet(mode: .edit, trip: trip)
                     .reisenSheetDetents()
                 }
+                .sheet(isPresented: $showCreateBooking) {
+                    TripCreateBookingSheetIOS(
+                        trip: trip,
+                        draft: $bookingCreateDraft,
+                        isPresented: $showCreateBooking
+                    )
+                }
                 .sheet(isPresented: $showAssignBookings) {
                     AssignBookingsSheet(trip: trip, candidates: assignCandidates(for: trip))
                 }
@@ -214,12 +259,16 @@ struct TripDetailIOS: View {
                     onKeepBookings: { deleteTrip(trip, bookings: .keepAsOpen) },
                     onDeleteBookings: { deleteTrip(trip, bookings: .deleteContained) }
                 )
-                .bookingDeleteConfirmAlert(
-                    isPresented: $showBookingDeleteConfirm,
-                    bookingTitle: pendingDeleteBooking?.presentationTitle ?? L10n.string(.editorBooking),
+                .bookingTripConfirmDialogs(
+                    showDeleteConfirmation: $showBookingDeleteConfirm,
+                    showRemoveFromTripConfirmation: $showRemoveFromTripConfirmation,
+                    bookingTitle: (pendingDeleteBooking ?? pendingRemoveBooking)?.presentationTitle
+                        ?? L10n.string(.editorBooking),
                     showsSyncRestoreWarning: pendingDeleteBooking.map { $0.provider != .manual } ?? false,
-                    onConfirm: deletePendingBooking,
-                    onCancel: { pendingDeleteBooking = nil }
+                    onConfirmDelete: deletePendingBooking,
+                    onConfirmRemove: removePendingBookingFromTrip,
+                    onCancelDelete: { pendingDeleteBooking = nil },
+                    onCancelRemove: { pendingRemoveBooking = nil }
                 )
                 .persistFailureAlert(message: $persistErrorMessage)
                 .bookingPortalCancelSheet($cancelRequest)
@@ -227,6 +276,46 @@ struct TripDetailIOS: View {
                 ContentUnavailableView(L10n.string(.tripTripMissing), systemImage: "magnifyingglass")
             }
         }
+    }
+
+    @ViewBuilder
+    private func tripBookingSwipeButton(
+        _ action: BookingRowSwipeAction,
+        booking: SDBooking
+    ) -> some View {
+        switch action {
+        case .delete:
+            Button(L10n.string(.commonDelete), role: .destructive) {
+                requestDeleteBooking(booking)
+            }
+            .accessibilityIdentifier(UITestingIdentifiers.swipeBookingDelete)
+        case .removeFromTrip:
+            Button(L10n.string(.commonRemove)) {
+                requestRemoveFromTrip(booking)
+            }
+            .tint(.orange)
+            .accessibilityIdentifier(UITestingIdentifiers.swipeBookingRemoveFromTrip)
+        case .createTripFromBooking:
+            EmptyView()
+        }
+    }
+
+    private func requestDeleteBooking(_ booking: SDBooking) {
+        pendingDeleteBooking = booking
+        showBookingDeleteConfirm = true
+    }
+
+    private func requestRemoveFromTrip(_ booking: SDBooking) {
+        pendingRemoveBooking = booking
+        showRemoveFromTripConfirmation = true
+    }
+
+    private func startCreateBooking(for trip: SDTrip) {
+        TripCreateBookingSheetIOS.start(
+            draft: &bookingCreateDraft,
+            isPresented: &showCreateBooking,
+            trip: trip
+        )
     }
 
     private func applyFocusBookingIfNeeded() {
@@ -276,6 +365,21 @@ struct TripDetailIOS: View {
         }
     }
 
+    private func removePendingBookingFromTrip() {
+        guard let booking = pendingRemoveBooking else { return }
+        Self.recordRemoveFromTrip(result: .started)
+        booking.trip = nil
+        do {
+            try modelContext.save()
+            pendingRemoveBooking = nil
+            Self.recordRemoveFromTrip(result: .succeeded)
+        } catch {
+            persistErrorMessage = error.localizedDescription
+            Self.recordPersistFailure(operation: "booking_remove_from_trip", error: error)
+            pendingRemoveBooking = nil
+        }
+    }
+
     private func deleteTrip(_ trip: SDTrip, bookings policy: TripDeletionBookingPolicy) {
         do {
             try TripDeletion.perform(trip: trip, in: modelContext, bookings: policy)
@@ -283,6 +387,26 @@ struct TripDetailIOS: View {
         } catch {
             persistErrorMessage = error.localizedDescription
             Self.recordPersistFailure(operation: "trip_delete", error: error)
+        }
+    }
+
+    private static func recordRemoveFromTrip(result: DiagnosticResult) {
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: UUID(),
+                        providerID: .manual,
+                        operation: "booking_remove_from_trip"
+                    ),
+                    component: "TripDetailIOS",
+                    phase: "persist",
+                    event: "booking_remove_from_trip",
+                    result: result,
+                    reason: result == .started ? "confirm_accepted" : "save_ok",
+                    visibility: .localDebugOnly
+                )
+            )
         }
     }
 

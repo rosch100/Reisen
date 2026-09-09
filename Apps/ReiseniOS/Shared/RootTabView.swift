@@ -14,6 +14,7 @@ import ReisenData
 import ReisenDiagnostics
 #if REISEN_PROVIDER_SYNC
 import ReisenProviders
+import ReisenProviderSync
 #endif
 
 struct RootTabView: View {
@@ -38,6 +39,10 @@ struct RootTabView: View {
     #endif
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
+    #if REISEN_PROVIDER_SYNC
+    @Environment(\.syncStore) private var syncStore
+    @Environment(\.providerSessionHub) private var sessionHub
+    #endif
 
     private enum AppTab: Hashable {
         case reisen, offen
@@ -111,6 +116,10 @@ struct RootTabView: View {
             }
         }
         #if REISEN_PROVIDER_SYNC
+        .onReceive(NotificationCenter.default.publisher(for: .reisenSyncProvider)) { note in
+            guard let providerID = note.object as? ProviderID else { return }
+            Task { await runSyncAfterPortalCancel(providerID) }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 refreshProviderAppPresence()
@@ -124,6 +133,16 @@ struct RootTabView: View {
     }
 
     #if REISEN_PROVIDER_SYNC
+    @MainActor
+    private func runSyncAfterPortalCancel(_ providerID: ProviderID) async {
+        await PortalCancelProviderResync.run(
+            providerID: providerID,
+            syncStore: syncStore,
+            sessionHub: sessionHub,
+            settings: .fromUserDefaults()
+        )
+    }
+
     private func refreshProviderAppPresence() {
         installedProviderIDs = Set(ProviderNativeAppPresence.installedProviderIDs())
         _ = ProviderNativeAppPresence.applyAutoEnableIfNeeded()

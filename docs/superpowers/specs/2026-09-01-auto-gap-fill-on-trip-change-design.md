@@ -1,10 +1,25 @@
 # Auto-Gap-Fill bei Reiseänderungen — Design
 
-**Datum:** 2026-09-01  
-**Status:** Spec (feature-dev P1)  
-**Worktree:** `.worktrees/feat-auto-gap-fill-on-trip-change`
+**Datum:** 2026-09-01
+**Status:** Spec — **amendiert 2026-09-08** (Gap-Platzhalter statt Auto-Buchungen)
+**Worktree:** `.worktrees/bugfix-auto-gap-fill`
 
-## Intent
+## Amendment 2026-09-08 (SSOT Verhalten)
+
+Produktentscheidung ersetzt v1-Auto-**Buchungen** für Lodging/Transport:
+
+| Thema | Verhalten |
+| --- | --- |
+| Übernachtung | ComputedGap `kind=lodging`, Titel **„Lücke: Übernachtung“**, Icon `bed.double.fill`, editierbar via `GapEditorSheet`/`SDGap`. Zeitraum: letzter Tag vorherige Unterkunft → erster Tag nächste (`from.endAt`→`to.startAt`). Ort-Hinweis: letzte Unterkunft (`GapContext` / `fromLocationTo`). |
+| Transport | ComputedGap `kind=transport`, Titel **„Lücke: Transport“** (+ optional `Stadt → Stadt`), Icon `arrow.left.arrow.right`. Bei Ortswechsel und Lodging-Bogen: Transport am **letzten Tag** der Übernachtungslücke; ohne Lodging (≥ minGap): Transport am Intervall zwischen den Nachbarn. **Keine** Uhrzeit-Range in der Timeline (macOS = iOS). |
+| Auto-Buchungen | `AutoGapPlanner.plan` liefert **leere** Desired-Menge. Reconciler entfernt veraltete `provider=autoGap` Lodging/Transport-Einträge. Suppress/Promotion-Pfade bleiben für Legacy-Daten. |
+| Plattform | Gap-Zeilen teilen Icon + Datumsformat (`GapPresentation` / `GapKind.systemImageName`). |
+
+Historische Abschnitte unten beschreiben die v1-Auto-Booking-Architektur; wo sie dem Amendment widersprechen, gilt das Amendment.
+
+---
+
+## Intent (historisch v1)
 
 Bei **jeder Änderung der Zusammensetzung einer Reise** („Reisen“-Eintrag) soll ein Domain-Algorithmus
 
@@ -19,12 +34,13 @@ Optional genannt: **Apple Intelligence** bei Unklarheiten (Ortsgleichheit, Trans
 
 | Baustein | Rolle heute |
 | --- | --- |
-| `GapDetector` / `GapAssembly` / `GapEdgeBuilder` | Zeitlücken ≥ `defaultMinGap` (12 h) zwischen Buchungen + Trip-Ränder |
+| `GapDetector` / `GapAssembly` / `GapEdgeBuilder` | Zeitlücken ≥ `defaultMinGap` (12 h) zwischen Buchungen + Trip-Ränder; Ortswechsel: Lodging-Vollbogen + Transport am letzten Tag |
 | `GapKindClassifier` | Heuristik aus angrenzenden `BookingType` → `lodging` / `transport` / `both` |
-| `ComputedGap` + `SDGap` | Timeline-Anzeige + optionale Nutzer-Metadaten (Titel/Preis), **keine** Buchung |
+| `ComputedGap` + `SDGap` | Timeline-Anzeige + optionale Nutzer-Metadaten (Titel/Preis); **primäre** Gap-Platzhalter |
 | `TripCompleteness` | Zählt Inter-Lücken auf **nicht-stornierten** Buchungen |
 | `GapContext` Hints | Deep-Link-Suche (Hotel/Flug) aus Nachbar-Locations |
 | `ProviderID.manual` | Nutzer-Buchungen; Sync ersetzt sie nicht |
+| `AutoGapPlanner` | Leerer Plan (keine neuen Auto-Buchungen); Reconcile räumt Legacy auf |
 
 **Lücke zum Intent:** Keine Persistenz automatischer Platzhalter-Buchungen; keine **ort-/zeitzonenbasierte** Transport-Erkennung unabhängig von `minGap`; kein Reconcile nach Mutation.
 
@@ -47,17 +63,17 @@ Optional genannt: **Apple Intelligence** bei Unklarheiten (Ortsgleichheit, Trans
 
 ### A — Nur `SDGap` auto-persistieren (verworfen)
 
-Pros: Wenig Schema-Risiko.  
+Pros: Wenig Schema-Risiko.
 Cons: Kein „Eintrag“ in der Buchungsliste; Completeness/Timeline bleiben Gap-UI; passt schlecht zu „automatische Einträge anpassen“.
 
 ### B — Soft-Trips / zweites Persistenzmodell (verworfen)
 
-Pros: Klare Trennung.  
+Pros: Klare Trennung.
 Cons: Parallel-Architektur zu `Booking`; Sync/UI/CloudKit-Duplikation.
 
 ### C — Empfohlen: Auto-Gap-Buchungen (`ProviderID.autoGap`)
 
-Pros: Nutzt bestehende Timeline/Editor/Zuordnung; klare Filterregel; Sync ignoriert sie wie Manual-Außerhalb-Katalog; nur Auto wird reconciled.  
+Pros: Nutzt bestehende Timeline/Editor/Zuordnung; klare Filterregel; Sync ignoriert sie wie Manual-Außerhalb-Katalog; nur Auto wird reconciled.
 Cons: Completeness muss Auto explizit ausschließen; UI braucht Herkunfts-Badge.
 
 ## Architektur
@@ -194,18 +210,25 @@ v1 Place-Evidence = `placekey-contract` / Normalize-Tests; AI nur in Restlücken
 
 ## Restlücken / Folgespecs
 
-1. Apple Intelligence / FoundationModels für Place- und Modus-Disambiguierung  
-2. `BookingType.bus` (oder explizite Produktentscheidung Bus≡Bahn)  
-3. Leading/Trailing Trip-Rand mit Auto-Fill  
-4. XCUI Badge / Suppress-Journey  
-5. CloudKit-Feldliste für `autoGap` + Suppress-Entity Review  
+1. Apple Intelligence / FoundationModels für Place- und Modus-Disambiguierung
+2. `BookingType.bus` (oder explizite Produktentscheidung Bus≡Bahn)
+3. Leading/Trailing Trip-Rand mit Auto-Fill
+4. XCUI Badge / Suppress-Journey
+5. CloudKit-Feldliste für `autoGap` + Suppress-Entity Review
 
-## Akzeptanz (v1)
+## Akzeptanz (historisch v1 — durch Amendment 2026-09-08 ersetzt)
 
-1. **Flug → Hotel → Flug**, Hotel auf `cancelled`: zwischen den beiden Flügen entsteht zeitliche `.lodging`-Lücke → Auto-Hotel; Sync-/Manual-Buchungen unverändert. (Hotel als Nachbar zu Flug allein erzeugt laut `GapKindClassifier` **kein** Lodging-Auto.)  
-2. Zwei Hotels unterschiedliche Städte, kurze Zeitlücke → Auto-Transport mit korrektem Typ laut Regeln.  
-3. Ort/Offsets einer realen Buchung ändern → bestehender Auto-Eintrag **derselbe Identity-Key** wird aktualisiert (kein Delete+Insert-Flicker); Suppress bleibt gültig.  
-4. Auto löschen → erscheint nach weiterem Reconcile nicht erneut (Suppress auf zeitstabilem Key).  
-5. Auto im Editor speichern → Promotion zu manual (`autoGapIdentityKey` leer) und Reconcile ändert/löscht sie nicht mehr.  
-6. Completeness bleibt unvollständig, solange reale Inter-Lücken existieren — auch wenn Auto-Platzhalter sichtbar sind.  
-7. Reale Buchung von Trip A nach Trip B verschieben → Reconcile A und B; keine Orphan-Autos auf A.
+Die folgenden Punkte beschreiben die **verworfene** Auto-Booking-Semantik und gelten nicht mehr als DoD.
+
+1. ~~Flug→…→Auto-Hotel~~ → siehe Amendment: ComputedGap „Lücke: Übernachtung“
+2. ~~Auto-Transport-Buchung~~ → ComputedGap „Lücke: Transport“ (ohne HH:mm-Range)
+3.–5. ~~Identity-Key-Update / Suppress / Promotion für neue Autos~~ — nur noch Legacy-Cleanup: leerer Plan löscht vorhandene `provider=autoGap`-Einträge; Suppress/Promotion bleiben für Altbestand.
+
+## Akzeptanz (aktuell, Amendment 2026-09-08)
+
+1. Zwei Hotels (ggf. unterschiedliche Städte) mit Intervall ≥ `defaultMinGap` → Timeline zeigt editierbare Lodging-Gap „Lücke: Übernachtung“ (`bed.double.fill`), Span `from.endAt`→`to.startAt`; **kein** „Hotel · Automatisch“.
+2. Bei Ortswechsel: zusätzlich Transport-Gap „Lücke: Transport“ am letzten Kalendertag der Übernachtungslücke (Start ≥ `from.endAt`); ohne Lodging-Bogen Transport am Intervall zwischen den Nachbarn; Timeline ohne Uhrzeit-Range.
+3. `AutoGapPlanner.plan` ist leer; Reconcile entfernt Legacy-`autoGap`-Lodging/Transport.
+4. macOS `GapRow` und iOS `TripTimelineSection` teilen Icon- und Datums-SSOT (`GapPresentation` / `GapKind.systemImageName`).
+5. Completeness bleibt unvollständig, solange reale Inter-Lücken existieren.
+6. Reale Buchung A→B: Reconcile beider Trips; keine Orphan-Autos auf A.

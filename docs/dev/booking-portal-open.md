@@ -40,10 +40,13 @@ Persistiertes `Booking.cancellationUrl` → `BookingExternalURL.browserURL` → 
 |----------|-----------------|--------|
 | Traveloka | `…/refund/presubmission/{PRODUCT}/{bookingId}/{itineraryId}` | ja, wenn actionable (≠ Open) |
 | Airbnb Experience | `…/experience_alteration/{code}?flow=oneCancel&productType=experience` | ja, wenn actionable (≠ Open) |
-| Airbnb Stay | unbelegt | nein |
+| Airbnb Stay | `…/alterations/stays/{code}/cancel` | ja, wenn actionable (≠ Open) |
 | GetYourGuide | = Open-URL (In-Page-Modal) | ja, nur mit Hub-Session + Fristen |
-| billiger-mietwagen.de | `…/reservation/cancellation` (keine Buchungs-ID; Session) | ja, nur mit Hub-Session + Fristen |
-| Check24 / Booking.com / Opodo | unbelegt bis Cancel-HAR | nein |
+| billiger-mietwagen.de | `…/reservation/account/bookings/{id}` (= Open; Assist → scoped Cancel) | ja, nur mit Hub-Session + Fristen |
+| Opodo | = Open-URL (`#tripdetails…`; Assist öffnet Bestätigungsdialog) | ja, nur mit Hub-Session + Fristen |
+| Check24 | `…/kundenbereich/buchung/{uuid}?action=cancel` | ja, wenn actionable (≠ Open) |
+| Booking.com Hotel | `…/cancel*.html?…auth_key=…` (aus Confirmation) | ja, wenn actionable (≠ Open) |
+| Booking.com Flug | unbelegt | nein |
 | Manual | Editor-Feld `cancellationUrl` | ja, wenn belegte HTTPS-URL und actionable |
 
 Nur-Storno (ohne Open-URL) ist erlaubt bei distinct-URL, z. B. nach Editor-Nachtrag.

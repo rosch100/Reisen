@@ -18,6 +18,7 @@ func opodoGraphQLParsesFlightAndHotel() throws {
 
     let flight = try #require(byType[.flight]?.first)
     #expect(flight.externalUrl?.contains("#tripdetails/td=") == true)
+    #expect(flight.cancellationUrl == flight.externalUrl)
     #expect(flight.locationFrom == "Singapur (SIN)")
     #expect(flight.locationTo == "Jakarta (CGK)")
     #expect(flight.locationFromAddress == "Singapore Changi Airport")
@@ -29,6 +30,8 @@ func opodoGraphQLParsesFlightAndHotel() throws {
     #expect(flight.rateDetails?.totalPriceAmount == 333.79)
 
     let active = try #require(byType[.hotel]?.first)
+    let activeExternal = try #require(active.externalUrl)
+    #expect(active.cancellationUrl == activeExternal)
     #expect(active.title?.contains("Merlynn") == true)
     #expect(active.locationTo == "Jakarta")
     #expect(active.locationToAddress == "Jl. KH. Hasyim Azhari 29 - 31, 10130 Jakarta, ID")

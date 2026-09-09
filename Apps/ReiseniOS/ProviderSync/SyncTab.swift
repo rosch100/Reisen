@@ -36,7 +36,7 @@ struct SyncTab: View {
     @State private var webView: WKWebView?
     @State private var showCreateTrip = false
     @State private var showCredentialSheet = false
-    @State private var isKeyboardVisible = false
+    @State private var isKeyboardChromeVisible = false
     @State private var selectedKeychainAccount: KeychainCredentialAccount?
     @State private var keychainAccounts: [KeychainCredentialAccount] = []
     @State private var keychainMessage: String?
@@ -65,6 +65,13 @@ struct SyncTab: View {
             .ignoresSafeArea(.keyboard)
             .navigationTitle(L10n.string(.syncTitle))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(
+                SyncBrowserChrome.hidesTabBarWhileKeyboardChromeVisible(
+                    isSyncTabSelected: isSelected,
+                    keyboardChromeOccupiesBottom: isKeyboardChromeVisible
+                ) ? .hidden : .automatic,
+                for: .tabBar
+            )
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     providerSwitcher
@@ -150,14 +157,16 @@ struct SyncTab: View {
                 }
             }
             .onChange(of: isSelected) { _, selected in
-                if !selected { isKeyboardVisible = false }
+                if !selected { setKeyboardChromeVisible(false) }
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
                 guard isSelected else { return }
-                isKeyboardVisible = true
+                applyKeyboardChromeFrame(
+                    notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+                )
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                isKeyboardVisible = false
+                setKeyboardChromeVisible(false)
             }
             .providerLoginDisclosure(isActive: !enabledProviderIDs.isEmpty)
             .onChange(of: showsApplePasskeyHint) { _, visible in
@@ -223,7 +232,7 @@ struct SyncTab: View {
             .clipped()
 
             if SyncBrowserChrome.showsBottomActionBar(isSessionReady: sessionReady),
-               !isKeyboardVisible {
+               !isKeyboardChromeVisible {
                 actionBar
             }
         }
@@ -374,7 +383,7 @@ struct SyncTab: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(trafficLight.displayLabel)
                     .font(.headline)
-                if !isKeyboardVisible {
+                if !isKeyboardChromeVisible {
                     Text(sessionBannerSubtitle)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -387,7 +396,7 @@ struct SyncTab: View {
 
             Spacer(minLength: 8)
 
-            if !isKeyboardVisible, let lastURLString {
+            if !isKeyboardChromeVisible, let lastURLString {
                 Text(lastURLString)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
@@ -398,7 +407,7 @@ struct SyncTab: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, isKeyboardVisible ? 6 : 10)
+        .padding(.vertical, isKeyboardChromeVisible ? 6 : 10)
         .background(.bar)
     }
 
@@ -426,7 +435,7 @@ struct SyncTab: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, isKeyboardVisible ? 6 : 12)
+        .padding(.vertical, isKeyboardChromeVisible ? 6 : 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
         .background(.bar)
@@ -442,7 +451,7 @@ struct SyncTab: View {
                 Text(trafficLight.displayLabel)
                     .font(.headline)
                     .accessibilityIdentifier(UITestingIdentifiers.syncLoginChrome)
-                if !isKeyboardVisible {
+                if !isKeyboardChromeVisible {
                     Text(sessionBannerSubtitle)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -892,6 +901,48 @@ struct SyncTab: View {
                     result: .succeeded,
                     url: authPopupURLAbsoluteString ?? lastURLString,
                     reason: "apple_idp_visible"
+                )
+            )
+        }
+    }
+
+    private func applyKeyboardChromeFrame(_ endFrame: CGRect?) {
+        guard let endFrame else {
+            setKeyboardChromeVisible(false)
+            return
+        }
+        let screen = UIScreen.main.bounds
+        let occupying = SyncBrowserChrome.isKeyboardChromeOccupyingBottom(
+            endFrameMinY: endFrame.minY,
+            endFrameMaxY: endFrame.maxY,
+            screenMinY: screen.minY,
+            screenMaxY: screen.maxY
+        )
+        setKeyboardChromeVisible(occupying)
+    }
+
+    private func setKeyboardChromeVisible(_ visible: Bool) {
+        guard isKeyboardChromeVisible != visible else { return }
+        isKeyboardChromeVisible = visible
+        let hidesTabBar = SyncBrowserChrome.hidesTabBarWhileKeyboardChromeVisible(
+            isSyncTabSelected: isSelected,
+            keyboardChromeOccupiesBottom: visible
+        )
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: selectedProviderID,
+                        operation: "sync_login"
+                    ),
+                    component: "SyncTab",
+                    phase: "keyboard",
+                    event: "keyboard_chrome",
+                    result: .succeeded,
+                    reason: visible
+                        ? (hidesTabBar ? "occupying_bottom_hide_tab_bar" : "occupying_bottom")
+                        : "cleared"
                 )
             )
         }

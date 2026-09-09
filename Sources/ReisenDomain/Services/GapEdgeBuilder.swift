@@ -33,7 +33,8 @@ public struct GapEdgeBuilder: Sendable {
         }
     }
 
-    /// Bei Ortswechsel: Transport-Segment (≤1 Tag) + optionales Lodging für den Rest (≥ minGap).
+    /// Bei Ortswechsel: Übernachtung über den vollen Bogen (Checkout→Check-in),
+    /// Transport am letzten Tag der Übernachtungslücke; ohne Übernachtung Transport am Tag dazwischen.
     private func interGaps(from: Booking, to: Booking) -> [ComputedGap] {
         let start = from.endAt
         let end = to.startAt
@@ -53,23 +54,10 @@ public struct GapEdgeBuilder: Sendable {
         }
 
         var gaps: [ComputedGap] = []
-        let transportEnd = SpatialGapDetector.cappedTransportEnd(fromStart: start, intervalEnd: end)
-        if transportEnd.timeIntervalSince(start) > 0 {
+        if end.timeIntervalSince(start) >= minGap {
             gaps.append(
                 ComputedGap(
                     gapStart: start,
-                    gapEnd: transportEnd,
-                    kind: .transport,
-                    fromBooking: from,
-                    toBooking: to,
-                    isTripBoundary: false
-                )
-            )
-        }
-        if end.timeIntervalSince(transportEnd) >= minGap {
-            gaps.append(
-                ComputedGap(
-                    gapStart: transportEnd,
                     gapEnd: end,
                     kind: .lodging,
                     fromBooking: from,
@@ -77,7 +65,42 @@ public struct GapEdgeBuilder: Sendable {
                     isTripBoundary: false
                 )
             )
+            let transport = transportOnLastLodgingDay(from: from, to: to, lodgingEnd: end)
+            if transport.gapEnd.timeIntervalSince(transport.gapStart) > 0
+                || transport.gapStart == end
+            {
+                // Positivdauer oder bewusster Midnight-/Kalendertag-Marker am Lodging-Ende.
+                gaps.append(transport)
+            }
+        } else if end.timeIntervalSince(start) > 0 {
+            gaps.append(
+                ComputedGap(
+                    gapStart: start,
+                    gapEnd: end,
+                    kind: .transport,
+                    fromBooking: from,
+                    toBooking: to,
+                    isTripBoundary: false
+                )
+            )
         }
         return gaps
+    }
+
+    /// Transport-Marker am Kalendertag des Übernachtungs-Endes (Check-in nächste Unterkunft).
+    private func transportOnLastLodgingDay(from: Booking, to: Booking, lodgingEnd: Date) -> ComputedGap {
+        let dayStart = HotelStayDate.dateOnly(
+            fromStoredOrParsed: lodgingEnd,
+            legacyHotelOffsetSeconds: to.hotelOffsetSeconds ?? from.hotelOffsetSeconds
+        )
+        let transportStart = max(from.endAt, min(dayStart, lodgingEnd))
+        return ComputedGap(
+            gapStart: transportStart,
+            gapEnd: lodgingEnd,
+            kind: .transport,
+            fromBooking: from,
+            toBooking: to,
+            isTripBoundary: false
+        )
     }
 }

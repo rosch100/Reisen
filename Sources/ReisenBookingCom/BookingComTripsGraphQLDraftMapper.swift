@@ -38,6 +38,9 @@ extension BookingComTripsGraphQLParser {
         let fields = mappedFields(from: reservation, bookingType: bookingType, tripTitle: tripTitle)
         let offset = fields.hotelOffsetSeconds ?? ISODateTime.offsetSeconds(from: startISO)
         let deadlines = deadline(from: reservation.policy, hotelOffsetSeconds: offset).map { [$0] } ?? []
+        let cancellationUrl = bookingType == .hotel
+            ? BookingComCancellationURL.fromConfirmationURL(externalUrl)
+            : nil
 
         return DraftAssembler.draft(
             from: ProviderBookingFacts(
@@ -48,6 +51,7 @@ extension BookingComTripsGraphQLParser {
                 title: fields.title,
                 confirmationCode: fields.confirmationCode,
                 externalUrl: externalUrl,
+                cancellationUrl: cancellationUrl,
                 locationFrom: fields.locationFrom,
                 locationTo: fields.locationTo,
                 locationToAddress: fields.locationToAddress,

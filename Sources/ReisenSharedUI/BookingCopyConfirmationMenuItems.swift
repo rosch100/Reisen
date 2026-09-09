@@ -35,12 +35,12 @@ public struct CopyLinkMenuItem: View {
 /// Kontextmenü zum Kopieren von Gap-Info (Plain-Text-Zeilen; kein Tap-to-Copy auf der Zeile).
 struct GapCopyMenuItems: View {
     let title: String
-    let rangeText: String
+    let rangeText: String?
     let kindLabel: String
     var priceText: String? = nil
 
     private var copyText: String {
-        ([title, rangeText, kindLabel] + [priceText].compactMap { $0 })
+        ([title, rangeText, kindLabel, priceText].compactMap { $0 })
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
     }

@@ -48,6 +48,7 @@ extension OpodoTripsGraphQLParser {
                 title: title,
                 confirmationCode: pnr ?? trip.id,
                 externalUrl: externalUrl,
+                cancellationUrl: externalUrl,
                 locationFrom: from,
                 locationTo: to,
                 locationFromAddress: NonEmpty.string(firstSection?.departure?.name),

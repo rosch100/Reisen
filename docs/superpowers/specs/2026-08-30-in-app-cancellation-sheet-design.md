@@ -12,7 +12,7 @@ Plattformen: macOS (`Reisen`) und iOS/iPadOS (`ReiseniOS`, Private und Store)
 
 Voraussetzung: persistierte `cancellationUrl` und Extract-Matrix. **URL-Extract / Provider-Modes (SSOT):** [2026-08-31-provider-cancellation-links-all-design.md](2026-08-31-provider-cancellation-links-all-design.md) (ersetzt die v1-Matrix in [cancellation-portal-links-design.md](2026-08-30-cancellation-portal-links-design.md)). Diese Spec **ändert das Storno-Control** (Frist-Sichtbarkeit, Titel, destruktive Rolle, Session-Sheet).
 
-Live-Belege (Browser 2026-08-30, nichts storniert): Traveloka Refund-Info mit „Start My Refund“; billiger-mietwagen SPA `/reservation/cancellation` ohne Buchungs-ID (**session-bound distinct**, Safari ohne Cookies nicht Akzeptanzkriterium); mehrere Provider stornieren **auf der Buchungsseite** (In-Page-Modal / Button), nicht auf einem eigenen GET-Pfad.
+Live-Belege (Browser 2026-08-30, nichts storniert): Traveloka Refund-Info mit „Start My Refund“; billiger-mietwagen scoped Cancel nur von Buchungsdetail (Assist B + Fallback A, Spec 2026-09-07); mehrere Provider stornieren **auf der Buchungsseite** (In-Page-Modal / Button), nicht auf einem eigenen GET-Pfad.
 
 Verwandt: [booking-portal-open.md](../../dev/booking-portal-open.md), [booking-trip-delete-design.md](2026-08-28-booking-trip-delete-design.md).
 
@@ -31,8 +31,8 @@ Verwandt: [booking-portal-open.md](../../dev/booking-portal-open.md), [booking-t
 | Begriff | Bedeutung |
 |---------|-----------|
 | **Storno-URL** | `Booking.cancellationBrowserURL`. Darf der Öffnen-URL **gleichen**, wenn das Portal dort storniert (Matrix in der Portal-Links-Spec). |
-| **Eigene Storno-Seite** | Storno-URL ≠ Öffnen-URL (Traveloka Refund, Airbnb Experience; Welle 2: Booking `cancel.html`, Opodo `funnel=cancellationHSA` nach Fixture). billiger-mietwagen `/reservation/cancellation` ist **eigene URL**, aber session-bound (nur Sheet). |
-| **Cancel-Fläche = Buchungsseite** | Storno-URL == Öffnen-URL: In-Page-Modal oder Button auf der Detailseite (GYG, Check24, Booking.com Flug, Airbnb Stay sofern belegt). |
+| **Eigene Storno-Seite** | Storno-URL ≠ Öffnen-URL (Traveloka Refund, Airbnb, Check24 `?action=cancel`, Booking.com Hotel `cancel*.html`). |
+| **Cancel-Fläche = Buchungsseite** | Storno-URL == Öffnen-URL: In-Page-Modal oder Button auf der Detailseite (GYG, billiger-mietwagen, Opodo; Booking.com Flug sofern belegt). |
 | **Anzeigbare Frist** | `CancellationDeadlineDisplayFilter.deadlinesForDisplay` — Zukunft, Free oder Paid unter der höchsten gespeicherten Fee. Vollpreis-Paid und Paid ohne Betrag zählen nicht. |
 | **Storno möglich** | `isActionable`: nicht cancelled, Storno-URL gesetzt, `deadlinesForDisplay` nicht leer. **Kein** Zwang `cancel ≠ open`. |
 | **Stornieren-Button** | Titel „Stornieren“ (DE; EN-Key `action.cancel_in_portal`). `role: .destructive`. |
@@ -47,9 +47,11 @@ Verwandt: [booking-portal-open.md](../../dev/booking-portal-open.md), [booking-t
 - `isActionable(cancellation:open:status:deadlines:now:)` — Fristen zusätzlich; gleiche URL wie Öffnen bleibt actionable (Portal-Links-Kontrakt).
 - Sichtbares Stornieren: `visible.cancel` **und** (Hub-WebView **oder** eigene Storno-Seite). Sonst kein Control, nicht disabled.
 - Hub-WebView da: Sheet, Owner `cancelSheet`, `load` der Storno-URL. In-Page-Cancel passiert auf der geladenen Seite in der Session (Cookies).
-- billiger-mietwagen: URL ohne Buchungs-ID ist Absicht; die SPA nutzt die Session (**sessionBoundDistinct**). Sheet lädt genau diese URL; ohne Hub-WebView kein Stornieren-Button (Safari nicht Akzeptanzkriterium).
+- billiger-mietwagen: `cancellationUrl == externalUrl` (`inPageOnOpen`). Sheet lädt Buchungsdetail; Assist löst „Buchung stornieren“ aus → scoped Cancel-Formular; bei Misserfolg bleibt die Detailseite (manuell). Ohne Hub-WebView kein Stornieren-Button.
+- Opodo: `cancellationUrl == externalUrl` (`inPageOnOpen`). Sheet lädt Trip-Detail; Assist öffnet Bestätigungsdialog („Buchung abbrechen“), **klickt nie** „Diese Buchung stornieren“.
 - Traveloka: Seite ist Refund-Info („Start My Refund“); Sheet zeigt sie, Reisen klickt nicht weiter. Enrich muss die Refund-URL setzen, auch wenn der Refund-HTML-Fetch wegen vorhandener Fristen übersprungen wird (Extract-Spec / Traveloka-Provider — nicht still nur Katalog).
-- Nach Dismiss: Owner `syncHost`, WebView zurück. URL nicht restaurieren. Sync während des Sheets auf derselben Instanz.
+- Nach Dismiss: Owner `syncHost`, WebView zurück. URL nicht restaurieren. Sync während des Sheets auf derselben Instanz bleibt erlaubt (manuell).
+- Nach Dismiss bei **erkannter Portal-Storno-Completion** (Heuristik): stiller Single-Provider-Sync — SSOT [2026-09-07-portal-cancel-success-provider-resync-design.md](2026-09-07-portal-cancel-success-provider-resync-design.md). Kein lokales `cancelled` ohne Sync-Ergebnis.
 - Sheet-Navigation fehlgeschlagen: Fehler im Sheet, Button bleibt, kein stiller Safari-Wechsel.
 - Hash-URLs (Opodo): Fragment nicht strippen.
 - L10n DE+EN.
@@ -58,11 +60,12 @@ Verwandt: [booking-portal-open.md](../../dev/booking-portal-open.md), [booking-t
 
 - Settings-Toggle.
 - `confirmationDialog` vor dem Sheet.
-- Provider-Cancel-API, Tombstones, lokales `cancelled`.
+- Provider-Cancel-API, Tombstones, lokales `cancelled` **ohne** Provider-Sync.
 - Zweites WebView.
 - DOM-Klick auf „Start My Refund“ / Modal-Buttons (Nutzer im Sheet).
 - Neue URL-Extracts (Portal-Links-Spec). Kein `?? externalUrl` als Dummy, wenn Cancel unbelegt ist.
 - XCUI.
+- Auto-Sync ohne Completion-Heuristik; Safari-Storno ohne Sheet.
 
 ## Architektur
 
@@ -117,8 +120,9 @@ Schicht-Landung: Domain (Fristen in `isActionable` + Sichtbarkeit ohne WebView n
 2. Traveloka (eigene Refund-URL) + Session: Sheet auf `refund/presubmission/…`, nicht Safari.
 3. Cancel-Fläche = Buchungsseite + Session: Sheet lädt die Buchungsseite; Nutzer bedient Modal dort.
 4. Dieselbe Situation ohne Session (Store-iOS): nur Öffnen, kein zweites Stornieren.
-5. billiger-mietwagen: Sheet auf `/reservation/cancellation` (keine ID im Pfad).
+5. billiger-mietwagen: Sheet auf Buchungsdetail; Assist führt zum scoped Cancel-Formular oder belässt Detail (Fallback).
 6. Sync während des Sheets möglich. Kein Settings, kein Confirm-Dialog, kein API-Storno.
+7. Erkannte Portal-Storno-Completion → nach Dismiss stiller Provider-Sync ([Resync-Spec](2026-09-07-portal-cancel-success-provider-resync-design.md)).
 
 ## Risiken
 
@@ -126,6 +130,6 @@ Schicht-Landung: Domain (Fristen in `isActionable` + Sichtbarkeit ohne WebView n
 |--------|--------|
 | Sync-`load()` ersetzt Refund/Modal | akzeptiert |
 | Host stiehlt die WebView | Display-Owner + Tests |
-| Generic-URL ohne ID (BM) | Session-SPA; nicht UUID in den Pfad raten |
+| Generic-URL ohne ID (BM) | ersetzt: Open-URL + Assist; Gast-Lookup nicht mehr Storno-Ziel |
 | Hash-Cancel (Opodo) | Fragment in `browserURL` behalten |
 | Portal-Links-Spec noch Link ohne destructive | diese Spec gilt für das Control |

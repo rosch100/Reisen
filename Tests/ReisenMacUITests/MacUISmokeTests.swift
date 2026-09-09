@@ -25,6 +25,8 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchEmpty()
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.providerSetupSheet)
+        // Reach-only: Alle-Button sichtbar, kein Tap (lokale Selection ohne Persistenz-Assert).
+        ui.waitFor(UITestingIdentifiers.providerSetupSelectAll, timeout: 3)
     }
 
     func testEmptyLaunchContinueWithoutProvidersDismissesSetup() {
@@ -441,9 +443,11 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchEmpty()
         ui.waitForWindow()
         let title = "UI Test Created Trip"
-        ui.createTripViaEmptyCTA(title: title)
+        let destination = "UI Test Destination"
+        ui.createTripViaEmptyCTA(title: title, destination: destination, notes: "UI Test Notes")
         XCTAssertFalse(ui.element(UITestingIdentifiers.tripEditor).waitForExistence(timeout: 3))
         ui.waitForLabelContaining(title)
+        ui.waitForLabelContaining(destination)
     }
 
     func testNewTripMenuCreatesTrip() {
@@ -509,6 +513,11 @@ final class MacUISmokeTests: XCTestCase {
     func testGapEditorIsReachableForSeededGap() {
         let ui = MacUI.launchPopulated()
         ui.waitForWindow()
+        // Gap-Platzhalter (Lücke: …) bleiben editierbar; Icon/Datumsformat teilen SharedUI-SSOT.
+        XCTAssertTrue(
+            ui.waitFor(UITestingIdentifiers.seededGapRow).exists,
+            "Seed-Gap-Zeile muss in der Timeline sichtbar sein"
+        )
         ui.editSeededGapTitle("UI Testing Edited Gap")
         ui.waitForLabelContaining("UI Testing Edited Gap")
     }

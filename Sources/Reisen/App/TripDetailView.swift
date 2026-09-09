@@ -1086,26 +1086,20 @@ private struct BookingDetailPanel: View {
         switch bookingEditorSession {
         case .create:
             // Hotel-Draft hält DatePicker-Lokalwerte; Expand vergleicht GMT-Anker (R16).
-            let bookingStart: Date
-            let bookingEnd: Date
-            if draft.bookingType == .hotel {
-                bookingStart = HotelStayDate.dateOnly(fromLocalPickerDate: draft.startAt)
-                bookingEnd = HotelStayDate.dateOnly(fromLocalPickerDate: draft.endAt)
-            } else {
-                bookingStart = draft.startAt
-                bookingEnd = draft.endAt
-            }
-            if let proposal = TripPeriodExpandOnAssign.proposalIfNeeded(
-                bookingStart: bookingStart,
-                bookingEnd: bookingEnd,
+            switch TripCreateBookingAssignment.plan(
+                bookingType: draft.bookingType,
+                draftStartAt: draft.startAt,
+                draftEndAt: draft.endAt,
                 tripStart: trip.startDate,
                 tripEnd: trip.endDate
             ) {
+            case .askExpand(let proposal):
                 pendingPeriodExpand = proposal
                 showPeriodExpandConfirm = true
                 return
+            case .assignToTrip:
+                try createBookingAssigned(to: trip)
             }
-            try createBookingAssigned(to: trip)
         case .edit:
             guard let booking = selectedBooking else { return }
             try draft.apply(to: booking, in: modelContext)
@@ -1725,13 +1719,6 @@ private struct GapRow: View {
     @Environment(\.openURL) private var openURL
     @State private var preferredSearchProvider: ProviderID?
 
-    private var hotelTimeZone: TimeZone {
-        HotelTimeZone.resolve(
-            fromOffsetSeconds: gap.fromBooking.hotelOffsetSeconds,
-            toOffsetSeconds: gap.toBooking.hotelOffsetSeconds
-        )
-    }
-
     private var enabledGapSearchProviders: [ProviderID] {
         providerRegistry?.enabledGapSearchProviderIDs() ?? []
     }
@@ -1742,6 +1729,10 @@ private struct GapRow: View {
             kind: effectiveKind,
             preferredProvider: preferredSearchProvider
         ) ?? ([], [])
+    }
+
+    private var rangeText: String? {
+        GapPresentation.rangeText(for: gap, kind: effectiveKind)
     }
 
     var body: some View {
@@ -1757,13 +1748,20 @@ private struct GapRow: View {
 
     private var gapSummaryBody: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(displayTitle)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                Text("\(Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))")
-                    .font(.subheadline)
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(displayTitle)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    if let rangeText {
+                        Text(rangeText)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } icon: {
+                Image(systemName: effectiveKind.systemImageName)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
@@ -1776,21 +1774,27 @@ private struct GapRow: View {
     private var gapDetailsBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    CopyableFieldValue(
-                        value: displayTitle,
-                        kind: .standard,
-                        textStyle: .headline,
-                        lineLimit: 2
-                    )
-                    let rangeText = "\(Formatting.formatOrtszeit(gap.gapStart, dateFormat: "d.M.", timeZone: hotelTimeZone)) – \(Formatting.formatOrtszeit(gap.gapEnd, dateFormat: "d.M.", timeZone: hotelTimeZone))"
-                    CopyableFieldValue(
-                        value: rangeText,
-                        kind: .standard,
-                        textStyle: .subheadline,
-                        foregroundStyle: .secondary,
-                        lineLimit: 1
-                    )
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        CopyableFieldValue(
+                            value: displayTitle,
+                            kind: .standard,
+                            textStyle: .headline,
+                            lineLimit: 2
+                        )
+                        if let rangeText {
+                            CopyableFieldValue(
+                                value: rangeText,
+                                kind: .standard,
+                                textStyle: .subheadline,
+                                foregroundStyle: .secondary,
+                                lineLimit: 1
+                            )
+                        }
+                    }
+                } icon: {
+                    Image(systemName: effectiveKind.systemImageName)
+                        .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
                 Button(L10n.string(.commonEdit)) {
