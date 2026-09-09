@@ -103,13 +103,14 @@ struct ProviderSessionWebView: UIViewRepresentable {
             attachCoordinator(view, context: context)
             host.embed(view)
         }
-        context.coordinator.loadedLoginURL = loginURL
         context.coordinator.boundProviderID = providerID
         context.coordinator.observeSessionCookies(in: view, providerID: providerID)
         DispatchQueue.main.async {
-            webView = view
+            if webView !== view {
+                webView = view
+            }
         }
-        if allowsEmbed, let loginURL { view.load(URLRequest(url: loginURL)) }
+        loadLoginURLIfNeeded(in: view, context: context)
         return host
     }
 
@@ -142,20 +143,57 @@ struct ProviderSessionWebView: UIViewRepresentable {
                 webView = view
             }
         }
-        guard allowsEmbed, let loginURL else { return }
-        if context.coordinator.loadedLoginURL != loginURL {
-            context.coordinator.dismissAuthPopup()
+        loadLoginURLIfNeeded(in: view, context: context)
+    }
+
+    private func loadLoginURLIfNeeded(in webView: InteractiveWKWebView, context: Context) {
+        let decision = ProviderLoginURLLoadIntent.decide(
+            loginURL: loginURL,
+            allowsEmbed: allowsEmbed,
+            coordinatorLoadedURL: context.coordinator.loadedLoginURL,
+            hubRequestedURL: sessionHub?.requestedLoginURL(for: providerID),
+            webViewURLString: webView.url?.absoluteString,
+            isLoading: webView.isLoading
+        )
+        switch decision {
+        case .skip:
+            return
+        case .markLoaded:
+            guard let loginURL else { return }
             context.coordinator.loadedLoginURL = loginURL
-            view.load(URLRequest(url: loginURL))
+            sessionHub?.noteRequestedLoginURL(providerID, url: loginURL)
+            context.coordinator.recordNavigationEvent(
+                "login_url_mark_loaded",
+                result: .skipped,
+                webView: webView,
+                reason: "remount_or_already_at_login"
+            )
+        case .load(let url):
+            context.coordinator.dismissAuthPopup()
+            context.coordinator.loadedLoginURL = url
+            sessionHub?.noteRequestedLoginURL(providerID, url: url)
+            let reason = ProviderLoginURLLoadIntent.isBlankWebViewURL(webView.url?.absoluteString)
+                ? "blank_webview_recovery"
+                : "login_url_intent"
+            context.coordinator.recordNavigationEvent(
+                "login_url_load",
+                result: .started,
+                webView: webView,
+                reason: reason
+            )
+            webView.load(URLRequest(url: url))
         }
     }
 
     private func resolveWebView(context: Context) -> InteractiveWKWebView {
+        if let hub = sessionHub,
+           let ensured = hub.ensureWebView(providerID, create: {
+               makeWebView(context: context)
+           }) as? InteractiveWKWebView {
+            return ensured
+        }
         if let existing = webView as? InteractiveWKWebView {
             return existing
-        }
-        if let hubView = sessionHub?.webView(for: providerID) as? InteractiveWKWebView {
-            return hubView
         }
         return makeWebView(context: context)
     }

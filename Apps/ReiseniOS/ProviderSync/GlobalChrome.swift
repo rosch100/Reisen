@@ -127,8 +127,11 @@ struct SyncBackgroundSessionProbe: View {
     }
 
     var body: some View {
+        // Hub-Slots vor WebViewHost — sonst ensureWebView/updateWebView ohne Slot.
+        let enabled = enabledProviderIDs
+        let _ = sessionHub?.syncEnabledProviders(Set(enabled))
         ZStack {
-            ForEach(enabledProviderIDs, id: \.self) { id in
+            ForEach(enabled, id: \.self) { id in
                 WebViewHost(
                     loginURL: loginURL(for: id),
                     providerID: id,
