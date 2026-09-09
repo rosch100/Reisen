@@ -211,7 +211,8 @@ private func withGermanL10n(_ body: () throws -> Void) rethrows {
         #expect(ProviderID.airbnb.displayName == "Airbnb")
         #expect(ProviderID.getYourGuide.displayName == "GetYourGuide")
         #expect(ProviderID.traveloka.displayName == "Traveloka")
-        #expect(ProviderID.billigerMietwagen.displayName == "billiger-mietwagen.de")
+        #expect(ProviderID.billigerMietwagen.displayName == "billiger-mietwagen")
+        #expect(ProviderID.expedia.displayName == "Expedia")
         #expect(ProviderID.manual.displayName == L10n.string(.providerManual))
         for id in ProviderID.syncProviderIDs {
             #expect(!id.displayName.isEmpty)
