@@ -15,8 +15,8 @@ Partner-/Demand-APIs (Amadeus, Sabre, GYG Partner, Expedia Lodging Supply) bleib
 | [`dev/booking-type-activity-impl-spec.md`](dev/booking-type-activity-impl-spec.md) | Gemeinsame Basis `BookingType.activity` |
 | [`dev/airbnb-experiences-impl-spec.md`](dev/airbnb-experiences-impl-spec.md) | Airbnb Catalog + `activity_reservation_details` |
 | [`dev/getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md) | Neuer Provider GYG |
-| [`dev/billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md) | Neuer Provider billiger-mietwagen.de (FLOYT) |
-| [`dev/expedia-impl-spec.md`](dev/expedia-impl-spec.md) | Neuer Provider Expedia.de (Hotel + Car) |
+| [`dev/billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md) | Neuer Provider billiger-mietwagen (FLOYT) |
+| [`dev/expedia-impl-spec.md`](dev/expedia-impl-spec.md) | Neuer Provider Expedia (Hotel + Car) |
 | [`dev/check24-productkey-audit.md`](dev/check24-productkey-audit.md) | productKey-Inventory + Live-Audit-Checkliste |
 | [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md) | Booking.com `verticalType` / Reservation-`__typename` + Query-Shape 2026-08 |
 
@@ -32,7 +32,7 @@ Ausführungsdetails nur im Plan — nicht hier wiederholen.
 | Partner/Metasearch-API | Amadeus, Skyscanner Travel API, GYG Partner API, Expedia Lodging Supply | **Nein** |
 | Gap-Deep-Links | Check24 Hotel/Flug-Suche | Teilweise (nur Suche, kein Sync) |
 
-Neue Provider = [`TravelProvider`](../Sources/ReisenDomain/Ports/TravelProvider.swift) + `WKWebView`-Session, wie die registrierten Sync-Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen.de, Expedia.de).
+Neue Provider = [`TravelProvider`](../Sources/ReisenDomain/Ports/TravelProvider.swift) + `WKWebView`-Session, wie die registrierten Sync-Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen, Expedia).
 
 ```mermaid
 flowchart LR
@@ -81,12 +81,12 @@ Domain-Basis: [`BookingType.activity`](dev/booking-type-activity-impl-spec.md). 
 
 | Provider | Sync-Pfad | Aufwand | Status Recherche |
 |----------|-----------|---------|------------------|
-| **billiger-mietwagen.de** (FLOYT) | Session.php + `consumer-api.floyt.com` bookings | Mittel | Live-Capture 2026-08-28; [Impl-Spec](dev/billiger-mietwagen-impl-spec.md) |
+| **billiger-mietwagen** (FLOYT) | Session.php + `consumer-api.floyt.com` bookings | Mittel | Live-Capture 2026-08-28; [Impl-Spec](dev/billiger-mietwagen-impl-spec.md) |
 | FlixBus/DB, Sixt | — | — | nachrangig; ggf. Check24-`productKey`-Whitelist |
 
 ---
 
-## Teil A.4 – billiger-mietwagen.de / FLOYT
+## Teil A.4 – billiger-mietwagen / FLOYT
 
 **HAR-SSOT** (Surfaces). **Mapping-SSOT:** [`billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md).
 
@@ -470,7 +470,7 @@ Nachbauen der Provider-OAuth-Flows sind keine unterstützten Lösungen.
 | Blocker | Arkose/OTP nur im WebView; Flight-Trips-HAR fehlt für volle Feldparität |
 | Risiko | Hash-/Schema-Bruch (hart failen, kein Query-Text-Fallback) |
 
-**Verdict:** Produktivpfad Expedia.de Hotel+Car in `ReisenExpedia`. Folge: Live-Flight/Activity-HAR für Prefix-Bestätigung und optional Completion-Detector.
+**Verdict:** Produktivpfad Expedia Hotel+Car in `ReisenExpedia`. Folge: Live-Flight/Activity-HAR für Prefix-Bestätigung und optional Completion-Detector.
 
 ---
 

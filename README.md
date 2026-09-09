@@ -16,8 +16,8 @@ Anmeldung mit deinem bestehenden Konto beim jeweiligen Portal; Voyenna importier
 | **Airbnb** | Unterkünfte, Erlebnisse |
 | **GetYourGuide** | Erlebnisse / Touren |
 | **Traveloka** | Hotel, Flug, Erlebnisse, Mietwagen, … |
-| **billiger-mietwagen.de** | Mietwagen |
-| **Expedia.de** | Hotel, Mietwagen (+ abgeleitet Flug/Aktivität) |
+| **billiger-mietwagen** | Mietwagen |
+| **Expedia** | Hotel, Mietwagen (+ abgeleitet Flug/Aktivität) |
 
 Zusätzlich: **manuelle Buchungen** (Flug, Hotel, Fähre, Bahn, Mietwagen, Erlebnis, Sonstiges) ohne Portal-Sync.
 
@@ -35,8 +35,8 @@ ReisenBookingCom     Booking.com-Adapter
 ReisenAirbnb         Airbnb-Adapter (Stays + Experiences)
 ReisenGetYourGuide   GetYourGuide-Adapter
 ReisenTraveloka      Traveloka-Adapter
-ReisenBilligerMietwagen  billiger-mietwagen.de-Adapter
-ReisenExpedia        Expedia.de-Adapter
+ReisenBilligerMietwagen  billiger-mietwagen-Adapter
+ReisenExpedia        Expedia-Adapter
 ReisenProviderSync   Produktions-Registry (ProviderSyncBootstrap)
 ReisenAppCore        Bootstrap, SyncStore, EventKit/Reminder Side Effects
 ReisenPasteImport    On-device Paste-Import (PDF/Bild/Text → Review)

@@ -705,6 +705,12 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchPasteImportFixture()
         ui.waitForWindow()
         ui.acceptPasteImportFixture()
-        ui.waitForLabelContaining("UI Testing Imported Booking", timeout: 10)
+        let sidebar = ui.waitFor(UITestingIdentifiers.sidebar)
+        let openContent = ui.waitFor(UITestingIdentifiers.openBookingsContent, timeout: 12)
+        ui.waitForLabelContaining(
+            "UI Testing Imported Booking",
+            in: [sidebar, openContent],
+            timeout: 12
+        )
     }
 }

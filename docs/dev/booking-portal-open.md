@@ -25,7 +25,7 @@ App-Store-iOS: keine Provider-Registry → keine Gap-Suche; Buchungs-Open über 
 | Check24 Fähre | `https://ferry.check24.de/kundenbereich/buchung/{uuid}` | Browser | unklar / Browser-Fallback |
 | GetYourGuide | `https://www.getyourguide.com/en-us/booking/{hash}` | Browser | best-effort |
 | Traveloka | `…/item/details/{bookingId}?type=&id=` | Browser | best-effort |
-| Expedia.de | `…/trips/{egti}/details/{tripItemId}` | Browser | best-effort |
+| Expedia | `…/trips/{egti}/details/{tripItemId}` | Browser | best-effort |
 | Opodo | `…/travel/secure/#tripdetails/td={token}` | Browser | Nein (Hash) → Safari |
 | Manual | `reisen://manual/{uuid}` | kein Open | kein Open |
 
@@ -43,10 +43,10 @@ Persistiertes `Booking.cancellationUrl` → `BookingExternalURL.browserURL` → 
 | Airbnb Experience | `…/experience_alteration/{code}?flow=oneCancel&productType=experience` | ja, wenn actionable (≠ Open) |
 | Airbnb Stay | `…/alterations/stays/{code}/cancel` | ja, wenn actionable (≠ Open) |
 | GetYourGuide | = Open-URL (In-Page-Modal) | ja, nur mit Hub-Session + Fristen |
-| billiger-mietwagen.de | `…/reservation/account/bookings/{id}` (= Open; Assist → scoped Cancel) | ja, nur mit Hub-Session + Fristen |
-| Expedia.de Hotel | `…/booking-servicing/lodging/voluntary/cancel/review?…` | ja, wenn actionable (≠ Open) |
-| Expedia.de Mietwagen | `…/details/…/manage-booking` (= In-Page; Assist → Dialog/Confirm) | ja, nur mit Hub-Session + Fristen |
-| Expedia.de Flug/Aktivität | `…/manage-booking` (Ableitung; kein Assist v1) | ja, nur mit Hub-Session + Fristen |
+| billiger-mietwagen | `…/reservation/account/bookings/{id}` (= Open; Assist → scoped Cancel) | ja, nur mit Hub-Session + Fristen |
+| Expedia Hotel | `…/booking-servicing/lodging/voluntary/cancel/review?…` | ja, wenn actionable (≠ Open) |
+| Expedia Mietwagen | `…/details/…/manage-booking` (= In-Page; Assist → Dialog/Confirm) | ja, nur mit Hub-Session + Fristen |
+| Expedia Flug/Aktivität | `…/manage-booking` (Ableitung; kein Assist v1) | ja, nur mit Hub-Session + Fristen |
 | Opodo | = Open-URL (`#tripdetails…`; Assist öffnet Bestätigungsdialog) | ja, nur mit Hub-Session + Fristen |
 | Check24 | `…/kundenbereich/buchung/{uuid}?action=cancel` | ja, wenn actionable (≠ Open) |
 | Booking.com Hotel | `…/cancel*.html?…auth_key=…` (aus Confirmation) | ja, wenn actionable (≠ Open) |
@@ -61,14 +61,14 @@ Menge = aktivierte Sync-Provider ∩ Builder. UI: Picker „alle aktiven“ oder
 
 | Kategorie | sichtbar bei GapKind | Builder |
 |-----------|----------------------|---------|
-| Hotel | lodging, both | Check24, Booking.com, Airbnb, Traveloka, Expedia.de |
+| Hotel | lodging, both | Check24, Booking.com, Airbnb, Traveloka, Expedia |
 | Flug | transport, both | Check24, Booking.com, Traveloka |
 | Erlebnis | lodging, both | GetYourGuide, Traveloka |
 | Fähre | transport, both | nur mit belegter öffentlicher URL (aktuell keine) |
-| Mietwagen | transport, both | Expedia.de (nur mit konkreten Gap-Zeiten); sonst keine |
+| Mietwagen | transport, both | Expedia (nur mit konkreten Gap-Zeiten); sonst keine |
 
 **Opodo:** kein Gap-Builder — öffentliche Prefill-Suche war nicht zuverlässig belegbar (kein Dummy).
-**Expedia.de:** Hotel-Gap (`Hotel-Search`); Mietwagen-Gap (`carsearch/details`) nur wenn Gap konkrete Abhol-/Rückgabezeiten hat.
+**Expedia:** Hotel-Gap (`Hotel-Search`); Mietwagen-Gap (`carsearch/details`) nur wenn Gap konkrete Abhol-/Rückgabezeiten hat.
 
 ## Open-Titel (L10n-SSOT)
 

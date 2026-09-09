@@ -70,6 +70,16 @@ struct MacUI {
     /// Kein `descendants(.any)`: unter CI-Last hängt die AX-Query („Timed out while evaluating UI query“).
     @discardableResult
     func waitForLabelContaining(_ text: String, timeout: TimeInterval = 8) -> XCUIElement {
+        waitForLabelContaining(text, in: [app], timeout: timeout)
+    }
+
+    /// Enger Suchraum — vermeidet CI-Timeouts bei `app.descendants(matching: .any)`.
+    @discardableResult
+    func waitForLabelContaining(
+        _ text: String,
+        in roots: [XCUIElement],
+        timeout: TimeInterval = 8
+    ) -> XCUIElement {
         let predicate = NSPredicate(
             format: "label CONTAINS %@ OR value CONTAINS %@",
             text,
@@ -77,25 +87,22 @@ struct MacUI {
         )
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            let staticMatch = app.staticTexts.matching(predicate).firstMatch
-            if staticMatch.exists {
-                return staticMatch
-            }
-            let buttonMatch = app.buttons.matching(predicate).firstMatch
-            if buttonMatch.exists {
-                return buttonMatch
+            for root in roots {
+                let staticMatch = root.staticTexts.matching(predicate).firstMatch
+                if staticMatch.exists {
+                    return staticMatch
+                }
+                let buttonMatch = root.buttons.matching(predicate).firstMatch
+                if buttonMatch.exists {
+                    return buttonMatch
+                }
             }
             RunLoop.current.run(until: Date().addingTimeInterval(0.05))
         }
-        let match = app.staticTexts.matching(predicate).firstMatch
-        XCTAssertTrue(
-            match.exists || app.buttons.matching(predicate).firstMatch.exists,
+        XCTFail(
             "Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)"
         )
-        if match.exists {
-            return match
-        }
-        return app.buttons.matching(predicate).firstMatch
+        return app
     }
 
     func waitForWindow(timeout: TimeInterval = 15) {

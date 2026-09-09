@@ -40,7 +40,7 @@ public final class ExpediaTravelProvider: TravelProvider, TravelProviderLoginCon
                 result: .succeeded
             )
 
-            onProgress?("Lade Reisen (Expedia.de)…")
+            onProgress?("Lade Reisen (Expedia)…")
             let tripsHTML = try await webView.fetchAuthenticatedHTML(
                 url: ExpediaAPI.tripsURL,
                 referer: ExpediaAPI.origin + "/",
@@ -123,7 +123,7 @@ public final class ExpediaTravelProvider: TravelProvider, TravelProviderLoginCon
                 throw ExpediaProviderError.missingTripItemId
             }
             let duaid = try await requireDUAID(webView: webView)
-            onProgress?("Lade Buchungsdetails (Expedia.de)…")
+            onProgress?("Lade Buchungsdetails (Expedia)…")
 
             let tripData = try await postPersistedGraphQL(
                 webView: webView,

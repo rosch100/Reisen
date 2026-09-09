@@ -17,14 +17,14 @@
 | ReisenAirbnb | Domain, Providers, WebKit | Airbnb Sync (Stays + Experiences) |
 | ReisenGetYourGuide | Domain, Providers, WebKit | GetYourGuide Sync |
 | ReisenTraveloka | Domain, Providers, WebKit | Traveloka Sync |
-| ReisenBilligerMietwagen | Domain, Providers, WebKit | billiger-mietwagen.de Sync |
-| ReisenExpedia | Domain, Providers, Diagnostics, MapKit, WebKit | Expedia.de Sync |
+| ReisenBilligerMietwagen | Domain, Providers, WebKit | billiger-mietwagen Sync |
+| ReisenExpedia | Domain, Providers, Diagnostics, MapKit, WebKit | Expedia Sync |
 | ReisenProviderSync | Domain, Providers, Anbieter-Module | Produktions-Registry (`ProviderSyncBootstrap`) |
 | ReisenPasteImport | Domain, AppCore | On-device Paste-Import von Bestätigungen |
 | Reisen | alle | macOS Composition Root + UI |
 | ReiseniOS | alle | Universal iOS/iPadOS App |
 
-Registrierte Sync-Anbieter (SSOT): `ProviderID.syncProviderIDs` — Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen.de, Expedia.de. Wiring in `ProviderSyncBootstrap.makeProviderRegistry()`.
+Registrierte Sync-Anbieter (SSOT): `ProviderID.syncProviderIDs` — Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen, Expedia. Wiring in `ProviderSyncBootstrap.makeProviderRegistry()`.
 
 CloudKit-/Store-Details: [`docs/dev/swiftdata-hybrid-cloudkit.md`](dev/swiftdata-hybrid-cloudkit.md).
 
