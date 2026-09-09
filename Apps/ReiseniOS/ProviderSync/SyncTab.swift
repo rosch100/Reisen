@@ -37,6 +37,7 @@ struct SyncTab: View {
     @State private var showCreateTrip = false
     @State private var showCredentialSheet = false
     @State private var isKeyboardChromeVisible = false
+    @State private var isWebLoginInputFocused = false
     @State private var selectedKeychainAccount: KeychainCredentialAccount?
     @State private var keychainAccounts: [KeychainCredentialAccount] = []
     @State private var keychainMessage: String?
@@ -65,10 +66,12 @@ struct SyncTab: View {
             .ignoresSafeArea(.keyboard)
             .navigationTitle(L10n.string(.syncTitle))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar(
-                SyncBrowserChrome.hidesTabBarWhileKeyboardChromeVisible(
+            .toolbarVisibility(
+                SyncBrowserChrome.hidesTabBarForSyncBrowserChrome(
                     isSyncTabSelected: isSelected,
-                    keyboardChromeOccupiesBottom: isKeyboardChromeVisible
+                    needsLogin: sessionStatus == .needsLogin,
+                    keyboardChromeOccupiesBottom: isKeyboardChromeVisible,
+                    webLoginInputFocused: isWebLoginInputFocused
                 ) ? .hidden : .automatic,
                 for: .tabBar
             )
@@ -139,6 +142,7 @@ struct SyncTab: View {
             }
             .onChange(of: selectedProviderID) { _, newProviderID in
                 navigationWasBlocked = false
+                isWebLoginInputFocused = false
                 webView = sessionHub?.webView(for: newProviderID)
                 guard enabledProviderIDs.contains(newProviderID) else { return }
                 guard let sessionHub else { return }
@@ -157,7 +161,10 @@ struct SyncTab: View {
                 }
             }
             .onChange(of: isSelected) { _, selected in
-                if !selected { setKeyboardChromeVisible(false) }
+                if !selected {
+                    setKeyboardChromeVisible(false)
+                    isWebLoginInputFocused = false
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
                 guard isSelected else { return }
@@ -226,6 +233,9 @@ struct SyncTab: View {
                 },
                 onNavigationBlocked: {
                     navigationWasBlocked = true
+                },
+                onWebLoginInputFocusChange: { focused in
+                    setWebLoginInputFocused(focused)
                 }
             )
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
@@ -924,10 +934,34 @@ struct SyncTab: View {
     private func setKeyboardChromeVisible(_ visible: Bool) {
         guard isKeyboardChromeVisible != visible else { return }
         isKeyboardChromeVisible = visible
-        let hidesTabBar = SyncBrowserChrome.hidesTabBarWhileKeyboardChromeVisible(
+        recordTabBarChromeChange()
+    }
+
+    private func setWebLoginInputFocused(_ focused: Bool) {
+        guard isWebLoginInputFocused != focused else { return }
+        isWebLoginInputFocused = focused
+        recordTabBarChromeChange()
+    }
+
+    private func recordTabBarChromeChange() {
+        let hidesTabBar = SyncBrowserChrome.hidesTabBarForSyncBrowserChrome(
             isSyncTabSelected: isSelected,
-            keyboardChromeOccupiesBottom: visible
+            needsLogin: sessionStatus == .needsLogin,
+            keyboardChromeOccupiesBottom: isKeyboardChromeVisible,
+            webLoginInputFocused: isWebLoginInputFocused
         )
+        let reason: String
+        if !isSelected {
+            reason = "cleared"
+        } else if sessionStatus == .needsLogin {
+            reason = hidesTabBar ? "needs_login_hide_tab_bar" : "needs_login"
+        } else if isWebLoginInputFocused {
+            reason = hidesTabBar ? "web_input_focused_hide_tab_bar" : "web_input_focused"
+        } else if isKeyboardChromeVisible {
+            reason = hidesTabBar ? "occupying_bottom_hide_tab_bar" : "occupying_bottom"
+        } else {
+            reason = "cleared"
+        }
         Task {
             await DiagnosticLogger.shared.record(
                 DiagnosticEvent(
@@ -940,9 +974,7 @@ struct SyncTab: View {
                     phase: "keyboard",
                     event: "keyboard_chrome",
                     result: .succeeded,
-                    reason: visible
-                        ? (hidesTabBar ? "occupying_bottom_hide_tab_bar" : "occupying_bottom")
-                        : "cleared"
+                    reason: reason
                 )
             )
         }

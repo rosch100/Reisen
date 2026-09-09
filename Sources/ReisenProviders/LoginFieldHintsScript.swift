@@ -50,6 +50,20 @@ public enum LoginFieldHintsScript {
             } catch (_) {}
           }
 
+          function notifyFocus(focused) {
+            try {
+              if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[handlerName]) {
+                window.webkit.messageHandlers[handlerName].postMessage({
+                  type: focused ? 'inputFocused' : 'inputBlurred'
+                });
+              }
+            } catch (_) {}
+          }
+
+          function isLoginInput(el) {
+            return candidatesUsername(el) || candidatesPassword(el);
+          }
+
           let notifyTimer = null;
           function scheduleNotify() {
             if (notifyTimer) clearTimeout(notifyTimer);
@@ -117,6 +131,20 @@ public enum LoginFieldHintsScript {
 
           markFields(document);
           scheduleNotify();
+
+          document.addEventListener('focusin', function(e) {
+            const t = e && e.target;
+            if (t && isLoginInput(t)) notifyFocus(true);
+          }, true);
+          document.addEventListener('focusout', function(e) {
+            const t = e && e.target;
+            if (t && isLoginInput(t)) {
+              setTimeout(function() {
+                const active = document.activeElement;
+                if (!isLoginInput(active)) notifyFocus(false);
+              }, 0);
+            }
+          }, true);
 
           const observer = new MutationObserver(function(mutations) {
             let sawInput = false;
