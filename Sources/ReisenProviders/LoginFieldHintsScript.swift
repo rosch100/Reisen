@@ -50,6 +50,20 @@ public enum LoginFieldHintsScript {
             } catch (_) {}
           }
 
+          function notifyFocus(focused) {
+            try {
+              if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[handlerName]) {
+                window.webkit.messageHandlers[handlerName].postMessage({
+                  type: focused ? 'inputFocused' : 'inputBlurred'
+                });
+              }
+            } catch (_) {}
+          }
+
+          function isLoginInput(el) {
+            return candidatesUsername(el) || candidatesPassword(el);
+          }
+
           let notifyTimer = null;
           function scheduleNotify() {
             if (notifyTimer) clearTimeout(notifyTimer);
@@ -115,8 +129,46 @@ public enum LoginFieldHintsScript {
           }
           window.__reisenLoginHintsInstalled = true;
 
+          function eventTarget(e) {
+            try {
+              if (e && e.composedPath) {
+                const path = e.composedPath();
+                if (path && path.length) return path[0];
+              }
+            } catch (_) {}
+            return e && e.target;
+          }
+
+          function deepActiveElement() {
+            let el = document.activeElement;
+            try {
+              while (el && el.shadowRoot && el.shadowRoot.activeElement) {
+                el = el.shadowRoot.activeElement;
+              }
+            } catch (_) {}
+            return el;
+          }
+
+          function reportCurrentFocus() {
+            notifyFocus(isLoginInput(deepActiveElement()));
+          }
+
           markFields(document);
           scheduleNotify();
+
+          document.addEventListener('focusin', function(e) {
+            const t = eventTarget(e);
+            if (t && isLoginInput(t)) notifyFocus(true);
+          }, true);
+          document.addEventListener('focusout', function(e) {
+            const t = eventTarget(e);
+            if (t && isLoginInput(t)) {
+              setTimeout(function() {
+                if (!isLoginInput(deepActiveElement())) notifyFocus(false);
+              }, 0);
+            }
+          }, true);
+          reportCurrentFocus();
 
           const observer = new MutationObserver(function(mutations) {
             let sawInput = false;

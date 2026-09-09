@@ -45,6 +45,7 @@ struct WebViewHost: View {
     var onAuthPopupURLChange: ((String?) -> Void)?
     var onCapturedCredentials: ((ProviderCredentials) -> Void)?
     var onNavigationBlocked: (() -> Void)?
+    var onWebLoginInputFocusChange: ((Bool) -> Void)?
 
     var body: some View {
         ProviderSessionWebView(
@@ -57,7 +58,8 @@ struct WebViewHost: View {
             onDidFinish: onDidFinish,
             onAuthPopupURLChange: onAuthPopupURLChange,
             onCapturedCredentials: onCapturedCredentials,
-            onNavigationBlocked: onNavigationBlocked
+            onNavigationBlocked: onNavigationBlocked,
+            onWebLoginInputFocusChange: onWebLoginInputFocusChange
         )
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
         .clipped()
@@ -75,6 +77,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
     var onAuthPopupURLChange: ((String?) -> Void)?
     var onCapturedCredentials: ((ProviderCredentials) -> Void)?
     var onNavigationBlocked: (() -> Void)?
+    var onWebLoginInputFocusChange: ((Bool) -> Void)?
     @Environment(\.providerSessionHub) private var sessionHub
 
     func makeCoordinator() -> Coordinator {
@@ -83,6 +86,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
             onAuthPopupURLChange: onAuthPopupURLChange,
             onCapturedCredentials: onCapturedCredentials,
             onNavigationBlocked: onNavigationBlocked,
+            onWebLoginInputFocusChange: onWebLoginInputFocusChange,
             diagnosticContext: diagnosticContext,
             passwordAutofillAllowedHosts: passwordAutofillAllowedHosts
         )
@@ -119,6 +123,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         context.coordinator.diagnosticContext = diagnosticContext
         context.coordinator.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
         context.coordinator.onAuthPopupURLChange = onAuthPopupURLChange
+        context.coordinator.onWebLoginInputFocusChange = onWebLoginInputFocusChange
         if ProviderAuthPopupPolicy.bindProvider(
             providerID,
             previous: &context.coordinator.boundProviderID
@@ -202,6 +207,8 @@ struct ProviderSessionWebView: UIViewRepresentable {
         let ucc = view.configuration.userContentController
         ucc.removeScriptMessageHandler(forName: LoginFormCapture.messageHandlerName)
         ucc.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
+        ucc.removeScriptMessageHandler(forName: LoginFieldHintsScript.messageHandlerName)
+        ucc.add(context.coordinator, name: LoginFieldHintsScript.messageHandlerName)
         view.navigationDelegate = context.coordinator
         view.uiDelegate = context.coordinator
     }
@@ -218,6 +225,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
             WKUserScript(source: Self.viewportScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         )
         configuration.userContentController.add(context.coordinator, name: LoginFormCapture.messageHandlerName)
+        configuration.userContentController.add(context.coordinator, name: LoginFieldHintsScript.messageHandlerName)
 
         let view = InteractiveWKWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = context.coordinator
@@ -267,6 +275,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         var onAuthPopupURLChange: ((String?) -> Void)?
         let onCapturedCredentials: ((ProviderCredentials) -> Void)?
         let onNavigationBlocked: (() -> Void)?
+        var onWebLoginInputFocusChange: ((Bool) -> Void)?
         var diagnosticContext: DiagnosticContext?
         var passwordAutofillAllowedHosts: [String]
         var loadedLoginURL: URL?
@@ -281,6 +290,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
             onAuthPopupURLChange: ((String?) -> Void)?,
             onCapturedCredentials: ((ProviderCredentials) -> Void)?,
             onNavigationBlocked: (() -> Void)?,
+            onWebLoginInputFocusChange: ((Bool) -> Void)?,
             diagnosticContext: DiagnosticContext?,
             passwordAutofillAllowedHosts: [String]
         ) {
@@ -288,6 +298,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
             self.onAuthPopupURLChange = onAuthPopupURLChange
             self.onCapturedCredentials = onCapturedCredentials
             self.onNavigationBlocked = onNavigationBlocked
+            self.onWebLoginInputFocusChange = onWebLoginInputFocusChange
             self.diagnosticContext = diagnosticContext
             self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
         }
@@ -296,9 +307,9 @@ struct ProviderSessionWebView: UIViewRepresentable {
             sessionCookieObserver?.detach()
             sessionCookieObserver = nil
             dismissAuthPopup()
-            webView?.configuration.userContentController.removeScriptMessageHandler(
-                forName: LoginFormCapture.messageHandlerName
-            )
+            let ucc = webView?.configuration.userContentController
+            ucc?.removeScriptMessageHandler(forName: LoginFormCapture.messageHandlerName)
+            ucc?.removeScriptMessageHandler(forName: LoginFieldHintsScript.messageHandlerName)
         }
 
         func observeSessionCookies(in webView: WKWebView, providerID: ProviderID) {
@@ -318,6 +329,12 @@ struct ProviderSessionWebView: UIViewRepresentable {
         }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            if message.name == LoginFieldHintsScript.messageHandlerName {
+                if let focused = LoginFieldHintsMessage.webLoginInputFocused(message.body) {
+                    onWebLoginInputFocusChange?(focused)
+                }
+                return
+            }
             LoginFormCapture.handleScriptMessage(
                 message,
                 webView: message.webView,

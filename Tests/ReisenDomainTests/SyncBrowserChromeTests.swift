@@ -168,3 +168,39 @@ import ReisenDomain
         )
     )
 }
+
+/// Regression #209 Follow-up: Keyboard-Frame allein reicht nicht — needsLogin / Web-Input-Fokus.
+@Test func syncBrowserChrome_hidesTabBarForSyncNeedsLoginOrWebInputFocus() {
+    #expect(
+        SyncBrowserChrome.hidesTabBarForSyncBrowserChrome(
+            isSyncTabSelected: true,
+            needsLogin: true,
+            keyboardChromeOccupiesBottom: false,
+            webLoginInputFocused: false
+        )
+    )
+    #expect(
+        SyncBrowserChrome.hidesTabBarForSyncBrowserChrome(
+            isSyncTabSelected: true,
+            needsLogin: false,
+            keyboardChromeOccupiesBottom: false,
+            webLoginInputFocused: true
+        )
+    )
+    #expect(
+        !SyncBrowserChrome.hidesTabBarForSyncBrowserChrome(
+            isSyncTabSelected: true,
+            needsLogin: false,
+            keyboardChromeOccupiesBottom: false,
+            webLoginInputFocused: false
+        )
+    )
+    #expect(
+        !SyncBrowserChrome.hidesTabBarForSyncBrowserChrome(
+            isSyncTabSelected: false,
+            needsLogin: true,
+            keyboardChromeOccupiesBottom: true,
+            webLoginInputFocused: true
+        )
+    )
+}

@@ -92,6 +92,22 @@ public enum SyncBrowserChrome: Sendable {
         isSyncTabSelected: Bool,
         keyboardChromeOccupiesBottom: Bool
     ) -> Bool {
-        isSyncTabSelected && keyboardChromeOccupiesBottom
+        hidesTabBarForSyncBrowserChrome(
+            isSyncTabSelected: isSyncTabSelected,
+            needsLogin: false,
+            keyboardChromeOccupiesBottom: keyboardChromeOccupiesBottom,
+            webLoginInputFocused: false
+        )
+    }
+
+    /// Floating-TabBar ausblenden bei Sync-Login, Keyboard-Chrome oder fokussiertem Web-Login-Feld.
+    public static func hidesTabBarForSyncBrowserChrome(
+        isSyncTabSelected: Bool,
+        needsLogin: Bool,
+        keyboardChromeOccupiesBottom: Bool,
+        webLoginInputFocused: Bool
+    ) -> Bool {
+        guard isSyncTabSelected else { return false }
+        return needsLogin || keyboardChromeOccupiesBottom || webLoginInputFocused
     }
 }
