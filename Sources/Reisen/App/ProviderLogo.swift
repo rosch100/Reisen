@@ -12,13 +12,13 @@ struct ProviderLogo: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 40, height: 16)
-                .accessibilityLabel(Text("\(providerID.rawValue) logo"))
+                .accessibilityLabel(Text(providerID.displayName))
         } else if providerID.expectsBrandedLogoAsset {
             Image(systemName: "questionmark.circle")
                 .foregroundStyle(.secondary)
                 .imageScale(.small)
                 .frame(width: 40, height: 16)
-                .accessibilityLabel(Text("\(providerID.rawValue) logo (missing asset)"))
+                .accessibilityLabel(Text("\(providerID.displayName) logo (missing asset)"))
         }
     }
 

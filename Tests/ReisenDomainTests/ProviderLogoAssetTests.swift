@@ -14,6 +14,17 @@ import ReisenDomain
     }
 }
 
+@Test func providerLogoWebsiteAssets_existForEverySyncProvider() {
+    let logos = repoRoot.appendingPathComponent("docs/legal/assets/providers")
+    for id in ProviderID.syncProviderIDs {
+        let svg = logos.appendingPathComponent("\(id.rawValue).svg")
+        #expect(
+            FileManager.default.fileExists(atPath: svg.path),
+            "Website-Provider-Logo fehlt: \(id.rawValue).svg"
+        )
+    }
+}
+
 private var repoRoot: URL {
     URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()

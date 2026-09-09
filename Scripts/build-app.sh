@@ -180,6 +180,8 @@ elif [[ -f "$PROFILE" ]]; then
   cp "$ENTITLEMENTS" "$MERGED_ENTITLEMENTS"
   /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string ${TEAM_ID}.${BUNDLE_ID}" "$MERGED_ENTITLEMENTS"
   /usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string ${TEAM_ID}" "$MERGED_ENTITLEMENTS"
+  # codesign expandiert $(AppIdentifierPrefix) nicht — literal lässt launchd mit POSIX 163 scheitern.
+  /usr/bin/sed -i '' "s|\\\$(AppIdentifierPrefix)|${TEAM_ID}.|g" "$MERGED_ENTITLEMENTS"
   # Profil listet erlaubte Umgebungen als Array; die Signatur braucht genau einen Wert.
   # Launchd prüft gegen das Profil (`Development`/`Production`); CloudKit erwartet denselben Token.
   /usr/libexec/PlistBuddy -c 'Delete :com.apple.developer.icloud-container-environment' "$MERGED_ENTITLEMENTS" >/dev/null 2>&1 || true

@@ -39,7 +39,7 @@ Details: [Apple Signing](../ci/apple-signing.md).
 | Aktion | Befehl |
 |--------|--------|
 | App auf Simulator starten | `bash ./Scripts/ios-run.sh` |
-| App auf dem iPhone starten | `bash ./Scripts/ios-run-device.sh` |
+| App auf dem iPhone starten | `bash ./Scripts/ios-run-device.sh` (Store); `--private` = Vendor-Sync (`ReiseniOSPrivate`) |
 | Unit-Tests auf Simulator | `bash ./Scripts/ios-test.sh` |
 | Nur Projekt generieren | `bash ./Scripts/generate-ios-project.sh` |
 
