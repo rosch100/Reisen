@@ -69,17 +69,33 @@ struct MacUI {
     /// Sidebar-/Timeline-Titel sind oft Button-Labels mit Datums-Suffix, nicht exakte StaticTexts.
     @discardableResult
     func waitForLabelContaining(_ text: String, timeout: TimeInterval = 8) -> XCUIElement {
+        waitForLabelContaining(text, in: [app], timeout: timeout)
+    }
+
+    /// Enger Suchraum — vermeidet CI-Timeouts bei `app.descendants(matching: .any)`.
+    @discardableResult
+    func waitForLabelContaining(
+        _ text: String,
+        in roots: [XCUIElement],
+        timeout: TimeInterval = 8
+    ) -> XCUIElement {
         let predicate = NSPredicate(
             format: "label CONTAINS %@ OR value CONTAINS %@",
             text,
             text
         )
-        let match = app.descendants(matching: .any).matching(predicate).firstMatch
-        XCTAssertTrue(
-            match.waitForExistence(timeout: timeout),
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            for root in roots {
+                let match = root.descendants(matching: .any).matching(predicate).firstMatch
+                if match.exists { return match }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        XCTFail(
             "Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)"
         )
-        return match
+        return app
     }
 
     func waitForWindow(timeout: TimeInterval = 15) {
