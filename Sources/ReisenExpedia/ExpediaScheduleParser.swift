@@ -77,6 +77,24 @@ enum ExpediaScheduleParser {
         minute: Int
     ) -> Date? {
         guard let berlin = TimeZone(identifier: "Europe/Berlin") else { return nil }
+        return makeDate(
+            year: year,
+            month: month,
+            day: day,
+            hour: hour,
+            minute: minute,
+            timeZone: berlin
+        )
+    }
+
+    static func makeDate(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        timeZone: TimeZone
+    ) -> Date? {
         var comps = DateComponents()
         comps.year = year
         comps.month = month
@@ -85,7 +103,7 @@ enum ExpediaScheduleParser {
         comps.minute = minute
         comps.second = 0
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = berlin
+        cal.timeZone = timeZone
         return cal.date(from: comps)
     }
 

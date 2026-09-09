@@ -1,0 +1,336 @@
+{
+  "tripsLocationDetails": {
+    "__typename": "TripDetailsUILocationDetailsSuccessResponse",
+    "heading": "Standortdetails",
+    "address": "Lehrter Straße 68, Berlin, BE, 10557 Deutschland",
+    "locationName": "martas Gästehäuser Hauptbahnhof Berlin - Hostel",
+    "map": {
+      "floatingMapButton": {
+        "action": {
+          "data": {
+            "center": {
+              "latitude": 52.526592,
+              "longitude": 13.364173,
+              "__typename": "Coordinates"
+            },
+            "zoom": 15,
+            "__typename": "TripDetailsUIMapData"
+          },
+          "url": {
+            "value": "https://maps.google.com/?q=martas%2BG%C3%A4steh%C3%A4user%2BHauptbahnhof%2BBerlin%2B-%2BHostel%2C+Lehrter%2BStra%C3%9Fe%2B68%2C%2BBerlin%2C%2BBE%2C%2B10557%2BDeutschland",
+            "__typename": "HttpURI"
+          },
+          "analytics": {
+            "event": {
+              "eventCategory": "location",
+              "eventName": "trip_details_item.selected",
+              "eventType": "Interaction",
+              "eventVersion": "1.0.0",
+              "actionLocation": null,
+              "actionReason": null,
+              "__typename": "TripDetailsUIClickStreamEvent"
+            },
+            "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"location\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"location_module\",\"component_element_name\":\"expand_map_button\"}}}}}}}",
+            "__typename": "TripDetailsUIClickStreamAnalytics"
+          },
+          "__typename": "TripDetailsUIMapDirectionsAction"
+        },
+        "button": {
+          "accessibility": "Wird in einem neuen Fenster geöffnet",
+          "disabled": false,
+          "primary": "Zur Wegbeschreibung",
+          "icon": {
+            "id": "open_in_new",
+            "description": "Wird in einem neuen Fenster geöffnet",
+            "title": null,
+            "size": null,
+            "spotLight": null,
+            "__typename": "Icon"
+          },
+          "iconPosition": null,
+          "__typename": "TripDetailsUITertiaryButton"
+        },
+        "__typename": "TripDetailsUIFloatingMapButton"
+      },
+      "staticMap": {
+        "image": {
+          "altText": null,
+          "description": "",
+          "url": "https://maps.googleapis.com/maps/api/staticmap?&size=842x360&center=52.526592,13.364173&zoom=15&markers=icon:%7C52.52659%2C13.36417&channel=bex-itinerary&scale=1&key=AIzaSyDvJfRIUpVEHJ9zwACq2L18ZRjAUZCSvhI&signature=OZ6ajXThjwh9nrFmodGKjkk85js=",
+          "__typename": "Image"
+        },
+        "mapData": {
+          "center": {
+            "latitude": 52.526592,
+            "longitude": 13.364173,
+            "__typename": "Coordinates"
+          },
+          "zoom": 15,
+          "__typename": "TripDetailsUIMapData"
+        },
+        "openMapAction": {
+          "data": {
+            "center": {
+              "latitude": 52.526592,
+              "longitude": 13.364173,
+              "__typename": "Coordinates"
+            },
+            "zoom": 15,
+            "__typename": "TripDetailsUIMapData"
+          },
+          "url": {
+            "value": "https://maps.google.com/?q=martas%2BG%C3%A4steh%C3%A4user%2BHauptbahnhof%2BBerlin%2B-%2BHostel%2C+Lehrter%2BStra%C3%9Fe%2B68%2C%2BBerlin%2C%2BBE%2C%2B10557%2BDeutschland",
+            "__typename": "HttpURI"
+          },
+          "analytics": {
+            "event": {
+              "eventCategory": "location",
+              "eventName": "trip_details_item.selected",
+              "eventType": "Interaction",
+              "eventVersion": "1.0.0",
+              "actionLocation": null,
+              "actionReason": null,
+              "__typename": "TripDetailsUIClickStreamEvent"
+            },
+            "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"location\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"location_module\",\"component_element_name\":\"map\"}}}}}}}",
+            "__typename": "TripDetailsUIClickStreamAnalytics"
+          },
+          "__typename": "TripDetailsUIMapDirectionsAction"
+        },
+        "impressionAnalytics": {
+          "event": {
+            "eventCategory": "",
+            "eventName": "",
+            "eventType": "",
+            "eventVersion": "",
+            "actionLocation": null,
+            "actionReason": null,
+            "__typename": "TripDetailsUIClickStreamEvent"
+          },
+          "payload": null,
+          "__typename": "TripDetailsUIClickStreamAnalytics"
+        },
+        "__typename": "TripDetailsUIStaticMap"
+      },
+      "__typename": "TripDetailsUILocationMap"
+    },
+    "actionButtons": [
+      {
+        "__typename": "TripDetailsUILocationDetailsButton",
+        "action": {
+          "data": {
+            "center": {
+              "latitude": 52.526592,
+              "longitude": 13.364173,
+              "__typename": "Coordinates"
+            },
+            "zoom": 15,
+            "__typename": "TripDetailsUIMapData"
+          },
+          "url": {
+            "value": "https://maps.google.com/?q=martas%2BG%C3%A4steh%C3%A4user%2BHauptbahnhof%2BBerlin%2B-%2BHostel%2C+Lehrter%2BStra%C3%9Fe%2B68%2C%2BBerlin%2C%2BBE%2C%2B10557%2BDeutschland",
+            "__typename": "HttpURI"
+          },
+          "analytics": {
+            "event": {
+              "eventCategory": "location",
+              "eventName": "trip_details_item.selected",
+              "eventType": "Interaction",
+              "eventVersion": "1.0.0",
+              "actionLocation": null,
+              "actionReason": null,
+              "__typename": "TripDetailsUIClickStreamEvent"
+            },
+            "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"location\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"location_module\",\"component_element_name\":\"get_directions\"}}}}}}}",
+            "__typename": "TripDetailsUIClickStreamAnalytics"
+          },
+          "__typename": "TripDetailsUIMapDirectionsAction"
+        },
+        "button": {
+          "accessibility": null,
+          "disabled": false,
+          "primary": "Zur Wegbeschreibung",
+          "icon": null,
+          "iconPosition": null,
+          "__typename": "TripDetailsUISecondaryButton"
+        }
+      }
+    ],
+    "copyLocationNameButton": {
+      "action": {
+        "analytics": {
+          "event": {
+            "eventCategory": "location",
+            "eventName": "trip_details_item.selected",
+            "eventType": "Interaction",
+            "eventVersion": "1.0.0",
+            "actionLocation": null,
+            "actionReason": null,
+            "__typename": "TripDetailsUIClickStreamEvent"
+          },
+          "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"location\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"location_module\",\"component_element_name\":\"property_address\"}}}}}}}",
+          "__typename": "TripDetailsUIClickStreamAnalytics"
+        },
+        "toast": {
+          "primary": "Adresse des Standorts in die Zwischenablage kopiert",
+          "analytics": null,
+          "__typename": "TripDetailsUIInfoToast"
+        },
+        "value": "Lehrter Straße 68, Berlin, BE, 10557 Deutschland",
+        "__typename": "TripDetailsUICopyToClipboardAction"
+      },
+      "button": {
+        "accessibility": "Adresse des Standorts in die Zwischenablage kopieren",
+        "disabled": false,
+        "icon": {
+          "id": "copy_content",
+          "description": "Adresse des Standorts in die Zwischenablage kopieren",
+          "title": null,
+          "size": null,
+          "spotLight": null,
+          "__typename": "Icon"
+        },
+        "iconPosition": null,
+        "impressionAnalytics": null,
+        "primary": null,
+        "__typename": "TripDetailsUITertiaryButton"
+      },
+      "__typename": "TripDetailsUICopyToClipboardButton"
+    },
+    "localInfoExpando": {
+      "expando": {
+        "expanded": false,
+        "collapsedLabel": "In der Nähe",
+        "expandedLabel": "In der Nähe",
+        "triggerPosition": "TRAILING",
+        "collapsedAnalytics": {
+          "event": {
+            "eventCategory": "location",
+            "eventName": "trip_details_item.selected",
+            "eventType": "Interaction",
+            "eventVersion": "1.0.0",
+            "actionLocation": null,
+            "actionReason": null,
+            "__typename": "TripDetailsUIClickStreamEvent"
+          },
+          "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"location\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"location_module\",\"component_element_name\":\"collapse_whats_nearby\"}}}}}}}",
+          "__typename": "TripDetailsUIClickStreamAnalytics"
+        },
+        "expandedAnalytics": {
+          "event": {
+            "eventCategory": "location",
+            "eventName": "trip_details_item.selected",
+            "eventType": "Interaction",
+            "eventVersion": "1.0.0",
+            "actionLocation": null,
+            "actionReason": null,
+            "__typename": "TripDetailsUIClickStreamEvent"
+          },
+          "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"location\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"location_module\",\"component_element_name\":\"expand_whats_nearby\"}}}}}}}",
+          "__typename": "TripDetailsUIClickStreamAnalytics"
+        },
+        "__typename": "TripDetailsUIExpandoListItem"
+      },
+      "content": {
+        "description": [
+          {
+            "label": {
+              "text": "Reichstagsgebäude",
+              "icon": {
+                "id": "place",
+                "description": "place icon",
+                "title": null,
+                "size": null,
+                "spotLight": null,
+                "__typename": "Icon"
+              },
+              "iconPosition": "LEADING",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "value": {
+              "text": "‪17 Gehminuten‬",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "__typename": "TripDetailsUILabelValuePair"
+          },
+          {
+            "label": {
+              "text": "Brandenburger Tor",
+              "icon": {
+                "id": "place",
+                "description": "place icon",
+                "title": null,
+                "size": null,
+                "spotLight": null,
+                "__typename": "Icon"
+              },
+              "iconPosition": "LEADING",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "value": {
+              "text": "‪3 Autominuten‬",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "__typename": "TripDetailsUILabelValuePair"
+          },
+          {
+            "label": {
+              "text": "Friedrichstraße",
+              "icon": {
+                "id": "place",
+                "description": "place icon",
+                "title": null,
+                "size": null,
+                "spotLight": null,
+                "__typename": "Icon"
+              },
+              "iconPosition": "LEADING",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "value": {
+              "text": "‪4 Autominuten‬",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "__typename": "TripDetailsUILabelValuePair"
+          },
+          {
+            "label": {
+              "text": "Berlin (BER-Brandenburg)",
+              "icon": {
+                "id": "lob_flights",
+                "description": "airport icon",
+                "title": null,
+                "size": null,
+                "spotLight": null,
+                "__typename": "Icon"
+              },
+              "iconPosition": "LEADING",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "value": {
+              "text": "‪47 Autominuten‬",
+              "__typename": "TripDetailsUIIconText"
+            },
+            "__typename": "TripDetailsUILabelValuePair"
+          }
+        ],
+        "title": null,
+        "__typename": "TripDetailsUILocalInfoExpandoContent"
+      },
+      "__typename": "TripDetailsUILocalInfoExpando"
+    },
+    "impressionAnalytics": {
+      "event": {
+        "eventCategory": "location",
+        "eventName": "trip_details_item.presented",
+        "eventType": "Impression",
+        "eventVersion": "1.0.0",
+        "actionLocation": null,
+        "actionReason": null,
+        "__typename": "TripDetailsUIClickStreamEvent"
+      },
+      "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.presented\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Impression\",\"event_category\":\"location\",\"event_name\":\"trip_details_item.presented\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"location_module\"}},\"destination_list\":[{\"destination_full_name\":\"Reichstagsgebäude\",\"destination_type\":\"POI\",\"destination_formatted_distance\":\"‪17 Gehminuten‬\"},{\"destination_full_name\":\"Brandenburger Tor\",\"destination_type\":\"POI\",\"destination_formatted_distance\":\"‪3 Autominuten‬\"},{\"destination_full_name\":\"Friedrichstraße\",\"destination_type\":\"POI\",\"destination_formatted_distance\":\"‪4 Autominuten‬\"},{\"destination_full_name\":\"Berlin (BER-Brandenburg)\",\"destination_type\":\"AIRPORT\",\"destination_formatted_distance\":\"‪47 Autominuten‬\"}]}}}}}",
+      "__typename": "TripDetailsUIClickStreamAnalytics"
+    }
+  }
+}

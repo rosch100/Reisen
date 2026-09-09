@@ -67,6 +67,7 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("WebKit"),
+                .linkedFramework("MapKit"),
             ]
         ),
         .target(
@@ -80,6 +81,7 @@ let package = Package(
                 "ReisenData",
                 "ReisenDiagnostics",
                 "ReisenCrashSignal",
+                "ReisenProviders",
             ],
             path: "Sources/ReisenAppCore",
             exclude: [

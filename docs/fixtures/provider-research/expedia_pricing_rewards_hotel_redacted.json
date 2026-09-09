@@ -1,0 +1,134 @@
+{
+  "tripsItemPricingAndRewards": {
+    "heading": "Preise und Treuevorteile",
+    "impressionAnalytics": {
+      "event": {
+        "eventCategory": "pricing_rewards",
+        "eventName": "trip_details_item.presented",
+        "eventType": "Impression",
+        "eventVersion": "1.0.0",
+        "actionLocation": null,
+        "actionReason": null,
+        "__typename": "TripDetailsUIClickStreamEvent"
+      },
+      "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.presented\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Impression\",\"event_category\":\"pricing_rewards\",\"event_name\":\"trip_details_item.presented\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"pricing_rewards_module\"}}}}}}}",
+      "__typename": "TripDetailsUIClickStreamAnalytics"
+    },
+    "oneKeyContent": {
+      "accessibility": "Du verdienst 0,43 € in OneKeyCash",
+      "impressionAnalytics": {
+        "event": {
+          "eventCategory": "pricing_rewards",
+          "eventName": "trip_details_item.presented",
+          "eventType": "Impression",
+          "eventVersion": "1.0.0",
+          "actionLocation": null,
+          "actionReason": null,
+          "__typename": "TripDetailsUIClickStreamEvent"
+        },
+        "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.presented\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Impression\",\"event_category\":\"pricing_rewards\",\"event_name\":\"trip_details_item.presented\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"pricing_rewards_module\",\"component_element_name\":\"one_key\"}}}}}}}",
+        "__typename": "TripDetailsUIClickStreamAnalytics"
+      },
+      "content": [
+        {
+          "__typename": "EGDSStylizedText",
+          "accessibility": null,
+          "stylizedText": "Du verdienst 0,43 € in OneKeyCash",
+          "theme": null,
+          "weight": "REGULAR",
+          "textSize": null
+        }
+      ],
+      "__typename": "TripDetailsUIOneKeyMessage"
+    },
+    "paymentDetailMessages": null,
+    "pricingSummaries": [
+      {
+        "accessibility": "Der Gesamtpreis beträgt 49,45 €.",
+        "label": {
+          "__typename": "EGDSStylizedText",
+          "accessibility": null,
+          "stylizedText": "Gesamtpreis",
+          "theme": null,
+          "weight": "BOLD",
+          "textSize": null
+        },
+        "value": {
+          "__typename": "EGDSStylizedText",
+          "accessibility": null,
+          "stylizedText": "49,45 €",
+          "theme": null,
+          "weight": "BOLD",
+          "textSize": null
+        },
+        "labelSubtext": null,
+        "valueSubtext": null,
+        "__typename": "TripDetailsUIPricingSummary"
+      },
+      {
+        "accessibility": "Der fällige Betrag beträgt 49,45 €.",
+        "label": {
+          "__typename": "EGDSStylizedText",
+          "accessibility": null,
+          "stylizedText": "Fälliger Betrag",
+          "theme": null,
+          "weight": "REGULAR",
+          "textSize": null
+        },
+        "value": {
+          "__typename": "EGDSStylizedText",
+          "accessibility": null,
+          "stylizedText": "49,45 €",
+          "theme": null,
+          "weight": "REGULAR",
+          "textSize": null
+        },
+        "labelSubtext": null,
+        "valueSubtext": null,
+        "__typename": "TripDetailsUIPricingSummary"
+      }
+    ],
+    "pricingSummaryButtons": [
+      {
+        "action": {
+          "analytics": {
+            "event": {
+              "eventCategory": "pricing_rewards",
+              "eventName": "trip_details_item.selected",
+              "eventType": "Interaction",
+              "eventVersion": "1.0.0",
+              "actionLocation": null,
+              "actionReason": null,
+              "__typename": "TripDetailsUIClickStreamEvent"
+            },
+            "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"pricing_rewards\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Item Detail\"},\"additional_context\":{\"user_interface\":{\"component_name\":\"pricing_rewards_module\",\"component_element_name\":\"view_details_and_receipt\"}}}}}}}",
+            "__typename": "TripDetailsUIClickStreamAnalytics"
+          },
+          "resource": {
+            "value": "https://www.expedia.de/trips/egti-0AZ-E1Q-LDGX/details/MTNjY2EyMDItMTNjMS02ZDY4LTliZTMtZTFhOTkyM2NhMjViOzQwYmYwNzY5LWY5ZDUtNDY4Ny05NTQwLWMwOTVhM2E5YjYyMF8wO2VnOnByb3BlcnR5OnYyOjczYmQ1NzVhNmIwY2Y3ZjY2MDZhZjdhNzkxODc5YmYx/pricing-and-rewards",
+            "__typename": "HttpURI"
+          },
+          "target": "INTERNAL",
+          "__typename": "TripDetailsUILinkAction"
+        },
+        "button": {
+          "accessibility": null,
+          "disabled": false,
+          "primary": "Details anzeigen",
+          "icon": {
+            "id": "chevron_right",
+            "description": "Right Arrow Icon",
+            "title": null,
+            "size": null,
+            "spotLight": null,
+            "__typename": "Icon"
+          },
+          "iconPosition": "TRAILING",
+          "__typename": "TripDetailsUITertiaryButton"
+        },
+        "__typename": "TripDetailsUIPricingSummaryButton"
+      }
+    ],
+    "__typename": "TripDetailsUIPricingAndRewardsSuccessResponse"
+  }
+}

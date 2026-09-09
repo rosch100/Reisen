@@ -15,7 +15,7 @@ Neuer Provider `ReisenExpedia` / `ProviderID.expedia`: persönliche Buchungen ü
 | Login | `https://www.expedia.de/login` | WKWebView; Arkose/OTP nicht nachbauen |
 | Session-Probe | Cookie `EG_SESSIONTOKEN` + `GET /trips` ohne Login-Redirect (`isLoginHTML`); Hub: `shouldProbeExpedia` | GraphQL-Context `authState=AUTHENTICATED`, `duaid` aus Cookie `DUAID` (fehlt → Fehler) |
 | Catalog | `GET /trips` → `egti-*` Links; je Trip `SharedUIWeb_TripItemsQuery` (BOOKED) | Nur Cards mit `__typename=TripsUIBookedItemCard`; Hotel: Kalendertag + Check-in/out-Minuten; unparsebare Zeiten → skip + Log |
-| Enrich | `TripItemQuery`; Hotel: `RoomDetailsQuery` + `BookingServicingManageQuery` | Bestätigungsnr., Preis, Cancel-URL (Hotel best-effort), Fristen |
+| Enrich | `TripItemQuery`; Hotel: `LocationDetailsQuery` + `PricingAndRewardsQuery` + `SharedUIWeb_BookingSummary` + `RoomDetailsQuery` + `BookingServicingManageQuery` | Bestätigungsnr. (Summary), Preis (Pricing), Straßenadresse (Location), Cancel-URL, Fristen (Ortszeit + Property-TZ via Forward-Geocode/`MapKitQuery`) |
 | Open | Card `cardAction.resource` | `/trips/{egti}/details/{tripItemId}` |
 | Cancel Hotel | BookingServicing voluntary cancel review | `.distinctURL` |
 | Cancel Car | `…/manage-booking` + Assist (Dialog → Ja, jetzt stornieren) | `.inPageOnOpen` |
@@ -39,6 +39,9 @@ SSOT im Code: `ExpediaGraphQL.PersistedOperation` (`name` + `sha256Hash` + `page
 | `TripItemQuery` | `5f38e6230f36e0b3b3e2cd3fc58074ea17e7af32b03a2761adbb14a400e54df4` |
 | `RoomDetailsQuery` | `bc7cb5bfe81736ea198026138bdcaf65ebede6691f01b3d75540d7cc1df079ac` |
 | `BookingServicingManageQuery` | `290ca1ec53212887b09bba72925619d90bd59f4e3f64ad3c1c6d6d480a98770f` |
+| `PricingAndRewardsQuery` | `564be4abdd284dd205345f8b1a592e4d5e024768908be70e4dc83620d0018457` |
+| `LocationDetailsQuery` | `0d97b21c296bbb4758a4fcaa92936d4649ed02a73bb4003e7d9ac3e1cf39b4d2` |
+| `SharedUIWeb_BookingSummary` | `5cb64382d33427d2b38207fe117a495e540de39292e67f63792f63329c4bb316` |
 
 Hotel-Servicing-`tripId` = UUID-Segment aus Base64-`tripItemId` (nicht `egti-*`).
 `PersistedQueryNotFound` / `persistedQuery*` → harter Fehler + Log (`hash_rejected`).
@@ -71,15 +74,15 @@ Cancel-URL im Katalog (`ExpediaProductType.usesManageBookingAsCancellationURL`):
 |-----|--------|
 | Hotel (Catalog/Schedule) | Kalendertag (`HotelStayDate`) + `hotelCheckIn/OutMinutes` — **keine** erfundene Property-TZ |
 | Car/Flight/Activity | Wandzeiten in `Europe/Berlin` (Portal-Locale expedia.de / `de_DE`) |
-| Free-Cancel-Deadlines | „Ortszeit der Unterkunft“ → **skip** (kein Berlin-Absolut); sonst Wandzeit in `Europe/Berlin` (Portal-Locale; pure Parser, kein Extra-Log) |
+| Free-Cancel-Deadlines | „Ortszeit der Unterkunft“ → Property-TZ aus LocationDetails-Adresse (`MapKitQuery` / Forward-Geocode); ohne TZ → skip. Geparste Fristen sind **absolute Instants** (`deadlineAt`) plus `hotelOffsetSeconds` nur für Wall-Clock-Anzeige; sonst Wandzeit in `Europe/Berlin` (Portal-Locale; pure Parser, kein Extra-Log) |
 
 ## Enrichment-Gate
 
-`ExpediaDraftEnrichmentNeeds.shouldEnrich`: nur wenn `confirmationCode == nil`.
+`ExpediaDraftEnrichmentNeeds.shouldEnrich`: wenn `confirmationCode == nil` **oder** `totalPriceAmount == nil` **oder** (Hotel und `locationToAddress == nil`).
 
 - Katalog setzt **keine** Reiseplan-Nummer als `confirmationCode` (Identity: `BookingIdentityKey`).
-- Enrich übernimmt nur echte Bestätigungsnr. (`Bestätigungsnr.` / Confirmation-Patterns).
-- Fehlende Hotel-Cancel-URL, fehlender Preis oder leere Ortszeit-Deadlines lösen **keinen** Dauer-Re-Enrich aus.
+- Enrich: Bestätigungsnr. aus `SharedUIWeb_BookingSummary`; Preis aus `PricingAndRewardsQuery`; Adresse aus `LocationDetailsQuery`.
+- Leere Ortszeit-Deadlines allein lösen **keinen** Dauer-Re-Enrich aus (TZ kann fehlen).
 - Hotel-Servicing soft-fail wie oben; Needs danach nicht erneut nur wegen fehlender Cancel-URL.
 
 ## Cancel-Assist (Car)

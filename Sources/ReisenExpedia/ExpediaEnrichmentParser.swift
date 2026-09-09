@@ -2,6 +2,17 @@ import Foundation
 import ReisenDomain
 
 enum ExpediaEnrichmentParser {
+    struct LocationDetails: Equatable {
+        var address: String?
+        var latitude: Double?
+        var longitude: Double?
+    }
+
+    struct MoneyAmount: Equatable {
+        var amount: Decimal
+        var currency: String
+    }
+
     private static func facts(
         fromTripItemData data: [String: Any],
         bookingType: BookingType,
@@ -70,7 +81,10 @@ enum ExpediaEnrichmentParser {
         return urls.first(where: looksLikeLodgingCancelURL)
     }
 
-    static func cancellationDeadlines(fromRoomDetails data: [String: Any]) -> [CancellationDeadline] {
+    static func cancellationDeadlines(
+        fromRoomDetails data: [String: Any],
+        propertyTimeZone: TimeZone? = nil
+    ) -> [CancellationDeadline] {
         let texts = ExpediaJSON.collectStrings(key: "text", in: data, limit: 80)
             + ExpediaJSON.collectStrings(key: "primary", in: data, limit: 40)
             + ExpediaJSON.collectStrings(key: "heading", in: data, limit: 40)
@@ -81,10 +95,13 @@ enum ExpediaEnrichmentParser {
                 if let s = ExpediaJSON.string(item) { itemTexts.append(s) }
             }
         }
-        return parseFreeCancellationDeadlines(from: texts + itemTexts)
+        return parseFreeCancellationDeadlines(from: texts + itemTexts, propertyTimeZone: propertyTimeZone)
     }
 
-    static func cancellationDeadlines(fromServicingData data: [String: Any]) -> [CancellationDeadline] {
+    static func cancellationDeadlines(
+        fromServicingData data: [String: Any],
+        propertyTimeZone: TimeZone? = nil
+    ) -> [CancellationDeadline] {
         var texts = ExpediaJSON.collectStrings(key: "text", in: data, limit: 40)
             + ExpediaJSON.collectStrings(key: "primary", in: data, limit: 40)
             + ExpediaJSON.collectStrings(key: "subtext", in: data, limit: 20)
@@ -94,11 +111,10 @@ enum ExpediaEnrichmentParser {
                 if let t = ExpediaJSON.string(s) { texts.append(t) }
             }
         }
-        return parseFreeCancellationDeadlines(from: texts)
+        return parseFreeCancellationDeadlines(from: texts, propertyTimeZone: propertyTimeZone)
     }
 
     static func roomCategory(fromRoomDetails data: [String: Any]) -> String? {
-        // First roomInfo heading is the room name in HAR fixtures.
         let match = ExpediaJSON.firstDictionary(in: data) { d in
             ExpediaJSON.string(d["__typename"]) == "TripDetailsUIRoomDetailsInfo"
                 && ExpediaJSON.string(d["heading"]).map { !$0.isEmpty } == true
@@ -106,11 +122,64 @@ enum ExpediaEnrichmentParser {
         return match.flatMap { ExpediaJSON.string($0["heading"]) }
     }
 
+    static func totalPrice(fromPricingAndRewards data: [String: Any]) -> MoneyAmount? {
+        let root = data["tripsItemPricingAndRewards"] ?? data
+        guard let summaries = ExpediaJSON.array(
+            ExpediaJSON.dict(root)?["pricingSummaries"]
+        ) else { return nil }
+        for summary in summaries {
+            guard let dict = ExpediaJSON.dict(summary) else { continue }
+            let accessibility = ExpediaJSON.string(dict["accessibility"]) ?? ""
+            let label = ExpediaJSON.dict(dict["label"]).flatMap { ExpediaJSON.string($0["stylizedText"]) }
+                ?? ""
+            let isTotal = accessibility.localizedCaseInsensitiveContains("Gesamtpreis")
+                || label.localizedCaseInsensitiveContains("Gesamtpreis")
+            guard isTotal else { continue }
+            let valueText = ExpediaJSON.dict(dict["value"]).flatMap { ExpediaJSON.string($0["stylizedText"]) }
+                ?? accessibility
+            if let parsed = ExpediaJSON.parseEuroAmount(valueText) {
+                return MoneyAmount(amount: parsed.0, currency: parsed.1)
+            }
+        }
+        return nil
+    }
+
+    static func locationDetails(from data: [String: Any]) -> LocationDetails? {
+        let root = ExpediaJSON.dict(data["tripsLocationDetails"]) ?? ExpediaJSON.dict(data)
+        guard let root else { return nil }
+        let address = ExpediaJSON.string(root["address"])
+        var latitude: Double?
+        var longitude: Double?
+        if let center = ExpediaJSON.firstDictionary(in: root, where: { d in
+            d["latitude"] is Double || d["latitude"] is NSNumber
+        }) {
+            latitude = doubleValue(center["latitude"])
+            longitude = doubleValue(center["longitude"])
+        }
+        guard address != nil || latitude != nil else { return nil }
+        return LocationDetails(address: address, latitude: latitude, longitude: longitude)
+    }
+
+    static func confirmationCode(fromBookingSummary data: [String: Any]) -> String? {
+        let root = data["tripBookingSummary"] ?? data
+        var found: String?
+        ExpediaJSON.walkDepthFirst(root) { node in
+            guard found == nil, let d = node as? [String: Any] else { return }
+            let label = ExpediaJSON.string(d["bookingInfoLabel"]) ?? ""
+            guard label.localizedCaseInsensitiveContains("Bestätigungsnummer") else { return }
+            found = ExpediaJSON.string(d["value"])
+        }
+        return found
+    }
+
     /// Parses DE policy lines like
     /// `… bis zum 6. Dez. 2026, 18:00 Uhr (Ortszeit der Unterkunft), kostenlos stornieren.`
-    /// Property-local (“Ortszeit”) lines are skipped until a property TZ is known.
+    /// Property-local (“Ortszeit”) lines require `propertyTimeZone`.
     /// Other wall clocks use `Europe/Berlin` (expedia.de / de_DE).
-    static func parseFreeCancellationDeadlines(from texts: [String]) -> [CancellationDeadline] {
+    static func parseFreeCancellationDeadlines(
+        from texts: [String],
+        propertyTimeZone: TimeZone? = nil
+    ) -> [CancellationDeadline] {
         var out: [CancellationDeadline] = []
         let pattern =
             #"bis\s+zum\s+(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ.]+)\s+(\d{4}),\s*(\d{1,2}):(\d{2})\s*Uhr"#
@@ -119,7 +188,7 @@ enum ExpediaEnrichmentParser {
         }
         for text in texts {
             let lower = text.lowercased()
-            guard lower.contains("kostenlos") || lower.contains("free cancellation") else { continue }
+            guard looksLikeFreeCancellationPolicy(lower) else { continue }
             let range = NSRange(text.startIndex..<text.endIndex, in: text)
             guard let match = regex.firstMatch(in: text, options: [], range: range) else { continue }
             func group(_ i: Int) -> String? {
@@ -131,12 +200,21 @@ enum ExpediaEnrichmentParser {
                   let day = Int(d), let month = ExpediaScheduleParser.monthNumber(m),
                   let year = Int(y), let hour = Int(h), let minute = Int(min)
             else { continue }
-            // Property-local wall clock without a known property TZ must not invent Europe/Berlin.
             let propertyLocal = lower.contains("ortszeit")
-            guard !propertyLocal else { continue }
-            guard let berlin = TimeZone(identifier: "Europe/Berlin"),
-                  let deadline = ExpediaScheduleParser.makeBerlinDate(
-                    year: year, month: month, day: day, hour: hour, minute: minute
+            let wallClockZone: TimeZone?
+            if propertyLocal {
+                wallClockZone = propertyTimeZone
+            } else {
+                wallClockZone = TimeZone(identifier: "Europe/Berlin")
+            }
+            guard let zone = wallClockZone,
+                  let deadline = ExpediaScheduleParser.makeDate(
+                    year: year,
+                    month: month,
+                    day: day,
+                    hour: hour,
+                    minute: minute,
+                    timeZone: zone
                   )
             else { continue }
             out.append(
@@ -144,11 +222,23 @@ enum ExpediaEnrichmentParser {
                     deadlineAt: deadline,
                     policyText: text,
                     isFreeCancellation: true,
-                    hotelOffsetSeconds: berlin.secondsFromGMT(for: deadline)
+                    hotelOffsetSeconds: zone.secondsFromGMT(for: deadline)
                 )
             )
         }
         return out
+    }
+
+    private static func looksLikeFreeCancellationPolicy(_ lowercased: String) -> Bool {
+        lowercased.contains("kostenlos")
+            || lowercased.contains("free cancellation")
+            || lowercased.contains("keine gebühr")
+    }
+
+    private static func doubleValue(_ any: Any?) -> Double? {
+        if let d = any as? Double { return d }
+        if let n = any as? NSNumber { return n.doubleValue }
+        return nil
     }
 
     private static func looksLikeLodgingCancelURL(_ url: String) -> Bool {

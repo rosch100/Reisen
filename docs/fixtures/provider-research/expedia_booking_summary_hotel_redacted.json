@@ -1,0 +1,539 @@
+{
+  "tripBookingSummary": {
+    "badge": null,
+    "content": {
+      "primary": "martas Gästehäuser Hauptbahnhof Berlin - Hostel",
+      "secondaries": [
+        {
+          "text": "1 Übernachtung · 2 Erwachsene · 1 Zimmer",
+          "accessibility": "1 Übernachtung · 2 Erwachsene · 1 Zimmer",
+          "__typename": "EGDSPlainText"
+        }
+      ],
+      "bookedByInfo": null,
+      "additionalInformation": null,
+      "actionCards": [
+        {
+          "primary": "Buchung stornieren",
+          "accessibility": "Diese Buchung stornieren",
+          "graphic": {
+            "id": "close",
+            "size": null,
+            "spotLight": "STANDARD",
+            "__typename": "Icon"
+          },
+          "action": {
+            "resource": {
+              "value": "https://www.expedia.de/booking-servicing/lodging?tripViewId=egti-0AZ-E1Q-LDGX&encodedTripItemId=MTNjY2EyMDItMTNjMS02ZDY4LTliZTMtZTFhOTkyM2NhMjViOzQwYmYwNzY5LWY5ZDUtNDY4Ny05NTQwLWMwOTVhM2E5YjYyMF8wO2VnOnByb3BlcnR5OnYyOjczYmQ1NzVhNmIwY2Y3ZjY2MDZhZjdhNzkxODc5YmYx&tripId=72078947219374",
+              "__typename": "HttpURI"
+            },
+            "__typename": "UILinkAction"
+          },
+          "enhancedAction": {
+            "accessibility": null,
+            "cardAnalytics": {
+              "clickstreamEvent": {
+                "eventName": "trip_details_item.selected",
+                "eventType": "Interaction",
+                "eventVersion": "1.0.0",
+                "eventCategory": "booking_summary",
+                "actionLocation": null,
+                "actionReason": null,
+                "__typename": "TripsUIEGClickstreamEvent"
+              },
+              "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"cancel\",\"component_name\":\"module\",\"component_element_text\":\"\"}},\"work_flow_list\":{\"work_flow_list\":[{\"intent\":\"UNKNOWN\",\"sub_intent\":\"\",\"automation_status\":\"STARTED\",\"automation_status_reason\":\"\",\"product_line\":\"LODGING\",\"order_line_id\":\"ec6d48c9-5395-4be5-b11b-cf2bfc2449f1\",\"channel\":\"WEB\"}]}}}}}}",
+              "__typename": "TripsUIClickstreamAnalytics"
+            },
+            "resource": {
+              "value": "https://www.expedia.de/booking-servicing/lodging?tripViewId=egti-0AZ-E1Q-LDGX&encodedTripItemId=MTNjY2EyMDItMTNjMS02ZDY4LTliZTMtZTFhOTkyM2NhMjViOzQwYmYwNzY5LWY5ZDUtNDY4Ny05NTQwLWMwOTVhM2E5YjYyMF8wO2VnOnByb3BlcnR5OnYyOjczYmQ1NzVhNmIwY2Y3ZjY2MDZhZjdhNzkxODc5YmYx&tripId=72078947219374",
+              "__typename": "HttpURI"
+            },
+            "__typename": "TripsUILinkAction"
+          },
+          "__typename": "TripsUIBookingSummaryActionCard"
+        },
+        {
+          "primary": "Buchung ändern",
+          "accessibility": "Diese Buchung ändern",
+          "graphic": {
+            "id": "mode_edit",
+            "size": null,
+            "spotLight": "STANDARD",
+            "__typename": "Icon"
+          },
+          "action": {
+            "resource": {
+              "value": "https://www.expedia.de/booking-servicing/lodging?tripViewId=egti-0AZ-E1Q-LDGX&encodedTripItemId=MTNjY2EyMDItMTNjMS02ZDY4LTliZTMtZTFhOTkyM2NhMjViOzQwYmYwNzY5LWY5ZDUtNDY4Ny05NTQwLWMwOTVhM2E5YjYyMF8wO2VnOnByb3BlcnR5OnYyOjczYmQ1NzVhNmIwY2Y3ZjY2MDZhZjdhNzkxODc5YmYx&tripId=72078947219374",
+              "__typename": "HttpURI"
+            },
+            "__typename": "UILinkAction"
+          },
+          "enhancedAction": {
+            "accessibility": null,
+            "cardAnalytics": {
+              "clickstreamEvent": {
+                "eventName": "trip_details_item.selected",
+                "eventType": "Interaction",
+                "eventVersion": "1.0.0",
+                "eventCategory": "booking_summary",
+                "actionLocation": null,
+                "actionReason": null,
+                "__typename": "TripsUIEGClickstreamEvent"
+              },
+              "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"change\",\"component_name\":\"module\",\"component_element_text\":\"\"}},\"work_flow_list\":{\"work_flow_list\":[{\"intent\":\"UNKNOWN\",\"sub_intent\":\"\",\"automation_status\":\"STARTED\",\"automation_status_reason\":\"\",\"product_line\":\"LODGING\",\"order_line_id\":\"ec6d48c9-5395-4be5-b11b-cf2bfc2449f1\",\"channel\":\"WEB\"}]}}}}}}",
+              "__typename": "TripsUIClickstreamAnalytics"
+            },
+            "resource": {
+              "value": "https://www.expedia.de/booking-servicing/lodging?tripViewId=egti-0AZ-E1Q-LDGX&encodedTripItemId=MTNjY2EyMDItMTNjMS02ZDY4LTliZTMtZTFhOTkyM2NhMjViOzQwYmYwNzY5LWY5ZDUtNDY4Ny05NTQwLWMwOTVhM2E5YjYyMF8wO2VnOnByb3BlcnR5OnYyOjczYmQ1NzVhNmIwY2Y3ZjY2MDZhZjdhNzkxODc5YmYx&tripId=72078947219374",
+              "__typename": "HttpURI"
+            },
+            "__typename": "TripsUILinkAction"
+          },
+          "__typename": "TripsUIBookingSummaryActionCard"
+        },
+        {
+          "primary": "Unterkunft kontaktieren",
+          "accessibility": "Unterkunft kontaktieren",
+          "graphic": {
+            "id": "chat_bubble",
+            "size": null,
+            "spotLight": "STANDARD",
+            "__typename": "Icon"
+          },
+          "action": {
+            "menu": {
+              "trigger": {
+                "analytics": {
+                  "referrerId": "App.LS.TripPlanCard.Pathtotripboard.178310.Card1",
+                  "linkName": "App.Launchscreen",
+                  "__typename": "ClientSideAnalytics"
+                },
+                "clickstreamAnalytics": {
+                  "clickstreamEvent": {
+                    "eventName": "trip_details_item.selected",
+                    "eventType": "Interaction",
+                    "eventVersion": "1.0.0",
+                    "eventCategory": "booking_summary",
+                    "actionLocation": null,
+                    "actionReason": null,
+                    "__typename": "TripsUIEGClickstreamEvent"
+                  },
+                  "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"contact_property\",\"component_name\":\"module\",\"component_element_text\":\"\"}}}}}}}",
+                  "__typename": "TripsUIClickstreamAnalytics"
+                },
+                "__typename": "TripsUIGraphicTrigger"
+              },
+              "__typename": "TripsUIMenu"
+            },
+            "items": [
+              {
+                "action": {
+                  "analytics": {
+                    "linkName": "CP-Call",
+                    "referrerId": "TripItemDetails.Hotel.CP-Call",
+                    "__typename": "ClientSideAnalytics"
+                  },
+                  "resource": {
+                    "value": "tel:+49306903333",
+                    "__typename": "TelURI"
+                  },
+                  "__typename": "UILinkAction"
+                },
+                "item": {
+                  "title": "+49 30 6903333 anrufen",
+                  "accessibility": "+49 30 6903333 anrufen",
+                  "graphic": {
+                    "id": "phone",
+                    "__typename": "Icon"
+                  },
+                  "__typename": "TripsUIMenuItem"
+                },
+                "clickstreamAnalytics": {
+                  "clickstreamEvent": {
+                    "eventName": "trip_details_item.selected",
+                    "eventType": "Interaction",
+                    "eventVersion": "1.0.0",
+                    "eventCategory": "booking_summary",
+                    "actionLocation": null,
+                    "actionReason": null,
+                    "__typename": "TripsUIEGClickstreamEvent"
+                  },
+                  "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"call_property_number\",\"component_name\":\"module\",\"component_element_text\":\"+49306903333\"}}}}}}}",
+                  "__typename": "TripsUIClickstreamAnalytics"
+                },
+                "__typename": "TripsUIOpenMenuItem"
+              },
+              {
+                "action": {
+                  "analytics": {
+                    "linkName": "MessagePropertyInbox",
+                    "referrerId": "TripItemDetails.Hotel.VA.MessagePropertyInbox",
+                    "__typename": "ClientSideAnalytics"
+                  },
+                  "resource": {
+                    "value": "https://www.expedia.de/inbox/chats/75360c2c-76a1-4335-a158-62c5fcffec8a",
+                    "__typename": "HttpURI"
+                  },
+                  "__typename": "UILinkAction"
+                },
+                "item": {
+                  "title": "Nachricht an Unterkunft senden",
+                  "accessibility": "Nachricht an Unterkunft senden",
+                  "graphic": {
+                    "id": "icon__chat_bubble",
+                    "__typename": "Icon"
+                  },
+                  "__typename": "TripsUIMenuItem"
+                },
+                "clickstreamAnalytics": {
+                  "clickstreamEvent": {
+                    "eventName": "trip_details_item.selected",
+                    "eventType": "Interaction",
+                    "eventVersion": "1.0.0",
+                    "eventCategory": "booking_summary",
+                    "actionLocation": null,
+                    "actionReason": null,
+                    "__typename": "TripsUIEGClickstreamEvent"
+                  },
+                  "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"message_property\",\"component_name\":\"module\",\"component_element_text\":\"\"}}}}}}}",
+                  "__typename": "TripsUIClickstreamAnalytics"
+                },
+                "__typename": "TripsUIOpenMenuItem"
+              }
+            ],
+            "__typename": "TripsUIOpenMenuAction"
+          },
+          "enhancedAction": null,
+          "__typename": "TripsUIBookingSummaryActionCard"
+        },
+        {
+          "primary": "Bestätigung erneut senden",
+          "accessibility": "Bestätigungs-E-Mail erneut senden",
+          "graphic": {
+            "id": "outgoing_mail",
+            "size": null,
+            "spotLight": "STANDARD",
+            "__typename": "Icon"
+          },
+          "action": {
+            "__typename": "TripsVAInitAction",
+            "text": "",
+            "applicationName": "trips-pwa",
+            "clickstreamAnalytics": {
+              "clickstreamEvent": {
+                "eventName": "trip_details_item.selected",
+                "eventType": "Interaction",
+                "eventVersion": "1.0.0",
+                "eventCategory": "booking_summary",
+                "actionLocation": null,
+                "actionReason": null,
+                "__typename": "TripsUIEGClickstreamEvent"
+              },
+              "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"resend_confirmation\",\"component_name\":\"module\",\"component_element_text\":\"\"}},\"work_flow_list\":{\"work_flow_list\":[{\"intent\":\"RECONFIRMATION\",\"sub_intent\":\"\",\"automation_status\":\"UNSUPPORTED\",\"automation_status_reason\":\"NO_WEB_FLOW\",\"product_line\":\"LODGING\",\"order_line_id\":\"ec6d48c9-5395-4be5-b11b-cf2bfc2449f1\",\"channel\":\"WEB\"}]}}}}}}",
+              "__typename": "TripsUIClickstreamAnalytics"
+            },
+            "clientOverrides": {
+              "conversationProperties": {
+                "launchPoint": "MessageHotel",
+                "skipWelcome": "true",
+                "__typename": "TripsVAConversationProperties"
+              },
+              "enableAutoOpenChatWidget": null,
+              "enableProactiveConversation": null,
+              "intentArguments": [
+                {
+                  "id": "intent",
+                  "value": "RECONFIRMATION",
+                  "__typename": "TripsVAIntentValue"
+                },
+                {
+                  "id": "itineraryNumber",
+                  "value": "72078947219374",
+                  "__typename": "TripsVAIntentValue"
+                },
+                {
+                  "id": "orderNumber",
+                  "value": "9021712600014",
+                  "__typename": "TripsVAIntentValue"
+                },
+                {
+                  "id": "email",
+                  "value": "kleber.montiert.57@icloud.com",
+                  "__typename": "TripsVAIntentValue"
+                }
+              ],
+              "subscribedEvents": null,
+              "__typename": "TripsVAOverrideData"
+            }
+          },
+          "enhancedAction": null,
+          "__typename": "TripsUIBookingSummaryActionCard"
+        }
+      ],
+      "bookingSummaryInformation": [
+        {
+          "bookingInformation": {
+            "bookingInfoLabel": "Bestätigungsnummer:",
+            "value": "EXPEDIA_REDACTED01",
+            "customerSupportAccessibility": "Die Bestätigungsnummer lautet E X P E D I A _ 2 5 5 4 5 9 6 3 0 3",
+            "__typename": "TripsBookingInformation"
+          },
+          "copyTextButton": {
+            "button": {
+              "accessibility": "Bestätigungsnummer kopieren",
+              "primary": null,
+              "analytics": null,
+              "icon": {
+                "id": "copy_content",
+                "size": null,
+                "spotLight": null,
+                "__typename": "Icon"
+              },
+              "__typename": "TripsUITertiaryButton"
+            },
+            "action": {
+              "toast": {
+                "analytics": {
+                  "linkName": null,
+                  "referrerId": "TripBS.Success",
+                  "__typename": "ClientSideImpressionEventAnalytics"
+                },
+                "text": "Bestätigungsnummer in die Zwischenablage kopiert.",
+                "actionText": null,
+                "action": null,
+                "clickstreamAnalytics": null,
+                "__typename": "TripsUIToast"
+              },
+              "analytics": null,
+              "text": "EXPEDIA_REDACTED01",
+              "clickstreamAnalytics": {
+                "clickstreamEvent": {
+                  "eventName": "trip_details_item.selected",
+                  "eventType": "Interaction",
+                  "eventVersion": "1.0.0",
+                  "eventCategory": "booking_summary",
+                  "actionLocation": null,
+                  "actionReason": null,
+                  "__typename": "TripsUIEGClickstreamEvent"
+                },
+                "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"copy_booking_confirmation\",\"component_name\":\"module\",\"component_element_text\":\"EXPEDIA_REDACTED01\"}}}}}}}",
+                "__typename": "TripsUIClickstreamAnalytics"
+              },
+              "__typename": "TripsUICopyAction"
+            },
+            "__typename": "TripsUICopyTextButton"
+          },
+          "__typename": "BookingSummaryInformation"
+        },
+        {
+          "bookingInformation": {
+            "bookingInfoLabel": "Expedia-Reiseplan",
+            "value": "72078947219374",
+            "customerSupportAccessibility": "Der Expedia-Reiseplan lautet 7 2 0 7 8 9 4 7 2 1 9 3 7 4",
+            "__typename": "TripsBookingInformation"
+          },
+          "copyTextButton": {
+            "button": {
+              "accessibility": "Expedia-Reiseplan kopieren",
+              "primary": null,
+              "analytics": null,
+              "icon": {
+                "id": "copy_content",
+                "size": null,
+                "spotLight": null,
+                "__typename": "Icon"
+              },
+              "__typename": "TripsUITertiaryButton"
+            },
+            "action": {
+              "toast": {
+                "analytics": {
+                  "linkName": null,
+                  "referrerId": "TripBS.Success",
+                  "__typename": "ClientSideImpressionEventAnalytics"
+                },
+                "text": "Expedia-Reiseplan in die Zwischenablage kopiert.",
+                "actionText": null,
+                "action": null,
+                "clickstreamAnalytics": null,
+                "__typename": "TripsUIToast"
+              },
+              "analytics": null,
+              "text": "72078947219374",
+              "clickstreamAnalytics": {
+                "clickstreamEvent": {
+                  "eventName": "trip_details_item.selected",
+                  "eventType": "Interaction",
+                  "eventVersion": "1.0.0",
+                  "eventCategory": "booking_summary",
+                  "actionLocation": null,
+                  "actionReason": null,
+                  "__typename": "TripsUIEGClickstreamEvent"
+                },
+                "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"copy_booking_itinerary\",\"component_name\":\"module\",\"component_element_text\":\"72078947219374\"}}}}}}}",
+                "__typename": "TripsUIClickstreamAnalytics"
+              },
+              "__typename": "TripsUICopyAction"
+            },
+            "__typename": "TripsUICopyTextButton"
+          },
+          "__typename": "BookingSummaryInformation"
+        }
+      ],
+      "bookingElements": {
+        "initialTravelDetail": [
+          {
+            "accessibility": "Check-in-Datum und Uhrzeit",
+            "text": "Check-in",
+            "theme": null,
+            "weight": null,
+            "__typename": "EGDSStylizedText"
+          },
+          {
+            "accessibility": null,
+            "text": "Mo., 7. Dez.",
+            "theme": null,
+            "weight": "BOLD",
+            "__typename": "EGDSStylizedText"
+          },
+          {
+            "accessibility": null,
+            "text": "3:00 pm",
+            "theme": null,
+            "weight": null,
+            "__typename": "EGDSStylizedText"
+          }
+        ],
+        "icon": {
+          "id": "arrow_forward",
+          "size": null,
+          "spotLight": null,
+          "__typename": "Icon"
+        },
+        "finalTravelDetail": [
+          {
+            "accessibility": "Check-out-Datum und Uhrzeit",
+            "text": "Check-out",
+            "theme": null,
+            "weight": null,
+            "__typename": "EGDSStylizedText"
+          },
+          {
+            "accessibility": null,
+            "text": "Di., 8. Dez.",
+            "theme": null,
+            "weight": "BOLD",
+            "__typename": "EGDSStylizedText"
+          },
+          {
+            "accessibility": null,
+            "text": "10:00 am",
+            "theme": null,
+            "weight": null,
+            "__typename": "EGDSStylizedText"
+          }
+        ],
+        "__typename": "TripsUITravelDetail"
+      },
+      "bookingSummaryCTAs": [
+        {
+          "button": {
+            "accessibility": null,
+            "clickAnalytics": null,
+            "clickClickstreamAnalytics": {
+              "clickstreamEvent": {
+                "eventName": "trip_details_item.selected",
+                "eventType": "Interaction",
+                "eventVersion": "1.0.0",
+                "eventCategory": "booking_summary",
+                "actionLocation": null,
+                "actionReason": null,
+                "__typename": "TripsUIEGClickstreamEvent"
+              },
+              "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"check_in_instructions\",\"component_name\":\"module\",\"component_element_text\":\"\"}}}}}}}",
+              "__typename": "TripsUIClickstreamAnalytics"
+            },
+            "disabled": false,
+            "primary": "Besondere Anweisungen und Hinweise zum Check-in",
+            "icon": null,
+            "__typename": "TripsUIPrimaryButton"
+          },
+          "action": {
+            "primary": "Besondere Anweisungen und Hinweise zum Check-in",
+            "secondaries": [
+              "Check-in ab 15:00 Uhr",
+              "Check-in bis 00:00 Uhr",
+              "Mindestalter für den Check-in: 16",
+              "Check-out bis 10:00 Uhr",
+              "Die Mitarbeiter der Rezeption heißen dich bei deiner Ankunft willkommen. Von der Unterkunft zur Verfügung gestellte Informationen werden ggf. mit automatischen Übersetzungstools übersetzt."
+            ],
+            "accessibility": null,
+            "__typename": "TripsUIOpenSheetAction"
+          },
+          "__typename": "TripsUIBookingSummaryCTA"
+        },
+        {
+          "button": {
+            "accessibility": null,
+            "clickAnalytics": null,
+            "clickClickstreamAnalytics": {
+              "clickstreamEvent": {
+                "eventName": "trip_details_item.selected",
+                "eventType": "Interaction",
+                "eventVersion": "1.0.0",
+                "eventCategory": "booking_summary",
+                "actionLocation": null,
+                "actionReason": null,
+                "__typename": "TripsUIEGClickstreamEvent"
+              },
+              "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"trip_details_item.selected\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Interaction\",\"event_category\":\"booking_summary\",\"event_name\":\"trip_details_item.selected\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"},\"additional_context\":{\"user_interface\":{\"component_element_name\":\"view_property_details\",\"component_name\":\"module\",\"component_element_text\":\"\"}}}}}}}",
+              "__typename": "TripsUIClickstreamAnalytics"
+            },
+            "disabled": false,
+            "primary": "Unterkunftsdetails anzeigen",
+            "icon": null,
+            "__typename": "TripsUISecondaryButton"
+          },
+          "action": {
+            "resource": {
+              "value": "https://www.expedia.de/Berlin-Hotels-Jugendgastehaus-Hauptbahnhof.h1877992.Hotel-Beschreibung",
+              "__typename": "HttpURI"
+            },
+            "__typename": "UILinkAction"
+          },
+          "__typename": "TripsUIBookingSummaryCTA"
+        }
+      ],
+      "disclaimer": null,
+      "__typename": "TripsUIBookingSummaryContent"
+    },
+    "accessibility": null,
+    "clickstreamImpressionAnalytics": {
+      "clickstreamEvent": {
+        "eventName": "booking_summary_module.presented",
+        "eventType": "Impression",
+        "eventVersion": "1.0.0",
+        "eventCategory": "booking_summary",
+        "actionLocation": null,
+        "actionReason": null,
+        "__typename": "TripsUIEGClickstreamEvent"
+      },
+      "payload": "{\"metadata\":{\"packer_version\":\"1.0.1\"},\"events\":{\"booking_summary_module.presented\":{\"v1\":{\"event_data\":{\"event\":{\"event_type\":\"Impression\",\"event_category\":\"booking_summary\",\"event_name\":\"booking_summary_module.presented\",\"event_version\":\"1.0.0\"},\"experience\":{\"page_name\":\"Trip Detail\",\"page_name_detailed\":\"Trip Detail Lodging\"}}}}}}",
+      "__typename": "TripsUIClickstreamAnalytics"
+    },
+    "bookingStatusCard": {
+      "text": null,
+      "badge": {
+        "accessibility": "Status: Gebucht",
+        "egdsElementId": null,
+        "text": "Gebucht",
+        "theme": "positive",
+        "size": "large",
+        "__typename": "EGDSStandardBadge"
+      },
+      "backgroundTheme": null,
+      "__typename": "TripsUIBookingStatusCard"
+    },
+    "__typename": "TripsUIBookingSummarySuccessResponse"
+  }
+}

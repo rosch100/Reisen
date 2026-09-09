@@ -21,7 +21,8 @@ enum ExpediaHotelSidePath {
                  .invalidResponse,
                  .missingTripItemId,
                  .lodgingTripIdUndecodable,
-                 .missingHotelCancellationURL:
+                 .missingHotelCancellationURL,
+                 .propertyTimeZoneUnresolved:
                 return .softContinue
             }
         }

@@ -2,6 +2,7 @@ import Foundation
 import MapKit
 
 import ReisenDomain
+import ReisenProviders
 
 public struct MapKitAddressResolver: AddressResolving, Sendable {
     public init() {}

@@ -201,6 +201,11 @@ private enum ExpediaFixtureLoader {
         ExpediaHotelSidePath.roomDetailsHandling(for: ExpediaProviderError.invalidResponse)
             == .softContinue
     )
+    #expect(
+        ExpediaHotelSidePath.roomDetailsHandling(
+            for: ExpediaProviderError.propertyTimeZoneUnresolved
+        ) == .softContinue
+    )
 }
 
 @Test func expediaDeepLinkBuilderHotelAndTimedCar() {
@@ -243,7 +248,7 @@ private enum ExpediaFixtureLoader {
     #expect(!result.links.contains { $0.category == .carRental })
 }
 
-@Test func expediaDraftEnrichmentNeedsOnlyWhenConfirmationMissing() {
+@Test func expediaDraftEnrichmentNeedsWhenPriceOrAddressMissing() {
     var draft = ProviderBookingDraft(
         provider: .expedia,
         bookingType: .hotel,
@@ -251,14 +256,52 @@ private enum ExpediaFixtureLoader {
         cancellationUrl: "https://www.expedia.de/booking-servicing/lodging/voluntary/cancel/review",
         startAt: Date(timeIntervalSince1970: 1),
         endAt: Date(timeIntervalSince1970: 2),
+        locationToAddress: "Lehrter Straße 68, Berlin",
         rateDetails: BookingRateDetails(totalPriceAmount: 10, totalPriceCurrency: "EUR")
     )
     #expect(ExpediaDraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: true) == false)
-    draft.cancellationUrl = nil
     draft.rateDetails = nil
-    #expect(ExpediaDraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: true) == false)
+    #expect(ExpediaDraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: false) == true)
+    draft.rateDetails = BookingRateDetails(totalPriceAmount: 10, totalPriceCurrency: "EUR")
+    draft.locationToAddress = nil
+    #expect(ExpediaDraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: false) == true)
+    draft.locationToAddress = "Lehrter Straße 68, Berlin"
     draft.confirmationCode = nil
     #expect(ExpediaDraftEnrichmentNeeds.shouldEnrich(draft, requiresDeadlines: false) == true)
+}
+
+@Test func expediaPricingAndRewardsParsesTotalPrice() throws {
+    let data = try ExpediaFixtureLoader.loadJSON("expedia_pricing_rewards_hotel_redacted.json")
+    let price = ExpediaEnrichmentParser.totalPrice(fromPricingAndRewards: data)
+    #expect(price?.amount == Decimal(string: "49.45"))
+    #expect(price?.currency == "EUR")
+}
+
+@Test func expediaLocationDetailsParsesStreetAddressAndCoordinates() throws {
+    let data = try ExpediaFixtureLoader.loadJSON("expedia_location_details_hotel_redacted.json")
+    let location = ExpediaEnrichmentParser.locationDetails(from: data)
+    #expect(location?.address?.contains("Lehrter Straße 68") == true)
+    #expect(location?.latitude == 52.526592)
+    #expect(location?.longitude == 13.364173)
+}
+
+@Test func expediaBookingSummaryParsesConfirmationCode() throws {
+    let data = try ExpediaFixtureLoader.loadJSON("expedia_booking_summary_hotel_redacted.json")
+    let code = ExpediaEnrichmentParser.confirmationCode(fromBookingSummary: data)
+    #expect(code == "EXPEDIA_REDACTED01")
+}
+
+@Test func expediaHotelDeadlineParsesOrtszeitWhenPropertyTimeZoneKnown() throws {
+    let data = try ExpediaFixtureLoader.loadJSON("expedia_booking_servicing_hotel_redacted.json")
+    let berlin = try #require(TimeZone(identifier: "Europe/Berlin"))
+    let deadlines = ExpediaEnrichmentParser.cancellationDeadlines(
+        fromServicingData: data,
+        propertyTimeZone: berlin
+    )
+    #expect(deadlines.count == 1)
+    let deadline = try #require(deadlines.first)
+    #expect(deadline.isFreeCancellation == true)
+    #expect(deadline.hotelOffsetSeconds == berlin.secondsFromGMT(for: deadline.deadlineAt))
 }
 
 @Test func expediaScheduleParsesCrossYearHotelStay() {
