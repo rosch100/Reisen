@@ -42,6 +42,7 @@ struct SyncTab: View {
     @State private var keychainAccounts: [KeychainCredentialAccount] = []
     @State private var keychainMessage: String?
     @State private var keychainAutoFillTask: Task<Void, Never>?
+    @State private var autofillCredentials: ProviderCredentials?
     @State private var pendingRememberCredentials: ProviderCredentials?
     @State private var rememberLoginMode: ProviderRememberLoginMode = .passwordManual
     @State private var rememberLoginMessage: String?
@@ -141,6 +142,30 @@ struct SyncTab: View {
                 sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
                 ensureSelectedProviderIsEnabled()
                 updateForegroundSyncProviderClaim()
+                if KeychainAutoFill.shouldScheduleReloadOnAppear(
+                    sessionNeedsLogin: sessionStatus == .needsLogin
+                ) {
+                    let context = DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: selectedProviderID,
+                        operation: "ios_auto_login"
+                    )
+                    Task {
+                        await DiagnosticLogger.shared.record(
+                            DiagnosticEvent(
+                                context: context,
+                                component: "SyncTab",
+                                phase: "keychain",
+                                event: "appear_schedule_reload",
+                                result: .started,
+                                reason: "needs_login"
+                            )
+                        )
+                    }
+                    scheduleKeychainReloadIfLoginStillRequired()
+                } else {
+                    clearKeychainRuntimeState()
+                }
             }
             .onChange(of: enabledProviderIDs) { _, _ in
                 sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
@@ -232,6 +257,7 @@ struct SyncTab: View {
                     operation: "ios_sync"
                 ),
                 passwordAutofillAllowedHosts: loginConfiguration?.passwordAutofillAllowedHosts ?? [],
+                autofillCredentials: autofillCredentials,
                 webView: webViewBinding,
                 allowsEmbed: sessionHub?.allowsEmbed(
                     on: .sync,
@@ -531,6 +557,8 @@ struct SyncTab: View {
                     insertKeychainCredentials()
                 } label: {
                     Label(L10n.string(.actionFillCredentials), systemImage: "key.fill")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -542,6 +570,8 @@ struct SyncTab: View {
                 openRememberLoginSheet()
             } label: {
                 Label(L10n.string(.actionRememberLogin), systemImage: "key")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
@@ -847,6 +877,7 @@ struct SyncTab: View {
         selectedKeychainAccount = nil
         keychainAccounts = []
         keychainMessage = nil
+        autofillCredentials = nil
     }
 
     private func scheduleKeychainReloadIfLoginStillRequired() {
@@ -865,6 +896,7 @@ struct SyncTab: View {
         selectedKeychainAccount = nil
         keychainAccounts = []
         keychainMessage = nil
+        autofillCredentials = nil
 
         guard let host = credentialServerHost() else {
             keychainMessage = L10n.string(.syncNoKeychainHost)
@@ -934,6 +966,7 @@ struct SyncTab: View {
 
     @MainActor
     private func selectAccount(_ account: KeychainCredentialAccount, autoFill: Bool = false) {
+        autofillCredentials = nil
         selectedKeychainAccount = account
         setPreferredKeychainAccountID(account.id)
         keychainMessage = nil
@@ -965,7 +998,7 @@ struct SyncTab: View {
         guard let account = selectedKeychainAccount else { return }
         guard let webView = targetWebView ?? selectedSessionWebView else { return }
         do {
-            try KeychainAutoFill.applyAccount(
+            let applied = try KeychainAutoFill.applyAccount(
                 account,
                 in: webView,
                 diagnosticContext: DiagnosticContext(
@@ -974,8 +1007,14 @@ struct SyncTab: View {
                     operation: "ios_auto_login"
                 )
             )
+            autofillCredentials = KeychainAutoFill.retainedCredentialsForReapply(
+                sessionNeedsLogin: sessionStatus == .needsLogin,
+                applied: applied
+            )
+            keychainMessage = nil
         } catch {
             selectedKeychainAccount = nil
+            autofillCredentials = nil
             keychainMessage = error.localizedDescription
             let context = DiagnosticContext(
                 runID: diagnosticRunID,

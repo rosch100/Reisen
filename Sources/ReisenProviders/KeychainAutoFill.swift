@@ -8,6 +8,20 @@ public enum KeychainAutoFill {
     public static let webViewRetryDelayNanoseconds: UInt64 = 250_000_000
     public static let loginSettleDelayNanoseconds: UInt64 = 350_000_000
 
+    /// macOS/iOS: bei needsLogin Keychain-Reload + Auto-Fill bereits onAppear schedulen.
+    public static func shouldScheduleReloadOnAppear(sessionNeedsLogin: Bool) -> Bool {
+        sessionNeedsLogin
+    }
+
+    /// Nach Apply Credentials behalten, solange Login nötig (SPA-Folgeseiten Re-Apply).
+    public static func retainedCredentialsForReapply(
+        sessionNeedsLogin: Bool,
+        applied: ProviderCredentials?
+    ) -> ProviderCredentials? {
+        guard sessionNeedsLogin else { return nil }
+        return applied
+    }
+
     @MainActor
     @discardableResult
     public static func applyAccount(

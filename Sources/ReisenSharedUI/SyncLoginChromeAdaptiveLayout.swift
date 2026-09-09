@@ -9,8 +9,8 @@ public struct SyncLoginChromeAdaptiveLayout<Status: View, Credentials: View>: Vi
     private let status: Status
     private let credentials: Credentials
 
-    /// Start bei Side-by-Side-Schwelle: vermeidet ersten Layout-Flip 0→gemessen (Remount-Churn #145).
-    @State private var availableWidth: CGFloat = SyncBrowserChrome.sideBySideMinimumWidth
+    /// Stacked bis Messung — vermeidet Phone Side-by-Side mit kollabierten CTA-Labels (HIG).
+    @State private var availableWidth: CGFloat = SyncBrowserChrome.initialAvailableWidthAssumption
 
     public init(
         @ViewBuilder status: () -> Status,
@@ -26,11 +26,13 @@ public struct SyncLoginChromeAdaptiveLayout<Status: View, Credentials: View>: Vi
                 availableWidth: Double(availableWidth)
             ) {
             case .sideBySide:
-                HStack(alignment: .top, spacing: 16) {
+                HStack(alignment: .top, spacing: CGFloat(SyncBrowserChrome.sideBySideSpacing)) {
                     status
                         .frame(maxWidth: .infinity, alignment: .leading)
+                    // Intrinsic: verhindert equal-flex Zeichen-Wrap der Credential-CTAs (HIG).
                     credentials
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .layoutPriority(1)
                 }
             case .stacked:
                 VStack(alignment: .leading, spacing: 12) {

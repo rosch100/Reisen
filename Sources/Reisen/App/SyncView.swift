@@ -298,7 +298,9 @@ struct SyncView: View {
             restoreSessionFromHub()
             isBrowserExpanded = false
             validateProviderAvailability()
-            if sessionStatus == .needsLogin {
+            if KeychainAutoFill.shouldScheduleReloadOnAppear(
+                sessionNeedsLogin: sessionStatus == .needsLogin
+            ) {
                 scheduleKeychainReloadIfLoginStillRequired()
             } else {
                 clearKeychainRuntimeState()
@@ -560,6 +562,8 @@ struct SyncView: View {
                     insertKeychainCredentials()
                 } label: {
                     Label(L10n.string(.actionFillCredentials), systemImage: "key.fill")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
@@ -576,6 +580,8 @@ struct SyncView: View {
                 openRememberLoginSheet()
             } label: {
                 Label(L10n.string(.actionRememberLogin), systemImage: "plus")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
@@ -1004,10 +1010,14 @@ struct SyncView: View {
         guard let account = selectedKeychainAccount else { return }
         guard let webView = targetWebView ?? sessionWebView ?? sessionHub?.webView(for: providerID) else { return }
         do {
-            autofillCredentials = try KeychainAutoFill.applyAccount(
+            let applied = try KeychainAutoFill.applyAccount(
                 account,
                 in: webView,
                 diagnosticContext: diagnosticContext
+            )
+            autofillCredentials = KeychainAutoFill.retainedCredentialsForReapply(
+                sessionNeedsLogin: sessionStatus == .needsLogin,
+                applied: applied
             )
             keychainMessage = nil
         } catch {
