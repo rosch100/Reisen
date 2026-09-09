@@ -127,10 +127,12 @@ struct SyncView: View {
     /// Status/Fehler nur für den Provider anzeigen, der sie erzeugt hat.
     private var storeMessageBelongsToThisProvider: Bool {
         guard let store else { return false }
-        if store.isSyncing {
-            return store.syncingProviderID == providerID
-        }
-        return store.messageProviderID == providerID
+        return SyncFeedbackScope.belongsToSelectedProvider(
+            selected: providerID,
+            isSyncing: store.isSyncing,
+            syncingProviderID: store.syncingProviderID,
+            messageProviderID: store.messageProviderID
+        )
     }
 
     /// Hub zuerst — sonst erzeugt `makeNSView` vor `onAppear` ein zweites WebView.

@@ -680,7 +680,7 @@ struct ContentView: View {
     private var globalSyncStatusBar: some View {
         let statusText = store?.statusMessage
         let errorText = store?.errorMessage
-        if store?.messageProviderID == nil,
+        if SyncFeedbackScope.showsUnscopedAggregateBanner(messageProviderID: store?.messageProviderID),
            (statusText?.isEmpty == false || errorText?.isEmpty == false) {
             HStack(alignment: .top, spacing: 8) {
                 if store?.isSyncing == true {

@@ -85,16 +85,20 @@ struct MacUI {
             text,
             text
         )
+        // Kein `descendants(.any)` — auf macOS hängt die Snapshot-Evaluation
+        // (CI: „Timed out while evaluating UI query“, PasteImport-Smoke ~125s).
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             for root in roots {
-                let staticMatch = root.staticTexts.matching(predicate).firstMatch
-                if staticMatch.exists {
-                    return staticMatch
-                }
-                let buttonMatch = root.buttons.matching(predicate).firstMatch
-                if buttonMatch.exists {
-                    return buttonMatch
+                let queries: [XCUIElementQuery] = [
+                    root.staticTexts.matching(predicate),
+                    root.buttons.matching(predicate),
+                    root.links.matching(predicate),
+                    root.otherElements.matching(predicate),
+                ]
+                for query in queries {
+                    let match = query.firstMatch
+                    if match.exists { return match }
                 }
             }
             RunLoop.current.run(until: Date().addingTimeInterval(0.05))
