@@ -10,6 +10,8 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
     var genericAttributeResults: Any = [[CFString: Any]]()
     var genericCopyStatus: OSStatus = errSecSuccess
     var genericSecretByAccount: [String: Data] = [:]
+    /// Optional Access-Group pro Account (nur wenn gesetzt → Secret-Lookups filtern).
+    var genericAccessGroupByAccount: [String: String] = [:]
     var localOnlySecretByAccount: [String: Data] = [:]
     var localOnlyAttributeResults: [[CFString: Any]] = []
 
@@ -38,6 +40,12 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
                 let account = dict[kSecAttrAccount] as? String ?? ""
                 let store = localOnly ? localOnlySecretByAccount : genericSecretByAccount
                 if let data = store[account] {
+                    if !localOnly,
+                       let queryGroup = dict[kSecAttrAccessGroup] as? String,
+                       let storedGroup = genericAccessGroupByAccount[account],
+                       storedGroup != queryGroup {
+                        return (errSecItemNotFound, nil)
+                    }
                     return (errSecSuccess, data as CFTypeRef)
                 }
                 return (errSecItemNotFound, nil)
@@ -70,6 +78,9 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
                 localOnlySecretByAccount[account] = data
             } else {
                 genericSecretByAccount[account] = data
+                if let group = dict[kSecAttrAccessGroup] as? String {
+                    genericAccessGroupByAccount[account] = group
+                }
             }
         }
         return addStatus
@@ -83,8 +94,14 @@ final class FakeKeychainInternetPasswordAPI: KeychainInternetPasswordKeychainAPI
            let account = dict[kSecAttrAccount] as? String {
             if keychainQueryIsLocalOnlyGeneric(dict) {
                 localOnlySecretByAccount.removeValue(forKey: account)
+            } else if let queryGroup = dict[kSecAttrAccessGroup] as? String,
+                      let storedGroup = genericAccessGroupByAccount[account],
+                      storedGroup != queryGroup {
+                // Andere Access Group — Shared-Item nicht löschen.
+                return deleteStatus
             } else {
                 genericSecretByAccount.removeValue(forKey: account)
+                genericAccessGroupByAccount.removeValue(forKey: account)
             }
         }
         return deleteStatus
@@ -322,6 +339,9 @@ struct KeychainCredentialStoreHotspotsTests {
         #expect(dict?[kSecUseDataProtectionKeychain] as? Bool == true)
         #expect(dict?[kSecAttrSynchronizable] as? Bool == true)
         #expect(
+            (dict?[kSecAttrAccessGroup] as? String) == KeychainCredentialAccessGroup.value
+        )
+        #expect(
             CFEqual(
                 (dict?[kSecAttrAccessible] as CFTypeRef?) ?? kCFNull,
                 kSecAttrAccessibleAfterFirstUnlock
@@ -329,6 +349,28 @@ struct KeychainCredentialStoreHotspotsTests {
         )
         #expect(!keychainQueryUsesSynchronizableAny(dict ?? [:]))
         #expect(keychainQueryIsInternetPassword(dict ?? [:]) == false)
+    }
+
+    @Test("accounts/credentials Queries nutzen shared Access Group (macOS↔iOS)")
+    func lookupQueries_useSharedAccessGroup() throws {
+        let fake = FakeKeychainInternetPasswordAPI()
+        let store = KeychainCredentialStore(keychain: fake)
+        let account = KeychainCredentialAccount(serverHost: "booking.com", username: "u@x.de")
+        fake.genericSecretByAccount[account.id] = Data("secret".utf8)
+
+        _ = try store.accounts(serverHost: "booking.com")
+        _ = try store.credentials(for: account)
+
+        let sharedQueries = fake.copyMatchingQueries.filter { dict in
+            keychainQueryIsGenericPassword(dict)
+                && (dict[kSecAttrSynchronizable] as? Bool) == true
+        }
+        #expect(!sharedQueries.isEmpty)
+        for dict in sharedQueries {
+            #expect(
+                (dict[kSecAttrAccessGroup] as? String) == KeychainCredentialAccessGroup.value
+            )
+        }
     }
 
     @Test("credentials: lädt Generic-Password ohne Auth-UI")
