@@ -51,10 +51,8 @@ public final class ExpediaCarCancelAssistRunner {
             case .clickedEntry:
                 record(result: .started, reason: "entry_clicked")
             case .dialogGone:
-                if clickedConfirm {
-                    record(result: .succeeded, reason: "dialog_gone")
-                    return
-                }
+                // Confirm success is handled in `pollDialogGone` after `.clickedConfirm`.
+                break
             case .notCarCancel:
                 record(result: .skipped, reason: "not_car_cancel")
                 return

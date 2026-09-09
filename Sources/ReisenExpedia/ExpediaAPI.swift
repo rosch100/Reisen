@@ -6,5 +6,6 @@ enum ExpediaAPI {
     static let portalHost = ExpediaSessionProbe.portalHost
     static let loginURL = URL(string: "\(origin)/login")!
     static let tripsURL = ExpediaSessionProbe.tripsURL
-    static let graphqlURL = URL(string: "\(origin)/graphql")!
+    /// Full URL literal (iOS binary isolation marker `www.expedia.de/graphql`).
+    static let graphqlURL = URL(string: "https://www.expedia.de/graphql")!
 }
