@@ -72,6 +72,39 @@ import ReisenDomain
     )
 }
 
+/// Regression HIG: Phone-Portrait darf nicht mit Side-by-Side-Annahme starten (Zeichen-Wrap-CTAs).
+@Test func syncBrowserChrome_initialAvailableWidthAssumesStackedUntilMeasured() {
+    #expect(SyncBrowserChrome.initialAvailableWidthAssumption < SyncBrowserChrome.sideBySideMinimumWidth)
+    #expect(
+        SyncBrowserChrome.loginChromeArrangement(
+            availableWidth: SyncBrowserChrome.initialAvailableWidthAssumption
+        ) == .stacked
+    )
+    // iPhone-Breitenklasse bleibt stacked
+    #expect(SyncBrowserChrome.loginChromeArrangement(availableWidth: 390) == .stacked)
+    #expect(SyncBrowserChrome.loginChromeArrangement(availableWidth: 430) == .stacked)
+}
+
+@Test func syncBrowserChrome_loginChromeArrangementStacksForAccessibilityText() {
+    #expect(
+        SyncBrowserChrome.loginChromeArrangement(
+            availableWidth: 900,
+            prefersStackedForAccessibilityText: true
+        ) == .stacked
+    )
+}
+
+/// Side-by-Side erst wenn Status + Credential-CTAs (DE-Labels) ohne Kompression passen.
+@Test func syncBrowserChrome_sideBySideMinimumFitsCredentialColumn() {
+    #expect(
+        SyncBrowserChrome.sideBySideMinimumWidth
+            >= SyncBrowserChrome.statusColumnMinimumWidth
+            + SyncBrowserChrome.credentialsColumnMinimumWidth
+            + SyncBrowserChrome.sideBySideSpacing
+    )
+    #expect(SyncBrowserChrome.loginChromeCredentialsUseIntrinsicWidth)
+}
+
 @Test func syncBrowserChrome_showsFillCredentialsOnlyWhenAccountsExist() {
     #expect(!SyncBrowserChrome.showsFillCredentialsControl(accountCount: 0))
     #expect(SyncBrowserChrome.showsFillCredentialsControl(accountCount: 1))

@@ -39,6 +39,7 @@ struct WebViewHost: View {
     let providerID: ProviderID
     var diagnosticContext: DiagnosticContext?
     var passwordAutofillAllowedHosts: [String] = []
+    var autofillCredentials: ProviderCredentials? = nil
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
@@ -53,6 +54,7 @@ struct WebViewHost: View {
             providerID: providerID,
             diagnosticContext: diagnosticContext,
             passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
+            autofillCredentials: autofillCredentials,
             webView: $webView,
             allowsEmbed: allowsEmbed,
             onDidFinish: onDidFinish,
@@ -71,6 +73,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
     let providerID: ProviderID
     var diagnosticContext: DiagnosticContext?
     var passwordAutofillAllowedHosts: [String]
+    var autofillCredentials: ProviderCredentials?
     @Binding var webView: WKWebView?
     var allowsEmbed: Bool
     let onDidFinish: (WKWebView) -> Void
@@ -88,7 +91,8 @@ struct ProviderSessionWebView: UIViewRepresentable {
             onNavigationBlocked: onNavigationBlocked,
             onWebLoginInputFocusChange: onWebLoginInputFocusChange,
             diagnosticContext: diagnosticContext,
-            passwordAutofillAllowedHosts: passwordAutofillAllowedHosts
+            passwordAutofillAllowedHosts: passwordAutofillAllowedHosts,
+            autofillCredentials: autofillCredentials
         )
     }
 
@@ -124,6 +128,7 @@ struct ProviderSessionWebView: UIViewRepresentable {
         context.coordinator.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
         context.coordinator.onAuthPopupURLChange = onAuthPopupURLChange
         context.coordinator.onWebLoginInputFocusChange = onWebLoginInputFocusChange
+        let credentialsChanged = context.coordinator.setAutofillCredentials(autofillCredentials)
         if ProviderAuthPopupPolicy.bindProvider(
             providerID,
             previous: &context.coordinator.boundProviderID
@@ -141,6 +146,10 @@ struct ProviderSessionWebView: UIViewRepresentable {
                     result: .succeeded,
                     webView: view
                 )
+            }
+            if credentialsChanged {
+                ProviderLoginAssistance.resetAssistanceScheduling(for: view)
+                context.coordinator.applyAssistance(in: view)
             }
         }
         if webView !== view {
@@ -278,6 +287,8 @@ struct ProviderSessionWebView: UIViewRepresentable {
         var onWebLoginInputFocusChange: ((Bool) -> Void)?
         var diagnosticContext: DiagnosticContext?
         var passwordAutofillAllowedHosts: [String]
+        private var autofillCredentials: ProviderCredentials?
+        private var loginAssistanceCancellation: ProviderLoginAssistanceCancellation?
         var loadedLoginURL: URL?
         var boundProviderID: ProviderID?
         private weak var authPopupWebView: WKWebView?
@@ -292,7 +303,8 @@ struct ProviderSessionWebView: UIViewRepresentable {
             onNavigationBlocked: (() -> Void)?,
             onWebLoginInputFocusChange: ((Bool) -> Void)?,
             diagnosticContext: DiagnosticContext?,
-            passwordAutofillAllowedHosts: [String]
+            passwordAutofillAllowedHosts: [String],
+            autofillCredentials: ProviderCredentials?
         ) {
             self.onDidFinish = onDidFinish
             self.onAuthPopupURLChange = onAuthPopupURLChange
@@ -301,9 +313,22 @@ struct ProviderSessionWebView: UIViewRepresentable {
             self.onWebLoginInputFocusChange = onWebLoginInputFocusChange
             self.diagnosticContext = diagnosticContext
             self.passwordAutofillAllowedHosts = passwordAutofillAllowedHosts
+            self.autofillCredentials = autofillCredentials
+        }
+
+        func setAutofillCredentials(_ credentials: ProviderCredentials?) -> Bool {
+            let changed = autofillCredentials != credentials
+            if changed {
+                loginAssistanceCancellation?.cancel()
+                loginAssistanceCancellation = nil
+            }
+            autofillCredentials = credentials
+            return changed
         }
 
         func tearDown(from webView: WKWebView?) {
+            loginAssistanceCancellation?.cancel()
+            loginAssistanceCancellation = nil
             sessionCookieObserver?.detach()
             sessionCookieObserver = nil
             dismissAuthPopup()
@@ -608,13 +633,25 @@ struct ProviderSessionWebView: UIViewRepresentable {
             return true
         }
 
-        private func applyAssistance(in webView: WKWebView) {
+        func applyAssistance(in webView: WKWebView) {
             guard let absolute = webView.url?.absoluteString, !absolute.isEmpty else { return }
             if AuthPageURLHeuristic.shouldApplyOneTimeCodeAutofill(absolute) {
                 OneTimeCodeAutofill.apply(in: webView, relaxSplitFieldMaxLength: true)
             }
             ProviderLoginAssistance.installOnLoginPage(
                 in: webView,
+                allowedServerHosts: passwordAutofillAllowedHosts,
+                diagnosticContext: diagnosticContext
+            )
+            guard AuthPageURLHeuristic.shouldApplyPasswordAutofill(
+                absolute,
+                allowedServerHosts: passwordAutofillAllowedHosts
+            ) else { return }
+            guard let credentials = autofillCredentials else { return }
+            loginAssistanceCancellation?.cancel()
+            loginAssistanceCancellation = ProviderLoginAssistance.applyCredentials(
+                in: webView,
+                credentials: credentials,
                 allowedServerHosts: passwordAutofillAllowedHosts,
                 diagnosticContext: diagnosticContext
             )

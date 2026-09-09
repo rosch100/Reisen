@@ -13,8 +13,24 @@ public enum SyncContentStackVerticalAlignment: Equatable, Sendable {
 
 /// Regeln für Provider-Sync-Browser-Chrome (macOS + iOS): Placement und progressive Login-UI.
 public enum SyncBrowserChrome: Sendable {
+    /// Startbreite vor Geometry-Messung: stacked, damit Phone nicht mit Side-by-Side-CTAs kollabiert.
+    public static let initialAvailableWidthAssumption: Double = 0
+
+    /// Mindestbreite der Status/Guidance-Spalte (Side-by-Side).
+    public static let statusColumnMinimumWidth: Double = 220
+
+    /// Mindestbreite der Credential-CTAs (DE-Labels „Zugangsdaten ausfüllen“ + „Anmeldung merken…“).
+    public static let credentialsColumnMinimumWidth: Double = 360
+
+    /// Abstand zwischen Status- und Credentials-Spalte.
+    public static let sideBySideSpacing: Double = 16
+
     /// Ab dieser Chrome-Breite liegen Status/Guidance und Credential-CTAs nebeneinander.
-    public static let sideBySideMinimumWidth: Double = 560
+    public static let sideBySideMinimumWidth: Double =
+        statusColumnMinimumWidth + credentialsColumnMinimumWidth + sideBySideSpacing
+
+    /// Credentials behalten Intrinsic-Width (kein equal-flex-Kollaps / Zeichen-Wrap).
+    public static let loginChromeCredentialsUseIntrinsicWidth = true
 
     /// Content-Stack immer top-pinnen. Bei collapsed Browser (kein flexibles WebView-Kind)
     /// zentriert SwiftUI sonst Session-Banner und Action-Bar vertikal in der Detailfläche.
@@ -52,9 +68,15 @@ public enum SyncBrowserChrome: Sendable {
         availableWidth >= sideBySideMinimumWidth
     }
 
-    /// SSOT für Adaptive Login-Chrome: nur gemessene Breite, kein ViewThatFits+minWidth-Hack.
-    public static func loginChromeArrangement(availableWidth: Double) -> SyncLoginChromeArrangement {
-        prefersSideBySideLoginChrome(availableWidth: availableWidth) ? .sideBySide : .stacked
+    /// SSOT für Adaptive Login-Chrome: gemessene Breite + Accessibility-Schrift (HIG).
+    public static func loginChromeArrangement(
+        availableWidth: Double,
+        prefersStackedForAccessibilityText: Bool = false
+    ) -> SyncLoginChromeArrangement {
+        if prefersStackedForAccessibilityText {
+            return .stacked
+        }
+        return prefersSideBySideLoginChrome(availableWidth: availableWidth) ? .sideBySide : .stacked
     }
 
     /// „Ausfüllen“ nur wenn mindestens ein Keychain-Konto da ist (leer → Speichern/Hilfe).

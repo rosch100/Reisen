@@ -26,3 +26,34 @@ func keychainAutoFillTimingConstants_areStable() {
     #expect(KeychainAutoFill.webViewRetryDelayNanoseconds == 250_000_000)
     #expect(KeychainAutoFill.loginSettleDelayNanoseconds == 350_000_000)
 }
+
+/// macOS/iOS-Parität: bei needsLogin sofort Keychain-Reload+Auto-Fill schedulen (onAppear).
+@Test
+func keychainAutoFill_schedulesReloadOnAppearOnlyWhenLoginRequired() {
+    #expect(KeychainAutoFill.shouldScheduleReloadOnAppear(sessionNeedsLogin: true))
+    #expect(!KeychainAutoFill.shouldScheduleReloadOnAppear(sessionNeedsLogin: false))
+}
+
+/// Nach erfolgreichem Apply Credentials behalten, solange Login nötig (SPA Re-Apply).
+@Test
+func keychainAutoFill_retainsCredentialsForReapplyWhileLoginRequired() {
+    let credentials = ProviderCredentials(username: "a@b.de", password: "x")
+    #expect(
+        KeychainAutoFill.retainedCredentialsForReapply(
+            sessionNeedsLogin: true,
+            applied: credentials
+        ) == credentials
+    )
+    #expect(
+        KeychainAutoFill.retainedCredentialsForReapply(
+            sessionNeedsLogin: false,
+            applied: credentials
+        ) == nil
+    )
+    #expect(
+        KeychainAutoFill.retainedCredentialsForReapply(
+            sessionNeedsLogin: true,
+            applied: nil
+        ) == nil
+    )
+}
