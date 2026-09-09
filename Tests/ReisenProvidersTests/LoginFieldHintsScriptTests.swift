@@ -22,6 +22,9 @@ func loginFieldHintsScriptNotifiesNativeOnLoginInputFocusAndBlur() {
     #expect(script.contains("inputBlurred"))
     #expect(script.contains("focusin"))
     #expect(script.contains("focusout"))
+    #expect(script.contains("composedPath"))
+    #expect(script.contains("shadowRoot.activeElement"))
+    #expect(script.contains("reportCurrentFocus"))
 }
 
 @Test

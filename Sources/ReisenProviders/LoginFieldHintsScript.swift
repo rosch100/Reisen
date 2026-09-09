@@ -129,22 +129,46 @@ public enum LoginFieldHintsScript {
           }
           window.__reisenLoginHintsInstalled = true;
 
+          function eventTarget(e) {
+            try {
+              if (e && e.composedPath) {
+                const path = e.composedPath();
+                if (path && path.length) return path[0];
+              }
+            } catch (_) {}
+            return e && e.target;
+          }
+
+          function deepActiveElement() {
+            let el = document.activeElement;
+            try {
+              while (el && el.shadowRoot && el.shadowRoot.activeElement) {
+                el = el.shadowRoot.activeElement;
+              }
+            } catch (_) {}
+            return el;
+          }
+
+          function reportCurrentFocus() {
+            notifyFocus(isLoginInput(deepActiveElement()));
+          }
+
           markFields(document);
           scheduleNotify();
 
           document.addEventListener('focusin', function(e) {
-            const t = e && e.target;
+            const t = eventTarget(e);
             if (t && isLoginInput(t)) notifyFocus(true);
           }, true);
           document.addEventListener('focusout', function(e) {
-            const t = e && e.target;
+            const t = eventTarget(e);
             if (t && isLoginInput(t)) {
               setTimeout(function() {
-                const active = document.activeElement;
-                if (!isLoginInput(active)) notifyFocus(false);
+                if (!isLoginInput(deepActiveElement())) notifyFocus(false);
               }, 0);
             }
           }, true);
+          reportCurrentFocus();
 
           const observer = new MutationObserver(function(mutations) {
             let sawInput = false;
