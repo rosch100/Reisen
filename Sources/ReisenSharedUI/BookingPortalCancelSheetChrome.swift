@@ -3,7 +3,8 @@ import ReisenDomain
 
 public enum BookingPortalCancelChrome {
     public static let systemImage = "arrow.up.right.square"
-    public static let usesDestructiveRole = true
+    /// Portal-Navigation (Sheet/Safari), kein lokales Löschen.
+    public static let usesDestructiveRole = false
 }
 
 public struct BookingPortalCancelSheetChrome<WebContent: View>: View {
