@@ -528,6 +528,7 @@ struct SyncTab: View {
                 } else {
                     selectedKeychainAccount = nil
                     setPreferredKeychainAccountID("")
+                    autofillCredentials = nil
                 }
             }
         )

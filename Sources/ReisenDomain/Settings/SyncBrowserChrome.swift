@@ -68,9 +68,15 @@ public enum SyncBrowserChrome: Sendable {
         availableWidth >= sideBySideMinimumWidth
     }
 
-    /// SSOT für Adaptive Login-Chrome: nur gemessene Breite, kein ViewThatFits+minWidth-Hack.
-    public static func loginChromeArrangement(availableWidth: Double) -> SyncLoginChromeArrangement {
-        prefersSideBySideLoginChrome(availableWidth: availableWidth) ? .sideBySide : .stacked
+    /// SSOT für Adaptive Login-Chrome: gemessene Breite + Accessibility-Schrift (HIG).
+    public static func loginChromeArrangement(
+        availableWidth: Double,
+        prefersStackedForAccessibilityText: Bool = false
+    ) -> SyncLoginChromeArrangement {
+        if prefersStackedForAccessibilityText {
+            return .stacked
+        }
+        return prefersSideBySideLoginChrome(availableWidth: availableWidth) ? .sideBySide : .stacked
     }
 
     /// „Ausfüllen“ nur wenn mindestens ein Keychain-Konto da ist (leer → Speichern/Hilfe).

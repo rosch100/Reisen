@@ -11,6 +11,7 @@ public struct SyncLoginChromeAdaptiveLayout<Status: View, Credentials: View>: Vi
 
     /// Stacked bis Messung — vermeidet Phone Side-by-Side mit kollabierten CTA-Labels (HIG).
     @State private var availableWidth: CGFloat = SyncBrowserChrome.initialAvailableWidthAssumption
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
         @ViewBuilder status: () -> Status,
@@ -23,7 +24,8 @@ public struct SyncLoginChromeAdaptiveLayout<Status: View, Credentials: View>: Vi
     public var body: some View {
         Group {
             switch SyncBrowserChrome.loginChromeArrangement(
-                availableWidth: Double(availableWidth)
+                availableWidth: Double(availableWidth),
+                prefersStackedForAccessibilityText: prefersStackedForAccessibilityText
             ) {
             case .sideBySide:
                 HStack(alignment: .top, spacing: CGFloat(SyncBrowserChrome.sideBySideSpacing)) {
@@ -56,6 +58,10 @@ public struct SyncLoginChromeAdaptiveLayout<Status: View, Credentials: View>: Vi
             guard width > 0, width != availableWidth else { return }
             availableWidth = width
         }
+    }
+
+    private var prefersStackedForAccessibilityText: Bool {
+        dynamicTypeSize.isAccessibilitySize || dynamicTypeSize >= .xxLarge
     }
 }
 

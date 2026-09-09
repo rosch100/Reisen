@@ -85,6 +85,15 @@ import ReisenDomain
     #expect(SyncBrowserChrome.loginChromeArrangement(availableWidth: 430) == .stacked)
 }
 
+@Test func syncBrowserChrome_loginChromeArrangementStacksForAccessibilityText() {
+    #expect(
+        SyncBrowserChrome.loginChromeArrangement(
+            availableWidth: 900,
+            prefersStackedForAccessibilityText: true
+        ) == .stacked
+    )
+}
+
 /// Side-by-Side erst wenn Status + Credential-CTAs (DE-Labels) ohne Kompression passen.
 @Test func syncBrowserChrome_sideBySideMinimumFitsCredentialColumn() {
     #expect(
