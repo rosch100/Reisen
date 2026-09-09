@@ -74,12 +74,26 @@ struct MacUI {
             text,
             text
         )
-        let match = app.descendants(matching: .any).matching(predicate).firstMatch
-        XCTAssertTrue(
-            match.waitForExistence(timeout: timeout),
-            "Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)"
-        )
-        return match
+        // Kein `descendants(.any)` über die ganze App — auf macOS hängt die Snapshot-Evaluation
+        // (CI: „Timed out while evaluating UI query“, PasteImport-Smoke ~125s).
+        let queries: [XCUIElementQuery] = [
+            app.staticTexts.matching(predicate),
+            app.buttons.matching(predicate),
+            app.links.matching(predicate),
+            app.otherElements.matching(predicate),
+        ]
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            for query in queries {
+                let match = query.firstMatch
+                if match.exists {
+                    return match
+                }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        XCTFail("Text fehlt (label/value CONTAINS): \(text)\n\(app.debugDescription)")
+        return app.staticTexts.firstMatch
     }
 
     func waitForWindow(timeout: TimeInterval = 15) {
