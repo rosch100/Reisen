@@ -33,6 +33,7 @@ import ReisenDomain
     #expect(UITestingIdentifiers.assignBookingsSheet == "reisen.assign-bookings.sheet")
     #expect(UITestingIdentifiers.assignBookingsConfirm == "reisen.assign-bookings.confirm")
     #expect(UITestingIdentifiers.providerSetupSheet == "setup.providers.sheet")
+    #expect(UITestingIdentifiers.providerSetupSelectAll == "setup.providers.all")
     #expect(UITestingIdentifiers.providerSetupContinue == "setup.providers.continue")
     #expect(UITestingIdentifiers.providerSetupLater == "setup.providers.later")
     #expect(UITestingIdentifiers.providerSetupReopen == "setup.providers.reopen")

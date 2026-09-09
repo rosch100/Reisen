@@ -25,6 +25,8 @@ final class MacUISmokeTests: XCTestCase {
         let ui = MacUI.launchEmpty()
         ui.waitForWindow()
         ui.waitFor(UITestingIdentifiers.providerSetupSheet)
+        // Reach-only: Alle-Button sichtbar, kein Tap (lokale Selection ohne Persistenz-Assert).
+        ui.waitFor(UITestingIdentifiers.providerSetupSelectAll, timeout: 3)
     }
 
     func testEmptyLaunchContinueWithoutProvidersDismissesSetup() {
