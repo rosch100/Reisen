@@ -229,7 +229,10 @@ struct SyncView: View {
                         onNavigationBlocked: {
                             navigationWasBlocked = true
                         },
-                        allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false,
+                        allowsEmbed: sessionHub?.allowsEmbed(
+                            on: .sync,
+                            providerID: providerID
+                        ) ?? false,
                         diagnosticContext: DiagnosticContext(
                             runID: diagnosticRunID,
                             providerID: providerID,
@@ -289,6 +292,7 @@ struct SyncView: View {
         }
         .onAppear {
             if UITestingLaunch.isActive { return }
+            updateForegroundSyncProviderClaim(claim: providerID)
             restoreSessionFromHub()
             isBrowserExpanded = false
             validateProviderAvailability()
@@ -317,6 +321,9 @@ struct SyncView: View {
             }
         }
         .onDisappear {
+            if sessionHub?.foregroundSyncProviderID == providerID {
+                updateForegroundSyncProviderClaim(claim: nil)
+            }
             store?.dismissMessages(for: providerID)
         }
         .onChange(of: sessionStatus) { _, newValue in
@@ -384,6 +391,28 @@ struct SyncView: View {
         }
         if let webView = sessionHub.webView(for: providerID) {
             sessionWebView = webView
+        }
+    }
+
+    private func updateForegroundSyncProviderClaim(claim: ProviderID?) {
+        guard let sessionHub else { return }
+        if sessionHub.foregroundSyncProviderID == claim { return }
+        sessionHub.setForegroundSyncProviderID(claim)
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: providerID,
+                        operation: "macos_sync"
+                    ),
+                    component: "SyncView",
+                    phase: "webview_display",
+                    event: "foreground_sync_claim",
+                    result: claim == nil ? .skipped : .succeeded,
+                    reason: claim == nil ? "cleared" : "claimed"
+                )
+            )
         }
     }
 

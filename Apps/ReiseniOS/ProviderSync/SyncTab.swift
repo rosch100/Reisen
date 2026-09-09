@@ -56,6 +56,8 @@ struct SyncTab: View {
         // Hub-Slots vor WebViewHost — sonst updateWebView no-op / zweites WebView vor onAppear.
         let enabled = enabledProviderIDs
         let _ = sessionHub?.syncEnabledProviders(Set(enabled))
+        // Foreground vor Probe-Update setzen (Body-seitiger Claim, analog syncEnabledProviders).
+        let _ = updateForegroundSyncProviderClaim()
         NavigationStack {
             Group {
                 if enabled.isEmpty {
@@ -138,15 +140,18 @@ struct SyncTab: View {
             .onAppear {
                 sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
                 ensureSelectedProviderIsEnabled()
+                updateForegroundSyncProviderClaim()
             }
             .onChange(of: enabledProviderIDs) { _, _ in
                 sessionHub?.syncEnabledProviders(Set(enabledProviderIDs))
                 ensureSelectedProviderIsEnabled()
+                updateForegroundSyncProviderClaim()
             }
             .onChange(of: selectedProviderID) { _, newProviderID in
                 navigationWasBlocked = false
                 isWebLoginInputFocused = false
                 webView = sessionHub?.webView(for: newProviderID)
+                updateForegroundSyncProviderClaim()
                 guard enabledProviderIDs.contains(newProviderID) else { return }
                 guard let sessionHub else { return }
                 if sessionHub.status(for: newProviderID) != .sessionReady {
@@ -164,6 +169,7 @@ struct SyncTab: View {
                 }
             }
             .onChange(of: isSelected) { _, selected in
+                updateForegroundSyncProviderClaim()
                 if !selected {
                     setKeyboardChromeVisible(false)
                     isWebLoginInputFocused = false
@@ -224,7 +230,10 @@ struct SyncTab: View {
                 ),
                 passwordAutofillAllowedHosts: loginConfiguration?.passwordAutofillAllowedHosts ?? [],
                 webView: webViewBinding,
-                allowsEmbed: sessionHub?.allowsEmbed(on: .sync) ?? false,
+                allowsEmbed: sessionHub?.allowsEmbed(
+                    on: .sync,
+                    providerID: selectedProviderID
+                ) ?? false,
                 onDidFinish: { finishedWebView in
                     handleWebDidFinish(finishedWebView)
                 },
@@ -651,6 +660,34 @@ struct SyncTab: View {
         if resolved != selectedProviderID {
             selectedProviderID = resolved
         }
+    }
+
+    /// Sync-Host beansprucht die Hub-WebView; Hintergrund-Probe darf sie dann nicht stehlen.
+    @discardableResult
+    private func updateForegroundSyncProviderClaim() -> Bool {
+        guard let sessionHub else { return false }
+        let claim = isSelected && enabledProviderIDs.contains(selectedProviderID)
+            ? selectedProviderID
+            : nil
+        if sessionHub.foregroundSyncProviderID == claim { return true }
+        sessionHub.setForegroundSyncProviderID(claim)
+        Task {
+            await DiagnosticLogger.shared.record(
+                DiagnosticEvent(
+                    context: DiagnosticContext(
+                        runID: diagnosticRunID,
+                        providerID: selectedProviderID,
+                        operation: "ios_sync"
+                    ),
+                    component: "SyncTab",
+                    phase: "webview_display",
+                    event: "foreground_sync_claim",
+                    result: claim == nil ? .skipped : .succeeded,
+                    reason: claim == nil ? "cleared" : "claimed"
+                )
+            )
+        }
+        return true
     }
 
     private func navigationHintURLsForSync() -> [URL] {

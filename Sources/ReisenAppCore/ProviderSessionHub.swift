@@ -39,6 +39,8 @@ public final class ProviderSessionHub {
     /// Einmalige Cookie-/Session-Probe beim App-Start abgeschlossen.
     private(set) public var didCompleteStartupProbe = false
     public private(set) var webViewDisplayOwner: ProviderWebViewDisplayOwner = .syncHost
+    /// Provider, dessen Hub-WebView der sichtbare Sync-Host einbettet (Probe darf nicht stehlen).
+    public private(set) var foregroundSyncProviderID: ProviderID?
 
     public init() {}
 
@@ -46,8 +48,21 @@ public final class ProviderSessionHub {
         webViewDisplayOwner = owner
     }
 
+    public func setForegroundSyncProviderID(_ providerID: ProviderID?) {
+        foregroundSyncProviderID = providerID
+    }
+
     public func allowsEmbed(on host: ProviderWebViewHostRole) -> Bool {
         ProviderWebViewDisplayPolicy.allowsEmbed(owner: webViewDisplayOwner, host: host)
+    }
+
+    public func allowsEmbed(on host: ProviderWebViewHostRole, providerID: ProviderID) -> Bool {
+        ProviderWebViewDisplayPolicy.allowsEmbed(
+            owner: webViewDisplayOwner,
+            host: host,
+            providerID: providerID,
+            foregroundSyncProviderID: foregroundSyncProviderID
+        )
     }
 
     public func markStartupProbeCompleted() {
