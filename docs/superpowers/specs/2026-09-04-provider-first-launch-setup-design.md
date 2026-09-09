@@ -80,7 +80,7 @@ applySelection(enabledIDs:syncProviderIDs:defaults:)
 - SwiftUI `.sheet` (kein Full-Screen-Trap auf macOS).
 - Struktur:
   1. Header: SF Symbol `airplane.departure`, Titel, Untertitel.
-  2. Liste der `ProviderID.syncProviderIDs` mit Toggle; optional Caption `settingsAppInstalled`.
+  2. Liste: Button **Alle** (lokale Selection select-all/clear-all) + `ProviderID.syncProviderIDs` mit Toggle; optional Caption `settingsAppInstalled`.
   3. Footer-Actions: **Weiter** (`.borderedProminent`, immer aktiv) und **Ohne Buchungsportale** (`.bordered` / cancel-ähnlich).
 - macOS: `.presentationSizing(.fitted)`; iOS: Standard-Sheet + Drag-Indicator.
 
@@ -90,6 +90,9 @@ applySelection(enabledIDs:syncProviderIDs:defaults:)
 | --- | --- | --- |
 | `setup.providers.title` | Buchungsportale wählen | Choose Booking Portals |
 | `setup.providers.subtitle` | Wähle die Portale… | Choose the portals… |
+| `setup.providers.all` | Alle | All |
+| `setup.providers.all_select_help` | Alle Portale auswählen | Select all portals |
+| `setup.providers.all_deselect_help` | Alle Portale abwählen | Deselect all portals |
 | `setup.providers.continue` | Weiter | Continue |
 | `setup.providers.later` | Ohne Buchungsportale | Without Booking Portals |
 | `setup.providers.reopen` | Portale wählen… | Choose Portals… |
@@ -101,6 +104,7 @@ applySelection(enabledIDs:syncProviderIDs:defaults:)
 | Identifier | Element |
 | --- | --- |
 | `setup.providers.sheet` | Sheet-Root |
+| `setup.providers.all` | Button „Alle“ (select-all / clear-all der lokalen Auswahl) |
 | `setup.providers.toggle.<rawValue>` | Toggle pro Provider |
 | `setup.providers.continue` | Weiter |
 | `setup.providers.later` | Ohne Buchungsportale |
@@ -135,7 +139,7 @@ Unverändert (siehe iCloud-Prefs-Spec): Wait auf Import; synced `setupCompleted`
 ### Empty-Launch-Vertrag
 
 1. `MacUI.waitForWindow`: Sheet-Existence akzeptiert.
-2. Smoke `testEmptyLaunchShowsProviderSetupSheet`: Reach-only Sheet.
+2. Smoke `testEmptyLaunchShowsProviderSetupSheet`: Reach-only Sheet + `setup.providers.all`.
 3. Empty-Smokes: Dismiss via `setup.providers.later` → `completeWithoutPortals` (Hide + completed, kein Reopen).
 4. Smoke `testEmptyLaunchWithoutPortalsDismissesSetup` / Empty-Continue; Settings-Hide-Toggle Existence.
 5. Populated: Sheet-Count `0`.

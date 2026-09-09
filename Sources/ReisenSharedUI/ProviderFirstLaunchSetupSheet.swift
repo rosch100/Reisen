@@ -79,8 +79,29 @@ public struct ProviderFirstLaunchSetupSheet: View {
         .padding(.bottom, 12)
     }
 
+    private var allProvidersSelected: Bool {
+        ProviderSetupSelection.areAllSelected(current: selection, allIDs: syncProviderIDs)
+    }
+
     private var providerList: some View {
         Form {
+            Button(L10n.string(.setupProvidersAll)) {
+                selection = ProviderSetupSelection.toggleAll(
+                    current: selection,
+                    allIDs: syncProviderIDs
+                )
+            }
+            .accessibilityIdentifier(UITestingIdentifiers.providerSetupSelectAll)
+            .accessibilityHint(
+                Text(
+                    L10n.string(
+                        allProvidersSelected
+                            ? .setupProvidersAllDeselectHelp
+                            : .setupProvidersAllSelectHelp
+                    )
+                )
+            )
+
             ForEach(syncProviderIDs, id: \.self) { providerID in
                 Toggle(isOn: binding(for: providerID)) {
                     VStack(alignment: .leading, spacing: 2) {

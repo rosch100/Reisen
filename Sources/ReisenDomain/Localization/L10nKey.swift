@@ -363,6 +363,9 @@ public enum L10nKey: String, Sendable, CaseIterable {
     case settingsTravelTimesFooter = "settings.travel_times_footer"
     case setupProvidersTitle = "setup.providers.title"
     case setupProvidersSubtitle = "setup.providers.subtitle"
+    case setupProvidersAll = "setup.providers.all"
+    case setupProvidersAllSelectHelp = "setup.providers.all_select_help"
+    case setupProvidersAllDeselectHelp = "setup.providers.all_deselect_help"
     case setupProvidersContinue = "setup.providers.continue"
     /// Sheet-Aktion „Ohne Buchungsportale“ (Identifier bleibt `setup.providers.later`).
     case setupProvidersLater = "setup.providers.later"
