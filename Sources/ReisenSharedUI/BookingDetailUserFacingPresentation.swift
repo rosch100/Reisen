@@ -9,9 +9,19 @@ public struct BookingGuestHintPresentation: Equatable, Sendable {
     public let detail: String?
 
     public static func make(title: String, detail: String) -> BookingGuestHintPresentation {
-        BookingGuestHintPresentation(
-            title: title,
-            detail: detail.isEmpty ? nil : detail
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDetail = detail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let detailOut: String?
+        if trimmedDetail.isEmpty {
+            detailOut = nil
+        } else if trimmedDetail.caseInsensitiveCompare(trimmedTitle) == .orderedSame {
+            detailOut = nil
+        } else {
+            detailOut = trimmedDetail
+        }
+        return BookingGuestHintPresentation(
+            title: trimmedTitle.isEmpty ? title : trimmedTitle,
+            detail: detailOut
         )
     }
 }
