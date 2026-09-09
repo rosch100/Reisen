@@ -14,6 +14,10 @@ public enum UITestingIdentifiers {
     public static let syncLoginChrome = "reisen.sync.login-chrome"
     /// Session-ready Banner („Angemeldet“) oberhalb der Action-Bar.
     public static let syncSessionBanner = "reisen.sync.session-banner"
+    /// Sync-All-/Unscoped-Feedback (nicht dem aktuellen Portal-WebView zuschreiben).
+    public static let syncUnscopedFeedback = "reisen.sync.unscoped-feedback"
+    /// Provider-scoped Sync-Fehler in der Action-Bar.
+    public static let syncProviderScopedError = "reisen.sync.provider-scoped-error"
     /// Passkey-Hinweis im Sync-Login-Chrome (nur bei Apple-IdP sichtbar).
     public static let syncApplePasskeyHint = "reisen.sync.apple-passkey-hint"
     /// Hauptfläche: gewähltes Portal ist deaktiviert (Checkbox aus).
