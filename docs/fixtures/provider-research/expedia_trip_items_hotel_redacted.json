@@ -1,0 +1,357 @@
+{
+  "tripItems": {
+    "itemGroups": [
+      {
+        "analytics": {
+          "linkName": "<redacted>",
+          "referrerId": "BookedSectionDisplayed",
+          "__typename": "ClientSideImpressionEventAnalytics"
+        },
+        "button": null,
+        "buttonAction": null,
+        "heading": null,
+        "messages": null,
+        "sections": [
+          {
+            "heading": null,
+            "cards": [
+              {
+                "identifier": "eg:property:v2:testhotelproductid0001",
+                "accessibility": null,
+                "cardAction": {
+                  "accessibility": "Weitere Informationen für martas Gästehäuser Hauptbahnhof Berlin - Hostel anzeigen.",
+                  "analytics": {
+                    "linkName": "<redacted>",
+                    "referrerId": "TO.HOT.TripItemCard.Booked.NAV.ViewItemDetails",
+                    "__typename": "ClientSideAnalytics"
+                  },
+                  "resource": {
+                    "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=",
+                    "__typename": "HttpURI"
+                  },
+                  "target": "INTERNAL",
+                  "__typename": "UILinkAction"
+                },
+                "analytics": {
+                  "linkName": "<redacted>",
+                  "referrerId": "TO.HOT.TripItem.Booked.TripsItemPresented",
+                  "__typename": "ClientSideImpressionEventAnalytics"
+                },
+                "clickstreamAnalytics": null,
+                "badge": {
+                  "accessibility": null,
+                  "text": "Gebucht",
+                  "theme": "positive",
+                  "__typename": "EGDSStandardBadge"
+                },
+                "enrichedSecondaries": [
+                  {
+                    "text": "von 7. Dez., 15:00 Uhr bis 8. Dez., 10:00 Uhr",
+                    "accessibility": null,
+                    "__typename": "EGDSPlainText"
+                  },
+                  {
+                    "text": "Reiseplan: 72000000000001",
+                    "accessibility": null,
+                    "__typename": "EGDSPlainText"
+                  }
+                ],
+                "logo": null,
+                "asset": null,
+                "media": {
+                  "description": "<redacted:139chars>",
+                  "url": "https://images.trvl-media.com/lodging/2000000/1880000/1878000/1999999/0824d05b.jpg?impolicy=resizecrop&rw=250&ra=fit",
+                  "__typename": "Image"
+                },
+                "menu": {
+                  "items": [
+                    {
+                      "action": {
+                        "accessibility": null,
+                        "analytics": {
+                          "linkName": "<redacted>",
+                          "referrerId": "TO.HOT.TripItemMenu.NAV.ViewItemDetails",
+                          "__typename": "ClientSideAnalytics"
+                        },
+                        "resource": {
+                          "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=",
+                          "__typename": "HttpURI"
+                        },
+                        "target": "INTERNAL",
+                        "__typename": "UILinkAction"
+                      },
+                      "item": {
+                        "accessibility": "Buchung anzeigen",
+                        "graphic": {
+                          "id": "lob_hotels",
+                          "__typename": "Icon"
+                        },
+                        "title": "Buchung anzeigen",
+                        "__typename": "TripsUIMenuItem"
+                      },
+                      "linkAction": {
+                        "accessibility": null,
+                        "resource": {
+                          "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=",
+                          "__typename": "HttpURI"
+                        },
+                        "target": "INTERNAL",
+                        "analytics": {
+                          "clickstreamEvent": {
+                            "eventName": "<redacted>",
+                            "eventType": "Interaction",
+                            "eventVersion": "1.0.0",
+                            "eventCategory": "BOOKED_HOT_TO",
+                            "actionLocation": null,
+                            "actionReason": null,
+                            "__typename": "TripsUIEGClickstreamEvent"
+                          },
+                          "payload": "<redacted:435chars>",
+                          "__typename": "TripsUIClickstreamAnalytics"
+                        },
+                        "__typename": "TripsUILinkAction"
+                      },
+                      "__typename": "TripsUIMenuItemLink"
+                    },
+                    {
+                      "action": {
+                        "accessibility": null,
+                        "analytics": {
+                          "linkName": "<redacted>",
+                          "referrerId": "TO.HOT.TripItemMenu.NAV.ManageTrip",
+                          "__typename": "ClientSideAnalytics"
+                        },
+                        "resource": {
+                          "value": "https://www.expedia.de/booking-servicing/lodging?tripViewId=egti-TEST-VIEW-0001&encodedTripItemId=MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=&tripId=00000000-0000-4000-8000-000000000101",
+                          "__typename": "HttpURI"
+                        },
+                        "target": "INTERNAL",
+                        "__typename": "UILinkAction"
+                      },
+                      "item": {
+                        "accessibility": "Buchung ändern oder stornieren",
+                        "graphic": {
+                          "id": "mode_edit",
+                          "__typename": "Icon"
+                        },
+                        "title": "Buchung ändern oder stornieren",
+                        "__typename": "TripsUIMenuItem"
+                      },
+                      "linkAction": {
+                        "accessibility": null,
+                        "resource": {
+                          "value": "https://www.expedia.de/booking-servicing/lodging?tripViewId=egti-TEST-VIEW-0001&encodedTripItemId=MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=&tripId=00000000-0000-4000-8000-000000000101",
+                          "__typename": "HttpURI"
+                        },
+                        "target": "INTERNAL",
+                        "analytics": {
+                          "clickstreamEvent": {
+                            "eventName": "",
+                            "eventType": "",
+                            "eventVersion": "",
+                            "eventCategory": "",
+                            "actionLocation": "",
+                            "actionReason": "",
+                            "__typename": "TripsUIEGClickstreamEvent"
+                          },
+                          "payload": null,
+                          "__typename": "TripsUIClickstreamAnalytics"
+                        },
+                        "__typename": "TripsUILinkAction"
+                      },
+                      "__typename": "TripsUIMenuItemLink"
+                    },
+                    {
+                      "analytics": {
+                        "linkName": "<redacted>",
+                        "referrerId": "TO.HOT.TripItemMenu.Open-Sheet.MoveItemSelected",
+                        "__typename": "ClientSideAnalytics"
+                      },
+                      "item": {
+                        "accessibility": "Zu einer anderen Reise verschieben",
+                        "graphic": {
+                          "id": "swap_vert",
+                          "__typename": "Icon"
+                        },
+                        "title": "Zu einer anderen Reise verschieben",
+                        "__typename": "TripsUIMenuItem"
+                      },
+                      "planningSheet": {
+                        "toolbar": {
+                          "toolbar": {
+                            "closeAccessibility": "Seite schließen",
+                            "closeAnalytics": {
+                              "linkName": "<redacted>",
+                              "referrerId": "…",
+                              "__typename": "…"
+                            },
+                            "__typename": "TripsUISheetToolbar"
+                          },
+                          "createTripButton": {
+                            "button": {
+                              "icon": "…",
+                              "primary": "…",
+                              "accessibility": "…",
+                              "clickAnalytics": "…",
+                              "__typename": "…"
+                            },
+                            "action": {
+                              "sheet": "…",
+                              "__typename": "…"
+                            },
+                            "__typename": "TripsUISheetToolbarCreateTripButton"
+                          },
+                          "__typename": "TripsUITripPlanningSheetToolbar"
+                        },
+                        "tripPlanningPrimer": {
+                          "tripsUITripItemContext": {
+                            "itemId": "eg:property:v2:testhotelproductid0001",
+                            "tripId": "egti-TEST-VIEW-0001",
+                            "operationType": "move",
+                            "__typename": "TripsUITripItemContext"
+                          },
+                          "__typename": "TripsUITripPlanningPrimer"
+                        },
+                        "__typename": "TripsUITripPlanningSheet"
+                      },
+                      "clickstreamAnalytics": {
+                        "clickstreamEvent": {
+                          "eventName": "<redacted>",
+                          "eventType": "Interaction",
+                          "eventVersion": "1.0.0",
+                          "eventCategory": "BOOKED_HOT_TO",
+                          "actionLocation": null,
+                          "actionReason": null,
+                          "__typename": "TripsUIEGClickstreamEvent"
+                        },
+                        "payload": "<redacted:435chars>",
+                        "__typename": "TripsUIClickstreamAnalytics"
+                      },
+                      "__typename": "TripsUIItemCardMenuItemUpdateTrip"
+                    }
+                  ],
+                  "menu": {
+                    "trigger": {
+                      "analytics": {
+                        "linkName": "<redacted>",
+                        "referrerId": "TO.HOT.TripItem.MENU.TripItemMenuSelected",
+                        "__typename": "ClientSideAnalytics"
+                      },
+                      "clickstreamAnalytics": {
+                        "clickstreamEvent": {
+                          "eventName": "",
+                          "eventType": "",
+                          "eventVersion": "",
+                          "eventCategory": "",
+                          "actionLocation": null,
+                          "actionReason": null,
+                          "__typename": "TripsUIEGClickstreamEvent"
+                        },
+                        "payload": null,
+                        "__typename": "TripsUIClickstreamAnalytics"
+                      },
+                      "graphic": {
+                        "description": "Weitere Optionen für martas Gästehäuser Hauptbahnhof Berlin - Hostel. Reiseplannummer mit Endziffern 0001.",
+                        "id": "more_vert",
+                        "__typename": "Icon"
+                      },
+                      "__typename": "TripsUIGraphicTrigger"
+                    },
+                    "__typename": "TripsUIMenu"
+                  },
+                  "__typename": "TripsUIItemCardMenu"
+                },
+                "commentsAndVotes": [
+                  {
+                    "sheet": {
+                      "primer": {
+                        "defaultTab": null,
+                        "itemId": "eg:property:v2:testhotelproductid0001",
+                        "tripId": "egti-TEST-VIEW-0001",
+                        "__typename": "TripsUICommentsAndVotesSheetPrimer"
+                      },
+                      "toolbar": {
+                        "toolbar": {
+                          "closeAccessibility": "Fenster schließen",
+                          "closeAnalytics": {
+                            "linkName": "<redacted>",
+                            "referrerId": "TO.HOT.CommentVotesSheet.Closed",
+                            "__typename": "ClientSideAnalytics"
+                          },
+                          "closeText": null,
+                          "title": "martas Gästehäuser Hauptbahnhof Berlin - Hostel",
+                          "__typename": "TripsUISheetToolbar"
+                        },
+                        "button": null,
+                        "__typename": "TripsUICommentsAndVotesSheetToolbar"
+                      },
+                      "fallback": {
+                        "primary": "Wir können die Stimmen und Kommentare gerade nicht laden",
+                        "secondaries": [
+                          "Irgendwas ist schiefgegangen. Aktualisiere die Seite."
+                        ],
+                        "retryButton": {
+                          "primer": {
+                            "tripId": "egti-TEST-VIEW-0001",
+                            "itemId": "eg:property:v2:testhotelproductid0001",
+                            "__typename": "TripsUICommentsAndVotesRetryPrimer"
+                          },
+                          "button": {
+                            "primary": "Erneut versuchen",
+                            "analytics": {
+                              "linkName": "<redacted>",
+                              "referrerId": "…",
+                              "__typename": "…"
+                            },
+                            "accessibility": "Schaltfläche, um es noch einmal zu versuchen.",
+                            "__typename": "TripsUIPrimaryButton"
+                          },
+                          "__typename": "TripsUICommentsAndVotesRetryButton"
+                        },
+                        "__typename": "TripsUICommentsAndVotesFailureResponse"
+                      },
+                      "__typename": "TripsUICommentsAndVotesSheet"
+                    },
+                    "trigger": {
+                      "accessibility": "<redacted:189chars>",
+                      "analytics": {
+                        "linkName": "<redacted>",
+                        "referrerId": "TO.HOT.CommentVotesSheet.Open",
+                        "__typename": "ClientSideAnalytics"
+                      },
+                      "impressionAnalytics": {
+                        "linkName": "<redacted>",
+                        "referrerId": "TO.TripItemCard.CommentButtonPresented",
+                        "__typename": "ClientSideImpressionEventAnalytics"
+                      },
+                      "count": 0,
+                      "icon": {
+                        "id": "comment",
+                        "__typename": "Icon"
+                      },
+                      "id": "eg:property:v2:testhotelproductid0001",
+                      "__typename": "TripsUIActionCount"
+                    },
+                    "__typename": "TripsUIItemCardCommentActionCount"
+                  }
+                ],
+                "primary": "martas Gästehäuser Hauptbahnhof Berlin - Hostel",
+                "contextualCardPrimer": {
+                  "itemId": "<redacted:848chars>",
+                  "__typename": "TripsUIItemCardContextualContentPrimer"
+                },
+                "mediaPosition": "LEFT",
+                "__typename": "TripsUIBookedItemCard"
+              }
+            ],
+            "actionArea": null,
+            "gridLayoutEnabled": false,
+            "__typename": "TripsItemsSection"
+          }
+        ],
+        "__typename": "TripsItemsGroup"
+      }
+    ],
+    "__typename": "TripItemsResponse"
+  }
+}

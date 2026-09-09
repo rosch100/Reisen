@@ -1,0 +1,561 @@
+{
+  "trip": {
+    "itemDetails": {
+      "__typename": "TripsView",
+      "header": {
+        "__typename": "TripsViewHeader",
+        "primary": "Mietwagen in Berlin",
+        "secondaries": [
+          "14. Okt. 2026 – 15. Okt. 2026"
+        ],
+        "toolbar": {
+          "__typename": "TripsToolbar",
+          "primary": null,
+          "secondaries": null,
+          "accessibility": {
+            "label": "Reisen",
+            "__typename": "TripsAccessibilityData"
+          },
+          "actions": {
+            "primary": {
+              "primary": null,
+              "accessibility": {
+                "label": "Bringt dich zur Seite mit deinen Reisen",
+                "__typename": "TripsAccessibilityData"
+              },
+              "icon": {
+                "description": "ZURÜCK",
+                "id": "arrow_back",
+                "__typename": "Icon"
+              },
+              "disabled": false,
+              "width": "MATCH_PARENT_CONTAINER",
+              "grow": null,
+              "action": {
+                "analytics": {
+                  "referrerId": "TD.CAR.NAV.Back",
+                  "linkName": "<redacted>",
+                  "uisPrimeMessages": [],
+                  "__typename": "ClientSideAnalytics"
+                },
+                "tripItemId": null,
+                "tripViewId": "egti-TEST-VIEW-0001",
+                "viewFilter": null,
+                "viewType": "OVERVIEW",
+                "viewUrl": "https://www.expedia.de/trips/egti-TEST-VIEW-0001",
+                "displayMode": "DEFAULT",
+                "clickstreamAnalytics": null,
+                "__typename": "TripsNavigateToViewAction"
+              },
+              "__typename": "TripsTertiaryButton"
+            },
+            "secondaries": [
+              {
+                "primary": "Menü",
+                "accessibility": {
+                  "label": "Menü",
+                  "__typename": "TripsAccessibilityData"
+                },
+                "icon": {
+                  "description": "Menü öffnen",
+                  "id": "more_vert",
+                  "__typename": "Icon"
+                },
+                "disabled": false,
+                "width": "MATCH_PARENT_CONTAINER",
+                "grow": null,
+                "action": {
+                  "__typename": "TripsOpenMenuAction",
+                  "analytics": {
+                    "__typename": "ClientSideAnalytics",
+                    "referrerId": "TD.CAR.MENU.OpenMenu",
+                    "linkName": "<redacted>",
+                    "uisPrimeMessages": []
+                  },
+                  "floatingMenu": {
+                    "items": [
+                      {
+                        "__typename": "TripsMenuListItem",
+                        "primary": "Reiseplan drucken",
+                        "icon": {
+                          "id": "print",
+                          "description": "Drucken",
+                          "title": null,
+                          "__typename": "Icon"
+                        },
+                        "accessibility": {
+                          "label": "Öffnet den Reiseplan als PDF-Datei, die gespeichert oder gedruckt werden kann. Wird in einem neuen Fenster geöffnet.",
+                          "__typename": "TripsAccessibilityData"
+                        },
+                        "action": {
+                          "resource": {
+                            "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMjAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDIwMl8wO2VnOmNhcjp2Mjp0ZXN0Y2FycHJvZHVjdGlkMDAwMQ==/trip-itinerary.pdf",
+                            "__typename": "HttpURI"
+                          },
+                          "target": "EXTERNAL",
+                          "analytics": {
+                            "referrerId": "TD.CAR.NAV.PrintItinerary",
+                            "linkName": "<redacted>",
+                            "uisPrimeMessages": [],
+                            "__typename": "ClientSideAnalytics"
+                          },
+                          "clickstreamAnalytics": null,
+                          "__typename": "TripsLinkAction"
+                        }
+                      },
+                      {
+                        "__typename": "TripsMenuListItem",
+                        "primary": "Reiseplan als PDF anzeigen",
+                        "icon": {
+                          "id": "visibility",
+                          "description": "Reiseplan als PDF anzeigen",
+                          "title": null,
+                          "__typename": "Icon"
+                        },
+                        "accessibility": {
+                          "label": "Reiseplan als PDF anzeigen. Wird in einem neuen Fenster geöffnet.",
+                          "__typename": "TripsAccessibilityData"
+                        },
+                        "action": {
+                          "resource": {
+                            "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMjAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDIwMl8wO2VnOmNhcjp2Mjp0ZXN0Y2FycHJvZHVjdGlkMDAwMQ==/trip-itinerary.pdf",
+                            "__typename": "HttpURI"
+                          },
+                          "target": "EXTERNAL",
+                          "analytics": {
+                            "referrerId": "TD.CAR.NAV.ViewItineraryPdf",
+                            "linkName": "<redacted>",
+                            "uisPrimeMessages": [],
+                            "__typename": "ClientSideAnalytics"
+                          },
+                          "clickstreamAnalytics": null,
+                          "__typename": "TripsLinkAction"
+                        }
+                      },
+                      {
+                        "__typename": "TripsMenuListItem",
+                        "primary": "Beleg ansehen",
+                        "icon": {
+                          "id": "receipt",
+                          "description": "Beleg ansehen",
+                          "title": null,
+                          "__typename": "Icon"
+                        },
+                        "accessibility": {
+                          "label": "Öffnet den Beleg als PDF-Datei, die gespeichert oder gedruckt werden kann. Wird in einem neuen Fenster geöffnet.",
+                          "__typename": "TripsAccessibilityData"
+                        },
+                        "action": {
+                          "resource": {
+                            "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMjAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDIwMl8wO2VnOmNhcjp2Mjp0ZXN0Y2FycHJvZHVjdGlkMDAwMQ==/trip-receipt.pdf",
+                            "__typename": "HttpURI"
+                          },
+                          "target": "EXTERNAL",
+                          "analytics": {
+                            "referrerId": "TD.CAR.NAV.ViewReceipt",
+                            "linkName": "<redacted>",
+                            "uisPrimeMessages": [],
+                            "__typename": "ClientSideAnalytics"
+                          },
+                          "clickstreamAnalytics": null,
+                          "__typename": "TripsLinkAction"
+                        }
+                      }
+                    ],
+                    "impressionTracking": null,
+                    "__typename": "TripsFloatingMenu"
+                  }
+                },
+                "__typename": "TripsTertiaryButton"
+              }
+            ],
+            "__typename": "TripsToolbarActions"
+          }
+        },
+        "signal": null
+      },
+      "stickyMenu": {
+        "accessibility": {
+          "label": "Aktionen auf der Seite",
+          "__typename": "TripsAccessibilityData"
+        },
+        "menuItems": [
+          {
+            "accessibility": {
+              "label": "Öffnet den Reiseplan als PDF-Datei, die gespeichert oder gedruckt werden kann.",
+              "__typename": "TripsAccessibilityData"
+            },
+            "action": {
+              "resource": {
+                "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMjAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDIwMl8wO2VnOmNhcjp2Mjp0ZXN0Y2FycHJvZHVjdGlkMDAwMQ==/trip-itinerary.pdf",
+                "__typename": "HttpURI"
+              },
+              "target": "EXTERNAL",
+              "analytics": {
+                "referrerId": "TD.CAR.NAV.PrintItinerary",
+                "linkName": "<redacted>",
+                "uisPrimeMessages": [],
+                "__typename": "ClientSideAnalytics"
+              },
+              "clickstreamAnalytics": null,
+              "__typename": "TripsLinkAction"
+            },
+            "icon": {
+              "description": "Drucken",
+              "id": "print",
+              "__typename": "Icon"
+            },
+            "__typename": "StickyMenuItems"
+          },
+          {
+            "accessibility": {
+              "label": "Reiseplan als PDF anzeigen",
+              "__typename": "TripsAccessibilityData"
+            },
+            "action": {
+              "resource": {
+                "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMjAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDIwMl8wO2VnOmNhcjp2Mjp0ZXN0Y2FycHJvZHVjdGlkMDAwMQ==/trip-itinerary.pdf",
+                "__typename": "HttpURI"
+              },
+              "target": "EXTERNAL",
+              "analytics": {
+                "referrerId": "TD.CAR.NAV.ViewItineraryPdf",
+                "linkName": "<redacted>",
+                "uisPrimeMessages": [],
+                "__typename": "ClientSideAnalytics"
+              },
+              "clickstreamAnalytics": null,
+              "__typename": "TripsLinkAction"
+            },
+            "icon": {
+              "description": "Reiseplan als PDF anzeigen",
+              "id": "visibility",
+              "__typename": "Icon"
+            },
+            "__typename": "StickyMenuItems"
+          },
+          {
+            "accessibility": {
+              "label": "Öffnet den Beleg als PDF-Datei, die gespeichert oder gedruckt werden kann.",
+              "__typename": "TripsAccessibilityData"
+            },
+            "action": {
+              "resource": {
+                "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMjAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDIwMl8wO2VnOmNhcjp2Mjp0ZXN0Y2FycHJvZHVjdGlkMDAwMQ==/trip-receipt.pdf",
+                "__typename": "HttpURI"
+              },
+              "target": "EXTERNAL",
+              "analytics": {
+                "referrerId": "TD.CAR.NAV.ViewReceipt",
+                "linkName": "<redacted>",
+                "uisPrimeMessages": [],
+                "__typename": "ClientSideAnalytics"
+              },
+              "clickstreamAnalytics": null,
+              "__typename": "TripsLinkAction"
+            },
+            "icon": {
+              "description": "Beleg ansehen",
+              "id": "receipt",
+              "__typename": "Icon"
+            },
+            "__typename": "StickyMenuItems"
+          }
+        ],
+        "__typename": "TripsStickyMenu"
+      },
+      "elements": [
+        {
+          "__typename": "TripsSectionContainer",
+          "heading": null,
+          "subheadings": null,
+          "tripsListSubTexts": null,
+          "theme": "DEFAULT",
+          "impressionAnalytics": null,
+          "layout": "DEFAULT",
+          "elements": []
+        },
+        {
+          "tripViewId": "egti-TEST-VIEW-0001",
+          "tripItemId": "<redacted:100chars>",
+          "placeHolder": {
+            "url": "https://mediaim.expedia.com/cars/1091/00000000-0000-4000-8000-000000000301.jpg",
+            "description": "",
+            "__typename": "Image"
+          },
+          "__typename": "TripItemContextualCardsPrimer"
+        },
+        {
+          "__typename": "TripsSectionContainer",
+          "heading": null,
+          "subheadings": null,
+          "tripsListSubTexts": null,
+          "theme": "DEFAULT",
+          "impressionAnalytics": null,
+          "layout": "DEFAULT",
+          "elements": [
+            {
+              "primary": "Dollar",
+              "secondaries": null,
+              "rows": [
+                {
+                  "primary": null,
+                  "secondaries": null,
+                  "items": [
+                    {
+                      "label": null,
+                      "value": "Bestätigungsnr.: L70REDACTED01",
+                      "button": {
+                        "primary": null,
+                        "accessibility": {
+                          "label": "Bestätigungsnummer kopieren",
+                          "__typename": "TripsAccessibilityData"
+                        },
+                        "icon": {
+                          "description": "Bestätigungsnummer kopieren",
+                          "id": "copy_content",
+                          "__typename": "Icon"
+                        },
+                        "disabled": false,
+                        "width": "MATCH_PARENT_CONTAINER",
+                        "grow": null,
+                        "action": {
+                          "__typename": "CopyToClipboardAction",
+                          "analytics": {
+                            "__typename": "ClientSideAnalytics",
+                            "referrerId": "TD.CAR.RA.CI-CopyCode",
+                            "linkName": "<redacted>",
+                            "uisPrimeMessages": []
+                          },
+                          "value": "L70REDACTED01",
+                          "toast": {
+                            "__typename": "TripsInfoToast",
+                            "primary": "Bestätigungsnummer in die Zwischenablage kopiert.",
+                            "impressionTracking": null
+                          }
+                        },
+                        "__typename": "TripsTertiaryButton"
+                      },
+                      "__typename": "TripsCopyableContentItem"
+                    },
+                    {
+                      "label": null,
+                      "value": "Expedia-Reiseplan: 73500000000001",
+                      "button": {
+                        "primary": null,
+                        "accessibility": {
+                          "label": "Expedia-Reiseplannummer kopieren",
+                          "__typename": "TripsAccessibilityData"
+                        },
+                        "icon": {
+                          "description": "Expedia-Reiseplannummer kopieren",
+                          "id": "copy_content",
+                          "__typename": "Icon"
+                        },
+                        "disabled": false,
+                        "width": "MATCH_PARENT_CONTAINER",
+                        "grow": null,
+                        "action": {
+                          "__typename": "CopyToClipboardAction",
+                          "analytics": {
+                            "__typename": "ClientSideAnalytics",
+                            "referrerId": "TD.CAR.RA.CI-CopyCode",
+                            "linkName": "<redacted>",
+                            "uisPrimeMessages": []
+                          },
+                          "value": "73500000000001",
+                          "toast": {
+                            "__typename": "TripsInfoToast",
+                            "primary": "Reiseplannummer in die Zwischenablage kopiert.",
+                            "impressionTracking": null
+                          }
+                        },
+                        "__typename": "TripsTertiaryButton"
+                      },
+                      "__typename": "TripsCopyableContentItem"
+                    }
+                  ],
+                  "__typename": "TripsCopyableContentList"
+                }
+              ],
+              "impressionTracking": null,
+              "__typename": "TripsContentCard"
+            }
+          ]
+        },
+        {
+          "__typename": "TripsSectionContainer",
+          "heading": "Buchungsdetails",
+          "subheadings": null,
+          "tripsListSubTexts": null,
+          "theme": "DEFAULT",
+          "impressionAnalytics": null,
+          "layout": "DEFAULT",
+          "elements": []
+        },
+        "…(+6)"
+      ],
+      "messagingCard": null,
+      "notifications": {
+        "funnelLocation": "POST_BOOKING",
+        "notificationLocation": "AFTER_HEADER",
+        "optionalContext": {
+          "itineraryNumber": "<redacted>",
+          "journeyCriterias": null,
+          "tripId": "egti-TEST-VIEW-0001",
+          "tripItemId": null,
+          "__typename": "<redacted:40chars>"
+        },
+        "xPageID": "page.Itin.Trips,U,80",
+        "__typename": "<redacted:40chars>"
+      },
+      "customerNotificationBanner": null,
+      "toast": null,
+      "contentType": null,
+      "floatingActionButton": {
+        "action": {
+          "analytics": {
+            "referrerId": "TD.CAR.FAB.VA.Open",
+            "linkName": "<redacted>",
+            "uisPrimeMessages": [],
+            "__typename": "ClientSideAnalytics"
+          },
+          "applicationName": "<redacted>",
+          "pageName": "<redacted>",
+          "clientOverrides": {
+            "enableAutoOpenChatWidget": false,
+            "enableProactiveConversation": false,
+            "subscribedEvents": [
+              "VAC_WidgetOpened",
+              "VAC_WidgetClosed",
+              "VAC_Initialized"
+            ],
+            "conversationProperties": {
+              "launchPoint": "FAB",
+              "pageName": "<redacted>",
+              "skipWelcome": "false",
+              "__typename": "VirtualAgentConversationProperties"
+            },
+            "intentMessage": null,
+            "intentArguments": null,
+            "__typename": "TripsVirtualAgentOverrideData"
+          },
+          "__typename": "TripsVirtualAgentInitAction"
+        },
+        "primary": "Virtueller Assistent",
+        "floatingButtonType": "RIGHT_CIRCLE",
+        "__typename": "TripsFloatingActionButton"
+      },
+      "tripFloatingActionButtons": [
+        {
+          "action": {
+            "analytics": {
+              "referrerId": "TD.CAR.FAB.VA.Open",
+              "linkName": "<redacted>",
+              "uisPrimeMessages": [],
+              "__typename": "ClientSideAnalytics"
+            },
+            "applicationName": "<redacted>",
+            "pageName": "<redacted>",
+            "clientOverrides": {
+              "enableAutoOpenChatWidget": false,
+              "enableProactiveConversation": false,
+              "subscribedEvents": [
+                "VAC_WidgetOpened",
+                "VAC_WidgetClosed",
+                "VAC_Initialized"
+              ],
+              "conversationProperties": {
+                "launchPoint": "FAB",
+                "pageName": "<redacted>",
+                "skipWelcome": "false",
+                "__typename": "VirtualAgentConversationProperties"
+              },
+              "intentMessage": null,
+              "intentArguments": null,
+              "__typename": "TripsVirtualAgentOverrideData"
+            },
+            "__typename": "TripsVirtualAgentInitAction"
+          },
+          "primary": "Virtueller Assistent",
+          "floatingButtonType": "RIGHT_CIRCLE",
+          "__typename": "TripsFloatingActionButton"
+        }
+      ],
+      "egTripsMap": {
+        "label": null,
+        "initialViewport": "BOUNDS",
+        "center": null,
+        "zoom": null,
+        "bounds": {
+          "northeast": {
+            "latitude": 52.518966999999996,
+            "longitude": 13.400363,
+            "__typename": "Coordinates"
+          },
+          "southwest": {
+            "latitude": 52.498967,
+            "longitude": 13.380363000000001,
+            "__typename": "Coordinates"
+          },
+          "__typename": "EGDSMapBounds"
+        },
+        "computedBoundsOptions": null,
+        "centeredBoundsOptions": null,
+        "config": {
+          "accessToken": "<redacted>",
+          "egdsMapProvider": "GOOGLE",
+          "externalConfigEndpoint": {
+            "value": "https://www.expedia.com/eg-maps-config-service/siteid-6,eapid-0",
+            "__typename": "HttpURI"
+          },
+          "externalConfigContent": null,
+          "mapId": null,
+          "__typename": "EGDSDynamicMapConfig"
+        },
+        "markers": [
+          {
+            "id": "-241432662",
+            "description": null,
+            "name": null,
+            "markerPosition": {
+              "latitude": 52.508967,
+              "longitude": 13.390363,
+              "__typename": "Coordinates"
+            },
+            "type": "PLACE",
+            "markerStatus": "UNKNOWN",
+            "qualifiers": [
+              "lob_cars"
+            ],
+            "text": "Dollar",
+            "clientSideAnalytics": {
+              "linkName": "<redacted>",
+              "referrerId": "TD.CAR.MAP.Map_Select",
+              "__typename": "ClientSideAnalytics"
+            },
+            "onSelectAccessibilityMessage": null,
+            "onEnterAccessibilityMessage": null,
+            "geometries": null,
+            "__typename": "EGDSMapFeature"
+          }
+        ],
+        "tnlFields": null,
+        "__typename": "EGDSBasicMap"
+      },
+      "egTripsCards": [
+        {
+          "id": "-241432662",
+          "description": null,
+          "image": null,
+          "title": "Abholort für Mietwagen",
+          "__typename": "EGDSImageCard"
+        }
+      ],
+      "pageTitle": "Mietwagen für Berlin | Expedia",
+      "tripsSideEffects": null,
+      "layout": "DEFAULT"
+    },
+    "__typename": "Trip"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "tripItems": {
+    "__typename": "TripItemsResponse",
+    "itemGroups": [
+      {
+        "sections": [
+          {
+            "cards": [
+              {
+                "__typename": "TripsUIBookedItemCard",
+                "identifier": "eg:activity:v2:syntheticactivity01",
+                "primary": "City Walking Tour",
+                "badge": {
+                  "text": "Gebucht",
+                  "theme": "positive"
+                },
+                "enrichedSecondaries": [
+                  {
+                    "text": "von 22. Nov., 14:00 Uhr bis 22. Nov., 17:00 Uhr",
+                    "__typename": "EGDSPlainText"
+                  },
+                  {
+                    "text": "Reiseplan: 90000000000002",
+                    "__typename": "EGDSPlainText"
+                  }
+                ],
+                "cardAction": {
+                  "resource": {
+                    "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/dGVzdFRyaXBJdGVtSWQwMDAx"
+                  }
+                },
+                "menu": {
+                  "items": [
+                    {
+                      "action": {
+                        "resource": {
+                          "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/dGVzdFRyaXBJdGVtSWQwMDAx/manage-booking"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

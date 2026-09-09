@@ -1,0 +1,126 @@
+{
+  "trip": {
+    "itemDetails": {
+      "__typename": "TripsView",
+      "header": null,
+      "stickyMenu": {
+        "accessibility": {
+          "label": "Aktionen auf der Seite",
+          "__typename": "TripsAccessibilityData"
+        },
+        "menuItems": [
+          {
+            "accessibility": {
+              "label": "Öffnet den Reiseplan als PDF-Datei, die gespeichert oder gedruckt werden kann.",
+              "__typename": "TripsAccessibilityData"
+            },
+            "action": {
+              "resource": {
+                "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=/trip-itinerary.pdf",
+                "__typename": "HttpURI"
+              },
+              "target": "EXTERNAL",
+              "analytics": {
+                "referrerId": "TD.HOT.NAV.PrintItinerary",
+                "linkName": "<redacted>",
+                "uisPrimeMessages": [],
+                "__typename": "ClientSideAnalytics"
+              },
+              "clickstreamAnalytics": null,
+              "__typename": "TripsLinkAction"
+            },
+            "icon": {
+              "description": "Drucken",
+              "id": "print",
+              "__typename": "Icon"
+            },
+            "__typename": "StickyMenuItems"
+          },
+          {
+            "accessibility": {
+              "label": "Reiseplan als PDF anzeigen",
+              "__typename": "TripsAccessibilityData"
+            },
+            "action": {
+              "resource": {
+                "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=/trip-itinerary.pdf",
+                "__typename": "HttpURI"
+              },
+              "target": "EXTERNAL",
+              "analytics": {
+                "referrerId": "TD.HOT.NAV.ViewItineraryPdf",
+                "linkName": "<redacted>",
+                "uisPrimeMessages": [],
+                "__typename": "ClientSideAnalytics"
+              },
+              "clickstreamAnalytics": null,
+              "__typename": "TripsLinkAction"
+            },
+            "icon": {
+              "description": "Reiseplan als PDF anzeigen",
+              "id": "visibility",
+              "__typename": "Icon"
+            },
+            "__typename": "StickyMenuItems"
+          },
+          {
+            "accessibility": {
+              "label": "Öffnet den Beleg als PDF-Datei, die gespeichert oder gedruckt werden kann.",
+              "__typename": "TripsAccessibilityData"
+            },
+            "action": {
+              "resource": {
+                "value": "https://www.expedia.de/trips/egti-TEST-VIEW-0001/details/MDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMTAxOzAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMl8wO2VnOnByb3BlcnR5OnYyOnRlc3Rob3RlbHByb2R1Y3RpZDAwMDE=/trip-receipt.pdf",
+                "__typename": "HttpURI"
+              },
+              "target": "EXTERNAL",
+              "analytics": {
+                "referrerId": "TD.HOT.NAV.ViewReceipt",
+                "linkName": "<redacted>",
+                "uisPrimeMessages": [],
+                "__typename": "ClientSideAnalytics"
+              },
+              "clickstreamAnalytics": null,
+              "__typename": "TripsLinkAction"
+            },
+            "icon": {
+              "description": "Beleg ansehen",
+              "id": "receipt",
+              "__typename": "Icon"
+            },
+            "__typename": "StickyMenuItems"
+          }
+        ],
+        "__typename": "TripsStickyMenu"
+      },
+      "elements": [
+        {
+          "__typename": "TripsUISyntheticHotelDetail",
+          "primary": "martas Gästehäuser Hauptbahnhof Berlin - Hostel",
+          "text": "Bestätigungsnr.: H70REDACTED01",
+          "stylizedText": "Gesamtpreis: 89,00 €",
+          "value": "https://www.expedia.de/booking-servicing/lodging/voluntary/cancel/review?tripId=test"
+        }
+      ],
+      "messagingCard": null,
+      "notifications": {
+        "funnelLocation": "POST_BOOKING",
+        "notificationLocation": "AFTER_HEADER",
+        "optionalContext": null,
+        "xPageID": "page.Itin.Trips,U,80",
+        "__typename": "<redacted:40chars>"
+      },
+      "customerNotificationBanner": null,
+      "toast": null,
+      "contentType": null,
+      "floatingActionButton": null,
+      "tripFloatingActionButtons": null,
+      "egTripsMap": null,
+      "egTripsCards": [],
+      "pageTitle": null,
+      "tripsSideEffects": null,
+      "layout": "DEFAULT"
+    },
+    "__typename": "Trip"
+  }
+}

@@ -997,7 +997,8 @@ private struct ProviderWebView: NSViewRepresentable {
                 }
             case .needsLogin:
                 sessionStatus.wrappedValue = .needsLogin
-            case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen, .shouldProbeCheck24:
+            case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen,
+                 .shouldProbeCheck24, .shouldProbeExpedia:
                 guard let liveProbe = ProviderSessionLiveProbe.prepare(
                     statusHeuristic,
                     sessionAlreadyReady: sessionStatus.wrappedValue == .sessionReady,

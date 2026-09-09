@@ -85,7 +85,8 @@ public enum DraftAssembler {
             locationToAddress: facts.locationToAddress,
             operatorName: facts.operatorName,
             isAllDay: facts.isAllDay,
-            cancellationUrl: facts.cancellationUrl
+            cancellationUrl: facts.cancellationUrl,
+            confirmationCode: facts.confirmationCode
         )
     }
 

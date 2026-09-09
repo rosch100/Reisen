@@ -16,6 +16,7 @@ Partner-/Demand-APIs (Amadeus, Sabre, GYG Partner, Expedia Lodging Supply) bleib
 | [`dev/airbnb-experiences-impl-spec.md`](dev/airbnb-experiences-impl-spec.md) | Airbnb Catalog + `activity_reservation_details` |
 | [`dev/getyourguide-impl-spec.md`](dev/getyourguide-impl-spec.md) | Neuer Provider GYG |
 | [`dev/billiger-mietwagen-impl-spec.md`](dev/billiger-mietwagen-impl-spec.md) | Neuer Provider billiger-mietwagen.de (FLOYT) |
+| [`dev/expedia-impl-spec.md`](dev/expedia-impl-spec.md) | Neuer Provider Expedia.de (Hotel + Car) |
 | [`dev/check24-productkey-audit.md`](dev/check24-productkey-audit.md) | productKey-Inventory + Live-Audit-Checkliste |
 | [`dev/bookingcom-mytrips-audit.md`](dev/bookingcom-mytrips-audit.md) | Booking.com `verticalType` / Reservation-`__typename` + Query-Shape 2026-08 |
 
@@ -31,7 +32,7 @@ Ausführungsdetails nur im Plan — nicht hier wiederholen.
 | Partner/Metasearch-API | Amadeus, Skyscanner Travel API, GYG Partner API, Expedia Lodging Supply | **Nein** |
 | Gap-Deep-Links | Check24 Hotel/Flug-Suche | Teilweise (nur Suche, kein Sync) |
 
-Neue Provider = [`TravelProvider`](../Sources/ReisenDomain/Ports/TravelProvider.swift) + `WKWebView`-Session, wie die registrierten Sync-Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen.de).
+Neue Provider = [`TravelProvider`](../Sources/ReisenDomain/Ports/TravelProvider.swift) + `WKWebView`-Session, wie die registrierten Sync-Anbieter (Check24, Opodo, Booking.com, Airbnb, GetYourGuide, Traveloka, billiger-mietwagen.de, Expedia.de).
 
 ```mermaid
 flowchart LR
@@ -448,23 +449,28 @@ Nachbauen der Provider-OAuth-Flows sind keine unterstützten Lösungen.
 ### Was nicht passt
 
 - **Expedia Group Lodging Supply GraphQL** (`api.expediagroup.com/supply/lodging/graphql`): B2B Properties/Partner — falscher Scope.
+- Hotels.com als eigener Sync-Provider (v1 nur expedia.de).
 
-### Was passen würde
+### Was passt (umgesetzt)
 
-- Consumer-UI **Trips / Bookings** nach Login (`expedia.de` / `.com`, Hotels.com).
-- Pfad analog Booking/Airbnb: WKWebView-Login → authenticated Trip-Liste + Detail.
+- Consumer-UI **Trips** nach Login auf `www.expedia.de`.
+- `ReisenExpedia` / `ProviderID.expedia`: Cookie-Session + Persisted GraphQL (`SharedUIWeb_TripItemsQuery`, `TripItemQuery`, Hotel `RoomDetails`/`BookingServicing`).
+- LOB: Hotel + Car (HAR); Flight/Activity abgeleitet (synthetische Fixtures); unbekannte Prefixes → skip + Log.
+- Car-Cancel-Assist auf `/manage-booking` (DE-Dialog); Hotel distinct Cancel-URL (fehlend → soft-fail, kein Sync-Loop).
+- Enrich nur bei fehlender Bestätigungsnr.; Reiseplan ≠ `confirmationCode`.
+- Spec/Fixtures/Website: [`dev/expedia-impl-spec.md`](dev/expedia-impl-spec.md), `fixtures/provider-research/expedia_*`, Landing/`docs/legal` (8 Portale).
 
-### Machbarkeit (ohne eigene Expedia-HAR)
+### Machbarkeit
 
 | Kriterium | Einschätzung |
 |-----------|--------------|
 | Scope-Fit | Hoch |
-| Technische Nähe | Mittel–hoch |
-| Öffentliche Consumer-JSON-API | Nein |
-| Blocker | Keine HAR — Endpunkte unbekannt |
-| Risiko | Bot-Schutz, Locale, Hotels.com-vs-Expedia-Session |
+| Technische Nähe | Hoch (wie Traveloka/Booking) |
+| Öffentliche Consumer-JSON-API | Nein (Persisted GraphQL) |
+| Blocker | Arkose/OTP nur im WebView; Flight-Trips-HAR fehlt für volle Feldparität |
+| Risiko | Hash-/Schema-Bruch (hart failen, kein Query-Text-Fallback) |
 
-**Verdict:** Prio 2 nach Activity-Arbeit. Nächster Schritt: Expedia.de-HAR (Hotel + optional Flug), dann Impl-Spec. Bis dahin kein Produktivcode.
+**Verdict:** Produktivpfad Expedia.de Hotel+Car in `ReisenExpedia`. Folge: Live-Flight/Activity-HAR für Prefix-Bestätigung und optional Completion-Detector.
 
 ---
 
@@ -475,7 +481,7 @@ Nachbauen der Provider-OAuth-Flows sind keine unterstützten Lösungen.
 | Spec-Doc GYG/Airbnb/Opodo | erledigt | — |
 | Airbnb/GYG Impl-Specs + Activity-Basis + Ausführungsplan | erledigt | Phase 0–2 Produktivcode umgesetzt |
 | Opodo Verdict „kein Muss“ | erledigt | optional TZ später |
-| Expedia Bewertung | erledigt | Live-HAR fehlt |
+| Expedia Bewertung | erledigt | Impl `ReisenExpedia` (Hotel+Car); Flight-HAR optional |
 | Check24 „alle productKeys erfassen“ | **Live-Keys** | Fixture + Audit 2026-08-28; `rentalcar` → `.carRental`; Detail-Parser angebunden |
 | Redigierte Fixtures GYG/Airbnb/(Opodo) | erledigt | Check24-Keys-Fixture auf Live-Keys gehoben |
 | Activity Produktivcode (Airbnb + GYG) | erledigt | Unit-Tests grün; Live-Sync manuell prüfen |

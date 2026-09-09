@@ -8,6 +8,7 @@ import ReisenProviders
 @MainActor
 public final class BookingPortalCancelSheetNavigation: NSObject, WKNavigationDelegate {
     public var providerID: ProviderID
+    public var bookingType: BookingType?
     public var onLoadFailed: () -> Void
     public var onCompletionDetected: () -> Void
     public var loadedURL: URL?
@@ -17,10 +18,12 @@ public final class BookingPortalCancelSheetNavigation: NSObject, WKNavigationDel
 
     public init(
         providerID: ProviderID,
+        bookingType: BookingType? = nil,
         onLoadFailed: @escaping () -> Void,
         onCompletionDetected: @escaping () -> Void
     ) {
         self.providerID = providerID
+        self.bookingType = bookingType
         self.onLoadFailed = onLoadFailed
         self.onCompletionDetected = onCompletionDetected
     }
@@ -56,7 +59,11 @@ public final class BookingPortalCancelSheetNavigation: NSObject, WKNavigationDel
     }
 
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        cancelAssist.webViewDidFinish(webView, provider: providerID)
+        cancelAssist.webViewDidFinish(
+            webView,
+            provider: providerID,
+            bookingType: bookingType
+        )
         PortalCancelCompletionProbe.evaluateIfNeeded(
             webView: webView,
             provider: providerID,

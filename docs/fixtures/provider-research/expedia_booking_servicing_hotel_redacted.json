@@ -1,0 +1,755 @@
+{
+  "bookingServicingManage": {
+    "presentation": {
+      "content": {
+        "benefitsSection": null,
+        "cancelSection": {
+          "elements": [
+            {
+              "detailedTimeline": null,
+              "detailedTimelineOverlay": {
+                "title": {
+                  "text": "Voll erstattungsfähig",
+                  "__typename": "EGDSStylizedText"
+                },
+                "policies": [
+                  {
+                    "title": null,
+                    "stepIndicator": {
+                      "accessibilityLabel": "Zeitrahmen für die Stornierung",
+                      "steppers": [
+                        {
+                          "text": {
+                            "text": "Heute",
+                            "theme": null,
+                            "weight": null,
+                            "textSize": null,
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "state": "COMPLETE",
+                          "track": {
+                            "text": {
+                              "accessibility": "…",
+                              "text": "…",
+                              "theme": "…",
+                              "weight": "…",
+                              "textSize": "…",
+                              "__typename": "…"
+                            },
+                            "position": "START",
+                            "__typename": "BookingServicingTrack"
+                          },
+                          "__typename": "BookingServicingStepper"
+                        },
+                        {
+                          "text": {
+                            "text": "6. Dez.",
+                            "theme": null,
+                            "weight": null,
+                            "textSize": null,
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "state": "CURRENT",
+                          "track": {
+                            "text": {
+                              "accessibility": "…",
+                              "text": "…",
+                              "theme": "…",
+                              "weight": "…",
+                              "textSize": "…",
+                              "__typename": "…"
+                            },
+                            "position": "STANDARD",
+                            "__typename": "BookingServicingTrack"
+                          },
+                          "__typename": "BookingServicingStepper"
+                        },
+                        {
+                          "text": {
+                            "text": "Check-in",
+                            "theme": null,
+                            "weight": null,
+                            "textSize": null,
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "state": "INCOMPLETE",
+                          "track": {
+                            "text": null,
+                            "position": "END",
+                            "__typename": "BookingServicingTrack"
+                          },
+                          "__typename": "BookingServicingStepper"
+                        }
+                      ],
+                      "__typename": "BookingServicingStepIndicator"
+                    },
+                    "messageSections": [
+                      {
+                        "primaryInfo": {
+                          "heading": {
+                            "text": "Vor dem",
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "subheading": {
+                            "text": "6. Dez.",
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "__typename": "BookingServicingPrimaryInfo"
+                        },
+                        "secondaryInfo": {
+                          "title": {
+                            "text": "Vollständige Rückerstattung",
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "message": [
+                            "<redacted:163chars>"
+                          ],
+                          "__typename": "BookingServicingSecondaryInfo"
+                        },
+                        "__typename": "BookingServicingMessageSection"
+                      },
+                      {
+                        "primaryInfo": {
+                          "heading": {
+                            "text": "Nach dem",
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "subheading": {
+                            "text": "6. Dez.",
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "__typename": "BookingServicingPrimaryInfo"
+                        },
+                        "secondaryInfo": {
+                          "title": {
+                            "text": "Teilerstattung",
+                            "__typename": "EGDSStylizedText"
+                          },
+                          "message": [
+                            "Nach diesem Datum erhältst du eine Rückerstattung in Höhe von 10% des Gesamtbetrags."
+                          ],
+                          "__typename": "BookingServicingSecondaryInfo"
+                        },
+                        "__typename": "BookingServicingMessageSection"
+                      }
+                    ],
+                    "policyClientSideAnalytics": {
+                      "linkName": "",
+                      "referrerId": "",
+                      "__typename": "ClientSideAnalytics"
+                    },
+                    "__typename": "BookingServicingPolicy"
+                  }
+                ],
+                "footerMessage": null,
+                "__typename": "BookingServicingDetailedTimeline"
+              },
+              "trigger": {
+                "triggerText": "Weitere Richtliniendetails anzeigen",
+                "clientAction": {
+                  "actionType": "OPEN",
+                  "clickstreamPayload": {
+                    "eventName": "<redacted>",
+                    "eventType": "Interaction",
+                    "eventVersion": "2.14.0",
+                    "payload": "<redacted:668chars>",
+                    "__typename": "<redacted:40chars>"
+                  },
+                  "accessibility": null,
+                  "analyticsList": [],
+                  "dialogId": "manage-booking-timeline-policy-overlay",
+                  "__typename": "BookingServicingDialogAction"
+                },
+                "__typename": "<redacted:42chars>"
+              },
+              "sheet": {
+                "closeAnalytics": {
+                  "__typename": "ClientSideAnalytics",
+                  "clientSideAnalyticsEventType": "CLICK",
+                  "linkName": "",
+                  "referrerId": "",
+                  "uisPrimeMessages": []
+                },
+                "closeText": "Schließen",
+                "closeAccessibility": "Schließen",
+                "sheetTypes": [
+                  {
+                    "sheetType": "FULLSCREEN",
+                    "viewSize": "SMALL",
+                    "__typename": "EGDSSheetTypePerViewSize"
+                  },
+                  {
+                    "sheetType": "CENTERED",
+                    "viewSize": "MEDIUM",
+                    "__typename": "EGDSSheetTypePerViewSize"
+                  },
+                  {
+                    "sheetType": "CENTERED",
+                    "viewSize": "LARGE",
+                    "__typename": "EGDSSheetTypePerViewSize"
+                  }
+                ],
+                "__typename": "EGDSSheet"
+              },
+              "__typename": "BookingServicingLodgingCardTimeline"
+            },
+            {
+              "__typename": "BookingServicingManageButton"
+            },
+            {
+              "buttons": [
+                {
+                  "button": {
+                    "button": {
+                      "primary": "Unterkunft stornieren",
+                      "disabled": false,
+                      "accessibility": null,
+                      "icon": null,
+                      "analytics": null,
+                      "__typename": "UISecondaryButton"
+                    },
+                    "clientAction": {
+                      "accessibility": null,
+                      "analyticsList": [],
+                      "resource": {
+                        "relativePath": "<redacted:199chars>",
+                        "__typename": "HttpURI",
+                        "value": "https://www.expedia.de/booking-servicing/lodging/voluntary/cancel/review?tripId=<redacted>&orderNumber=<redacted>&orderLineId=<redacted>&orderId=-9000000000000000001"
+                      },
+                      "target": "INTERNAL",
+                      "useRelativePath": null,
+                      "clickstreamPayload": {
+                        "eventName": "<redacted>",
+                        "eventType": "Interaction",
+                        "eventVersion": "2.14.0",
+                        "payload": "<redacted:627chars>",
+                        "__typename": "<redacted:40chars>"
+                      },
+                      "__typename": "BookingServicingResourceLinkAction"
+                    },
+                    "iconPosition": null,
+                    "modifiers": null,
+                    "impressionAnalytics": {
+                      "eventName": "<redacted>",
+                      "eventType": "Impression",
+                      "eventVersion": "1.2.0",
+                      "payload": "<redacted:349chars>",
+                      "__typename": "<redacted:40chars>"
+                    },
+                    "__typename": "BookingServicingButton"
+                  },
+                  "subtext": "Damit stornierst du noch nicht deine Buchung.",
+                  "__typename": "BookingServicingManageButton"
+                }
+              ],
+              "subtext": null,
+              "__typename": "BookingServicingManageButtonGroup"
+            }
+          ],
+          "heading": {
+            "subtitleTexts": null,
+            "subtitles": [
+              "Du kannst deine Unterkunft bis zum 6. Dez. 2026, 18:00 Uhr (Ortszeit der Unterkunft), kostenlos stornieren."
+            ],
+            "title": "Stornierungen",
+            "__typename": "BookingServicingManageSectionHeading"
+          },
+          "__typename": "BookingServicingManageCancelSection"
+        },
+        "changeSection": {
+          "displayAnalytics": null,
+          "elements": [
+            {
+              "cards": [
+                {
+                  "action": null,
+                  "graphic": {
+                    "description": "",
+                    "id": "calendar",
+                    "size": "XLARGE",
+                    "spotLight": "STANDARD",
+                    "theme": null,
+                    "title": null,
+                    "withBackground": true,
+                    "__typename": "Icon"
+                  },
+                  "text": {
+                    "accessibilityText": "Daten und Reisende ändern",
+                    "primary": {
+                      "__typename": "EGDSPlainText",
+                      "text": "Daten und Reisende",
+                      "accessibility": null
+                    },
+                    "secondary": null,
+                    "__typename": "BookingServicingText"
+                  },
+                  "clientAction": {
+                    "accessibility": null,
+                    "analyticsList": [],
+                    "resource": {
+                      "relativePath": "<redacted:291chars>",
+                      "__typename": "HttpURI",
+                      "value": "https://www.expedia.de/booking-servicing/lodging/voluntary/change/search-selection?tripId=<redacted>&orderNumber=<redacted>&orderLineId=<redacted>&changeType=DATES_AND_GUEST_COUNT&startDate=2026-12-07&endDate=2026-12-08&regionId=100001&group=1999999&adults=2"
+                    },
+                    "target": "INTERNAL",
+                    "useRelativePath": null,
+                    "clickstreamPayload": {
+                      "eventName": "<redacted>",
+                      "eventType": "Interaction",
+                      "eventVersion": "2.14.7",
+                      "payload": "<redacted:659chars>",
+                      "__typename": "<redacted:40chars>"
+                    },
+                    "__typename": "BookingServicingResourceLinkAction"
+                  },
+                  "__typename": "BookingServicingCardActionGraphicText"
+                },
+                {
+                  "action": null,
+                  "graphic": {
+                    "description": "",
+                    "id": "room",
+                    "size": "XLARGE",
+                    "spotLight": "STANDARD",
+                    "theme": null,
+                    "title": null,
+                    "withBackground": true,
+                    "__typename": "Icon"
+                  },
+                  "text": {
+                    "accessibilityText": "Zimmer ändern",
+                    "primary": {
+                      "__typename": "EGDSPlainText",
+                      "text": "Zimmer",
+                      "accessibility": null
+                    },
+                    "secondary": null,
+                    "__typename": "BookingServicingText"
+                  },
+                  "clientAction": {
+                    "accessibility": null,
+                    "analyticsList": [],
+                    "resource": {
+                      "relativePath": "<redacted:281chars>",
+                      "__typename": "HttpURI",
+                      "value": "https://www.expedia.de/booking-servicing/lodging/voluntary/change/search?tripId=<redacted>&orderNumber=<redacted>&orderLineId=<redacted>&changeType=DATES_AND_GUEST_COUNT&startDate=2026-12-07&endDate=2026-12-08&regionId=100001&group=1999999&adults=2"
+                    },
+                    "target": "INTERNAL",
+                    "useRelativePath": null,
+                    "clickstreamPayload": {
+                      "eventName": "<redacted>",
+                      "eventType": "Interaction",
+                      "eventVersion": "2.13.0",
+                      "payload": "<redacted:652chars>",
+                      "__typename": "<redacted:40chars>"
+                    },
+                    "__typename": "BookingServicingResourceLinkAction"
+                  },
+                  "__typename": "BookingServicingCardActionGraphicText"
+                }
+              ],
+              "impressionAnalytics": {
+                "eventName": "<redacted>",
+                "eventType": "Impression",
+                "eventVersion": "1.2.0",
+                "payload": "<redacted:349chars>",
+                "__typename": "<redacted:40chars>"
+              },
+              "__typename": "<redacted:42chars>"
+            },
+            {
+              "description": "Name, Präferenzen und Anfragen bezüglich Barrierearmut",
+              "title": "Angaben zum Reisenden aktualisieren",
+              "action": {
+                "accessibility": null,
+                "analyticsList": [],
+                "resource": {
+                  "relativePath": "<redacted:268chars>",
+                  "__typename": "HttpURI",
+                  "value": "https://www.expedia.de/booking-servicing/lodging/voluntary/change/details?tripId=<redacted>&orderNumber=<redacted>&orderLineId=<redacted>&changeType=DETAILS&startDate=2026-12-07&endDate=2026-12-08&regionId=100001&group=1999999&adults=2"
+                },
+                "target": "INTERNAL",
+                "useRelativePath": true,
+                "clickstreamPayload": {
+                  "eventName": "<redacted>",
+                  "eventType": "Interaction",
+                  "eventVersion": "2.13.0",
+                  "payload": "<redacted:676chars>",
+                  "__typename": "<redacted:40chars>"
+                },
+                "__typename": "BookingServicingResourceLinkAction"
+              },
+              "__typename": "BookingServicingCardActionText"
+            }
+          ],
+          "heading": {
+            "subtitleTexts": null,
+            "subtitles": [
+              "Was möchtest du ändern?"
+            ],
+            "title": "Änderungen",
+            "__typename": "BookingServicingManageSectionHeading"
+          },
+          "__typename": "BookingServicingManageChangeSection"
+        },
+        "helpSection": {
+          "displayAnalytics": null,
+          "elements": [
+            {
+              "heading": {
+                "text": "Kontaktiere martas Gästehäuser Hauptbahnhof Berlin - Hostel für Folgendes:",
+                "headingType": null,
+                "__typename": "EGDSHeading"
+              },
+              "list": {
+                "items": [
+                  {
+                    "graphic": {
+                      "description": "",
+                      "id": "accessible",
+                      "size": "SMALL",
+                      "spotLight": null,
+                      "theme": null,
+                      "title": null,
+                      "withBackground": null,
+                      "__typename": "Icon"
+                    },
+                    "text": {
+                      "inlineContent": [
+                        {
+                          "text": "Bestätigung barrierearmer Anfragen",
+                          "accessibility": null,
+                          "__typename": "EGDSPlainText"
+                        }
+                      ],
+                      "__typename": "EGDSSpannableText"
+                    },
+                    "__typename": "EGDSSpannableListItem"
+                  },
+                  {
+                    "graphic": {
+                      "description": "",
+                      "id": "bedding__trundle",
+                      "size": "SMALL",
+                      "spotLight": null,
+                      "theme": null,
+                      "title": null,
+                      "withBackground": null,
+                      "__typename": "Icon"
+                    },
+                    "text": {
+                      "inlineContent": [
+                        {
+                          "text": "Anfrage von Zustell- oder Kinderbetten",
+                          "accessibility": null,
+                          "__typename": "EGDSPlainText"
+                        }
+                      ],
+                      "__typename": "EGDSSpannableText"
+                    },
+                    "__typename": "EGDSSpannableListItem"
+                  },
+                  {
+                    "graphic": {
+                      "description": "",
+                      "id": "room_service",
+                      "size": "SMALL",
+                      "spotLight": null,
+                      "theme": null,
+                      "title": null,
+                      "withBackground": null,
+                      "__typename": "Icon"
+                    },
+                    "text": {
+                      "inlineContent": [
+                        {
+                          "text": "Infos zu Annehmlichkeiten und Services der Unterkunft",
+                          "accessibility": null,
+                          "__typename": "EGDSPlainText"
+                        }
+                      ],
+                      "__typename": "EGDSSpannableText"
+                    },
+                    "__typename": "EGDSSpannableListItem"
+                  },
+                  {
+                    "graphic": {
+                      "description": "",
+                      "id": "customer_service",
+                      "size": "SMALL",
+                      "spotLight": null,
+                      "theme": null,
+                      "title": null,
+                      "withBackground": null,
+                      "__typename": "Icon"
+                    },
+                    "text": {
+                      "inlineContent": [
+                        {
+                          "text": "Fragen bezüglich Check-in, Parkplatz oder Wegbeschreibung",
+                          "accessibility": null,
+                          "__typename": "EGDSPlainText"
+                        }
+                      ],
+                      "__typename": "EGDSSpannableText"
+                    },
+                    "__typename": "EGDSSpannableListItem"
+                  }
+                ],
+                "listType": "ICON",
+                "__typename": "EGDSSpannableList"
+              },
+              "clickstreamPayload": null,
+              "__typename": "BookingServicingTextList"
+            },
+            {
+              "heading": {
+                "text": "Bestätigungsnummer:",
+                "headingType": null,
+                "__typename": "EGDSHeading"
+              },
+              "list": {
+                "items": [
+                  {
+                    "graphic": null,
+                    "text": {
+                      "inlineContent": [
+                        {
+                          "text": "EXPEDIA_0000000001",
+                          "accessibility": null,
+                          "__typename": "EGDSPlainText"
+                        }
+                      ],
+                      "__typename": "EGDSSpannableText"
+                    },
+                    "__typename": "EGDSSpannableListItem"
+                  }
+                ],
+                "listType": "NO_BULLET",
+                "__typename": "EGDSSpannableList"
+              },
+              "clickstreamPayload": null,
+              "__typename": "BookingServicingTextList"
+            },
+            {
+              "__typename": "BookingServicingManageButton"
+            },
+            {
+              "buttons": [
+                {
+                  "button": {
+                    "button": {
+                      "primary": "Nachricht an Unterkunft senden",
+                      "disabled": false,
+                      "accessibility": null,
+                      "icon": {
+                        "description": "",
+                        "id": "chat_bubble",
+                        "size": "LARGE",
+                        "spotLight": null,
+                        "theme": null,
+                        "title": null,
+                        "withBackground": null,
+                        "__typename": "Icon"
+                      },
+                      "analytics": null,
+                      "__typename": "UISecondaryButton"
+                    },
+                    "clientAction": {
+                      "accessibility": null,
+                      "analyticsList": [],
+                      "resource": {
+                        "relativePath": "/inbox/chats/00000000-0000-4000-8000-000000000002",
+                        "__typename": "HttpURI",
+                        "value": "https://www.expedia.de/inbox/chats/00000000-0000-4000-8000-000000000002"
+                      },
+                      "target": "INTERNAL",
+                      "useRelativePath": null,
+                      "clickstreamPayload": null,
+                      "__typename": "BookingServicingResourceLinkAction"
+                    },
+                    "iconPosition": "LEADING",
+                    "modifiers": null,
+                    "impressionAnalytics": null,
+                    "__typename": "BookingServicingButton"
+                  },
+                  "subtext": null,
+                  "__typename": "BookingServicingManageButton"
+                }
+              ],
+              "subtext": null,
+              "__typename": "BookingServicingManageButtonGroup"
+            }
+          ],
+          "heading": {
+            "subtitleTexts": null,
+            "subtitles": null,
+            "title": "Benötigst du weitere Hilfe?",
+            "__typename": "BookingServicingManageSectionHeading"
+          },
+          "__typename": "BookingServicingManageHelpSection"
+        },
+        "playbackSection": {
+          "banner": null,
+          "playback": {
+            "header": null,
+            "element": {
+              "accessibility": null,
+              "bookingReference": null,
+              "header": null,
+              "item": {
+                "additionalInformation": null,
+                "badge": {
+                  "__typename": "EGDSStandardBadge",
+                  "accessibility": null,
+                  "egdsElementId": null,
+                  "graphic": null,
+                  "size": "SMALL",
+                  "text": "Gebucht",
+                  "theme": "positive"
+                },
+                "descriptions": [
+                  "Gemeinsamer Basic-Schlafsaal, Gemischter Schlafsaal, Gemeinschaftsbad (6 Beds)",
+                  "Mo., Dez. 7–Di., Dez. 8 (1 Nacht)",
+                  "2 Erwachsene"
+                ],
+                "image": {
+                  "description": "",
+                  "aspectRatio": null,
+                  "url": "https://images.trvl-media.com/lodging/2000000/1880000/1878000/1999999/0824d05b.jpg",
+                  "__typename": "Image"
+                },
+                "provider": null,
+                "sections": null,
+                "title": "martas Gästehäuser Hauptbahnhof Berlin - Hostel",
+                "__typename": "BookingServicingTripPlaybackSingleItem"
+              },
+              "expando": null,
+              "expandoContent": null,
+              "__typename": "BookingServicingTripPlayback"
+            },
+            "playbackElement": null,
+            "__typename": "BookingServicingPlaybackSection"
+          },
+          "packageInfoSection": null,
+          "__typename": "BookingServicingManagePlaybackSection"
+        },
+        "title": "Verwalte deine Unterkunft",
+        "__typename": "<redacted:49chars>"
+      },
+      "context": {
+        "feedback": {
+          "eid": null,
+          "itineraryNumber": "<redacted>",
+          "pagename": "<redacted>",
+          "tripId": "72000000000001",
+          "tuid": "000000001",
+          "__typename": "BookingServicingFeedback"
+        },
+        "__typename": "BookingServicingResponseContext"
+      },
+      "criteria": {
+        "lodging": {
+          "orderLineId": "<redacted>",
+          "orderNumber": "9000000000001",
+          "search": {
+            "primary": {
+              "dateRange": {
+                "checkInDate": {
+                  "day": 7,
+                  "month": 12,
+                  "year": 2026,
+                  "__typename": "Date"
+                },
+                "checkOutDate": {
+                  "day": 8,
+                  "month": 12,
+                  "year": 2026,
+                  "__typename": "Date"
+                },
+                "__typename": "PropertyDateRange"
+              },
+              "destination": {
+                "propertyIds": [
+                  "1999999"
+                ],
+                "regionId": "100001",
+                "__typename": "Destination"
+              },
+              "rooms": [
+                {
+                  "adults": 2,
+                  "children": [],
+                  "__typename": "Room"
+                }
+              ],
+              "__typename": "PrimaryPropertyCriteria"
+            },
+            "__typename": "PropertySearchCriteria"
+          },
+          "tripId": "00000000-0000-4000-8000-000000000001",
+          "__typename": "BookingServicingManageLodgingCriteria"
+        },
+        "__typename": "BookingServicingManageCriteria"
+      },
+      "displayAnalytics": {
+        "eventName": "<redacted>",
+        "eventType": "Page View",
+        "eventVersion": "1.2.0",
+        "payload": "<redacted:551chars>",
+        "__typename": "<redacted:40chars>"
+      },
+      "toolbar": {
+        "title": null,
+        "subtitle": null,
+        "type": "STANDARD",
+        "navigation": {
+          "navigationType": "BACK",
+          "iconLabel": "Zurück zur vorherigen Seite",
+          "buttonLabel": null,
+          "buttonId": "back_button",
+          "action": {
+            "accessibility": null,
+            "analyticsList": [],
+            "resource": {
+              "relativePath": "/trips/72000000000001",
+              "__typename": "HttpURI",
+              "value": "https://www.expedia.de/trips/72000000000001"
+            },
+            "target": "INTERNAL",
+            "useRelativePath": null,
+            "clickstreamPayload": {
+              "eventName": "<redacted>",
+              "eventType": "Interaction",
+              "eventVersion": "2.0.3",
+              "payload": "<redacted:344chars>",
+              "__typename": "<redacted:40chars>"
+            },
+            "__typename": "BookingServicingResourceLinkAction"
+          },
+          "__typename": "BookingServicingToolbarNavigation"
+        },
+        "dialog": null,
+        "__typename": "BookingServicingToolbar"
+      },
+      "virtualAgent": {
+        "clientOverrides": {
+          "analytics": null,
+          "conversationProperties": {
+            "launchPoint": "FAB",
+            "pageName": "<redacted>",
+            "skipWelcome": "true",
+            "__typename": "<redacted:57chars>"
+          },
+          "intent": "",
+          "intentArguments": null,
+          "__typename": "<redacted:47chars>"
+        },
+        "pageName": "<redacted>",
+        "__typename": "BookingServicingVirtualAgentControl"
+      },
+      "__typename": "BookingServicingManagePresentation"
+    },
+    "__typename": "BookingServicingManage"
+  }
+}

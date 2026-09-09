@@ -105,7 +105,8 @@ public enum ProviderSessionNavigation {
             return .needsLogin
         case .unknown:
             return current == .sessionReady ? nil : .needsLogin
-        case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen, .shouldProbeCheck24:
+        case .shouldProbeOpodo, .shouldProbeTraveloka, .shouldProbeBilligerMietwagen,
+             .shouldProbeCheck24, .shouldProbeExpedia:
             return nil
         }
     }

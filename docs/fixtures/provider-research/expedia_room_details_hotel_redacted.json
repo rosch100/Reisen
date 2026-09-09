@@ -1,0 +1,136 @@
+{
+  "tripsRoomDetails": {
+    "accessibility": null,
+    "heading": "Zimmerdetails",
+    "roomInfo": [
+      {
+        "accessibility": null,
+        "heading": "Gemeinsamer Basic-Schlafsaal, Gemischter Schlafsaal, Gemeinschaftsbad (6 Beds)",
+        "content": [
+          {
+            "accessibility": null,
+            "heading": "Reserviert für",
+            "items": [
+              "<redacted:guest_name> (2 Erwachsene)"
+            ],
+            "__typename": "TripDetailsUIRoomDetailsList"
+          },
+          {
+            "accessibility": null,
+            "heading": "Wünsche",
+            "items": [
+              "Nichtraucher"
+            ],
+            "__typename": "TripDetailsUIRoomDetailsList"
+          }
+        ],
+        "__typename": "TripDetailsUIRoomDetailsInfo"
+      }
+    ],
+    "vipAccess": null,
+    "actionButton": {
+      "button": {
+        "accessibility": null,
+        "disabled": false,
+        "primary": "Richtlinien und Einschränkungen lesen",
+        "icon": null,
+        "iconPosition": null,
+        "__typename": "TripDetailsUISecondaryButton"
+      },
+      "action": {
+        "analytics": {
+          "event": {
+            "eventCategory": "room_details",
+            "eventName": "<redacted>",
+            "eventType": "Interaction",
+            "eventVersion": "1.0.0",
+            "actionLocation": null,
+            "actionReason": null,
+            "__typename": "TripDetailsUIClickStreamEvent"
+          },
+          "payload": "<redacted:420chars>",
+          "__typename": "TripDetailsUIClickStreamAnalytics"
+        },
+        "content": {
+          "primary": "Richtlinien und Einschränkungen",
+          "list": [
+            {
+              "heading": "Stornierungen und Änderungen",
+              "items": [
+                "<redacted:143chars>",
+                "<redacted:122chars>",
+                "<redacted:147chars>",
+                "<redacted:238chars>"
+              ],
+              "__typename": "TripDetailsUIRoomDetailsList"
+            },
+            {
+              "heading": "Gebühren für Gäste und Zimmerbelegung",
+              "items": [
+                "Der Basispreis gilt für 2 Gäste.",
+                "Hier aufgeführte Preise sind eventuell in der Währung des Landes angegeben, in dem sich die Unterkunft befindet.",
+                "Diese Unterkunft stuft alle Gäste als Erwachsene ein.",
+                "Die Unterbringung von zusätzlichen Gästen in derselben Unterkunft kann nicht garantiert werden."
+              ],
+              "__typename": "TripDetailsUIRoomDetailsList"
+            }
+          ],
+          "sections": null,
+          "__typename": "TripDetailsUIRoomDetailsSheetContent"
+        },
+        "sheet": {
+          "accessibility": null,
+          "impressionAnalytics": {
+            "event": {
+              "eventCategory": "room_details",
+              "eventName": "<redacted>",
+              "eventType": "Impression",
+              "eventVersion": "1.0.0",
+              "actionLocation": null,
+              "actionReason": null,
+              "__typename": "TripDetailsUIClickStreamEvent"
+            },
+            "payload": "<redacted:374chars>",
+            "__typename": "TripDetailsUIClickStreamAnalytics"
+          },
+          "toolbar": {
+            "action": {
+              "analytics": {
+                "event": {
+                  "eventCategory": "room_details",
+                  "eventName": "<redacted>",
+                  "eventType": "Interaction",
+                  "eventVersion": "1.0.0",
+                  "actionLocation": null,
+                  "actionReason": null,
+                  "__typename": "TripDetailsUIClickStreamEvent"
+                },
+                "payload": null,
+                "__typename": "TripDetailsUIClickStreamAnalytics"
+              },
+              "__typename": "TripDetailsUICloseToolbarAction"
+            },
+            "__typename": "TripDetailsUIToolbar"
+          },
+          "__typename": "TripDetailsUISheet"
+        },
+        "__typename": "TripDetailsUIRoomDetailsOpenSheetAction"
+      },
+      "__typename": "TripDetailsUIRoomDetailsButton"
+    },
+    "impressionAnalytics": {
+      "event": {
+        "eventCategory": "room_details",
+        "eventName": "<redacted>",
+        "eventType": "Impression",
+        "eventVersion": "1.0.0",
+        "actionLocation": null,
+        "actionReason": null,
+        "__typename": "TripDetailsUIClickStreamEvent"
+      },
+      "payload": "<redacted:366chars>",
+      "__typename": "TripDetailsUIClickStreamAnalytics"
+    },
+    "__typename": "TripDetailsUIRoomDetailsSuccessResponse"
+  }
+}

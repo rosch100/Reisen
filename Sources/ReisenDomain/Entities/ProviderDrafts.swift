@@ -135,6 +135,7 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
     public var operatorName: String?
     public var isAllDay: Bool?
     public var cancellationUrl: String?
+    public var confirmationCode: String?
 
     public init(
         deadlines: [CancellationDeadline] = [],
@@ -154,7 +155,8 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         locationToAddress: String? = nil,
         operatorName: String? = nil,
         isAllDay: Bool? = nil,
-        cancellationUrl: String? = nil
+        cancellationUrl: String? = nil,
+        confirmationCode: String? = nil
     ) {
         self.deadlines = deadlines
         self.rateDetails = rateDetails
@@ -174,5 +176,6 @@ public struct ProviderBookingEnrichment: Equatable, Sendable {
         self.operatorName = operatorName
         self.isAllDay = isAllDay
         self.cancellationUrl = cancellationUrl
+        self.confirmationCode = confirmationCode
     }
 }

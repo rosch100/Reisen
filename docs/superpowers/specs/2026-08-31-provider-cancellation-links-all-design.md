@@ -100,11 +100,16 @@ Jeder Sync-Provider hat **genau einen** Mode pro `(provider, bookingType)`-Zelle
 | Booking.com | `.hotel` | distinct | Catalog (Confirmation→Cancel) | Live `cancel.de.html` + `auth_key` aus Confirmation | 2 (done) |
 | Booking.com | `.flight` | none | — | Cancel oft auf Confirmation; Capture nötig | 2 |
 | Check24 | * | distinct | Catalog (`mapDraft`) | Live `…/kundenbereich/buchung/{uuid}?action=cancel` | 2 (done) |
+| Expedia.de | `.hotel` | distinct | Enrich (`BookingServicing` cancel review) | HAR + Fixture `expedia_booking_servicing_hotel_*`; Cancel fehlt → soft, kein Sync-Abbruch | 3 (done) |
+| Expedia.de | `.carRental` | inPageOnOpen | Catalog (`…/manage-booking`) | Assist nur Car + Manage-Booking + Car-Marker JS | 3 (done) |
+| Expedia.de | `.flight` / `.activity` / `.ferry` / `.train` / `.other` | none | — | Kein Cancel-Capture (Flight/Activity nur synthetic Catalog); Cancel-URL/Mode erst mit Beleg | 3 |
 | Manual | — | distinct (Editor) | Nutzer | HTTPS-Feld | — |
 
 **Welle 1 (verbindlicher Spec-Scope):** Policy-SSOT + Presentation `linkMode` (inkl. `.none` → hidden) + Copy-Helper + Docs-Folgen + Extract/Tests für **GYG (inPageOnOpen)** und **billiger-mietwagen (inPageOnOpen**, `cancellationUrl == externalUrl`, Assist „Buchung stornieren“ — Spec 2026-09-07). Traveloka/Airbnb Experience Regression.
 
 **Welle 2:** Booking Flug noch offen. Airbnb Stay, Opodo In-Page, Check24 `?action=cancel`, Booking Hotel Cancel: erledigt.
+
+**Welle 3:** Expedia.de Hotel (distinct Servicing) + Car (inPageOnOpen + Assist); Flight/Activity `.none` bis Cancel-Capture.
 
 ### Welle-2 Capture (kurz)
 
