@@ -4,7 +4,7 @@ import MapKit
 import ReisenDomain
 import ReisenData
 import ReisenDiagnostics
-import ReisenProviders
+import ReisenMapKit
 
 @MainActor
 public final class FlightTimeZoneAssigner {

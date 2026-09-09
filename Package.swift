@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "ReisenDomain", targets: ["ReisenDomain"]),
         .library(name: "ReisenData", targets: ["ReisenData"]),
         .library(name: "ReisenDiagnostics", targets: ["ReisenDiagnostics"]),
+        .library(name: "ReisenMapKit", targets: ["ReisenMapKit"]),
         .library(name: "ReisenProviders", targets: ["ReisenProviders"]),
         .library(name: "ReisenAppCore", targets: ["ReisenAppCore"]),
         .library(name: "ReisenProviderSync", targets: ["ReisenProviderSync"]),
@@ -59,6 +60,16 @@ let package = Package(
             ]
         ),
         .target(
+            name: "ReisenMapKit",
+            path: "Sources/ReisenMapKit",
+            swiftSettings: [
+                .enableUpcomingFeature("ApproachableConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("MapKit"),
+            ]
+        ),
+        .target(
             name: "ReisenProviders",
             dependencies: ["ReisenDomain", "ReisenDiagnostics"],
             path: "Sources/ReisenProviders",
@@ -67,7 +78,6 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("WebKit"),
-                .linkedFramework("MapKit"),
             ]
         ),
         .target(
@@ -81,7 +91,7 @@ let package = Package(
                 "ReisenData",
                 "ReisenDiagnostics",
                 "ReisenCrashSignal",
-                "ReisenProviders",
+                "ReisenMapKit",
             ],
             path: "Sources/ReisenAppCore",
             exclude: [
@@ -200,7 +210,7 @@ let package = Package(
         ),
         .target(
             name: "ReisenExpedia",
-            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics"],
+            dependencies: ["ReisenDomain", "ReisenProviders", "ReisenDiagnostics", "ReisenMapKit"],
             path: "Sources/ReisenExpedia",
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

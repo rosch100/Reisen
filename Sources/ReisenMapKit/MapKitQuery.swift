@@ -1,5 +1,6 @@
 import MapKit
 
+/// Store-sichere MapKit-SSOT (ohne Provider-/Session-Probe-Strings).
 public enum MapKitQuery {
     @MainActor
     public static func mapItems(matching query: String) async throws -> [MKMapItem] {

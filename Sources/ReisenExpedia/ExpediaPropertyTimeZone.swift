@@ -1,5 +1,5 @@
 import Foundation
-import ReisenProviders
+import ReisenMapKit
 
 enum ExpediaPropertyTimeZone {
     enum ResolveError: Error, Equatable {
@@ -7,7 +7,7 @@ enum ExpediaPropertyTimeZone {
         case noTimeZoneFound
     }
 
-    /// Resolves property-local wall-clock TZ via MapKit SSOT (`MapKitQuery` in ReisenProviders).
+    /// Resolves property-local wall-clock TZ via MapKit SSOT (`MapKitQuery` in ReisenMapKit).
     @MainActor
     static func resolve(address: String) async throws -> TimeZone {
         let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
