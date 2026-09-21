@@ -14,7 +14,7 @@ struct WKWebViewAuthenticatedHTMLTests {
         nonisolated(unsafe) static var failWithTimedOut = false
 
         override class func canInit(with request: URLRequest) -> Bool {
-            request.url?.host == "authenticated-html-test.local"
+            request.url?.host == "html-fetch-test.local"
         }
 
         override class func canonicalRequest(for request: URLRequest) -> URLRequest {
@@ -52,7 +52,7 @@ struct WKWebViewAuthenticatedHTMLTests {
     @Test("fetchAuthenticatedHTML setzt request.timeoutInterval wie fetchAuthenticatedText")
     func setsRequestTimeoutFromParameter() async throws {
         try await withStubProtocol {
-            let url = URL(string: "https://authenticated-html-test.local/trips")!
+            let url = URL(string: "https://html-fetch-test.local/catalog")!
             let webView = WKWebView()
             _ = try await webView.fetchAuthenticatedHTML(
                 url: url,
@@ -78,7 +78,7 @@ struct WKWebViewAuthenticatedHTMLTests {
             }
             defer { DiagnosticLogger.notePublicEvent = nil }
 
-            let url = URL(string: "https://authenticated-html-test.local/trips")!
+            let url = URL(string: "https://html-fetch-test.local/catalog")!
             let webView = WKWebView()
             try await DiagnosticContext.$current.withValue(context) {
                 _ = try await webView.fetchAuthenticatedHTML(
@@ -109,7 +109,7 @@ struct WKWebViewAuthenticatedHTMLTests {
             }
             defer { DiagnosticLogger.notePublicEvent = nil }
 
-            let url = URL(string: "https://authenticated-html-test.local/trips")!
+            let url = URL(string: "https://html-fetch-test.local/catalog")!
             let webView = WKWebView()
             do {
                 try await DiagnosticContext.$current.withValue(context) {
