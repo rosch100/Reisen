@@ -103,20 +103,64 @@ extension WKWebView {
         url: URL,
         accept: String = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         referer: String? = nil,
+        timeoutSeconds: TimeInterval = 60,
         isLoginHTML: (String) -> Bool,
         isChallengeHTML: ((String) -> Bool)? = nil
     ) async throws -> String {
-        let request = await authenticatedRequest(url: url, accept: accept, referer: referer)
+        let context = DiagnosticContext.current
+        let start = Date()
+        if let context {
+            await DiagnosticLogger.shared.record(
+                AuthenticatedFetchDiagnostics.event(
+                    context: context,
+                    event: "started",
+                    result: .started,
+                    url: url
+                )
+            )
+        }
+
         do {
+            var request = await authenticatedRequest(url: url, accept: accept, referer: referer)
+            request.timeoutInterval = timeoutSeconds
             let (data, response) = try await URLSession.shared.data(for: request)
-            return try AuthenticatedHTMLSession.validatedUTF8HTML(
+            let html = try AuthenticatedHTMLSession.validatedUTF8HTML(
                 data: data,
                 response: response,
                 isLoginHTML: isLoginHTML,
                 isChallengeHTML: isChallengeHTML
             )
+            if let context {
+                await DiagnosticLogger.shared.record(
+                    AuthenticatedFetchDiagnostics.event(
+                        context: context,
+                        event: "completed",
+                        result: .succeeded,
+                        url: url,
+                        durationMilliseconds: elapsedMilliseconds(since: start)
+                    )
+                )
+            }
+            return html
         } catch {
-            throw AuthenticatedFetchTransport.mapURLSessionError(error)
+            let mapped = AuthenticatedFetchTransport.mapURLSessionError(error)
+            if let context {
+                let timedOut = (mapped as? AuthenticatedFetchError) == .timedOut
+                await DiagnosticLogger.shared.record(
+                    AuthenticatedFetchDiagnostics.event(
+                        context: context,
+                        event: "failed",
+                        result: timedOut ? .timedOut : .failed,
+                        url: url,
+                        durationMilliseconds: elapsedMilliseconds(since: start),
+                        reason: timedOut
+                            ? "request_timed_out"
+                            : DiagnosticRedactor.redact(mapped.localizedDescription),
+                        errorType: String(reflecting: type(of: mapped))
+                    )
+                )
+            }
+            throw mapped
         }
     }
 
