@@ -80,9 +80,9 @@ actor EventKitDeadlineWriter {
 
         for trip in request.trips {
             do {
-                let tripResult = try Self.syncOneTrip(
+                let tripResult = try Self.syncOneTripCommitting(
                     trip: trip,
-                    store: store,
+                    store: &store,
                     shouldWriteReminders: shouldWriteReminders,
                     bookingsByID: bookingsByID,
                     eligibleDeadlines: eligible,
@@ -92,7 +92,6 @@ actor EventKitDeadlineWriter {
                     existingLinks: request.existingLinksByTripID[trip.id] ?? []
                 )
                 if tripResult.needsCommit {
-                    try store.commit()
                     upserts.append(contentsOf: Self.linksAfterCommit(tripResult.pendingUpserts))
                 }
                 deleteIDs.append(contentsOf: tripResult.deleteIDs)
@@ -129,6 +128,55 @@ actor EventKitDeadlineWriter {
                 link.reminderIdentifier = reminder.calendarItemIdentifier
             }
             return link
+        }
+    }
+
+    private static func syncOneTripCommitting(
+        trip: Trip,
+        store: inout EKEventStore,
+        shouldWriteReminders: Bool,
+        bookingsByID: [UUID: Booking],
+        eligibleDeadlines: [CancellationDeadline],
+        leadTimes: [Int],
+        calendarDuration: TimeInterval,
+        request: EventKitDeadlineWriterRequest,
+        existingLinks: [CancellationDeadlineLink]
+    ) throws -> TripSyncResult {
+        func run(links: [CancellationDeadlineLink]) throws -> TripSyncResult {
+            try syncOneTrip(
+                trip: trip,
+                store: store,
+                shouldWriteReminders: shouldWriteReminders,
+                bookingsByID: bookingsByID,
+                eligibleDeadlines: eligibleDeadlines,
+                leadTimes: leadTimes,
+                calendarDuration: calendarDuration,
+                request: request,
+                existingLinks: links
+            )
+        }
+
+        func commitIfNeeded(_ result: TripSyncResult) throws -> TripSyncResult {
+            if result.needsCommit {
+                try store.commit()
+            }
+            return result
+        }
+
+        do {
+            return try commitIfNeeded(run(links: existingLinks))
+        } catch {
+            guard EventKitStaleObjectRecovery.isObjectNotFound(error) else { throw error }
+            EventKitStaleObjectRecovery.recordRecovery(
+                component: "EventKitDeadlineWriter",
+                itemKind: "trip",
+                reason: "commit_or_save_retry_without_identifiers"
+            )
+            // Uncommittete Saves verwerfen — sonst doppelte Pending-Objekte beim Retry.
+            store = EKEventStore()
+            return try commitIfNeeded(
+                run(links: EventKitStaleObjectRecovery.linksWithoutEventKitIdentifiers(existingLinks))
+            )
         }
     }
 
@@ -185,35 +233,30 @@ actor EventKitDeadlineWriter {
 
         for (_, info) in desiredByKey {
             let existingLink = existingByKey[info.linkKey]
-            let existingEvent = existingLink.flatMap { store.event(withIdentifier: $0.eventIdentifier) }
-            let event: EKEvent = existingEvent ?? EKEvent(eventStore: store)
-            event.title = "Stornofrist: \(info.bookingTitle)"
-            event.calendar = eventCalendar
-            event.timeZone = info.timeZone
-            event.url = BookingExternalURL.browserURL(from: info.booking.externalUrl)
-            event.startDate = info.fireAt
-            event.endDate = info.fireAt.addingTimeInterval(calendarDuration)
+            let deadlineText = deadlineText(for: info)
 
-            let deadlineText: String = {
-                if let text = CancellationDeadlineWallClock.string(for: info.deadline) {
-                    return text
-                }
-                EventKitOffsetSkip.record(
-                    component: "EventKitDeadlineWriter",
-                    reason: "format_deadline_missing_hotel_offset"
-                )
-                return info.deadline.policyText ?? "Stornofrist"
-            }()
-            event.notes = """
-            Reisen: Storno / Stornofrist
-            Deadline: \(deadlineText)
-            Vorlauf: \(info.linkKey.leadDays) Tage
-            Booking: \(info.bookingTitle)
-            """
-
-            event.alarms = []
-            event.addAlarm(EKAlarm(absoluteDate: info.fireAt))
-            try store.save(event, span: .thisEvent, commit: false)
+            let event = try EventKitStaleEventOperations.upsertEvent(
+                store: store,
+                existingIdentifier: existingLink?.eventIdentifier,
+                component: "EventKitDeadlineWriter",
+                configure: { event in
+                    event.title = "Stornofrist: \(info.bookingTitle)"
+                    event.calendar = eventCalendar
+                    event.timeZone = info.timeZone
+                    event.url = BookingExternalURL.browserURL(from: info.booking.externalUrl)
+                    event.startDate = info.fireAt
+                    event.endDate = info.fireAt.addingTimeInterval(calendarDuration)
+                    event.notes = """
+                    Reisen: Storno / Stornofrist
+                    Deadline: \(deadlineText)
+                    Vorlauf: \(info.linkKey.leadDays) Tage
+                    Booking: \(info.bookingTitle)
+                    """
+                    event.alarms = []
+                    event.addAlarm(EKAlarm(absoluteDate: info.fireAt))
+                },
+                commit: false
+            )
             eventSaveCount += 1
             needsCommit = true
 
@@ -249,13 +292,24 @@ actor EventKitDeadlineWriter {
         }
 
         for link in unwantedLinks(existingLinks: existingLinks, desiredKeys: Set(desiredByKey.keys)) {
-            if let event = store.event(withIdentifier: link.eventIdentifier) {
-                try store.remove(event, span: .thisEvent, commit: false)
+            if !link.eventIdentifier.isEmpty,
+               store.event(withIdentifier: link.eventIdentifier) != nil {
+                try EventKitStaleEventOperations.removeEventIfPresent(
+                    store: store,
+                    identifier: link.eventIdentifier,
+                    component: "EventKitDeadlineWriter",
+                    commit: false
+                )
                 needsCommit = true
             }
             if let reminderIdentifier = link.reminderIdentifier,
-               let reminder = store.calendarItem(withIdentifier: reminderIdentifier) as? EKReminder {
-                try store.remove(reminder, commit: false)
+               store.calendarItem(withIdentifier: reminderIdentifier) != nil {
+                try EventKitStaleReminderOperations.removeReminderIfPresent(
+                    store: store,
+                    identifier: reminderIdentifier,
+                    component: "EventKitDeadlineWriter",
+                    commit: false
+                )
                 needsCommit = true
             }
             deleteIDs.append(link.id)
@@ -379,6 +433,17 @@ actor EventKitDeadlineWriter {
         }
     }
 
+    private static func deadlineText(for info: DesiredDeadlineLinkInfo) -> String {
+        if let text = CancellationDeadlineWallClock.string(for: info.deadline) {
+            return text
+        }
+        EventKitOffsetSkip.record(
+            component: "EventKitDeadlineWriter",
+            reason: "format_deadline_missing_hotel_offset"
+        )
+        return info.deadline.policyText ?? "Stornofrist"
+    }
+
     private static func upsertReminderIfNeeded(
         existingLink: CancellationDeadlineLink?,
         reminderCalendar: EKCalendar?,
@@ -389,30 +454,26 @@ actor EventKitDeadlineWriter {
     ) throws -> EKReminder? {
         guard shouldWriteReminders, let reminderCalendar else { return nil }
 
-        let reminder: EKReminder
-        if let existingLink,
-           let reminderIdentifier = existingLink.reminderIdentifier,
-           let existingReminder = store.calendarItem(withIdentifier: reminderIdentifier) as? EKReminder {
-            reminder = existingReminder
-        } else {
-            reminder = EKReminder(eventStore: store)
-        }
+        return try EventKitStaleReminderOperations.upsertReminder(
+            store: store,
+            existingIdentifier: existingLink?.reminderIdentifier,
+            component: "EventKitDeadlineWriter",
+            configure: { reminder in
+                reminder.calendar = reminderCalendar
+                reminder.title = "Stornofrist: \(info.bookingTitle)"
+                reminder.notes = "Reisen: Storno / Stornofrist\nDeadline: \(deadlineText)"
 
-        reminder.calendar = reminderCalendar
-        reminder.title = "Stornofrist: \(info.bookingTitle)"
-        reminder.notes = "Reisen: Storno / Stornofrist\nDeadline: \(deadlineText)"
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = info.timeZone
+                reminder.dueDateComponents = calendar.dateComponents(
+                    [.year, .month, .day, .hour, .minute],
+                    from: info.fireAt
+                )
 
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = info.timeZone
-        reminder.dueDateComponents = calendar.dateComponents(
-            [.year, .month, .day, .hour, .minute],
-            from: info.fireAt
+                reminder.alarms = []
+                reminder.addAlarm(EKAlarm(absoluteDate: info.fireAt))
+            },
+            commit: false
         )
-
-        reminder.alarms = []
-        reminder.addAlarm(EKAlarm(absoluteDate: info.fireAt))
-
-        try store.save(reminder, commit: false)
-        return reminder
     }
 }

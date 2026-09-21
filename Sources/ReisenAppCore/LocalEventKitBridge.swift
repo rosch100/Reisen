@@ -359,31 +359,27 @@ public final class LocalEventKitBridge: CalendarSyncing {
         calendarDuration: TimeInterval,
         calendarEventLinkRepository: CalendarEventLinkRepository
     ) throws {
-        let event: EKEvent
-        if let existingLink,
-           let existingEvent = store.event(withIdentifier: existingLink.eventIdentifier) {
-            event = existingEvent
-        } else {
-            event = EKEvent(eventStore: store)
-        }
-
-        event.title = draft.title
-        event.calendar = eventCalendar
-        event.url = draft.url
-        event.notes = draft.notes
-
-        configureEventDates(
-            event: event,
-            draft: draft,
-            tz: tz,
-            calendarDuration: calendarDuration
+        let event = try EventKitStaleEventOperations.upsertEvent(
+            store: store,
+            existingIdentifier: existingLink?.eventIdentifier,
+            component: "LocalEventKitBridge",
+            configure: { event in
+                event.title = draft.title
+                event.calendar = eventCalendar
+                event.url = draft.url
+                event.notes = draft.notes
+                configureEventDates(
+                    event: event,
+                    draft: draft,
+                    tz: tz,
+                    calendarDuration: calendarDuration
+                )
+                if let location = draft.locationAddress {
+                    event.location = location
+                }
+            },
+            commit: true
         )
-
-        if let location = draft.locationAddress {
-            event.location = location
-        }
-
-        try store.save(event, span: .thisEvent)
 
         #if DEBUG
         debugLogHotelStaySaved(store: store, draft: draft, event: event)
@@ -474,9 +470,12 @@ public final class LocalEventKitBridge: CalendarSyncing {
 
     private func removeUnwantedEvents(store: EKEventStore, links: [CalendarEventLink]) throws {
         for link in links {
-            if let event = store.event(withIdentifier: link.eventIdentifier) {
-                try store.remove(event, span: .thisEvent)
-            }
+            try EventKitStaleEventOperations.removeEventIfPresent(
+                store: store,
+                identifier: link.eventIdentifier,
+                component: "LocalEventKitBridge",
+                commit: true
+            )
         }
     }
 

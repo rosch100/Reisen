@@ -184,17 +184,23 @@ extension LocalEventKitBridge {
                 continue
             }
 
-            let event: EKEvent = existingEvent ?? EKEvent(eventStore: store)
-            event.title = BookingGuestHintSummary.eventTitle(bookingTitle: info.bookingTitle)
-            event.calendar = eventCalendar
-            event.timeZone = .current
-            event.url = info.booking.externalUrl.flatMap { URL(string: $0) }
-            event.startDate = info.fireAt
-            event.endDate = info.fireAt.addingTimeInterval(calendarDuration)
-            event.notes = eventNotes
-            event.alarms = []
-            event.addAlarm(EKAlarm(absoluteDate: info.fireAt))
-            try store.save(event, span: .thisEvent)
+            let event = try EventKitStaleEventOperations.upsertEvent(
+                store: store,
+                existingIdentifier: existingLink?.eventIdentifier,
+                component: "LocalEventKitBridge",
+                configure: { event in
+                    event.title = BookingGuestHintSummary.eventTitle(bookingTitle: info.bookingTitle)
+                    event.calendar = eventCalendar
+                    event.timeZone = .current
+                    event.url = info.booking.externalUrl.flatMap { URL(string: $0) }
+                    event.startDate = info.fireAt
+                    event.endDate = info.fireAt.addingTimeInterval(calendarDuration)
+                    event.notes = eventNotes
+                    event.alarms = []
+                    event.addAlarm(EKAlarm(absoluteDate: info.fireAt))
+                },
+                commit: true
+            )
 
             let reminderIdentifier = try upsertPreTravelReminderIfNeeded(
                 existingLink: existingLink,
@@ -244,7 +250,6 @@ extension LocalEventKitBridge {
     ) throws -> String? {
         guard shouldWriteReminders, let reminderCalendar else { return nil }
 
-        let reminder: EKReminder
         if let existingLink,
            let reminderIdentifier = existingLink.reminderIdentifier,
            let existingReminder = store.calendarItem(withIdentifier: reminderIdentifier) as? EKReminder,
@@ -252,29 +257,27 @@ extension LocalEventKitBridge {
             return reminderIdentifier
         }
 
-        if let existingLink,
-           let reminderIdentifier = existingLink.reminderIdentifier,
-           let existingReminder = store.calendarItem(withIdentifier: reminderIdentifier) as? EKReminder {
-            reminder = existingReminder
-        } else {
-            reminder = EKReminder(eventStore: store)
-        }
+        let reminder = try EventKitStaleReminderOperations.upsertReminder(
+            store: store,
+            existingIdentifier: existingLink?.reminderIdentifier,
+            component: "LocalEventKitBridge",
+            configure: { reminder in
+                reminder.calendar = reminderCalendar
+                reminder.title = BookingGuestHintSummary.eventTitle(bookingTitle: info.bookingTitle)
+                reminder.notes = reminderNotes
 
-        reminder.calendar = reminderCalendar
-        reminder.title = BookingGuestHintSummary.eventTitle(bookingTitle: info.bookingTitle)
-        reminder.notes = reminderNotes
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = .current
+                reminder.dueDateComponents = calendar.dateComponents(
+                    [.year, .month, .day, .hour, .minute],
+                    from: info.fireAt
+                )
 
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .current
-        reminder.dueDateComponents = calendar.dateComponents(
-            [.year, .month, .day, .hour, .minute],
-            from: info.fireAt
+                reminder.alarms = []
+                reminder.addAlarm(EKAlarm(absoluteDate: info.fireAt))
+            },
+            commit: true
         )
-
-        reminder.alarms = []
-        reminder.addAlarm(EKAlarm(absoluteDate: info.fireAt))
-
-        try store.save(reminder, commit: true)
         return reminder.calendarItemIdentifier
     }
 
@@ -291,12 +294,19 @@ extension LocalEventKitBridge {
         linkRepo: PreTravelHintLinkRepository
     ) throws {
         for link in links {
-            if let event = store.event(withIdentifier: link.eventIdentifier) {
-                try store.remove(event, span: .thisEvent)
-            }
-            if let reminderIdentifier = link.reminderIdentifier,
-               let reminder = store.calendarItem(withIdentifier: reminderIdentifier) as? EKReminder {
-                try store.remove(reminder, commit: true)
+            try EventKitStaleEventOperations.removeEventIfPresent(
+                store: store,
+                identifier: link.eventIdentifier,
+                component: "LocalEventKitBridge",
+                commit: true
+            )
+            if let reminderIdentifier = link.reminderIdentifier {
+                try EventKitStaleReminderOperations.removeReminderIfPresent(
+                    store: store,
+                    identifier: reminderIdentifier,
+                    component: "LocalEventKitBridge",
+                    commit: true
+                )
             }
         }
         try linkRepo.deleteLinks(ids: links.map(\.id))
