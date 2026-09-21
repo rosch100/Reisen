@@ -170,13 +170,11 @@ actor EventKitDeadlineWriter {
             EventKitStaleObjectRecovery.recordRecovery(
                 component: "EventKitDeadlineWriter",
                 itemKind: "trip",
-                reason: "commit_or_save_retry_without_identifiers"
+                reason: "commit_or_save_retry_fresh_store"
             )
             // Uncommittete Saves verwerfen — sonst doppelte Pending-Objekte beim Retry.
             store = EKEventStore()
-            return try commitIfNeeded(
-                run(links: EventKitStaleObjectRecovery.linksWithoutEventKitIdentifiers(existingLinks))
-            )
+            return try commitIfNeeded(run(links: existingLinks))
         }
     }
 
