@@ -16,7 +16,7 @@ permissions:
 jobs:
   ingest:
     name: Unread mail to GitHub issues
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["ubuntu-latest"]') }}
     timeout-minutes: 10
     if: github.repository == 'rosch100/Reisen'
 
