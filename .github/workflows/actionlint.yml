@@ -19,7 +19,7 @@ permissions:
 jobs:
   actionlint:
     name: Check workflows
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     timeout-minutes: 10
 
     steps:

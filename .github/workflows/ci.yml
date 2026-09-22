@@ -27,7 +27,7 @@ defaults:
 jobs:
   detect-suites:
     name: detect-suites
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     timeout-minutes: 10
     outputs:
       mode: ${{ steps.select.outputs.mode }}
@@ -265,7 +265,7 @@ jobs:
 
   CI:
     name: CI
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     needs:
       - detect-suites
       - suite-swiftpm
