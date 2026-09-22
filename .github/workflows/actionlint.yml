@@ -19,7 +19,7 @@ permissions:
 jobs:
   actionlint:
     name: Check workflows
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["ubuntu-latest"]') }}
+    runs-on: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON(vars.CI_RUNS_ON || '["ubuntu-latest"]') }}
     timeout-minutes: 10
 
     steps:
